@@ -1,0 +1,56 @@
+{
+    "name": "cheesegrits/iseed",
+    "description": "This is a fork of the SchuBu/iseed of the original package Orangehill/Iseed. Generate a new Laravel database seed file based on data from the existing database table.",
+    "keywords": ["laravel", "generators", "seed", "artisan"],
+    "license": "BSD-2-Clause",
+    "authors": [
+        {
+            "name": "Hugh Messenger",
+            "email": "hugh.messenger@gmail.com"
+        },
+        {
+            "name": "Peter Schulze-Buxloh",
+            "email": "peter@schu-bu.de"
+        },
+        {
+            "name": "Tihomir Opacic",
+            "email": "tihomir.opacic@SchuBudev.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2|^8.0.2",
+        "illuminate/support": "~5.5.0|~5.6.0|~5.7.0|~5.8.0|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.0.0",
+        "illuminate/filesystem": "~5.5.0|~5.6.0|~5.7.0|~5.8.0|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+        "laravel/framework": "~5.5.0|~5.6.0|~5.7.0|~5.8.0|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+        "phpunit/phpunit": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cheesegrits\\Iseed\\": "src/",
+            "Cheesegrits\\Iseed\\Tests\\": "tests/"
+        },
+        "classmap": [
+            "src/Exceptions/Exceptions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cheesegrits\\Iseed\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Cheesegrits\\Iseed\\IseedServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
