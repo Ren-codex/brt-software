@@ -4,62 +4,137 @@
             <BRow>
                 <BCol lg="12">
                     <BRow class="g-3 mt-n1">
-                        <BCol lg="3" class="mt-1">
+                        <BCol lg="12">Personal Information</BCol><hr class="text-muted mt-n1 mb-4"/>
+
+                        <BCol lg="3" class="mt-n1 mb-3">
                             <InputLabel value="Firstname" :message="form.errors.firstname"/>
-                            <TextInput v-model="form.firstname" type="text" class="form-control" placeholder="Please enter firstname" @input="handleInput('name')" :light="true" />
+                            <TextInput v-model="form.firstname" type="text" class="form-control" placeholder="Please enter firstname" @input="handleInput('firstname')" :light="true" />
                         </BCol>
-                        <BCol lg="3" class="mt-1">
+                        <BCol lg="3" class="mt-n1 mb-3">
                             <InputLabel value="Middlename" :message="form.errors.middlename"/>
-                            <TextInput v-model="form.middlename" type="text" class="form-control" placeholder="Please enter middlename" @input="handleInput('name')" :light="true" />
+                            <TextInput v-model="form.middlename" type="text" class="form-control" placeholder="Please enter middlename" @input="handleInput('middlename')" :light="true" />
                         </BCol>
-                        <BCol lg="3" class="mt-1">
+                        <BCol lg="3" class="mt-n1 mb-3">
                             <InputLabel value="Lastname" :message="form.errors.lastname"/>
-                            <TextInput v-model="form.lastname" type="text" class="form-control" placeholder="Please enter lastname" @input="handleInput('name')" :light="true" />
+                            <TextInput v-model="form.lastname" type="text" class="form-control" placeholder="Please enter lastname" @input="handleInput('lastname')" :light="true" />
+                        </BCol>
+
+                        <BCol lg="3" class="mt-n1 mb-3">
+                            <InputLabel value="Suffix" :message="form.errors.suffix"/>
+                            <TextInput v-model="form.suffix" type="text" class="form-control" placeholder="Please enter suffix" @input="handleInput('suffix')" :light="true" />
                         </BCol>
                         
-                        <BCol lg="3" class="mt-n1">
-                            <InputLabel value="Suffix" :message="form.errors.short"/>
-                            <TextInput v-model="form.short" type="text" class="form-control" placeholder="Please enter short" @input="handleInput('short')" :light="true" />
+                        <BCol lg="3" class="mt-n1 mb-3">
+                            <InputLabel value="Birthdate" :message="form.errors.birthdate"/>
+                            <TextInput v-model="form.birthdate" type="date" class="form-control" placeholder="Please enter birthdate" @input="handleInput('birthdate')" :light="true" />
                         </BCol>
-                        <BCol lg="6" class="mt-0 mb-2">
-                            <InputLabel value="Roles" :message="form.errors.division_id"/>
-                            <Multiselect :options="role" :searchable="true" label="name" v-model="form.roles" placeholder="Select Roles" @input="handleInput('roles')" mode="tags"/>
+
+                        <BCol lg="3" class="mt-n1 mb-3">
+                            <InputLabel value="Religion" :message="form.errors.religion"/>
+                            <Multiselect :options="religions" :searchable="true" label="name" v-model="form.religion" placeholder="Select Sex" @input="handleInput('sex')"/>
                         </BCol>
-                        <BCol lg="6" class="mt-0 mb-2">
-                            <InputLabel value="Roles" :message="form.errors.division_id"/>
-                            <Multiselect :options="role" :searchable="true" label="name" v-model="form.roles" placeholder="Select Roles" @input="handleInput('roles')"/>
+
+                        <BCol lg="3" class="mt-n1 mb-3">
+                            <InputLabel value="Sex" :message="form.errors.sex"/>
+                            <Multiselect :options="['Male', 'Female' ]" :searchable="true" label="name" v-model="form.sex" placeholder="Select Sex" @input="handleInput('sex')"/>
                         </BCol>
-                        <BCol lg="12"><hr class="text-muted mt-n1 mb-n4"/></BCol>
-                        <BCol lg="12" style="margin-top: 13px; margin-bottom: -10px;">
-                            <div class="d-flex position-relative">
-                                <div class="flex-shrink-0 fs-12" :class="(form.errors.is_active) ? 'text-danger' : ''">
-                                    Is unit active? :
-                                </div>
-                                <div class="flex-grow-1 ms-2"></div>
-                                <div class="flex-shrink-0">
-                                    <div class="d-inline-block">
-                                        <div class="custom-control custom-radio mb-3 ms-4">
-                                            <input type="radio" id="customRadio1" class="custom-control-input me-2" @input="handleInput('is_active')" :value="true" v-model="form.is_active">
-                                            <label class="custom-control-label fs-12 fw-normal" for="customRadio1">Yes</label>
-                                        </div>
-                                    </div>
-                                    <div class="d-inline-block">
-                                        <div class="custom-control custom-radio mb-3 ms-4">
-                                            <input type="radio" id="customRadio1" class="custom-control-input me-2" @input="handleInput('is_active')" :value="false" v-model="form.is_active">
-                                            <label class="custom-control-label fs-12 fw-normal" for="customRadio1">No</label>
-                                        </div>
-                                    </div>
-                                </div>
+
+                        <BCol lg="3" class="mt-n1 mb-3">
+                            <InputLabel value="Mobile Number" :message="form.errors.short"/>
+                            <TextInput v-model="form.mobile" type="text" class="form-control" placeholder="Please enter mobile" @input="handleInput('short')" :light="true" />
+                        </BCol>
+
+                        <BCol lg="12">Credentials</BCol><hr class="text-muted mt-n1 mb-4"/>
+
+                        <BCol lg="6" class="mt-n1 mb-3">
+                            <InputLabel value="Username" :message="form.errors.email"/>
+                            <TextInput v-model="form.username" type="username" class="form-control" placeholder="Please enter username" @input="handleInput('short')" :light="true" />
+                        </BCol>
+
+                        <BCol lg="6" class="mt-n1 mb-3">
+                            <InputLabel value="Email" :message="form.errors.email"/>
+                            <TextInput v-model="form.email" type="email" class="form-control" placeholder="Please enter email" @input="handleInput('short')" :light="true" />
+                        </BCol>
+
+                        <BCol lg="6" class="mt-n1 mb-3">
+                            <InputLabel value="Password" :message="form.errors.password"/>
+
+                            <div class="position-relative">
+
+                                <TextInput
+                                    v-model="form.password"
+                                    :type="togglePassword ? 'text' : 'password'"
+                                    class="form-control pe-5"
+                                    placeholder="Please enter password"
+                                    @input="validatePassword"
+                                    :class="{ 'is-invalid': passwordMismatch }"
+                                    :light="true"
+                                />
+
+                                <BButton
+                                    variant="link"
+                                    class="position-absolute end-0 top-50 translate-middle-y text-decoration-none text-muted px-2"
+                                    type="button"
+                                    @click="togglePassword = !togglePassword"
+                                >
+                                    <i :class="togglePassword ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i>
+                                </BButton>
+
                             </div>
                         </BCol>
-                        <BCol lg="12"><hr class="text-muted mt-n1 mb-n4"/></BCol>
-                    </BRow>
+
+                        <BCol lg="6" class="mt-n1 mb-3">
+                            <InputLabel value="Confirm Password" />
+
+                            <div class="position-relative">
+
+                                <TextInput
+                                    v-model="form.confirm_password"
+                                    :type="toggleConfirm ? 'text' : 'password'"
+                                    class="form-control pe-5"
+                                    placeholder="Please confirm password"
+                                    @input="validatePassword"
+                                    :class="{ 'is-invalid': passwordMismatch }"
+                                    :light="true"
+                                />
+
+                                <BButton
+                                    variant="link"
+                                    class="position-absolute end-0 top-50 translate-middle-y text-decoration-none text-muted px-2"
+                                    type="button"
+                                    @click="toggleConfirm = !toggleConfirm"
+                                >
+                                    <i :class="toggleConfirm ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i>
+                                </BButton>
+
+                            </div>
+
+                            <!-- Password mismatch warning -->
+                            <small v-if="passwordMismatch" class="text-danger">
+                                Passwords do not match.
+                            </small>
+                        </BCol>
+
+                        <BCol lg="12" class="mt-n1 mb-3">
+                            <InputLabel value="Roles" :message="form.errors.role_ids"/>
+                            <Multiselect :options="dropdowns.roles" :searchable="true" label="name" v-model="form.role_ids" placeholder="Select Roles" @input="handleInput('roles')" mode="tags"/>
+                        </BCol>
+
+
+                        </BRow>
                 </BCol>
             </BRow>
         </form>
         <template v-slot:footer>
             <b-button @click="hide()" variant="light" block>Cancel</b-button>
-            <b-button @click="submit('ok')" variant="primary" :disabled="form.processing" block>Submit</b-button>
+            <b-button
+                @click="submit('ok')"
+                variant="primary"
+                :disabled="form.processing || passwordMismatch"
+                block
+            >
+                Submit
+            </b-button>
         </template>
     </b-modal>
 </template>
@@ -70,20 +145,59 @@ import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 export default {
     components: {InputLabel, TextInput, Multiselect },
-    props: ['divisions'],
+    props: ['dropdowns'],
     data(){
         return {
             currentUrl: window.location.origin,
             form: useForm({
                 id: null,
-                name: null,
-                short: null,
-                division_id: null,
-                is_active: null,
-                option: 'unit'
+                firstname: null,
+                middlename: null,
+                lastname: null,
+                suffix: null,
+                birthdate: null,
+                sex: null,
+                religion: null,
+                mobile: null,
+                address: null,
+                email: null,
+                password: null,
+                username: null,
+                role_ids: null,
+                option: 'users'
             }),
+            togglePassword: false,
+            toggleConfirm: false,
+            passwordMismatch: false,
             showModal: false,
-            editable: false
+            editable: false,
+            religions: [
+                'Roman Catholic',
+                'Iglesia ni Cristo',
+                'Evangelical (Born Again)',
+                'Aglipayan / Philippine Independent Church',
+                'Seventh-day Adventist',
+                'Jehovah’s Witnesses',
+                'Bible Baptist',
+                'UCCP (United Church of Christ in the Philippines)',
+                'Pentecostal',
+                'Lutheran',
+                'Methodist',
+                'Anglican / Episcopal',
+                'Jesus Is Lord (JIL)',
+                'Victory Christian Fellowship',
+                'El Shaddai',
+                'Islam',
+                'Buddhism',
+                'Hinduism',
+                'Taoism',
+                'Confucianism',
+                'Indigenous / Anito / Animism',
+                'Baháʼí Faith',
+                'Judaism',
+                'Sikhism',
+                'Non-religious / Atheist / Agnostic'
+            ]
         }
     },
     methods: { 
@@ -94,26 +208,43 @@ export default {
         },
         edit(data){
             this.form.id = data.id;
-            this.form.name = data.name;
-            this.form.short = data.short;
-            this.form.is_active = (data.is_active) ? true : false;
-            this.form.division_id = data.division_id;
+            this.form.firstname = data.firstname;
+            this.form.middlename = data.middlename;
+            this.form.lastname = data.lastname;
+            this.form.suffix = data.suffix;
+            this.form.sex = data.sex;
+            this.form.religion = data.religion;
+            this.form.mobile = data.mobile;
+            this.form.birthdate = data.birthdate;
+            this.form.username = data.username;
+            this.form.email = data.email;
+            this.form.role_ids = data.role_ids;
             this.editable = true;
             this.showModal = true;
         },
+        validatePassword() {
+            this.passwordMismatch =
+                this.form.password &&
+                this.form.confirm_password &&
+                this.form.password !== this.form.confirm_password;
+        },
+
         submit(){
+            console.log(this.editable);
             if(this.editable){
-                this.form.put('/references/update',{
+                this.form.put('/users/update',{
                     preserveScroll: true,
                     onSuccess: (response) => {
+                        this.$emit('add', true);
                         this.form.reset();
                         this.hide();
                     },
                 });
             }else{
-                this.form.post('/references',{
+                this.form.post('/users',{
                     preserveScroll: true,
                     onSuccess: (response) => {
+                        this.$emit('add', true);
                         this.form.reset();
                         this.hide();
                         this.$emit('success',true);

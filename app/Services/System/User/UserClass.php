@@ -5,6 +5,7 @@ namespace App\Services\System\User;
 use Hashids\Hashids;
 use App\Models\User;
 use App\Models\UserRole;
+use App\Models\UserProfile;
 use Illuminate\Support\Carbon;
 use App\Models\AuthenticationLog;
 use Spatie\Activitylog\Models\Activity;
@@ -23,11 +24,51 @@ class UserClass
         $data = new ViewResource(
             User::query()
             ->with('profile:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
-            ->with('myroles:role_id,id,user_id,added_by,removed_by,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.profile:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.profile:user_id,firstname,middlename,lastname,suffix')
+            ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.profile:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.profile:user_id,firstname,middlename,lastname,suffix')
             ->where('id',$id)->first()
         );
         return $data;
     }
+
+    
+    public function save($request){
+
+        $data = User::create([
+            'username' =>  $request->username,
+            'email' =>  $request->email,
+            'password' =>  bcrypt($request->password),
+            'is_active' => 1,
+        ]);
+
+        UserProfile::create([
+            'firstname' =>  $request->firstname,
+            'middlename' =>  $request->middlename,
+            'lastname' =>  $request->lastname,
+            'suffix' =>  $request->suffix,
+            'birthdate' =>  $request->birthdate,
+            'sex' =>  $request->sex,
+            'religion' =>  $request->religion,
+            'mobile' =>  $request->mobile,
+            'address' =>  $request->address,
+            'user_id' =>   $data->id,
+        ]);
+  
+        foreach($request->role_ids as $role_id){   
+            UserRole::create([
+                'role_id' =>  $role_id,   
+                'user_id' =>  $data->id,
+                'added_by_id' => \Auth::user()->id,
+            ]);
+        }
+
+  
+        return [
+            'data' => new UserResource($data),
+            'message' => 'User update was successful!', 
+            'info' => "You've successfully updated the selected user."
+        ];
+    }
+
 
     public function authentication($request){
         $hashids = new Hashids('krad',10);
@@ -45,7 +86,7 @@ class UserClass
 
     public function list($request){
         $data = User::with('profile:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
-        ->with('myroles:role_id,id,user_id,added_by,removed_by,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.profile:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.profile:user_id,firstname,middlename,lastname,suffix')
+        ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.profile:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.profile:user_id,firstname,middlename,lastname,suffix')
         ->paginate($request->count);
         return UserResource::collection($data);
     }

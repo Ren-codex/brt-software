@@ -10,7 +10,7 @@ class UserRole extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'role_id', 'added_by', 'removed_by','removed_at'
+        'user_id', 'role_id', 'added_by_id', 'removed_by_id','removed_at'
     ];
 
 
@@ -26,12 +26,12 @@ class UserRole extends Model
 
     public function added()
     {
-        return $this->belongsTo('App\Models\User', 'added_by', 'id');
+        return $this->belongsTo('App\Models\User', 'added_by_id', 'id');
     }
 
     public function removed()
     {
-        return $this->belongsTo('App\Models\User', 'removed_by', 'id');
+        return $this->belongsTo('App\Models\User', 'removed_by_id', 'id');
     }
 
     public function getUpdatedAtAttribute($value)

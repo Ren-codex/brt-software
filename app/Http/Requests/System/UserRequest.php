@@ -31,23 +31,9 @@ class UserRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            $hashids = new Hashids('krad', 10);
-            $id = $hashids->decode($this->code)[0] ?? null;
 
-            if (!$id) {
-                $validator->errors()->add('code', 'Invalid code provided.');
-                return;
-            }
-            if ($this->option === 'credential' || $this->option === 'status') {
-                $user = \App\Models\User::with('profile')->find($id);
-
-                if (!$user) {
-                    $validator->errors()->add('code', 'User not found.');
-                    return;
-                }
-            }
             if ($this->option === 'credential') {
-                if (\App\Models\User::where('email', $this->email)->where('id', '<>', $id)->exists()) {
+                if (\App\Models\User::where('email', $this->email)->exists()) {
                     $validator->errors()->add('email', 'The email has already been taken.');
                 }
 
@@ -64,11 +50,6 @@ class UserRequest extends FormRequest
                 if ($mobileExists) {
                     $validator->errors()->add('mobile', 'The mobile number has already been taken.');
                 }
-            }
-            if ($this->option === 'credential' || $this->option === 'status') {
-                $this->merge(['user_id' => $user->id]);
-            }else{
-                $this->merge(['id' => $id]);
             }
         });
     }

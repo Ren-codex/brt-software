@@ -63,6 +63,19 @@ class UserController extends Controller
         ]);
     }
 
+    public function store(UserRequest $request){
+        $result = $this->handleTransaction(function () use ($request) {
+            return $this->user->save($request);
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
+
      public function show($code){
         return inertia('Modules/System/Users/View',[
             'user_data' => $this->user->view($code),

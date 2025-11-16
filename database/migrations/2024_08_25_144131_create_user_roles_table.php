@@ -19,10 +19,10 @@ return new class extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedTinyInteger('role_id');
             $table->foreign('role_id')->references('id')->on('list_roles')->restrictOnDelete();
-            $table->unsignedInteger('added_by');
-            $table->foreign('added_by')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedInteger('removed_by')->nullable();
-            $table->foreign('removed_by')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedInteger('added_by_id');
+            $table->foreign('added_by_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedInteger('removed_by_id')->nullable();
+            $table->foreign('removed_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamp('removed_at')->nullable();
             $table->timestamps();
             $table->unique(['user_id', 'role_id']);

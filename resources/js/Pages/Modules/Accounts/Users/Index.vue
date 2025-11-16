@@ -96,9 +96,7 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="d-flex gap-3 justify-content-center"> 
-                                            <button type="button" class="btn btn-ghost-primary btn-icon btn-sm material-shadow-none favourite-btn"> 
-                                                <i class="ri-star-fill fs-13 align-bottom"></i>
-                                            </button>
+    
                                             <div class="dropdown" @click.stop> 
                                                 <button class="btn btn-light btn-icon btn-sm dropdown material-shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false"> <i class="ri-more-fill align-bottom"></i> </button>
                                                 <ul class="dropdown-menu dropdownmenu-primary dropdown-menu-end">
@@ -143,7 +141,7 @@
     </BRow>
     <Role :roles="dropdowns.roles" ref="role"/>
     <Update @update="updateData" ref="update"/>
-     <Create ref="create"/>
+    <Create :dropdowns="dropdowns" @add="fetch()" ref="create"/>
 </template>
 <script>
 import _ from 'lodash';
