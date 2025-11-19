@@ -230,7 +230,6 @@ export default {
         },
 
         submit(){
-            console.log(this.editable);
             if(this.editable){
                 this.form.put('/users/update',{
                     preserveScroll: true,
