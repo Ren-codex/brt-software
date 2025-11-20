@@ -25,7 +25,7 @@ class SupplierClass
         return $data;
     }
 
-      public function save($request){
+    public function save($request){
 
         $data = ListSupplier::create([
             'name' =>  $request->name,
