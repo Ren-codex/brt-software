@@ -98,7 +98,7 @@
                     <div class="collapse menu-dropdown" id="sidebarDashboards">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <Link href="/suppliers"  class="nav-link" data-key="t-basic">
+                                <Link href="/libraries/suppliers"  class="nav-link" data-key="t-basic">
                                     Suppliers
                                 </Link>
                             </li>
