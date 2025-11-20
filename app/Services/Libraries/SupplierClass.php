@@ -11,7 +11,14 @@ class SupplierClass
 {
     public function lists($request){
         $data = ListSupplierResource::collection(
-            ListSupplier::query()
+            ListSupplier::when($request->keyword, function ($query,$keyword) {
+                    $query->where('name', 'LIKE', "%{$keyword}%")
+                          ->orWhere('address', 'LIKE', "%{$keyword}%")
+                          ->orWhere('contact_person', 'LIKE', "%{$keyword}%")
+                          ->orWhere('contact_number', 'LIKE', "%{$keyword}%")
+                          ->orWhere('email', 'LIKE', "%{$keyword}%")
+                          ->orWhere('tin', 'LIKE', "%{$keyword}%");
+                })
                 ->orderBy('created_at', 'DESC')
                 ->paginate($request->count)
         );
