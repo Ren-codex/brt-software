@@ -102,7 +102,11 @@
                                     Suppliers
                                 </Link>
                             </li>
-                        
+                            <li class="nav-item">
+                                <Link href="/libraries/brands"  class="nav-link" data-key="t-basic">
+                                    Brands
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                 </li>
