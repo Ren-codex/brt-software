@@ -15,14 +15,14 @@
                             <textarea v-model="form.description" type="text" class="form-control" placeholder="Please enter description" @input="handleInput('description')" />
                         </BCol>
 
-                        <BCol lg="12" class="mt-n1 mb-3">
+                        <BCol lg="6" class="mt-n1 mb-3">
                             <InputLabel value="Text Color" :message="form.errors.text_color"/>
-                            <TextInput v-model="form.text_color" type="text" class="form-control" placeholder="Please enter text color" @input="handleInput('text_color')" />
+                            <ColorInput v-model="form.text_color" class="form-control" @input="handleInput('text_color')" />
                         </BCol>
 
-                        <BCol lg="12" class="mt-n1 mb-3">
+                        <BCol lg="6" class="mt-n1 mb-3">
                             <InputLabel value="Background Color" :message="form.errors.bg_color"/>
-                            <TextInput v-model="form.bg_color" type="text" class="form-control" placeholder="Please enter bg color" @input="handleInput('bg_color')" />
+                            <ColorInput v-model="form.bg_color" class="form-control" @input="handleInput('bg_color')" />
                         </BCol>
 
                     </BRow>
@@ -47,8 +47,9 @@ import { useForm } from '@inertiajs/vue3';
 import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
+import ColorInput from '@/Shared/Components/Forms/ColorInput.vue';
 export default {
-    components: {InputLabel, TextInput, Multiselect },
+    components: {InputLabel, TextInput, ColorInput, Multiselect },
     props: ['dropdowns'],
     data(){
         return {

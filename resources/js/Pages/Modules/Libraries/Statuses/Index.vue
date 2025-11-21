@@ -60,6 +60,7 @@
                             <thead class="table-light thead-fixed">
                                 <tr class="fs-11">
                                     <th style="width: 3%;">#</th>
+                                    <th style="width: 10%;" class="text-center">Badge</th>
                                     <th style="width: 10%;" class="text-center">Name</th>
                                     <th style="width: 10%;" class="text-center">Description</th>
                                     <th style="width: 10%;" class="text-center">Text Color</th>
@@ -76,7 +77,9 @@
                                     <td class="text-center"> 
                                       {{ index + 1}} 
                                     </td>
-
+                                    <td class="text-center">
+                                        <span class="badge" :style="{ color: list.text_color, backgroundColor: list.bg_color }">{{ list.name }}</span>
+                                    </td>
                                     <td class="text-center">{{ list.name }}</td>
                                     <td class="text-center">{{ list.description }}</td>
                                     <td class="text-center">{{ list.text_color }}</td>
