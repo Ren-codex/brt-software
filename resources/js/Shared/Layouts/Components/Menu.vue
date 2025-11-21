@@ -102,7 +102,11 @@
                                     Suppliers
                                 </Link>
                             </li>
-                        
+                            <li class="nav-item">
+                                <Link href="/libraries/units"  class="nav-link" data-key="t-basic">
+                                    Units
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                 </li>
