@@ -17,6 +17,7 @@ class ListSupplierResource extends JsonResource
             'contact_number' => $this->contact_number,
             'email' => $this->email,
             'tin' => $this->tin,
+            'status' => $this->status,
         ];
     }
 }

@@ -1,0 +1,65 @@
+<template>
+    <b-modal v-model="showModal" size="md" header-class="p-3 bg-light" :title="'Delete '+ title" class="v-modal-custom" modal-class="zoomIn" centered no-close-on-backdrop>
+        <div class="text-center p-5">
+             <h1> <i class="ri-alert-fill align-bottom text-warning" style="font-size: 60px;"></i></h1>
+            <h5>Are you sure you want to delete this {{title}}? </h5>
+        </div>
+        <template v-slot:footer>
+            <b-button @click="hide()" variant="light" block>Cancel</b-button>
+            <b-button
+                @click="submit('ok')"
+                variant="danger"
+                block
+            >
+                <i class="ri-delete-bin-line"></i> Yes
+            </b-button>
+        </template>
+    </b-modal>
+</template>
+<script>
+
+import { useForm } from '@inertiajs/vue3';
+
+export default {
+    components: { },
+    props: [],
+    data(){
+        return {
+            currentUrl: window.location.origin,
+            form: useForm({
+                id: null,
+            }),
+            title: null,
+            showModal: false,
+        }
+    },
+    methods: { 
+        show(id, title){
+            this.showModal = true;
+            this.form.id = id;
+            this.title = title;
+        },
+
+        submit(){
+            this.form.delete(`/libraries/roles/${this.form.id}`,{
+                preserveScroll: true,
+                onSuccess: (response) => {
+                    this.$emit('delete', true);
+                    this.form.reset();
+                    this.hide();
+                },
+            });
+
+        },
+        handleInput(field) {
+            this.form.errors[field] = false;
+        },
+        hide(){
+            this.editable = false;
+            this.showModal = false;
+        },
+
+   
+    }
+}
+</script>

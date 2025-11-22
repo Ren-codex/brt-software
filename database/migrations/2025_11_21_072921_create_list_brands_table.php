@@ -11,13 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('list_roles', function (Blueprint $table) {
+        Schema::create('list_brands', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->tinyIncrements('id');
-            $table->string('name')->unique();
-            $table->string('type',20);
-            $table->boolean('is_active')->default(1);
-            $table->string('definition')->default('n/a');
+            $table->increments('id');
+            $table->string('name');
             $table->timestamps();
         });
     }
@@ -27,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('list_roles');
+        Schema::dropIfExists('brands');
     }
 };

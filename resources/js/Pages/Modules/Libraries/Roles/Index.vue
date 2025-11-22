@@ -1,6 +1,6 @@
 <template>
 <Head title="Users"/>
-    <PageHeader title="Supplier Management" pageTitle="List" />
+    <PageHeader title="Roles Management" pageTitle="List" />
     <BRow>
         <div class="col-md-12">
             <div class="card bg-light-subtle shadow-none border">
@@ -14,8 +14,8 @@
                             </div>
                         </div>
                         <div class="flex-grow-1">
-                            <h5 class="mb-0 fs-14"><span class="text-body">List of Suppliers</span></h5>
-                            <p class="text-muted text-truncate-two-lines fs-12">A comprehensive list of suppliers</p>
+                            <h5 class="mb-0 fs-14"><span class="text-body">List of Roles</span></h5>
+                            <p class="text-muted text-truncate-two-lines fs-12">A comprehensive list of roles</p>
                         </div>
                         <div class="flex-shrink-0" style="width: 45%;">
                            
@@ -27,7 +27,7 @@
                         <b-col lg>
                             <div class="input-group mb-1">
                                 <span class="input-group-text"> <i class="ri-search-line search-icon"></i></span>
-                                <input type="text" v-model="filter.keyword" placeholder="Search Supplier" class="form-control" style="width: 20%;">
+                                <input type="text" v-model="filter.keyword" placeholder="Search Role" class="form-control" style="width: 20%;">
                                 <b-button type="button" variant="primary" @click="openCreate">
                                     <i class="ri-add-circle-fill align-bottom me-1"></i> Create
                                 </b-button>
@@ -60,13 +60,10 @@
                             <thead class="table-light thead-fixed">
                                 <tr class="fs-11">
                                     <th style="width: 3%;">#</th>
-                                    <th style="width: 10%;">Name</th>
-                                    <th style="width: 10%;">Address</th>
-                                    <th style="width: 10%;">Contact Person/Contact Number</th>
-                                    <th style="width: 10%;" >Email</th>
-                                    <th style="width: 10%;" >TIN</th>
-                                    <th style="width: 10%;" >Status</th>
-                                    <th style="width: 6%;" class="text-center">Action</th>
+                                    <th style="width: 10%;" >Name</th>
+                                    <th style="width: 10%;" >Type</th>
+                                    <th style="width: 10%;" >Definition</th>
+                                    <th style="width: 6%;" class="text-end">Action</th>
                                 </tr>
                             </thead>
 
@@ -75,26 +72,21 @@
                                     'bg-info-subtle': index === selectedRow,
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                                 }">
-                                    <td > 
+                                    <td> 
                                       {{ index + 1}} 
                                     </td>
 
                                     <td >{{ list.name }}</td>
-                                    <td >{{ list.address }}</td>
-                                    <td ><span>{{ list.contact_person }}</span>
-                                        <p class="text-muted">{{ list.contact_number }}</p>
-                                    </td>
-                                    <td>{{ list.email}}</td>
-                                    <td >{{ list.tin}}</td>
-                                    <td>
-                                        <b-badge :color="list.status.text_color" >{{ list.status.name }}</b-badge >
-                                    </td>
-
-                                    <td class="text-center">
-                                        <b-button  @click="openEdit(list,index)"  variant="info" class="me-1" v-b-tooltip.hover title="View" size="sm">
+                                    <td >{{ list.type }}</td>
+                                    <td >{{ list.definition }}</td>
+   
+                                    <td class="text-end">
+                                        <b-button  @click="openEdit(list,index)"  variant="info" class="me-1" v-b-tooltip.hover title="Edit" size="sm">
                                             <i class="ri-pencil-fill align-bottom"></i>
                                         </b-button>
-
+                                        <b-button  @click="openDelete(list.id)"  variant="danger" class="me-1" v-b-tooltip.hover title="Delete" size="sm">
+                                            <i class="ri-delete-bin-fill align-bottom"></i>
+                                        </b-button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -107,7 +99,8 @@
             </div>
         </div>
     </BRow>
-    <Create @add="fetch()" :dropdowns="dropdowns" ref="create"/>
+    <Create @add="fetch()" ref="create"/>
+    <Delete @delete="fetch()" ref="delete"/>
 </template>
 <script>
 import _ from 'lodash';
@@ -115,10 +108,11 @@ import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
+import Delete from "@/Shared/Components/Modals/Delete.vue";
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create },
-    props: ['dropdowns'],
+    components: { PageHeader, Pagination, Multiselect , Create ,Delete },
+    props: [],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -146,7 +140,7 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url){
-            page_url = page_url || '/libraries/suppliers';
+            page_url = page_url || '/libraries/roles';
             axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
@@ -172,6 +166,10 @@ export default {
             this.$refs.create.edit(data , index);
         },
 
+        openDelete(id){
+            let title = "Role";
+            this.$refs.delete.show(id , title);
+        },
 
         selectRow(index) {
             if (this.selectedRow === index) {
