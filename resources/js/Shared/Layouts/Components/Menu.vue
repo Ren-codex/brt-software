@@ -88,6 +88,32 @@
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Loans</span>
                     </Link>
                 </li>
+                 <li class="nav-item">
+                   <BLink class="nav-link menu-link" href="#sidebarDashboards"
+                    :class="{'active': $page.component.startsWith('Modules/System/Users') }"
+                    data-bs-toggle="collapse" role="button" :aria-expanded="$page.url.startsWith('/references')" aria-controls="sidebarDashboards">
+                        <i class="ri-folder-2-fill"></i>
+                        <span data-key="t-dashboards">Libraries</span>
+                    </BLink>
+                    <div class="collapse menu-dropdown" id="sidebarDashboards">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <Link href="/libraries/suppliers"  class="nav-link" data-key="t-basic">
+                                    Suppliers
+                                </Link>
+                            </li>
+                            <li class="nav-item">
+                                <Link href="/libraries/brands"  class="nav-link" data-key="t-basic">
+                                    Brands
+                                <Link href="/libraries/units"  class="nav-link" data-key="t-basic">
+                                    Units
+                                <Link href="/libraries/statuses"  class="nav-link" data-key="t-basic">
+                                    Statuses
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
 
 
             </tempalte>
