@@ -1,43 +1,40 @@
 <?php
 
 namespace App\Http\Controllers\Libraries;
+
 use App\Services\DropdownClass;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Services\Libraries\SupplierClass;
-use App\Http\Requests\Libraries\SupplierRequest;
+use App\Services\Libraries\RoleClass;
+use App\Http\Requests\Libraries\RoleRequest;
 
-class SupplierController extends Controller
+class RoleController extends Controller
 {
     use HandlesTransaction;
 
-    public $supplier,$dropdown;
+    public $role,$dropdown;
 
-    public function __construct(SupplierClass $supplier, DropdownClass $dropdown){
+    public function __construct(RoleClass $role, DropdownClass $dropdown){
         $this->dropdown = $dropdown;
-        $this->supplier = $supplier;
+        $this->role = $role;
     }
 
     public function index(Request $request){   
         switch($request->option){
             case 'lists':
-                return $this->supplier->lists($request);
+                return $this->role->lists($request);
             break;
             default:
-                return inertia('Modules/Libraries/Suppliers/Index',[
-                    'dropdowns' => [
-                        'statuses' => $this->dropdown->statuses()
-                    ]
-                ]); 
+                return inertia('Modules/Libraries/Roles/Index'); 
             break;
         }   
     }
 
   
-    public function update(SupplierRequest $request){
+    public function update(RoleRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
-            return $this->supplier->update($request);
+            return $this->role->update($request);
         });
 
         return back()->with([
@@ -48,9 +45,9 @@ class SupplierController extends Controller
         ]);
     }
 
-    public function store(SupplierRequest $request){
+    public function store(RoleRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
-            return $this->supplier->save($request);
+            return $this->role->save($request);
         });
 
         return back()->with([
@@ -61,7 +58,16 @@ class SupplierController extends Controller
         ]);
     }
 
+    public function destroy($id){
+        $result = $this->handleTransaction(function () use ($id) {
+            return $this->role->delete($id);
+        });
 
-
- 
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
 }

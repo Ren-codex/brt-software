@@ -102,7 +102,30 @@
                                     Suppliers
                                 </Link>
                             </li>
-                        
+                            <li class="nav-item">
+                                <Link href="/libraries/statuses"  class="nav-link" data-key="t-basic">
+                                    Statuses
+                                </Link>
+                            </li>
+
+                            <li class="nav-item">
+                                <Link href="/libraries/brands"  class="nav-link" data-key="t-basic">
+                                    Brands
+                                  </Link>
+                            </li>
+
+                            <li class="nav-item">
+                                <Link href="/libraries/units"  class="nav-link" data-key="t-basic">
+                                    Units
+                                </Link>
+                            </li>
+
+                            <li class="nav-item">
+                                <Link href="/libraries/roles"  class="nav-link" data-key="t-basic">
+                                    Roles
+                                </Link>
+                            </li>
+
                         </ul>
                     </div>
                 </li>

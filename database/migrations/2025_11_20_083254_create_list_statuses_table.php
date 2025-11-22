@@ -11,17 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('list_suppliers', function (Blueprint $table) {
+        Schema::create('list_statuses', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->string('name')->unique();
-            $table->string('address');
-            $table->string('contact_person');
-            $table->string('contact_number');
-            $table->string('email');
-            $table->string('tin');
-            $table->integer('status_id')->unsigned()->nullable()->index();
-            $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
+            $table->string('description')->nullable();
+            $table->string('text_color');
+            $table->string('bg_color');
             $table->timestamps();
         });
     }
@@ -31,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('list_suppliers');
+        Schema::dropIfExists('statuses');
     }
 };

@@ -35,6 +35,11 @@
                             <TextInput v-model="form.tin" type="username" class="form-control" placeholder="Please enter tin" @input="handleInput('tin')" :light="true" />
                         </BCol>
 
+                        <BCol v-if="editable" lg="6" class="mt-n1 mb-3">
+                            <InputLabel value="Status" :message="form.errors.status_id"/>
+                            <Multiselect :options="dropdowns.statuses" :searchable="true" label="name" v-model="form.status_id" placeholder="Select Status" @input="handleInput('status_id')"/>
+                        </BCol>
+
                         </BRow>
                 </BCol>
             </BRow>
@@ -72,6 +77,7 @@ export default {
                 birthdate: null,
                 email: null,
                 tin: null,
+                status_id: null,
                 option: 'lists'
             }),
             togglePassword: false,
@@ -89,7 +95,6 @@ export default {
             this.showModal = true;
         },
         edit(data, index){
-            console.log(data);
             this.form.id = data.id;
             this.form.name = data.name;
             this.form.address = data.address;
@@ -97,6 +102,7 @@ export default {
             this.form.contact_number = data.contact_number;
             this.form.email = data.email;
             this.form.tin = data.tin;
+            this.form.status_id = data.status.id;
             this.editable = true;
             this.showModal = true;
         },

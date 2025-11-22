@@ -5,39 +5,35 @@ use App\Services\DropdownClass;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Services\Libraries\SupplierClass;
-use App\Http\Requests\Libraries\SupplierRequest;
+use App\Services\Libraries\BrandClass;
+use App\Http\Requests\Libraries\BrandRequest;
 
-class SupplierController extends Controller
+class BrandController extends Controller
 {
     use HandlesTransaction;
 
-    public $supplier,$dropdown;
+    public $brand,$dropdown;
 
-    public function __construct(SupplierClass $supplier, DropdownClass $dropdown){
+    public function __construct(BrandClass $brand, DropdownClass $dropdown){
         $this->dropdown = $dropdown;
-        $this->supplier = $supplier;
+        $this->brand = $brand;
     }
 
     public function index(Request $request){   
         switch($request->option){
             case 'lists':
-                return $this->supplier->lists($request);
+                return $this->brand->lists($request);
             break;
             default:
-                return inertia('Modules/Libraries/Suppliers/Index',[
-                    'dropdowns' => [
-                        'statuses' => $this->dropdown->statuses()
-                    ]
-                ]); 
+                return inertia('Modules/Libraries/Brands/Index'); 
             break;
         }   
     }
 
   
-    public function update(SupplierRequest $request){
+    public function update(BrandRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
-            return $this->supplier->update($request);
+            return $this->brand->update($request);
         });
 
         return back()->with([
@@ -48,9 +44,9 @@ class SupplierController extends Controller
         ]);
     }
 
-    public function store(SupplierRequest $request){
+    public function store(BrandRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
-            return $this->supplier->save($request);
+            return $this->brand->save($request);
         });
 
         return back()->with([
@@ -61,7 +57,17 @@ class SupplierController extends Controller
         ]);
     }
 
+    public function destroy($id){
+        $result = $this->handleTransaction(function () use ($id) {
+            return $this->brand->delete($id);
+        });
 
-
+        return response()->json([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ], $result['status'] ? 200 : 400);
+    }
  
 }
