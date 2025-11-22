@@ -60,13 +60,13 @@
                             <thead class="table-light thead-fixed">
                                 <tr class="fs-11">
                                     <th style="width: 3%;">#</th>
-                                    <th style="width: 10%;" class="text-center">Name</th>
-                                    <th style="width: 10%;" class="text-center">Address</th>
-                                    <th style="width: 10%;" class="text-center">Contact Person</th>
-                                    <th style="width: 10%;" class="text-center">Contact Number</th>
-                                    <th style="width: 10%;" class="text-center">Email</th>
-                                    <th style="width: 10%;" class="text-center">TIN</th>
-                                    <th style="width: 6%;"></th>
+                                    <th style="width: 10%;">Name</th>
+                                    <th style="width: 10%;">Address</th>
+                                    <th style="width: 10%;">Contact Person/Contact Number</th>
+                                    <th style="width: 10%;" >Email</th>
+                                    <th style="width: 10%;" >TIN</th>
+                                    <th style="width: 10%;" >Status</th>
+                                    <th style="width: 6%;" class="text-center">Action</th>
                                 </tr>
                             </thead>
 
@@ -75,28 +75,26 @@
                                     'bg-info-subtle': index === selectedRow,
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                                 }">
-                                    <td class="text-center"> 
+                                    <td > 
                                       {{ index + 1}} 
                                     </td>
 
-                                    <td class="text-center">{{ list.name }}</td>
-                                    <td class="text-center">{{ list.address }}</td>
-                                    <td class="text-center">{{ list.contact_person }}</td>
-                                    <td class="text-center">{{ list.contact_number }}</td>
-                                    <td class="text-center">{{ list.email}}</td>
-                                    <td class="text-center">{{ list.tin}}</td>
-                                    <!-- <td>
-                                        <h5 class="fs-13 mb-0 fw-semibold text-primary text-uppercase">{{list.name}}</h5>
-                                        <p class="fs-12 text-muted mb-0">
-                                            <span class="badge bg-primary-subtle text-info me-1" v-for="role in list.roles" v-bind:key="role.id">{{ role.name }}</span>
-                                        </p>
-                                    </td> -->
+                                    <td >{{ list.name }}</td>
+                                    <td >{{ list.address }}</td>
+                                    <td ><span>{{ list.contact_person }}</span>
+                                        <p class="text-muted">{{ list.contact_number }}</p>
+                                    </td>
+                                    <td>{{ list.email}}</td>
+                                    <td >{{ list.tin}}</td>
+                                    <td>
+                                        <b-badge :color="list.status.text_color" >{{ list.status.name }}</b-badge >
+                                    </td>
 
-
-                                    <td class="text-end">
+                                    <td class="text-center">
                                         <b-button  @click="openEdit(list,index)"  variant="info" class="me-1" v-b-tooltip.hover title="View" size="sm">
                                             <i class="ri-pencil-fill align-bottom"></i>
                                         </b-button>
+
                                     </td>
                                 </tr>
                             </tbody>
@@ -109,7 +107,7 @@
             </div>
         </div>
     </BRow>
-    <Create @add="fetch()" ref="create"/>
+    <Create @add="fetch()" :dropdowns="dropdowns" ref="create"/>
 </template>
 <script>
 import _ from 'lodash';
@@ -120,7 +118,7 @@ import Create from './Modals/Create.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create },
-    props: [],
+    props: ['dropdowns'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -173,6 +171,7 @@ export default {
             this.selectedRow = index;
             this.$refs.create.edit(data , index);
         },
+
 
         selectRow(index) {
             if (this.selectedRow === index) {

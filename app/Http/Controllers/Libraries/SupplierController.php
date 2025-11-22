@@ -25,7 +25,11 @@ class SupplierController extends Controller
                 return $this->supplier->lists($request);
             break;
             default:
-                return inertia('Modules/Libraries/Suppliers/Index'); 
+                return inertia('Modules/Libraries/Suppliers/Index',[
+                    'dropdowns' => [
+                        'statuses' => $this->dropdown->statuses()
+                    ]
+                ]); 
             break;
         }   
     }

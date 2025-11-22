@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('list_roles', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->tinyIncrements('id');
-            $table->string('name');
+            $table->string('name')->unique();
             $table->string('type',20);
             $table->boolean('is_active')->default(1);
             $table->string('definition')->default('n/a');
