@@ -120,6 +120,12 @@
                                 </Link>
                             </li>
 
+                            <li class="nav-item">
+                                <Link href="/libraries/roles"  class="nav-link" data-key="t-basic">
+                                    Roles
+                                </Link>
+                            </li>
+
                         </ul>
                     </div>
                 </li>
