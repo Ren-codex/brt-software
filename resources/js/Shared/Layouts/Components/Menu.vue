@@ -103,6 +103,8 @@
                                 </Link>
                             </li>
                             <li class="nav-item">
+                                <Link href="/libraries/brands"  class="nav-link" data-key="t-basic">
+                                    Brands
                                 <Link href="/libraries/units"  class="nav-link" data-key="t-basic">
                                     Units
                                 <Link href="/libraries/statuses"  class="nav-link" data-key="t-basic">
