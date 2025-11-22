@@ -11,6 +11,7 @@ Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
         Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
         Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
+        Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
     });
 });
 

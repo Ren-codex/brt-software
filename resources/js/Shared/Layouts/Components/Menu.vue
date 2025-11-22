@@ -105,6 +105,8 @@
                             <li class="nav-item">
                                 <Link href="/libraries/units"  class="nav-link" data-key="t-basic">
                                     Units
+                                <Link href="/libraries/statuses"  class="nav-link" data-key="t-basic">
+                                    Statuses
                                 </Link>
                             </li>
                         </ul>
