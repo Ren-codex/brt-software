@@ -240,6 +240,7 @@ export default {
               <BButton variant="none" type="submit" class="btn p-0"><i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> Logout</BButton>
             </form>
           </BDropdown>
+          
         </div>
       </div>
     </div>

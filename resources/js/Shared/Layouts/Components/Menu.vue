@@ -9,7 +9,7 @@
                 <span class="fw-semibold fs-14" data-key="t-dashboards">Dashboard</span>
                 </Link>
             </li>
-            <tempalte v-if="$page.props.roles.includes('Human Resource Officer')">
+            <template v-if="$page.props.roles.includes('Human Resource Officer')">
                 <li class="menu-title">
                     <i class="ri-more-fill" aria-expanded="false"></i>
                     <span data-key="t-menu">Human Resource</span>
@@ -22,106 +22,116 @@
                     </Link>
                 </li>
 
-            </tempalte>
-            <tempalte v-if="$page.props.roles.includes('Administrator')">
+            </template>
+            <template v-if="$page.props.roles.includes('Administrator')">
                 <li class="nav-item">
                     <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    :class="{'active': $page.url.startsWith('/users') }">
                     <i class="ri-team-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Accounts</span>
                     </Link>
                 </li>
                 <li class="nav-item">
-                    <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    <Link href="/reports" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/reports') }">
                     <i class="ri-bar-chart-2-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Reports</span>
                     </Link>
                 </li>
                 <li class="nav-item">
-                    <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    <Link href="/inventory" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/inventory') }">
                     <i class="ri-survey-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Inventory Management</span>
                     </Link>
                 </li>
                 <li class="nav-item">
-                    <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    <Link href="/sales-orders" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/sales-orders') }">
                     <i class="ri-shopping-cart-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Order</span>
                     </Link>
                 </li>
                   <li class="nav-item">
-                    <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    <Link href="/customers" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/customers') }">
                     <i class="ri-team-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Customers</span>
                     </Link>
                 </li>
                 <li class="nav-item">
-                    <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    <Link href="/receipts" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/receipts') }">
                     <i class="ri-file-list-3-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Receipts</span>
                     </Link>
                 </li>
 
                 <li class="nav-item">
-                    <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    <Link href="/expenses" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/expenses') }">
                     <i class="ri-money-dollar-circle-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Expenses</span>
                     </Link>
                 </li>
                 <li class="nav-item">
-                    <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    <Link href="/payroll" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/payroll') }">
                     <i class="ri-bank-card-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Payroll</span>
                     </Link>
                 </li>
                 <li class="nav-item">
-                    <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }">
+                    <Link href="/loans" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/loans') }">
                     <i class="ri-bank-card-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Loans</span>
                     </Link>
                 </li>
                  <li class="nav-item">
                    <BLink class="nav-link menu-link" href="#sidebarDashboards"
-                    :class="{'active': $page.component.startsWith('Modules/System/Users') }"
-                    data-bs-toggle="collapse" role="button" :aria-expanded="$page.url.startsWith('/references')" aria-controls="sidebarDashboards">
+                    :class="{'active': $page.url.startsWith('/libraries') }"
+                    data-bs-toggle="collapse" role="button" :aria-expanded="$page.url.startsWith('/libraries')" aria-controls="sidebarDashboards">
                         <i class="ri-folder-2-fill"></i>
                         <span data-key="t-dashboards">Libraries</span>
                     </BLink>
                     <div class="collapse menu-dropdown" id="sidebarDashboards">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <Link href="/libraries/suppliers"  class="nav-link" data-key="t-basic">
+                                <Link href="/libraries/suppliers" class="nav-link" 
+                                    :class="{'active': $page.url === '/libraries/suppliers' }"
+                                    data-key="t-basic">
                                     Suppliers
                                 </Link>
                             </li>
                             <li class="nav-item">
-                                <Link href="/libraries/statuses"  class="nav-link" data-key="t-basic">
+                                <Link href="/libraries/statuses" class="nav-link"
+                                    :class="{'active': $page.url === '/libraries/statuses' }"
+                                    data-key="t-basic">
                                     Statuses
                                 </Link>
                             </li>
 
                             <li class="nav-item">
-                                <Link href="/libraries/brands"  class="nav-link" data-key="t-basic">
+                                <Link href="/libraries/brands" class="nav-link"
+                                    :class="{'active': $page.url === '/libraries/brands' }"
+                                    data-key="t-basic">
                                     Brands
                                   </Link>
                             </li>
 
                             <li class="nav-item">
-                                <Link href="/libraries/units"  class="nav-link" data-key="t-basic">
+                                <Link href="/libraries/units" class="nav-link"
+                                    :class="{'active': $page.url === '/libraries/units' }"
+                                    data-key="t-basic">
                                     Units
                                 </Link>
                             </li>
 
                             <li class="nav-item">
-                                <Link href="/libraries/roles"  class="nav-link" data-key="t-basic">
+                                <Link href="/libraries/roles" class="nav-link"
+                                    :class="{'active': $page.url === '/libraries/roles' }"
+                                    data-key="t-basic">
                                     Roles
                                 </Link>
                             </li>
@@ -131,7 +141,7 @@
                 </li>
 
 
-            </tempalte>
+            </template>
         </ul>
         
     </BContainer>
