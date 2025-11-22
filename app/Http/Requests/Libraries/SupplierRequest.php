@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Libraries;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SupplierRequest extends FormRequest
 {
@@ -15,12 +16,33 @@ class SupplierRequest extends FormRequest
     {
 
         return [
-            'name' => 'required|string',
+            'name' => [
+                'required',
+                'string',
+                Rule::unique('list_suppliers', 'name')->ignore($this->id),
+            ],
+
             'address' => 'required|string',
+
             'contact_person' => 'required|string',
-            'contact_number' => 'required|string',
-            'email' => 'required|email',
-            'tin' => 'required|string',
+
+            'contact_number' => [
+                'required',
+                'regex:/^09\d{9}$/',
+                Rule::unique('list_suppliers', 'contact_number')->ignore($this->id),
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('list_suppliers', 'email')->ignore($this->id),
+            ],
+
+            'tin' => [
+                'required',
+                'string',
+                Rule::unique('list_suppliers', 'tin')->ignore($this->id),
+            ],
         ];
 
     }
@@ -36,5 +58,6 @@ class SupplierRequest extends FormRequest
         ];
 
     }
+
 
 }

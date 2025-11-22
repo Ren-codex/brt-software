@@ -15,7 +15,7 @@ class RoleRequest extends FormRequest
     {
 
         return [
-            'name' => 'required|string',
+            'name' => 'required|string|unique:list_roles,name' . ($this->input('id') ? ',' . $this->input('id') : ''),
             'type' => 'required|string',
             'definition' => 'required|string',
         ];

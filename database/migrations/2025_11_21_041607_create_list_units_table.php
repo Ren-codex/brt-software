@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('list_units', function (Blueprint $table) {
-            $table->id();
+            $table->engine = 'InnoDB';
+            $table->increments('id');
             $table->string('name');
             $table->string('description')->nullable();
             $table->timestamps();

@@ -34,6 +34,7 @@ class SupplierClass
             'contact_number' =>  $request->contact_number,
             'email' =>  $request->email,
             'tin' =>  $request->tin,
+            'status_id' =>  1,
         ]);
 
         return [
@@ -52,6 +53,7 @@ class SupplierClass
             'contact_number' =>  $request->contact_number,
             'email' =>  $request->email,
             'tin' =>  $request->tin,
+            'status_id' =>  $request->status_id,
         ]);
 
         return [

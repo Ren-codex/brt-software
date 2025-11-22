@@ -12,6 +12,12 @@ class ListSupplier extends Model
         'contact_person',
         'contact_number',
         'email',
-        'tin'
+        'tin',
+        'status_id',
     ];
+
+    public function status()
+    {
+        return $this->belongsTo('App\Models\ListStatus', 'status_id');
+    }
 }

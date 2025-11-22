@@ -12,15 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('list_suppliers', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
+            $table->engine = 'InnoDB';
+            $table->increments('id');
+            $table->string('name')->unique();
             $table->string('address');
             $table->string('contact_person');
             $table->string('contact_number');
             $table->string('email');
             $table->string('tin');
-            // $table->unsignedInteger('status_id')->nullable();
-            // $table->foreign('status_id')->references('id')->on('list_status')->onDelete('cascade');
+            $table->integer('status_id')->unsigned()->nullable()->index();
+            $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->timestamps();
         });
     }
