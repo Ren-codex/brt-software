@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('contact_number');
             $table->string('email');
             $table->string('tin');
-            $table->integer('status_id')->unsigned()->nullable()->index();
-            $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
+            $table->boolean('is_active')->default(1);
+            $table->boolean('is_blacklisted')->default(1);
             $table->timestamps();
         });
     }

@@ -18,6 +18,8 @@ class ListSupplierResource extends JsonResource
             'email' => $this->email,
             'tin' => $this->tin,
             'status' => $this->status,
+            'is_active' => $this->is_active,
+            'is_blacklisted' => $this->is_blacklisted,
         ];
     }
 }

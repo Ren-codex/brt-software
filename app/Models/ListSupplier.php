@@ -13,11 +13,8 @@ class ListSupplier extends Model
         'contact_number',
         'email',
         'tin',
-        'status_id',
+        'is_active',
+        'is_blacklisted',
     ];
 
-    public function status()
-    {
-        return $this->belongsTo('App\Models\ListStatus', 'status_id');
-    }
 }

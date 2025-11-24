@@ -87,7 +87,7 @@
                                     <td>{{ list.email}}</td>
                                     <td >{{ list.tin}}</td>
                                     <td>
-                                        <b-badge :color="list.status.text_color" >{{ list.status.name }}</b-badge >
+                                        <b-badge :class="list.status.bg" >{{ list.status.name }}</b-badge >
                                     </td>
 
                                     <td class="text-center">

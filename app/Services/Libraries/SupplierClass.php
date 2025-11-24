@@ -53,7 +53,8 @@ class SupplierClass
             'contact_number' =>  $request->contact_number,
             'email' =>  $request->email,
             'tin' =>  $request->tin,
-            'status_id' =>  $request->status_id,
+            'is_blacklisted' =>  $request->is_blacklisted,
+            'is_active' =>  $request->is_active,
         ]);
 
         return [
