@@ -65,7 +65,8 @@
                                     <th style="width: 10%;">Contact Person/Contact Number</th>
                                     <th style="width: 10%;" >Email</th>
                                     <th style="width: 10%;" >TIN</th>
-                                    <th style="width: 10%;" >Status</th>
+                                    <th style="width: 10%;" >Is Active?</th>
+                                    <th style="width: 10%;" >Is Blacklisted?</th>
                                     <th style="width: 6%;" class="text-center">Action</th>
                                 </tr>
                             </thead>
@@ -87,7 +88,20 @@
                                     <td>{{ list.email}}</td>
                                     <td >{{ list.tin}}</td>
                                     <td>
-                                        <b-badge :color="list.status.text_color" >{{ list.status.name }}</b-badge >
+                                     <b-form-checkbox
+                                        switch
+                                        size="sm"
+                                        :checked="list.is_active"
+                                    ></b-form-checkbox>
+                                    </td>
+
+                                     <td>
+                                         <b-form-checkbox
+                                            switch
+                                            size="sm"
+                                            :checked="list.is_blacklisted"
+                                        >
+                                        </b-form-checkbox>
                                     </td>
 
                                     <td class="text-center">
@@ -183,3 +197,4 @@ export default {
     }
 }
 </script>
+
