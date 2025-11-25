@@ -216,7 +216,10 @@ export default {
           <BDropdown variant="link" class="ms-sm-3 header-item topbar-user" toggle-class="rounded-circle arrow-none" menu-class="dropdown-menu-end" :offset="{ alignmentAxis: -14, crossAxis: 0, mainAxis: 0 }">
             <template #button-content>
               <span class="d-flex align-items-center">
-                <img class="rounded-circle header-profile-user" :src="$page.props.user.data.avatar" :alt="$page.props.user.data.username">
+                <img v-if="$page.props.user.data.avatar" class="rounded-circle header-profile-user" :src="$page.props.user.data.avatar" :alt="$page.props.user.data.username">
+                <span v-else class="avatar-title rounded-circle bg-primary-subtle text-primary fs-20">
+                  <i class="bx bx-user"></i>
+                </span>
                 <span class="text-start ms-xl-2">
                   <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">{{ $page.props.user.data.name }}</span>
                   <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text">{{ $page.props.user.data.position}}</span>
