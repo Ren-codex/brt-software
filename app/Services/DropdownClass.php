@@ -7,7 +7,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\ListRole;
 use App\Models\ListStatus;
-
+use App\Models\ListUnit;
 
 class DropdownClass
 {  
@@ -32,4 +32,13 @@ class DropdownClass
         return  $data;
     }
 
+    public function units(){
+        $data = ListUnit::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name
+            ];
+        });
+        return  $data;
+    }
 }
