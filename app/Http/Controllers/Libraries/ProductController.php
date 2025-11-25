@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Libraries\ProductClass;
 use App\Http\Requests\Libraries\ProductRequest;
+use App\Models\Product;
 use App\Services\DropdownClass;
 
 class ProductController extends Controller
@@ -67,6 +68,25 @@ class ProductController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+        ]);
+    }
+
+    // New method for toggling active status
+    public function toggleActive(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $request->validate([
+            'is_active' => 'required|boolean'
+        ]);
+
+        $product->is_active = $request->input('is_active');
+        $product->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Product active status updated successfully',
+            'data' => $product
         ]);
     }
 }

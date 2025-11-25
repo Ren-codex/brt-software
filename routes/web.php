@@ -21,6 +21,8 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
         Route::resource('/libraries/products', App\Http\Controllers\Libraries\ProductController::class);
         Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
+        
+        Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
         Route::get('/inventory', [App\Http\Controllers\Libraries\InventoryManagementController::class, 'index']);
     });
 });

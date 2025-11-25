@@ -14,7 +14,7 @@
           :reduce="unit => unit.id"
           label="name"
           placeholder="Select a unit"
-          :class="{ 'is-invalid': errors.unit_id }"
+          :class="{ 'is-invalid': form.errors.unit_id }"
         />
         <div class="invalid-feedback">{{ errors.unit_id }}</div>
       </div>

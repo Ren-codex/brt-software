@@ -106,6 +106,7 @@
                                       <th style="width: 3%;">#</th>
                                       <th style="width: 15%;" class="text-center">Name</th>
                                       <th style="width: 15%;" class="text-center">Unit</th>
+                                      <th style="width: 10%;">Active</th>
                                       <th style="width: 6%;"></th>
                                   </tr>
                               </thead>
@@ -121,6 +122,15 @@
 
                                       <td class="text-center">{{ list.name }}</td>
                                       <td class="text-center">{{ list.unit.name }}</td>
+
+                                      <td class="text-center">
+                                        <b-form-checkbox
+                                          :checked="list.is_active === 1"
+                                          @change="toggleActive(list)"
+                                          switch
+                                          size="md"
+                                        />
+                                      </td>
 
                                       <td class="text-end">
                                           <b-button  @click="openEdit(list,index)"  variant="info" class="me-1" v-b-tooltip.hover title="View" size="sm">
@@ -239,6 +249,22 @@ export default {
     onDelete(id){
         let title = "Product";
         this.$refs.delete.show(id , title, '/libraries/products');
+    },
+    toggleActive(product) {
+      const updatedStatus = product.is_active === 1 ? 0 : 1;
+      axios.patch(`/libraries/products/${product.id}/toggle-active`, {
+        is_active: updatedStatus,
+      })
+      .then(response => {
+        if (response.data.status) {
+          product.is_active = updatedStatus;
+        } else {
+          console.error('Failed to update product active status:', response.data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error updating product active status:', error);
+      });
     },
   },
 };
