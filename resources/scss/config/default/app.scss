@@ -42,6 +42,10 @@ File: Main Css File
 @import "../../components/ribbons";
 @import "../../components/toast";
 @import "../../components/scrollspy";
+@import "../../components/library-modal";
+@import "../../components/library-index";
+@import "../../components/footer-glass";
+@import "../../components/navigation-modern";
 
 // Bootstrap components
 @import "../../components/root";
@@ -126,3 +130,67 @@ File: Main Css File
 
 @import "custom";
 @import "@vueform/toggle/themes/default.css";
+
+/* Extra Small Button Size */
+.btn-xs {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    border-radius: 0.2rem;
+}
+
+.btn-xs i {
+    font-size: 0.85rem;
+}
+
+/* Modern Action Buttons - Matching Landing Page Design */
+.action-buttons {
+    display: inline-flex;
+    gap: 0.4rem;
+}
+
+.action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    padding: 0;
+}
+
+.action-btn i {
+    line-height: 1;
+}
+
+.action-btn-edit {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    color: #2e8b57;
+}
+
+.action-btn-edit:hover {
+    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(46, 139, 87, 0.3);
+}
+
+.action-btn-delete {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    color: #d32f2f;
+}
+
+.action-btn-delete:hover {
+    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(211, 47, 47, 0.3);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
