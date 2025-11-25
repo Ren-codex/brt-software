@@ -1,6 +1,6 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
-import { layoutMethods } from "@/Shared/State/helpers";
+import { layoutMethods } from '../../State/helpers';
 const logout = () => {
   router.post('/logout');
 };

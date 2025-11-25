@@ -48,26 +48,29 @@ export default {
             <slot />
         </TwoColumns>
     </div>
-    <b-modal v-model="message" hide-footer class="v-modal-custom" modal-class="zoomIn" body-class="p-0" centered hide-header-close style="z-index: 5000;">
-        <div class="text-end me-4">
-            <button type="button" class="btn-close text-end" @click="check()"></button>
-        </div>
-        <div class="text-center px-5 pt-2">
-            <div class="mt-2">
-                 <div class="avatar-md mx-auto">
-                    <div class="avatar-title rounded-circle bg-light">
-                        <i v-if="$page.props.flash.status" class="ri-checkbox-circle-fill text-success h1 mb-0"></i>
-                        <i v-else class="ri-close-circle-fill text-danger h1 mb-0"></i>
-                    </div>
+    <div v-if="message" class="flash-modal-overlay" @click.self="check()">
+        <div class="flash-modal">
+            <button class="flash-modal-close" @click="check()">
+                <i class="ri-close-line"></i>
+            </button>
+            <div class="flash-modal-content">
+                <div class="flash-icon-wrapper" :class="$page.props.flash.status ? 'success' : 'error'">
+                    <i v-if="$page.props.flash.status" class="ri-checkbox-circle-fill"></i>
+                    <i v-else class="ri-close-circle-fill"></i>
                 </div>
-                <h5 class="mb-1 mt-4 fs-14">{{$page.props.flash.message }}</h5>
-                <p v-if="$page.props.flash.info" class="text-muted fs-12">{{$page.props.flash.info }}</p>
+                <h4 class="flash-title">{{ $page.props.flash.message }}</h4>
+                <p v-if="$page.props.flash.info" class="flash-info">{{ $page.props.flash.info }}</p>
+                <button class="flash-btn" @click="check()">
+                    <i class="ri-check-line me-2"></i>
+                    Got it
+                </button>
+            </div>
+            <div class="flash-footer">
+                <p class="flash-footer-text">
+                    Need help? Contact 
+                    <a href="javascript:void(0)" class="flash-link">Administrator</a>
+                </p>
             </div>
         </div>
-        <div class="modal-footer bg-light p-3 mt-5 justify-content-center">
-            <p class="mb-0 text-muted fs-10">Any suggestions please contact
-                <b-link href="" target="_blank" class="link-secondary fw-semibold">Administrator</b-link>
-            </p>
-        </div>
-    </b-modal>
+    </div>
 </template>
