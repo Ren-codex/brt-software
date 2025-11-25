@@ -35,9 +35,29 @@
                             <TextInput v-model="form.tin" type="username" class="form-control" placeholder="Please enter tin" @input="handleInput('tin')" :light="true" />
                         </BCol>
 
-                        <BCol v-if="editable" lg="6" class="mt-n1 mb-3">
-                            <InputLabel value="Status" :message="form.errors.status_id"/>
-                            <Multiselect :options="dropdowns.statuses" :searchable="true" label="name" v-model="form.status_id" placeholder="Select Status" @input="handleInput('status_id')"/>
+                        <BCol lg="6" class="mt-n1 mb-3">
+                            <InputLabel value="Is Active?" />
+                            <b-form-checkbox
+                                switch
+                                size="sm"
+                                v-model="form.is_active"
+                                :value="1"
+                                :unchecked-value="0"
+                            >
+                            </b-form-checkbox>
+                        </BCol>
+
+
+                        <BCol lg="6" class="mt-n1 mb-3">
+                            <InputLabel value="Is Blacklisted" />
+                            <b-form-checkbox
+                                    switch
+                                    size="sm"
+                                    v-model="form.is_blacklisted"
+                                    :value="1"
+                                    :unchecked-value="0"
+                                >
+                                </b-form-checkbox>
                         </BCol>
 
                         </BRow>
@@ -64,7 +84,7 @@ import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 export default {
     components: {InputLabel, TextInput, Multiselect },
-    props: ['dropdowns'],
+    props: [],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -77,7 +97,8 @@ export default {
                 birthdate: null,
                 email: null,
                 tin: null,
-                status_id: null,
+                is_active: true,
+                is_blacklisted: false,  
                 option: 'lists'
             }),
             togglePassword: false,
@@ -102,7 +123,8 @@ export default {
             this.form.contact_number = data.contact_number;
             this.form.email = data.email;
             this.form.tin = data.tin;
-            this.form.status_id = data.status.id;
+            this.form.is_active = data.is_active;
+            this.form.is_blacklisted = data.is_blacklisted;
             this.editable = true;
             this.showModal = true;
         },
