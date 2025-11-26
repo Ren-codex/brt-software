@@ -6,6 +6,7 @@ use App\Models\ListAcademic;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\ListRole;
+use App\Models\ListProduct;
 use App\Models\ListStatus;
 
 
@@ -14,6 +15,16 @@ class DropdownClass
 
     public function roles(){
         $data = ListRole::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name
+            ];
+        });
+        return  $data;
+    }
+
+    public function products(){
+        $data = ListProduct::get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->name

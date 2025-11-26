@@ -12,8 +12,9 @@ Route::get('/landing', function () {
 
 Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('/sales-orders', App\Http\Controllers\System\SalesOrderController::class);
 
-Route::middleware(['role:Administrator'])->group(function () {
+    Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
         Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
         Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
@@ -21,6 +22,10 @@ Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
         Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
     });
+
+
 });
+
+
 
 require __DIR__.'/auth.php';
