@@ -1,0 +1,288 @@
+/* ============================================================================
+   MODERN NAVIGATION COMPONENT
+   ============================================================================ */
+
+#page-topbar {
+    background: linear-gradient(135deg, rgba(46, 139, 87, 0.95) 0%, rgba(31, 107, 65, 0.95) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: 50px;
+
+    &.topbar-shadow {
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .navbar-header {
+        padding: 0.25rem 0;
+        height: 50px;
+
+        .navbar-brand-box {
+            .logo {
+                display: flex;
+                align-items: center;
+                text-decoration: none;
+
+                img {
+                    filter: brightness(0) invert(1);
+                    height: 20px !important;
+                }
+            }
+        }
+
+        // Hamburger Menu
+        .topnav-hamburger {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: all 0.3s ease;
+            padding: 0.35rem 0.6rem;
+            height: 32px;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.2);
+                transform: translateY(-1px);
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            }
+
+            .hamburger-icon {
+                span {
+                    background-color: white;
+                    height: 1.5px;
+                }
+            }
+        }
+
+        // Header Items
+        .header-item {
+            .btn-icon {
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                transition: all 0.3s ease;
+                width: 32px;
+                height: 32px;
+                padding: 0.25rem;
+
+                &:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                    transform: translateY(-1px);
+                    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+                }
+
+                i {
+                    color: white;
+                    font-size: 18px;
+                }
+            }
+
+            // Search Dropdown
+            &.topbar-head-dropdown {
+                .btn-icon {
+                    i {
+                        color: white;
+                    }
+                }
+            }
+        }
+
+        // User Profile Dropdown
+        .topbar-user {
+            .dropdown-toggle {
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 50px;
+                padding: 0.2rem 0.5rem;
+                transition: all 0.3s ease;
+                height: 32px;
+
+                &:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                    transform: translateY(-1px);
+                    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+                }
+
+                .header-profile-user {
+                    width: 22px;
+                    height: 22px;
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                }
+
+                .avatar-title {
+                    width: 22px;
+                    height: 22px;
+                    background: rgba(255, 255, 255, 0.2) !important;
+                    color: white !important;
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    font-size: 0.65rem;
+                }
+
+                .user-name-text {
+                    color: white;
+                    font-weight: 600;
+                    font-size: 0.75rem;
+                }
+
+                .user-name-sub-text {
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 0.65rem;
+                }
+            }
+
+            // Dropdown Menu
+            .dropdown-menu {
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                margin-top: 0.3rem;
+
+                .dropdown-header {
+                    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+                    color: #2e8b57;
+                    font-weight: 700;
+                    padding: 0.5rem 0.8rem;
+                    border-radius: 10px 10px 0 0;
+                    font-size: 0.75rem;
+                }
+
+                .dropdown-item {
+                    padding: 0.4rem 0.8rem;
+                    transition: all 0.3s ease;
+                    border-radius: 6px;
+                    margin: 0.15rem 0.4rem;
+                    font-size: 0.85rem;
+
+                    &:hover {
+                        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+                        color: #2e8b57;
+                        transform: translateX(5px);
+                    }
+
+                    i {
+                        transition: all 0.3s ease;
+                    }
+
+                    &:hover i {
+                        color: #2e8b57 !important;
+                    }
+                }
+
+                .dropdown-divider {
+                    margin: 0.3rem 0;
+                    border-color: rgba(0, 0, 0, 0.08);
+                }
+            }
+        }
+    }
+
+    // Responsive Design
+    @media (max-width: 991px) {
+        height: 48px;
+        
+        .navbar-header {
+            padding: 0.2rem 0;
+            height: 48px;
+        }
+    }
+
+    @media (max-width: 767px) {
+        height: 46px;
+        
+        .navbar-header {
+            padding: 0.2rem 0;
+            height: 46px;
+
+            .navbar-brand-box .logo img {
+                height: 18px !important;
+            }
+
+            .topnav-hamburger {
+                padding: 0.3rem 0.5rem;
+                height: 30px;
+            }
+
+            .header-item .btn-icon {
+                width: 30px;
+                height: 30px;
+                
+                i {
+                    font-size: 16px;
+                }
+            }
+
+            .topbar-user {
+                .dropdown-toggle {
+                    padding: 0.15rem 0.4rem;
+                    height: 30px;
+
+                    .header-profile-user,
+                    .avatar-title {
+                        width: 20px;
+                        height: 20px;
+                        font-size: 0.6rem;
+                    }
+
+                    .user-name-text {
+                        font-size: 0.7rem;
+                    }
+
+                    .user-name-sub-text {
+                        font-size: 0.6rem;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Dark Mode Adjustments
+[data-bs-theme="dark"] {
+    #page-topbar {
+        background: linear-gradient(135deg, rgba(46, 139, 87, 0.9) 0%, rgba(31, 107, 65, 0.9) 100%);
+        border-bottom-color: rgba(255, 255, 255, 0.05);
+
+        .navbar-header {
+            .topnav-hamburger,
+            .header-item .btn-icon {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: rgba(255, 255, 255, 0.1);
+
+                &:hover {
+                    background: rgba(255, 255, 255, 0.15);
+                }
+            }
+
+            .topbar-user {
+                .dropdown-toggle {
+                    background: rgba(255, 255, 255, 0.05);
+                    border-color: rgba(255, 255, 255, 0.1);
+
+                    &:hover {
+                        background: rgba(255, 255, 255, 0.15);
+                    }
+                }
+
+                .dropdown-menu {
+                    background: #1a1d21;
+                    border-color: rgba(255, 255, 255, 0.1);
+
+                    .dropdown-header {
+                        background: linear-gradient(135deg, rgba(46, 139, 87, 0.2) 0%, rgba(31, 107, 65, 0.2) 100%);
+                        color: #4ade80;
+                    }
+
+                    .dropdown-item {
+                        color: #e5e7eb;
+
+                        &:hover {
+                            background: linear-gradient(135deg, rgba(46, 139, 87, 0.2) 0%, rgba(31, 107, 65, 0.2) 100%);
+                            color: #4ade80;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

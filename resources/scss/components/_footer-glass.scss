@@ -1,0 +1,68 @@
+/* ============================================================================
+   FOOTER GLASS MORPHISM COMPONENT
+   ============================================================================ */
+
+.footer-section {
+    background: linear-gradient(135deg, rgba(46, 139, 87, 0.3) 0%, rgba(31, 107, 65, 0.3) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1000;
+
+    .footer-text {
+        color: white;
+        font-size: 0.75rem;
+        margin: 0;
+        padding: 0;
+    }
+
+    .footer-links {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        margin: 0;
+        padding: 0;
+
+        @media (min-width: 768px) {
+            justify-content: flex-end;
+        }
+    }
+
+    .footer-link {
+        color: white;
+        font-size: 0.75rem;
+        transition: color 0.3s;
+        margin: 0;
+        padding: 0;
+    }
+
+    .separator {
+        color: rgba(255, 255, 255, 0.5);
+        margin: 0 0.2rem;
+        padding: 0;
+    }
+
+    @media (max-width: 576px) {
+        padding: 0.4rem 0;
+
+        .footer-links {
+            flex-wrap: wrap;
+            gap: 0.2rem;
+        }
+
+        .footer-text {
+            font-size: 0.7rem;
+        }
+
+        .footer-link {
+            font-size: 0.7rem;
+        }
+    }
+}

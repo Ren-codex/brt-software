@@ -1,36 +1,75 @@
 <template>
-    <b-modal v-model="showModal" size="md" header-class="p-3 bg-light" :title="(editable) ? 'Update Unit' : 'Add Unit'" class="v-modal-custom" modal-class="zoomIn" centered no-close-on-backdrop>
-        <form class="customform">
-            <BRow>
-                <BCol lg="12">
-                    <BRow class="g-3 mt-n1">
-                        <BCol lg="12" class="mt-n1 mb-3">
-                            <InputLabel value="Name" :message="form.errors.name"/>
-                            <TextInput v-model="form.name" type="text" class="form-control" placeholder="Please enter unit name" @input="handleInput('name')" />
-                        </BCol>
-                    </BRow>
-                    <BRow class="g-3 mt-n1">
-                        <BCol lg="12" class="mt-n1 mb-3">
-                            <InputLabel value="Description" :message="form.errors.description"/>
-                            <TextArea v-model="form.description" class="form-control" placeholder="Please enter unit description" @input="handleInput('description')" rows="3"></TextArea>
-                        </BCol>
-                    </BRow>
-                </BCol>
-            </BRow>
-        </form>
-        <template v-slot:footer>
-            <b-button @click="hide()" variant="light" block>Cancel</b-button>
-            <b-button
-                @click="submit('ok')"
-                variant="primary"
-                :disabled="form.processing || passwordMismatch"
-                block
-            >
-                Submit
-            </b-button>
-        </template>
-    </b-modal>
+    <div 
+        v-if="showModal"
+        class="modal-overlay"
+        :class="{ active: showModal }"
+        @click.self="hide"
+    >
+        <div class="modal-container" @click.stop>
+            <div class="modal-header">
+                <h2>{{ editable ? 'Update Unit' : 'Unit Information' }}</h2>
+                <button class="close-btn" @click="hide">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form @submit.prevent="submit">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Unit Name</label>
+                        <div class="input-wrapper">
+                            <i class="ri-ruler-line input-icon"></i>
+                            <input 
+                                type="text" 
+                                id="name" 
+                                v-model="form.name" 
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.name }"
+                                placeholder="Enter unit name"
+                                @input="handleInput('name')"
+                            >
+                        </div>
+                        <span class="error-message" v-if="form.errors.name">{{ form.errors.name }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Description</label>
+                        <div class="input-wrapper">
+                            <i class="ri-file-text-line input-icon textarea-icon"></i>
+                            <textarea 
+                                id="description" 
+                                v-model="form.description" 
+                                class="form-control textarea-control"
+                                :class="{ 'input-error': form.errors.description }"
+                                placeholder="Enter unit description"
+                                rows="3"
+                                @input="handleInput('description')"
+                            ></textarea>
+                        </div>
+                        <span class="error-message" v-if="form.errors.description">{{ form.errors.description }}</span>
+                    </div>
+                    
+                    <div class="success-alert" v-if="saveSuccess">
+                        <i class="ri-checkbox-circle-fill"></i>
+                        <span>Your information has been saved successfully!</span>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-cancel" @click="hide">
+                            <i class="ri-close-line"></i>
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-save" :disabled="form.processing">
+                            <i class="ri-save-line" v-if="!form.processing"></i>
+                            <i class="ri-loader-4-line spinner" v-else></i>
+                            {{ form.processing ? 'Saving...' : 'Save Information' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </template>
+
 <script>
 import { useForm } from '@inertiajs/vue3';
 import Multiselect from "@vueform/multiselect";
@@ -39,9 +78,9 @@ import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import TextArea from '@/Shared/Components/Forms/Textarea.vue';
 
 export default {
-    components: {InputLabel, TextInput, Multiselect },
+    components: { InputLabel, TextInput, TextArea, Multiselect },
     props: ['dropdowns'],
-    data(){
+    data() {
         return {
             currentUrl: window.location.origin,
             form: useForm({
@@ -54,43 +93,49 @@ export default {
             passwordMismatch: false,
             showModal: false,
             editable: false,
-
+            saveSuccess: false,
         }
     },
     methods: { 
-        show(){
+        show() {
             this.form.reset();
             this.editable = false;
+            this.saveSuccess = false;
             this.showModal = true;
         },
-        edit(data, index){
+        edit(data, index) {
             console.log(data);
             this.form.id = data.id;
             this.form.name = data.name;
             this.form.description = data.description;
             this.editable = true;
+            this.saveSuccess = false;
             this.showModal = true;
         },
-
-
-        submit(){
-            if(this.editable){
-                this.form.put(`/libraries/units/${this.form.id}`,{
+        submit() {
+            if (this.editable) {
+                this.form.put(`/libraries/units/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.$emit('add', true);
-                        this.form.reset();
-                        this.hide();
+                        this.saveSuccess = true;
+                        setTimeout(() => {
+                            this.$emit('add', true);
+                            this.form.reset();
+                            this.hide();
+                        }, 1500);
                     },
                 });
-            }else{
+            } else {
                 console.log(this.form);
-                this.form.post('/libraries/units',{
+                this.form.post('/libraries/units', {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.$emit('add', true);
-                        this.form.reset();
-                        this.hide();
+                        this.saveSuccess = true;
+                        setTimeout(() => {
+                            this.$emit('add', true);
+                            this.form.reset();
+                            this.hide();
+                        }, 1500);
                     },
                 });
             }
@@ -98,12 +143,13 @@ export default {
         handleInput(field) {
             this.form.errors[field] = false;
         },
-        hide(){
+        hide() {
+            this.form.reset();
+            this.form.clearErrors();
             this.editable = false;
+            this.saveSuccess = false;
             this.showModal = false;
-        },
-
-   
+        }
     }
 }
 </script>
