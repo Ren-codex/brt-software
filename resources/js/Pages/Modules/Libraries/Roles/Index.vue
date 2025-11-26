@@ -149,7 +149,7 @@ export default {
 
         openDelete(id){
             let title = "Role";
-            this.$refs.delete.show(id , title);
+            this.$refs.delete.show(id , title, '/libraries/roles');
         },
 
         selectRow(index) {

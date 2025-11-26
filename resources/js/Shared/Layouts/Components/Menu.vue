@@ -40,7 +40,7 @@
                 </li>
                 <li class="nav-item">
                     <Link href="/inventory" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/inventory') }">
+                    :class="{'active': $page.component.startsWith('Modules/Inventory/InventoryManagement') }">
                     <i class="ri-survey-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Inventory Management</span>
                     </Link>
