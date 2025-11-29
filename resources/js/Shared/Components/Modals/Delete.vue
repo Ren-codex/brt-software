@@ -30,18 +30,20 @@ export default {
                 id: null,
             }),
             title: null,
+            table: null,
             showModal: false,
         }
     },
     methods: { 
-        show(id, title){
+        show(id, title, route){
             this.showModal = true;
             this.form.id = id;
             this.title = title;
+            this.route = route;
         },
 
         submit(){
-            this.form.delete(`/libraries/roles/${this.form.id}`,{
+            this.form.delete(`${this.route}/${this.form.id}`,{
                 preserveScroll: true,
                 onSuccess: (response) => {
                     this.$emit('delete', true);
