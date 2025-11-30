@@ -7,7 +7,7 @@ Route::get('/', [App\Http\Controllers\WelcomeController::class, 'index'])->middl
 
 // Landing Page Routes
 Route::get('/landing', function () {
-    return Inertia\Inertia::render('Landing');
+    return Inertia::render('Landing');
 })->middleware('guest')->name('landing');
 
 Route::middleware(['2fa','auth','verified','is_active'])->group(function () {

@@ -21,19 +21,12 @@ if (window.history.state === null) {
 
 createInertiaApp({
     resolve: (name) => {
-        const pages = import.meta.glob('./Pages/**/*.vue', { eager: true });
-        const key = `./Pages/${name}.vue`;
-        const module = pages[key];
-        if (!module) {
-            // helpful debug output when a page isn't found
-            console.error('Inertia page not found:', name, Object.keys(pages));
-            throw new Error(`Page not found: ${name}`);
-        }
-        const page = module.default;
+        const pages = import.meta.glob('./Pages/**/*.vue', { eager: true })
+        let page = pages[`./Pages/${name}.vue`].default
         if (page.layout === undefined) {
             page.layout = Layout;
         }
-        return page;
+        return pages[`./Pages/${name}.vue`]
     },
     setup({ el, App, props, plugin }) {
         return createApp({ render: () => h(App, props) })
