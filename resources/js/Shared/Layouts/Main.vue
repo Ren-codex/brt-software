@@ -48,7 +48,7 @@ export default {
             <slot />
         </TwoColumns>
     </div>
-    <div v-if="message" class="flash-modal-overlay" @click.self="check()">
+    <!-- <div v-if="message" class="flash-modal-overlay" @click.self="check()">
         <div class="flash-modal">
             <button class="flash-modal-close" @click="check()">
                 <i class="ri-close-line"></i>
@@ -72,5 +72,5 @@ export default {
                 </p>
             </div>
         </div>
-    </div>
+    </div> -->
 </template>
