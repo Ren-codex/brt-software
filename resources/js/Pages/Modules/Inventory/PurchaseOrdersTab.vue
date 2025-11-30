@@ -103,7 +103,7 @@
           </div>
         </div>
   </div>
-  <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" />
+  <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="$emit('fetch')" />
 </template>
 
 <script>

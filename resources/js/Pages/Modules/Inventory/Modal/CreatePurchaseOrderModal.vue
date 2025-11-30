@@ -18,8 +18,17 @@
                         <label for="supplier_id" class="form-label">Supplier</label>
                         <div class="input-wrapper">
                             <i class="ri-store-line input-icon"></i>
-                            <b-form-select v-model="form.supplier_id" :options="dropdowns.suppliers" text-field="name" @update:modelValue="handleInput('supplier_id')"></b-form-select>
+                            <select
+                                v-model="form.supplier_id"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.supplier_id }"
+                                @change="handleInput('supplier_id')"
+                            >
+                                <option value="" disabled>Select Supplier</option>
+                                <option v-for="supplier in dropdowns.suppliers" :value="supplier.value" :key="supplier.value">{{ supplier.name }}</option>
+                            </select>
                         </div>
+                        <span class="error-message" v-if="form.errors.supplier_id">{{ form.errors.supplier_id }}</span>
                     </div>
 
                     <div class="form-group">
@@ -38,8 +47,15 @@
                             <tbody>
                                 <tr v-for="(item, index) in form.items" :key="index">
                                     <td>
-                                        <b-form-select v-model="item.product_id" :options="dropdowns.products" text-field="name"
-                                        @update:modelValue="handleInput(`items.${index}.product_id`)"></b-form-select>
+                                        <select
+                                            v-model="item.product_id"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors[`items.${index}.product_id`] }"
+                                            @change="handleInput(`items.${index}.product_id`)"
+                                        >
+                                            <option value="" disabled>Select Product</option>
+                                            <option v-for="product in dropdowns.products" :value="product.value" :key="product.value">{{ product.name }}</option>
+                                        </select>
                                     </td>
                                     <td>
                                         <input
@@ -137,6 +153,8 @@ export default {
         show() {
             this.form.reset();
             this.form.clearErrors();
+            this.form.items = [];
+            this.addItem();
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
