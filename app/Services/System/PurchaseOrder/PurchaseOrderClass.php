@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\System\PurchaseOrder\PurchaseOrderResource;
 use App\Http\Resources\System\PurchaseOrder\ViewResource;
 use App\Models\ListStatus;
+use App\Models\PurchaseOrderLog;
 
 class PurchaseOrderClass
 {
@@ -20,7 +21,7 @@ class PurchaseOrderClass
 
     public function view($id)
     {
-        $data = PurchaseOrder::with(['status', 'supplier', 'items.product', 'created_by.profile'])->findOrFail($id);
+        $data = PurchaseOrder::with(['status', 'supplier', 'items.product', 'created_by.profile', 'logs'])->findOrFail($id);
         return new ViewResource($data);
     }
 
@@ -48,7 +49,14 @@ class PurchaseOrderClass
                 ]);
             }
 
-            return $purchaseOrder->load(['status', 'supplier', 'items.product']);
+            PurchaseOrderLog::create([
+                'po_id' => $purchaseOrder->id,
+                'user_id' => Auth::id(),
+                'action' => 'Created',
+                'remarks' => 'Purchase order created.',
+            ]);
+
+            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'logs']);
         });
 
         return [
@@ -95,6 +103,13 @@ class PurchaseOrderClass
                     'total_cost' => $item['total_cost'],
                 ]);
             }
+
+            PurchaseOrderLog::create([
+                'po_id' => $purchaseOrder->id,
+                'user_id' => Auth::id(),
+                'action' => 'Updated',
+                'remarks' => 'Purchase order updated.',
+            ]);
 
             return $purchaseOrder->load(['status', 'supplier', 'items.product']);
         });

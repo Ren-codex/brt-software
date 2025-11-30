@@ -68,6 +68,8 @@
                                             class="form-control"
                                             :class="{ 'input-error': form.errors[`items.${index}.quantity`] }"
                                             @input="calculateTotal(item); handleInput(`items.${index}.quantity`)"
+                                            step="1"
+                                            min="0"
                                             required
                                         >
                                     </td>
@@ -166,7 +168,7 @@ export default {
             this.form.supplier_id = data.supplier ? data.supplier.id : null;
             this.form.items = data.items ? data.items.map(item => ({
                 product_id: item.product_id,
-                quantity: item.quantity,
+                quantity: Math.round(item.quantity),
                 unit_cost: item.unit_cost,
                 total_cost: item.total_cost,
             })) : [];

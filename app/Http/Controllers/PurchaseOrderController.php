@@ -82,7 +82,7 @@ class PurchaseOrderController extends Controller
             return $this->purchaseOrder->delete($id);
         });
 
-        return back()->with([
+        return redirect('/inventory')->with([
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'] ?? true,

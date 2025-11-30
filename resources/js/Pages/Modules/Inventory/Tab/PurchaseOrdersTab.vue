@@ -84,14 +84,6 @@
                       <b-button @click="openView(list.id)" variant="success" class="me-1" v-b-tooltip.hover title="View" size="sm">
                         <i class="ri-eye-fill align-bottom"></i>
                       </b-button>
-                      <template v-if="list.status && list.status.name === 'pending' && list.created_by_id === $page.props.user.id">
-                        <b-button @click="openEdit(list, index)" variant="info" class="me-1" v-b-tooltip.hover title="Edit" size="sm">
-                          <i class="ri-pencil-fill align-bottom"></i>
-                        </b-button>
-                        <b-button @click="onDelete(list.id)" variant="danger" class="me-1" v-b-tooltip.hover title="Delete" size="sm">
-                          <i class="ri-delete-bin-line align-bottom"></i>
-                        </b-button>
-                      </template>
                     </td>
                   </tr>
                 </tbody>

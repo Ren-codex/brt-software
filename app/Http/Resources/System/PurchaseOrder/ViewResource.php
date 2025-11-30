@@ -22,6 +22,7 @@ class ViewResource extends JsonResource
             'status' => $this->status,
             'supplier' => $this->supplier,
             'items' => $this->items,
+            'logs' => $this->logs,
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
