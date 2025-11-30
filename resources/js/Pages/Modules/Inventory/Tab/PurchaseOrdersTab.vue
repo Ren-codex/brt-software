@@ -110,7 +110,7 @@
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
-import CreatePurchaseOrderModal from './Modal/CreatePurchaseOrderModal.vue';
+import CreatePurchaseOrderModal from '../Modal/CreatePurchaseOrderModal.vue';
 
 export default {
   name: "PurchaseOrdersTab",
@@ -152,7 +152,6 @@ export default {
       this.$refs.delete.show(id, title, '/purchase-orders');
     },
     handleDeleteSuccess() {
-      console.log('handleDeleteSuccess called in PurchaseOrdersTab');
       this.$emit('toast', 'Purchase Order deleted successfully');
       this.$emit('fetch');
     },

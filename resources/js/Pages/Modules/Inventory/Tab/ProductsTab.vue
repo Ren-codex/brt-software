@@ -113,7 +113,7 @@
 
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
-import CreateProduct from '../Libraries/Products/Modals/Create.vue';
+import CreateProduct from '../Modal/CreateProductModal.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
 
 export default {

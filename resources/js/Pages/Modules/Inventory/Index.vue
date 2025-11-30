@@ -93,8 +93,8 @@
 <script>
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
-import PurchaseOrdersTab from './PurchaseOrdersTab.vue';
-import ProductsTab from './ProductsTab.vue';
+import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
+import ProductsTab from './Tab/ProductsTab.vue';
 
 export default {
   name: "InventoryManagement",

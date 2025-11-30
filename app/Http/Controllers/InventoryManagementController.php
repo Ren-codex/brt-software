@@ -25,7 +25,7 @@ class InventoryManagementController extends Controller
                 return $this->product->lists($request);
             break;
             default:
-                return inertia('Modules/Inventory/InventoryManagement', [
+                return inertia('Modules/Inventory/Index', [
                     'dropdowns' => [
                         'units' => $this->dropdown->units(),
                         'suppliers' => $this->dropdown->suppliers(),
