@@ -52,13 +52,13 @@
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Sales</span>
                     </Link>
                 </li>
-                  <!-- <li class="nav-item">
+                  <li class="nav-item">
                     <Link href="/customers" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/customers') }">
                     <i class="ri-team-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Customers</span>
                     </Link>
-                </li> -->
+                </li>
                 <li class="nav-item">
                     <Link href="/receipts" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/receipts') }">

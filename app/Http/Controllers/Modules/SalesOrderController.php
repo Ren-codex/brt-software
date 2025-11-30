@@ -8,7 +8,7 @@ use App\Services\DropdownClass;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use App\Services\Modules\SalesOrderClass;
-// use App\Http\Requests\Libraries\SalesOrderRequest;
+use App\Http\Requests\Modules\SalesOrderRequest;
 
 
 class SalesOrderController extends Controller
@@ -28,8 +28,27 @@ class SalesOrderController extends Controller
                 return $this->sales_order->lists($request);
             break;
             default:
-                return inertia('Modules/SalesOrders/Index'); 
+                return inertia('Modules/Sales/Index', [
+                    'dropdowns' => [
+                        'customers' => $this->dropdown->customers(),
+                        'brands' => $this->dropdown->brands(),
+                        'units' => $this->dropdown->units()
+                    ]
+                ]);
             break;
         }   
+    }
+
+    public function store(SalesOrderRequest $request){
+        return $this->handleTransaction(function () use ($request) {
+            return $this->sales_order->save($request);
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
     }
 }

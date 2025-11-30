@@ -8,6 +8,9 @@ use App\Models\User;
 use App\Models\ListRole;
 use App\Models\ListStatus;
 use App\Models\ListUnit;
+use App\Models\ListBrand;
+use App\Models\Customer;
+
 
 class DropdownClass
 {  
@@ -41,4 +44,26 @@ class DropdownClass
         });
         return  $data;
     }
+
+    public function customers(){
+        $data = Customer::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name
+            ];
+        });
+        return  $data;
+    }
+
+    public function brands(){
+        $data = ListBrand::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name
+            ];
+        });
+        return  $data;
+    }
+
+
 }

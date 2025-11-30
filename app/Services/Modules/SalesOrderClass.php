@@ -28,4 +28,20 @@ class SalesOrderClass
     }
 
 
+    public function save($request){
+        $data = SalesOrder::create([
+            'customer_id' => $request->customer_id,
+            'payment_mode' => $request->payment_mode,
+            'order_date' => $request->order_date,
+            'amount' => $request->amount,
+            'added_by_id' => auth()->id(),
+        ]);
+
+        return [
+            'data' => new CustomerResource($data),
+            'message' => 'Customer saved successfully!',
+            'info' => "You've successfully saved the customer"
+        ];
+    }
+
 }

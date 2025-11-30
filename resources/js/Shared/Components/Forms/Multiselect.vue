@@ -1,10 +1,11 @@
 <template>
-    <Multiselect class="form-control w-lg" 
+    <Multiselect class="form-control custom-multiselect w-lg" 
     v-model="selectedValues" 
     :options="options" label="name"
-    :placeholder="placeholder" ref="multiselect"
+    :placeholder="placeholder" 
+    ref="multiselect"
     @update:modelValue="emitSelectedValues" 
-   :style="'border-color: ' + (message ? '#f06548' : '#ced4da') + ' !important; '"/>
+    />
 </template>
 <script>
 import Multiselect from "@vueform/multiselect";
@@ -31,4 +32,5 @@ export default {
 .multiselect-wrapper {
   background-color: #f5f6f7;
 }
+
 </style>
