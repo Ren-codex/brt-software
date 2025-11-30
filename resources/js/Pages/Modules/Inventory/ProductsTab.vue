@@ -108,7 +108,7 @@
     </BRow>
   </div>
   <CreateProduct @add="$emit('fetch')" ref="createProduct" :dropdowns="dropdowns"/>
-  <Delete @delete="$emit('fetch')" ref="delete"/>
+  <Delete ref="delete" @delete="handleDeleteSuccess"/>
 </template>
 
 <script>
@@ -126,7 +126,7 @@ export default {
     filter: Object,
     dropdowns: Object,
   },
-  emits: ['fetch', 'update-keyword'],
+  emits: ['fetch', 'update-keyword', 'toast'],
   data() {
     return {
       selectedRow: null,
@@ -153,6 +153,7 @@ export default {
       .then(response => {
         if (response.data.status) {
           product.is_active = updatedStatus;
+          this.$emit('toast', 'Status updated successfully');
         } else {
           console.error('Failed to update product active status:', response.data.message);
         }
@@ -173,6 +174,10 @@ export default {
     updateKeyword(keyword) {
       this.localKeyword = keyword;
       this.$emit('update-keyword', keyword);
+    },
+    handleDeleteSuccess() {
+      this.$emit('toast', 'Product deleted successfully');
+      this.$emit('fetch');
     },
   },
 };

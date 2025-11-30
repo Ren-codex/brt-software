@@ -81,14 +81,14 @@
                     <td class="text-center">{{ list.status ? list.status.name : '' }}</td>
 
                     <td class="text-end">
-                      <b-button @click="openViewPurchaseOrder(list.id)" variant="success" class="me-1" v-b-tooltip.hover title="View" size="sm">
+                      <b-button @click="openView(list.id)" variant="success" class="me-1" v-b-tooltip.hover title="View" size="sm">
                         <i class="ri-eye-fill align-bottom"></i>
                       </b-button>
                       <template v-if="list.status && list.status.name === 'pending' && list.created_by_id === $page.props.user.id">
-                        <b-button @click="openEditPurchaseOrder(list, index)" variant="info" class="me-1" v-b-tooltip.hover title="Edit" size="sm">
+                        <b-button @click="openEdit(list, index)" variant="info" class="me-1" v-b-tooltip.hover title="Edit" size="sm">
                           <i class="ri-pencil-fill align-bottom"></i>
                         </b-button>
-                        <b-button @click="onDeletePurchaseOrder(list.id)" variant="danger" class="me-1" v-b-tooltip.hover title="Delete" size="sm">
+                        <b-button @click="onDelete(list.id)" variant="danger" class="me-1" v-b-tooltip.hover title="Delete" size="sm">
                           <i class="ri-delete-bin-line align-bottom"></i>
                         </b-button>
                       </template>
@@ -104,6 +104,7 @@
         </div>
   </div>
   <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="$emit('fetch')" />
+  <Delete ref="delete" @delete="handleDeleteSuccess" />
 </template>
 
 <script>
@@ -121,7 +122,7 @@ export default {
     filter: Object,
     dropdowns: Object,
   },
-  emits: ['fetch', 'open-create', 'open-edit', 'on-delete', 'update-keyword'],
+  emits: ['fetch', 'open-create', 'open-edit', 'on-delete', 'update-keyword', 'toast'],
   data() {
     return {
       selectedRow: null,
@@ -140,15 +141,20 @@ export default {
     openCreatePurchaseOrder() {
       this.$refs.createModal.show();
     },
-    openViewPurchaseOrder(id) {
+    openView(id) {
       this.$inertia.visit(`/purchase-orders/${id}`);
     },
-    openEditPurchaseOrder(data, index) {
+    openEdit(data, index) {
       this.$refs.createModal.edit(data, index);
     },
-    onDeletePurchaseOrder(id) {
+    onDelete(id) {
       let title = "Purchase Order";
       this.$refs.delete.show(id, title, '/purchase-orders');
+    },
+    handleDeleteSuccess() {
+      console.log('handleDeleteSuccess called in PurchaseOrdersTab');
+      this.$emit('toast', 'Purchase Order deleted successfully');
+      this.$emit('fetch');
     },
   },
 };

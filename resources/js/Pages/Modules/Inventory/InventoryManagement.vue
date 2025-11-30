@@ -53,6 +53,7 @@
           :dropdowns="dropdowns"
           @fetch="fetchProducts"
           @update-keyword="updateKeyword"
+          @toast="showToast"
         />
 
         <PurchaseOrdersTab
@@ -64,6 +65,7 @@
           :dropdowns="dropdowns"
           @fetch="fetchPurchaseOrders"
           @update-keyword="updateKeyword"
+          @toast="showToast"
         />
 
         <div v-if="activeTab === 'receivingStocks'" class="card shadow-sm p-3">
@@ -77,6 +79,14 @@
         </div>
       </BCol>
     </BRow>
+
+    <!-- Toast Notification -->
+    <div v-if="isToastVisible" class="toast-notification">
+      <div class="toast-content">
+        <i class="ri-check-line text-white me-2"></i>
+        {{ toastMessage }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -100,6 +110,8 @@ export default {
       listPurchaseOrders: [],
       meta: null,
       links: null,
+      isToastVisible: false,
+      toastMessage: '',
     };
   },
   watch: {
@@ -169,6 +181,45 @@ export default {
         this.links = null;
       }
     },
+    showToast(message) {
+      this.toastMessage = message;
+      this.isToastVisible = true;
+      setTimeout(() => {
+        this.isToastVisible = false;
+      }, 3000);
+    },
   },
 };
 </script>
+
+<style scoped>
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background-color: #28a745;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+</style>

@@ -13,6 +13,10 @@
                 </button>
             </div>
             <div class="modal-body">
+                <div class="success-alert" v-if="saveSuccess">
+                    <i class="ri-checkbox-circle-fill"></i>
+                    <span>Your information has been saved successfully!</span>
+                </div>
                 <form @submit.prevent="submit">
                     <div class="form-group">
                         <label for="name" class="form-label">Product Name</label>
@@ -46,11 +50,6 @@
                             </select>
                         </div>
                         <span class="error-message" v-if="form.errors.unit_id">{{ form.errors.unit_id }}</span>
-                    </div>
-
-                    <div class="success-alert" v-if="saveSuccess">
-                        <i class="ri-checkbox-circle-fill"></i>
-                        <span>Your information has been saved successfully!</span>
                     </div>
 
                     <div class="form-actions">
@@ -112,9 +111,9 @@ export default {
                     preserveScroll: true,
                     onSuccess: (response) => {
                         this.saveSuccess = true;
+                        this.form.reset();
                         setTimeout(() => {
                             this.$emit('add', true);
-                            this.form.reset();
                             this.hide();
                         }, 1500);
                     },
@@ -124,9 +123,9 @@ export default {
                     preserveScroll: true,
                     onSuccess: (response) => {
                         this.saveSuccess = true;
+                        this.form.reset();
                         setTimeout(() => {
                             this.$emit('add', true);
-                            this.form.reset();
                             this.hide();
                         }, 1500);
                     },

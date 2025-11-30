@@ -13,6 +13,10 @@
                 </button>
             </div>
             <div class="modal-body">
+                <div class="success-alert" v-if="saveSuccess">
+                    <i class="ri-checkbox-circle-fill"></i>
+                    <span>Your information has been saved successfully!</span>
+                </div>
                 <form @submit.prevent="submit">
                     <div class="form-group">
                         <label for="supplier_id" class="form-label">Supplier</label>
@@ -94,11 +98,6 @@
                         <div class="mt-3">
                             <p><strong>Total Amount: {{ totalAmount }}</strong></p>
                         </div>
-                    </div>
-
-                    <div class="success-alert" v-if="saveSuccess">
-                        <i class="ri-checkbox-circle-fill"></i>
-                        <span>Your information has been saved successfully!</span>
                     </div>
 
                     <div class="form-actions">

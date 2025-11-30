@@ -76,6 +76,19 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
+    public function destroy($id)
+    {
+        $result = $this->handleTransaction(function () use ($id) {
+            return $this->purchaseOrder->delete($id);
+        });
+
+        return back()->with([
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
+
     public function getNextPoNumber()
     {
         return response()->json(['po_number' => $this->purchaseOrder->generatePoNumber()]);
