@@ -64,6 +64,20 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
+    public function updateStatus(Request $request)
+    {
+        $result = $this->handleTransaction(function () use ($request) {
+            return $this->purchaseOrder->updateStatus($request);
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
+
     public function show($id)
     {
         return inertia('Modules/PurchaseOrders/View', [

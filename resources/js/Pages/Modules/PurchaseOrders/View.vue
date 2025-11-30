@@ -32,7 +32,7 @@
                     variant="success"
                     @click="approvePurchaseOrder"
                   >
-                    <i class="ri-check-line align-bottom me-1"></i> Approve
+                    Approval
                   </b-button>
                   <template v-if="data.status?.name === 'pending' && data.created_by_id === $page.props.user.id">
                     <b-button @click="onDelete" variant="danger" v-b-tooltip.hover title="Delete" style="margin-right: -10px">
@@ -121,7 +121,7 @@
               </div>
 
               <div class="col-lg-4">
-                <h6 class="mb-3">Transaction Logs</h6>
+                <label class="form-label mb-3">Transaction Logs</label>
                 <div class="table-responsive" v-if="data.logs && data.logs.length">
                   <table class="table table-bordered">
                     <thead>
@@ -153,6 +153,32 @@
 
   <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="handleEditSuccess" />
   <Delete ref="delete" @delete="handleDeleteSuccess" />
+
+  <b-modal v-model="showModal" title="Approve Purchase Order" size="lg" centered hide-footer>
+    <div class="mb-3">
+      <label for="remarks" class="form-label">Remarks</label>
+      <textarea
+        id="remarks"
+        v-model="remarks"
+        class="form-control"
+        rows="4"
+        placeholder="Enter your remarks here..."
+      ></textarea>
+    </div>
+    <div slot="modal-footer">
+      <b-button variant="secondary" @click="onCancel">Cancel</b-button>
+      <b-button variant="danger" @click="updateStatus('disapproved')">Disapprove</b-button>
+      <b-button variant="success" @click="updateStatus('approved')">Approve</b-button>
+    </div>
+  </b-modal>
+
+  <!-- Toast Notification -->
+  <div v-if="isToastVisible" class="toast-notification">
+    <div class="toast-content">
+      <i class="ri-check-line text-white me-2"></i>
+      {{ toastMessage }}
+    </div>
+  </div>
 </template>
 
 <script>
@@ -170,7 +196,10 @@ export default {
   },
   data() {
     return {
-    //   data: null,
+      showModal: false,
+      remarks: '',
+      isToastVisible: false,
+      toastMessage: '',
     };
   },
   computed: {
@@ -194,18 +223,7 @@ export default {
       }).format(amount);
     },
     approvePurchaseOrder() {
-      if (confirm('Are you sure you want to approve this purchase order?')) {
-        this.$inertia.put(`/purchase-orders/${this.purchase_order_data.id}`, {
-          status_id: this.dropdowns.statuses.find(s => s.name === 'Approved').id
-        }, {
-          onSuccess: () => {
-            this.$toast.success('Purchase order approved successfully');
-          },
-          onError: () => {
-            this.$toast.error('Failed to approve purchase order');
-          }
-        });
-      }
+      this.showModal = true;
     },
     openEdit() {
       this.$refs.createModal.edit(this.purchase_order_data.data);
@@ -219,7 +237,66 @@ export default {
     },
     handleEditSuccess() {
       this.$inertia.reload();
-    }
+    },
+    updateStatus(status) {      
+      this.$inertia.put(`/purchase-orders/${this.data.id}/status`, {
+        status_id: this.dropdowns.statuses.find(s => s.name === status).value,
+        id: this.data.id,
+        remarks: this.remarks
+      }, {
+        onSuccess: () => {
+          this.showToast('Purchase order updated successfully');
+          this.showModal = false;
+          this.remarks = '';
+        },
+        onError: () => {
+          this.showToast('Failed to approve purchase order');
+        }
+      });
+    },
+    onCancel() {
+      this.showModal = false;
+      this.remarks = '';
+    },
+    showToast(message) {
+      this.toastMessage = message;
+      this.isToastVisible = true;
+      setTimeout(() => {
+        this.isToastVisible = false;
+      }, 3000);
+    },
   }
 };
 </script>
+
+<style scoped>
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background-color: #28a745;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+</style>

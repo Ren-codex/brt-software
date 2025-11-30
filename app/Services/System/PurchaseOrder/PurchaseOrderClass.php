@@ -21,7 +21,7 @@ class PurchaseOrderClass
 
     public function view($id)
     {
-        $data = PurchaseOrder::with(['status', 'supplier', 'items.product', 'created_by.profile', 'logs'])->findOrFail($id);
+        $data = PurchaseOrder::with(['status', 'supplier', 'items.product', 'created_by.profile', 'logs', 'logs.user.profile'])->findOrFail($id);
         return new ViewResource($data);
     }
 
@@ -71,6 +71,33 @@ class PurchaseOrderClass
         $data = PurchaseOrder::findOrFail($request->id);
         $data->status_id = $request->status_id;
         $data->save();
+
+        return [
+            'data' => new PurchaseOrderResource($data),
+            'message' => 'Purchase order status updated successfully!',
+            'info' => "You've successfully updated the purchase order status."
+        ];
+    }
+
+    public function updateStatus($request)
+    {
+        $data = DB::transaction(function () use ($request) {
+            $purchaseOrder = PurchaseOrder::findOrFail($request->id);
+            $oldStatus = $purchaseOrder->status->name;
+            $newStatus = ListStatus::findOrFail($request->status_id)->name;
+
+            $purchaseOrder->status_id = $request->status_id;
+            $purchaseOrder->save();
+
+            PurchaseOrderLog::create([
+                'po_id' => $purchaseOrder->id,
+                'user_id' => Auth::id(),
+                'action' => $newStatus,
+                'remarks' => $request->remarks,
+            ]);
+
+            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'logs']);
+        });
 
         return [
             'data' => new PurchaseOrderResource($data),
