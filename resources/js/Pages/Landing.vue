@@ -32,14 +32,14 @@
         <section id="home" class="hero-section">
             <BContainer>
                 <BRow class="align-items-center min-vh-100">
-                    <BCol lg="6" data-aos="fade-right" data-aos-duration="1000" data-aos-delay="200">
+                    <BCol lg="6" data-aos="fade-right">
                         <div class="hero-content">
-                            <h1 class="hero-title" data-aos="zoom-in" data-aos-duration="1200" data-aos-delay="400">
+                            <h1 class="hero-title">
                                 Premium Quality Rice
-                                <span class="highlight" data-aos="fade-up" data-aos-duration="1000" data-aos-delay="600">From Farm to Table</span>
+                                <span class="highlight">From Farm to Table</span>
                             </h1>
-                            <p class="hero-description" data-aos="fade-up" data-aos-duration="1000" data-aos-delay="800">
-                                Experience the finest selection of premium rice varieties, carefully sourced and processed
+                            <p class="hero-description">
+                                Experience the finest selection of premium rice varieties, carefully sourced and processed 
                                 to bring you the best quality grains for your family.
                             </p>
                             <div class="hero-buttons">
@@ -52,13 +52,13 @@
                                     <i class="ri-arrow-right-line ms-2"></i>
                                 </BButton>
                             </div>
-
+                           
                         </div>
                     </BCol>
-                    <BCol lg="6" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="300">
+                    <BCol lg="6" data-aos="fade-left">
                         <div class="hero-image">
-                            <div class="image-wrapper" data-aos="zoom-in" data-aos-duration="1200" data-aos-delay="500">
-                                <i class="ri-plant-fill rice-icon" data-aos="bounce-in" data-aos-duration="1500" data-aos-delay="700"></i>
+                            <div class="image-wrapper">
+                                <i class="ri-plant-fill rice-icon"></i>
                             </div>
                         </div>
                     </BCol>
@@ -231,8 +231,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -292,15 +290,7 @@ const submitContactForm = () => {
 // ============================================================================
 onMounted(() => {
     window.addEventListener('scroll', handleScroll);
-
-    // Initialize AOS animations
-    AOS.init({
-        duration: 800,
-        easing: 'ease-in-out',
-        once: true,
-        offset: 100
-    });
-
+    
     // Scroll to top on page load to prevent auto-scrolling to hash
     window.scrollTo(0, 0);
 });
