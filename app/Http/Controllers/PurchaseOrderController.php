@@ -53,13 +53,7 @@ class PurchaseOrderController extends Controller
     public function update(PurchaseOrderRequest $request)
     {
         $result = $this->handleTransaction(function () use ($request) {
-            switch ($request->option) {
-                case 'status':
-                    return $this->purchaseOrder->status($request);
-                    break;
-                default:
-                    return $this->purchaseOrder->update($request);
-            }
+            return $this->purchaseOrder->update($request);
         });
 
         return back()->with([

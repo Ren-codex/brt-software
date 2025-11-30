@@ -132,6 +132,7 @@ export default {
     data() {
         return {
             form: useForm({
+                id: null,
                 supplier_id: null,
                 total_amount: 0,
                 items: [],
@@ -160,11 +161,16 @@ export default {
             this.showModal = true;
         },
         edit(data, index) {
-            // Placeholder for edit functionality if needed
-            this.form.po_number = data.po_number || '';
-            this.form.po_date = data.po_date || new Date().toISOString().split('T')[0];
-            this.form.supplier_id = data.supplier_id || null;
-            this.form.items = data.items || [];
+            this.form.reset();
+            this.form.clearErrors();
+            this.form.id = data.id;
+            this.form.supplier_id = data.supplier ? data.supplier.id : null;
+            this.form.items = data.items ? data.items.map(item => ({
+                product_id: item.product_id,
+                quantity: item.quantity,
+                unit_cost: item.unit_cost,
+                total_cost: item.total_cost,
+            })) : [];
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;

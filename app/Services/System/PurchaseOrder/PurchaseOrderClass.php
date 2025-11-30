@@ -78,7 +78,6 @@ class PurchaseOrderClass
 
             $poData = [
                 'total_amount' => $request->total_amount,
-                'status_id' => $request->status_id,
                 'supplier_id' => $request->supplier_id,
             ];
 

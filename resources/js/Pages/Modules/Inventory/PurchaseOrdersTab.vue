@@ -144,8 +144,7 @@ export default {
       this.$inertia.visit(`/purchase-orders/${id}`);
     },
     openEditPurchaseOrder(data, index) {
-      // Placeholder for opening edit modal
-      alert('Edit Purchase Order modal not implemented yet');
+      this.$refs.createModal.edit(data, index);
     },
     onDeletePurchaseOrder(id) {
       let title = "Purchase Order";
