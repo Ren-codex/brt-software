@@ -20,7 +20,7 @@ class PurchaseOrderClass
 
     public function view($id)
     {
-        $data = PurchaseOrder::with(['status', 'supplier', 'items.product'])->findOrFail($id);
+        $data = PurchaseOrder::with(['status', 'supplier', 'items.product', 'created_by.profile'])->findOrFail($id);
         return new ViewResource($data);
     }
 
