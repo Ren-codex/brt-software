@@ -1,0 +1,89 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\DropdownClass;
+use App\Traits\HandlesTransaction;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Services\System\PurchaseOrder\PurchaseOrderClass as PurchaseOrderService;
+use App\Http\Requests\PurchaseOrderRequest;
+
+class PurchaseOrderController extends Controller
+{
+    use HandlesTransaction;
+
+    public $purchaseOrder, $dropdown;
+
+    public function __construct(PurchaseOrderService $purchaseOrder, DropdownClass $dropdown)
+    {
+        $this->dropdown = $dropdown;
+        $this->purchaseOrder = $purchaseOrder;
+    }
+
+    public function index(Request $request)
+    {
+        switch ($request->option) {
+            case 'list':
+                return $this->purchaseOrder->list($request);
+                break;
+            default:
+                return inertia('Modules/PurchaseOrders/Index', [
+                    'dropdowns' => [
+                        'statuses' => $this->dropdown->statuses()
+                    ]
+                ]);
+        }
+    }
+
+    public function store(PurchaseOrderRequest $request)
+    {
+        $result = $this->handleTransaction(function () use ($request) {
+            return $this->purchaseOrder->save($request);
+        });
+        
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
+
+    public function update(PurchaseOrderRequest $request)
+    {
+        $result = $this->handleTransaction(function () use ($request) {
+            switch ($request->option) {
+                case 'status':
+                    return $this->purchaseOrder->status($request);
+                    break;
+                default:
+                    return $this->purchaseOrder->update($request);
+            }
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
+
+    public function show($id)
+    {
+        return inertia('Modules/PurchaseOrders/View', [
+            'purchase_order_data' => $this->purchaseOrder->view($id),
+            'dropdowns' => [
+                'suppliers' => $this->dropdown->suppliers(),
+                'statuses' => $this->dropdown->statuses(),
+                'products' => $this->dropdown->products(),
+            ],
+        ]);
+    }
+
+    public function getNextPoNumber()
+    {
+        return response()->json(['po_number' => $this->purchaseOrder->generatePoNumber()]);
+    }
+}

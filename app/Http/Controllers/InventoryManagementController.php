@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Libraries;
+namespace App\Http\Controllers;
 
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
@@ -27,7 +27,9 @@ class InventoryManagementController extends Controller
             default:
                 return inertia('Modules/Inventory/InventoryManagement', [
                     'dropdowns' => [
-                        'units' => $this->dropdown->units()
+                        'units' => $this->dropdown->units(),
+                        'suppliers' => $this->dropdown->suppliers(),
+                        'products' => $this->dropdown->products(),
                     ]
                 ]);
             break;

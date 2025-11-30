@@ -23,7 +23,10 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
         
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
-        Route::get('/inventory', [App\Http\Controllers\Libraries\InventoryManagementController::class, 'index']);
+        Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
+
+        Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
+        Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
     });
 });
 

@@ -8,14 +8,7 @@
 
       <div class="mb-3">
         <InputLabel value="Unit" :message="form.errors.unit_id"/>
-        <Multiselect
-          v-model="form.unit_id"
-          :options="dropdowns.units"
-          :reduce="unit => unit.id"
-          label="name"
-          placeholder="Select a unit"
-          :class="{ 'is-invalid': form.errors.unit_id }"
-        />
+        <b-form-select v-model="form.unit_id" :options="dropdowns.units" text-field="name" required></b-form-select>
         <div class="invalid-feedback">{{ errors.unit_id }}</div>
       </div>
 

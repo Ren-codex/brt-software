@@ -1,10 +1,10 @@
 <template>
-    <Multiselect class="form-control w-lg" 
-    v-model="selectedValues" 
-    :options="options" label="name"
+    <Multiselect class="form-control w-lg"
+    v-model="selectedValues"
+    :options="options" label="name" valueProp="id"
     :placeholder="placeholder" ref="multiselect"
-    @update:modelValue="emitSelectedValues" 
-   :style="'border-color: ' + (message ? '#f06548' : '#ced4da') + ' !important; '"/>
+    @update:modelValue="emitSelectedValues"
+   :style="'border-color: ' + (message ? '#f06548' : '#ced4da') + ' !important;'"/>
 </template>
 <script>
 import Multiselect from "@vueform/multiselect";
