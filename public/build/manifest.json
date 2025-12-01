@@ -192,12 +192,12 @@
     "src": "public/images/sidebar/img-4.jpg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-LcMD1wp8.js",
+    "file": "assets/app-BetO5Xdn.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-CsvYP5td.css"
+      "assets/app-DykBJQgi.css"
     ],
     "assets": [
       "assets/logo-sm-C9p9en_o.png",
