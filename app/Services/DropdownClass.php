@@ -43,6 +43,19 @@ class DropdownClass
                 'name' => $item->name
             ];
         });
+      
+        return  $data;
+    }
+
+    
+    public function brands(){
+        $data = ListBrand::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name
+            ];
+        });
+      
         return  $data;
     }
 
