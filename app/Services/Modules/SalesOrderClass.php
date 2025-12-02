@@ -33,14 +33,23 @@ class SalesOrderClass
             'customer_id' => $request->customer_id,
             'payment_mode' => $request->payment_mode,
             'order_date' => $request->order_date,
-            'amount' => $request->amount,
             'added_by_id' => auth()->id(),
         ]);
 
+        foreach($request->items as $item){
+            $data->items()->create([
+                'brand_id' => $item['brand_id'],
+                'unit_id' => $item['unit_id'],
+                'quantity' => $item['quantity'],
+                'price' => $item['price'],
+            ]);
+        }
+
+
         return [
-            'data' => new CustomerResource($data),
-            'message' => 'Customer saved successfully!',
-            'info' => "You've successfully saved the customer"
+            'data' => new SalesOrderResource($data),
+            'message' => 'Sales Order saved successfully!',
+            'info' => "You've successfully saved the Sales Order"
         ];
     }
 

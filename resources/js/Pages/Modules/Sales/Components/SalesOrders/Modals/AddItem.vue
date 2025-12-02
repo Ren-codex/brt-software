@@ -35,9 +35,9 @@
                             </div>
                             <span class="error-message" v-if="form.errors.brand_id">{{ form.errors.brand_id }}</span>
                         </div>
-
-                       
+           
                     </div>
+
 
 
                     <div class="form-row">
@@ -59,16 +59,16 @@
                             <span class="error-message" v-if="form.errors.quantity">{{ form.errors.quantity }}</span>
                         </div>
                          <div class="form-group form-group-half">
-                            <label for="amount" class="form-label">Unit Price</label>
+                            <label for="unit_cost" class="form-label">Unit Cost</label>
                             <div class="input-wrapper">
                                 <i class="ri-cash-line input-icon"></i>
                                 <Amount
-                                    @amount="updateAmount($event)"
-                                    :class="{ 'input-error': form.errors.amount }"
+                                    @amount="updateUnitCost($event)"
+                                    :class="{ 'input-error': form.errors.unit_cost }"
                                     class="form-control"
                                 />
                             </div>
-                            <span class="error-message" v-if="form.errors.amount">{{ form.errors.amount }}</span>
+                            <span class="error-message" v-if="form.errors.unit_cost">{{ form.errors.unit_cost }}</span>
                         </div>
                     </div>
 
@@ -110,11 +110,7 @@
                             <i class="ri-loader-4-line spinner" v-else></i>
                             {{ form.processing ? 'Saving...' : 'Save Order' }}
                         </button>
-                    </div>
-
-
-               
-                    
+                    </div>  
                 </form>
             </div>
         </div>
@@ -130,7 +126,7 @@ import Amount from '@/Shared/Components/Forms/Amount.vue';
 
 export default {
     components: { InputLabel, TextInput, Multiselect, Amount },
-    props: ['dropdowns'],
+    props: ['dropdowns', 'items'],
     data() {
         return {
             currentUrl: window.location.origin,
@@ -138,9 +134,8 @@ export default {
                 id: null,
                 brand_id: null,
                 quantity: null,
-                unit_price: null,
-                unit_id:null,
-                amount: null,
+                unit_cost: null,
+                unit_id: null,
             }),
 
             togglePassword: false,
@@ -161,39 +156,29 @@ export default {
         edit(data, index) {
             this.form.brand_id = data.brand_id;
             this.form.quantity = data.quantity;
-            this.form.unit_price = data.unit_price;
+            this.form.unit_cost = data.unit_cost;
             this.form.unit_id = data.unit_id;
-            this.form.amount = data.amount;
+            this.form.total_amount = data.total_amount;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
         },
-        submit() {
+        submit(index) {
             if (this.editable) {
-                this.form.put(`/sales-orders/${this.form.id}`, {
-                    preserveScroll: true,
-                    onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
-                    },
-                });
+                this.$emit('items', this.form);
             } else {
-                this.form.post('/sales-orders', {
-                    preserveScroll: true,
-                    onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
-                    },
-                });
+                const stored_item = {
+                    id: Date.now(),
+                    brand_id: this.form.brand_id,
+                    quantity: this.form.quantity,
+                    unit_cost: this.form.unit_cost,
+                    unit_id: this.form.unit_id,
+                    total_amount: this.form.amount,
+                };
+
+                this.$emit('items', stored_item);
             }
+            this.showModal = false;
         },
         handleInput(field) {
             this.form.errors[field] = false;
@@ -206,12 +191,12 @@ export default {
             this.showModal = false;
         },
 
-        updateAmount(value){
+        updateUnitCost(value){
             // Remove ₱ symbol and commas
             const cleanValue = value.replace(/[₱,]/g, '');
             
             // Optional: convert to float
-            this.form.amount = parseFloat(cleanValue || 0).toFixed(2);
+            this.form.unit_cost = parseFloat(cleanValue || 0).toFixed(2);
         }
 
         

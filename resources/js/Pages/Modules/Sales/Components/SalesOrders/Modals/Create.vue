@@ -77,19 +77,6 @@
                             
                             <span class="error-message" v-if="form.errors.customer_id">{{ form.errors.customer_id }}</span>
                         </div>
-
-                         <div class="form-group form-group-half">
-                            <label for="amount" class="form-label">Amount</label>
-                            <div class="input-wrapper">
-                                <i class="ri-cash-line input-icon"></i>
-                                <Amount
-                                    @amount="updateAmount($event)"
-                                    :class="{ 'input-error': form.errors.amount }"
-                                    class="form-control"
-                                />
-                            </div>
-                            <span class="error-message" v-if="form.errors.amount">{{ form.errors.amount }}</span>
-                        </div>
                     </div>
                     
                 
@@ -104,30 +91,31 @@
                                       <th style="width: 3%;">#</th>
                                      <th style="width: 10%;" class="text-center">Brand</th>
                                      <th style="width: 12%;" class="text-center">Quantity/Unit Price</th>
-                                      <th style="width: 10%;" class="text-center">Amount</th>
+                                      <th style="width: 10%;" class="text-center">Unit Price</th>
+                                      <th style="width: 10%;" class="text-center">Total Amount</th>
                                       <th style="width: 6%;" class="text-center">Actions</th>
                                   </tr>
                               </thead>
 
-
                               <tbody class="table-white fs-12">
-                                  <tr v-for="(list,index) in lists" v-bind:key="index" @click="selectRow(index)" :class="{
+                                  <tr v-for="(list,index) in form.items" v-bind:key="index" @click="selectRow(index)" :class="{
                                       'bg-info-subtle': index === selectedRow
                                   }">
-                                      <td class="text-center">
+                                    <td class="text-center">
                                         {{ index + 1}}
-                                      </td>
-                                        <td class="text-center">{{ list.brand }}</td>
-                                      <td class="text-center">{{ list.quantity }} {{ list.unit_price }}</td>
-                                    <td class="text-center">{{ list.amount }}</td>
+                                    </td>
+                                    <td class="text-center">{{ getBrand(list.brand_id) }}</td>
+                                    <td class="text-center">{{ list.quantity }} {{ getUnit(list.unit_id) }}</td>
+                                    <td class="text-center">{{ formatCurrency(list.unit_cost) }} </td>
+                                    <td class="text-center">{{ formatCurrency(list.quantity * list.unit_cost) }}</td>
                                     
 
                                       <td class="text-end">
                                           <div class="d-flex justify-content-end gap-1">
-                                              <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
+                                              <b-button @click="editItem(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                   <i class="ri-pencil-fill"></i>
                                               </b-button>
-                                              <b-button @click="onDelete(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
+                                              <b-button @click="removeItem(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
                                                   <i class="ri-delete-bin-line"></i>
                                               </b-button>
                                           </div>
@@ -158,7 +146,7 @@
         </div>
     </div>
 
-       <Item @add="fetch()" :dropdowns="dropdowns" ref="item"/>
+       <Item @add="fetch()" :dropdowns="dropdowns"  @items="storeItem" ref="item"/>
 </template>
 
 <script>
@@ -180,9 +168,8 @@ export default {
                 payment_mode: null,
                 order_date: new Date().toISOString().slice(0, 10),  // current date
                 customer_id: null,
-                amount: null,
                 status_id: null,
-                items: null,
+                items: [],
                 option: 'lists'
             }),
 
@@ -193,9 +180,22 @@ export default {
             showModal: false,
             editable: false,
             saveSuccess: false,
+            selectedRow: null,
         }
     },
     methods: { 
+        storeItem(item) {
+            const newItem = {
+                ...item,
+                id: Date.now() // temporary unique ID
+            };
+            this.form.items.push(newItem);
+        },
+
+        removeItem(id) {
+            this.form.items = this.form.items.filter(item => item.id !== id);
+        },
+
         show() {
             this.form.reset();
             this.editable = false;
@@ -251,17 +251,34 @@ export default {
             this.showModal = false;
         },
 
-        updateAmount(value){
-            // Remove ₱ symbol and commas
-            const cleanValue = value.replace(/[₱,]/g, '');
-            
-            // Optional: convert to float
-            this.form.amount = parseFloat(cleanValue || 0).toFixed(2);
-        },
 
         addItem(){
             this.$refs.item.show();
+        },
+
+        selectRow(index) {
+            this.selectedRow = this.selectedRow === index ? null : index;
+        },
+
+
+        getBrand(brand_id){
+            const brand = this.dropdowns.brands.find(b => b.value === brand_id);
+            return brand ? brand.name : '';
+        },
+
+        getUnit(unit_id){
+            const unit = this.dropdowns.units.find(u => u.value === unit_id);
+            return unit ? unit.name : '';
+        },
+
+        formatCurrency(value) {
+            if (!value) return '₱0.00';
+            return '₱' + Number(value).toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
         }
+
 
         
     }

@@ -18,8 +18,8 @@ class SalesOrderRequest extends FormRequest
         return [
             'order_date' => 'required|date',
             'payment_mode' => 'required|string',
-            'amount' => 'required|numeric|min:0.01',
             'customer_id' => 'required|exists:customers,id',
+            
         ];
 
     }
@@ -29,7 +29,6 @@ class SalesOrderRequest extends FormRequest
             'order_date.required' => 'This field is required',
             'payment_mode.required' => 'This field is required',
             'amount.required' => 'This field is required',
-            'amount.min' => 'Amount must be greater than 0',
             'customer_id.required' => 'This field is required',
         ];
 
