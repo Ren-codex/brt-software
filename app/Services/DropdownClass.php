@@ -10,7 +10,8 @@ use App\Models\ListStatus;
 use App\Models\ListUnit;
 use App\Models\ListBrand;
 use App\Models\Customer;
-
+use App\Models\ListSupplier;
+use App\Models\Product;
 
 class DropdownClass
 {  
@@ -54,9 +55,9 @@ class DropdownClass
         });
         return  $data;
     }
-
-    public function brands(){
-        $data = ListBrand::get()->map(function ($item) {
+        
+    public function suppliers(){
+        $data = ListSupplier::get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->name
@@ -65,5 +66,13 @@ class DropdownClass
         return  $data;
     }
 
-
+    public function products(){
+        $data = Product::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name
+            ];
+        });
+        return  $data;
+    }
 }
