@@ -1,100 +1,84 @@
 <template>
-  <div class="card shadow-sm">
-    <div class="card bg-light-subtle shadow-none border">
-          <div class="card-header bg-light-subtle">
-            <div class="d-flex mb-n3">
-              <div class="flex-shrink-0 me-3">
-                <div style="height:2.5rem;width:2.5rem;">
-                  <span class="avatar-title bg-primary-subtle rounded p-2 mt-n1">
-                    <i class="ri-shopping-cart-line text-primary fs-24"></i>
-                  </span>
-                </div>
+  <BRow>
+    <div class="col-md-12">
+      <div class="library-card">
+        <div class="library-card-header">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="header-icon">
+                <i class="ri-shopping-cart-line"></i>
               </div>
-              <div class="flex-grow-1">
-                <h5 class="mb-0 fs-14"><span class="text-body">List of Purchase Orders</span></h5>
-                <p class="text-muted text-truncate-two-lines fs-12">A comprehensive list of purchase orders</p>
-              </div>
-              <div class="flex-shrink-0" style="width: 45%;">
-
+              <div>
+                <h4 class="header-title mb-1">Purchase Order Management</h4>
+                <p class="header-subtitle mb-0">Manage and organize your purchase order catalog</p>
               </div>
             </div>
+            <button class="create-btn" @click="openCreatePurchaseOrder">
+              <i class="ri-add-line"></i>
+              <span>Add Purchase Order</span>
+            </button>
           </div>
-          <div class="card-body bg-white border-bottom shadow-none">
-            <b-row class="mb-2 ms-1 me-1" style="margin-top: 12px;">
-              <b-col lg>
-                <div class="input-group mb-1">
-                  <span class="input-group-text"> <i class="ri-search-line search-icon"></i></span>
-                  <input type="text" v-model="localKeyword" @input="$emit('update-keyword', localKeyword)" placeholder="Search Purchase Order" class="form-control" style="width: 20%;">
-                  <b-button type="button" variant="primary" @click="openCreatePurchaseOrder">
-                    <i class="ri-add-circle-fill align-bottom me-1"></i> Create
-                  </b-button>
-                </div>
-              </b-col>
-            </b-row>
-          </div>
+        </div>
 
-          <div class="card bg-white border-bottom shadow-none" no-body>
-            <div class="d-flex">
-              <div class="flex-grow-1">
-                <ul class="nav nav-tabs nav-tabs-custom nav-primary fs-12" role="tablist">
-                  <li class="nav-item">
-                    <BLink class="nav-link py-3 active" data-bs-toggle="tab" role="tab" aria-selected="true">
-                      <i class="ri-apps-2-line me-1 align-bottom"></i> All
-                    </BLink>
-                  </li>
-                </ul>
-              </div>
-              <div class="flex-shrink-0">
-                <div class="d-flex flex-wrap gap-2 mt-3">
-
-                </div>
-              </div>
+        <div class="library-card-body">
+          <div class="search-section">
+            <div class="search-wrapper">
+              <i class="ri-search-line search-icon"></i>
+              <input
+                type="text"
+                v-model="localKeyword"
+                @input="updateKeyword(localKeyword)"
+                placeholder="Search purchase orders..."
+                class="search-input"
+              >
             </div>
           </div>
-          <div class="card-body bg-white rounded-bottom">
-            <div class="table-responsive table-card" style="margin-top: -39px; overflow: auto;">
-              <table class="table align-middle table-striped table-centered mb-0">
-                <thead class="table-light thead-fixed">
-                  <tr class="fs-11">
-                    <th style="width: 3%;">#</th>
-                    <th style="width: 15%;" class="text-center">PO Number</th>
-                    <th style="width: 15%;" class="text-center">Date</th>
-                    <th style="width: 15%;" class="text-center">Supplier</th>
-                    <th style="width: 15%;" class="text-center">Total Amount</th>
-                    <th style="width: 10%;">Status</th>
-                    <th style="width: 6%;"></th>
+
+          <div class="table-section">
+            <div class="table-responsive" style="overflow: visible; max-height: none;">
+              <table class="table align-middle table-centered mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>PO Number</th>
+                    <th>Date</th>
+                    <th>Supplier</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
 
-                <tbody class="table-white fs-12">
+                <tbody>
                   <tr v-for="(list,index) in listPurchaseOrders" v-bind:key="index" @click="selectRow(index)" :class="{
                     'bg-info-subtle': index === selectedRow
                   }">
-                    <td class="text-center">
-                      {{ index + 1}}
-                    </td>
-
-                    <td class="text-center">{{ list.po_number }}</td>
-                    <td class="text-center">{{ list.po_date }}</td>
-                    <td class="text-center">{{ list.supplier ? list.supplier.name : '' }}</td>
-                    <td class="text-center">{{ list.total_amount }}</td>
-                    <td class="text-center">{{ list.status ? list.status.name : '' }}</td>
-
-                    <td class="text-end">
-                      <b-button @click="openView(list.id)" variant="success" class="me-1" v-b-tooltip.hover title="View" size="sm">
-                        <i class="ri-eye-fill align-bottom"></i>
-                      </b-button>
+                    <td>{{ index + 1}}</td>
+                    <td>{{ list.po_number }}</td>
+                    <td>{{ list.po_date }}</td>
+                    <td>{{ list.supplier ? list.supplier.name : '' }}</td>
+                    <td>{{ list.total_amount }}</td>
+                    <td>{{ list.status ? list.status.name : '' }}</td>
+                    <td>
+                      <div class="action-buttons">
+                        <button @click="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                          <i class="ri-eye-fill"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
-          <div class="card-footer">
-            <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="$emit('fetch')" :lists="listPurchaseOrders.length" :links="links" :pagination="meta" />
+
+          <div class="pagination-section">
+            <Pagination v-if="meta" @fetch="$emit('fetch')" :lists="listPurchaseOrders.length" :links="links" :pagination="meta" />
           </div>
         </div>
-  </div>
+      </div>
+    </div>
+  </BRow>
   <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="$emit('fetch')" />
   <Delete ref="delete" @delete="handleDeleteSuccess" />
 </template>
@@ -142,6 +126,10 @@ export default {
     onDelete(id) {
       let title = "Purchase Order";
       this.$refs.delete.show(id, title, '/purchase-orders');
+    },
+    updateKeyword(keyword) {
+      this.localKeyword = keyword;
+      this.$emit('update-keyword', keyword);
     },
     handleDeleteSuccess() {
       this.$emit('toast', 'Purchase Order deleted successfully');
