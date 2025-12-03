@@ -42,6 +42,9 @@
                       <i class="ri-pencil-fill align-bottom"></i>
                     </b-button>
                   </template>
+                  <b-button @click="printPurchaseOrder" variant="secondary" v-b-tooltip.hover style="margin-right: -2px">
+                    <i class="ri-printer-line align-bottom"></i>
+                  </b-button>
                   <b-button @click="$inertia.visit('/inventory?tab=purchaseOrders')">
                     <i class="ri-arrow-left-line align-bottom"></i>
                   </b-button>
@@ -264,6 +267,9 @@ export default {
       setTimeout(() => {
         this.isToastVisible = false;
       }, 3000);
+    },
+    printPurchaseOrder() {
+      window.open(`/purchase-orders/${this.data.id}/print`, '_blank');
     },
   }
 };

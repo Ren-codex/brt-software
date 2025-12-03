@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\System\PurchaseOrder\PurchaseOrderClass as PurchaseOrderService;
 use App\Http\Requests\PurchaseOrderRequest;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PurchaseOrderController extends Controller
 {
@@ -106,5 +107,13 @@ class PurchaseOrderController extends Controller
     public function getNextPoNumber()
     {
         return response()->json(['po_number' => $this->purchaseOrder->generatePoNumber()]);
+    }
+
+    public function print($id)
+    {
+        $purchase_order = $this->purchaseOrder->view($id);
+        $pdf = Pdf::loadView('prints.purchase-order', compact('purchase_order'));
+
+        return $pdf->stream('purchase-order-' . $purchase_order->po_number . '.pdf');
     }
 }
