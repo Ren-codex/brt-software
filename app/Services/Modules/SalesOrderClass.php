@@ -29,7 +29,7 @@ class SalesOrderClass
 
 
     public function save($request){
-        $so_number = 'SO-' . str_pad(SalesOrder::max('id') + 1, 6, '0', STR_PAD_LEFT);
+        $so_number = SalesOrder::generateSONumber();
         $data = SalesOrder::create([
             'so_number' => $so_number,
             'customer_id' => $request->customer_id,
