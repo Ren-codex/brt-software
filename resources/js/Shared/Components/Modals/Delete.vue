@@ -1,11 +1,11 @@
 <template>
     <b-modal v-model="showModal" size="md" header-class="p-3 bg-light" :title="'Delete '+ title" class="v-modal-custom" modal-class="zoomIn" centered no-close-on-backdrop>
-        
+  
         <div class="text-center p-5">
              <h1> <i class="ri-alert-fill align-bottom text-warning" style="font-size: 60px;"></i></h1>
             <h5>Are you sure you want to delete this {{title}}? </h5>
         </div>
-    </div>
+    </b-modal>
 </template>
 <script>
 

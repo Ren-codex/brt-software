@@ -89,6 +89,9 @@
 
                                       <td class="text-center">
                                           <div class="d-flex justify-content-center gap-1">
+                                              <b-button @click="onPrint(list.id)" variant="secondary" v-b-tooltip.hover title="Print" size="sm" class="btn-icon">
+                                                  <i class="ri-printer-line"></i>
+                                              </b-button>
                                               <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                   <i class="ri-pencil-fill"></i>
                                               </b-button>
@@ -180,6 +183,9 @@ export default {
             this.$refs.delete.show(id , title, '/sales-orders');
         },
 
+        onPrint(id){
+            window.open(`/sales-orders/${id}?option=print&type=sales_order`);
+        },
 
         selectRow(index) {
             if (this.selectedRow === index) {

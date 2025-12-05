@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Modules;
 use App\Models\SalesOrder;
 use Illuminate\Http\Request;
 use App\Services\DropdownClass;
+use App\Services\PrintClass;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use App\Services\Modules\SalesOrderClass;
@@ -15,11 +16,12 @@ class SalesOrderController extends Controller
 {
     use HandlesTransaction;
 
-    public $sales_order,$dropdown;
+    public $sales_order,$dropdown , $print;
 
-    public function __construct(SalesOrderClass $sales_order, DropdownClass $dropdown){
+    public function __construct(SalesOrderClass $sales_order, DropdownClass $dropdown , PrintClass $print){
         $this->dropdown = $dropdown;
         $this->sales_order = $sales_order;
+        $this->print = $print;
     }
 
     public function index(Request $request){   
@@ -65,7 +67,11 @@ class SalesOrderController extends Controller
             'status' => $result['status'],
         ]);
 
-        
+    }
+
+
+    public function show($id , Request $request){
+        return $this->print->print($id, $request);
     }
 
     public function destroy($id){
