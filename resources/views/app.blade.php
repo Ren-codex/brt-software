@@ -7,7 +7,7 @@
         <meta name="description" content="BRT Accountitng Software">
         <meta name="keywords" content="BRT Accountitng Software">
         <meta name="author" content="Krad Jumli">
-        <meta property="og:title" content="STLIMS - Science & Technology Laboratory Information Management System">
+        <meta property="og:title" content="BRT Accounting Software">
         <link rel="shortcut icon" href="{{ URL::asset('images/logo-sm.png') }}">
         @vite(['resources/js/app.js'])
         @inertiaHead

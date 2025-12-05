@@ -17,14 +17,15 @@ return new class extends Migration
             $table->string('so_number',50)->unique();
             $table->date('order_date');
             $table->date('transferred_at')->nullable();
-            $table->date('payment_mode');
+            $table->string('payment_mode');
             $table->unsignedInteger('added_by_id');
             $table->foreign('added_by_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedInteger('transferred_to');
+            $table->unsignedInteger('transferred_to')->nullable();
             $table->foreign('transferred_to')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedInteger('customer_id');
-            $table->foreign('customer_id')->references('id')->on('list_units')->onDelete('cascade');
-            $table->boolean('is_active')->default('1');
+            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
+            $table->unsignedInteger('status_id');
+            $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->timestamps();
         });
     }

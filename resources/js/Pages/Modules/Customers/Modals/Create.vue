@@ -163,6 +163,11 @@ export default {
                 id: null,
                 name: null,
                 address: null,
+                contact_number: null,
+                email: null,
+                is_regular: 0,
+                is_active: 1,
+                is_blacklisted: 0,
                 option: 'lists'
             }),
             togglePassword: false,

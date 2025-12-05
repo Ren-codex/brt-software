@@ -63,7 +63,6 @@
                                      <th style="width: 12%;" class="text-center">Order Number</th>
                                       <th style="width: 12%;" class="text-center">Customer</th>
                                       <th style="width: 12%;" class="text-center">Date</th>
-                                      <th style="width: 10%;" class="text-center">Amount</th>
                                       <th style="width: 12%;" class="text-center">Status</th>
                                       <th style="width: 6%;" class="text-center">Actions</th>
                                   </tr>
@@ -78,15 +77,18 @@
                                         {{ index + 1}}
                                       </td>
 
-                                      <td class="text-center">{{ list.order_number }}</td>
-                                      <td class="text-center">{{ list.customer || '-' }}</td>
+                                      <td class="text-center">{{ list.so_number }}</td>
+                                      <td class="text-center">{{ list.customer.name || '-' }}</td>
                                       <td class="text-center">{{ list.created_at }}</td>
-                                          <td class="text-center">{{ list.amount }}</td>
-                                      <td class="text-center">{{ list.status }}</td>
+                                      <td class="text-center" >
+                                        <b-badge :style="{ 'background-color': list.status.bg_color, color: '#fff' }">
+                                        {{ list.status?.name }}
+                                        </b-badge>
+                                      </td>
                                     
 
-                                      <td class="text-end">
-                                          <div class="d-flex justify-content-end gap-1">
+                                      <td class="text-center">
+                                          <div class="d-flex justify-content-center gap-1">
                                               <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                   <i class="ri-pencil-fill"></i>
                                               </b-button>

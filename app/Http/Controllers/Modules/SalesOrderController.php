@@ -15,7 +15,7 @@ class SalesOrderController extends Controller
 {
     use HandlesTransaction;
 
-    public $role,$dropdown;
+    public $sales_order,$dropdown;
 
     public function __construct(SalesOrderClass $sales_order, DropdownClass $dropdown){
         $this->dropdown = $dropdown;
@@ -39,9 +39,38 @@ class SalesOrderController extends Controller
         }   
     }
 
-    public function store(SalesOrderRequest $request){
-        return $this->handleTransaction(function () use ($request) {
+    public function store(Request $request){
+        $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
+
+
+    public function update(Request $request){
+        $result = $this->handleTransaction(function () use ($request) {
+            return $this->sales_order->update($request);
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+
+        
+    }
+
+    public function destroy($id){
+        $result = $this->handleTransaction(function () use ($id) {
+            return $this->sales_order->delete($id);
         });
 
         return back()->with([

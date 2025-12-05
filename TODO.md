@@ -1,0 +1,2 @@
+- [ ] Add ref="amountComponent" to the Amount component in AddItem.vue
+- [ ] In the edit method, call this.$refs.amountComponent.emitValue(this.form.unit_cost) after setting form.unit_cost

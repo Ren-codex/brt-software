@@ -8,7 +8,7 @@ use App\Services\DropdownClass;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use App\Services\Modules\CustomerClass;
-use App\Http\Requests\Libraries\CustomerRequest;
+use App\Http\Requests\Modules\CustomerRequest;
 
 class CustomerController extends Controller
 {
@@ -36,8 +36,8 @@ class CustomerController extends Controller
         }
     }
 
-    public function store(Request $request){
-        return $this->handleTransaction(function () use ($request) {
+    public function store(CustomerRequest $request){
+        $result = $this->handleTransaction(function () use ($request) {
             return $this->customer->save($request);
         });
 
@@ -50,7 +50,7 @@ class CustomerController extends Controller
     }
 
     public function update(Request $request){
-        return $this->handleTransaction(function () use ($request) {
+        $result = $this->handleTransaction(function () use ($request) {
             return $this->customer->update($request);
         });
 
@@ -63,7 +63,7 @@ class CustomerController extends Controller
     }
 
     public function toggleActive(Request $request){
-        return $this->handleTransaction(function () use ($request) {
+        $result = $this->handleTransaction(function () use ($request) {
             return $this->customer->toggleActive($request);
         });
 

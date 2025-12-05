@@ -79,10 +79,9 @@
                         </div>
                     </div>
                     
-                
-
+            
                     <div class="text-end">
-                        <b-button @click="addItem()" size="sm" variant="secondary" class="mb-2">Add Item</b-button>
+                        <b-button :disabled="!form.customer_id || !form.payment_mode || !form.order_date" @click="addItem()" size="sm" variant="secondary" class="mb-2">Add Item</b-button>
                     </div>
                     <div class="form-row">
                         <table class="table align-middle table-striped table-centered mb-0">
@@ -101,7 +100,7 @@
                                   <tr v-for="(list,index) in form.items" v-bind:key="index" @click="selectRow(index)" :class="{
                                       'bg-info-subtle': index === selectedRow
                                   }">
-                                    <td class="text-center">
+                                    <td >
                                         {{ index + 1}}
                                     </td>
                                     <td class="text-center">{{ getBrand(list.brand_id) }}</td>
@@ -110,8 +109,8 @@
                                     <td class="text-center">{{ formatCurrency(list.quantity * list.unit_cost) }}</td>
                                     
 
-                                      <td class="text-end">
-                                          <div class="d-flex justify-content-end gap-1">
+                                      <td class="text-center">
+                                          <div class="d-flex justify-content-center gap-1">
                                               <b-button @click="editItem(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                   <i class="ri-pencil-fill"></i>
                                               </b-button>
@@ -146,7 +145,7 @@
         </div>
     </div>
 
-       <Item @add="fetch()" :dropdowns="dropdowns"  @items="storeItem" ref="item"/>
+       <Item @add="fetch()" :dropdowns="dropdowns"  @items="storeItem" @update="updateItem" :formatCurrency="formatCurrency()" ref="item"/>
 </template>
 
 <script>
@@ -192,9 +191,25 @@ export default {
             this.form.items.push(newItem);
         },
 
+        updateItem(updatedItem) {
+            const index = this.form.items.findIndex(item => item.id === updatedItem.id);
+            if (index !== -1) {
+                this.form.items.splice(index, 1, updatedItem);
+            }
+        },
+
+        addItem(){
+            this.$refs.item.show();
+        },
+
+        editItem(item, index ) {
+            this.$refs.item.edit(item, index);
+        },
+
         removeItem(id) {
             this.form.items = this.form.items.filter(item => item.id !== id);
         },
+
 
         show() {
             this.form.reset();
@@ -206,9 +221,17 @@ export default {
             this.form.id = data.id;
             this.form.payment_mode = data.payment_mode;
             this.form.order_date = data.order_date;
-            this.form.customer_id = data.customer_id;
+            this.form.customer_id = data.customer?.id;
             this.form.amount = data.amount;
             this.form.status_id = data.status_id;
+            this.form.items = data.items.map(item => ({
+                id: item.id || Date.now(), // ensure each item has a unique ID
+                brand_id: item.brand_id,
+                quantity: item.quantity,
+                unit_cost: item.unit_cost,
+                unit_id: item.unit_id,
+            }));
+            console.log(data.items , 33);
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
@@ -252,9 +275,8 @@ export default {
         },
 
 
-        addItem(){
-            this.$refs.item.show();
-        },
+    
+
 
         selectRow(index) {
             this.selectedRow = this.selectedRow === index ? null : index;

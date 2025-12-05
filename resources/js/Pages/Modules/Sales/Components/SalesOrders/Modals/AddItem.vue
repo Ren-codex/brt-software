@@ -1,6 +1,6 @@
 <template>
     <div 
-        v-if="showModal"
+        v-show="showModal"
         class="modal-overlay"
         :class="{ active: showModal }"
         @click.self="hide"
@@ -48,7 +48,7 @@
                                 <TextInput 
                                     type="number" 
                                     id="quantity" 
-                                    v-model="form.quantity" 
+                                    v-model.number="form.quantity" 
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.quantity }"
                                     placeholder="Enter Quantity"
@@ -66,6 +66,7 @@
                                     @amount="updateUnitCost($event)"
                                     :class="{ 'input-error': form.errors.unit_cost }"
                                     class="form-control"
+                                    ref="amountComponent"
                                 />
                             </div>
                             <span class="error-message" v-if="form.errors.unit_cost">{{ form.errors.unit_cost }}</span>
@@ -95,7 +96,8 @@
                         </div>
 
                     </div>
-                    
+
+  
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Item has been saved successfully!</span>
@@ -105,12 +107,14 @@
                             <i class="ri-close-line"></i>
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing">
+                        <button type="submit" class="btn btn-save" :disabled="form.processing || (!form.brand_id || form.quantity == 0 || form.unit_cost == 0 || !form.unit_id)">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
                             {{ form.processing ? 'Saving...' : 'Save Order' }}
                         </button>
                     </div>  
+
+
                 </form>
             </div>
         </div>
@@ -119,6 +123,7 @@
 
 <script>
 import { useForm } from '@inertiajs/vue3';
+import { nextTick } from 'vue';
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import Multiselect from '@/Shared/Components/Forms/Multiselect.vue';
@@ -126,15 +131,15 @@ import Amount from '@/Shared/Components/Forms/Amount.vue';
 
 export default {
     components: { InputLabel, TextInput, Multiselect, Amount },
-    props: ['dropdowns', 'items'],
+    props: ['dropdowns', 'items' , 'update' ],
     data() {
         return {
             currentUrl: window.location.origin,
             form: useForm({
                 id: null,
                 brand_id: null,
-                quantity: null,
-                unit_cost: null,
+                quantity: 0,
+                unit_cost: 0.00,
                 unit_id: null,
             }),
 
@@ -149,41 +154,48 @@ export default {
     methods: { 
         show() {
             this.form.reset();
+            this.$refs.amountComponent.emitValue(0.00);
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
         },
         edit(data, index) {
+            this.form.id = data.id;
             this.form.brand_id = data.brand_id;
             this.form.quantity = data.quantity;
-            this.form.unit_cost = data.unit_cost;
+            this.$refs.amountComponent.emitValue(data.unit_cost);
             this.form.unit_id = data.unit_id;
             this.form.total_amount = data.total_amount;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
+            console.log(data , 33);
         },
-        submit(index) {
-            if (this.editable) {
-                this.$emit('items', this.form);
-            } else {
-                const stored_item = {
-                    id: Date.now(),
-                    brand_id: this.form.brand_id,
-                    quantity: this.form.quantity,
-                    unit_cost: this.form.unit_cost,
-                    unit_id: this.form.unit_id,
-                    total_amount: this.form.amount,
-                };
+        submit() {
+            const itemData = {
+                id: this.form.id,
+                brand_id: this.form.brand_id,
+                quantity: this.form.quantity,
+                unit_cost: Number(this.form.unit_cost).toFixed(2), // 2 decimals
+                unit_id: this.form.unit_id,
+                total_amount: this.form.amount || 0,
+            };
 
-                this.$emit('items', stored_item);
+            if (this.editable) {
+                this.$emit('update', itemData );
+            } else {
+                itemData.id = Date.now();
+                this.$emit('items', itemData);
             }
+
             this.showModal = false;
         },
+
         handleInput(field) {
             this.form.errors[field] = false;
         },
         hide() {
+            this.form.unit_cost = null;
             this.form.reset();
             this.form.clearErrors();
             this.editable = false;
@@ -191,12 +203,24 @@ export default {
             this.showModal = false;
         },
 
-        updateUnitCost(value){
-            // Remove ₱ symbol and commas
-            const cleanValue = value.replace(/[₱,]/g, '');
-            
-            // Optional: convert to float
-            this.form.unit_cost = parseFloat(cleanValue || 0).toFixed(2);
+        updateUnitCost(value) {
+            if (typeof value === 'string') {
+                const cleanValue = value.replace(/[₱,]/g, '');
+                const num = parseFloat(cleanValue);
+                this.form.unit_cost = isNaN(num) ? 0 : num;
+            } else {
+                this.form.unit_cost = value || 0;
+            }
+        },
+
+
+
+        formatCurrency(value) {
+            if (!value) return '₱0.00';
+            return '₱' + Number(value).toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
         }
 
         

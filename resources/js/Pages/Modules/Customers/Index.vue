@@ -59,14 +59,14 @@
                               <thead class="table-light thead-fixed">
                                   <tr class="fs-11">
                                       <th style="width: 3%;">#</th>
-                                      <th style="width: 12%;" class="text-center">Name</th>
-                                      <th style="width: 12%;" class="text-center">Email</th>
-                                      <th style="width: 10%;" class="text-center">Contact</th>
-                                      <th style="width: 12%;" class="text-center">Address</th>
-                                      <th style="width: 6%;" class="text-center">Regular</th>
-                                      <th style="width: 6%;" class="text-center">Active</th>
-                                      <th style="width: 8%;" class="text-center">Created</th>
-                                      <th style="width: 8%;"></th>
+                                      <th style="width: 12%;" >Name</th>
+                                      <th style="width: 12%;" >Email</th>
+                                      <th style="width: 10%;" >Contact</th>
+                                      <th style="width: 12%;" >Address</th>
+                                      <th style="width: 6%;"  class="text-center">Regular</th>
+                                      <th style="width: 6%;" >Active</th>
+                                      <th style="width: 8%;" >Created</th>
+                                      <th style="width: 8%;" class="text-center">Actions</th>
                                   </tr>
                               </thead>
 
@@ -81,18 +81,18 @@
                                         {{ index + 1}}
                                       </td>
 
-                                      <td class="text-center">{{ list.name }}</td>
-                                      <td class="text-center">{{ list.email || '-' }}</td>
-                                      <td class="text-center">{{ list.contact_number }}</td>
-                                      <td class="text-center">{{ list.address }}</td>
+                                      <td >{{ list.name }}</td>
+                                      <td >{{ list.email || '-' }}</td>
+                                      <td >{{ list.contact_number }}</td>
+                                      <td >{{ list.address }}</td>
 
 
-                                      <td class="text-center">
+                                      <td  class="text-center">
                                         <i v-if="list.is_regular === 1" class="ri-check-line text-success fs-16"></i>
                                         <i v-else class="ri-close-line text-muted fs-16"></i>
                                       </td>
 
-                                      <td class="text-center">
+                                      <td >
                                         <b-form-checkbox
                                           :checked="list.is_active === 1"
                                           @change="toggleActive(list)"
@@ -101,12 +101,12 @@
                                         />
                                       </td>
 
-                                      <td class="text-center">
+                                      <td >
                                         {{ list.created_at }}
                                       </td>
 
-                                      <td class="text-end">
-                                          <div class="d-flex justify-content-end gap-1">
+                                      <td class="text-center">
+                                          <div class="d-flex justify-content-center gap-1">
                                               <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                   <i class="ri-pencil-fill"></i>
                                               </b-button>
