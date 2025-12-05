@@ -1,33 +1,9 @@
 <template>
-    <div
-        v-if="showModal"
-        class="modal-overlay"
-        :class="{ active: showModal }"
-        @click.self="hide"
-    >
-        <div class="modal-container" @click.stop>
-            <div class="modal-header">
-                <h2>Delete {{ title }}</h2>
-                <button class="close-btn" @click="hide">
-                    <i class="ri-close-line"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center p-4">
-                    <h1><i class="ri-alert-fill align-bottom text-warning" style="font-size: 60px;"></i></h1>
-                    <h5>Are you sure you want to delete this {{ title }}?</h5>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-cancel" @click="hide">
-                        <i class="ri-close-line"></i>
-                        Cancel
-                    </button>
-                    <button type="button" class="btn btn-danger" @click="submit()">
-                        <i class="ri-delete-bin-line"></i>
-                        Yes
-                    </button>
-                </div>
-            </div>
+    <b-modal v-model="showModal" size="md" header-class="p-3 bg-light" :title="'Delete '+ title" class="v-modal-custom" modal-class="zoomIn" centered no-close-on-backdrop>
+        
+        <div class="text-center p-5">
+             <h1> <i class="ri-alert-fill align-bottom text-warning" style="font-size: 60px;"></i></h1>
+            <h5>Are you sure you want to delete this {{title}}? </h5>
         </div>
     </div>
 </template>

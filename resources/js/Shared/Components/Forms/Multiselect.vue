@@ -31,4 +31,5 @@ export default {
 .multiselect-wrapper {
   background-color: #f5f6f7;
 }
+
 </style>
