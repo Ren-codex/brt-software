@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\InventoryStocks;
 use App\Models\PurchaseOrderItem;
 use App\Models\ReceivedStock;
 use App\Models\ReceivedItem;
 use App\Models\PurchaseOrder;
 use App\Models\ListStatus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class ReceivedStockService
 {
@@ -24,16 +26,18 @@ class ReceivedStockService
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
+            var_dump(Auth::id());
             $receivedStock = ReceivedStock::create([
                 'po_id' => $data['po_id'],
                 'supplier_id' => $data['supplier_id'],
                 'received_date' => $data['received_date'],
                 'batch_code' => $data['batch_code'],
+                'received_by_id' => Auth::id(),
             ]);
 
             if (isset($data['items'])) {
                 foreach ($data['items'] as $itemData) {
-                    ReceivedItem::create([
+                    $receivedItem = ReceivedItem::create([
                         'received_id' => $receivedStock->id,
                         'product_id' => $itemData['product_id'],
                         'quantity' => $itemData['quantity'],
@@ -47,6 +51,11 @@ class ReceivedStockService
                         $po_item->status = 'received';
                         $po_item->update();
                     }
+
+                    InventoryStocks::create([
+                        'received_item_id' => $receivedItem->id,
+                        'quantity' => $itemData['quantity'],
+                    ]);
                 }
             }
 

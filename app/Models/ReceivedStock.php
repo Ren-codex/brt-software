@@ -11,6 +11,7 @@ class ReceivedStock extends Model
         'supplier_id',
         'received_date',
         'batch_code',
+        'received_by_id',
     ];
 
     public function purchaseOrder()
@@ -26,5 +27,10 @@ class ReceivedStock extends Model
     public function items()
     {
         return $this->hasMany(ReceivedItem::class, 'received_id');
+    }
+
+    public function receivedBy()
+    {
+        return $this->belongsTo(User::class, 'received_by_id');
     }
 }
