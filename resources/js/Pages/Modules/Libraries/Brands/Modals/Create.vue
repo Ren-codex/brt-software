@@ -58,6 +58,7 @@ import { useForm } from '@inertiajs/vue3';
 import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
+import Swal from 'sweetalert2';
 
 export default {
     components: { InputLabel, TextInput, Multiselect },
@@ -80,7 +81,11 @@ export default {
     },
     methods: { 
         show() {
-            this.form.reset();
+            this.form.defaults({
+                id: null,
+                name: null,
+                option: '',
+                }).reset();
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
@@ -92,29 +97,35 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
         },
-        submit() {
+         submit() {
             if (this.editable) {
                 this.form.put(`/libraries/brands/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Brand updated successfully!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        this.$emit('add', true);
+                        this.hide();
                     },
                 });
             } else {
                 this.form.post('/libraries/brands', {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Brand created successfully!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        this.$emit('add', true);
+                        this.hide();
                     },
                 });
             }

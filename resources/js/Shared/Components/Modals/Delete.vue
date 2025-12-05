@@ -5,17 +5,7 @@
              <h1> <i class="ri-alert-fill align-bottom text-warning" style="font-size: 60px;"></i></h1>
             <h5>Are you sure you want to delete this {{title}}? </h5>
         </div>
-        <template v-slot:footer>
-            <b-button @click="hide()" variant="light" block>Cancel</b-button>
-            <b-button
-                @click="submit('ok')"
-                variant="danger"
-                block
-            >
-                <i class="ri-delete-bin-line"></i> Yes
-            </b-button>
-        </template>
-    </b-modal>
+    </div>
 </template>
 <script>
 

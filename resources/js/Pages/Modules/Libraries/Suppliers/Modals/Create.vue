@@ -173,6 +173,7 @@ import { useForm } from '@inertiajs/vue3';
 import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
+import Swal from 'sweetalert2';
 
 export default {
     components: { InputLabel, TextInput, Multiselect },
@@ -203,7 +204,17 @@ export default {
     },
     methods: { 
         show() {
-            this.form.reset();
+            this.form.defaults({
+                id: null,
+                name: null,
+                address: null,
+                contact_person: null,
+                contact_number: null,
+                birthdate: null,
+                email: null,
+                tin: null,
+                option: '',
+                }).reset();
             this.form.is_active = 1;
             this.form.is_blacklisted = 0;
             this.editable = false;
@@ -224,30 +235,36 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
         },
+        
         submit() {
             if (this.editable) {
                 this.form.put(`/libraries/suppliers/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Supplier updated successfully!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        this.$emit('add', true);
+                        this.hide();
                     },
                 });
             } else {
-                console.log(this.form);
                 this.form.post('/libraries/suppliers', {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Supplier created successfully!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        this.$emit('add', true);
+                        this.hide();
                     },
                 });
             }
