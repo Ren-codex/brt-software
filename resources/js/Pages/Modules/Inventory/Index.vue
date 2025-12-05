@@ -29,16 +29,7 @@
               class="nav-link"
               :class="{ active: activeTab === 'receivingStocks' }"
               @click.prevent="changeTab('receivingStocks')"
-              >Receiving of Stocks</a
-            >
-          </li>
-          <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'adjustmentStocks' }"
-              @click.prevent="changeTab('adjustmentStocks')"
-              >Adjustment of Stocks</a
+              >Stocks Management</a
             >
           </li>
         </ul>
@@ -69,13 +60,8 @@
         />
 
         <div v-if="activeTab === 'receivingStocks'" class="card shadow-sm p-3">
-          <h5>Receiving of Stocks</h5>
+          <h5>Stocks Management</h5>
           <p>Receiving stocks table or content goes here.</p>
-        </div>
-
-        <div v-if="activeTab === 'adjustmentStocks'" class="card shadow-sm p-3">
-          <h5>Adjustment of Stocks</h5>
-          <p>Adjustment stocks table or content goes here.</p>
         </div>
       </BCol>
     </BRow>

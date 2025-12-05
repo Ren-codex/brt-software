@@ -78,7 +78,11 @@
                     <td class="text-center">{{ list.po_date }}</td>
                     <td class="text-center">{{ list.supplier ? list.supplier.name : '' }}</td>
                     <td class="text-center">{{ list.total_amount }}</td>
-                    <td class="text-center">{{ list.status ? list.status.name : '' }}</td>
+                    <td class="text-center">
+                      <span :style="{ color: list.status?.text_color, backgroundColor: list.status?.bg_color, padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }">
+                        {{ list.status?.name }}
+                      </span>
+                    </td>
 
                     <td class="text-end">
                       <b-button @click="openView(list.id)" variant="success" class="me-1" v-b-tooltip.hover title="View" size="sm">

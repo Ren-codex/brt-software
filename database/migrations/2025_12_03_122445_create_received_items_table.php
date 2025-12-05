@@ -11,16 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('purchase_order_items', function (Blueprint $table) {
+        Schema::create('received_items', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('po_id');
-            $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('cascade');
+            $table->unsignedInteger('received_id');
+            $table->foreign('received_id')->references('id')->on('received_stocks')->onDelete('cascade');
             $table->unsignedInteger('product_id');
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            $table->integer('quantity');
-            $table->decimal('unit_cost', 10, 2);
-            $table->decimal('total_cost', 10, 2);
+            $table->decimal('quantity', 15, 4);
+            $table->decimal('unit_cost', 15, 4);
+            $table->decimal('total_cost', 15, 4);
+            $table->unsignedInteger('po_item_id');
+            $table->foreign('po_item_id')->references('id')->on('purchase_order_items')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -30,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchase_order_items');
+        Schema::dropIfExists('received_items');
     }
 };
