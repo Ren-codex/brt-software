@@ -11,16 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('purchase_order_items', function (Blueprint $table) {
+        Schema::create('received_stocks', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->unsignedInteger('po_id');
             $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('cascade');
-            $table->unsignedInteger('product_id');
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            $table->integer('quantity');
-            $table->decimal('unit_cost', 10, 2);
-            $table->decimal('total_cost', 10, 2);
+            $table->unsignedInteger('supplier_id');
+            $table->foreign('supplier_id')->references('id')->on('list_suppliers')->onDelete('cascade');
+            $table->date('received_date');
+            $table->string('batch_code');
             $table->timestamps();
         });
     }
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchase_order_items');
+        Schema::dropIfExists('received_stocks');
     }
 };
