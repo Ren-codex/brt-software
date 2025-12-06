@@ -202,6 +202,8 @@ namespace Aws;
  * @method \Aws\MultiRegionClient createMultiRegionComprehendMedical(array $args = [])
  * @method \Aws\ComputeOptimizer\ComputeOptimizerClient createComputeOptimizer(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionComputeOptimizer(array $args = [])
+ * @method \Aws\ComputeOptimizerAutomation\ComputeOptimizerAutomationClient createComputeOptimizerAutomation(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionComputeOptimizerAutomation(array $args = [])
  * @method \Aws\ConfigService\ConfigServiceClient createConfigService(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionConfigService(array $args = [])
  * @method \Aws\Connect\ConnectClient createConnect(array $args = [])
@@ -572,6 +574,10 @@ namespace Aws;
  * @method \Aws\MultiRegionClient createMultiRegionPI(array $args = [])
  * @method \Aws\Panorama\PanoramaClient createPanorama(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionPanorama(array $args = [])
+ * @method \Aws\PartnerCentralAccount\PartnerCentralAccountClient createPartnerCentralAccount(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionPartnerCentralAccount(array $args = [])
+ * @method \Aws\PartnerCentralBenefits\PartnerCentralBenefitsClient createPartnerCentralBenefits(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionPartnerCentralBenefits(array $args = [])
  * @method \Aws\PartnerCentralChannel\PartnerCentralChannelClient createPartnerCentralChannel(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionPartnerCentralChannel(array $args = [])
  * @method \Aws\PartnerCentralSelling\PartnerCentralSellingClient createPartnerCentralSelling(array $args = [])
@@ -650,6 +656,8 @@ namespace Aws;
  * @method \Aws\MultiRegionClient createMultiRegionRoute53(array $args = [])
  * @method \Aws\Route53Domains\Route53DomainsClient createRoute53Domains(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionRoute53Domains(array $args = [])
+ * @method \Aws\Route53GlobalResolver\Route53GlobalResolverClient createRoute53GlobalResolver(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionRoute53GlobalResolver(array $args = [])
  * @method \Aws\Route53Profiles\Route53ProfilesClient createRoute53Profiles(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionRoute53Profiles(array $args = [])
  * @method \Aws\Route53RecoveryCluster\Route53RecoveryClusterClient createRoute53RecoveryCluster(array $args = [])
@@ -825,7 +833,7 @@ namespace Aws;
  */
 class Sdk
 {
-    const VERSION = '3.362.1';
+    const VERSION = '3.364.0';
 
     /** @var array Arguments for creating clients */
     private $args;
