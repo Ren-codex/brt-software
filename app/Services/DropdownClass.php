@@ -83,7 +83,7 @@ class DropdownClass
         $data = Product::get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'name' => $item->name
+                'name' => $item->brand->name . ' ' . $item->pack_size  . $item->unit->name
             ];
         });
         return  $data;
