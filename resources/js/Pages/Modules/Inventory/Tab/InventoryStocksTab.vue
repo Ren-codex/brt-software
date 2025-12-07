@@ -30,43 +30,84 @@
             </div>
           </div>
 
-          <div class="table-section">
-            <div class="table-responsive" style="overflow: visible; max-height: none;">
-              <table class="table align-middle table-centered mb-0">
-                <thead>
-                  <tr>
-                    <th>Received Date</th>
-                    <th>Batch Code</th>
-                    <th>Supplier</th>
-                    <th>Product</th>
-                    <th>Unit Cost</th>
-                    <th>Quanity</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr v-for="(list,index) in listInventoryStocks" v-bind:key="index" @click="selectRow(index)" :class="{
-                    'bg-info-subtle': index === selectedRow
-                  }">
-                    <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
-                    <td>{{ list.received_item.received_stock.batch_code }}</td>
-                    <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
-                    <td>{{ list.received_item.product.name }}</td>
-                    <td>{{ number_format(list.received_item.unit_cost, 2) }}</td>
-                    <td>{{ list.quantity }}</td>
-                    <td>
-                      <div class="action-buttons">
-                        <button @click="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
-                          <i class="ri-eye-fill"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <BTabs>
+            <BTab title="Available Stocks">
+              <div class="table-section">
+                <div class="table-responsive" style="overflow: visible; max-height: none;">
+                  <table class="table align-middle table-centered mb-0">
+                    <thead>
+                      <tr>
+                        <th>Received Date</th>
+                        <th>Batch Code</th>
+                        <th>Supplier</th>
+                        <th>Product</th>
+                        <th>Unit Cost</th>
+                        <th>Quantity</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(list,index) in availableStocks" v-bind:key="list.id" @click="selectRow(list.id)" :class="{
+                        'bg-info-subtle': list.id === selectedRow
+                      }">
+                        <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
+                        <td>{{ list.received_item.received_stock.batch_code }}</td>
+                        <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
+                        <td>{{ list.received_item.product.name }}</td>
+                        <td>{{ number_format(list.received_item.unit_cost, 2) }}</td>
+                        <td>{{ list.quantity }}</td>
+                        <td>
+                          <div class="action-buttons">
+                            <button @click="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                              <i class="ri-eye-fill"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </BTab>
+            <BTab title="Consumed Stocks">
+              <div class="table-section">
+                <div class="table-responsive" style="overflow: visible; max-height: none;">
+                  <table class="table align-middle table-centered mb-0">
+                    <thead>
+                      <tr>
+                        <th>Received Date</th>
+                        <th>Batch Code</th>
+                        <th>Supplier</th>
+                        <th>Product</th>
+                        <th>Unit Cost</th>
+                        <th>Quantity</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(list,index) in consumedStocks" v-bind:key="list.id" @click="selectRow(list.id)" :class="{
+                        'bg-info-subtle': list.id === selectedRow
+                      }">
+                        <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
+                        <td>{{ list.received_item.received_stock.batch_code }}</td>
+                        <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
+                        <td>{{ list.received_item.product.name }}</td>
+                        <td>{{ number_format(list.received_item.unit_cost, 2) }}</td>
+                        <td>{{ list.quantity }}</td>
+                        <td>
+                          <div class="action-buttons">
+                            <button @click="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                              <i class="ri-eye-fill"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </BTab>
+          </BTabs>
 
           <div class="pagination-section">
             <Pagination v-if="meta" @fetch="$emit('fetch')" :lists="listInventoryStocks.length" :links="links" :pagination="meta" />
@@ -97,14 +138,22 @@ export default {
       localKeyword: this.filter.keyword,
     };
   },
+  computed: {
+    availableStocks() {
+      return this.listInventoryStocks.filter(stock => stock.quantity > 0);
+    },
+    consumedStocks() {
+      return this.listInventoryStocks.filter(stock => stock.quantity <= 0);
+    }
+  },
   watch: {
     'filter.keyword'(newVal) {
       this.localKeyword = newVal;
     }
   },
   methods: {
-    selectRow(index) {
-      this.selectedRow = this.selectedRow === index ? null : index;
+    selectRow(id) {
+      this.selectedRow = this.selectedRow === id ? null : id;
     },
     openView(id) {
       this.$inertia.visit(`/inventory-stocks/${id}`);

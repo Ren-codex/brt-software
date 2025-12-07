@@ -122,6 +122,14 @@ export default {
   },
   created() {
     this.fetchInventoryStocks();
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    console.log(tabParam);
+
+    if (tabParam) {
+      this.activeTab = tabParam;
+      this.changeTab(this.activeTab);
+    }
   },
   methods: {
     changeTab(tab) {

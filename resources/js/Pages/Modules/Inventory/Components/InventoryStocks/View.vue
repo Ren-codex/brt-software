@@ -27,6 +27,13 @@
               <h5 class="card-title mb-0 flex-grow-1">Inventory Stock #{{ data.id }}</h5>
               <div class="flex-shrink-0">
                 <div class="d-flex gap-2">
+                  <b-button
+                    v-if="data.quantity > 0"
+                    variant="primary"
+                    @click="adjustStock"
+                  >
+                    Adjust Stocks
+                  </b-button>
                   <b-button @click="$inertia.visit('/inventory?tab=inventoryStocks')">
                     <i class="ri-arrow-left-line align-bottom"></i>
                   </b-button>
@@ -100,14 +107,29 @@
         </div>
       </div>
     </div>
+
+    <AdjustStockModal
+      :inventoryStock="data"
+      @saved="$inertia.reload()"
+      ref="adjustStockDialog"
+    />
   </div>
 </template>
 
 <script>
+import AdjustStockModal from '../../Modal/AdjustStockModal.vue';
+
 export default {
+  components: {
+    AdjustStockModal,
+  },
   props: {
     inventory_stock_data: Object,
     dropdowns: Object,
+  },
+  data() {
+    return {
+    };
   },
   computed: {
     data() {
@@ -115,6 +137,9 @@ export default {
     },
   },
   methods: {
+    adjustStock() {
+      this.$refs.adjustStockDialog.show();
+    },
     formatDate(date) {
       return new Date(date).toLocaleDateString();
     },
