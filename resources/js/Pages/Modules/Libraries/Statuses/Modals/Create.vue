@@ -106,6 +106,7 @@ import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import ColorInput from '@/Shared/Components/Forms/ColorInput.vue';
+import Swal from 'sweetalert2';
 
 export default {
     components: { InputLabel, TextInput, ColorInput, Multiselect },
@@ -131,7 +132,14 @@ export default {
     },
     methods: { 
         show() {
-            this.form.reset();
+            this.form.defaults({
+                id: null,
+                name: null,
+                description: null,
+                 text_color: null,
+                bg_color: null,
+                option: '',
+                }).reset();
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
@@ -152,25 +160,30 @@ export default {
                 this.form.put(`/libraries/statuses/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Status updated successfully!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        this.$emit('add', true);
+                        this.hide();
                     },
                 });
             } else {
-                console.log(this.form);
                 this.form.post('/libraries/statuses', {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Status created successfully!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        this.$emit('add', true);
+                        this.hide();
                     },
                 });
             }

@@ -1,0 +1,18 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class InventoryStocks extends Model
+{
+    protected $fillable = [
+        'received_item_id',
+        'quantity',
+    ];
+
+    public function receivedItem()
+    {
+        return $this->belongsTo(ReceivedItem::class);
+    }
+}

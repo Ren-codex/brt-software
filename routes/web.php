@@ -12,6 +12,9 @@ Route::get('/landing', function () {
 
 Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('/sales', App\Http\Controllers\Modules\SalesController::class);
+    Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
+    Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
 
     Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
@@ -29,6 +32,8 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
         Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus']);
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'print']);
+        Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
+        Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);
     });
 });
 

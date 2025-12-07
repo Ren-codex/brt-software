@@ -76,6 +76,7 @@ import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import TextArea from '@/Shared/Components/Forms/Textarea.vue';
+import Swal from 'sweetalert2';
 
 export default {
     components: { InputLabel, TextInput, TextArea, Multiselect },
@@ -96,9 +97,13 @@ export default {
             saveSuccess: false,
         }
     },
-    methods: { 
-        show() {
-            this.form.reset();
+        methods: { 
+            show() {
+            this.form.defaults({
+                id: null,
+                name: null,
+                description: null,
+                }).reset();
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
@@ -117,25 +122,30 @@ export default {
                 this.form.put(`/libraries/units/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Unit updated successfully!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        this.$emit('add', true);
+                        this.hide();
                     },
                 });
             } else {
-                console.log(this.form);
                 this.form.post('/libraries/units', {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        this.saveSuccess = true;
-                        setTimeout(() => {
-                            this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Unit created successfully!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        this.$emit('add', true);
+                        this.hide();
                     },
                 });
             }

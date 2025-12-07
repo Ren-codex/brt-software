@@ -53,7 +53,7 @@
                                     <td>
                                         <select
                                             v-model="item.product_id"
-                                            class="form-control"
+                                            class="create-purchase-form"
                                             :class="{ 'input-error': form.errors[`items.${index}.product_id`] }"
                                             @change="handleInput(`items.${index}.product_id`)"
                                         >
@@ -65,7 +65,7 @@
                                         <input
                                             type="number"
                                             v-model="item.quantity"
-                                            class="form-control"
+                                            class="create-purchase-form"
                                             :class="{ 'input-error': form.errors[`items.${index}.quantity`] }"
                                             @input="calculateTotal(item); handleInput(`items.${index}.quantity`)"
                                             step="1"
@@ -78,7 +78,7 @@
                                             type="number"
                                             step="0.01"
                                             v-model="item.unit_cost"
-                                            class="form-control"
+                                            class="create-purchase-form"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
                                             @input="calculateTotal(item); handleInput(`items.${index}.unit_cost`)"
                                             required
@@ -89,7 +89,7 @@
                                             type="number"
                                             step="0.01"
                                             v-model="item.total_cost"
-                                            class="form-control"
+                                            class="create-purchase-form"
                                             readonly
                                         >
                                     </td>

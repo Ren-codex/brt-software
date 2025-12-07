@@ -34,6 +34,13 @@
                   >
                     Approval
                   </b-button>
+                  <b-button
+                    v-if="data.status?.name === 'approved'"
+                    variant="primary"
+                    @click="receiveStock"
+                  >
+                    Receive Stock
+                  </b-button>
                   <template v-if="data.status?.name === 'pending' && data.created_by_id === $page.props.user.id">
                     <b-button @click="onDelete" variant="danger" v-b-tooltip.hover title="Delete" style="margin-right: -10px">
                       <i class="ri-delete-bin-line align-bottom"></i>
@@ -108,6 +115,7 @@
                         <th>Quantity</th>
                         <th>Unit Cost</th>
                         <th>Total Cost</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -117,6 +125,7 @@
                         <td>{{ Math.floor(item.quantity) }}</td>
                         <td>{{ formatCurrency(item.unit_cost) }}</td>
                         <td>{{ formatCurrency(item.total_cost) }}</td>
+                        <td>{{ item.status == 'received' ? item.status : '' }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -155,6 +164,7 @@
   </div>
 
   <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="handleEditSuccess" />
+  <CreateReceivedStockModal ref="receiveModal" :dropdowns="dropdowns" :purchaseOrder="data" @add="handleReceiveSuccess" />
   <Delete ref="delete" @delete="handleDeleteSuccess" />
 
   <b-modal v-model="showModal" title="Approve Purchase Order" size="lg" centered hide-footer>
@@ -186,11 +196,13 @@
 
 <script>
 import CreatePurchaseOrderModal from '../Inventory/Modal/CreatePurchaseOrderModal.vue';
+import CreateReceivedStockModal from '../Inventory/Modal/CreateReceivedStockModal.vue';
 import Delete from '@/Shared/Components/Modals/Delete.vue';
 
 export default {
   components: {
     CreatePurchaseOrderModal,
+    CreateReceivedStockModal,
     Delete,
   },
   props: {
@@ -240,6 +252,17 @@ export default {
     },
     handleEditSuccess() {
       this.$inertia.reload();
+    },
+    receiveStock() {
+      this.$refs.receiveModal.show();
+    },
+    handleReceiveSuccess(status) {
+      if(status == 'success') {
+        this.showToast('Stock received successfully');
+        this.$inertia.reload();
+      } else {
+        this.showToast('Failed to receive stock');
+      }
     },
     updateStatus(status) {      
       this.$inertia.put(`/purchase-orders/${this.data.id}/status`, {

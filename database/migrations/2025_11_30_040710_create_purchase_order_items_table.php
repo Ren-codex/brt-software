@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('cascade');
             $table->unsignedInteger('product_id');
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            $table->decimal('quantity', 10, 2);
+            $table->integer('quantity');
             $table->decimal('unit_cost', 10, 2);
             $table->decimal('total_cost', 10, 2);
             $table->timestamps();

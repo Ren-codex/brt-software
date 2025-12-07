@@ -12,6 +12,7 @@ class PurchaseOrderItem extends Model
         'quantity',
         'unit_cost',
         'total_cost',
+        'status',
     ];
 
     public function purchaseOrder()
