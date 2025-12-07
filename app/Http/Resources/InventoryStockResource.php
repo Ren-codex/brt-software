@@ -14,6 +14,7 @@ class InventoryStockResource extends JsonResource
             'received_item' => $this->receivedItem ? new ReceivedItemResource($this->receivedItem) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'inventory_adjustments' => $this->inventoryAdjustments ? InventoryAdjustmentResource::collection($this->inventoryAdjustments) : [],
         ];
     }
 }

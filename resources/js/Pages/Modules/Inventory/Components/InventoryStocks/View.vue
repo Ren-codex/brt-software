@@ -88,19 +88,43 @@
                       <p class="text-muted">{{ formatCurrency((data.received_item?.unit_cost || 0) * data.quantity) }}</p>
                     </div>
                   </div>
+                  <div>
+                    <label class="form-label mb-3">Additional Information</label>
+                    <div class="mb-3">
+                      <label class="form-label">Created At</label>
+                      <p class="text-muted">{{ formatDate(data.created_at) }}</p>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Updated At</label>
+                      <p class="text-muted">{{ formatDate(data.updated_at) }}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div class="col-lg-4">
-                <label class="form-label mb-3">Additional Information</label>
-                <div class="mb-3">
-                  <label class="form-label">Created At</label>
-                  <p class="text-muted">{{ formatDate(data.created_at) }}</p>
+                <label class="form-label mb-3">Inventory Adjustment Logs</label>
+                <div class="table-responsive" v-if="data.inventory_adjustments && data.inventory_adjustments.length">
+                  <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Quantity</th>
+                        <th>Reason</th>
+                        <th>Adjusted By</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(log, index) in data.inventory_adjustments" :key="log.id">
+                        <td>{{ formatDate(log.adjustment_date) }}</td>
+                        <td>{{ log.previous_quantity }} → {{ log.new_quantity }}</td>
+                        <td>{{ log.reason }}</td>
+                        <td>{{ log.received_by ? log.received_by.name : 'N/A' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <div class="mb-3">
-                  <label class="form-label">Updated At</label>
-                  <p class="text-muted">{{ formatDate(data.updated_at) }}</p>
-                </div>
+                <p v-else>No transaction logs available.</p>
               </div>
             </div>
           </div>

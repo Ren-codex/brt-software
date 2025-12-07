@@ -11,7 +11,7 @@ class InventoryStockClass
     public function lists($request)
     {
         $data = InventoryStockResource::collection(
-            InventoryStocks::with('receivedItem.product')
+            InventoryStocks::with('receivedItem.product', 'inventoryAdjustments')
                 ->when($request->keyword, function ($query, $keyword) {
                     $query->whereHas('receivedItem.product', function ($q) use ($keyword) {
                         $q->where('name', 'LIKE', "%{$keyword}%");
@@ -25,7 +25,7 @@ class InventoryStockClass
 
     public function view($id)
     {
-        $inventoryStock = InventoryStocks::findOrFail($id);
+        $inventoryStock = InventoryStocks::with('inventoryAdjustments')->findOrFail($id);
         return new InventoryStockResource($inventoryStock);
     }
 }

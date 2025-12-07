@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\System\User\ViewResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,7 +22,7 @@ class InventoryAdjustmentResource extends JsonResource
             'previous_quantity' => $this->previous_quantity,
             'reason' => $this->reason,
             'adjustment_date' => $this->adjustment_date,
-            'adjusted_by' => $this->adjustedBy,
+            'received_by' => $this->adjustedBy ? new ViewResource($this->adjustedBy) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
