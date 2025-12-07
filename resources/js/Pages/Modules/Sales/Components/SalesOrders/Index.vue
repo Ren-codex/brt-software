@@ -62,6 +62,7 @@
                                       <th style="width: 3%;">#</th>
                                      <th style="width: 12%;" class="text-center">Order Number</th>
                                       <th style="width: 12%;" class="text-center">Customer</th>
+                                        <th style="width: 12%;" class="text-center">Product</th>
                                       <th style="width: 12%;" class="text-center">Date</th>
                                       <th style="width: 12%;" class="text-center">Status</th>
                                       <th style="width: 6%;" class="text-center">Actions</th>
@@ -78,7 +79,8 @@
                                       </td>
 
                                       <td class="text-center">{{ list.so_number }}</td>
-                                      <td class="text-center">{{ list.customer.name || '-' }}</td>
+                                        <td class="text-center">{{ list.customer.name || '-' }}</td>
+                                      <td class="text-center">{{ list.product.name|| '-' }}</td>
                                       <td class="text-center">{{ list.created_at }}</td>
                                       <td class="text-center" >
                                         <b-badge :style="{ 'background-color': list.status.bg_color, color: '#fff' }">

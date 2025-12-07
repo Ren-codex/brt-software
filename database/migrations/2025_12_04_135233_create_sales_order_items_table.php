@@ -16,10 +16,8 @@ return new class extends Migration
             $table->increments('id');
             $table->integer('quantity');
             $table->decimal('unit_cost', 15, 2);
-            $table->unsignedInteger('unit_id');
-            $table->foreign('unit_id')->references('id')->on('list_units')->onDelete('cascade');
-            $table->unsignedInteger('brand_id');
-            $table->foreign('brand_id')->references('id')->on('list_brands')->onDelete('cascade');
+            $table->unsignedInteger('product_id');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             $table->unsignedInteger('sales_order_id');
             $table->foreign('sales_order_id')->references('id')->on('sales_orders')->onDelete('cascade');
             $table->timestamps();

@@ -13,10 +13,6 @@ class SalesOrderClass
         $data = SalesOrderResource::collection(
             SalesOrder::when($request->keyword, function ($query,$keyword) {
                     $query->where('name', 'LIKE', "%{$keyword}%")
-                          ->orWhere('name', 'LIKE', "%{$keyword}%")
-                          ->orWhere('address', 'LIKE', "%{$keyword}%")
-                          ->orWhere('contact_number', 'LIKE', "%{$keyword}%")   
-                          ->orWhere('email', 'LIKE', "%{$keyword}%")
                           ->orWhereHas('status', function($q) use ($keyword){
                               $q->where('name', 'LIKE', "%{$keyword}%");
                           });
@@ -43,8 +39,7 @@ class SalesOrderClass
 
         foreach($request->items as $item){
             $data->items()->create([
-                'brand_id' => $item['brand_id'],
-                'unit_id' => $item['unit_id'],
+                'product_id' => $item['product_id'],
                 'quantity' => $item['quantity'],
                 'unit_cost' => $item['unit_cost'],
             ]);
