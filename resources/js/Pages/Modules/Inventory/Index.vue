@@ -9,9 +9,9 @@
             <a
               href="#"
               class="nav-link"
-              :class="{ active: activeTab === 'products' }"
-              @click.prevent="changeTab('products')"
-              >Product List</a
+              :class="{ active: activeTab === 'inventoryStocks' }"
+              @click.prevent="changeTab('inventoryStocks')"
+              >Inventory Stocks</a
             >
           </li>
           <li class="nav-item">
@@ -27,9 +27,9 @@
             <a
               href="#"
               class="nav-link"
-              :class="{ active: activeTab === 'receivingStocks' }"
-              @click.prevent="changeTab('receivingStocks')"
-              >Stocks Management</a
+              :class="{ active: activeTab === 'products' }"
+              @click.prevent="changeTab('products')"
+              >Product List</a
             >
           </li>
         </ul>
@@ -59,10 +59,17 @@
           @toast="showToast"
         />
 
-        <div v-if="activeTab === 'receivingStocks'" class="card shadow-sm p-3">
-          <h5>Stocks Management</h5>
-          <p>Receiving stocks table or content goes here.</p>
-        </div>
+        <InventoryStocksTab
+          v-if="activeTab === 'inventoryStocks'"
+          :listInventoryStocks="listInventoryStocks"
+          :meta="meta"
+          :links="links"
+          :filter="filter"
+          :dropdowns="dropdowns"
+          @fetch="fetchInventoryStocks"
+          @update-keyword="updateKeyword"
+          @toast="showToast"
+        />
       </BCol>
     </BRow>
 
@@ -81,19 +88,21 @@ import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
+import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 
 export default {
   name: "InventoryManagement",
-  components: { PageHeader, PurchaseOrdersTab, ProductsTab },
+  components: { PageHeader, PurchaseOrdersTab, ProductsTab, InventoryStocksTab },
   props: ['dropdowns'],
   data() {
     return {
-      activeTab: 'products',
+      activeTab: 'inventoryStocks',
       filter: {
         keyword: '',
       },
       listProducts: [],
       listPurchaseOrders: [],
+      listInventoryStocks: [],
       meta: null,
       links: null,
       isToastVisible: false,
@@ -106,11 +115,13 @@ export default {
         this.fetchProducts();
       } else if (newVal === 'purchaseOrders') {
         this.fetchPurchaseOrders();
+      } else if (newVal === 'inventoryStocks') {
+        this.fetchInventoryStocks();
       }
     }
   },
   created() {
-    this.fetchProducts();
+    this.fetchInventoryStocks();
   },
   methods: {
     changeTab(tab) {
@@ -173,6 +184,31 @@ export default {
       setTimeout(() => {
         this.isToastVisible = false;
       }, 3000);
+    },
+    fetchInventoryStocks(page_url) {
+      if (this.activeTab === 'inventoryStocks') {
+        page_url = page_url || '/inventory-stocks';
+        axios
+          .get(page_url, {
+            params: {
+              keyword: this.filter.keyword,
+              count: 10,
+              option: 'lists',
+            },
+          })
+          .then((response) => {
+            if (response) {
+              this.listInventoryStocks = response.data.data;
+              this.meta = response.data.meta;
+              this.links = response.data.links;
+            }
+          })
+          .catch((err) => console.error(err));
+      } else {
+        this.listInventoryStocks = [];
+        this.meta = null;
+        this.links = null;
+      }
     },
   },
 };

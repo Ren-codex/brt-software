@@ -34,6 +34,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO']);
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);
+        Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class);
     });
 });
 
