@@ -189,7 +189,7 @@ export default {
       const item = this.editableItems[index];
       const totalCost = item.editable_quantity * item.editable_unit_cost;
       this.form.items.push({
-        product_id: item.product_id,
+        product_id: item.product.id,
         quantity: item.editable_quantity,
         unit_cost: item.editable_unit_cost,
         total_cost: totalCost,
