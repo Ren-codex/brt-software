@@ -41,6 +41,7 @@
                   <tr>
                     <th>#</th>
                     <th>Name</th>
+                    <th>Pack Size</th>
                     <th>Unit</th>
                     <th>Active</th>
                     <th>Actions</th>
@@ -53,7 +54,8 @@
                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                   }">
                     <td>{{ index + 1}}</td>
-                    <td>{{ list.name }}</td>
+                    <td>{{ list.brand.name }}</td>
+                    <td>{{ list.pack_size }}</td>
                     <td>{{ list.unit.name }}</td>
                     <td>
                       <b-form-checkbox

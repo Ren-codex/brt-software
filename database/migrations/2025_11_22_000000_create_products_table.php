@@ -16,7 +16,6 @@ class CreateProductsTable extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->string('name');
             $table->unsignedInteger('unit_id');
             $table->foreign('unit_id')->references('id')->on('list_units')->onDelete('cascade');
             $table->boolean('is_active')->default('1');
