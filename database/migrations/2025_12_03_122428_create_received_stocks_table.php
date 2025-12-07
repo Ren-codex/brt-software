@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedInteger('supplier_id');
             $table->foreign('supplier_id')->references('id')->on('list_suppliers')->onDelete('cascade');
             $table->date('received_date');
-            $table->string('batch_code');
+            $table->string('batch_code')->unique();
             $table->timestamps();
         });
     }

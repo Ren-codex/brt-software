@@ -21,7 +21,7 @@ class ListStatusesTableSeeder extends Seeder
             0 => 
             array (
                 'id' => 1,
-                'name' => 'Active',
+                'name' => 'Pending',
                 'description' => 'Active status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#28a745',
@@ -31,7 +31,7 @@ class ListStatusesTableSeeder extends Seeder
             1 => 
             array (
                 'id' => 2,
-                'name' => 'Inactive',
+                'name' => 'Cancelled',
                 'description' => 'Inactive status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#6c757d',
@@ -41,7 +41,18 @@ class ListStatusesTableSeeder extends Seeder
             2 => 
             array (
                 'id' => 3,
-                'name' => 'Pending',
+                'name' => 'Sales Returned',
+                'description' => 'Pending status',
+                'text_color' => '#000000',
+                'bg_color' => '#ffc107',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            3 => 
+            array (
+                'id' => 4,
+                'name' => 'Allowance Applied',
                 'description' => 'Pending status',
                 'text_color' => '#000000',
                 'bg_color' => '#ffc107',

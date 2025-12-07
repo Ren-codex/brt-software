@@ -18,6 +18,8 @@ return new class extends Migration
             $table->date('order_date');
             $table->date('transferred_at')->nullable();
             $table->string('payment_mode');
+            $table->unsignedInteger('received_id');
+            $table->foreign('received_id')->references('id')->on('received_stocks')->onDelete('cascade');
             $table->unsignedInteger('added_by_id');
             $table->foreign('added_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedInteger('transferred_to')->nullable();

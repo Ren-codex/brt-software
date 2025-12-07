@@ -32,6 +32,7 @@ class SalesOrderClass
         $so_number = SalesOrder::generateSONumber();
         $data = SalesOrder::create([
             'so_number' => $so_number,
+            'received_id' => $request->batch_code,
             'customer_id' => $request->customer_id,
             'payment_mode' => $request->payment_mode,
             'order_date' => $request->order_date,
@@ -60,6 +61,7 @@ class SalesOrderClass
     public function update($request){
         $data = SalesOrder::findOrFail($request->id);
         $data->update([
+            'received_id' => $request->batch_code,
             'customer_id' => $request->customer_id,
             'payment_mode' => $request->payment_mode,
             'order_date' => $request->order_date,
@@ -83,9 +85,11 @@ class SalesOrderClass
         ];
     }
 
-    public function delete($id){
+    public function cancel($id){
         $data = SalesOrder::findOrFail($id);
-        $data->delete();
+        $data->update([
+            'status_id' => 2, //set to cancelled
+        ]);
 
         return [
             'data' => $data,

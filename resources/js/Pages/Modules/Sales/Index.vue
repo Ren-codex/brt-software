@@ -15,15 +15,7 @@
               >Sales Orders</a
             >
           </li>
-          <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'sales_returns' }"
-              @click.prevent="changeTab('sales_returns')"
-              >Sales Returns</a
-            >
-          </li>
+
           <li class="nav-item">
             <a
               href="#"
@@ -51,10 +43,6 @@
           <SalesOrders :dropdowns="dropdowns"/>
         </div>
 
-        <div v-if="activeTab === 'sales_returns'" class="card shadow-sm p-3">
-          <h5>Sales Returns</h5>
-          <p>sales returns table or content goes here.</p>
-        </div>
 
         <div v-if="activeTab === 'ar_invoices'" class="card shadow-sm p-3">
           <h5>Account Receivable Invoices</h5>
