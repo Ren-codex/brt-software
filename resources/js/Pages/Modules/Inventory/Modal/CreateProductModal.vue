@@ -17,22 +17,43 @@
                     <i class="ri-checkbox-circle-fill"></i>
                     <span>Your information has been saved successfully!</span>
                 </div>
+                <div class="error-alert" v-if="form.errors.duplicate">
+                    <i class="ri-close-circle-fill"></i>
+                    <span>{{ form.errors.duplicate }}</span>
+                </div>
                 <form @submit.prevent="submit">
                     <div class="form-group">
-                        <label for="name" class="form-label">Product Name</label>
+                        <label for="brand_id" class="form-label">Brand</label>
                         <div class="input-wrapper">
-                            <i class="ri-archive-line input-icon"></i>
-                            <input
-                                type="text"
-                                id="name"
-                                v-model="form.name"
+                            <i class="ri-price-tag-3-line input-icon"></i>
+                            <select
+                                v-model="form.brand_id"
                                 class="form-control"
-                                :class="{ 'input-error': form.errors.name }"
-                                placeholder="Enter product name"
-                                @input="handleInput('name')"
+                                :class="{ 'input-error': form.errors.brand_id }"
+                                @change="handleInput('brand_id')"
+                            >
+                                <option value="" disabled>Select Brand</option>
+                                <option v-for="unit in dropdowns.brands" :value="unit.value" :key="unit.value">{{ unit.name }}</option>
+                            </select>
+                        </div>
+                        <span class="error-message" v-if="form.errors.brand_id">{{ form.errors.brand_id }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pack_size" class="form-label">Pack Size</label>
+                        <div class="input-wrapper">
+                            <i class="ri-inbox-unarchive-line input-icon"></i>
+                            <input
+                                type="number"
+                                id="pack_size"
+                                v-model="form.pack_size"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.pack_size }"
+                                placeholder="Enter product pack size"
+                                @input="handleInput('pack_size')"
                             >
                         </div>
-                        <span class="error-message" v-if="form.errors.name">{{ form.errors.name }}</span>
+                        <span class="error-message" v-if="form.errors.pack_size">{{ form.errors.pack_size }}</span>
                     </div>
 
                     <div class="form-group">
@@ -82,8 +103,9 @@ export default {
         return {
             form: useForm({
                 id: null,
-                name: null,
+                pack_size: null,
                 unit_id: null,
+                brand_id: null,
             }),
             showModal: false,
             editable: false,
@@ -99,8 +121,9 @@ export default {
         },
         edit(data) {
             this.form.id = data.id;
-            this.form.name = data.name;
-            this.form.unit_id = data.unit_id;
+            this.form.pack_size = data.pack_size;
+            this.form.unit_id = data.unit.id;
+            this.form.brand_id = data.brand.id;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;

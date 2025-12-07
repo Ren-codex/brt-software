@@ -10,9 +10,13 @@ class ProductClass
     public function lists($request)
     {
         $data = ProductResource::collection(
-            Product::with('unit')
+            Product::with('unit', 'brand')
                 ->when($request->keyword, function ($query, $keyword) {
-                    $query->where('name', 'LIKE', "%{$keyword}%");
+                    $query->where(function ($q) use ($keyword) {
+                        $q->whereHas('brand', function ($qb) use ($keyword) {
+                            $qb->where('name', 'LIKE', "%{$keyword}%");
+                        })->orWhere('pack_size', 'LIKE', "%{$keyword}%");
+                    });
                 })
                 ->orderBy('created_at', 'DESC')
                 ->paginate($request->count)
@@ -23,8 +27,9 @@ class ProductClass
     public function save($request)
     {
         $data = Product::create([
-            'name' => $request->name,
+            'pack_size' => $request->pack_size,
             'unit_id' => $request->unit_id,
+            'brand_id' => $request->brand_id,
         ]);
 
         return [
@@ -38,8 +43,9 @@ class ProductClass
     {
         $data = Product::findOrFail($request->id);
         $data->update([
-            'name' => $request->name,
+            'pack_size' => $request->pack_size,
             'unit_id' => $request->unit_id,
+            'brand_id' => $request->brand_id,
         ]);
 
         return [

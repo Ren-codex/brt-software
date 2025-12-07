@@ -15,4 +15,9 @@ class InventoryStocks extends Model
     {
         return $this->belongsTo(ReceivedItem::class);
     }
+
+    public function inventoryAdjustments()
+    {
+        return $this->hasMany(InventoryAdjustment::class);
+    }
 }

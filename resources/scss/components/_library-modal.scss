@@ -337,6 +337,24 @@
     }
 }
 
+/* Error Alert */
+.error-alert {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideIn 0.5s ease-out;
+    border: 1px solid #f5c6cb;
+
+    i {
+        font-size: 1.5rem;
+    }
+}
+
 @keyframes slideIn {
     from {
         opacity: 0;

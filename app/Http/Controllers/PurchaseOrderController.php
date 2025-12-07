@@ -8,17 +8,19 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\System\PurchaseOrder\PurchaseOrderClass as PurchaseOrderService;
 use App\Http\Requests\PurchaseOrderRequest;
+use App\Services\PrintClass;
 
 class PurchaseOrderController extends Controller
 {
     use HandlesTransaction;
 
-    public $purchaseOrder, $dropdown;
+    public $purchaseOrder, $dropdown, $print;
 
-    public function __construct(PurchaseOrderService $purchaseOrder, DropdownClass $dropdown)
+    public function __construct(PurchaseOrderService $purchaseOrder, DropdownClass $dropdown, PrintClass $print)
     {
         $this->dropdown = $dropdown;
         $this->purchaseOrder = $purchaseOrder;
+        $this->print = $print;
     }
 
     public function index(Request $request)
@@ -80,7 +82,7 @@ class PurchaseOrderController extends Controller
 
     public function show($id)
     {
-        return inertia('Modules/PurchaseOrders/View', [
+        return inertia('Modules/Inventory/Components/PurchaseOrders/View', [
             'purchase_order_data' => $this->purchaseOrder->view($id),
             'dropdowns' => [
                 'suppliers' => $this->dropdown->suppliers(),
@@ -106,5 +108,10 @@ class PurchaseOrderController extends Controller
     public function getNextPoNumber()
     {
         return response()->json(['po_number' => $this->purchaseOrder->generatePoNumber()]);
+    }
+
+    public function printPO($id, Request $request)
+    {
+        return $this->print->print($id, $request);
     }
 }

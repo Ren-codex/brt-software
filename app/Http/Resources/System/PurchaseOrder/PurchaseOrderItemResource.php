@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\System\PurchaseOrder;
 
-use App\Http\Resources\Libraries\ProductResource;
-use App\Http\Resources\System\PurchaseOrder\PurchaseOrderItemResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Libraries\ProductResource;
 
-class ReceivedItemResource extends JsonResource
+class PurchaseOrderItemResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -18,12 +17,12 @@ class ReceivedItemResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'received_stock' => $this->receivedStock ? new ReceivedStockResource($this->receivedStock) : null,
-            'product' => $this->product ? new ProductResource($this->product) : null,
-            'purchase_order_item' => $this->purchaseOrderItem ? new PurchaseOrderItemResource($this->purchaseOrderItem) : null,
+            'po_id' => $this->po_id,
             'quantity' => $this->quantity,
             'unit_cost' => $this->unit_cost,
             'total_cost' => $this->total_cost,
+            'status' => $this->status,
+            'product' => $this->product ? new ProductResource($this->product) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
