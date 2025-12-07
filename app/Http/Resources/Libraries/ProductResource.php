@@ -10,12 +10,9 @@ class ProductResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'unit_id' => $this->unit_id,
-            'unit' => [
-                'id' => $this->unit->id ?? null,
-                'name' => $this->unit->name ?? null,
-            ],
+            'pack_size' => $this->pack_size,
+            'brand' => $this->brand ? new ListBrandResource($this->brand) : null,
+            'unit' => $this->unit ? new ListUnitResource($this->unit) : null,
             'is_active' => $this->is_active,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Libraries;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Product;
 
 class ProductRequest extends FormRequest
 {
@@ -14,18 +15,23 @@ class ProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|unique:products,name' . ($this->input('id') ? ',' . $this->input('id') : ''),
+            'pack_size' => 'required|integer|max:255',
             'unit_id' => 'required|exists:list_units,id',
+            'brand_id' => 'required|exists:list_brands,id',
         ];
     }
 
-    public function messages()
+    public function withValidator($validator)
     {
-        return [
-            'name.required' => 'This field is required',
-            'name.unique' => 'The name must be unique.',
-            'unit_id.required' => 'Please select a unit',
-            'unit_id.exists' => 'Selected unit is invalid',
-        ];
+        $validator->after(function ($validator) {
+            $existingProduct = Product::where('brand_id', $this->brand_id)
+                ->where('unit_id', $this->unit_id)
+                ->where('pack_size', $this->pack_size)
+                ->first();
+
+            if ($existingProduct) {
+                $validator->errors()->add('duplicate', 'A product with this brand, unit, and pack size already exists.');
+            }
+        });
     }
 }
