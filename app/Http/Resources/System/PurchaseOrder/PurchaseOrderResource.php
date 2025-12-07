@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\System\PurchaseOrder;
 
+use App\Http\Resources\System\User\ViewResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,8 +22,9 @@ class PurchaseOrderResource extends JsonResource
             'total_amount' => $this->total_amount,
             'status' => $this->status,
             'supplier' => $this->supplier,
-            'items' => $this->items,
-            'created_by' => $this->created_by,
+            'items' => $this->items ? PurchaseOrderItemResource::collection($this->items) : null,
+            'logs' => $this->logs ? PurchaseOrderLogResource::collection($this->logs) : null,
+            'created_by' => $this->created_by ? new ViewResource($this->created_by) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

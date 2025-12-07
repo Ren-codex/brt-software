@@ -1,2 +1,5 @@
-- [ ] Add ref="amountComponent" to the Amount component in AddItem.vue
-- [ ] In the edit method, call this.$refs.amountComponent.emitValue(this.form.unit_cost) after setting form.unit_cost
+# TODO for PurchaseOrderItem Resource Creation and Connection
+
+## Steps to Complete:
+1. Create PurchaseOrderItemResource.php in app/Http/Resources/System/PurchaseOrder/
+2. Update PurchaseOrderResource.php to import and use PurchaseOrderItemResource for the 'items' field

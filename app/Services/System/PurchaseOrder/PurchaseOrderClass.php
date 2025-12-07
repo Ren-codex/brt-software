@@ -15,14 +15,14 @@ class PurchaseOrderClass
 {
     public function list($request)
     {
-        $data = PurchaseOrder::with(['status', 'supplier', 'items.product'])->paginate($request->count ?? 10);
+        $data = PurchaseOrder::paginate($request->count ?? 10);
         return PurchaseOrderResource::collection($data);
     }
 
     public function view($id)
     {
-        $data = PurchaseOrder::with(['status', 'supplier', 'items.product', 'created_by.profile', 'logs', 'logs.user.profile'])->findOrFail($id);
-        return new ViewResource($data);
+        $data = PurchaseOrder::findOrFail($id);
+        return new PurchaseOrderResource($data);
     }
 
     public function save($request)

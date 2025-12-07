@@ -129,11 +129,11 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($purchase_order->items as $index => $item)
+            @foreach($items as $index => $item)
             <tr>
                 <td class="text-center">{{ $index + 1 }}</td>
-                <td>{{ $item->product->name }}</td>
-                <td class="text-center">{{ number_format($item->quantity, 2) }}</td>
+                <td>{{ $item->product->brand->name }}</td>
+                <td class="text-center">{{ number_format($item->quantity) }}</td>
                 <td class="text-center">{{ $item->product->unit->name ?? 'N/A' }}</td>
                 <td class="text-right">{{ number_format($item->unit_cost, 2) }}</td>
                 <td class="text-right">{{ number_format($item->total_cost, 2) }}</td>

@@ -8,18 +8,19 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\System\PurchaseOrder\PurchaseOrderClass as PurchaseOrderService;
 use App\Http\Requests\PurchaseOrderRequest;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\PrintClass;
 
 class PurchaseOrderController extends Controller
 {
     use HandlesTransaction;
 
-    public $purchaseOrder, $dropdown;
+    public $purchaseOrder, $dropdown, $print;
 
-    public function __construct(PurchaseOrderService $purchaseOrder, DropdownClass $dropdown)
+    public function __construct(PurchaseOrderService $purchaseOrder, DropdownClass $dropdown, PrintClass $print)
     {
         $this->dropdown = $dropdown;
         $this->purchaseOrder = $purchaseOrder;
+        $this->print = $print;
     }
 
     public function index(Request $request)
@@ -109,11 +110,8 @@ class PurchaseOrderController extends Controller
         return response()->json(['po_number' => $this->purchaseOrder->generatePoNumber()]);
     }
 
-    public function print($id)
+    public function printPO($id, Request $request)
     {
-        $purchase_order = $this->purchaseOrder->view($id);
-        $pdf = Pdf::loadView('prints.purchase-order', compact('purchase_order'));
-
-        return $pdf->stream('purchase-order-' . $purchase_order->po_number . '.pdf');
+        return $this->print->print($id, $request);
     }
 }

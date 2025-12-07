@@ -99,12 +99,12 @@
                   <div class="col-md-6">
                     <div class="mb-3">
                       <label class="form-label">Created By</label>
-                      <p class="text-muted">{{ data.created_by ? data.created_by.profile.name : 'N/A' }}</p>
+                      <p class="text-muted">{{ data.created_by ? data.created_by.name : 'N/A' }}</p>
                     </div>
                   </div>
                 </div>
                 <hr>
-
+                
                 <h6 class="mb-3">Items</h6>
                 <div class="table-responsive">
                   <table class="table table-bordered">
@@ -121,7 +121,7 @@
                     <tbody>
                       <tr v-for="(item, index) in data.items" :key="item.id">
                         <td>{{ index + 1 }}</td>
-                        <td>{{ item.product ? item.product.name : 'N/A' }}</td>
+                        <td>{{ item.product ? item.product.brand.name : 'N/A' }}</td>
                         <td>{{ Math.floor(item.quantity) }}</td>
                         <td>{{ formatCurrency(item.unit_cost) }}</td>
                         <td>{{ formatCurrency(item.total_cost) }}</td>
@@ -147,7 +147,7 @@
                     <tbody>
                       <tr v-for="(log, index) in data.logs" :key="log.id">
                         <td>{{ formatDate(log.created_at) }}</td>
-                        <td>{{ log.user ? log.user.profile.name : 'N/A' }}</td>
+                        <td>{{ log.user ? log.user.name : 'N/A' }}</td>
                         <td>{{ log.action }}</td>
                         <td>{{ log.remarks }}</td>
                       </tr>
@@ -292,7 +292,7 @@ export default {
       }, 3000);
     },
     printPurchaseOrder() {
-      window.open(`/purchase-orders/${this.data.id}/print`, '_blank');
+      window.open(`/purchase-orders/${this.data.id}/print?type=purchase_order`, '_blank');
     },
   }
 };
