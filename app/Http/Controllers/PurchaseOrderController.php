@@ -82,7 +82,7 @@ class PurchaseOrderController extends Controller
 
     public function show($id)
     {
-        return inertia('Modules/PurchaseOrders/View', [
+        return inertia('Modules/Inventory/Components/PurchaseOrders/View', [
             'purchase_order_data' => $this->purchaseOrder->view($id),
             'dropdowns' => [
                 'suppliers' => $this->dropdown->suppliers(),

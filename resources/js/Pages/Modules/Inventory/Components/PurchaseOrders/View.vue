@@ -195,8 +195,8 @@
 </template>
 
 <script>
-import CreatePurchaseOrderModal from '../Inventory/Modal/CreatePurchaseOrderModal.vue';
-import CreateReceivedStockModal from '../Inventory/Modal/CreateReceivedStockModal.vue';
+import CreatePurchaseOrderModal from '../../Modal/CreatePurchaseOrderModal.vue';
+import CreateReceivedStockModal from '../../Modal/CreateReceivedStockModal.vue';
 import Delete from '@/Shared/Components/Modals/Delete.vue';
 
 export default {
