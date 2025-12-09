@@ -13,10 +13,6 @@ class SalesOrderClass
         $data = SalesOrderResource::collection(
             SalesOrder::when($request->keyword, function ($query,$keyword) {
                     $query->where('name', 'LIKE', "%{$keyword}%")
-                          ->orWhere('name', 'LIKE', "%{$keyword}%")
-                          ->orWhere('address', 'LIKE', "%{$keyword}%")
-                          ->orWhere('contact_number', 'LIKE', "%{$keyword}%")   
-                          ->orWhere('email', 'LIKE', "%{$keyword}%")
                           ->orWhereHas('status', function($q) use ($keyword){
                               $q->where('name', 'LIKE', "%{$keyword}%");
                           });
@@ -32,6 +28,7 @@ class SalesOrderClass
         $so_number = SalesOrder::generateSONumber();
         $data = SalesOrder::create([
             'so_number' => $so_number,
+            'received_id' => $request->batch_code,
             'customer_id' => $request->customer_id,
             'payment_mode' => $request->payment_mode,
             'order_date' => $request->order_date,
@@ -42,8 +39,7 @@ class SalesOrderClass
 
         foreach($request->items as $item){
             $data->items()->create([
-                'brand_id' => $item['brand_id'],
-                'unit_id' => $item['unit_id'],
+                'product_id' => $item['product_id'],
                 'quantity' => $item['quantity'],
                 'unit_cost' => $item['unit_cost'],
             ]);
@@ -60,6 +56,7 @@ class SalesOrderClass
     public function update($request){
         $data = SalesOrder::findOrFail($request->id);
         $data->update([
+            'received_id' => $request->batch_code,
             'customer_id' => $request->customer_id,
             'payment_mode' => $request->payment_mode,
             'order_date' => $request->order_date,
@@ -83,9 +80,11 @@ class SalesOrderClass
         ];
     }
 
-    public function delete($id){
+    public function cancel($id){
         $data = SalesOrder::findOrFail($id);
-        $data->delete();
+        $data->update([
+            'status_id' => 2, //set to cancelled
+        ]);
 
         return [
             'data' => $data,

@@ -8,8 +8,7 @@ class SalesOrderItem extends Model
 {
     protected $fillable = [
         'sales_order_id',
-        'brand_id',
-        'unit_id',
+        'product_id',
         'quantity',
         'unit_cost',
         'status_id'

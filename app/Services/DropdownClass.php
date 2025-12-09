@@ -12,6 +12,8 @@ use App\Models\ListBrand;
 use App\Models\Customer;
 use App\Models\ListSupplier;
 use App\Models\Product;
+use App\Models\ReceivedStock;
+
 
 class DropdownClass
 {  
@@ -80,10 +82,20 @@ class DropdownClass
     }
 
     public function products(){
-        $data = Product::get()->map(function ($item) {
+        $data = Product::with(['brand', 'unit'])->get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'name' => $item->brand->name . ' ' . $item->pack_size  . $item->unit->name
+                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '')
+            ];
+        });
+        return  $data;
+    }
+
+    public function batch_codes(){
+        $data = ReceivedStock::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'code' => $item->batch_code
             ];
         });
         return  $data;

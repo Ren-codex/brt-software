@@ -16,31 +16,6 @@
             <div class="modal-body">
                 <form @submit.prevent="submit">
                     <div class="form-row">
-                        <div class="form-group form-group-half">
-                            <label for="brand_id" class="form-label">Brand</label>
-                            <div class="input-wrapper">
-                                <i class="ri-calendar-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.brand_id"
-                                :options="dropdowns.brands"
-                                :class="{ 'input-error': form.errors.brand_id }"
-                                text-field="name"
-                                value-field="value"
-                                >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Brand</b-form-select-option>
-                                </template>
-                                </b-form-select>    
-                            </div>
-                            <span class="error-message" v-if="form.errors.brand_id">{{ form.errors.brand_id }}</span>
-                        </div>
-           
-                    </div>
-
-
-
-                    <div class="form-row">
                          <div class="form-group form-group-half">
                             <label for="quantity" class="form-label">Quantity</label>
                             <div class="input-wrapper">
@@ -73,26 +48,26 @@
                         </div>
                     </div>
 
-
+                    {{  dropdowns.products }}
                     <div class="form-row">
                         <div class="form-group form-group-half">
-                            <label for="brand_id" class="form-label">Unit</label>
+                            <label for="product_id" class="form-label">Product</label>
                             <div class="input-wrapper">
                                 <i class="ri-bar-chart-2-line input-icon"></i>
                                 <b-form-select
                                 class="form-control"
-                                v-model="form.unit_id"
-                                :options="dropdowns.units"
-                                :class="{ 'input-error': form.errors.unit_id }"
+                                v-model="form.product_id"
+                                :options="dropdowns.products"
+                                :class="{ 'input-error': form.errors.product_id }"
                                 text-field="name"
                                 value-field="value"
                                 >
                                  <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Unit</b-form-select-option>
+                                    <b-form-select-option :value="null" disabled  >Select Product</b-form-select-option>
                                 </template>
                                 </b-form-select>    
                             </div>
-                            <span class="error-message" v-if="form.errors.unit_id">{{ form.errors.unit_id }}</span>
+                            <span class="error-message" v-if="form.errors.product_id">{{ form.errors.product_id }}</span>
                         </div>
 
                     </div>
@@ -107,7 +82,7 @@
                             <i class="ri-close-line"></i>
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing || (!form.brand_id || form.quantity == 0 || form.unit_cost == 0 || !form.unit_id)">
+                        <button type="submit" class="btn btn-save" :disabled="form.processing || (!form.brand_id || form.quantity == 0 || form.unit_cost == 0 || !form.product_id)">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
                             {{ form.processing ? 'Saving...' : 'Save Order' }}
@@ -140,7 +115,7 @@ export default {
                 brand_id: null,
                 quantity: 0,
                 unit_cost: 0.00,
-                unit_id: null,
+                product_id: null,
             }),
 
             togglePassword: false,
@@ -164,7 +139,7 @@ export default {
             this.form.brand_id = data.brand_id;
             this.form.quantity = data.quantity;
             this.$refs.amountComponent.emitValue(data.unit_cost);
-            this.form.unit_id = data.unit_id;
+            this.form.product_id = data.product_id;
             this.form.total_amount = data.total_amount;
             this.editable = true;
             this.saveSuccess = false;
@@ -177,7 +152,7 @@ export default {
                 brand_id: this.form.brand_id,
                 quantity: this.form.quantity,
                 unit_cost: Number(this.form.unit_cost).toFixed(2), // 2 decimals
-                unit_id: this.form.unit_id,
+                product_id: this.form.product_id,
                 total_amount: this.form.amount || 0,
             };
 

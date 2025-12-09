@@ -34,7 +34,8 @@ class SalesOrderController extends Controller
                     'dropdowns' => [
                         'customers' => $this->dropdown->customers(),
                         'brands' => $this->dropdown->brands(),
-                        'units' => $this->dropdown->units()
+                        'products' => $this->dropdown->products(),
+                        'batch_codes' => $this->dropdown->batch_codes()
                     ]
                 ]);
             break;
@@ -76,7 +77,7 @@ class SalesOrderController extends Controller
 
     public function destroy($id){
         $result = $this->handleTransaction(function () use ($id) {
-            return $this->sales_order->delete($id);
+            return $this->sales_order->cancel($id);
         });
 
         return back()->with([

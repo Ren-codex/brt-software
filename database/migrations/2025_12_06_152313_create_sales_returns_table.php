@@ -11,15 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sales_order_items', function (Blueprint $table) {
+        Schema::create('sales_returns', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->integer('quantity');
-            $table->decimal('unit_cost', 15, 2);
-            $table->unsignedInteger('product_id');
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             $table->unsignedInteger('sales_order_id');
             $table->foreign('sales_order_id')->references('id')->on('sales_orders')->onDelete('cascade');
+            $table->string('reason');
             $table->timestamps();
         });
     }
@@ -29,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sales_order_items');
+        Schema::dropIfExists('sales_returns');
     }
 };
