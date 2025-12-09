@@ -50,9 +50,7 @@
                 </thead>
 
                 <tbody>
-                  <tr v-for="(list,index) in listPurchaseOrders" v-bind:key="index" @click="selectRow(index)" :class="{
-                    'bg-info-subtle': index === selectedRow
-                  }">
+                  <tr v-for="(list,index) in listPurchaseOrders" v-bind:key="index" @click="openView(list.id)" style="cursor: pointer;">
                     <td>{{ index + 1}}</td>
                     <td>{{ list.po_number }}</td>
                     <td>{{ list.po_date }}</td>
@@ -60,11 +58,11 @@
                     <td>{{ list.total_amount }}</td>
                     <td>{{ list.status ? list.status.name : '' }}</td>
                     <td>
-                      <div class="action-buttons">
-                        <button @click="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                      <!-- <div class="action-buttons">
+                        <button @click.stop="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
                           <i class="ri-eye-fill"></i>
                         </button>
-                      </div>
+                      </div> -->
                     </td>
                   </tr>
                 </tbody>
