@@ -48,7 +48,7 @@
                         </div>
                     </div>
 
-                    {{  dropdowns.products }}
+
                     <div class="form-row">
                         <div class="form-group form-group-half">
                             <label for="product_id" class="form-label">Product</label>
@@ -82,7 +82,7 @@
                             <i class="ri-close-line"></i>
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing || (!form.brand_id || form.quantity == 0 || form.unit_cost == 0 || !form.product_id)">
+                        <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || form.unit_cost == 0 || !form.product_id)">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
                             {{ form.processing ? 'Saving...' : 'Save Order' }}
@@ -98,7 +98,6 @@
 
 <script>
 import { useForm } from '@inertiajs/vue3';
-import { nextTick } from 'vue';
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import Multiselect from '@/Shared/Components/Forms/Multiselect.vue';
@@ -144,8 +143,8 @@ export default {
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
-            console.log(data , 33);
         },
+
         submit() {
             const itemData = {
                 id: this.form.id,

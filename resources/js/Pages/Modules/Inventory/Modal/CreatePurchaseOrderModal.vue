@@ -35,6 +35,7 @@
                         <span class="error-message" v-if="form.errors.supplier_id">{{ form.errors.supplier_id }}</span>
                     </div>
 
+
                     <div class="form-group">
                         <label class="form-label">Items</label>
                         <button type="button" @click="addItem" class="btn btn-sm btn-primary">Add Item</button>

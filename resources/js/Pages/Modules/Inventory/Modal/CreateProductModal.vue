@@ -26,7 +26,7 @@
                         <label for="brand_id" class="form-label">Brand</label>
                         <div class="input-wrapper">
                             <i class="ri-price-tag-3-line input-icon"></i>
-                            <select
+                            <!-- <select
                                 v-model="form.brand_id"
                                 class="form-control"
                                 :class="{ 'input-error': form.errors.brand_id }"
@@ -34,7 +34,23 @@
                             >
                                 <option value="" disabled>Select Brand</option>
                                 <option v-for="unit in dropdowns.brands" :value="unit.value" :key="unit.value">{{ unit.name }}</option>
-                            </select>
+
+                            </select> -->
+
+
+                              <b-form-select
+                                class="form-control"
+                                v-model="form.brand_id"
+                                :options="dropdowns.brands"
+                                :class="{ 'input-error': form.errors.brand_id }"
+                                text-field="name"
+                                value-field="value"
+                                >
+                                 <template #first>
+                                    <b-form-select-option :value="null" disabled  >Select Brand</b-form-select-option>
+                                </template>
+                                </b-form-select>    
+                     
                         </div>
                         <span class="error-message" v-if="form.errors.brand_id">{{ form.errors.brand_id }}</span>
                     </div>
