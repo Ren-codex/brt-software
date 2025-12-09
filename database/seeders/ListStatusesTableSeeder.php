@@ -59,6 +59,28 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            4 => 
+            array (
+                'id' => 5,
+                'name' => 'approved',
+                'description' => 'Approved status',
+                'text_color' => '#000000',
+                'bg_color' => '#ffc107',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            5 => 
+            array (
+                'id' => 6,
+                'name' => 'disapproved',
+                'description' => 'Disapproved status',
+                'text_color' => '#000000',
+                'bg_color' => '#ffc107',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

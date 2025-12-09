@@ -153,7 +153,7 @@
                                                 {{ index + 1}}
                                             </td>
                                             <td class="text-center">{{ getBrand(list.brand_id) }}</td>
-                                            <td class="text-center">{{ list.quantity }} {{ getUnit(list.unit_id) }}</td>
+                                            <td class="text-center">{{ list.quantity }} {{ getProduct(list.product_id) }}</td>
                                             <td class="text-center">{{ formatCurrency(list.unit_cost) }} </td>
                                             <td class="text-center">
                                                 <input
@@ -356,8 +356,8 @@ export default {
             return brand ? brand.name : '';
         },
 
-        getUnit(unit_id){
-            const unit = this.dropdowns.units.find(u => u.value === unit_id);
+        getProduct(unit_id){
+            const unit = this.dropdowns.products.find(u => u.value === product_id);
             return unit ? unit.name : '';
         },
 

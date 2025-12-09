@@ -45,7 +45,7 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(ProductRequest $request){
+    public function store(Request $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->product->save($request);
         });
