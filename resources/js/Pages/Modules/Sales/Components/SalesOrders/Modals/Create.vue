@@ -20,7 +20,7 @@
                                     <label for="batch_code" class="form-label">Batch Code</label>
                                     <div class="input-wrapper">
                                         <i class="ri-code-line input-icon"></i>
-                                        <b-form-select
+                                        <!-- <b-form-select
                                             v-model="form.batch_code"
                                             :options="dropdowns.batch_codes"
                                             text-field="code"
@@ -31,8 +31,14 @@
                                         >
                                           <template #first>
                                             <b-form-select-option :value="null" disabled>Select Batch Code</b-form-select-option>
-                                        </template>
-                                        </b-form-select>
+                                        </template> -->
+                                        <Multiselect 
+                                        v-model="form.batch_code"
+                                        :options="dropdowns.batch_codes"
+                                        label="code"
+                                        mode="tags"
+                                        placeholder="Select type" />
+                                        <!-- </b-form-select> -->
 
                                     </div>
 

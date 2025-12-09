@@ -24,6 +24,16 @@ class ReceivedStocksTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+            1 =>
+            array (
+                'id' => 2,
+                'po_id' => 1,
+                'supplier_id' => 1,
+                'received_date' => '2025-01-01',
+                'batch_code' => 'CODE-1106-0002',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
     }
 }
