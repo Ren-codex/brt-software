@@ -22,4 +22,9 @@ class Product extends Model
     {
         return $this->belongsTo('App\Models\ListBrand', 'brand_id');
     }
+
+    public function receivedItems()
+    {
+        return $this->hasMany('App\Models\ReceivedItem', 'product_id');
+    }
 }

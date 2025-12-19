@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\System\User\UserClass;
 use App\Http\Requests\System\UserRequest;
+use App\Http\Requests\System\UserRoleRequest;
 
 class UserController extends Controller
 {
@@ -40,7 +41,8 @@ class UserController extends Controller
         }   
     }
 
-     public function update(UserRequest $request){
+     public function update(UserRequest $request ){
+
         $result = $this->handleTransaction(function () use ($request) {
             switch($request->option){
                 case 'status':
@@ -50,7 +52,10 @@ class UserController extends Controller
                     return $this->user->credential($request);
                 break;
                 case 'role':
-                    return $this->user->role($request);
+                    return $this->user->user_role($request);
+                break;
+                case 'set_role_active':
+                    return $this->user->user_role($request);
                 break;
             }
         });

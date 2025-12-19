@@ -24,10 +24,16 @@ class SalesOrderController extends Controller
         $this->print = $print;
     }
 
-    public function index(Request $request){   
+    public function index(Request $request){
         switch($request->option){
             case 'lists':
                 return $this->sales_order->lists($request);
+            break;
+            case 'dashboard':
+                return $this->sales_order->dashboard();
+            break;
+            case 'stock':
+                return $this->sales_order->stockAvailability();
             break;
             default:
                 return inertia('Modules/Sales/Index', [
@@ -39,7 +45,7 @@ class SalesOrderController extends Controller
                     ]
                 ]);
             break;
-        }   
+        }
     }
 
     public function store(Request $request){

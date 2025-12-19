@@ -65,7 +65,10 @@ class DropdownClass
         $data = Customer::get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'name' => $item->name
+                'name' => $item->name,
+                'address' => $item->address,
+                'contact_number' => $item->contact_number,
+                'email' => $item->email,
             ];
         });
         return  $data;
@@ -81,11 +84,27 @@ class DropdownClass
         return  $data;
     }
 
+    // public function products(){
+    //     $data = Product::with(['brand', 'unit', 'receivedItems.inventoryStocks', 'receivedItems.receivedStock'])->get()->map(function ($item) {
+    //         $available_quantity = $item->receivedItems->sum(function ($receivedItem) {
+    //             return $receivedItem->inventoryStocks->sum('quantity');
+    //         });
+    //         $batch_code = $item->receivedItems->first()?->receivedStock?->batch_code ?? null;
+    //         return [
+    //             'value' => $item->id,
+    //             'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '') . ' (Available: ' . $available_quantity . ')',
+    //             'batch_code' => $batch_code,
+    //             'available_quantity' => $available_quantity
+    //         ];
+    //     });
+    //     return  $data;
+    // }
+
     public function products(){
         $data = Product::with(['brand', 'unit'])->get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '')
+                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
             ];
         });
         return  $data;

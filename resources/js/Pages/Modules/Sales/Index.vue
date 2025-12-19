@@ -39,14 +39,12 @@
       <BCol md="10">
 
         <div v-if="activeTab === 'sales_orders'" class="card shadow-sm p-3">
-          <h5>Sales Orders</h5>
           <SalesOrders :dropdowns="dropdowns"/>
         </div>
 
 
         <div v-if="activeTab === 'ar_invoices'" class="card shadow-sm p-3">
-          <h5>Account Receivable Invoices</h5>
-          <p>>Account Receivable Invoices content goes here.</p>
+          <ARInvoices :dropdowns="dropdowns"/>
         </div>
 
         <div v-if="activeTab === 'receipts'" class="card shadow-sm p-3">
@@ -65,9 +63,10 @@ import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import SalesOrders from "@/Pages/Modules/Sales/Components/SalesOrders/Index.vue";
+import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders },
+  components: { PageHeader, Pagination, SalesOrders, ARInvoices },
   props: ['dropdowns'],
   data() {
     return {
