@@ -7,13 +7,13 @@
                         <div class="flex-shrink-0 me-3">
                             <div style="height:2.5rem;width:2.5rem;">
                                 <span class="avatar-title rounded p-2 mt-n1">
-                                    <i class="ri-shopping-cart-line text-white fs-24"></i>
+                                    <i class="ri-user-2-line text-white fs-24"></i>
                                 </span>
                             </div>
                         </div>
                         <div class="flex-grow-1">
-                            <h5 class=" fs-14"><span class="text-white">Sales Orders</span></h5>
-                            <p class="text-white-50 text-truncate-two-lines fs-12">A comprehensive list of Sales Orders</p>
+                            <h5 class=" fs-14"><span class="text-white">Account Receivable Invoices</span></h5>
+                            <p class="text-white-50 text-truncate-two-lines fs-12">A comprehensive Account Receivable Invoices</p>
                         </div>
 
                     </div>
@@ -250,21 +250,16 @@
             </div>
         </div>
     </BRow>
-    <Create @add="fetch()" :dropdowns="dropdowns" ref="create"/>
-    <Cancel @cancel="fetch()" ref="cancel"/>
-    <Adjustment @update="fetch()"  ref="adjustment"/>
+
 </template>
 <script>
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
-import Cancel from './Modals/Cancel.vue';
-import Create from './Modals/Create.vue';
-import Adjustment from './Modals/Adjustment.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment },
+    components: { PageHeader, Pagination, Multiselect },
     props: ['dropdowns'],
     data(){
         return {

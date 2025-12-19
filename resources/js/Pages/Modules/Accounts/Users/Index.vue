@@ -83,9 +83,9 @@
                                     </td>
                                     <td>
                                         <h5 class="fs-13 mb-0 fw-semibold text-primary text-uppercase">{{list.name}}</h5>
-                                        <p class="fs-12 text-muted mb-0">
+                                        <!-- <p class="fs-12 text-muted mb-0">
                                             <span class="badge bg-primary-subtle text-info me-1" v-for="role in list.roles" v-bind:key="role.id">{{ role.name }}</span>
-                                        </p>
+                                        </p> -->
                                     </td>
                                     <td class="text-center">{{ list.username }}</td>
                                     <td class="text-center">{{ list.email }}</td>
@@ -100,11 +100,11 @@
                                             <div class="dropdown" @click.stop> 
                                                 <button class="btn btn-light btn-icon btn-sm dropdown material-shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false"> <i class="ri-more-fill align-bottom"></i> </button>
                                                 <ul class="dropdown-menu dropdownmenu-primary dropdown-menu-end">
-                                                    <li>
+                                                    <!-- <li>
                                                         <Link :href="`/users/${list.code}`" class="dropdown-item d-flex align-items-center" role="button">
                                                             <i class="ri-eye-fill me-2"></i> View
                                                         </Link>
-                                                    </li>
+                                                    </li> -->
                                                     <li>
                                                         <a @click="openUpdate(list,index)" class="dropdown-item d-flex align-items-center" role="button">
                                                             <i class="ri-edit-2-fill me-2"></i> Update

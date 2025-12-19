@@ -10,12 +10,9 @@ class RoleResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $hashids = new Hashids('krad',10);
-        $code = $hashids->encode($this->id);
-
         return [
-            'code' => $code,
-            'name' => $this->role->name,
+            'user' => $this->user,
+            'role' => $this->role,
             'added' => $this->added?->profile->fullname,
             'removed' => ($this->removed) ? $this->removed?->profile->fullname : '-',
             'removed_at' => $this->removed_at,

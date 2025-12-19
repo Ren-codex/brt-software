@@ -10,11 +10,8 @@ class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $hashids = new Hashids('krad',10);
-        $code = $hashids->encode($this->id);
-
         return [
-            'code' => $code,
+            'id' => $this->id,
             'avatar' => ($this->profile && $this->profile->avatar && $this->profile->avatar !== 'noavatar.jpg')
             ? asset('storage/' . $this->profile->avatar) 
             : asset('images/avatars/avatar.jpg'), 

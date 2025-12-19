@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 class ProductsTableSeeder extends Seeder
 {
     /**
-     * Auto generated seeder file.
+     * Run the database seeds.
      *
      * @return void
      */
@@ -19,8 +19,59 @@ class ProductsTableSeeder extends Seeder
             0 =>
             array (
                 'id' => 1,
-                'name' => 'Rice',
+                'pack_size' => 5,
                 'unit_id' => 1, // Kilogram
+                'brand_id' => 1, // Jasmine Rice
+                'is_active' => 1,
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+            1 =>
+            array (
+                'id' => 2,
+                'pack_size' => 10,
+                'unit_id' => 1, // Kilogram
+                'brand_id' => 1, // Jasmine Rice
+                'is_active' => 1,
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+            2 =>
+            array (
+                'id' => 3,
+                'pack_size' => 5,
+                'unit_id' => 1, // Kilogram
+                'brand_id' => 2, // Basmati Rice
+                'is_active' => 1,
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+            3 =>
+            array (
+                'id' => 4,
+                'pack_size' => 10,
+                'unit_id' => 1, // Kilogram
+                'brand_id' => 2, // Basmati Rice
+                'is_active' => 1,
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+            4 =>
+            array (
+                'id' => 5,
+                'pack_size' => 5,
+                'unit_id' => 1, // Kilogram
+                'brand_id' => 3, // Brown Rice
+                'is_active' => 1,
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+            5 =>
+            array (
+                'id' => 6,
+                'pack_size' => 1,
+                'unit_id' => 2, // Sack
+                'brand_id' => 4, // White Rice
                 'is_active' => 1,
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',

@@ -7,7 +7,7 @@
     >
         <div class="modal-container modal-lg" @click.stop>
             <div class="modal-header">
-                <h2>Remove Role</h2>
+                <h2>Set Active Role</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -24,12 +24,12 @@
                                             <i class="ri-alert-line fs-14 align-middle"></i>
                                         </div>
                                         <div class="flex-grow-1 mt-1">
-                                            <h5 class="fs-11 alert-heading">Are you sure you want to remove this <b class="text-uppercase text-decoration-line-through">{{ selected?.role?.name }}</b> role?</h5>
+                                            <h5 class="fs-11 text-primary">Are you sure you want to set this <b class="text-uppercase ">{{ selected?.role?.name }}</b> role to <span class="text-primary">"ACTIVE"</span>?</h5>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="alert-content">
-                                    <p class="mb-0 fs-10">Removing this role will revoke the user’s access and permissions associated with the <strong class="text-decoration-underline">{{ selected.name }}</strong> module.</p>
+                                <div class="bg-primary p-2 rounded alert-content">
+                                    <p class="mb-0 fs-10">Setting this role will allow the user’s access and permissions associated with the <strong class="text-decoration-underline">{{ selected.name }}</strong> module.</p>
                                 </div>
                             </div>
                         </div>
@@ -39,17 +39,17 @@
   
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
-                        <span>Role has been removed successfully!</span>
+                        <span>Role has been set to active successfully!</span>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-cancel" @click="hide">
                             <i class="ri-close-line"></i>
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-danger" :disabled="form.processing">
+                        <button type="submit" class="btn btn-primary" :disabled="form.processing">
                             <i class="ri-delete-bin-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Removing...' : 'Remove' }}
+                            {{ form.processing ? 'Setting Active...' : 'Set Active' }}
                         </button>
                     </div>  
 
@@ -71,8 +71,8 @@ export default {
             form: useForm({
                 role_id: null,
                 user_id: null,
-                type: 'remove',
-                option: 'role'
+                type: 'set_role_active',
+                option: 'set_role_active'
             }),
             selected: null,
             showModal: false
@@ -98,7 +98,6 @@ export default {
                 },
             });
         },
-
 
         hide(){
             this.showModal = false;
