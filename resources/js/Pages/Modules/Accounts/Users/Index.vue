@@ -32,6 +32,7 @@
                             </span>
                         </div>
                     </div>
+<<<<<<< HEAD
                     <div class="table-section">
                         <div class="table-responsive">
                             <table class="table align-middle table-centered mb-0">
@@ -54,6 +55,77 @@
                                         <td class="text-center">
                                             <div class="avatar-xs chat-user-img online">
                                                 <img :src="list.avatar" alt="" class="avatar-xs rounded-circle">
+=======
+                </div>
+                <div class="card-body bg-white rounded-bottom">
+                    <div class="table-responsive table-card" style="margin-top: -39px; height: calc(100vh - 465px); overflow: auto;">
+                        <table class="table align-middle table-striped table-centered mb-0">
+                            <thead class="table-light thead-fixed">
+                                <tr class="fs-11">
+                                    <th style="width: 3%;"></th>
+                                    <th>Name</th>
+                                    <th style="width: 10%;" class="text-center">Username</th>
+                                    <th style="width: 10%;" class="text-center">Email</th>
+                                    <th style="width: 10%;" class="text-center">Mobile</th>
+                                    <th style="width: 10%;" class="text-center">Status</th>
+                                    <th style="width: 6%;"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-white fs-12">
+                                <tr v-for="(list,index) in lists" v-bind:key="index" @click="selectRow(index)" :class="{
+                                    'bg-info-subtle': index === selectedRow,
+                                    'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
+                                }">
+                                    <td class="text-center"> 
+                                        <div class="avatar-xs chat-user-img online">
+                                            <img :src="list.avatar" alt="" class="avatar-xs rounded-circle">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <h5 class="fs-13 mb-0 fw-semibold text-primary text-uppercase">{{list.name}}</h5>
+                                        <!-- <p class="fs-12 text-muted mb-0">
+                                            <span class="badge bg-primary-subtle text-info me-1" v-for="role in list.roles" v-bind:key="role.id">{{ role.name }}</span>
+                                        </p> -->
+                                    </td>
+                                    <td class="text-center">{{ list.username }}</td>
+                                    <td class="text-center">{{ list.email }}</td>
+                                    <td class="text-center">{{ list.mobile }}</td>
+                                    <td class="text-center">
+                                        <span v-if="list.is_active" class="badge bg-success">Active</span>
+                                        <span v-else class="badge bg-danger">Inactive</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex gap-3 justify-content-center"> 
+    
+                                            <div class="dropdown" @click.stop> 
+                                                <button class="btn btn-light btn-icon btn-sm dropdown material-shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false"> <i class="ri-more-fill align-bottom"></i> </button>
+                                                <ul class="dropdown-menu dropdownmenu-primary dropdown-menu-end">
+                                                    <!-- <li>
+                                                        <Link :href="`/users/${list.code}`" class="dropdown-item d-flex align-items-center" role="button">
+                                                            <i class="ri-eye-fill me-2"></i> View
+                                                        </Link>
+                                                    </li> -->
+                                                    <li>
+                                                        <a @click="openUpdate(list,index)" class="dropdown-item d-flex align-items-center" role="button">
+                                                            <i class="ri-edit-2-fill me-2"></i> Update
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a @click="openRole(list,index)" class="dropdown-item d-flex align-items-center" role="button">
+                                                            <i class="ri-group-2-line me-2"></i> Set Roles
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a @click="openActivation('activation',list,index)" class="dropdown-item d-flex align-items-center" :class="(list.is_active) ? 'text-danger' : 'text-success'" href="#removeFileItemModal" data-id="1" data-bs-toggle="modal" role="button">
+                                                            <span v-if="list.is_active"><i class="ri-lock-2-fill me-2"></i> Deactivate User</span>
+                                                            <span v-else><i class="ri-lock-unlock-line me-2"></i> Activate User</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+
+>>>>>>> 7eef488250f0a2454fe56a9292a76ee49682d36d
                                             </div>
                                         </td>
                                         <td>

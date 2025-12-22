@@ -1,26 +1,66 @@
 
 <template>
-    <b-modal v-model="showModal" header-class="p-3 bg-light" title="Add Role" class="v-modal-custom" modal-class="zoomIn" centered no-close-on-backdrop>
-        <form class="customform">
-            <BRow class="g-3 mt-n1">
-                <BCol lg="12" class="mt-0 mb-2">
-                    <div class="alert fs-10 alert-danger alert-dismissible alert-label-icon label-arrow fade show mb-xl-0 material-shadow" role="alert">
-                        <i class="ri-error-warning-line label-icon"></i><strong>Notice</strong>
-                        - Adding a new role will grant the user access to the corresponding role module.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div 
+        v-if="showModal"
+        class="modal-overlay"
+        :class="{ active: showModal }"
+        @click.self="hide"
+    >
+        <div class="modal-container modal-lg" @click.stop>
+            <div class="modal-header">
+                <h2>{{ editable ? 'Update Role' : 'Add Role' }}</h2>
+                <button class="close-btn" @click="hide">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form @submit.prevent="submit">
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="role_id" class="form-label">Role</label>
+                            <div class="input-wrapper">
+                                <i class="ri-bar-chart-2-line input-icon"></i>
+                                <b-form-select
+                                class="form-control"
+                                v-model="form.role_id"
+                                :options="filteredRoles"
+                                :class="{ 'input-error': form.errors.role_id }"
+                                text-field="name"
+                                value-field="value"
+                                >
+                                 <template #first>
+                                    <b-form-select-option :value="null" disabled  >Select Role</b-form-select-option>
+                                </template>
+                                </b-form-select>    
+                            </div>
+                            <span class="error-message" v-if="form.errors.role_id">{{ form.errors.role_id }}</span>
+                        </div>
+
                     </div>
-                </BCol>
-                <BCol lg="12" class="mt-0 mb-2">
-                    <InputLabel value="Role" :message="form.errors.role_id"/>
-                    <Multiselect :options="filteredRoles" label="name" v-model="form.role_id" placeholder="Select Role" @input="handleInput('role_id')"/>
-                </BCol>
-            </BRow>
-        </form>
-        <template v-slot:footer>
-            <b-button @click="hide()" variant="light" block>Cancel</b-button>
-            <b-button @click="submit('ok')" variant="primary" :disabled="form.processing" block>Submit</b-button>
-        </template>
-    </b-modal>
+
+  
+                    <div class="success-alert" v-if="saveSuccess">
+                        <i class="ri-checkbox-circle-fill"></i>
+                        <span>Role has been saved successfully!</span>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-cancel" @click="hide">
+                            <i class="ri-close-line"></i>
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-save" :disabled="form.processing">
+                            <i class="ri-save-line" v-if="!form.processing"></i>
+                            <i class="ri-loader-4-line spinner" v-else></i>
+                            {{ form.processing ? 'Saving...' : 'Save Role' }}
+                        </button>
+                    </div>  
+
+
+                </form>
+            </div>
+ 
+        </div>
+    </div>
 </template>
 <script>
 import { useForm } from '@inertiajs/vue3';
@@ -28,11 +68,11 @@ import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 export default {
     components: { Multiselect, InputLabel },
-    props: ['roles'],
+    props: ['list_roles' , 'roles'],
     data(){
         return {
             form: useForm({
-                code: null,
+                user_id: null,
                 role_id: null,
                 type: 'add',
                 option: 'role'
@@ -43,18 +83,39 @@ export default {
         }
     },
     computed: {
-        filteredRoles() {
-            if (!this.roles || !this.user.roles) return this.roles || [];
-            const activeUserRoles = this.user.roles
-                .filter(r => r.is_active === 1)
-                .map(r => r.name);
-            return this.roles.filter(role => !activeUserRoles.includes(role.name));
+    filteredRoles() {
+        if (!Array.isArray(this.roles) || !Array.isArray(this.user?.roles)) {
+            return [];
         }
-    },
+
+        // Use Set for fast lookup
+        const assignedRoleIds = new Set(
+            this.roles
+                .filter(role => role && role.role.id )
+                .map(role => role.role.id)
+        );
+
+        console.log(assignedRoleIds, 'assignedRoleIds');
+
+
+        return this.list_roles
+            .filter(role => role && !assignedRoleIds.has(role.value))
+            .map(role => ({
+                value: role.value,
+                name: role.name
+            }));
+    }
+
+        },
+
+        mounted() {
+            console.log(this.list_roles, 'list_roles');
+            console.log(this.roles, 'existingroles');
+        },
     methods: { 
         show(data){
             this.user = data;
-            this.form.code = this.user.code,
+            this.form.user_id = this.user.id,
             this.showModal = true;
         },
         submit(){

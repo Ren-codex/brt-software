@@ -13,41 +13,14 @@
                     <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body ">
+               
                 <form @submit.prevent="submit">
+                     <BRow>
+                     <div class="col-md-9">
                             <div class="form-row">
                                 <div class="form-group form-group-half">
-                                    <label for="batch_code" class="form-label">Batch Code</label>
-                                    <div class="input-wrapper">
-                                        <i class="ri-code-line input-icon"></i>
-                                        <!-- <b-form-select
-                                            v-model="form.batch_code"
-                                            :options="dropdowns.batch_codes"
-                                            text-field="code"
-                                            value-field="value"
-                                            :class="{ 'input-error': form.errors.batch_code }"
-                                            class="form-control"
-
-                                        >
-                                          <template #first>
-                                            <b-form-select-option :value="null" disabled>Select Batch Code</b-form-select-option>
-                                        </template> -->
-                                        <Multiselect 
-                                        v-model="form.batch_code"
-                                        :options="dropdowns.batch_codes"
-                                        label="code"
-                                        mode="tags"
-                                        placeholder="Select type" />
-                                        <!-- </b-form-select> -->
-
-                                    </div>
-
-                                    <span class="error-message" v-if="form.errors.batch_code">{{ form.errors.batch_code }}</span>
-                                </div>
-
-
-                                <div class="form-group form-group-half">
-                                    <label for="order_date" class="form-label">Order Date</label>
+                                    <label for="order_date" class="form-label">Order Date<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-calendar-line input-icon"></i>
                                         <text-input
@@ -61,11 +34,9 @@
                                     </div>
                                     <span class="error-message" v-if="form.errors.order_date">{{ form.errors.order_date }}</span>
                                 </div>
-                            </div>
 
-                            <div class="form-row">
-                                <div class="form-group form-group-half">
-                                    <label for="customer_id" class="form-label">Customer</label>
+                                 <div class="form-group form-group-half">
+                                    <label for="customer_id" class="form-label">Customer<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
                                         <b-form-select
@@ -87,60 +58,29 @@
                                     <span class="error-message" v-if="form.errors.customer_id">{{ form.errors.customer_id }}</span>
                                 </div>
 
-                                 <div   class="form-group form-group-half">
-                                    <label for="payment_mode" class="form-label">Payment Mode</label>
-                                    <div class="input-wrapper">
-                                        <i class="ri-money-dollar-circle-line input-icon"></i>
-                                        <b-form-select
-                                        class="form-control"
-                                        v-model="form.payment_mode"
-                                        :options="paymentModes"
-                                        :class="{ 'input-error': form.errors.payment_mode }"
-                                        label="name"
-                                        >
-                                         <template #first>
-                                            <b-form-select-option :value="null" disabled  >Select Mode</b-form-select-option>
-                                        </template>
-                                        </b-form-select>
-                                    </div>
-                                    <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
-                                </div>
+
+
+
+
                             </div>
 
-                            <div class="form-row" v-if="form.payment_mode">
-
-                                <div class="form-group form-group-half" v-if="form.payment_mode !== 'Cash'">
-                                    <label for="billing_account" class="form-label">Billing Account</label>
-                                    <div class="input-wrapper">
-                                        <i class="ri-bank-card-line input-icon"></i>
-                                        <text-input
-                                            type="text"
-                                            id="billing_account"
-                                            v-model="form.billing_account"
-                                            class="form-control"
-                                            :class="{ 'input-error': form.errors.billing_account }"
-                                            @input="handleInput('billing_account')"
-                                            placeholder="Enter Billing Account"
-                                        />
-                                    </div>
-                                    <span class="error-message" v-if="form.errors.billing_account">{{ form.errors.billing_account }}</span>
-                                </div>
-                            </div>
-
-
+                          
                             <div class="text-end">
-                                <b-button :disabled="!form.customer_id || !form.payment_mode || !form.order_date" @click="addItem()" size="sm" variant="secondary" class="mb-2">Add Item</b-button>
+                                <b-button :disabled="!form.customer_id || !form.payment_mode || !form.order_date" @click="addRowItem()" size="sm" variant="primary" class="mb-2">Add Item</b-button>
                             </div>
                             <div class="form-row">
                                 <table class="table align-middle table-striped table-centered mb-0">
                                       <thead class="table-light thead-fixed">
                                           <tr class="fs-11">
                                               <th style="width: 3%;">#</th>
-                                             <th style="width: 10%;" class="text-center">Brand</th>
-                                             <th style="width: 12%;" class="text-center">Quantity/Unit</th>
-                                              <th style="width: 10%;" class="text-center">Unit Price</th>
+                                             <th style="width: 10%;" class="text-center">Product</th>
+                                              <th style="width: 10%;" class="text-center">Batch Code</th>
+                                            <th style="width: 12%;" class="text-center">Unit</th>
+                                            <th style="width: 10%;" class="text-center">Available</th>
+                                             <th style="width: 12%;" class="text-center">Quantity</th>
+                                              <th style="width: 10%;" class="text-center">Price</th>
                                               <th style="width: 8%;" class="text-center">Discount (₱)</th>
-                                              <th style="width: 10%;" class="text-center">Total Amount</th>
+                                              <th style="width: 10%;" class="text-center">Total </th>
                                               <th style="width: 6%;" class="text-center">Actions</th>
                                           </tr>
                                       </thead>
@@ -152,8 +92,26 @@
                                             <td >
                                                 {{ index + 1}}
                                             </td>
-                                            <td class="text-center">{{ getBrand(list.brand_id) }}</td>
-                                            <td class="text-center">{{ list.quantity }} {{ getProduct(list.product_id) }}</td>
+                                            <td class="text-center">
+                                                <b-form-select
+                                                    v-model="list.product_id"
+                                                    :options="dropdowns.products"
+                                                    value-field="value"
+                                                    text-field="name"
+                                                    size="sm"
+                                                    class="form-control"
+                                                    @change="onProductChange(index)"
+                                                >
+                                                    <template #first>
+                                                        <b-form-select-option :value="null" disabled>
+                                                            Select Product
+                                                        </b-form-select-option>
+                                                    </template>
+                                                </b-form-select>
+                                            </td>
+                                            <td class="text-center">{{ getBatchCode(list.product_id) }}</td>
+                                            <td></td>
+                                            <td class="text-center">{{ list.quantity }} </td>
                                             <td class="text-center">{{ formatCurrency(list.unit_cost) }} </td>
                                             <td class="text-center">
                                                 <input
@@ -183,24 +141,82 @@
                                       </tbody>
                                   </table>
                             </div>
-
-                            <div class="success-alert" v-if="saveSuccess">
-                                <i class="ri-checkbox-circle-fill"></i>
-                                <span>Your information has been saved successfully!</span>
+                    </div>
+                    <div class="col-md-3">
+                        <b-card class="mb-3">
+                            <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Customer Information</h5>
+                            <div v-if="form.customer_id" class="mt-3">
+                                <ul class="list-unstyled">
+                                    <li><strong>Name:</strong> {{ getCustomer(form.customer_id).name }}</li>
+                                    <li><strong>Address:</strong> {{ getCustomer(form.customer_id).address }}</li>
+                                    <li><strong>Contact:</strong> {{ getCustomer(form.customer_id).contact_number }}</li>
+                                    <li><strong>Email:</strong> {{ getCustomer(form.customer_id).email }}</li>
+                                </ul>
                             </div>
-                            <div class="form-actions">
-                                <button type="button" class="btn btn-cancel" @click="hide">
-                                    <i class="ri-close-line"></i>
-                                    Cancel
-                                </button>
-                                <button type="submit" class="btn btn-save" :disabled="form.processing">
-                                    <i class="ri-save-line" v-if="!form.processing"></i>
-                                    <i class="ri-loader-4-line spinner" v-else></i>
-                                    {{ form.processing ? 'Saving...' : 'Save Order' }}
-                                </button>
+                            <div v-else class="mt-3 text-muted">
+                                <p class="text-center">Select a customer to view information</p>
                             </div>
+                        </b-card>
+                        <b-card>
+                            <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Payment Mode<span class="text-danger">*</span></h5>
+                            <div class="mt-3 mb-3">
+                                <div class="payment-mode-buttons">
+                                    <b-button
+                                        v-for="mode in paymentModes"
+                                        :key="mode"
+                                        :class="{ 'selected-payment-mode': form.payment_mode === mode }"
+                                        variant="outline-primary"
+                                        @click="selectPaymentMode(mode)"
+                                        class="me-2 mb-2"
+                                        size="sm"
+                                    >
+                                        <i :class="getPaymentModeIcon(mode)" class="me-1"></i>
+                                        {{ mode }}
+                                    </b-button>
+                                </div>
+                                <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
+                            </div>
+                              <div class="form-row" v-if="form.payment_mode">
 
-                        </form>
+                                <div class="form-group form-group-half" v-if="form.payment_mode !== 'Cash'">
+                                    <label for="billing_account" class="form-label">Billing Account<span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-bank-card-line input-icon"></i>
+                                        <text-input
+                                            type="text"
+                                            id="billing_account"
+                                            v-model="form.billing_account"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors.billing_account }"
+                                            @input="handleInput('billing_account')"
+                                            placeholder="Enter Billing Account"
+                                        />
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.billing_account">{{ form.errors.billing_account }}</span>
+                                </div>
+                            </div>
+                        </b-card>
+                    </div>
+                    </BRow>
+                    
+                    <div class="success-alert" v-if="saveSuccess">
+                        <i class="ri-checkbox-circle-fill"></i>
+                        <span>Your information has been saved successfully!</span>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-cancel" @click="hide">
+                            <i class="ri-close-line"></i>
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-save" :disabled="form.processing">
+                            <i class="ri-save-line" v-if="!form.processing"></i>
+                            <i class="ri-loader-4-line spinner" v-else></i>
+                            {{ form.processing ? 'Saving...' : 'Save Order' }}
+                        </button>
+                    </div>
+                </form>
+              
+                
             </div>
         </div>
     </div>
@@ -266,6 +282,17 @@ export default {
             this.$refs.item.show();
         },
 
+        addRowItem() {
+            this.form.items.push({
+                id: Date.now(),
+                product_id: null,
+                quantity: 1,
+                unit_cost: 0,
+                unit_id: null,
+                discount_per_unit: 0,
+            });
+        },
+
         editItem(item, index ) {
             this.$refs.item.edit(item, index);
         },
@@ -273,7 +300,6 @@ export default {
         removeItem(id) {
             this.form.items = this.form.items.filter(item => item.id !== id);
         },
-
 
         show() {
             this.form.reset();
@@ -356,9 +382,14 @@ export default {
             return brand ? brand.name : '';
         },
 
-        getProduct(unit_id){
-            const unit = this.dropdowns.products.find(u => u.value === product_id);
-            return unit ? unit.name : '';
+        getProduct(product_id){
+            const product = this.dropdowns.products.find(u => u.value === product_id);
+            return product ? product.name : '';
+        },
+
+        getCustomer(customer_id){
+            const customer = this.dropdowns.customers.find(u => u.value === customer_id);
+            return customer;
         },
 
         formatCurrency(value) {
@@ -380,6 +411,30 @@ export default {
         updateItemTotal(index) {
             // Force reactivity update for the item total
             this.$set(this.form.items, index, { ...this.form.items[index] });
+        },
+
+        selectPaymentMode(mode) {
+            this.form.payment_mode = mode;
+            this.form.errors.payment_mode = false;
+        },
+
+        onProductChange(index) {
+            const product_id = this.form.items[index].product_id;
+            const product = this.dropdowns.products.find(p => p.value === product_id);
+            if (product && product.batch_code) {
+                this.form.batch_code = product.batch_code;
+            }
+            this.updateItemTotal(index);
+        },
+
+        getPaymentModeIcon(mode) {
+            const icons = {
+                'Cash': 'ri-money-dollar-circle-line',
+                'Credit Card': 'ri-bank-card-line',
+                'Debit Card': 'ri-bank-card-2-line',
+                'Bank Transfer': 'ri-exchange-dollar-line'
+            };
+            return icons[mode] || 'ri-money-dollar-circle-line';
         }
 
 
@@ -393,5 +448,30 @@ export default {
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+}
+
+.payment-mode-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.payment-mode-buttons .btn {
+    min-width: 120px;
+    justify-content: flex-start;
+}
+
+.selected-payment-mode {
+    border-color: darkgreen !important;
+    border-width: 2px !important;
+    background-color: transparent !important;
+    border: 2px solid darkgreen;
+}
+
+.payment-mode-buttons .btn:hover {
+    border-color:darkgreen !important;
+    border: 2px solid darkgreen;
+    background-color: transparent !important;
+    color:darkgreen;
 }
 </style>

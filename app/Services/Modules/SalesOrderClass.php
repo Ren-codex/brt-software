@@ -4,6 +4,9 @@ namespace App\Services\Modules;
 
 
 use App\Models\SalesOrder;
+use App\Models\InventoryStocks;
+use App\Models\ReceivedItem;
+use App\Models\Product;
 use App\Http\Resources\Modules\SalesOrderResource;
 
 
@@ -93,4 +96,79 @@ class SalesOrderClass
         ];
     }
 
+    public function dashboard(){
+        $totalSalesOrders = SalesOrder::count();
+
+        $todayOrders = SalesOrder::whereDate('created_at', today())->count();
+
+        $totalRevenue = SalesOrder::with('items')->get()->sum(function ($order) {
+            return $order->items->sum(function ($item) {
+                return $item->quantity * $item->unit_cost;
+            });
+        });
+
+        $pendingOrders = SalesOrder::where('status_id', 1)->count(); // Assuming status_id 1 is pending
+
+        return [
+            'total_sales_orders' => $totalSalesOrders,
+            'today_orders' => $todayOrders,
+            'total_revenue' => $totalRevenue,
+            'pending_orders' => $pendingOrders,
+        ];
+    }
+
+    public function stockAvailability(){
+        // Get all products with their details
+        $products = Product::with(['brand', 'unit'])->get();
+
+        $stockData = [];
+        $totalKgLeft = 0;
+        $fiveKgSacks = 0;
+        $tenKgSacks = 0;
+        $twentyFiveKgSacks = 0;
+
+        foreach($products as $product){
+            // Total received quantity
+            $received = ReceivedItem::where('product_id', $product->id)->sum('quantity');
+
+            // Total sold quantity (exclude cancelled orders, assuming status_id 2 is cancelled)
+            $sold = SalesOrderItem::whereHas('sales_order', function($q){
+                $q->where('status_id', '!=', 2);
+            })->where('product_id', $product->id)->sum('quantity');
+
+            $remaining = $received - $sold;
+
+            if($remaining > 0){
+                $totalKg = $remaining * $product->pack_size;
+
+                $stockData[] = [
+                    'product_name' => $product->name,
+                    'brand_name' => $product->brand ? $product->brand->name : 'No Brand',
+                    'pack_size' => $product->pack_size,
+                    'unit' => $product->unit ? $product->unit->name : 'No Unit',
+                    'total_quantity' => $remaining,
+                    'total_kg' => $totalKg
+                ];
+
+                $totalKgLeft += $totalKg;
+
+                // Count sacks based on pack_size
+                if($product->pack_size == 5){
+                    $fiveKgSacks += $remaining;
+                } elseif($product->pack_size == 10){
+                    $tenKgSacks += $remaining;
+                } elseif($product->pack_size == 25){
+                    $twentyFiveKgSacks += $remaining;
+                }
+            }
+        }
+
+        return [
+            'total_kg_left' => $totalKgLeft,
+            'five_kg_sacks_left' => $fiveKgSacks,
+            'ten_kg_sacks_left' => $tenKgSacks,
+            'twenty_five_kg_sacks_left' => $twentyFiveKgSacks,
+            'products' => $stockData
+        ];
+    }
 }
