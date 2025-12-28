@@ -11,7 +11,7 @@
                         <b-button @click="$emit('delete', item.id)" size="sm" class="btn-default me-1">
                             <i class="ri-printer-line"></i>
                         </b-button>
-                        <b-button @click="$emit('delete', item.id)" size="sm" class="btn-danger" v-if="item.status.id != 7">
+                        <b-button @click="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.id != 7">
                             <i class="ri-delete-bin-line"></i>
                         </b-button>
                     </div>
@@ -76,17 +76,18 @@
 
     <ReceiptDetails :item="item" v-if="showReceipts" @hide="showReceipts = false" />
 
-    <ApprovalModal :item="item" ref="approvalModal" @reload="$emit('reload')" />
+    <ApprovalModal :item="item" ref="approvalModal" @reload="reload()" />
 </template>
 
 <script>
 import ReceiptDetails from './ReceiptDetails.vue';
 import ApprovalModal from '../Modals/ApprovalModal.vue';
+import Swal from 'sweetalert2';
 
 export default {
     components: {
         ReceiptDetails,
-        ApprovalModal
+        ApprovalModal,
     },
     props: {
         item: {
@@ -113,6 +114,40 @@ export default {
             const num = Number(val);
             if (!isFinite(num)) return val;
             return '\u20B1' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        async openDelete(id){
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: 'You want to delete this remittance?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            });
+
+            if (result.isConfirmed) {
+                axios.delete(`/remittances/${id}`)
+                    .then(response => {
+                        this.fetch();
+                        Swal.fire(
+                            'Deleted!',
+                            'Remittance deleted successfully!',
+                            'success'
+                        );
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        Swal.fire(
+                            'Error!',
+                            'Failed to delete remittance.',
+                            'error'
+                        );
+                    });
+            }
+        },
+        reload(){
+            this.$emit('reload');
         }
     }
 }
