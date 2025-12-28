@@ -1,13 +1,28 @@
-public function status()
-    {
-        return $this->belongsTo(ListStatus::class, 'status_id', 'id');
-    }
-=======
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Receipt extends Model
+{
+    protected $fillable = [
+        'receipt_number',
+        'receipt_date',
+        'amount_paid',
+        'payment_mode',
+        'status_id',
+        'customer_id',
+        'ar_invoice_id',
+    ];
+
     public function status()
     {
-        return $this->belongsTo(ListStatus::class, 'status_id', 'id');
+        return $this->belongsTo(ListStatus::class, 'status_id');
     }
 
-    public function voidReceipt()
+    public function customer()
     {
-        return $this->hasOne(VoidReceipt::class, 'receipt_id', 'id');
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+}

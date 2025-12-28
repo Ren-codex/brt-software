@@ -35,7 +35,7 @@ class SalesOrder extends Model
 
     public function items()
     {
-        return $this->hasMany(SalesOrderItem::class, 'so_id');
+        return $this->hasMany(SalesOrderItem::class, 'sales_order_id');
     }
 
     public function created_by()
