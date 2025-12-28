@@ -109,7 +109,6 @@ import _ from 'lodash';
 import { useForm } from '@inertiajs/vue3';
 
 export default {
-    props: ['dropdowns'],
     data() {
         return {
             showModal: false,
@@ -163,7 +162,7 @@ export default {
         fetchPending() {
             axios.get('/receipts', {
                 params: {
-                    status: 'pending',
+                    status_id: 1,
                     option: 'lists',
                     count: 100
                 }
@@ -215,6 +214,8 @@ export default {
                         this.$emit('add', true);
                         this.form.reset();
                         this.hide();
+                        this.saveSuccess = false;
+                        this.submitting = false;
                     }, 1500);
                     
                 },

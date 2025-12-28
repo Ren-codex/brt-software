@@ -14,6 +14,8 @@ class ReceiptClass
             Receipt::when($request->keyword, function ($query,$keyword) {
                         $query->where('receipt_number', 'LIKE', "%{$keyword}%")
                                 ->orWhere('payment_mode', 'LIKE', "%{$keyword}%");
+                })->when($request->status_id, function ($query,$status_id) {
+                    $query->where('status_id', $status_id);
                 })
                 ->orderBy('created_at', 'DESC')
                 ->paginate($request->count)

@@ -225,7 +225,7 @@
             </div>
         </div>
     </BRow>
-    <Create @created="fetch" ref="create" :dropdowns="dropdowns" />
+    <Create @add="fetch" ref="create"/>
 </template>
     
 <script>
@@ -235,7 +235,6 @@ import Create from './Modals/Create.vue';
 
 export default {
     components: { Pagination, Create },
-    props: ['dropdowns'],
     data(){
         return {
             lists: [],
@@ -276,9 +275,8 @@ export default {
         this.fetch();
     },
     methods: {
-        fetch(page_url){
-            page_url = page_url || '/remittances';
-            axios.get(page_url,{
+        fetch(){
+            axios.get('/remittances',{
                 params : {
                     keyword: this.filter.keyword,
                     count: 10,
@@ -287,8 +285,6 @@ export default {
             })
             .then(response => {
                 if(response){
-                    console.log(response.data.data);
-                    
                     this.lists = response.data.data;
                     this.meta = response.data.meta;
                     this.links = response.data.links;
