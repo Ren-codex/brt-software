@@ -56,4 +56,17 @@ class RemittanceController extends Controller
             'status' => $result['status'],
         ]);
     }
+
+    public function approve(Request $request, $id){
+        $result = $this->handleTransaction(function () use ($request, $id) {
+            return $this->remittance->approve($request, $id);
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
 }

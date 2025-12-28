@@ -71,14 +71,71 @@ class RemittanceClass
         }
     }
 
-    public function delete($id){
-        $data = Remittance::findOrFail($id);
-        $data->delete();
+    public function delete($id)
+    {
+        try {
+            db::beginTransaction();
 
-        return [
-            'data' => $data,
-            'message' => 'Remittance deleted was successful!',
-            'info' => "You've successfully deleted the remittance"
-        ];
+            $receipts = Receipt::where('remittance_id', $id)->get();
+            foreach ($receipts as $receipt) {
+                $receipt->status_id = 1;
+                $receipt->remittance_id = null;
+                $receipt->update();
+            }
+
+            $data = Remittance::findOrFail($id);
+            $data->delete();
+
+            return [
+                'data' => $data,
+                'message' => 'Remittance deleted was successful!',
+                'info' => "You've successfully deleted the remittance"
+            ];
+
+
+            db::commit();
+
+        } catch (\Exception $e){
+            return [
+                'data' => null,
+                'message' => 'Remittance delete failed!',
+                'info' => $e->getMessage()
+            ];
+        }
     }
+
+    public function approve($request, $id)
+    {
+        try{
+            db::beginTransaction();
+
+            $data = Remittance::findOrFail($id);
+            $data->status_id = ($request->status == 'Approve') ? 7 : 6;
+            $data->approved_by_id = Auth::user()->id;
+            $data->approved_at = Carbon::now();
+            $data->remarks = $request->remarks;
+            $data->save();
+    
+            if($request->status == 'Approve'){
+                $receipts = Receipt::where('remittance_id', $data->id)->get();
+                foreach ($receipts as $receipt) {
+                    $receipt->status_id = 9;
+                    $receipt->update();
+                }
+            }
+    
+            db::commit();
+            return [
+                'data' => new RemittanceResource($data),
+                'message' => 'Remittance approval was successful!',
+                'info' => "You've successfully approved the remittance"
+            ];
+        } catch (\Exception $e){
+            return [
+                'data' => null,
+                'message' => 'Remittance approval failed!',
+                'info' => $e->getMessage()
+            ];
+        }
+    } 
 }

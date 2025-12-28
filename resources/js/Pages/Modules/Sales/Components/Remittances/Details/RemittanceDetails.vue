@@ -5,13 +5,13 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <b-button @click="$emit('delete', item.id)" size="sm" class="btn-success me-1">
+                        <b-button @click="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.id == 1">
                             <i class="ri-check-line"></i>
                         </b-button>
                         <b-button @click="$emit('delete', item.id)" size="sm" class="btn-default me-1">
                             <i class="ri-printer-line"></i>
                         </b-button>
-                        <b-button @click="$emit('delete', item.id)" size="sm" class="btn-danger">
+                        <b-button @click="$emit('delete', item.id)" size="sm" class="btn-danger" v-if="item.status.id != 7">
                             <i class="ri-delete-bin-line"></i>
                         </b-button>
                     </div>
@@ -64,7 +64,8 @@
                                 </div><br>
                                 <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.username || '-' }}</p>
                                 <p class="mb-1"><strong>Date Approved:</strong> {{ item.approved_at || '-' }}</p>
-                                <p class="mb-0"><strong>Remarks:</strong> {{ item.notes || '-' }}</p>
+                                <p class="mb-0"><strong>Remarks:</strong>
+                                    &nbsp;<b-badge variant="dark" style="font-size:12px">{{ item.remarks }}</b-badge></p><br>
                             </div>
                         </div>
                     </div>
@@ -74,14 +75,18 @@
     </tr>
 
     <ReceiptDetails :item="item" v-if="showReceipts" @hide="showReceipts = false" />
+
+    <ApprovalModal :item="item" ref="approvalModal" @reload="$emit('reload')" />
 </template>
 
 <script>
 import ReceiptDetails from './ReceiptDetails.vue';
+import ApprovalModal from '../Modals/ApprovalModal.vue';
 
 export default {
     components: {
-        ReceiptDetails
+        ReceiptDetails,
+        ApprovalModal
     },
     props: {
         item: {
@@ -97,6 +102,9 @@ export default {
     methods: {
         showReceiptsModal() {
             this.showReceipts = true;
+        },
+        openApprovalModal() {
+            this.$refs.approvalModal.show();
         },
         formatSummaryKey(key) {
             return String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());

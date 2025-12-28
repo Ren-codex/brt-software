@@ -4,6 +4,7 @@ namespace App\Http\Resources\Libraries;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Carbon\Carbon;
 
 class RemittanceResource extends JsonResource
 {
@@ -25,7 +26,7 @@ class RemittanceResource extends JsonResource
             'created_by' => $this->createdBy,
             'status' => $this->status,
             'approved_by' => $this->approvedBy,
-            'approved_at' => $this->approved_at,
+            'approved_at' => Carbon::parse($this->approved_at)->format('Y-m-d H:i:s'),
             'remarks' => $this->remarks,
             'receipts' => $this->receipts ? ReceiptResource::collection($this->receipts) : null,
         ];

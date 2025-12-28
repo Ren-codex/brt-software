@@ -71,7 +71,7 @@
                                                 </td>
                                             </tr>
 
-                                            <RemittanceDetails v-if="expandedRows.includes(index)" :item="item" @delete="onDelete" />
+                                            <RemittanceDetails v-if="expandedRows.includes(index)" :item="item" @reload="fetch"/>
                                         </template>
                                     </tbody>
                                 </table>
@@ -178,6 +178,8 @@ export default {
     },
     methods: {
         fetch(){
+            this.expandedRows = [];
+            this.tabIndex = 0;
             axios.get('/remittances',{
                 params : {
                     keyword: this.filter.keyword,
