@@ -6,7 +6,7 @@
         @click.self="hide"
         
     >
-        <div class="modal-container modal-lg">
+        <div class="modal-container modal-xl" @click.stop>
             <div class="modal-header">
                 <h2>{{ editable ? 'Update Item' : 'Add Item' }}</h2>
                 <button class="close-btn" @click="hide">

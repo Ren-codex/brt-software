@@ -6,14 +6,14 @@
         @click.self="hide"
         
     >
-        <div class="modal-container">
+        <div class="modal-container modal-xl" @click.stop>
             <div class="modal-header">
                 <h2>{{ editable ? 'Update Supplier' : 'Add Sales Order' }}</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body ">
+            <div class="modal-body modal-body-lg">
                
                 <form @submit.prevent="submit">
                      <BRow>
@@ -57,31 +57,23 @@
 
                                     <span class="error-message" v-if="form.errors.customer_id">{{ form.errors.customer_id }}</span>
                                 </div>
-
-
-
-
-
                             </div>
-
-                          
-                            <div class="text-end">
-                                <b-button :disabled="!form.customer_id || !form.payment_mode || !form.order_date" @click="addRowItem()" size="sm" variant="primary" class="mb-2">Add Item</b-button>
-                            </div>
+           
                             <div class="form-row">
+                                <div style="height: calc(100vh - 400px);  overflow: auto;">
+
                                 <table class="table align-middle table-striped table-centered mb-0">
                                       <thead class="table-light thead-fixed">
                                           <tr class="fs-11">
                                               <th style="width: 3%;">#</th>
-                                             <th style="width: 10%;" class="text-center">Product</th>
-                                              <th style="width: 10%;" class="text-center">Batch Code</th>
-                                            <th style="width: 12%;" class="text-center">Unit</th>
-                                            <th style="width: 10%;" class="text-center">Available</th>
-                                             <th style="width: 12%;" class="text-center">Quantity</th>
-                                              <th style="width: 10%;" class="text-center">Price</th>
-                                              <th style="width: 8%;" class="text-center">Discount (₱)</th>
-                                              <th style="width: 10%;" class="text-center">Total </th>
-                                              <th style="width: 6%;" class="text-center">Actions</th>
+                                              <th style="width: 15%;" >Product</th>
+                                              <th style="width: 10%;" >Batch Code</th>
+                                              <th style="width: 12%;" class="text-center">Unit</th>
+                                             <th style="width: 5%;" class="text-center">Quantity</th>
+                                              <th style="width: 12%;" class="text-center">Price</th>
+                                              <th style="width: 15%;" class="text-center">Total </th>
+                                              <th style="width: 15%;" class="text-center">Discount </th>
+                                              <th style="width: 10%;" class="text-center">Actions</th>
                                           </tr>
                                       </thead>
 
@@ -92,14 +84,14 @@
                                             <td >
                                                 {{ index + 1}}
                                             </td>
-                                            <td class="text-center">
+                                            <td >
                                                 <b-form-select
                                                     v-model="list.product_id"
                                                     :options="dropdowns.products"
                                                     value-field="value"
                                                     text-field="name"
                                                     size="sm"
-                                                    class="form-control"
+                                                    :class="{ 'input-error': form.errors['items.' + index + '.product_id'] }"          
                                                     @change="onProductChange(index)"
                                                 >
                                                     <template #first>
@@ -109,24 +101,30 @@
                                                     </template>
                                                 </b-form-select>
                                             </td>
-                                            <td class="text-center">{{ getBatchCode(list.product_id) }}</td>
-                                            <td></td>
-                                            <td class="text-center">{{ list.quantity }} </td>
-                                            <td class="text-center">{{ formatCurrency(list.unit_cost) }} </td>
+                                            <td >
+                                                {{ list.batch_code }}
+                                            </td>
+                                            <td class="text-center">{{ getProduct(list.product_id) }} </td>
+                                      
                                             <td class="text-center">
-                                                <input
-                                                    type="number"
-                                                    v-model="list.discount_per_unit"
-                                                    class="form-control form-control-sm text-center"
-                                                    min="0"
-                                                    step="0.01"
-                                                    placeholder="0.00"
+                                                <input 
+                                                    class="text-center"
+                                                    type="number" 
+                                                    v-model.number="list.quantity" 
+                                                    :class="{ 'input-error': form.errors['items.' + index + '.quantity'] }"
                                                     @input="updateItemTotal(index)"
                                                 />
                                             </td>
+                                            <td class="text-center">
+                                                <Amount
+                                                    class="amount"
+                                                    @amount="value => list.unit_cost = value"
+                                                    :class="{ 'input-error': form.errors['items.' + index + '.unit_cost'] }"
+                                                    :value="list.unit_cost"
+                                                />
+                                            </td>
+                                            <td class="text-center">{{formatCurrency(calculateItemTotal(list)) }}</td>
                                             <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}</td>
-
-
                                               <td class="text-center">
                                                   <div class="d-flex justify-content-center gap-1">
                                                       <b-button @click="editItem(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
@@ -140,12 +138,13 @@
                                           </tr>
                                       </tbody>
                                   </table>
+                                </div>
                             </div>
                     </div>
                     <div class="col-md-3">
-                        <b-card class="mb-3">
+                        <b-card class="bg-light p-1 rounded">
                             <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Customer Information</h5>
-                            <div v-if="form.customer_id" class="mt-3">
+                            <div v-if="form.customer_id" class="mt-1">
                                 <ul class="list-unstyled">
                                     <li><strong>Name:</strong> {{ getCustomer(form.customer_id).name }}</li>
                                     <li><strong>Address:</strong> {{ getCustomer(form.customer_id).address }}</li>
@@ -157,7 +156,7 @@
                                 <p class="text-center">Select a customer to view information</p>
                             </div>
                         </b-card>
-                        <b-card>
+                        <b-card class="bg-light p-1 rounded">
                             <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Payment Mode<span class="text-danger">*</span></h5>
                             <div class="mt-3 mb-3">
                                 <div class="payment-mode-buttons">
@@ -167,7 +166,7 @@
                                         :class="{ 'selected-payment-mode': form.payment_mode === mode }"
                                         variant="outline-primary"
                                         @click="selectPaymentMode(mode)"
-                                        class="me-2 mb-2"
+                                        class="me-2 mb-2 text-center"
                                         size="sm"
                                     >
                                         <i :class="getPaymentModeIcon(mode)" class="me-1"></i>
@@ -195,7 +194,52 @@
                                     <span class="error-message" v-if="form.errors.billing_account">{{ form.errors.billing_account }}</span>
                                 </div>
                             </div>
+                             <div class="form-row" v-if="form.payment_mode">
+
+                                <div class="form-group form-group-half" >
+                                    <label for="payment_term" class="form-label">Payment Term<span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-bank-card-line input-icon"></i>
+                                        <b-form-select
+                                            v-model="form.payment_term"
+                                            :options="['Net 15', 'Net 30', 'Net 60', 'Cash on Delivery' , 'Due on Receipt' , 'Immediate Payment']"
+                                            text-field="name"
+                                            value-field="value"
+                                            :class="{ 'input-error': form.errors.billing_account }"
+                                            class="form-control"
+                                        >
+                                          <template #first>
+                                            <b-form-select-option :value="null" disabled>Select Payment Term</b-form-select-option>
+                                        </template>
+                                        </b-form-select>    
+    
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.billing_account">{{ form.errors.billing_account }}</span>
+                                </div>
+                            </div>
+
+                          
                         </b-card>
+                         <!-- <b-card class=" bg-light mt-4 p-3 rounded">
+                                <div class="form-group form-group-half mt-0" >
+                                    <label class="form-label text-primary">Order Summary</label>
+                                    <div class="input-wrapper">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Subtotal:</span>
+                                            <span>{{ formatCurrency(form.items.reduce((total, item) => total + calculateItemTotal(item), 0)) }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Discount ({{ form.discount_percentage }}%):</span>
+                                            <span>{{ formatCurrency(form.discount_amount) }}</span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between fw-bold">
+                                            <span>Calculated Total:</span>
+                                            <span>{{ formatCurrency(form.items.reduce((total, item) => total + calculateItemTotal(item), 0) - form.discount_amount) }}</span>
+                                        </div>
+                                </div>
+                            </div>
+                        </b-card> -->
                     </div>
                     </BRow>
                     
@@ -203,16 +247,22 @@
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Your information has been saved successfully!</span>
                     </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-cancel" @click="hide">
-                            <i class="ri-close-line"></i>
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing">
-                            <i class="ri-save-line" v-if="!form.processing"></i>
-                            <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : 'Save Order' }}
-                        </button>
+                    <div class="form-actions d-flex justify-content-between">
+                        <b-button :disabled="!form.customer_id || !form.order_date" @click="addRowItem()" size="sm" variant="primary">
+                            <i class="ri-add-line" v-if="!form.processing"></i>
+                            Add Item
+                        </b-button>
+                        <div>
+                            <button type="button" class="btn btn-cancel me-2" @click="hide">
+                                <i class="ri-close-line"></i>
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-save" :disabled="form.processing">
+                                <i class="ri-save-line" v-if="!form.processing"></i>
+                                <i class="ri-loader-4-line spinner" v-else></i>
+                                {{ form.processing ? 'Saving...' : 'Save Order' }}
+                            </button>
+                        </div>
                     </div>
                 </form>
               
@@ -247,6 +297,10 @@ export default {
                 status_id: null,
                 or_release: null,
                 billing_account: null,
+                payment_term: null,
+                amount: 0.00,
+                discount_percentage: 0,
+                discount_amount: 0.00,
                 items: [],
                 option: 'lists'
             }),
@@ -286,6 +340,7 @@ export default {
             this.form.items.push({
                 id: Date.now(),
                 product_id: null,
+                batch_code: null,
                 quantity: 1,
                 unit_cost: 0,
                 unit_id: null,
@@ -303,6 +358,7 @@ export default {
 
         show() {
             this.form.reset();
+            this.addRowItem(); // Add a starting row
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
@@ -384,7 +440,7 @@ export default {
 
         getProduct(product_id){
             const product = this.dropdowns.products.find(u => u.value === product_id);
-            return product ? product.name : '';
+            return product ? product.name : '-';
         },
 
         getCustomer(customer_id){
@@ -421,8 +477,9 @@ export default {
         onProductChange(index) {
             const product_id = this.form.items[index].product_id;
             const product = this.dropdowns.products.find(p => p.value === product_id);
-            if (product && product.batch_code) {
-                this.form.batch_code = product.batch_code;
+            if (product) {
+                this.form.items[index].batch_code = product.batch_code || null;
+                this.form.batch_code = product.batch_code || null;
             }
             this.updateItemTotal(index);
         },
@@ -444,10 +501,26 @@ export default {
 
 <style scoped>
 .modal-container {
-    max-width: 70%;
+    max-width: 95%;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+    position: relative;
+}
+
+.modal-body {
+    padding-bottom: 80px; /* Space for fixed buttons */
+}
+
+.form-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 1rem;
+    border-top: 1px solid #ddd;
+    z-index: 10;
 }
 
 .payment-mode-buttons {
@@ -457,15 +530,16 @@ export default {
 }
 
 .payment-mode-buttons .btn {
-    min-width: 120px;
+    min-width: 70px;
+    min-height: 70px;
     justify-content: flex-start;
+    border: 1px solid lightgreen;
 }
 
 .selected-payment-mode {
-    border-color: darkgreen !important;
     border-width: 2px !important;
     background-color: transparent !important;
-    border: 2px solid darkgreen;
+    border: 3px solid darkgreen;
 }
 
 .payment-mode-buttons .btn:hover {
@@ -474,4 +548,13 @@ export default {
     background-color: transparent !important;
     color:darkgreen;
 }
+
+.btn:focus, .btn:active {
+    border-color:darkgreen !important;
+    border: 2px solid darkgreen;
+    background-color: transparent !important;
+    color:darkgreen;
+}
+
+
 </style>
