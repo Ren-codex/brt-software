@@ -7,83 +7,98 @@
             </div>
 
             <div class="modal-body">
-                <div class="mb-3 d-flex align-items-center gap-2">
-                    <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt" class="form-control" />
-                    <b-button size="sm" variant="outline-primary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</b-button>
+                <div class="success-alert" v-if="saveSuccess">
+                    <i class="ri-checkbox-circle-fill"></i>
+                    <span>Your information has been saved successfully!</span>
                 </div>
+                
+                <form @submit.prevent="submit">
+                    <div class="mb-3 d-flex align-items-center gap-2">
+                        <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt" class="form-control" />
+                        <b-button size="sm" variant="outline-primary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</b-button>
+                    </div>
 
-                <div class="table-responsive" style="max-height: 220px; overflow:auto;">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width:40px"><input type="checkbox" :checked="allSelected" @change="toggleSelectAll" /></th>
-                                <th>#</th>
-                                <th>Receipt No.</th>
-                                <th>Customer</th>
-                                <th class="text-end">Amount</th>
-                                <th>Payment</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(order, idx) in filteredOrders" :key="order.id">
-                                <td><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
-                                <td>{{ idx + 1 }}</td>
-                                <td>{{ order.receipt_number || '-' }}</td>
-                                <td>{{ order.customer?.name || '-' }}</td>
-                                <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
-                                <td>{{ order.payment_mode }}</td>
-                                <td>{{ order.created_at }}</td>
-                            </tr>
-                            <tr v-if="orders.length === 0">
-                                <td colspan="7" class="text-center text-muted">No pending sales orders found.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                    <div class="table-responsive" style="max-height: 180px; overflow:auto;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:40px"><input type="checkbox" :checked="allSelected" @change="toggleSelectAll" /></th>
+                                    <th>#</th>
+                                    <th>Receipt No.</th>
+                                    <th>Customer</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Payment</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(order, idx) in filteredOrders" :key="order.id">
+                                    <td><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
+                                    <td>{{ idx + 1 }}</td>
+                                    <td>{{ order.receipt_number || '-' }}</td>
+                                    <td>{{ order.customer?.name || '-' }}</td>
+                                    <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
+                                    <td>{{ order.payment_mode }}</td>
+                                    <td>{{ order.created_at }}</td>
+                                </tr>
+                                <tr v-if="orders.length === 0">
+                                    <td colspan="7" class="text-center text-muted">No pending sales orders found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-end">
+                        <p>
+                            <span class="text-primary"><b>{{ selectedIds.length }}</b></span> Selected
+                        </p>
+                    </div>
 
-                <div class="mt-3">
-                    <h6 class="text-primary"><i class="ri-money-dollar-circle-line"></i> Summary</h6>
-                    <div class="row g-2">
-                        <div class="col-md-3">
-                            <div class="p-2 bg-light rounded">
-                                <small class="text-muted">Cash</small>
-                                <div class="fw-bold">{{ formatAmount(totals.cash) }}</div>
+                    <div>
+                        <h6 class="text-primary"><i class="ri-money-dollar-circle-line"></i> Summary</h6>
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <div class="p-2 bg-light rounded">
+                                    <small class="text-muted">Cash</small>
+                                    <div class="fw-bold">{{ formatAmount(totals.cash) }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-2 bg-light rounded">
+                                    <small class="text-muted">Credit Card</small>
+                                    <div class="fw-bold">{{ formatAmount(totals.credit_card) }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-2 bg-light rounded">
+                                    <small class="text-muted">Debit Card</small>
+                                    <div class="fw-bold">{{ formatAmount(totals.debit_card) }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-2 bg-light rounded">
+                                    <small class="text-muted">Bank Transfer</small>
+                                    <div class="fw-bold">{{ formatAmount(totals.bank_transfer) }}</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="p-2 bg-light rounded">
-                                <small class="text-muted">Credit Card</small>
-                                <div class="fw-bold">{{ formatAmount(totals.credit_card) }}</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-2 bg-light rounded">
-                                <small class="text-muted">Debit Card</small>
-                                <div class="fw-bold">{{ formatAmount(totals.debit_card) }}</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-2 bg-light rounded">
-                                <small class="text-muted">Bank Transfer</small>
-                                <div class="fw-bold">{{ formatAmount(totals.bank_transfer) }}</div>
-                            </div>
+
+                        <div class="my-4 text-end">
+                            TOTAL<h2 class="mb-0"><strong> {{ formatAmount(totals.overall) }}</strong></h2>
                         </div>
                     </div>
 
-                    <div class="my-4 text-end">
-                        TOTAL<h2 class="mb-0"><strong> {{ formatAmount(totals.overall) }}</strong></h2>
+                    <div class="form-actions mt-3 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-cancel" @click="hide">
+                            <i class="ri-close-line"></i>
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-save" :disabled="selectedIds.length === 0 || submitting">
+                            <i class="ri-save-line" v-if="!submitting"></i>
+                            <i class="ri-loader-4-line spinner" v-else></i>
+                            {{ submitting ? 'Saving...' : 'Save Order' }}
+                        </button>
                     </div>
-                </div>
-
-                <div class="form-actions mt-3 d-flex justify-content-end gap-2">
-                    <b-button variant="outline-secondary" @click="hide">Cancel</b-button>
-                    <b-button variant="primary" :disabled="selectedIds.length === 0 || submitting" @click="submit">
-                        <i v-if="!submitting" class="ri-save-line me-1"></i>
-                        <i v-else class="ri-loader-4-line spinner me-1"></i>
-                        Prepare Remittance
-                    </b-button>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -91,6 +106,8 @@
 
 <script>
 import _ from 'lodash';
+import { useForm } from '@inertiajs/vue3';
+
 export default {
     props: ['dropdowns'],
     data() {
@@ -101,7 +118,13 @@ export default {
             selectedIds: [],
             keyword: '',
             submitting: false,
-            debouncedFetch: null
+            debouncedFetch: null,
+            form: useForm({
+                receipts: [],
+                summary: {},
+                total_amount: 0,
+            }),
+            saveSuccess: false,
         }; 
     },
     computed: {
@@ -162,7 +185,7 @@ export default {
                 this.filteredOrders = this.orders;
             } else {
                 const kw = this.keyword.toLowerCase();
-                this.filteredOrders = this.orders.filter(o => ((o.so_number || o.receipt_number || '') + ' ' + (o.customer?.name || '')).toLowerCase().includes(kw));
+                this.filteredOrders = this.orders.filter(o => ((o.receipt_number || '') + ' ' + (o.customer?.name || '' ) + ' ' + (o.payment_mode || '')).toLowerCase().includes(kw));
             }
         },
 
@@ -180,18 +203,21 @@ export default {
         submit() {
             if (this.selectedIds.length === 0) return;
             this.submitting = true;
-            axios.post('/remittances', {
-                sales_order_ids: this.selectedIds,
-                option: 'bulk_create'
-            })
-            .then(resp => {
-                this.submitting = false;
-                this.$emit('created', true);
-                this.hide();
-            })
-            .catch(err => {
-                this.submitting = false;
-                console.error(err);
+            this.form.receipts = this.selectedIds;
+            const { overall, ...summary } = this.totals;
+            this.form.summary = summary;
+            this.form.total_amount = this.totals.overall;
+            this.form.post('/remittances', {
+                preserveScroll: true,
+                onSuccess: (response) => {
+                    this.saveSuccess = true;
+                    setTimeout(() => {
+                        this.$emit('add', true);
+                        this.form.reset();
+                        this.hide();
+                    }, 1500);
+                    
+                },
             });
         }
     }

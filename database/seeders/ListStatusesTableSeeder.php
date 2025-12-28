@@ -84,7 +84,7 @@ class ListStatusesTableSeeder extends Seeder
 
             6 =>
             array (
-                'id' => 6,
+                'id' => 7,
                 'name' => 'liquidated',
                 'description' => 'Liquidated status',
                 'text_color' => '#000000',
@@ -95,9 +95,20 @@ class ListStatusesTableSeeder extends Seeder
 
             7 =>
             array (
-                'id' => 7,
+                'id' => 8,
                 'name' => 'posted',
                 'description' => 'Posted status',
+                'text_color' => '#000000',
+                'bg_color' => '#35f2d2',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            8 =>
+            array (
+                'id' => 9,
+                'name' => 'remitted',
+                'description' => 'Remitted status',
                 'text_color' => '#000000',
                 'bg_color' => '#35f2d2',
                 'created_at' => '2025-01-01 00:00:00',

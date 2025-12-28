@@ -14,6 +14,7 @@ class Receipt extends Model
         'status_id',
         'customer_id',
         'ar_invoice_id',
+        'remittance_id',
     ];
 
     public function status()
