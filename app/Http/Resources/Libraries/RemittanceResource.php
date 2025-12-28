@@ -20,12 +20,14 @@ class RemittanceResource extends JsonResource
             'remittance_date' => $this->remittance_date,
             'summary' => $this->summary,
             'total_amount' => $this->total_amount,
-            'approved_at' => $this->approved_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'created_by' => $this->createdBy,
             'status' => $this->status,
             'approved_by' => $this->approvedBy,
+            'approved_at' => $this->approved_at,
+            'remarks' => $this->remarks,
+            'receipts' => $this->receipts ? ReceiptResource::collection($this->receipts) : null,
         ];
     }
 }

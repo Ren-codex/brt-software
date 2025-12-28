@@ -26,4 +26,9 @@ class Receipt extends Model
     {
         return $this->belongsTo(Customer::class, 'customer_id');
     }
+
+    public function remittance()
+    {
+        return $this->belongsTo(Remittance::class, 'remittance_id');
+    }
 }

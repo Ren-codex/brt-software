@@ -50,6 +50,7 @@ class RemittanceClass
                 foreach ($request->receipts as $receiptId) {
                     Receipt::where('id', $receiptId)->update([
                         'status_id' => 8,
+                        'remittance_id' => $data->id,
                     ]);
                 }
             }

@@ -37,4 +37,9 @@ class Remittance extends Model
     {
         return $this->belongsTo(User::class, 'approved_by_id');
     }
+
+    public function receipts()
+    {
+        return $this->hasMany(Receipt::class, 'remittance_id');
+    }
 }

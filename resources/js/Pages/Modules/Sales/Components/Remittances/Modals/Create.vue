@@ -95,7 +95,7 @@
                         <button type="submit" class="btn btn-save" :disabled="selectedIds.length === 0 || submitting">
                             <i class="ri-save-line" v-if="!submitting"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ submitting ? 'Saving...' : 'Save Order' }}
+                            {{ submitting ? 'Saving...' : 'Save Remit' }}
                         </button>
                     </div>
                 </form>
