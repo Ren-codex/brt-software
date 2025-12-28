@@ -29,4 +29,9 @@ class ReceivedItem extends Model
     {
         return $this->belongsTo(PurchaseOrderItem::class, 'po_item_id');
     }
+
+    public function inventoryStocks()
+    {
+        return $this->hasMany(InventoryStocks::class, 'received_item_id');
+    }
 }
