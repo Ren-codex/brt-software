@@ -5,13 +5,13 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <b-button @click="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.id == 1">
+                        <b-button @click.stop="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.id == 1">
                             <i class="ri-check-line"></i>
                         </b-button>
-                        <b-button @click="$emit('delete', item.id)" size="sm" class="btn-default me-1">
+                        <b-button @click.stop="$emit('print', item.id)" size="sm" class="btn-default me-1">
                             <i class="ri-printer-line"></i>
                         </b-button>
-                        <b-button @click="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.id != 7">
+                        <b-button @click.stop="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.id != 7">
                             <i class="ri-delete-bin-line"></i>
                         </b-button>
                     </div>
@@ -127,23 +127,50 @@ export default {
             });
 
             if (result.isConfirmed) {
-                axios.delete(`/remittances/${id}`)
-                    .then(response => {
-                        this.fetch();
-                        Swal.fire(
-                            'Deleted!',
-                            'Remittance deleted successfully!',
-                            'success'
-                        );
-                    })
-                    .catch(error => {
-                        console.error(error);
-                        Swal.fire(
-                            'Error!',
-                            'Failed to delete remittance.',
-                            'error'
-                        );
-                    });
+                const url = `/remittances/${id}`;
+                try {
+                    const response = await axios.delete(url, { headers: { 'X-Request-Origin': 'remittance-delete' } });
+                    this.reload();
+                    Swal.fire(
+                        'Deleted!',
+                        'Remittance deleted successfully!',
+                        'success'
+                    );
+                } catch (error) {
+                    console.error('remittance delete error', error);
+                    // If server rejects DELETE with 405, retry using POST method spoofing
+                    if (error && error.response && error.response.status === 405) {
+                        console.log('DELETE returned 405 — retrying with POST _method=DELETE');
+                        try {
+                            const postResponse = await axios.post(url, { _method: 'DELETE' }, { headers: { 'X-Request-Origin': 'remittance-delete' } });
+                            console.log('remittance delete via POST response', postResponse);
+                            this.reload();
+                            Swal.fire(
+                                'Deleted!',
+                                'Remittance deleted successfully!',
+                                'success'
+                            );
+                            return;
+                        } catch (postErr) {
+                            console.error('remittance delete via POST error', postErr);
+                            if (postErr && postErr.response && postErr.response.config) {
+                                console.log('postErr response config url:', postErr.response.config.url);
+                                console.log('postErr response config method:', postErr.response.config.method);
+                            }
+                        }
+                    } else {
+                        if (error && error.response && error.response.config) {
+                            console.log('error response config url:', error.response.config.url);
+                            console.log('error response config method:', error.response.config.method);
+                        }
+                    }
+
+                    Swal.fire(
+                        'Error!',
+                        'Failed to delete remittance.',
+                        'error'
+                    );
+                }
             }
         },
         reload(){

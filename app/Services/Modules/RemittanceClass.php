@@ -85,16 +85,14 @@ class RemittanceClass
 
             $data = Remittance::findOrFail($id);
             $data->delete();
+            
+            db::commit();
 
             return [
                 'data' => $data,
                 'message' => 'Remittance deleted was successful!',
                 'info' => "You've successfully deleted the remittance"
             ];
-
-
-            db::commit();
-
         } catch (\Exception $e){
             return [
                 'data' => null,
