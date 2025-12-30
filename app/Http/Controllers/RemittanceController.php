@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\DropdownClass;
+use App\Services\PrintClass;
 use App\Traits\HandlesTransaction;
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Modules\RemittanceClass;
 use App\Http\Requests\Modules\RemittanceRequest;
@@ -13,11 +13,12 @@ class RemittanceController extends Controller
 {
     use HandlesTransaction;
 
-    public $remittance,$dropdown;
+    public $remittance,$dropdown,$print;
 
-    public function __construct(RemittanceClass $remittance, DropdownClass $dropdown){
+    public function __construct(RemittanceClass $remittance, DropdownClass $dropdown, PrintClass $print){
         $this->dropdown = $dropdown;
         $this->remittance = $remittance;
+        $this->print = $print;
     }
 
     public function index(Request $request){   
@@ -68,5 +69,10 @@ class RemittanceController extends Controller
             'info' => $result['info'],
             'status' => $result['status'],
         ]);
+    }
+
+    public function show($id, Request $request)
+    {
+        return $this->print->print($id, $request);
     }
 }

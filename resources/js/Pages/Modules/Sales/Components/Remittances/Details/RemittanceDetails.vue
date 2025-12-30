@@ -8,7 +8,7 @@
                         <b-button @click.stop="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.id == 1">
                             <i class="ri-check-line"></i>
                         </b-button>
-                        <b-button @click.stop="$emit('print', item.id)" size="sm" class="btn-default me-1">
+                        <b-button @click.stop="onPrint(item.id)" size="sm" class="btn-default me-1">
                             <i class="ri-printer-line"></i>
                         </b-button>
                         <b-button @click.stop="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.id != 7">
@@ -172,6 +172,9 @@ export default {
                     );
                 }
             }
+        },
+        onPrint(id){
+            window.open(`/remittances/${id}?option=print&type=remittance`);
         },
         reload(){
             this.$emit('reload');
