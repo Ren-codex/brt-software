@@ -18,8 +18,9 @@ return new class extends Migration
             $table->date('order_date');
             $table->date('transferred_at')->nullable();
             $table->string('payment_mode');
-            $table->unsignedInteger('received_id');
-            $table->foreign('received_id')->references('id')->on('received_stocks')->onDelete('cascade');
+            $table->string('payment_term');
+            $table->decimal('total_amount', 15, 2)->default(0);
+            $table->decimal('total_discount', 15, 2)->default(0);
             $table->unsignedInteger('added_by_id');
             $table->foreign('added_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedInteger('transferred_to')->nullable();

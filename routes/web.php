@@ -14,6 +14,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::resource('/sales', App\Http\Controllers\Modules\SalesController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
+    Route::post('/sales-orders/adjustment/{id}', [App\Http\Controllers\Modules\SalesAdjustmentController::class, 'store']);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
 
     Route::middleware(['role:Administrator'])->group(function () {

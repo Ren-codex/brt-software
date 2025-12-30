@@ -15,11 +15,14 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->integer('quantity');
-            $table->decimal('unit_cost', 15, 2);
+            $table->decimal('price', 15, 2);
+            $table->decimal('discount_per_unit', 15, 2);
             $table->unsignedInteger('product_id');
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             $table->unsignedInteger('sales_order_id');
             $table->foreign('sales_order_id')->references('id')->on('sales_orders')->onDelete('cascade');
+            $table->string('batch_code');
+            $table->foreign('batch_code')->references('batch_code')->on('received_stocks')->onDelete('cascade');
             $table->timestamps();
         });
     }

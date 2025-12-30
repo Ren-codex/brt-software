@@ -10,13 +10,23 @@ class SalesOrderItem extends Model
         'sales_order_id',
         'product_id',
         'quantity',
-        'unit_cost',
-        'status_id'
-    
+        'price',
+        'batch_code',
+        'discount_per_unit'
     ];
 
     public function sales_order()
     {
-        return $this->belongsTo('App\Models\SalesOrder', 'sales_order_id', 'id');
+        return $this->belongsTo('App\Models\SalesOrder', 'sales_order_id', 'id')->with('items.product');
+    }
+
+    public function batch_code()
+    {
+        return $this->belongsTo('App\Models\ReceivedStock', 'batch_code', 'batch_code');
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
     }
 }

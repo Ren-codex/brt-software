@@ -13,6 +13,7 @@ class InventoryAdjustment extends Model
         'reason',
         'adjustment_date',
         'adjusted_by_id',
+        'type',
     ];
 
     public function inventoryStock()

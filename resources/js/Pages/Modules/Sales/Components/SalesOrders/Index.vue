@@ -7,22 +7,22 @@
                         <div class="flex-shrink-0 me-3">
                             <div style="height:2.5rem;width:2.5rem;">
                                 <span class="avatar-title rounded p-2 mt-n1">
-                                    <i class="ri-shopping-cart-line text-white fs-24"></i>
+                                    <i class="ri-shopping-cart-line fs-24"></i>
                                 </span>
                             </div>
                         </div>
-                        <div class="flex-grow-1">
+                        <div class="flex-grow-1 text-white">
                             <h5 class=" fs-14"><span class="text-white">Sales Orders</span></h5>
-                            <p class="text-white-50 text-truncate-two-lines fs-12">A comprehensive list of Sales Orders</p>
+                            <p class=" text-truncate-two-lines fs-12">A comprehensive list of Sales Orders</p>
                         </div>
 
                     </div>
                 </div>
-                <div class="card-body bg-white">
+                <div class="card-body ">
                     <b-row class="mb-3 ms-1 me-1">
                         <b-col lg>
                             <div class="input-group">
-                                <span class="input-group-text bg-primary text-white">
+                                <span class="input-group-text bg-primary text-white border-primary">
                                     <i class="ri-search-line"></i>
                                 </span>
                                 <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search Sales Order" class="form-control border-primary">
@@ -94,10 +94,10 @@
                                     <th style="width: 3%; border: none;">#</th>
                                     <th style="width: 12%;" class="text-center border-none">Order Number</th>
                                     <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 12%;" class="text-center border-none">Product</th>
                                     <th style="width: 12%;" class="text-center border-none">Date</th>
                                     <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment</th>
+                                    <th style="width: 12%;" class="text-center border-none">Payment Mode</th>
+                                    <th style="width: 12%;" class="text-center border-none">Payment Term</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
@@ -114,14 +114,14 @@
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.so_number }}</td>
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
-                                        <td class="text-center">{{ list.product?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
-                                            <b-badge :style="{ 'background-color': list.status?.bg_color, color: '#fff' }" class="px-3 py-2 rounded-pill">
-                                                {{ list.status?.name }}
-                                            </b-badge>
+                                            <span :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">  
+                                                {{ list.status?.name || 'Unknown' }}
+                                            </span>
                                         </td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
+                                        <td class="text-center">{{ list.payment_term }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <b-button @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary" v-b-tooltip.hover title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">
@@ -133,7 +133,7 @@
                                                 <b-button @click.stop="openEdit(list,index)" variant="outline-primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
-                                                <b-button @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.name != 'Cancelled'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
                                                 </b-button>
                                             </div>
@@ -147,7 +147,7 @@
                                                 </h6>
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm bg-white">
+                                                        <div class="card border-0 shadow-sm ">
                                                             <div class="card-body">
                                                                 <h6 class="card-title text-muted small mb-2">Order Information</h6>
                                                                 <p class="mb-1"><strong>Order Date:</strong> {{ list.order_date }}</p>
@@ -157,14 +157,37 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm bg-white">
+                                                        <div class="card border-0 shadow-sm ">
+                                                          
                                                             <div class="card-body">
                                                                 <h6 class="card-title text-muted small mb-2">Items</h6>
                                                                 <div v-if="list.items && list.items.length > 0">
-                                                                    <div v-for="item in list.items" :key="item.id" class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                                                                        <span>{{ item.product?.name || 'Unknown Product' }}</span>
+                                                                    <table class="table table-sm table-borderless mb-0">
+                                                                       <thead>
+                                                                        <tr>
+                                                                            <th class="fw-semibold">Product Name</th>
+                                                                            <th class=" fw-semibold">Quantity</th>
+                                                                            <th class=" fw-semibold">
+                                                                                Price
+                                                                            </th>
+                                                                        </tr>
+                                                                       </thead>      
+                                                                       <tbody>
+                                                                        <tr v-for="item in list.items" :key="item.id">
+                                                                            <td>{{ getProduct(item.product_id).name || 'Unknown Product' }}</td>
+                                                                            <td >
+                                                                                <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
+                                                                            </td>
+                                                                            <td >
+                                                                                ₱{{ item.price }}
+                                                                            </td>
+                                                                        </tr>
+                                                                       </tbody>
+                                                                    </table>
+                                                                    <!-- <div v-for="item in list.items" :key="item.id" class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                                                                        <span>{{ getProduct(item.product_id).name || 'Unknown Product' }}</span>
                                                                         <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
-                                                                    </div>
+                                                                    </div> -->
                                                                 </div>
                                                                 <p v-else class="text-muted mb-0">No items found</p>
                                                             </div>
@@ -184,65 +207,81 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2 ">
-            <div class="card shadow-lg border-0 bg-primary" >
-                <div class="card-header border-0  bg-primary" >
-                    <h4 class="text-white" >
+        <div class="col-md-2  bg-light">
+            <div class="card shadow-lg border-0 bg-light" >
+                <div class="card-header border-0  " >
+                    <h4 >
                         <i class="ri-dashboard-line "></i> Quick Stats
                         <hr class="mb-0">
                     </h4>
                 </div>
      
                 <div class="card-body">
-                    <div class="metric-card mb-3 p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 e bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-shopping-cart-line text-white fs-18"></i>
+                                <span class="avatar-title  bg-opacity-25 rounded">
+                                    <i class="ri-shopping-cart-line  fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Total Sales Orders</p>
-                                <h4 class="mb-0 text-white">{{ metrics.total_sales_orders }}</h4>
+                                <p class=" fw-semibold fs-12 mb-1">Total Sales Orders</p>
+                                <h4 class="mb-0 ">{{ metrics.total_sales_orders }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card mb-3 p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-calendar-line text-white fs-18"></i>
+                                <span class="avatar-title  bg-opacity-25 rounded">
+                                    <i class="ri-calendar-line  fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Today's Orders</p>
-                                <h4 class="mb-0 text-white">{{ metrics.today_orders }}</h4>
+                                <p class=" fw-semibold fs-12 mb-1">Today's Orders</p>
+                                <h4 class="mb-0 ">{{ metrics.today_orders }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card mb-3 p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+              
+                    <div class="metric-card p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-money-dollar-circle-line text-white fs-18"></i>
+                                <span class="avatar-title  bg-opacity-25 rounded">
+                                    <i class="ri-time-line  fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Total Revenue</p>
-                                <h4 class="mb-0 text-white">₱{{ metrics.total_revenue?.toFixed(2) }}</h4>
+                                <p class=" fw-semibold fs-12 mb-1">Pending Orders</p>
+                                <h4 class="mb-0 ">{{ metrics.pending_orders }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+
+                     <div class="metric-card p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-time-line text-white fs-18"></i>
+                                <span class="avatar-title  bg-opacity-25 rounded">
+                                    <i class="ri-time-line  fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Pending Orders</p>
-                                <h4 class="mb-0 text-white">{{ metrics.pending_orders }}</h4>
+                                <p class=" fw-semibold fs-12 mb-1">Cancelled Orders</p>
+                                <h4 class="mb-0 ">{{ metrics.cancelled_orders }}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title  bg-opacity-25 rounded">
+                                    <i class="ri-money-dollar-circle-line  fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class=" fw-semibold fs-12 mb-1">Total Revenue</p>
+                                <h4 class="mb-0 ">₱{{ metrics.total_revenue }}</h4>
                             </div>
                         </div>
                     </div>
@@ -282,7 +321,8 @@ export default {
                 total_sales_orders: 0,
                 today_orders: 0,
                 total_revenue: 0,
-                pending_orders: 0
+                pending_orders: 0,
+                total_cancelled_orders: 0
             },
             stock: {
                 products: []
@@ -416,7 +456,12 @@ export default {
             // You might want to adjust this based on your business logic
             const maxStock = Math.max(...this.stock.products.map(p => p.total_quantity));
             return Math.min((quantity / maxStock) * 100, 100);
-        }
+        },
+
+         getProduct(product_id){
+            const product = this.dropdowns.products.find(u => u.value === product_id);
+            return product ? product : [];
+        },
     }
 }
 </script>
