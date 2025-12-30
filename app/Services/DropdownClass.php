@@ -97,7 +97,7 @@ class DropdownClass
             }
             return [
                 'value' => $item->id,
-                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '') . ')',
+                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
                 'batch_code' => $batch_code,
                 'available_quantity' => $available_quantity,
                 'price' => $item->price,
