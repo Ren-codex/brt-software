@@ -24,4 +24,9 @@ class SalesOrderItem extends Model
     {
         return $this->belongsTo('App\Models\ReceivedStock', 'batch_code', 'batch_code');
     }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
 }

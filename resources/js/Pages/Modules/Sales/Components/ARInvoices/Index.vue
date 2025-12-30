@@ -246,6 +246,20 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="metric-card p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-white bg-opacity-25 rounded">
+                                    <i class="ri-time-line text-white fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="text-white-50 fw-semibold fs-12 mb-1">Cancelled Orders</p>
+                                <h4 class="mb-0 text-white">{{ metrics.cancelled_orders }}</h4>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

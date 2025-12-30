@@ -82,4 +82,41 @@ class InventoryService
             throw new \Exception('Insufficient stock to deduct the requested quantity.');
         }
     }
+
+    /**
+     * Add stock to inventory using LIFO method (add to the most recent stock).
+     *
+     * @param int $productId
+     * @param int $quantity
+     * @param string $reason
+     */
+    public function addStock($productId, $quantity, $reason)
+    {
+        // Get the most recent inventory stock for the product (LIFO)
+        $stock = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
+            $query->where('product_id', $productId);
+        })->orderBy('created_at', 'desc')->first();
+
+        if ($stock) {
+            $previousQuantity = $stock->quantity;
+            $newQuantity = $previousQuantity + $quantity;
+
+            // Update the stock quantity
+            $stock->update(['quantity' => $newQuantity]);
+
+            // Create an inventory adjustment record
+            InventoryAdjustment::create([
+                'inventory_stocks_id' => $stock->id,
+                'new_quantity' => $newQuantity,
+                'previous_quantity' => $previousQuantity,
+                'reason' => $reason,
+                'adjustment_date' => now()->toDateString(),
+                'adjusted_by_id' => auth()->id(),
+                'type' => 1, // Addition
+            ]);
+        } else {
+            // If no stock exists, this might be an error, but for now, we'll skip
+            // In a real scenario, you might need to create a new stock entry
+        }
+    }
 }

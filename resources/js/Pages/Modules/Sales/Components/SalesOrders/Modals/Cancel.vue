@@ -1,10 +1,28 @@
 <template>
-    <b-modal v-model="showModal" size="md" header-class="p-3  text-white" :title="'Cancel '+ title" class="v-modal-custom" modal-class="zoomIn" centered no-close-on-backdrop>
-        <div class="text-center p-5">
-             <h1> <i class="ri-alert-fill align-bottom text-warning" style="font-size: 60px;"></i></h1>
-            <h5>Are you sure you want to cancel this {{title}}? </h5>
+    <div 
+        v-show="showModal"
+        class="modal-overlay"
+        :class="{ active: showModal }"
+        @click.self="hide"
+        
+    >
+        <div class="modal-container modal-xl" @click.stop>
+                <div class="modal-header">
+                    <h2>{{ 'Cancel Order' }}</h2>
+                    <button class="close-btn" @click="hide">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+            <div class="text-center p-5">
+                <h1> <i class="ri-alert-fill align-bottom text-warning" style="font-size: 60px;"></i></h1>
+                <h5>Are you sure you want to cancel this {{title}}? </h5>
+            </div>
+            <div class="modal-footer m-3">
+                <button class="btn btn-secondary me-2" @click="hide">Close</button>
+                <button class="btn btn-danger" @click="submit">Yes, Cancel</button>
+            </div>
         </div>
-    </b-modal>
+    </div>
 </template>
 <script>
 

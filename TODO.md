@@ -1,7 +1,8 @@
-# Sales Order Discount Feature Implementation
+# Fix Sales Order Class
 
 ## Tasks
-- [ ] Add input field for discount percentage in order summary section
-- [ ] Add updateDiscountAmount method to calculate discount amount based on percentage
-- [ ] Update discount calculation when percentage changes or items are modified
-- [ ] Test the discount feature functionality
+- [x] Add addStock method to InventoryService
+- [x] Fix dashboard method: correct totalRevenue calculation and complete return array
+- [x] Update update method: restore old stock before deducting new stock
+- [x] Update cancel method: restore stock when cancelling
+- [x] Wrap save and update methods in DB transactions

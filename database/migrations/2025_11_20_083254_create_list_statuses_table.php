@@ -15,6 +15,7 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->string('name')->unique();
+            $table->string('slug')->unique();
             $table->string('description')->nullable();
             $table->string('text_color');
             $table->string('bg_color');

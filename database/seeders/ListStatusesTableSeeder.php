@@ -22,6 +22,7 @@ class ListStatusesTableSeeder extends Seeder
             array (
                 'id' => 1,
                 'name' => 'Pending',
+                'slug' => 'pending',
                 'description' => 'Active status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#28a745',
@@ -32,6 +33,7 @@ class ListStatusesTableSeeder extends Seeder
             array (
                 'id' => 2,
                 'name' => 'Cancelled',
+                'slug' => 'cancelled',
                 'description' => 'Inactive status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#6c757d',
@@ -42,6 +44,7 @@ class ListStatusesTableSeeder extends Seeder
             array (
                 'id' => 3,
                 'name' => 'Sales Returned',
+                'slug' => 'sales-returned',
                 'description' => 'Pending status',
                 'text_color' => '#000000',
                 'bg_color' => '#ffc107',
@@ -53,6 +56,7 @@ class ListStatusesTableSeeder extends Seeder
             array (
                 'id' => 4,
                 'name' => 'Allowance Applied',
+                'slug' => 'allowance-applied',
                 'description' => 'Pending status',
                 'text_color' => '#000000',
                 'bg_color' => '#ffc107',
@@ -63,7 +67,8 @@ class ListStatusesTableSeeder extends Seeder
             4 => 
             array (
                 'id' => 5,
-                'name' => 'approved',
+                'name' => 'Approved',
+                'slug' => 'approved',
                 'description' => 'Approved status',
                 'text_color' => '#000000',
                 'bg_color' => '#ffc107',
@@ -74,8 +79,21 @@ class ListStatusesTableSeeder extends Seeder
             5 => 
             array (
                 'id' => 6,
-                'name' => 'disapproved',
+                'name' => 'Disapproved',
+                'slug' => 'disapproved',
                 'description' => 'Disapproved status',
+                'text_color' => '#000000',
+                'bg_color' => '#ffc107',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            6 =>    
+            array (
+                'id' => 7,
+                'name' => 'Adjusted',
+                'slug' => 'adjusted',
+                'description' => 'Adjusted status',
                 'text_color' => '#000000',
                 'bg_color' => '#ffc107',
                 'created_at' => '2025-01-01 00:00:00',
