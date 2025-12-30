@@ -22,7 +22,7 @@
                     <b-row class="mb-3 ms-1 me-1">
                         <b-col lg>
                             <div class="input-group">
-                                <span class="input-group-text bg-primary ">
+                                <span class="input-group-text bg-primary text-white border-primary">
                                     <i class="ri-search-line"></i>
                                 </span>
                                 <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search Sales Order" class="form-control border-primary">
@@ -96,7 +96,8 @@
                                     <th style="width: 12%;" class="text-center border-none">Customer</th>
                                     <th style="width: 12%;" class="text-center border-none">Date</th>
                                     <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment</th>
+                                    <th style="width: 12%;" class="text-center border-none">Payment Mode</th>
+                                    <th style="width: 12%;" class="text-center border-none">Payment Term</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
@@ -120,6 +121,7 @@
                                             </b-badge>
                                         </td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
+                                        <td class="text-center">{{ list.payment_term }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <b-button @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary" v-b-tooltip.hover title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">

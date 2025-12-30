@@ -18,6 +18,7 @@ return new class extends Migration
             $table->date('order_date');
             $table->date('transferred_at')->nullable();
             $table->string('payment_mode');
+            $table->string('payment_term');
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->decimal('total_discount', 15, 2)->default(0);
             $table->unsignedInteger('added_by_id');
