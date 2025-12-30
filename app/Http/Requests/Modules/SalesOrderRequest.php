@@ -28,7 +28,6 @@ class SalesOrderRequest extends FormRequest
         return [
             'order_date.required' => 'This field is required',
             'payment_mode.required' => 'This field is required',
-            'amount.required' => 'This field is required',
             'customer_id.required' => 'This field is required',
         ];
 

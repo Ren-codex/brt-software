@@ -13,7 +13,6 @@ class SalesOrderResource extends JsonResource
             'id' => $this->id,
             'so_number' => $this->so_number,
             'customer' => $this->customer,
-            'received' => $this->batch_code,
             'order_date' => $this->order_date,
             'status' => $this->status,
             'added_by' => $this->added_by,
