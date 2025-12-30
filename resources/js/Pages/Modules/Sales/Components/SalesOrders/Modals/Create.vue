@@ -220,7 +220,7 @@
                                             :options="['Net 15', 'Net 30', 'Net 60', 'Cash on Delivery' , 'Due on Receipt' , 'Immediate Payment']"
                                             text-field="name"
                                             value-field="value"
-                                            :class="{ 'input-error': form.errors.billing_account }"
+                                            :class="{ 'input-error': form.errors.payment_term }"
                                             class="form-control"
                                         >
                                           <template #first>
@@ -229,7 +229,7 @@
                                         </b-form-select>    
     
                                     </div>
-                                    <span class="error-message" v-if="form.errors.billing_account">{{ form.errors.billing_account }}</span>
+                                    <span class="error-message" v-if="form.errors.payment_term">{{ form.errors.payment_term }}</span>
                                 </div>
                             </div>
 
@@ -406,8 +406,9 @@ export default {
         },
 
         show() {
-            this.form.reset();
-            this.addRowItem(); // Add a starting row
+            if (this.form.items.length === 0) {
+                this.addRowItem(); // Add a starting row if none
+            }
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
@@ -463,7 +464,6 @@ export default {
             this.form.errors[field] = false;
         },
         hide() {
-            this.form.reset();
             this.form.clearErrors();
             this.editable = false;
             this.saveSuccess = false;

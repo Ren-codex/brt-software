@@ -116,9 +116,9 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
-                                            <b-badge :style="{ 'background-color': list.status?.bg_color, color: '#fff' }" class="px-3 py-2 rounded-pill">
-                                                {{ list.status?.name }}
-                                            </b-badge>
+                                            <span :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">  
+                                                {{ list.status?.name || 'Unknown' }}
+                                            </span>
                                         </td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">{{ list.payment_term }}</td>
@@ -133,7 +133,7 @@
                                                 <b-button @click.stop="openEdit(list,index)" variant="outline-primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
-                                                <b-button @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.name != 'Cancelled'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
                                                 </b-button>
                                             </div>
@@ -243,19 +243,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-money-dollar-circle-line  fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Total Revenue</p>
-                                <h4 class="mb-0 ">₱{{ metrics.total_revenue?.toFixed(2) }}</h4>
-                            </div>
-                        </div>
-                    </div>
+              
                     <div class="metric-card p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
@@ -266,6 +254,34 @@
                             <div class="flex-grow-1 ms-3">
                                 <p class=" fw-semibold fs-12 mb-1">Pending Orders</p>
                                 <h4 class="mb-0 ">{{ metrics.pending_orders }}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                     <div class="metric-card p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title  bg-opacity-25 rounded">
+                                    <i class="ri-time-line  fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class=" fw-semibold fs-12 mb-1">Cancelled Orders</p>
+                                <h4 class="mb-0 ">{{ metrics.cancelled_orders }}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title  bg-opacity-25 rounded">
+                                    <i class="ri-money-dollar-circle-line  fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class=" fw-semibold fs-12 mb-1">Total Revenue</p>
+                                <h4 class="mb-0 ">₱{{ metrics.total_revenue }}</h4>
                             </div>
                         </div>
                     </div>
@@ -305,7 +321,8 @@ export default {
                 total_sales_orders: 0,
                 today_orders: 0,
                 total_revenue: 0,
-                pending_orders: 0
+                pending_orders: 0,
+                total_cancelled_orders: 0
             },
             stock: {
                 products: []

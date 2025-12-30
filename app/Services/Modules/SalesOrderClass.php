@@ -98,79 +98,103 @@ class SalesOrderClass
 
 
     public function update($request){
-        $data = SalesOrder::findOrFail($request->id);
-        $data->update([
-            'customer_id' => $request->customer_id,
-            'payment_mode' => $request->payment_mode,
-            'payment_term' => $request->payment_term,
-            'order_date' => $request->order_date,
-        ]);
-        // Clear existing items
-        $data->items()->delete();
-        // Add new items
-        $totalAmount = 0;
-        $totalDiscount = 0;
-        foreach($request->items as $item){
-            $price = $item['unit_cost']; // map unit_cost to price
-            $discount = $item['discount_per_unit'] ?? 0;
-            $quantity = $item['quantity'];
+        return DB::transaction(function () use ($request) {
+            $data = SalesOrder::findOrFail($request->id);
 
-            $data->items()->create([
-                'product_id' => $item['product_id'],
-                'quantity' => $quantity,
-                'price' => $price,
-                'batch_code' => $item['batch_code'],
-                'discount_per_unit' => $discount,
+            // Restore old stock
+            foreach($data->items as $item){
+                $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number);
+            }
+
+            $data->update([
+                'customer_id' => $request->customer_id,
+                'payment_mode' => $request->payment_mode,
+                'payment_term' => $request->payment_term,
+                'order_date' => $request->order_date,
             ]);
 
-            $totalAmount += ($price - $discount) * $quantity;
-            $totalDiscount += $discount * $quantity;
-        }
+            // Clear existing items
+            $data->items()->delete();
 
-        // Update totals
-        $data->update([
-            'total_amount' => $totalAmount,
-            'total_discount' => $totalDiscount,
-        ]);
+            // Validate stock availability for new items
+            foreach($request->items as $item){
+                if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'])) {
+                    $product = Product::find($item['product_id']);
+                    throw new \Exception('Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product'));
+                }
+            }
 
-        return [
-            'data' => new SalesOrderResource($data),
-            'message' => 'Sales Order updated successfully!',
-            'info' => "You've successfully updated the Sales Order"
-        ];
+            // Add new items
+            $totalAmount = 0;
+            $totalDiscount = 0;
+            foreach($request->items as $item){
+                $price = $item['unit_cost']; // map unit_cost to price
+                $discount = $item['discount_per_unit'] ?? 0;
+                $quantity = $item['quantity'];
+
+                $data->items()->create([
+                    'product_id' => $item['product_id'],
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'batch_code' => $item['batch_code'],
+                    'discount_per_unit' => $discount,
+                ]);
+
+                $totalAmount += ($price - $discount) * $quantity;
+                $totalDiscount += $discount * $quantity;
+
+                // Deduct new inventory
+                $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Update Sale - SO#' . $data->so_number);
+            }
+
+            // Update totals
+            $data->update([
+                'total_amount' => $totalAmount,
+                'total_discount' => $totalDiscount,
+            ]);
+
+            return [
+                'data' => new SalesOrderResource($data),
+                'message' => 'Sales Order updated successfully!',
+                'info' => "You've successfully updated the Sales Order"
+            ];
+        });
     }
 
     public function cancel($id){
-        $data = SalesOrder::findOrFail($id);
-        $data->update([
-            'status_id' => 2, //set to cancelled
-        ]);
+        DB::transaction(function () use ($id) {
+            $data = SalesOrder::findOrFail($id);
+
+            // Restore stock
+            foreach($data->items as $item){
+                $this->inventoryService->addStock($item->product_id, $item->quantity, 'Cancel SO - Restore Stock - SO#' . $data->so_number);
+            }
+
+            $data->update([
+                'status_id' => 2, //set to cancelled
+            ]);
+        });
 
         return [
-            'data' => $data,
-            'message' => 'Sales Order deleted was successful!',
-            'info' => "You've successfully deleted the Sales Order"
+            'data' => SalesOrder::find($id),
+            'message' => 'Sales Order cancelled successfully!',
+            'info' => "You've successfully cancelled the Sales Order"
         ];
     }
 
     public function dashboard(){
-        $totalSalesOrders = SalesOrder::count();
-
-        $todayOrders = SalesOrder::whereDate('created_at', today())->count();
-
-        $totalRevenue = SalesOrder::with('items')->get()->sum(function ($order) {
-            return $order->items->sum(function ($item) {
-                return $item->quantity * $item->unit_cost;
-            });
-        });
-
-        $pendingOrders = SalesOrder::where('status_id', 1)->count(); // Assuming status_id 1 is pending
+        $total_sales_orders = SalesOrder::count();
+        $today_orders = SalesOrder::whereDate('created_at', today())->count();
+        $total_revenue = SalesOrder::where('status_id', '!=', 2)->sum('total_amount') ?? 0; // Exclude cancelled orders (status_id 2)
+        $pending_orders = SalesOrder::where('status_id', 1)->count(); // Assuming status_id 1 is pending
+        $cancelled_orders = SalesOrder::where('status_id', 2)->count(); // status_id 2 is cancelled
 
         return [
-            'total_sales_orders' => $totalSalesOrders,
-            'today_orders' => $todayOrders,
-            'total_revenue' => $totalRevenue,
-            'pending_orders' => $pendingOrders,
+            'total_sales_orders' => $total_sales_orders,
+            'today_orders' => $today_orders,
+            'total_revenue' => $total_revenue,
+            'pending_orders' => $pending_orders,
+            'cancelled_orders' => $cancelled_orders,
         ];
     }
 
@@ -219,5 +243,12 @@ class SalesOrderClass
             'twenty_five_kg_sacks_left' => $twentyFiveKgSacks,
             'products' => $stockData
         ];
+    }
+
+     public function adjustment(){
+        // Get all sales orders with status 'adjusted' (assuming status_id 3 is 'adjusted')
+        $adjusted_orders = SalesOrder::where('status_id', 3)->with('items')->get();
+
+        return $adjusted_orders; 
     }
 }
