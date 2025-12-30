@@ -23,6 +23,8 @@ class SalesOrderResource extends JsonResource
             'items' => $this->items,
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at?->format('F d, Y'),
+            'approved_by' => $this->approved_by,
+            // 'approved_at' => $this->approved_at?->format('F d, Y'),
 
         ];
     }

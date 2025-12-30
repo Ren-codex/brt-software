@@ -19,6 +19,8 @@ class SalesOrder extends Model
         'total_discount',
         'added_by_id',
         'updated_by_id',
+        'approved_by_id',
+        'approved_at',
     ];
 
     public function status()

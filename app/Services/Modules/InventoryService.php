@@ -13,13 +13,22 @@ class InventoryService
      * Get the current stock quantity for a product.
      *
      * @param int $productId
+     * @param string|null $batchCode
      * @return int
      */
-    public function getCurrentStock($productId)
+    public function getCurrentStock($productId, $batchCode = null)
     {
-        return InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
+        $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
             $query->where('product_id', $productId);
-        })->sum('quantity');
+        });
+
+        if ($batchCode) {
+            $query->whereHas('receivedItem.receivedStock', function ($query) use ($batchCode) {
+                $query->where('batch_code', $batchCode);
+            });
+        }
+
+        return $query->sum('quantity');
     }
 
     /**
@@ -40,16 +49,25 @@ class InventoryService
      * @param int $productId
      * @param int $quantity
      * @param string $reason
+     * @param string|null $batchCode
      * @throws \Exception
      */
-    public function deductStock($productId, $quantity, $reason)
+    public function deductStock($productId, $quantity, $reason, $batchCode = null)
     {
         $remainingQuantity = $quantity;
 
-        // Get inventory stocks for the product, ordered by creation date (FIFO)
-        $inventoryStocks = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
+        // Get inventory stocks for the product, optionally filtered by batch_code
+        $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
             $query->where('product_id', $productId);
-        })->orderBy('created_at')->get();
+        });
+
+        if ($batchCode) {
+            $query->whereHas('receivedItem.receivedStock', function ($query) use ($batchCode) {
+                $query->where('batch_code', $batchCode);
+            });
+        }
+
+        $inventoryStocks = $query->orderBy('created_at')->get();
 
         foreach ($inventoryStocks as $stock) {
             if ($remainingQuantity <= 0) {

@@ -8,18 +8,19 @@
     >
         <div class="modal-container modal-xl" @click.stop>
                 <div class="modal-header">
-                    <h2>{{ 'Cancel Order' }}</h2>
+                    <h2>{{ 'Approve Order' }}</h2>
                     <button class="close-btn" @click="hide">
                         <i class="ri-close-line"></i>
                     </button>
                 </div>
             <div class="text-center p-5">
-                <h1> <i class="ri-alert-fill align-bottom text-warning" style="font-size: 60px;"></i></h1>
-                <h5>Are you sure you want to cancel this {{title}}? </h5>
+                <h1> <i class="ri-check-fill align-bottom text-success" style="font-size: 60px;"></i></h1>
+                <h5>Are you sure you want to approve this {{title}}? </h5>
+
             </div>
             <div class="modal-footer m-3">
                 <button class="btn btn-secondary me-2" @click="hide">Close</button>
-                <button class="btn btn-danger" @click="submit">Yes, Cancel</button>
+                <button class="btn btn-primary" @click="submit">Yes, Approve</button>
             </div>
         </div>
     </div>
@@ -27,6 +28,7 @@
 <script>
 
 import { useForm } from '@inertiajs/vue3';
+
 
 export default {
     components: { },
@@ -36,7 +38,7 @@ export default {
             currentUrl: window.location.origin,
             form: useForm({
                 id: null,
-                action: 'cancel',
+                action: 'approve',
             }),
             title: null,
             table: null,
@@ -52,10 +54,10 @@ export default {
         },
 
         submit(){
-            this.form.delete(`${this.route}/${this.form.id}`,{
+            this.form.put(`${this.route}/${this.form.id}`,{
                 preserveScroll: true,
                 onSuccess: (response) => {
-                    this.$emit('cancel', true);
+                    this.$emit('approve', true);
                     this.form.reset();
                     this.hide();
                 },
