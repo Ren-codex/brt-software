@@ -48,7 +48,7 @@ class SalesOrderController extends Controller
         }
     }
 
-    public function store(Request $request){
+    public function store(SalesOrderRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);
         });

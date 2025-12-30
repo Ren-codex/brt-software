@@ -89,6 +89,22 @@
                         <span class="error-message" v-if="form.errors.unit_id">{{ form.errors.unit_id }}</span>
                     </div>
 
+                    <div class="form-group">
+                        <label for="price" class="form-label">Price</label>
+                        <div class="input-wrapper">
+                            <i class="ri-money-dollar-circle-line input-icon"></i>
+                            <Amount
+                                @amount="value => form.price = value"
+                                :initialValue="form.price"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.price }"
+                                placeholder="Enter product price"
+                                @input="handleInput('price')"
+                            />
+                        </div>
+                        <span class="error-message" v-if="form.errors.price">{{ form.errors.price }}</span>
+                    </div>
+
                     <div class="form-actions">
                         <button type="button" class="btn btn-cancel" @click="hide">
                             <i class="ri-close-line"></i>
@@ -111,9 +127,10 @@ import { useForm } from '@inertiajs/vue3';
 import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
+import Amount from '@/Shared/Components/Forms/Amount.vue';
 
 export default {
-    components: { InputLabel, TextInput, Multiselect },
+    components: { InputLabel, TextInput, Amount, Multiselect },
     props: ['dropdowns'],
     data() {
         return {
