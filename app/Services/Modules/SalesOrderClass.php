@@ -51,6 +51,7 @@ class SalesOrderClass
         $data->so_number = SalesOrder::generateSONumber();
         $data->order_date = $request->order_date;
         $data->payment_mode = $request->payment_mode;
+        $data->payment_term = $request->payment_term;
         $data->customer_id = $request->customer_id;
         $data->added_by_id = auth()->user()->id;
         $data->status_id = 1; //set to pending
@@ -101,6 +102,7 @@ class SalesOrderClass
         $data->update([
             'customer_id' => $request->customer_id,
             'payment_mode' => $request->payment_mode,
+            'payment_term' => $request->payment_term,
             'order_date' => $request->order_date,
         ]);
         // Clear existing items

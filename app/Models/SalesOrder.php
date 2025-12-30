@@ -10,6 +10,7 @@ class SalesOrder extends Model
         'so_number',
         'order_date',
         'payment_mode',
+        'payment_term',
         'transferred_to',
         'transferred_at',
         'customer_id',

@@ -19,6 +19,7 @@ class SalesOrderResource extends JsonResource
             'transferred_to' => $this->transferred_to,
             'transferred_at' => $this->transferred_at,
             'payment_mode' => $this->payment_mode,
+            'payment_term' => $this->payment_term,
             'items' => $this->items,
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at?->format('F d, Y'),
