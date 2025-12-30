@@ -99,6 +99,30 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            7 => 
+            array (
+                'id' => 8,
+                'name' => 'Invoiced',
+                'slug' => 'invoiced',
+                'description' => 'Invoiced status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#28a745',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            8 => 
+            array (
+                'id' => 9,
+                'name' => 'Closed',
+                'slug' => 'closed',
+                'description' => 'Closed status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#000000',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

@@ -20,9 +20,9 @@ return new class extends Migration
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->string('invoice_number')->unique();
             $table->date('invoice_date');
-            $table->decimal('amount_balance', 2);
-            $table->decimal('amount_paid', 2);
-            $table->decimal('balance_due', 2);
+            $table->decimal('amount_balance', 15, 2);
+            $table->decimal('amount_paid', 15, 2);
+            $table->decimal('balance_due', 15, 2);
             $table->timestamps();
         });
     }

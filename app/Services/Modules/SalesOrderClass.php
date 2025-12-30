@@ -41,11 +41,12 @@ class SalesOrderClass
 
         // Validate stock availability for all items
         foreach($request->items as $item){
-            if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'])) {
+            if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'], $item['batch_code'])) {
                 $product = Product::find($item['product_id']);
-                throw new \Exception('Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product'));
+                throw new \Exception('Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']);
             }
         }
+
 
         $data = new SalesOrder();
         $data->so_number = SalesOrder::generateSONumber();
@@ -103,7 +104,7 @@ class SalesOrderClass
 
             // Restore old stock
             foreach($data->items as $item){
-                $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number);
+                $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number, $item->batch_code);
             }
 
             $data->update([
@@ -144,7 +145,7 @@ class SalesOrderClass
                 $totalDiscount += $discount * $quantity;
 
                 // Deduct new inventory
-                $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Update Sale - SO#' . $data->so_number);
+                $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Update Sale - SO#' . $data->so_number, $item['batch_code']);
             }
 
             // Update totals
@@ -161,13 +162,29 @@ class SalesOrderClass
         });
     }
 
+    public function approve($id){
+        $data = SalesOrder::findOrFail($id);
+
+        $data->update([
+            'status_id' => 5, //set to approved
+            'approved_by_id' => auth()->user()->id,
+            'approved_at' => now(),
+        ]);
+
+        return [
+            'data' => SalesOrder::find($id),
+            'message' => 'Sales Order approved successfully!',
+            'info' => "You've successfully approved the Sales Order"
+        ];
+    }
+
     public function cancel($id){
         DB::transaction(function () use ($id) {
             $data = SalesOrder::findOrFail($id);
 
             // Restore stock
             foreach($data->items as $item){
-                $this->inventoryService->addStock($item->product_id, $item->quantity, 'Cancel SO - Restore Stock - SO#' . $data->so_number);
+                $this->inventoryService->addStock($item->product_id, $item->quantity, 'Cancel SO - Restore Stock - SO#' . $data->so_number, $item->batch_code);
             }
 
             $data->update([

@@ -124,17 +124,26 @@
                                         <td class="text-center">{{ list.payment_term }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary" v-b-tooltip.hover title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.slug == 'delivered'" @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary" v-b-tooltip.hover title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-refund-line"></i>
                                                 </b-button>
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button @click.stop="openEdit(list,index)" variant="outline-primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.slug == 'pending'"
+                                                         @click.stop="openEdit(list,index)" variant="outline-primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.name != 'Cancelled'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.slug != 'approved' && $page.props.roles.includes('Sales Manager')"
+                                                 @click.stop="onApproval(list.id)" variant="outline-primary" v-b-tooltip.hover title="Approve" size="sm" class="btn-icon rounded-circle">
+                                                    <i class="ri-check-line"></i>
+                                                </b-button>
+                                                <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' && list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
+                                                </b-button>
+
+                                                <b-button v-if="list.status?.slug == 'approved'" @click.stop="onPayment(list.id)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
+                                                    <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
                                         </td>
@@ -291,7 +300,10 @@
     </BRow>
     <Create @add="fetch()" :dropdowns="dropdowns" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
+     <Approval @approve="fetch()" ref="approval"/>
     <Adjustment @update="fetch()"  ref="adjustment"/>
+    <Payment @approve="fetch()" ref="payment"/>
+    
 </template>
 <script>
 import _ from 'lodash';
@@ -301,9 +313,11 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import Cancel from './Modals/Cancel.vue';
 import Create from './Modals/Create.vue';
 import Adjustment from './Modals/Adjustment.vue';
+import Approval from './Modals/Approval.vue';
+import Payment from './Modals/Payment.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment },
+    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval, Payment },
     props: ['dropdowns'],
     data(){
         return {
@@ -398,8 +412,16 @@ export default {
             this.$refs.cancel.show(id , title, '/sales-orders');
         },
 
+        onApproval(id){
+            let title = "Sales Order";
+            this.$refs.approval.show(id , title, '/sales-orders');
+        },
         onPrint(id){
             window.open(`/sales-orders/${id}?option=print&type=sales_order`);
+        },
+        onPayment(id){
+            let title = "Sales Order";
+            this.$refs.payment.show(id , title, '/sales-orders');
         },
 
         onSalesAdjustment(id){

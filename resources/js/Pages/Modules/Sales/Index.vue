@@ -57,8 +57,7 @@
         </div>
 
         <div v-if="activeTab === 'receipts'" class="card shadow-sm p-3">
-          <h5>Receipts</h5>
-          <p>>Receipts content goes here.</p>
+           <Receipts :dropdowns="dropdowns"/>
         </div>
 
         <div v-if="activeTab === 'remittance'" class="card shadow-sm p-3">
@@ -77,10 +76,10 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import SalesOrders from "@/Pages/Modules/Sales/Components/SalesOrders/Index.vue";
 import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
-import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
+import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, ARInvoices, Remittances },
+  components: { PageHeader, Pagination, SalesOrders, ARInvoices, Receipts },
   props: ['dropdowns'],
   data() {
     return {
