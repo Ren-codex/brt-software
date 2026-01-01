@@ -1,8 +1,5 @@
-# Fix Sales Order Class
-
-## Tasks
-- [x] Add addStock method to InventoryService
-- [x] Fix dashboard method: correct totalRevenue calculation and complete return array
-- [x] Update update method: restore old stock before deducting new stock
-- [x] Update cancel method: restore stock when cancelling
-- [x] Wrap save and update methods in DB transactions
+  - [ ] Update ArInvoice model: rename generateArNumber to generateInvoiceNumber
+- [ ] Update ArInvoiceController: change 'ar_number' to 'invoice_number' in search query
+- [ ] Update ArInvoiceClass: change all 'ar_number' to 'invoice_number', update method call
+- [ ] Update ArInvoicesTableSeeder: change 'ar_number' to 'invoice_number'
+- [ ] Update Vue component: change list.ar_number to list.invoice_number

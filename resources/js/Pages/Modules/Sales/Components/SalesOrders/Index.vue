@@ -127,18 +127,20 @@
                                                 <b-button v-if="list.status?.slug == 'delivered'" @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary" v-b-tooltip.hover title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-refund-line"></i>
                                                 </b-button>
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
+                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print Invoice" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
                                                 <b-button v-if="list.status?.slug == 'pending'"
                                                          @click.stop="openEdit(list,index)" variant="outline-primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.slug != 'approved' && $page.props.roles.includes('Sales Manager')"
+                                                <b-button v-if="(list.status?.slug != 'approved'  && list.status?.slug != 'cancelled' && list.status?.slug != 'closed' &&  list.status?.slug == 'pending') && $page.props.roles.includes('Sales Manager')"
                                                  @click.stop="onApproval(list.id)" variant="outline-primary" v-b-tooltip.hover title="Approve" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-check-line"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' && list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
+
+                                                
+                                                <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' || list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
                                                 </b-button>
 

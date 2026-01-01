@@ -14,9 +14,9 @@
                     </button>
                 </div>
             <div class=" p-5">
-                <h5>TOTAL AMOUNT: {{ totalAmount }}</h5>
+                <h5>TOTAL AMOUNT: ₱0.00</h5>
                 <div class="mt-3 mb-3">
-                    <label for="payment_mode"></label>
+                     <label for="billing_account" class="form-label">Billing Account<span class="text-danger">*</span></label>
                     <div class="payment-mode-buttons">
                   
                         <b-button
@@ -32,18 +32,39 @@
                             {{ mode }}
                         </b-button>
                     </div>
-                    <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
+                   
+                </div>
+                <div  class="mb-3">
+                     <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
+                    <div class="form-group form-group-half" v-if="form.payment_mode !== 'Cash'">
+                        <label for="billing_account" class="form-label">Billing Account<span class="text-danger">*</span></label>
+                        <div class="input-wrapper">
+                            <i class="ri-bank-card-line input-icon"></i>
+                            <input
+                                type="text"
+                                id="billing_account"
+                                v-model="form.billing_account"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.billing_account }"
+                                @input="handleInput('billing_account')"
+                                placeholder="Enter Billing Account"
+                            />
+                        </div>
+                        <span class="error-message" v-if="form.errors.billing_account">{{ form.errors.billing_account }}</span>
+                    </div>
                 </div>
 
+                
+
                 <div class="form-row">
-                    <div class="form-group mb-3">
-                        <label for="payment_amount">Payment Amount</label>
+                    <div class="form-group mb-3 form-group-half">
+                        <label for="payment_amount">Payment Amount<span class="text-danger">*</span></label>
                         <Amount v-model="form.payment_amount" id="payment_amount" @input="handleInput('payment_amount')" />
                         <span class="error-message" v-if="form.errors.payment_amount">{{ form.errors.payment_amount }}</span>
                     </div>
 
-                    <div class="form-group mb-3">
-                        <label for="payment_date">Payment Date</label>
+                    <div class="form-group mb-3 form-group-half">
+                        <label for="payment_date">Payment Date<span class="text-danger">*</span></label>
                         <input type="date" class="form-control" id="payment_date" v-model="form.payment_date" @input="handleInput('payment_date')" />
                         <span class="error-message" v-if="form.errors.payment_date">{{ form.errors.payment_date }}</span>
                     </div>
