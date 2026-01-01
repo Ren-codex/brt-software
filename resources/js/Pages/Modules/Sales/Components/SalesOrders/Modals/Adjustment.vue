@@ -47,9 +47,11 @@
                                     id="textarea-rows"
                                     placeholder="Enter the reason"
                                     rows="8"
+                                    v-model="form.reason"
+                                    :class="{ 'input-error': form.errors.reason }"
                                 ></b-form-textarea>
                             </div>
-                            <span class="error-message" v-if="form.errors.brand_id">{{ form.errors.type }}</span>
+                            <span class="error-message" v-if="form.errors.reason">{{ form.errors.reason }}</span>
                         </div>
                     </div>
 
@@ -101,12 +103,23 @@ export default {
     methods: { 
         show(id) {
             this.form.reset();
+            this.form.id = id;
             this.showModal = true;
         },
 
         submit() {
-
-            this.showModal = false;
+            this.form.post(`/sales-orders/adjustment/${this.form.id}`, {
+                onSuccess: () => {
+                    this.saveSuccess = true;
+                    this.$emit('update');
+                    setTimeout(() => {
+                        this.hide();
+                    }, 2000);
+                },
+                onError: () => {
+                    this.saveSuccess = false;
+                }
+            });
         },
 
         hide() {

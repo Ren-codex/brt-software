@@ -27,7 +27,7 @@
               <input
                 type="text"
                 v-model="localKeyword"
-                @input="updateKeyword(localKeyword)"
+                @input="updateKeyword($event.target.value)"
                 placeholder="Search purchase orders..."
                 class="search-input"
               >

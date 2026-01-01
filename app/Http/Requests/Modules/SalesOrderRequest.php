@@ -18,8 +18,15 @@ class SalesOrderRequest extends FormRequest
         return [
             'order_date' => 'required|date',
             'payment_mode' => 'required|string',
+            'payment_term' => 'required|string',
             'customer_id' => 'required|exists:customers,id',
-            
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_cost' => 'required|numeric|min:0',
+            'items.*.batch_code' => 'required|string',
+            'items.*.discount_per_unit' => 'nullable|numeric|min:0',
+
         ];
 
     }
@@ -28,7 +35,7 @@ class SalesOrderRequest extends FormRequest
         return [
             'order_date.required' => 'This field is required',
             'payment_mode.required' => 'This field is required',
-            'amount.required' => 'This field is required',
+            'payment_term.required' => 'This field is required',
             'customer_id.required' => 'This field is required',
         ];
 

@@ -43,6 +43,7 @@
                     <th>Name</th>
                     <th>Pack Size</th>
                     <th>Unit</th>
+                    <th>Price</th>
                     <th>Active</th>
                     <th>Actions</th>
                   </tr>
@@ -57,6 +58,7 @@
                     <td>{{ list.brand?.name }}</td>
                     <td>{{ list.pack_size }}</td>
                     <td>{{ list.unit.name }}</td>
+                    <td>{{ formatCurrency(list.price) }}</td>
                     <td>
                       <b-form-checkbox
                         :checked="list.is_active === 1"
@@ -70,9 +72,9 @@
                         <button @click="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                           <i class="ri-pencil-line"></i>
                         </button>
-                        <button @click="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                        <!-- <button @click="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
                           <i class="ri-delete-bin-line"></i>
-                        </button>
+                        </button> -->
                       </div>
                     </td>
                   </tr>
@@ -159,6 +161,13 @@ export default {
     handleDeleteSuccess() {
       this.$emit('toast', 'Product deleted successfully');
       this.$emit('fetch');
+    },
+
+    formatCurrency(value) {
+      if (typeof value !== 'number') {
+        return value;
+      }
+      return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
     },
   },
 };

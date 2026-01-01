@@ -13,16 +13,18 @@ class SalesOrderResource extends JsonResource
             'id' => $this->id,
             'so_number' => $this->so_number,
             'customer' => $this->customer,
-            'received' => $this->batch_code,
             'order_date' => $this->order_date,
             'status' => $this->status,
             'added_by' => $this->added_by,
             'transferred_to' => $this->transferred_to,
             'transferred_at' => $this->transferred_at,
             'payment_mode' => $this->payment_mode,
+            'payment_term' => $this->payment_term,
             'items' => $this->items,
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at?->format('F d, Y'),
+            'approved_by' => $this->approved_by,
+            // 'approved_at' => $this->approved_at?->format('F d, Y'),
 
         ];
     }

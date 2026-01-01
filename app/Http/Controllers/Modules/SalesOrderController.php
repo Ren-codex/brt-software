@@ -48,7 +48,7 @@ class SalesOrderController extends Controller
         }
     }
 
-    public function store(Request $request){
+    public function store(SalesOrderRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);
         });
@@ -64,7 +64,14 @@ class SalesOrderController extends Controller
 
     public function update(Request $request){
         $result = $this->handleTransaction(function () use ($request) {
-            return $this->sales_order->update($request);
+            switch($request->action){
+                case 'approve':
+                    return $this->sales_order->approve($request->id);
+                break;
+                case 'cancel':
+                    return $this->sales_order->cancel($request->id);
+                break;
+            }
         });
 
         return back()->with([

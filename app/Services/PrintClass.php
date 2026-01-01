@@ -18,11 +18,14 @@ class PrintClass
             case 'purchase_order':
                 return $this->prinPurchaseOrder($id);
             break;
+            case 'remittance':
+                return $this->printRemittance($id);
+            break;
         }
     }
 
     public function printSalesOrder($id){   
-        $sales_order = SalesOrder::with('status' , 'items')->findOrFail($id); 
+        $sales_order = SalesOrder::with('status' , 'items.product.brand' , 'items.product.unit' )->findOrFail($id); 
         $items = $sales_order->items;
 
         $array = [
@@ -35,8 +38,8 @@ class PrintClass
 
     }
 
-    public function prinPurchaseOrder($id){   
-        $purchase_order = \App\Models\PurchaseOrder::with('status' , 'items.product.brand', 'items.product.unit', 'supplier')->findOrFail($id); 
+    public function prinPurchaseOrder($id){
+        $purchase_order = \App\Models\PurchaseOrder::with('status' , 'items.product.brand', 'items.product.unit', 'supplier')->findOrFail($id);
         $items = $purchase_order->items;
 
         $array = [
@@ -46,6 +49,20 @@ class PrintClass
 
         $pdf = \PDF::loadView('prints.purchase-order',$array)->setPaper('A4', 'portrait');
         return $pdf->stream('purchase-order-'.$purchase_order->po_number.'.pdf');
+
+    }
+
+    public function printRemittance($id){
+        $remittance = \App\Models\Remittance::with('status', 'receipts.customer', 'createdBy', 'approvedBy')->findOrFail($id);
+        $receipts = $remittance->receipts;
+
+        $array = [
+            'remittance' => $remittance,
+            'receipts' => $receipts,
+        ];
+
+        $pdf = \PDF::loadView('prints.remittance',$array)->setPaper('A4', 'portrait');
+        return $pdf->stream('remittance-'.$remittance->remittance_no.'.pdf');
 
     }
 

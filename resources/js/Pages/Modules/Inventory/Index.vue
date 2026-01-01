@@ -1,75 +1,37 @@
 <template>
   <div>
+
     <Head title="Inventory" />
     <PageHeader title="Inventory Management" pageTitle="List" />
     <BRow no-gutters>
       <BCol md="2" class="border-end" style="min-height: 80vh;">
         <ul class="nav flex-column nav-pills">
           <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'inventoryStocks' }"
-              @click.prevent="changeTab('inventoryStocks')"
-              >Inventory Stocks</a
-            >
+            <a href="#" class="nav-link" :class="{ active: activeTab === 'inventoryStocks' }"
+              @click.prevent="changeTab('inventoryStocks')">Inventory Stocks</a>
           </li>
           <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'purchaseOrders' }"
-              @click.prevent="changeTab('purchaseOrders')"
-              >Purchase Orders</a
-            >
+            <a href="#" class="nav-link" :class="{ active: activeTab === 'purchaseOrders' }"
+              @click.prevent="changeTab('purchaseOrders')">Purchase Orders</a>
           </li>
           <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'products' }"
-              @click.prevent="changeTab('products')"
-              >Product List</a
-            >
+            <a href="#" class="nav-link" :class="{ active: activeTab === 'products' }"
+              @click.prevent="changeTab('products')">Product List</a>
           </li>
         </ul>
       </BCol>
       <BCol md="10">
-        <ProductsTab
-          v-if="activeTab === 'products'"
-          :listProducts="listProducts"
-          :meta="meta"
-          :links="links"
-          :filter="filter"
-          :dropdowns="dropdowns"
-          @fetch="fetchProducts"
-          @update-keyword="updateKeyword"
-          @toast="showToast"
-        />
+        <ProductsTab v-if="activeTab === 'products'" :listProducts="listProducts" :meta="meta" :links="links"
+          :filter="filter" :dropdowns="dropdowns" @fetch="fetchProducts" @update-keyword="updateKeyword"
+          @toast="showToast" />
 
-        <PurchaseOrdersTab
-          v-if="activeTab === 'purchaseOrders'"
-          :listPurchaseOrders="listPurchaseOrders"
-          :meta="meta"
-          :links="links"
-          :filter="filter"
-          :dropdowns="dropdowns"
-          @fetch="fetchPurchaseOrders"
-          @update-keyword="updateKeyword"
-          @toast="showToast"
-        />
+        <PurchaseOrdersTab v-if="activeTab === 'purchaseOrders'" :listPurchaseOrders="listPurchaseOrders" :meta="meta"
+          :links="links" :filter="filter" :dropdowns="dropdowns" @fetch="fetchPurchaseOrders"
+          @update-keyword="updateKeyword" @toast="showToast" />
 
-        <InventoryStocksTab
-          v-if="activeTab === 'inventoryStocks'"
-          :listInventoryStocks="listInventoryStocks"
-          :meta="meta"
-          :links="links"
-          :filter="filter"
-          :dropdowns="dropdowns"
-          @fetch="fetchInventoryStocks"
-          @update-keyword="updateKeyword"
-          @toast="showToast"
-        />
+        <InventoryStocksTab v-if="activeTab === 'inventoryStocks'" :listInventoryStocks="listInventoryStocks"
+          :meta="meta" :links="links" :filter="filter" :dropdowns="dropdowns" @fetch="fetchInventoryStocks"
+          @update-keyword="updateKeyword" @toast="showToast" />
       </BCol>
     </BRow>
 
@@ -161,6 +123,7 @@ export default {
         this.links = null;
       }
     },
+
     fetchPurchaseOrders(page_url) {
       if (this.activeTab === 'purchaseOrders') {
         page_url = page_url || '/purchase-orders';
@@ -192,6 +155,18 @@ export default {
       setTimeout(() => {
         this.isToastVisible = false;
       }, 3000);
+    },
+    updateKeyword(keyword) {
+      this.filter.keyword = keyword;
+
+      // Trigger the appropriate fetch based on active tab
+      if (this.activeTab === 'products') {
+        this.fetchProducts();
+      } else if (this.activeTab === 'purchaseOrders') {
+        this.fetchPurchaseOrders();
+      } else if (this.activeTab === 'inventoryStocks') {
+        this.fetchInventoryStocks();
+      }
     },
     fetchInventoryStocks(page_url) {
       if (this.activeTab === 'inventoryStocks') {
@@ -247,6 +222,7 @@ export default {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;

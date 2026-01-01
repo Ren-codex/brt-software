@@ -14,6 +14,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::resource('/sales', App\Http\Controllers\Modules\SalesController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
+    Route::post('/sales-orders/adjustment/{id}', [App\Http\Controllers\Modules\SalesAdjustmentController::class, 'store']);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
 
     Route::middleware(['role:Administrator'])->group(function () {
@@ -36,6 +37,11 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);
         Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class);
         Route::post('inventory-stocks/adjustment/{id}', [App\Http\Controllers\InventoryAdjustmentController::class, 'store']);
+
+        Route::get('/receipts', [App\Http\Controllers\Libraries\ReceiptController::class, 'index']);
+        Route::resource('/remittances', App\Http\Controllers\RemittanceController::class);
+        Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
+        Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
     });
 });
 
