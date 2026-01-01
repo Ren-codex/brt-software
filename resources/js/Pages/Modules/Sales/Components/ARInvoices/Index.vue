@@ -25,9 +25,9 @@
                                 <span class="input-group-text bg-primary text-white">
                                     <i class="ri-search-line"></i>
                                 </span>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search Sales Order" class="form-control border-primary">
+                                <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search AR Invoice" class="form-control border-primary">
                                 <b-button type="button" variant="primary" @click="openCreate" class="d-flex align-items-center">
-                                    <i class="ri-add-circle-fill me-1"></i> Create Order
+                                    <i class="ri-add-circle-fill me-1"></i> Create Invoice
                                 </b-button>
                             </div>
                         </b-col>
@@ -92,12 +92,12 @@
                             <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
                                 <tr class="fs-12 fw-bold text-muted">
                                     <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 12%;" class="text-center border-none">Order Number</th>
+                                    <th style="width: 12%;" class="text-center border-none">Invoice Number</th>
+                                    <th style="width: 12%;" class="text-center border-none">Sales Order</th>
                                     <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 12%;" class="text-center border-none">Product</th>
-                                    <th style="width: 12%;" class="text-center border-none">Date</th>
+                                    <th style="width: 12%;" class="text-center border-none">Invoice Date</th>
                                     <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment</th>
+                                    <th style="width: 12%;" class="text-center border-none">Balance Due</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
@@ -112,16 +112,16 @@
                                             <i v-else class="ri-arrow-right-s-line text-muted"></i>
                                             {{ index + 1}}
                                         </td>
-                                        <td class="text-center fw-semibold">{{ list.so_number }}</td>
-                                        <td class="text-center">{{ list.customer?.name || '-' }}</td>
-                                        <td class="text-center">{{ list.product?.name || '-' }}</td>
-                                        <td class="text-center">{{ list.created_at }}</td>
+                                        <td class="text-center fw-semibold">{{ list.ar_number }}</td>
+                                        <td class="text-center">{{ list.sales_order?.so_number || '-' }}</td>
+                                        <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
+                                        <td class="text-center">{{ list.invoice_date }}</td>
                                         <td class="text-center">
                                             <b-badge :style="{ 'background-color': list.status?.bg_color, color: '#fff' }" class="px-3 py-2 rounded-pill">
                                                 {{ list.status?.name }}
                                             </b-badge>
                                         </td>
-                                        <td class="text-center">{{ list.payment_mode }}</td>
+                                        <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <b-button @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary" v-b-tooltip.hover title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">
@@ -143,30 +143,27 @@
                                         <td colspan="8" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
-                                                    <i class="ri-file-list-line me-2"></i>Order Details
+                                                    <i class="ri-file-list-line me-2"></i>Invoice Details
                                                 </h6>
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <div class="card border-0 shadow-sm bg-white">
                                                             <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Order Information</h6>
-                                                                <p class="mb-1"><strong>Order Date:</strong> {{ list.order_date }}</p>
-                                                                <p class="mb-1"><strong>Added By:</strong> {{ list.added_by?.name || '-' }}</p>
-                                                                <p class="mb-0"><strong>Transferred To:</strong> {{ list.transferred_to || '-' }}</p>
+                                                                <h6 class="card-title text-muted small mb-2">Invoice Information</h6>
+                                                                <p class="mb-1"><strong>Invoice Date:</strong> {{ list.invoice_date }}</p>
+                                                                <p class="mb-1"><strong>Amount Balance:</strong> ₱{{ list.amount_balance?.toFixed(2) }}</p>
+                                                                <p class="mb-1"><strong>Amount Paid:</strong> ₱{{ list.amount_paid?.toFixed(2) }}</p>
+                                                                <p class="mb-0"><strong>Balance Due:</strong> ₱{{ list.balance_due?.toFixed(2) }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <div class="card border-0 shadow-sm bg-white">
                                                             <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Items</h6>
-                                                                <div v-if="list.items && list.items.length > 0">
-                                                                    <div v-for="item in list.items" :key="item.id" class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                                                                        <span>{{ item.product?.name || 'Unknown Product' }}</span>
-                                                                        <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <p v-else class="text-muted mb-0">No items found</p>
+                                                                <h6 class="card-title text-muted small mb-2">Sales Order Details</h6>
+                                                                <p class="mb-1"><strong>Sales Order:</strong> {{ list.sales_order?.so_number || '-' }}</p>
+                                                                <p class="mb-1"><strong>Customer:</strong> {{ list.sales_order?.customer?.name || '-' }}</p>
+                                                                <p class="mb-0"><strong>Order Date:</strong> {{ list.sales_order?.order_date || '-' }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -336,12 +333,11 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url){
-            page_url = page_url || '/sales-orders';
+            page_url = page_url || '/ar-invoices';
             axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
-                    count: 10,
-                    option: 'lists'
+                    count: 10
                 }
             })
             .then(response => {
@@ -393,7 +389,7 @@ export default {
         },
 
         fetchMetrics(){
-            axios.get('/sales-orders',{
+            axios.get('/ar-invoices',{
                 params : {
                     option: 'dashboard'
                 }
@@ -407,7 +403,7 @@ export default {
         },
 
         fetchStock(){
-            axios.get('/sales-orders',{
+            axios.get('/ar-invoices',{
                 params : {
                     option: 'stock'
                 }
