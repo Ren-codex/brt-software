@@ -97,15 +97,11 @@
 
                                     <div class="form-group">
                                         <label>Unit Cost</label>
-                                        <!-- FIXED: Use Amount component with proper binding -->
-                                        <div class="cost-input">
-                                            <Amount 
-                                                :initial-value="item.unit_cost"
-                                                @amount="updateUnitCost(item, $event)"
-                                                :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
-                                                class="form-control amount-input"
-                                            />
-                                        </div>
+                                        <!-- FIXED: Proper Amount component binding -->
+                                        <Amount ref="amount" :model-value="item.unit_cost"
+                                            @update:model-value="updateUnitCost(item, $event)"
+                                            :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
+                                            class="form-control amount-input" />
                                         <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                             {{ form.errors[`items.${index}.unit_cost`] }}
                                         </span>
@@ -114,7 +110,6 @@
                                     <div class="form-group">
                                         <label>Total Cost</label>
                                         <div class="total-display">
-                                            <span class="currency"></span>
                                             <span class="total-amount">{{ formatCurrency(item.total_cost) }}</span>
                                         </div>
                                     </div>
@@ -194,7 +189,6 @@ export default {
             showModal: false,
             editable: false,
             saveSuccess: false,
-            amountRefs: new Map(),
         };
     },
     mounted() {
@@ -217,11 +211,6 @@ export default {
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
-            this.$nextTick(() => {
-                this.form.items.forEach((item, index) => {
-                    this.setAmountValue(index, 0.00);
-                });
-            });
         },
         
         edit(data, index) {
@@ -232,28 +221,12 @@ export default {
             this.form.items = data.items ? data.items.map(item => ({
                 product_id: item.product_id,
                 quantity: Math.round(item.quantity),
-                unit_cost: parseFloat(item.unit_cost),
-                total_cost: parseFloat(item.total_cost),
+                unit_cost: parseFloat(item.unit_cost) || 0,
+                total_cost: parseFloat(item.total_cost) || 0,
             })) : [];
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
-            
-        
-            this.$nextTick(() => {
-                this.form.items.forEach((item, index) => {
-                    this.setAmountValue(index, item.unit_cost || 0);
-                });
-            });
-        },
-        
-       
-        setAmountValue(index, value) {
-          
-            const amountComponent = this.$refs[`amount_${index}`];
-            if (amountComponent && amountComponent.emitValue) {
-                amountComponent.emitValue(value);
-            }
         },
         
         submit() {
@@ -362,25 +335,29 @@ export default {
             }
         },
         
-        formatCurrency(value) {
-            if (!value && value !== 0) return '0.00';
-            return parseFloat(value).toFixed(2);
-        },
-        
-        // FIXED: Update unit cost for specific item
+        // FIXED: Update unit cost method
         updateUnitCost(item, value) {
+            // If value is a string (from Amount component), parse it
             if (typeof value === 'string') {
+                // Remove currency symbol and commas
                 const cleanValue = value.replace(/[₱,]/g, '');
                 const num = parseFloat(cleanValue);
                 item.unit_cost = isNaN(num) ? 0 : num;
             } else {
+                // If it's already a number
                 item.unit_cost = value || 0;
             }
             this.calculateTotal(item);
         },
+        
+        // FIXED: Format currency method
         formatCurrency(value) {
-            if (!value) return '₱0.00';
-            return '₱' + Number(value).toLocaleString('en-PH', {
+            if (!value && value !== 0) return '₱0.00';
+            
+            const num = parseFloat(value);
+            if (isNaN(num)) return '₱0.00';
+            
+            return '₱' + num.toLocaleString('en-PH', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
@@ -389,7 +366,29 @@ export default {
 };
 </script>
 
+
+
 <style scoped>
+    .cost-input .form-control {
+    padding-left: 1rem !important;
+}
+
+.total-display {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-weight: 600;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.total-display .total-amount {
+    font-size: 1rem;
+}
+
 /* Modal Overlay */
 .modal-overlay {
     position: fixed;
@@ -406,7 +405,7 @@ export default {
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    padding: 20px;
+    padding: 15px;
 }
 
 .modal-overlay.active {
@@ -417,12 +416,12 @@ export default {
 /* Modal Container */
 .modal-container {
     background: white;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 500px;
     overflow: hidden;
-    transform: translateY(30px) scale(0.95);
+    transform: translateY(25px) scale(0.95);
     transition: all 0.3s ease;
 }
 
@@ -438,7 +437,7 @@ export default {
 .modal-header {
     background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
     color: white;
-    padding: 1rem 1.5rem;
+    padding: 0.875rem 1.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -446,7 +445,7 @@ export default {
 
 .modal-header h2 {
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     margin: 0;
 }
 
@@ -454,15 +453,15 @@ export default {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 
 .close-btn:hover {
@@ -472,22 +471,22 @@ export default {
 
 /* Modal Body */
 .modal-body {
-    padding: 2rem;
-    max-height: 70vh;
+    padding: 1.5rem;
+    max-height: 75vh;
     overflow-y: auto;
 }
 
 /* Form Group */
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .form-label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.375rem;
     font-weight: 600;
     color: #2c3e50;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 /* Input Wrapper */
@@ -497,20 +496,20 @@ export default {
 
 .input-icon {
     position: absolute;
-    left: 1rem;
+    left: 0.875rem;
     top: 50%;
     transform: translateY(-50%);
     color: #7f8c8d;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     z-index: 1;
 }
 
 .form-control {
     width: 100%;
-    padding: 0.8rem 1rem 0.8rem 3rem;
+    padding: 0.7rem 0.875rem 0.7rem 2.75rem;
     border: 1px solid #e9ecef;
-    border-radius: 10px;
-    font-size: 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
     background-color: white;
 }
@@ -532,8 +531,8 @@ export default {
 /* Error Message */
 .error-message {
     display: block;
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
     color: #e74c3c;
 }
 
@@ -541,26 +540,25 @@ export default {
 .success-alert {
     background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
     color: #155724;
-    padding: 1rem 1.5rem;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.625rem;
     animation: slideIn 0.5s ease-out;
     border: 1px solid #c3e6cb;
 }
 
 .success-alert i {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
 }
 
 @keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-8px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -572,14 +570,14 @@ export default {
     background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
     color: white;
     border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+    padding: 0.5rem 0.875rem;
+    border-radius: 6px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    font-size: 0.875rem;
+    gap: 0.35rem;
+    font-size: 0.8125rem;
     transition: all 0.3s ease;
 }
 
@@ -592,41 +590,41 @@ export default {
 .item-card {
     background: white;
     border: 1px solid #e9ecef;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 15px;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
     transition: box-shadow 0.3s ease;
 }
 
 .item-card:hover {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
 }
 
 .item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
     border-bottom: 1px solid #f3f4f6;
 }
 
 .item-number {
     font-weight: 600;
     color: #374151;
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
 .item-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .btn-action {
     background: #f9fafb;
     border: 1px solid #e9ecef;
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: 5px;
+    padding: 6px;
     color: #6b7280;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -649,23 +647,23 @@ export default {
 /* Item Details */
 .item-details {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-top: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
 }
 
 .quantity-control {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .qty-btn {
     background: #f9fafb;
     border: 1px solid #e9ecef;
-    border-radius: 6px;
-    width: 36px;
-    height: 36px;
+    border-radius: 5px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -691,7 +689,7 @@ export default {
 
 .cost-input .currency {
     position: absolute;
-    left: 1rem;
+    left: 0.875rem;
     top: 50%;
     transform: translateY(-50%);
     color: #7f8c8d;
@@ -700,74 +698,75 @@ export default {
 }
 
 .cost-input .form-control {
-    padding-left: 2.5rem;
+    padding-left: 2.25rem;
 }
 
 .total-display {
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
-    border-radius: 8px;
-    padding: 10px 15px;
+    border-radius: 6px;
+    padding: 8px 12px;
     font-weight: 600;
     color: #059669;
     display: flex;
     align-items: center;
-    gap: 5px;
+    justify-content: center;
 }
 
 /* Empty State */
 .empty-state {
     text-align: center;
-    padding: 40px 20px;
+    padding: 32px 16px;
     color: #9ca3af;
 }
 
 .empty-state i {
-    font-size: 3rem;
-    margin-bottom: 15px;
+    font-size: 2.5rem;
+    margin-bottom: 12px;
     opacity: 0.5;
 }
 
 .empty-state h4 {
-    font-size: 1.2rem;
-    margin-bottom: 10px;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
     color: #6b7280;
 }
 
 .empty-state p {
-    margin-bottom: 20px;
-    max-width: 300px;
+    margin-bottom: 16px;
+    max-width: 280px;
     margin-left: auto;
     margin-right: auto;
+    font-size: 0.9rem;
 }
 
 /* Summary Section */
 .summary-section {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 25px;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
 }
 
 .summary-header h3 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: #333;
-    margin: 0 0 20px 0;
+    margin: 0 0 16px 0;
 }
 
 .summary-content {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .summary-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
+    padding: 8px 0;
     border-bottom: 1px solid #e9ecef;
 }
 
@@ -781,11 +780,11 @@ export default {
 }
 
 .total-row {
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .total-row .total-amount {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     color: #059669;
 }
 
@@ -793,21 +792,21 @@ export default {
 .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
 }
 
 .btn {
-    padding: 0.5rem 1.25rem;
+    padding: 0.5rem 1rem;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
 }
 
 .btn-cancel {
@@ -848,7 +847,6 @@ export default {
     from {
         transform: rotate(0deg);
     }
-
     to {
         transform: rotate(360deg);
     }
@@ -857,15 +855,15 @@ export default {
 /* Responsive Design */
 @media (max-width: 768px) {
     .modal-header {
-        padding: 1rem 1.25rem;
+        padding: 0.75rem 1rem;
     }
 
     .modal-header h2 {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .modal-body {
-        padding: 1.5rem;
+        padding: 1.25rem;
     }
 
     .item-details {
@@ -874,7 +872,7 @@ export default {
 
     .form-actions {
         flex-direction: column-reverse;
-        gap: 0.75rem;
+        gap: 0.625rem;
     }
 
     .btn {
@@ -889,24 +887,33 @@ export default {
     }
 
     .modal-header {
-        padding: 0.875rem 1rem;
+        padding: 0.625rem 0.875rem;
     }
 
     .modal-header h2 {
-        font-size: 1rem;
-    }
-
-    .modal-body {
-        padding: 1.25rem;
-    }
-
-    .form-control {
         font-size: 0.95rem;
     }
 
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .form-control {
+        font-size: 0.9rem;
+        padding: 0.625rem 0.75rem 0.625rem 2.5rem;
+    }
+
     .btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
+        padding: 0.5rem 0.875rem;
+        font-size: 0.75rem;
+    }
+    
+    .item-card {
+        padding: 12px;
+    }
+    
+    .summary-section {
+        padding: 16px;
     }
 }
 </style>
