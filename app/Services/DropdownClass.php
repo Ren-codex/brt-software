@@ -19,7 +19,7 @@ class DropdownClass
 {  
 
     public function roles(){
-        $data = ListRole::get()->map(function ($item) {
+        $data = ListRole::where('is_active', 1)->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->name
