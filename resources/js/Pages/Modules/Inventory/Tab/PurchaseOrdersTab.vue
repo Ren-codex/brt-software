@@ -1,7 +1,7 @@
 <template>
   <BRow>
     <div class="col-md-12">
-      <div class="library-card">
+    <div class="library-card">
         <div class="library-card-header">
           <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
@@ -32,64 +32,7 @@
                 class="search-input"
               >
             </div>
-            <div class="filter-section">
-              <div class="status-filter">
-                <label for="statusFilter" class="filter-label">
-                  <i class="ri-filter-line me-2"></i>
-                  Filter by Status:
-                </label>
-                <select 
-                  id="statusFilter" 
-                  v-model="selectedStatus" 
-                  @change="applyStatusFilter"
-                  class="status-select"
-                >
-                  <option value="">All Statuses</option>
-                  <option v-for="status in dropdowns.statuses" :key="status.value" :value="status.value">
-                    {{ status.name }}
-                  </option>
-                </select>
-              </div>
-              
-              <div class="sort-section">
-                <label class="sort-label">
-                  <i class="ri-sort-desc me-2"></i>
-                  Sort by:
-                </label>
-                <div class="sort-options">
-                  <button 
-                    @click="toggleSort('date')" 
-                    class="sort-btn"
-                    :class="{ active: sortBy === 'date' }"
-                  >
-                    Date
-                    <i v-if="sortBy === 'date'" 
-                      :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
-                    </i>
-                  </button>
-                  <button 
-                    @click="toggleSort('amount')" 
-                    class="sort-btn"
-                    :class="{ active: sortBy === 'amount' }"
-                  >
-                    Amount
-                    <i v-if="sortBy === 'amount'" 
-                      :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
-                    </i>
-                  </button>
-                  <button 
-                    @click="toggleSort('status')" 
-                    class="sort-btn"
-                    :class="{ active: sortBy === 'status' }"
-                  >
-                    Status
-                    <i v-if="sortBy === 'status'" 
-                      :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
-                    </i>
-                  </button>
-                </div>
-              </div>
-            </div>
+          
           </div>
 
           <div class="table-section">
@@ -139,7 +82,7 @@
                   <tr 
                     v-for="(list,index) in filteredAndSortedList" 
                     v-bind:key="list.id" 
-                    @click="openView(list.id)" 
+                    @click="openView(list)" 
                     style="cursor: pointer;"
                     :style="getRowStyle(list.status)"
                   >
@@ -172,7 +115,7 @@
                     </td>
                     <td>
                       <div class="action-buttons" @click.stop>
-                        <button @click="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                        <button @click.stop="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                           <i class="ri-pencil-line"></i>
                         </button>
                         <button @click.stop="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
@@ -200,7 +143,8 @@
             <Pagination v-if="meta" @fetch="$emit('fetch')" :lists="listPurchaseOrders.length" :links="links" :pagination="meta" />
           </div>
         </div>
-      </div>
+      
+    </div>
     </div>
   </BRow>
   
@@ -223,7 +167,7 @@ export default {
     filter: Object,
     dropdowns: Object,
   },
-  emits: ['fetch', 'open-create', 'open-edit', 'on-delete', 'update-keyword', 'toast', 'update-filter'],
+  emits: ['fetch', 'update-keyword', 'toast', 'update-filter', 'view-details'],
   data() {
     return {
       selectedRow: null,
@@ -234,18 +178,15 @@ export default {
     };
   },
   computed: {
-    // Filter and sort the list
     filteredAndSortedList() {
       let filtered = this.listPurchaseOrders;
       
-      // Filter by status
       if (this.selectedStatus) {
         filtered = filtered.filter(order => 
           order.status && order.status.id == this.selectedStatus
         );
       }
       
-      // Sort the filtered list
       return this.sortList(filtered);
     }
   },
@@ -264,16 +205,12 @@ export default {
     }
   },
   methods: {
-    selectRow(index) {
-      this.selectedRow = this.selectedRow === index ? null : index;
+    openView(purchaseOrder) {
+      this.$emit('view-details', purchaseOrder);
     },
     
     openCreatePurchaseOrder() {
       this.$refs.createModal.show();
-    },
-    
-    openView(id) {
-      this.$inertia.visit(`/purchase-orders/${id}`);
     },
     
     openEdit(data, index) {
@@ -285,7 +222,7 @@ export default {
       this.$refs.delete.show(id, title, '/purchase-orders');
     },
     
-     printPurchaseOrder(id) {
+    printPurchaseOrder(id) {
         window.open(`/purchase-orders/${id}/print?type=purchase_order`, '_blank');
     },
     
@@ -294,18 +231,12 @@ export default {
       this.emitFilterUpdate();
     },
     
-    applyStatusFilter() {
-      this.emitFilterUpdate();
-    },
-    
     toggleSort(field) {
       if (this.sortBy === field) {
-        // Toggle direction if same field
         this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
       } else {
-        // Set new field with default direction
         this.sortBy = field;
-        this.sortDirection = 'desc'; // Default to descending for date/amount
+        this.sortDirection = 'desc';
       }
       this.emitFilterUpdate();
     },
@@ -336,7 +267,6 @@ export default {
             bValue = b[this.sortBy] || '';
         }
         
-        // Compare values
         if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
         if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
         return 0;
@@ -376,7 +306,6 @@ export default {
       });
     },
     
-    // Get dynamic status style from database colors
     getStatusStyle(status) {
       if (!status) return {};
       
@@ -384,37 +313,21 @@ export default {
         color: status.text_color || '#000000',
         backgroundColor: status.bg_color || '#ffffff',
         border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
-        // Add subtle shadow for depth
         boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
       };
     },
     
-    // Get row hover style based on status
     getRowStyle(status) {
       if (!status || !status.bg_color) return {};
       
       return {
         '--hover-color': status.bg_color + '10'
       };
-    },
-    
-    // Fallback CSS class for status (if colors not defined in database)
-    getStatusClass(status) {
-      if (!status) return 'status-default';
-      
-      const statusMap = {
-        'pending': 'status-pending',
-        'approved': 'status-approved',
-        'processing': 'status-processing',
-        'completed': 'status-completed',
-        'cancelled': 'status-cancelled'
-      };
-      
-      return statusMap[status.name.toLowerCase()] || 'status-default';
     }
   },
 };
 </script>
+
 
 <style scoped>
 /* Filter Section */
