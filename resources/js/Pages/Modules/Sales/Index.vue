@@ -77,9 +77,10 @@ import Pagination from '@/Shared/Components/Pagination.vue';
 import SalesOrders from "@/Pages/Modules/Sales/Components/SalesOrders/Index.vue";
 import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
 import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
+import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, ARInvoices, Receipts },
+  components: { PageHeader, Pagination, SalesOrders, ARInvoices, Receipts, Remittances },
   props: ['dropdowns'],
   data() {
     return {

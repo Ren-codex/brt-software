@@ -9,13 +9,13 @@
                 <i class="ri-shopping-cart-line"></i>
               </div>
               <div>
-                <h4 class="header-title mb-1">Purchase Order Management</h4>
-                <p class="header-subtitle mb-0">Manage and organize your purchase order catalog</p>
+                <h4 class="header-title mb-1">Purchase Request Management</h4>
+                <p class="header-subtitle mb-0">Manage and organize your purchase request catalog</p>
               </div>
             </div>
             <button class="create-btn" @click="openCreatePurchaseOrder">
               <i class="ri-add-line"></i>
-              <span>Add Purchase Order</span>
+              <span>Add Purchase Request</span>
             </button>
           </div>
         </div>
@@ -186,7 +186,7 @@ export default {
           order.status && order.status.id == this.selectedStatus
         );
       }
-      
+
       return this.sortList(filtered);
     }
   },
@@ -213,7 +213,7 @@ export default {
       this.$refs.createModal.show();
     },
     
-    openEdit(data, index) {
+    openEdit(data, index) {      
       this.$refs.createModal.edit(data, index);
     },
     

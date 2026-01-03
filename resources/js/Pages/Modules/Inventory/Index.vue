@@ -53,12 +53,13 @@
                 <!-- Purchase Order Details View -->
                 <div v-if="currentView === 'purchaseOrderDetails' && selectedPurchaseOrder" class="purchase-order-details-container">
                   <!-- Your purchase order details component here -->
-                  <PurchaseOrderDetails 
+                  <PurchaseOrderDetails
                     :purchase-order="selectedPurchaseOrder"
                     :dropdowns="dropdowns"
                     @back="backToList"
                     @toast="showToast"
                     @fetch="fetchPurchaseOrders"
+                    @refresh="fetchPurchaseOrderDetails(selectedPurchaseOrder.id)"
                   />
                 </div>
 
@@ -148,7 +149,7 @@ export default {
   emits: ['fetch'],
   data() {
     return {
-      activeTab: 'inventoryStocks',
+      activeTab: 'purchaseOrders',
       currentView: 'list', // 'list' or 'details'
       filter: {
         keyword: '',
@@ -163,23 +164,17 @@ export default {
       selectedPurchaseOrder: null,
       tabs: [
         { 
+          id: 'purchaseOrders', 
+          label: 'Purchase Requests', 
+          icon: 'ri-shopping-cart-2-line',
+          description: 'Manage purchase requests'
+        },
+        { 
           id: 'inventoryStocks', 
           label: 'Inventory Stocks', 
           icon: 'ri-box-3-line',
           description: 'Current stock levels'
         },
-        { 
-          id: 'purchaseOrders', 
-          label: 'Purchase Orders', 
-          icon: 'ri-shopping-cart-2-line',
-          description: 'Manage supplier orders'
-        },
-        { 
-          id: 'products', 
-          label: 'Product List', 
-          icon: 'ri-list-check',
-          description: 'All products catalog'
-        }
       ]
     };
   },

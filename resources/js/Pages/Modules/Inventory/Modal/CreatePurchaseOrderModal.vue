@@ -2,7 +2,7 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-lg" @click.stop>
             <div class="modal-header">
-                <h2>{{ editable ? 'Update Purchase Order' : 'Create Purchase Order' }}</h2>
+                <h2>{{ editable ? 'Update Purchase Request' : 'Create Purchase Request' }}</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -98,10 +98,13 @@
                                     <div class="form-group">
                                         <label>Unit Cost</label>
                                         <!-- FIXED: Proper Amount component binding -->
-                                        <Amount ref="amount" :model-value="item.unit_cost"
-                                            @update:model-value="updateUnitCost(item, $event)"
+                                       <Amount
+                                            @amount="updateUnitCost($event, index)"
+                                            :initialValue="item.unit_cost"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
-                                            class="form-control amount-input" />
+                                            class="form-control"
+                                            ref="amountComponent"
+                                        />
                                         <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                             {{ form.errors[`items.${index}.unit_cost`] }}
                                         </span>
@@ -160,7 +163,7 @@
                             :disabled="form.processing || form.items.length === 0">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Processing...' : (editable ? 'Update Order' : 'Create Order') }}
+                            {{ form.processing ? 'Processing...' : (editable ? 'Update Request' : 'Create Request') }}
                         </button>
                     </div>
                 </form>
@@ -206,7 +209,15 @@ export default {
         show() {
             this.form.reset();
             this.form.clearErrors();
-            this.form.items = [];
+
+            this.form.items = [
+                {
+                    product_id: null,
+                    quantity: 0,
+                    unit_cost: 0.00,
+                    total_cost: 0,
+                }
+            ];
             this.addItem();
             this.editable = false;
             this.saveSuccess = false;
@@ -218,12 +229,12 @@ export default {
             this.form.clearErrors();
             this.form.id = data.id;
             this.form.supplier_id = data.supplier ? data.supplier.id : null;
-            this.form.items = data.items ? data.items.map(item => ({
-                product_id: item.product_id,
-                quantity: Math.round(item.quantity),
-                unit_cost: parseFloat(item.unit_cost) || 0,
-                total_cost: parseFloat(item.total_cost) || 0,
-            })) : [];
+            this.form.items = (data.items || []).map(item => ({
+                product_id: item.product.id,
+                quantity: item.quantity,
+                unit_cost: item.unit_cost,
+                total_cost: item.total_cost,
+            }));
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
@@ -336,18 +347,15 @@ export default {
         },
         
         // FIXED: Update unit cost method
-        updateUnitCost(item, value) {
-            // If value is a string (from Amount component), parse it
+        updateUnitCost(value, index) {
             if (typeof value === 'string') {
-                // Remove currency symbol and commas
                 const cleanValue = value.replace(/[₱,]/g, '');
                 const num = parseFloat(cleanValue);
-                item.unit_cost = isNaN(num) ? 0 : num;
+                this.form.items[index].unit_cost = isNaN(num) ? 0 : num;
             } else {
-                // If it's already a number
-                item.unit_cost = value || 0;
+                this.form.items[index].unit_cost = value || 0;
             }
-            this.calculateTotal(item);
+            this.calculateTotal(this.form.items[index]);
         },
         
         // FIXED: Format currency method

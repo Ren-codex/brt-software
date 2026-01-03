@@ -17,7 +17,7 @@
                     </div>
                   </div>
                   <div class="d-flex gap-2">
-                    <button v-if="canApprove && purchaseOrder.status?.name === 'pending'" class="create-btn"
+                    <button v-if="canApprove && purchaseOrder.status?.name === 'Pending'" class="create-btn"
                             @click="approvePurchaseOrder">
                       <i class="ri-check-line"></i>
                       <span>Approval</span>
@@ -179,6 +179,31 @@
       </div>
     </div>
   </div>
+  <b-modal v-model="showModal" title="Approve Purchase Order" size="lg" centered hide-footer>
+    <div class="mb-3">
+      <label for="remarks" class="form-label">Remarks</label>
+      <textarea
+        id="remarks"
+        v-model="remarks"
+        class="form-control"
+        rows="4"
+        placeholder="Enter your remarks here..."
+      ></textarea>
+    </div>
+    <div slot="modal-footer">
+      <b-button variant="secondary" @click="onCancel">Cancel</b-button>
+      <b-button variant="danger" @click="updateStatus('Disapproved')">Disapprove</b-button>
+      <b-button variant="success" @click="updateStatus('Approved')">Approve</b-button>
+    </div>
+  </b-modal>
+  
+  <!-- Toast Notification -->
+  <div v-if="isToastVisible" class="toast-notification">
+    <div class="toast-content">
+      <i class="ri-check-line text-white me-2"></i>
+      {{ toastMessage }}
+    </div>
+  </div>
 </template>
 
 <script>
@@ -188,7 +213,15 @@ export default {
     purchaseOrder: Object,
     dropdowns: Object,
   },
-  emits: ['back', 'toast', 'fetch'],
+  emits: ['back', 'toast', 'fetch', 'refresh'],
+  data() {
+    return {
+      showModal: false,
+      remarks: '',
+      isToastVisible: false,
+      toastMessage: '',
+    };
+  },
   computed: {
     canApprove() {
       const roles = this.$page.props.roles;
@@ -225,8 +258,7 @@ export default {
     },
     
     approvePurchaseOrder() {
-      // This would trigger a modal in the parent component
-      this.$emit('toast', 'Approve functionality would open a modal');
+      this.showModal = true;
     },
     
     editPurchaseOrder() {
@@ -248,10 +280,68 @@ export default {
       if (this.purchaseOrder) {
         window.open(`/purchase-orders/${this.purchaseOrder.id}/print?type=purchase_order`, '_blank');
       }
-    }
+    },
+
+    updateStatus(status) {
+      this.$inertia.put(`/purchase-orders/${this.purchaseOrder.id}/status`, {
+        status_id: this.dropdowns.statuses.find(s => s.name === status).value,
+        id: this.purchaseOrder.id,
+        remarks: this.remarks
+      }, {
+        onSuccess: () => {
+          this.showToast('Purchase order updated successfully');
+          this.showModal = false;
+          this.remarks = '';
+          this.$emit('refresh');
+        },
+        onError: () => {
+          this.showToast('Failed to approve purchase order');
+        }
+      });
+    },
+    onCancel() {
+      this.showModal = false;
+      this.remarks = '';
+    },
+    showToast(message) {
+      this.toastMessage = message;
+      this.isToastVisible = true;
+      setTimeout(() => {
+        this.isToastVisible = false;
+      }, 3000);
+    },
   }
 };
 </script>
 
 <style scoped>
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background-color: #28a745;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
 </style>
