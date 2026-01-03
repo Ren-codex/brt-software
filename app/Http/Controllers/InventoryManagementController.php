@@ -31,6 +31,7 @@ class InventoryManagementController extends Controller
                         'units' => $this->dropdown->units(),
                         'suppliers' => $this->dropdown->suppliers(),
                         'products' => $this->dropdown->products(),
+                        'statuses' => $this->dropdown->statuses(),
                     ]
                 ]);
             break;
