@@ -306,14 +306,6 @@
   }
 }
 
-/* Minimal Fade Transition */
-.inventory-fade-enter-active {
-  animation: inventory-fade-in 0.3s ease-out;
-}
-
-.inventory-fade-leave-active {
-  animation: inventory-fade-out 0.2s ease-in;
-}
 
 @keyframes inventory-fade-in {
   from {
