@@ -87,6 +87,21 @@
                   @view-details="openPurchaseOrderDetails"
                 />
 
+                <!-- Purchase Request List -->
+                <PurchaseRequestsTab
+                  v-else-if="activeTab === 'purchaseRequests'"
+                  :listPurchaseRequests="listPurchaseRequests"
+                  :listPurchaseOrders="listPurchaseOrders"
+                  :meta="meta"
+                  :links="links"
+                  :filter="filter"
+                  :dropdowns="dropdowns"
+                  @fetch="fetchPurchaseOrders"
+                  @update-keyword="updateKeyword"
+                  @toast="showToast"
+                  @view-details="openPurchaseOrderDetails"
+                />
+
                 <ProductsTab 
                   v-else-if="activeTab === 'products'" 
                   :listProducts="listProducts" 
@@ -126,7 +141,7 @@
     </div>
     
     <!-- Modals -->
-    <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="handlePurchaseOrderUpdate" />
+    <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="handlePurchaseOrderUpdate" :purchaseOrder="selectedPurchaseOrder"/>
     <CreateReceivedStockModal ref="receiveModal" :dropdowns="dropdowns" :purchaseOrder="selectedPurchaseOrder" @add="handleReceiveSuccess" />
     <Delete ref="deleteModal" @delete="handleDeleteSuccess" />
   </div>
@@ -136,6 +151,7 @@
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
+import PurchaseRequestsTab from './Tab/PurchaseRequestsTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import PurchaseOrderDetails from './Components/PurchaseOrders/View.vue';
@@ -149,10 +165,11 @@ export default {
   components: { 
     PageHeader, 
     PurchaseOrdersTab, 
+    PurchaseRequestsTab,
     ProductsTab, 
     InventoryStocksTab, 
     PurchaseOrderDetails,
-    InventoryStockDetails, // Add this component
+    InventoryStockDetails,
     CreatePurchaseOrderModal,
     CreateReceivedStockModal,
     Delete
@@ -161,13 +178,14 @@ export default {
   emits: ['fetch'],
   data() {
     return {
-      activeTab: 'purchaseOrders',
-      currentView: 'list', // 'list' or 'details'
+      activeTab: 'purchaseRequests',
+      currentView: 'list',
       filter: {
         keyword: '',
       },
       listProducts: [],
       listPurchaseOrders: [],
+      listPurchaseRequests: [],
       listInventoryStocks: [],
       meta: null,
       links: null,
@@ -177,10 +195,16 @@ export default {
       selectedInventoryStock: null, // Add this
       tabs: [
         { 
-          id: 'purchaseOrders', 
+          id: 'purchaseRequests', 
           label: 'Purchase Requests', 
           icon: 'ri-shopping-cart-2-line',
           description: 'Manage purchase requests'
+        },
+        { 
+          id: 'purchaseOrders', 
+          label: 'Purchase Orders', 
+          icon: 'ri-box-3-line',
+          description: 'List of purchase orders'
         },
         { 
           id: 'inventoryStocks', 
@@ -196,7 +220,7 @@ export default {
       if (newVal === 'products') {
         this.currentView = 'list';
         this.fetchProducts();
-      } else if (newVal === 'purchaseOrders') {
+      } else if (newVal === 'purchaseOrders' || newVal === 'purchaseRequests') {
         this.currentView = 'list';
         this.fetchPurchaseOrders();
       } else if (newVal === 'inventoryStocks') {
@@ -268,7 +292,7 @@ export default {
     },
 
     fetchPurchaseOrders(page_url) {
-      if (this.activeTab === 'purchaseOrders' && this.currentView === 'list') {
+      if ((this.activeTab === 'purchaseOrders' || this.activeTab === 'purchaseRequests') && this.currentView === 'list') {
         page_url = page_url || '/purchase-orders';
         axios
           .get(page_url, {
@@ -280,7 +304,10 @@ export default {
           })
           .then((response) => {
             if (response) {
-              this.listPurchaseOrders = response.data.data;
+              const allPurchaseOrders = response.data.data;
+              // Separate based on status
+              this.listPurchaseRequests = allPurchaseOrders.filter(order => order.status?.name === 'Pending');
+              this.listPurchaseOrders = allPurchaseOrders.filter(order => order.status?.name === 'Approved');
               this.meta = response.data.meta;
               this.links = response.data.links;
             }

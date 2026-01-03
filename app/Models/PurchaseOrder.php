@@ -7,12 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 class PurchaseOrder extends Model
 {
     protected $fillable = [
+        'pr_number',
         'po_number',
         'po_date',
         'total_amount',
         'status_id',
         'supplier_id',
         'created_by_id',
+        'approved_by_id',
+        'approved_date',
     ];
 
     public function status()
@@ -38,5 +41,10 @@ class PurchaseOrder extends Model
     public function logs()
     {
         return $this->hasMany(PurchaseOrderLog::class, 'po_id');
+    }
+
+    public function approved_by()
+    {
+        return $this->belongsTo(User::class, 'approved_by_id');
     }
 }
