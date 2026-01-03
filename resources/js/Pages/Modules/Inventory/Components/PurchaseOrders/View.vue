@@ -213,7 +213,7 @@ export default {
     purchaseOrder: Object,
     dropdowns: Object,
   },
-  emits: ['back', 'toast', 'fetch', 'refresh'],
+  emits: ['back', 'toast', 'fetch'],
   data() {
     return {
       showModal: false,
@@ -292,7 +292,7 @@ export default {
           this.showToast('Purchase order updated successfully');
           this.showModal = false;
           this.remarks = '';
-          this.$emit('refresh');
+          this.$inertia.visit('/inventory');
         },
         onError: () => {
           this.showToast('Failed to approve purchase order');

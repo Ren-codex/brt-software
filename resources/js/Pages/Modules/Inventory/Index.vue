@@ -58,7 +58,6 @@
                     @back="backToList"
                     @toast="showToast"
                     @fetch="fetchPurchaseOrders"
-                    @refresh="fetchPurchaseOrderDetails(selectedPurchaseOrder.id)"
                   />
                 </div>
 
@@ -207,6 +206,7 @@ export default {
     }
   },
   created() {
+    this.fetchPurchaseOrders();
     this.fetchInventoryStocks();
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
