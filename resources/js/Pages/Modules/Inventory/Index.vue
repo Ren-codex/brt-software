@@ -3,7 +3,6 @@
     <Head title="Inventory" />
     <PageHeader title="Inventory Management" pageTitle="List" />
     
-    <div class="inventory-wrapper">
       <div class="inventory-container">
         <!-- Minimal Vertical Tabs -->
         <div class="inventory-sidebar">
@@ -62,6 +61,18 @@
                   />
                 </div>
 
+                <!-- Inventory Stock Details View -->
+                <div v-else-if="currentView === 'inventoryStockDetails' && selectedInventoryStock" class="inventory-stock-details-container">
+                  <!-- Your inventory stock details component here -->
+                  <InventoryStockDetails 
+                    :stock="selectedInventoryStock"
+                    :dropdowns="dropdowns"
+                    @back="backToStocksList"
+                    @toast="showToast"
+                    @fetch="fetchInventoryStocks"
+                  />
+                </div>
+
                 <!-- Purchase Orders List -->
                 <PurchaseOrdersTab 
                   v-else-if="activeTab === 'purchaseOrders'" 
@@ -77,7 +88,7 @@
                 />
 
                 <ProductsTab 
-                  v-if="activeTab === 'products'" 
+                  v-else-if="activeTab === 'products'" 
                   :listProducts="listProducts" 
                   :meta="meta" 
                   :links="links"
@@ -89,7 +100,7 @@
                 />
 
                 <InventoryStocksTab 
-                  v-if="activeTab === 'inventoryStocks'" 
+                  v-else-if="activeTab === 'inventoryStocks'" 
                   :listInventoryStocks="listInventoryStocks"
                   :meta="meta" 
                   :links="links" 
@@ -97,15 +108,15 @@
                   :dropdowns="dropdowns" 
                   @fetch="fetchInventoryStocks"
                   @update-keyword="updateKeyword" 
-                  @toast="showToast" 
+                  @toast="showToast"
+                  @view-details="openInventoryStockDetails"
                 />
               </div>
             </transition>
           </div>
         </div>
       </div>
-    </div>
-
+    
     <!-- Toast -->
     <div v-if="isToastVisible" class="inventory-toast">
       <div class="inventory-toast-content">
@@ -128,6 +139,7 @@ import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import PurchaseOrderDetails from './Components/PurchaseOrders/View.vue';
+import InventoryStockDetails from './Components/InventoryStocks/View.vue'; // Add this import
 import CreatePurchaseOrderModal from './Modal/CreatePurchaseOrderModal.vue';
 import CreateReceivedStockModal from './Modal/CreateReceivedStockModal.vue';
 import Delete from '@/Shared/Components/Modals/Delete.vue';
@@ -140,6 +152,7 @@ export default {
     ProductsTab, 
     InventoryStocksTab, 
     PurchaseOrderDetails,
+    InventoryStockDetails, // Add this component
     CreatePurchaseOrderModal,
     CreateReceivedStockModal,
     Delete
@@ -161,6 +174,7 @@ export default {
       isToastVisible: false,
       toastMessage: '',
       selectedPurchaseOrder: null,
+      selectedInventoryStock: null, // Add this
       tabs: [
         { 
           id: 'inventoryStocks', 
@@ -201,10 +215,16 @@ export default {
     this.fetchInventoryStocks();
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
+    const stockIdParam = params.get('stock_id');
     
     if (tabParam && ['products', 'purchaseOrders', 'inventoryStocks'].includes(tabParam)) {
       this.activeTab = tabParam;
       this.changeTab(this.activeTab);
+      
+      // If there's a stock_id in URL and we're on inventoryStocks tab, load that stock
+      if (tabParam === 'inventoryStocks' && stockIdParam) {
+        this.fetchInventoryStockDetails(stockIdParam);
+      }
     }
   },
   methods: {
@@ -212,11 +232,13 @@ export default {
       this.activeTab = tab;
       this.currentView = 'list';
       this.selectedPurchaseOrder = null;
+      this.selectedInventoryStock = null; // Clear stock selection
       this.filter.keyword = '';
       
       const url = new URL(window.location);
       url.searchParams.set('tab', tab);
       url.searchParams.delete('po_id');
+      url.searchParams.delete('stock_id');
       window.history.pushState({}, '', url);
       
       if (tab === 'products') {
@@ -304,6 +326,16 @@ export default {
       window.history.pushState({}, '', url);
     },
     
+    openInventoryStockDetails(stock) {
+      this.selectedInventoryStock = stock;
+      this.currentView = 'inventoryStockDetails';
+      
+      const url = new URL(window.location);
+      url.searchParams.set('tab', 'inventoryStocks');
+      url.searchParams.set('stock_id', stock.id);
+      window.history.pushState({}, '', url);
+    },
+    
     backToList() {
       this.currentView = 'list';
       this.selectedPurchaseOrder = null;
@@ -315,13 +347,15 @@ export default {
       window.history.pushState({}, '', url);
     },
     
-    handlePurchaseOrderUpdate() {
-      this.showToast('Purchase order updated successfully');
-      if (this.selectedPurchaseOrder) {
-        // Refresh the details view if we're viewing a purchase order
-        this.fetchPurchaseOrderDetails(this.selectedPurchaseOrder.id);
-      }
-      this.fetchPurchaseOrders();
+    backToStocksList() {
+      this.currentView = 'list';
+      this.selectedInventoryStock = null;
+      this.fetchInventoryStocks();
+      
+      const url = new URL(window.location);
+      url.searchParams.set('tab', 'inventoryStocks');
+      url.searchParams.delete('stock_id');
+      window.history.pushState({}, '', url);
     },
     
     fetchPurchaseOrderDetails(id) {
@@ -334,6 +368,28 @@ export default {
           console.error(err);
           this.showToast('Failed to refresh purchase order details');
         });
+    },
+    
+    fetchInventoryStockDetails(id) {
+      axios
+        .get(`/inventory-stocks/${id}`)
+        .then((response) => {
+          this.selectedInventoryStock = response.data.data;
+          this.currentView = 'inventoryStockDetails';
+        })
+        .catch((err) => {
+          console.error(err);
+          this.showToast('Failed to load inventory stock details');
+        });
+    },
+    
+    handlePurchaseOrderUpdate() {
+      this.showToast('Purchase order updated successfully');
+      if (this.selectedPurchaseOrder) {
+        // Refresh the details view if we're viewing a purchase order
+        this.fetchPurchaseOrderDetails(this.selectedPurchaseOrder.id);
+      }
+      this.fetchPurchaseOrders();
     },
     
     handleReceiveSuccess() {
@@ -381,6 +437,12 @@ export default {
   animation: fade-in 0.3s ease;
 }
 
+/* Add this for inventory stock details container */
+.inventory-stock-details-container {
+  height: 100%;
+  animation: fade-in 0.3s ease;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -422,7 +484,7 @@ export default {
 /* Minimal Sidebar with #267a4c */
 .inventory-sidebar {
   width: 240px;
-  background: #267a4c;
+  background: #3D8D7A;
   color: white;
   display: flex;
   flex-direction: column;
@@ -653,7 +715,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 500px;
-  background: #f9fafb;
+  background: #E9EFEC;
 }
 
 /* Main Content */

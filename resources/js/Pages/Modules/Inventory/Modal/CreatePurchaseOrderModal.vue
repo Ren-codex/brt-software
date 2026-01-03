@@ -306,7 +306,7 @@ export default {
             const itemToDuplicate = { ...this.form.items[index] };
             this.form.items.splice(index + 1, 0, {
                 ...itemToDuplicate,
-                product_id: null,
+                // product_id: null,
             });
         },
         
