@@ -37,30 +37,56 @@
                   <table class="table align-middle table-centered mb-0">
                     <thead>
                       <tr>
+                        <th>#</th>
                         <th>Received Date</th>
                         <th>Batch Code</th>
                         <th>Supplier</th>
                         <th>Product</th>
                         <th>Unit Cost</th>
                         <th>Quantity</th>
-                        <th>Actions</th>
+                      
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="(list,index) in availableStocks" v-bind:key="list.id" @click="selectRow(list.id)" :class="{
-                        'bg-info-subtle': list.id === selectedRow
-                      }">
+                      <tr 
+                        v-for="(list,index) in availableStocks" 
+                        v-bind:key="list.id" 
+                        @click="openView(list.id)" 
+                        style="cursor: pointer;"
+                        :class="{'bg-info-subtle': list.id === selectedRow}"
+                      >
+                        <td>{{ index + 1 }}</td>
                         <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
                         <td>{{ list.received_item.received_stock.batch_code }}</td>
                         <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
-                        <td>{{ list.received_item.product.name }}</td>
-                        <td>{{ number_format(list.received_item.unit_cost, 2) }}</td>
-                        <td>{{ list.quantity }}</td>
                         <td>
-                          <div class="action-buttons">
-                            <button @click="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                          <div class="product-info">
+                            <strong>{{ list.received_item.product.name }}</strong>
+                            <small class="text-muted d-block">{{ list.received_item.product.code || 'No Code' }}</small>
+                          </div>
+                        </td>
+                        <td>{{ formatCurrency(list.received_item.unit_cost) }}</td>
+                        <td>
+                          <span class="quantity-badge" :class="getQuantityClass(list.quantity)">
+                            {{ list.quantity }}
+                          </span>
+                        </td>
+                        <!-- <td>
+                          <div class="action-buttons" @click.stop>
+                            <button @click.stop="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
                               <i class="ri-eye-fill"></i>
                             </button>
+                            <button v-if="list.quantity > 0" @click.stop="adjustStock(list)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Adjust Stock">
+                              <i class="ri-edit-box-line"></i>
+                            </button>
+                          </div>
+                        </td> -->
+                      </tr>
+                      <tr v-if="availableStocks.length === 0">
+                        <td colspan="8" class="text-center py-4">
+                          <div class="empty-state">
+                            <i class="ri-inbox-line empty-icon"></i>
+                            <p class="mb-0">No available stocks found</p>
                           </div>
                         </td>
                       </tr>
@@ -75,6 +101,7 @@
                   <table class="table align-middle table-centered mb-0">
                     <thead>
                       <tr>
+                        <th>#</th>
                         <th>Received Date</th>
                         <th>Batch Code</th>
                         <th>Supplier</th>
@@ -85,20 +112,42 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="(list,index) in consumedStocks" v-bind:key="list.id" @click="selectRow(list.id)" :class="{
-                        'bg-info-subtle': list.id === selectedRow
-                      }">
+                      <tr 
+                        v-for="(list,index) in consumedStocks" 
+                        v-bind:key="list.id" 
+                        @click="openView(list.id)" 
+                        style="cursor: pointer;"
+                        :class="{'bg-info-subtle': list.id === selectedRow}"
+                      >
+                        <td>{{ index + 1 }}</td>
                         <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
                         <td>{{ list.received_item.received_stock.batch_code }}</td>
                         <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
-                        <td>{{ list.received_item.product.name }}</td>
-                        <td>{{ number_format(list.received_item.unit_cost, 2) }}</td>
-                        <td>{{ list.quantity }}</td>
                         <td>
-                          <div class="action-buttons">
-                            <button @click="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                          <div class="product-info">
+                            <strong>{{ list.received_item.product.name }}</strong>
+                            <small class="text-muted d-block">{{ list.received_item.product.code || 'No Code' }}</small>
+                          </div>
+                        </td>
+                        <td>{{ formatCurrency(list.received_item.unit_cost) }}</td>
+                        <td>
+                          <span class="quantity-badge text-danger">
+                            {{ list.quantity }}
+                          </span>
+                        </td>
+                        <td>
+                          <div class="action-buttons" @click.stop>
+                            <button @click.stop="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
                               <i class="ri-eye-fill"></i>
                             </button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr v-if="consumedStocks.length === 0">
+                        <td colspan="8" class="text-center py-4">
+                          <div class="empty-state">
+                            <i class="ri-check-double-line empty-icon"></i>
+                            <p class="mb-0">No consumed stocks found</p>
                           </div>
                         </td>
                       </tr>
@@ -155,26 +204,146 @@ export default {
     selectRow(id) {
       this.selectedRow = this.selectedRow === id ? null : id;
     },
+    
     openView(id) {
       this.$inertia.visit(`/inventory-stocks/${id}`);
     },
+    
+    adjustStock(stock) {
+      // You can implement adjust stock functionality here
+      // For example: this.$emit('adjust-stock', stock);
+      console.log('Adjust stock:', stock);
+    },
+    
     updateKeyword(keyword) {
       this.localKeyword = keyword;
       this.$emit('update-keyword', keyword);
     },
+    
     handleDeleteSuccess() {
       this.$emit('toast', 'Inventory stock deleted successfully');
       this.$emit('fetch');
     },
-    formatDate(date) {
-      return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
+    
+    getQuantityClass(quantity) {
+      if (quantity <= 0) return 'text-danger';
+      if (quantity < 10) return 'text-warning';
+      return 'text-success';
     },
-    number_format(number, decimals = 0) {
-      return parseFloat(number).toLocaleString('en-US', {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
+    
+    formatDate(date) {
+      return new Date(date).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: '2-digit' 
+      });
+    },
+    
+    formatCurrency(amount) {
+      if (!amount && amount !== 0) return '₱0.00';
+      return '₱' + Number(amount).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
       });
     },
   },
 };
 </script>
+
+<style scoped>
+.product-info {
+  max-width: 200px;
+}
+
+.quantity-badge {
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.text-success {
+  color: #28a745;
+}
+
+.text-warning {
+  color: #ffc107;
+}
+
+.text-danger {
+  color: #dc3545;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.action-btn-view {
+  background: #e7f3ff;
+  color: #0d6efd;
+}
+
+.action-btn-view:hover {
+  background: #d0e7ff;
+}
+
+.action-btn-edit {
+  background: #fff3cd;
+  color: #ffc107;
+}
+
+.action-btn-edit:hover {
+  background: #ffeaa7;
+}
+
+.empty-state {
+  color: #6c757d;
+  text-align: center;
+  padding: 20px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  opacity: 0.3;
+}
+
+/* Make table rows clickable */
+.table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa !important;
+}
+
+.table tbody tr.bg-info-subtle:hover {
+  background-color: #e7f3ff !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 28px;
+    height: 28px;
+  }
+}
+</style>

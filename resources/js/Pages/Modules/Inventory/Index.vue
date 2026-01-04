@@ -3,7 +3,6 @@
     <Head title="Inventory" />
     <PageHeader title="Inventory Management" pageTitle="List" />
     
-    <div class="inventory-wrapper">
       <div class="inventory-container">
         <!-- Minimal Vertical Tabs -->
         <div class="inventory-sidebar">
@@ -53,12 +52,24 @@
                 <!-- Purchase Order Details View -->
                 <div v-if="currentView === 'purchaseOrderDetails' && selectedPurchaseOrder" class="purchase-order-details-container">
                   <!-- Your purchase order details component here -->
-                  <PurchaseOrderDetails 
+                  <PurchaseOrderDetails
                     :purchase-order="selectedPurchaseOrder"
                     :dropdowns="dropdowns"
                     @back="backToList"
                     @toast="showToast"
                     @fetch="fetchPurchaseOrders"
+                  />
+                </div>
+
+                <!-- Inventory Stock Details View -->
+                <div v-else-if="currentView === 'inventoryStockDetails' && selectedInventoryStock" class="inventory-stock-details-container">
+                  <!-- Your inventory stock details component here -->
+                  <InventoryStockDetails 
+                    :stock="selectedInventoryStock"
+                    :dropdowns="dropdowns"
+                    @back="backToStocksList"
+                    @toast="showToast"
+                    @fetch="fetchInventoryStocks"
                   />
                 </div>
 
@@ -76,8 +87,23 @@
                   @view-details="openPurchaseOrderDetails"
                 />
 
+                <!-- Purchase Request List -->
+                <PurchaseRequestsTab
+                  v-else-if="activeTab === 'purchaseRequests'"
+                  :listPurchaseRequests="listPurchaseRequests"
+                  :listPurchaseOrders="listPurchaseOrders"
+                  :meta="meta"
+                  :links="links"
+                  :filter="filter"
+                  :dropdowns="dropdowns"
+                  @fetch="fetchPurchaseOrders"
+                  @update-keyword="updateKeyword"
+                  @toast="showToast"
+                  @view-details="openPurchaseOrderDetails"
+                />
+
                 <ProductsTab 
-                  v-if="activeTab === 'products'" 
+                  v-else-if="activeTab === 'products'" 
                   :listProducts="listProducts" 
                   :meta="meta" 
                   :links="links"
@@ -89,7 +115,7 @@
                 />
 
                 <InventoryStocksTab 
-                  v-if="activeTab === 'inventoryStocks'" 
+                  v-else-if="activeTab === 'inventoryStocks'" 
                   :listInventoryStocks="listInventoryStocks"
                   :meta="meta" 
                   :links="links" 
@@ -97,15 +123,15 @@
                   :dropdowns="dropdowns" 
                   @fetch="fetchInventoryStocks"
                   @update-keyword="updateKeyword" 
-                  @toast="showToast" 
+                  @toast="showToast"
+                  @view-details="openInventoryStockDetails"
                 />
               </div>
             </transition>
           </div>
         </div>
       </div>
-    </div>
-
+    
     <!-- Toast -->
     <div v-if="isToastVisible" class="inventory-toast">
       <div class="inventory-toast-content">
@@ -115,7 +141,7 @@
     </div>
     
     <!-- Modals -->
-    <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="handlePurchaseOrderUpdate" />
+    <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="handlePurchaseOrderUpdate" :purchaseOrder="selectedPurchaseOrder"/>
     <CreateReceivedStockModal ref="receiveModal" :dropdowns="dropdowns" :purchaseOrder="selectedPurchaseOrder" @add="handleReceiveSuccess" />
     <Delete ref="deleteModal" @delete="handleDeleteSuccess" />
   </div>
@@ -125,9 +151,11 @@
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
+import PurchaseRequestsTab from './Tab/PurchaseRequestsTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import PurchaseOrderDetails from './Components/PurchaseOrders/View.vue';
+import InventoryStockDetails from './Components/InventoryStocks/View.vue'; // Add this import
 import CreatePurchaseOrderModal from './Modal/CreatePurchaseOrderModal.vue';
 import CreateReceivedStockModal from './Modal/CreateReceivedStockModal.vue';
 import Delete from '@/Shared/Components/Modals/Delete.vue';
@@ -137,9 +165,11 @@ export default {
   components: { 
     PageHeader, 
     PurchaseOrdersTab, 
+    PurchaseRequestsTab,
     ProductsTab, 
     InventoryStocksTab, 
     PurchaseOrderDetails,
+    InventoryStockDetails,
     CreatePurchaseOrderModal,
     CreateReceivedStockModal,
     Delete
@@ -148,38 +178,40 @@ export default {
   emits: ['fetch'],
   data() {
     return {
-      activeTab: 'inventoryStocks',
-      currentView: 'list', // 'list' or 'details'
+      activeTab: 'purchaseRequests',
+      currentView: 'list',
       filter: {
         keyword: '',
       },
       listProducts: [],
       listPurchaseOrders: [],
+      listPurchaseRequests: [],
       listInventoryStocks: [],
       meta: null,
       links: null,
       isToastVisible: false,
       toastMessage: '',
       selectedPurchaseOrder: null,
+      selectedInventoryStock: null, // Add this
       tabs: [
+        { 
+          id: 'purchaseRequests', 
+          label: 'Purchase Requests', 
+          icon: 'ri-shopping-cart-2-line',
+          description: 'Manage purchase requests'
+        },
+        { 
+          id: 'purchaseOrders', 
+          label: 'Purchase Orders', 
+          icon: 'ri-box-3-line',
+          description: 'List of purchase orders'
+        },
         { 
           id: 'inventoryStocks', 
           label: 'Inventory Stocks', 
           icon: 'ri-box-3-line',
           description: 'Current stock levels'
         },
-        { 
-          id: 'purchaseOrders', 
-          label: 'Purchase Orders', 
-          icon: 'ri-shopping-cart-2-line',
-          description: 'Manage supplier orders'
-        },
-        { 
-          id: 'products', 
-          label: 'Product List', 
-          icon: 'ri-list-check',
-          description: 'All products catalog'
-        }
       ]
     };
   },
@@ -188,7 +220,7 @@ export default {
       if (newVal === 'products') {
         this.currentView = 'list';
         this.fetchProducts();
-      } else if (newVal === 'purchaseOrders') {
+      } else if (newVal === 'purchaseOrders' || newVal === 'purchaseRequests') {
         this.currentView = 'list';
         this.fetchPurchaseOrders();
       } else if (newVal === 'inventoryStocks') {
@@ -198,13 +230,20 @@ export default {
     }
   },
   created() {
+    this.fetchPurchaseOrders();
     this.fetchInventoryStocks();
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
+    const stockIdParam = params.get('stock_id');
     
     if (tabParam && ['products', 'purchaseOrders', 'inventoryStocks'].includes(tabParam)) {
       this.activeTab = tabParam;
       this.changeTab(this.activeTab);
+      
+      // If there's a stock_id in URL and we're on inventoryStocks tab, load that stock
+      if (tabParam === 'inventoryStocks' && stockIdParam) {
+        this.fetchInventoryStockDetails(stockIdParam);
+      }
     }
   },
   methods: {
@@ -212,11 +251,13 @@ export default {
       this.activeTab = tab;
       this.currentView = 'list';
       this.selectedPurchaseOrder = null;
+      this.selectedInventoryStock = null; // Clear stock selection
       this.filter.keyword = '';
       
       const url = new URL(window.location);
       url.searchParams.set('tab', tab);
       url.searchParams.delete('po_id');
+      url.searchParams.delete('stock_id');
       window.history.pushState({}, '', url);
       
       if (tab === 'products') {
@@ -251,7 +292,7 @@ export default {
     },
 
     fetchPurchaseOrders(page_url) {
-      if (this.activeTab === 'purchaseOrders' && this.currentView === 'list') {
+      if ((this.activeTab === 'purchaseOrders' || this.activeTab === 'purchaseRequests') && this.currentView === 'list') {
         page_url = page_url || '/purchase-orders';
         axios
           .get(page_url, {
@@ -263,7 +304,10 @@ export default {
           })
           .then((response) => {
             if (response) {
-              this.listPurchaseOrders = response.data.data;
+              const allPurchaseOrders = response.data.data;
+              // Separate based on status
+              this.listPurchaseRequests = allPurchaseOrders.filter(order => order.status?.name === 'Pending');
+              this.listPurchaseOrders = allPurchaseOrders.filter(order => order.status?.name === 'Approved');
               this.meta = response.data.meta;
               this.links = response.data.links;
             }
@@ -304,6 +348,16 @@ export default {
       window.history.pushState({}, '', url);
     },
     
+    openInventoryStockDetails(stock) {
+      this.selectedInventoryStock = stock;
+      this.currentView = 'inventoryStockDetails';
+      
+      const url = new URL(window.location);
+      url.searchParams.set('tab', 'inventoryStocks');
+      url.searchParams.set('stock_id', stock.id);
+      window.history.pushState({}, '', url);
+    },
+    
     backToList() {
       this.currentView = 'list';
       this.selectedPurchaseOrder = null;
@@ -315,13 +369,15 @@ export default {
       window.history.pushState({}, '', url);
     },
     
-    handlePurchaseOrderUpdate() {
-      this.showToast('Purchase order updated successfully');
-      if (this.selectedPurchaseOrder) {
-        // Refresh the details view if we're viewing a purchase order
-        this.fetchPurchaseOrderDetails(this.selectedPurchaseOrder.id);
-      }
-      this.fetchPurchaseOrders();
+    backToStocksList() {
+      this.currentView = 'list';
+      this.selectedInventoryStock = null;
+      this.fetchInventoryStocks();
+      
+      const url = new URL(window.location);
+      url.searchParams.set('tab', 'inventoryStocks');
+      url.searchParams.delete('stock_id');
+      window.history.pushState({}, '', url);
     },
     
     fetchPurchaseOrderDetails(id) {
@@ -334,6 +390,28 @@ export default {
           console.error(err);
           this.showToast('Failed to refresh purchase order details');
         });
+    },
+    
+    fetchInventoryStockDetails(id) {
+      axios
+        .get(`/inventory-stocks/${id}`)
+        .then((response) => {
+          this.selectedInventoryStock = response.data.data;
+          this.currentView = 'inventoryStockDetails';
+        })
+        .catch((err) => {
+          console.error(err);
+          this.showToast('Failed to load inventory stock details');
+        });
+    },
+    
+    handlePurchaseOrderUpdate() {
+      this.showToast('Purchase order updated successfully');
+      if (this.selectedPurchaseOrder) {
+        // Refresh the details view if we're viewing a purchase order
+        this.fetchPurchaseOrderDetails(this.selectedPurchaseOrder.id);
+      }
+      this.fetchPurchaseOrders();
     },
     
     handleReceiveSuccess() {
@@ -381,6 +459,12 @@ export default {
   animation: fade-in 0.3s ease;
 }
 
+/* Add this for inventory stock details container */
+.inventory-stock-details-container {
+  height: 100%;
+  animation: fade-in 0.3s ease;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -422,7 +506,7 @@ export default {
 /* Minimal Sidebar with #267a4c */
 .inventory-sidebar {
   width: 240px;
-  background: #267a4c;
+  background: #3D8D7A;
   color: white;
   display: flex;
   flex-direction: column;
@@ -653,7 +737,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 500px;
-  background: #f9fafb;
+  background: #E9EFEC;
 }
 
 /* Main Content */

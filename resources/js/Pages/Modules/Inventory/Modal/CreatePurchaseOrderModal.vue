@@ -2,7 +2,7 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-lg" @click.stop>
             <div class="modal-header">
-                <h2>{{ editable ? 'Update Purchase Order' : 'Create Purchase Order' }}</h2>
+                <h2>{{ editable ? 'Update Purchase Request' : 'Create Purchase Request' }}</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -102,7 +102,9 @@
                                         <Amount @amount="amount(index , item.unit_cost)"
                                             ref="amountComponent"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
-                                            class="form-control amount-input" />
+                                            class="form-control"
+                                            ref="amountComponent"
+                                        />
                                         <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                             {{ form.errors[`items.${index}.unit_cost`] }}
                                         </span>
@@ -161,7 +163,7 @@
                             :disabled="form.processing || form.items.length === 0">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Processing...' : (editable ? 'Update Order' : 'Create Order') }}
+                            {{ form.processing ? 'Processing...' : (editable ? 'Update Request' : 'Create Request') }}
                         </button>
                     </div>
                 </form>
@@ -211,7 +213,15 @@ export default {
         show() {
             this.form.reset();
             this.form.clearErrors();
-            this.form.items = [];
+
+            this.form.items = [
+                {
+                    product_id: null,
+                    quantity: 0,
+                    unit_cost: 0.00,
+                    total_cost: 0,
+                }
+            ];
             this.addItem();
             this.editable = false;
             this.saveSuccess = false;

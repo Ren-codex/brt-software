@@ -9,14 +9,35 @@
                 <i class="ri-shopping-cart-line"></i>
               </div>
               <div>
-                <h4 class="header-title mb-1">Purchase Order Management</h4>
-                <p class="header-subtitle mb-0">Manage and organize your purchase order catalog</p>
+                <h4 class="header-title mb-1">Purchase Request Management</h4>
+                <p class="header-subtitle mb-0">Manage and organize your purchase request catalog</p>
               </div>
             </div>
+            <button class="create-btn" @click="openCreatePurchaseOrder">
+              <i class="ri-add-line"></i>
+              <span>Add Purchase Request</span>
+            </button>
           </div>
         </div>
 
         <div class="library-card-body">
+          <div class="tabs-section">
+            <div class="tabs-wrapper">
+              <button
+                :class="['tab-btn', { active: activeTab === 'pending' }]"
+                @click="setActiveTab('pending')"
+              >
+                Pending
+              </button>
+              <button
+                :class="['tab-btn', { active: activeTab === 'approved' }]"
+                @click="setActiveTab('approved')"
+              >
+                Approved
+              </button>
+            </div>
+          </div>
+
           <div class="search-section">
             <div class="search-wrapper">
               <i class="ri-search-line search-icon"></i>
@@ -24,7 +45,7 @@
                 type="text"
                 v-model="localKeyword"
                 @input="updateKeyword($event.target.value)"
-                placeholder="Search purchase orders..."
+                placeholder="Search purchase request..."
                 class="search-input"
               >
             </div>
@@ -38,9 +59,9 @@
                   <tr>
                     <th>#</th>
                     <th>
-                      <div class="sortable-header" @click="toggleSort('po_number')">
-                        PO Number
-                        <i v-if="sortBy === 'po_number'" 
+                      <div class="sortable-header" @click="toggleSort('pr_number')">
+                        PR Number
+                        <i v-if="sortBy === 'pr_number'" 
                           :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
                         </i>
                       </div>
@@ -55,9 +76,9 @@
                     </th>
                     <th>Supplier</th>
                     <th>
-                      <div class="sortable-header" @click="toggleSort('approved_by')">
-                        Approved By
-                        <i v-if="sortBy === 'approved_by'" 
+                      <div class="sortable-header" @click="toggleSort('amount')">
+                        Total Amount
+                        <i v-if="sortBy === 'amount'" 
                           :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
                         </i>
                       </div>
@@ -84,9 +105,9 @@
                   >
                     <td>{{ index + 1 }}</td>
                     <td>
-                      <strong>{{ list.po_number }}</strong>
+                      <strong>{{ list.pr_number }}</strong>
                     </td>
-                    <td>{{ formatDate(list.approved_date) }}</td>
+                    <td>{{ formatDate(list.po_date) }}</td>
                     <td>
                       <div class="supplier-info">
                         <div class="supplier-name">{{ list.supplier ? list.supplier.name : '' }}</div>
@@ -97,7 +118,7 @@
                     </td>
                     <td>
                       <div class="amount-cell">
-                        <span class="amount-value">{{ list.approved_by?.name }}</span>
+                        <span class="amount-value">{{ formatCurrency(list.total_amount) }}</span>
                       </div>
                     </td>
                     <td>
@@ -126,7 +147,7 @@
                   <tr v-if="filteredAndSortedList.length === 0">
                     <td colspan="7" class="text-center py-4">
                       <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                      <p class="mt-2 mb-0">No purchase orders found</p>
+                      <p class="mt-2 mb-0">No pending purchase request found</p>
                       <small class="text-muted">Try changing your search or filter criteria</small>
                     </td>
                   </tr>
@@ -157,6 +178,7 @@ export default {
   name: "PurchaseOrdersTab",
   components: { Pagination, Delete, CreatePurchaseOrderModal },
   props: {
+    listPurchaseRequests: Array,
     listPurchaseOrders: Array,
     meta: Object,
     links: Object,
@@ -171,14 +193,22 @@ export default {
       selectedStatus: this.filter.status || '',
       sortBy: this.filter.sort_by || 'date',
       sortDirection: this.filter.sort_direction || 'desc',
+      activeTab: 'pending',
     };
   },
   computed: {
     filteredAndSortedList() {
-      let filtered = this.listPurchaseOrders;
-      
+      let filtered = [];
+      // Filter by active tab
+      if (this.activeTab === 'pending') {
+        filtered = this.listPurchaseRequests;
+      } else if (this.activeTab === 'approved') {
+        filtered = this.listPurchaseOrders;
+      }
+
+      // Additional filter by selectedStatus if needed
       if (this.selectedStatus) {
-        filtered = filtered.filter(order => 
+        filtered = filtered.filter(order =>
           order.status && order.status.id == this.selectedStatus
         );
       }
@@ -201,6 +231,10 @@ export default {
     }
   },
   methods: {
+    setActiveTab(tab) {
+      this.activeTab = tab;
+    },
+
     openView(purchaseOrder) {
       this.$emit('view-details', purchaseOrder);
     },
@@ -253,10 +287,6 @@ export default {
           case 'status':
             aValue = a.status ? a.status.name : '';
             bValue = b.status ? b.status.name : '';
-            break;
-          case 'po_number':
-            aValue = a.po_number || '';
-            bValue = b.po_number || '';
             break;
           default:
             aValue = a[this.sortBy] || '';
@@ -326,6 +356,38 @@ export default {
 
 
 <style scoped>
+/* Tabs Section */
+.tabs-section {
+  margin-bottom: 1rem;
+}
+
+.tabs-wrapper {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6c757d;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-btn:hover {
+  color: #2e8b57;
+}
+
+.tab-btn.active {
+  color: #2e8b57;
+  border-bottom-color: #2e8b57;
+}
+
 /* Filter Section */
 .filter-section {
   display: flex;
