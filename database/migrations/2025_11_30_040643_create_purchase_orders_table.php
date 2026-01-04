@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->string('po_number');
+            $table->string('po_number')->nullable();
             $table->date('po_date');
             $table->decimal('total_amount', 15, 2);
             $table->unsignedInteger('status_id');

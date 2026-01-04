@@ -10,9 +10,18 @@ use App\Models\PurchaseOrder;
 use App\Models\ListStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Services\SeriesService;
 
 class ReceivedStockService
 {
+    protected $series_service;
+
+    public function __construct(
+        SeriesService $series_service,
+    ) { 
+        $this->series_service = $series_service;
+    }
+
     public function getAll()
     {
         return ReceivedStock::with(['purchaseOrder', 'supplier', 'items'])->get();
@@ -26,12 +35,11 @@ class ReceivedStockService
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
-            var_dump(Auth::id());
             $receivedStock = ReceivedStock::create([
                 'po_id' => $data['po_id'],
                 'supplier_id' => $data['supplier_id'],
                 'received_date' => $data['received_date'],
-                'batch_code' => $data['batch_code'],
+                'batch_code' => $this->series_service->get('batch_code'),
                 'received_by_id' => Auth::id(),
             ]);
 
