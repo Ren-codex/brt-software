@@ -24,13 +24,13 @@ class StoreReceivedStockRequest extends FormRequest
         return [
             'po_id' => 'required|exists:purchase_orders,id',
             'supplier_id' => 'required|exists:list_suppliers,id',
-            'received_date' => 'required|date',
-            'batch_code' => 'required|string|max:255',
             'items' => 'required|array',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_name' => 'required|string',
             'items.*.quantity' => 'required|numeric|min:0',
             'items.*.unit_cost' => 'required|numeric|min:0',
             'items.*.total_cost' => 'required|numeric|min:0',
+            'items.*.to_received_quantity' => 'required|numeric|min:0',
             'items.*.po_item_id' => 'required|exists:purchase_order_items,id',
         ];
     }

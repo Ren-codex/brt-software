@@ -22,10 +22,6 @@
                       <i class="ri-check-line"></i>
                       <span>Approval</span>
                     </button>
-                    <button v-if="purchaseOrder.status?.name === 'Approved'" class="create-btn" @click="receiveStock">
-                      <i class="ri-inbox-line"></i>
-                      <span>Receive Stock</span>
-                    </button>
                     <template v-if="purchaseOrder.status?.name === 'pending' && purchaseOrder.created_by_id === $page.props.user.id">
                       <button @click="editPurchaseOrder" class="create-btn" v-b-tooltip.hover title="Edit">
                         <i class="ri-pencil-fill"></i>
@@ -113,7 +109,7 @@
                           <th>Quantity</th>
                           <th>Unit Cost</th>
                           <th>Total Cost</th>
-                          <th>Status</th>
+                          <th>Received</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -124,8 +120,7 @@
                           <td>{{ formatCurrency(item.unit_cost) }}</td>
                           <td>{{ formatCurrency(item.total_cost) }}</td>
                           <td>
-                            <span v-if="item.status === 'received'" class="badge bg-success">Received</span>
-                            <span v-else>-</span>
+                            {{ Math.floor(item.received_quantity) }}
                           </td>
                         </tr>
                       </tbody>
@@ -204,18 +199,11 @@
       {{ toastMessage }}
     </div>
   </div>
-
-  <CreateReceivedStockModal ref="receiveModal" :dropdowns="dropdowns" @add="handleReceiveSuccess" />
 </template>
 
 <script>
-import CreateReceivedStockModal from '../../Modal/CreateReceivedStockModal.vue';
-
 export default {
   name: "PurchaseOrderDetails",
-  components: {
-    CreateReceivedStockModal,
-  },
   props: {
     purchaseOrder: Object,
     dropdowns: Object,
@@ -278,10 +266,6 @@ export default {
       this.$emit('toast', 'Delete functionality would open the delete modal');
     },
     
-    receiveStock() {
-      this.$refs.receiveModal.show(this.purchaseOrder);
-    },
-    
     printPurchaseOrder() {
       if (this.purchaseOrder) {
         window.open(`/purchase-orders/${this.purchaseOrder.id}/print?type=purchase_order`, '_blank');
@@ -315,16 +299,6 @@ export default {
       setTimeout(() => {
         this.isToastVisible = false;
       }, 3000);
-    },
-    handleReceiveSuccess(status) {
-      console.log(status);
-      
-      if(status == 'success') {
-        this.showToast('Stock received successfully');
-        this.$inertia.visit('/inventory');
-      } else {
-        this.showToast('Failed to receive stock');
-      }
     },
   }
 };

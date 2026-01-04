@@ -25,6 +25,7 @@ class PurchaseOrderItemResource extends JsonResource
             'product' => $this->product ? new ProductResource($this->product) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'received_quantity' => $this->received_quantity,
         ];
     }
 }

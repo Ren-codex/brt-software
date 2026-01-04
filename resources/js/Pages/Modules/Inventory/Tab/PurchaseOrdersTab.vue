@@ -9,7 +9,7 @@
                 <i class="ri-shopping-cart-line"></i>
               </div>
               <div>
-                <h4 class="header-title mb-1">Purchase Order Management</h4>
+                <h4 class="header-title mb-1">Purchase Order List</h4>
                 <p class="header-subtitle mb-0">Manage and organize your purchase order catalog</p>
               </div>
             </div>
@@ -62,14 +62,7 @@
                         </i>
                       </div>
                     </th>
-                    <th>
-                      <div class="sortable-header" @click="toggleSort('status')">
-                        Status
-                        <i v-if="sortBy === 'status'" 
-                          :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
-                        </i>
-                      </div>
-                    </th>
+                    <th>Progress</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -101,24 +94,25 @@
                       </div>
                     </td>
                     <td>
-                      <span 
-                        class="status-badge" 
-                        :style="getStatusStyle(list.status)"
-                      >
-                        <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
-                        {{ list.status ? list.status.name : '' }}
-                      </span>
+                      <div class="progress-bar-container">
+                        <div class="progress-bar">
+                          <div
+                            class="progress-fill"
+                            :style="{ width: getProgressPercentage(list) + '%' }"
+                          ></div>
+                        </div>
+                        <small class="progress-text">{{ getProgressPercentage(list) }}% Received</small>
+                      </div>
                     </td>
                     <td>
                       <div class="action-buttons" @click.stop>
-                        <button @click.stop="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
-                          <i class="ri-pencil-line"></i>
-                        </button>
-                        <button @click.stop="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
-                          <i class="ri-delete-bin-line"></i>
-                        </button>
-                        <button @click.stop="printPurchaseOrder(list.id)" class="action-btn action-btn-print" v-b-tooltip.hover title="Print">
-                          <i class="ri-printer-line"></i>
+                        <button
+                          v-if="hasPendingItems(list)"
+                          class="action-btn action-btn-receive"
+                          @click="openReceiveStock(list)"
+                          title="Receive Stock"
+                        >
+                          Receive Stock
                         </button>
                       </div>
                     </td>
@@ -144,18 +138,20 @@
     </div>
   </BRow>
   
-  <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="$emit('fetch')" />
-  <Delete ref="delete" @delete="handleDeleteSuccess" />
+  <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="handleSuccess('edit')" />
+  <CreateReceivedStockModal ref="receiveStockModal" :dropdowns="dropdowns" @add="handleSuccess('receive')" />
+  <Delete ref="delete" @delete="handleSuccess('delete')" />
 </template>
 
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
 import CreatePurchaseOrderModal from '../Modal/CreatePurchaseOrderModal.vue';
+import CreateReceivedStockModal from '../Modal/CreateReceivedStockModal.vue';
 
 export default {
   name: "PurchaseOrdersTab",
-  components: { Pagination, Delete, CreatePurchaseOrderModal },
+  components: { Pagination, Delete, CreatePurchaseOrderModal, CreateReceivedStockModal },
   props: {
     listPurchaseOrders: Array,
     meta: Object,
@@ -279,8 +275,18 @@ export default {
       this.$emit('update-filter', filter);
     },
     
-    handleDeleteSuccess() {
-      this.$emit('toast', 'Purchase Order deleted successfully');
+    handleSuccess(type) {
+      switch(type) {
+        case 'edit':
+          this.$emit('toast', 'Purchase Order updated successfully');
+          break;
+        case 'receive':
+          this.$emit('toast', 'Stock received successfully');
+          break;
+        case 'delete':
+          this.$emit('toast', 'Purchase Order deleted successfully');
+          break;
+      }
       this.$emit('fetch');
     },
     
@@ -315,10 +321,29 @@ export default {
     
     getRowStyle(status) {
       if (!status || !status.bg_color) return {};
-      
+
       return {
         '--hover-color': status.bg_color + '10'
       };
+    },
+
+    hasPendingItems(list) {
+      return list.items && list.items.some(item => item.status === 'pending');
+    },
+
+    openReceiveStock(list) {
+      this.$refs.receiveStockModal.show(list);
+    },
+
+    getProgressPercentage(list) {
+      if (!list.items || list.items.length === 0) return 0;
+
+      const totalQuantity = list.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const totalReceived = list.items.reduce((sum, item) => sum + (item.received_quantity || 0), 0);
+
+      if (totalQuantity === 0) return 0;
+
+      return Math.round((totalReceived / totalQuantity) * 100);
     }
   },
 };
@@ -559,6 +584,48 @@ tbody tr:hover {
 .action-btn-print:hover {
   background-color: #e1bee7;
   transform: translateY(-2px);
+}
+
+.action-btn-receive {
+  background-color: #2e7d32;
+  color: #e8f5e8;
+  width: 80%;
+}
+
+.action-btn-receive:hover {
+  background-color: #c8e6c9;
+  transform: translateY(-2px);
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 100px;
+  margin-right: 15px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2e8b57 0%, #4caf50 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 11px;
+  color: #6c757d;
+  font-weight: 500;
 }
 
 /* Empty State */
