@@ -31,6 +31,14 @@
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Accounts</span>
                     </Link>
                 </li>
+
+                <li class="nav-item">
+                    <Link href="/employees" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/employees') }">
+                    <i class="ri-team-fill"></i>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Employees</span>
+                    </Link>
+                </li>
                 <li class="nav-item">
                     <Link href="/reports" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/reports') }">
@@ -49,7 +57,7 @@
                     <Link href="/sales-orders" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/sales-orders') }">
                     <i class="ri-shopping-cart-fill"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Order</span>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Management</span>
                     </Link>
                 </li>
                   <li class="nav-item">
@@ -133,6 +141,23 @@
                                     :class="{'active': $page.url === '/libraries/roles' }"
                                     data-key="t-basic">
                                     Roles
+                                </Link>
+                            </li>
+
+                            <li class="nav-item">
+                                <Link href="/libraries/positions" class="nav-link"
+                                    :class="{'active': $page.url === '/libraries/positions' }"
+                                    data-key="t-basic">
+                                    Positions
+                                </Link>
+                            </li>
+
+
+                            <li class="nav-item">
+                                <Link href="/libraries/salaries" class="nav-link"
+                                    :class="{'active': $page.url === '/libraries/salaries' }"
+                                    data-key="t-basic">
+                                    Salaries
                                 </Link>
                             </li>
 

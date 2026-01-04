@@ -33,6 +33,6 @@ class ConversationEvent implements ShouldBroadcast
 
 // 'message' => $this->message,
 // 'sender_id' => $this->sender_id,
-// 'name' => $this->sender->profile->firstname.' '.$this->sender->profile->lastname,
-// 'avatar' => $this->sender->profile->avatar,
+// 'name' => $this->sender->employee->firstname.' '.$this->sender->employee->lastname,
+// 'avatar' => $this->sender->employee->avatar,
 // 'time' => $this->created_at

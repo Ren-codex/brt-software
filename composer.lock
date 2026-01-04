@@ -10742,7 +10742,7 @@
                         "Pest\\Plugins\\Only",
                         "Pest\\Plugins\\Printer",
                         "Pest\\Plugins\\ProcessIsolation",
-                        "Pest\\Plugins\\Profile",
+                        "Pest\\Plugins\\Employee",
                         "Pest\\Plugins\\Retry",
                         "Pest\\Plugins\\Snapshot",
                         "Pest\\Plugins\\Verbose",
