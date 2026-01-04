@@ -22,7 +22,7 @@ class PurchaseOrderItemResource extends JsonResource
             'unit_cost' => $this->unit_cost,
             'total_cost' => $this->total_cost,
             'status' => $this->status,
-            'product' => $this->product ? new ProductResource($this->product) : null,
+            'product' => $this->product ,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'received_quantity' => $this->received_quantity,

@@ -1,6 +1,6 @@
 <template>
 <Head title="Users"/>
-    <PageHeader title="Roles Management" pageTitle="List" />
+    <PageHeader title="Position Management" pageTitle="List" />
     <BRow>
         <div class="col-md-12">
             <div class="library-card">
@@ -8,16 +8,16 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
-                                <i class="ri-shield-user-line"></i>
+                                <i class="ri-price-tag-3-line"></i>
                             </div>
                             <div>
-                                <h4 class="header-title mb-1">Role Management</h4>
-                                <p class="header-subtitle mb-0">Manage user roles and permissions</p>
+                                <h4 class="header-title mb-1">Position Management</h4>
+                                <p class="header-subtitle mb-0">Manage and organize your position catalog</p>
                             </div>
                         </div>
                         <button class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
-                            <span>Add Role</span>
+                            <span>Add Position</span>
                         </button>
                     </div>
                 </div>
@@ -29,7 +29,7 @@
                             <input 
                                 type="text" 
                                 v-model="filter.keyword" 
-                                placeholder="Search roles..." 
+                                placeholder="Search Position..." 
                                 class="search-input"
                             >
                         </div>
@@ -58,7 +58,7 @@
                                             <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                                                 <i class="ri-pencil-line"></i>
                                             </button>
-                                            <button @click="openDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                                            <button @click="onDelete(list,index)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </div>
@@ -77,7 +77,6 @@
         </div>
     </BRow>
     <Create @add="fetch()" ref="create"/>
-    <Delete @delete="fetch()" ref="delete"/>
 </template>
 <script>
 import _ from 'lodash';
@@ -85,10 +84,9 @@ import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
-import Delete from "@/Shared/Components/Modals/Delete.vue";
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create ,Delete },
+    components: { PageHeader, Pagination, Multiselect , Create },
     props: [],
     data(){
         return {
@@ -117,7 +115,7 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url){
-            page_url = page_url || '/libraries/roles';
+            page_url = page_url || '/libraries/positions';
             axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
@@ -141,11 +139,6 @@ export default {
         openEdit(data,index){
             this.selectedRow = index;
             this.$refs.create.edit(data , index);
-        },
-
-        openDelete(id){
-            let title = "Role";
-            this.$refs.delete.show(id , title, '/libraries/roles');
         },
 
         selectRow(index) {

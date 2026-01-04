@@ -5,7 +5,7 @@ namespace App\Services\System\User;
 use Hashids\Hashids;
 use App\Models\User;
 use App\Models\UserRole;
-use App\Models\UserProfile;
+use App\Models\Employee;
 use Illuminate\Support\Carbon;
 use App\Models\AuthenticationLog;
 use Spatie\Activitylog\Models\Activity;
@@ -20,8 +20,8 @@ class UserClass
     public function view($code){
         $data = new ViewResource(
             User::query()
-            ->with('profile:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
-            ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.profile:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.profile:user_id,firstname,middlename,lastname,suffix')
+            ->with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+            ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.employee:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.employee:user_id,firstname,middlename,lastname,suffix')
             ->where('id',$code)->first()
         );
         return $data;
@@ -37,7 +37,7 @@ class UserClass
             'is_active' => 1,
         ]);
 
-        UserProfile::create([
+        Employee::create([
             'firstname' =>  $request->firstname,
             'middlename' =>  $request->middlename,
             'lastname' =>  $request->lastname,
@@ -70,26 +70,26 @@ class UserClass
     public function authentication($request){
         $hashids = new Hashids('krad',10);
         $id = $hashids->decode($request->code);
-        $data = AuthenticationLog::with('user.profile')->where('user_id',$id)->orderBy('created_at','DESC')->paginate($request->count);
+        $data = AuthenticationLog::with('user.employee')->where('user_id',$id)->orderBy('created_at','DESC')->paginate($request->count);
         return AuthenticationResource::collection($data);
     }
 
     public function activity($request){
         $hashids = new Hashids('krad',10);
         $id = $hashids->decode($request->code);
-        $data = Activity::with('causer.profile')->where('causer_id',$id)->orderBy('created_at','DESC')->paginate($request->count);
+        $data = Activity::with('causer.employee')->where('causer_id',$id)->orderBy('created_at','DESC')->paginate($request->count);
         return ActivityResource::collection($data);
     }
 
     public function list($request){
-        $data = User::with('profile:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
-        ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.profile:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.profile:user_id,firstname,middlename,lastname,suffix')
+        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+        ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.employee:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.employee:user_id,firstname,middlename,lastname,suffix')
         ->paginate($request->count);
         return UserResource::collection($data);
     }
 
     public function status($request){
-        $data = User::with('profile:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
         ->with('myroles:role_id,id,user_id','myroles.role:id,name')
         ->where('id',$request->user_id)->first();
         $data->is_active = $request->is_active;
@@ -103,17 +103,17 @@ class UserClass
     }
 
     public function credential($request){
-        $data = User::with('profile')->find($request->user_id);
+        $data = User::with('employee')->find($request->user_id);
         $data->email = $request->email;
         if ($request->set) {
             $data->password = bcrypt($request->password);
             $data->must_change = 1;
         }
-        if($data->save() && $data->profile){
-            $data->profile->mobile = $request->mobile;
-            $data->profile->save();
+        if($data->save() && $data->employee){
+            $data->employee->mobile = $request->mobile;
+            $data->employee->save();
         }
-        $data = User::with('profile:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
         ->with('myroles:role_id,id,user_id','myroles.role:id,name')
         ->where('id',$request->user_id)->first();
         return [

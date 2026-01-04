@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
-class UserProfile extends Model
+class Employee extends Model
 {
     use HasFactory, LogsActivity;
 
@@ -35,6 +35,8 @@ class UserProfile extends Model
     ];
 
     public function user()     { return $this->belongsTo(User::class); }
+    public function position() { return $this->belongsTo(ListPosition::class, 'position_id'); }
+    public function added_by() { return $this->belongsTo(User::class, 'added_by_id'); }
     public function sex()      { return $this->belongsTo(ListData::class, 'sex_id'); }
     public function suffix()   { return $this->belongsTo(ListData::class, 'suffix_id'); }
     public function blood()    { return $this->belongsTo(ListData::class, 'blood_id'); }
@@ -102,8 +104,8 @@ class UserProfile extends Model
             'signature',
             'avatar'
         ])
-        ->setDescriptionForEvent(fn(string $eventName) => "$eventName the profile information")
-        ->useLogName('User Profile')
+        ->setDescriptionForEvent(fn(string $eventName) => "$eventName the Employee information")
+        ->useLogName('Employee')
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();
     }

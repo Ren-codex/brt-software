@@ -42,9 +42,9 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    public function profile()
+    public function employee()
     {
-        return $this->hasOne('App\Models\UserProfile', 'user_id');
+        return $this->hasOne('App\Models\Employee', 'user_id');
     }
 
 

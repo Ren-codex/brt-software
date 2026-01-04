@@ -6,18 +6,20 @@ use App\Models\User;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Services\Profile\ViewClass;
-use App\Services\Profile\SaveClass;
-use App\Http\Requests\ProfileRequest;
+use App\Services\Employee\ViewClass;
+use App\Services\Employee\SaveClass;
+use App\Http\Requests\EmployeeRequest;
 use Illuminate\Validation\Rules\Password;
+use App\Services\DropdownClass;
 
-class ProfileController extends Controller
+class EmployeeController extends Controller
 {
     use HandlesTransaction;
 
-    public function __construct(ViewClass $view, SaveClass $save){
+    public function __construct(ViewClass $view, SaveClass $save, DropdownClass $dropdown){
         $this->view = $view;
         $this->save = $save;
+        $this->dropdown = $dropdown;
     }
 
     public function index(Request $request){
@@ -35,8 +37,13 @@ class ProfileController extends Controller
             case 'sessions':
                 return $this->view->sessions($request);
             break;
-            default: 
-            return inertia('Auth/Profile/Index');
+           default:
+                return inertia('Modules/Employees/Index', [
+                    'dropdowns' => [
+                        'positions' => $this->dropdown->positions()
+                    ]
+                ]);
+            break;
         }
     }
 
@@ -54,7 +61,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(ProfileRequest $request){
+    public function update(EmloyeeRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->save->update($request);
         });

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Profile;
+namespace App\Services\Employee;
 
 use Illuminate\Support\Carbon;
 use App\Models\AuthenticationLog;
@@ -11,12 +11,12 @@ use App\Http\Resources\AuthenticationResource;
 class ViewClass
 {
     public function authenticationlogs($request){
-        $data = AuthenticationLog::with('user.profile')->where('user_id',\Auth::user()->id)->paginate($request->count);
+        $data = AuthenticationLog::with('user.employee')->where('user_id',\Auth::user()->id)->paginate($request->count);
         return AuthenticationResource::collection($data);
     }
 
     public function activitylogs($request){
-        $data = Activity::with('causer.profile')->orderBy('created_at','DESC')->paginate($request->count);
+        $data = Activity::with('causer.employee')->orderBy('created_at','DESC')->paginate($request->count);
         return ActivityResource::collection($data);
     }
 

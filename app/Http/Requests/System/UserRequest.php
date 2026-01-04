@@ -3,7 +3,7 @@
 namespace App\Http\Requests\System;
 
 use Hashids\Hashids;
-use App\Models\UserProfile;
+use App\Models\Employee;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UserRequest extends FormRequest
@@ -37,11 +37,11 @@ class UserRequest extends FormRequest
                     $validator->errors()->add('email', 'The email has already been taken.');
                 }
 
-                $mobileExists = \App\Models\UserProfile::all()->filter(function ($profile) use ($user) {
+                $mobileExists = \App\Models\Employee::all()->filter(function ($employee) use ($user) {
                     try {
-                        return $profile->mobile 
-                            && decrypt($profile->mobile) === $this->mobile
-                            && $profile->id !== ($user->profile->id ?? null);
+                        return $employee->mobile 
+                            && decrypt($employee->mobile) === $this->mobile
+                            && $employee->id !== ($user->employee->id ?? null);
                     } catch (\Exception $e) {
                         return false;
                     }
