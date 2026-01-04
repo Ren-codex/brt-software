@@ -58,6 +58,7 @@
 
                             <div class="item-body">
                                 <!-- Product Selection -->
+                                
                                 <div class="form-group">
                                     <label>Product</label>
                                     <select v-model="item.product_id" class="form-control"
@@ -97,9 +98,9 @@
 
                                     <div class="form-group">
                                         <label>Unit Cost</label>
-                                        <!-- FIXED: Proper Amount component binding -->
-                                        <Amount ref="amount" :model-value="item.unit_cost"
-                                            @update:model-value="updateUnitCost(item, $event)"
+                                    
+                                        <Amount @amount="amount(index , item.unit_cost)"
+                                            ref="amountComponent"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
                                             class="form-control amount-input" />
                                         <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
@@ -202,6 +203,10 @@ export default {
             return this.form.items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
         },
     },
+
+
+  
+
     methods: {
         show() {
             this.form.reset();
@@ -219,7 +224,7 @@ export default {
             this.form.id = data.id;
             this.form.supplier_id = data.supplier ? data.supplier.id : null;
             this.form.items = data.items ? data.items.map(item => ({
-                product_id: item.product_id,
+                product_id: item.product.id,
                 quantity: Math.round(item.quantity),
                 unit_cost: parseFloat(item.unit_cost) || 0,
                 total_cost: parseFloat(item.total_cost) || 0,
@@ -304,10 +309,15 @@ export default {
         
         duplicateItem(index) {
             const itemToDuplicate = { ...this.form.items[index] };
+            console.log('Duplicating item:', itemToDuplicate.unit_cost);
             this.form.items.splice(index + 1, 0, {
-                ...itemToDuplicate,
-                product_id: null,
+                quantity: itemToDuplicate.quantity,
+                unit_cost: itemToDuplicate.unit_cost,
+                total_cost: itemToDuplicate.total_cost,
+                product_id: itemToDuplicate.product_id,
             });
+
+            console.log('New item added:', this.form.items[index + 1]);
         },
         
         calculateTotal(item) {
@@ -336,31 +346,23 @@ export default {
         },
         
         // FIXED: Update unit cost method
-        updateUnitCost(item, value) {
-            // If value is a string (from Amount component), parse it
-            if (typeof value === 'string') {
-                // Remove currency symbol and commas
-                const cleanValue = value.replace(/[₱,]/g, '');
-                const num = parseFloat(cleanValue);
-                item.unit_cost = isNaN(num) ? 0 : num;
-            } else {
-                // If it's already a number
-                item.unit_cost = value || 0;
-            }
-            this.calculateTotal(item);
+        amount(index ,val){
+            this.$refs.amountComponent[index].emitValue(val.toFixed(2) ) ;
         },
-        
+
+        cleanCurrency(value) {
+            if (!value) return 0;
+            // Remove ₱, commas, and spaces
+            const cleaned = value.toString().replace(/[^0-9.]/g, "");
+            return parseFloat(cleaned);
+        },
+
         // FIXED: Format currency method
-        formatCurrency(value) {
-            if (!value && value !== 0) return '₱0.00';
-            
-            const num = parseFloat(value);
-            if (isNaN(num)) return '₱0.00';
-            
-            return '₱' + num.toLocaleString('en-PH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+        formatCurrency(amount) {
+            return new Intl.NumberFormat('en-PH', {
+                style: 'currency',
+                currency: 'PHP'
+            }).format(amount);
         },
     },
 };

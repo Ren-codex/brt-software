@@ -1,6 +1,6 @@
 <template>
 <Head title="Users"/>
-    <PageHeader title="Roles Management" pageTitle="List" />
+    <PageHeader title="Salary Management" pageTitle="List" />
     <BRow>
         <div class="col-md-12">
             <div class="library-card">
@@ -11,13 +11,13 @@
                                 <i class="ri-shield-user-line"></i>
                             </div>
                             <div>
-                                <h4 class="header-title mb-1">Role Management</h4>
-                                <p class="header-subtitle mb-0">Manage user roles and permissions</p>
+                                <h4 class="header-title mb-1">Salary Management</h4>
+                                <p class="header-subtitle mb-0">Manage salaries and permissions</p>
                             </div>
                         </div>
                         <button class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
-                            <span>Add Role</span>
+                            <span>Add Salary</span>
                         </button>
                     </div>
                 </div>
@@ -29,7 +29,7 @@
                             <input 
                                 type="text" 
                                 v-model="filter.keyword" 
-                                placeholder="Search roles..." 
+                                placeholder="Search salary..." 
                                 class="search-input"
                             >
                         </div>
@@ -41,7 +41,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Title</th>
+                                    <th>Amount</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -52,7 +52,7 @@
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                                 }">
                                     <td>{{ index + 1}}</td>
-                                    <td>{{ list.title }}</td>
+                                    <td>{{ list.amount }}</td>
                                     <td>
                                         <div class="action-buttons">
                                             <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
@@ -87,6 +87,7 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
 
+
 export default {
     components: { PageHeader, Pagination, Multiselect , Create ,Delete },
     props: [],
@@ -117,7 +118,7 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url){
-            page_url = page_url || '/libraries/roles';
+            page_url = page_url || '/libraries/salaries';
             axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
@@ -144,8 +145,8 @@ export default {
         },
 
         openDelete(id){
-            let title = "Role";
-            this.$refs.delete.show(id , title, '/libraries/roles');
+            let title = "Salary";
+            this.$refs.delete.show(id , title, '/libraries/salaries');
         },
 
         selectRow(index) {

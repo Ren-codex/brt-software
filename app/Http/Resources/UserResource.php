@@ -14,17 +14,17 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'username' => $this->username,
             'email' => $this->email,
-            'avatar' => ($this->profile && $this->profile->avatar && $this->profile->avatar !== 'noavatar.jpg')
-            ? asset('storage/' . $this->profile->avatar) 
+            'avatar' => ($this->employee && $this->employee->avatar && $this->employee->avatar !== 'noavatar.jpg')
+            ? asset('storage/' . $this->employee->avatar) 
             : asset('images/avatars/avatar.jpg'), 
-            'name' => $this->profile->firstname.' '.$this->profile->lastname,
-            'firstname' => $this->profile->firstname,
-            'lastname' => $this->profile->lastname,
-            'middlename' => $this->profile->middlename,
-            'gender' => $this->profile->gender,
-            'suffix' => $this->profile->suffix,
-            'mobile' => $this->profile->mobile,
-            'profile_id' => $this->profile->id,
+            'name' => $this->employee->firstname.' '.$this->employee->lastname,
+            'firstname' => $this->employee->firstname,
+            'lastname' => $this->employee->lastname,
+            'middlename' => $this->employee->middlename,
+            'gender' => $this->employee->gender,
+            'suffix' => $this->employee->suffix,
+            'mobile' => $this->employee->mobile,
+            'employee_id' => $this->employee->id,
             'is_active' => $this->is_active,
             'is_new' => $this->is_new,
             'two_factor_enabled' => ($this->two_factor_secret) ? true : false,

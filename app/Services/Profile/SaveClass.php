@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Profile;
+namespace App\Services\Employee;
 
 use App\Models\User;
 use App\Http\Resources\UserResource;
@@ -15,18 +15,18 @@ class SaveClass
         ]);
 
         $user = \Auth::user();
-        if ($user->profile->avatar) {
-            Storage::disk('public')->delete($user->profile->avatar);
+        if ($user->employee->avatar) {
+            Storage::disk('public')->delete($user->employee->avatar);
         }
 
-        $imagePath = $request->file('image')->store('profile-pictures', 'public');
-        $user->profile->avatar = $imagePath;
-        $user->profile->save();
+        $imagePath = $request->file('image')->store('employee-pictures', 'public');
+        $user->employee->avatar = $imagePath;
+        $user->employee->save();
 
         return [
             'data' => [],
-            'message' => 'Profile picture updated successfully.', 
-            'info' => "The user's profile image has been changed to the new photo."
+            'message' => 'Employee picture updated successfully.', 
+            'info' => "The user's Employee image has been changed to the new photo."
         ];
     }
 
@@ -34,13 +34,13 @@ class SaveClass
         $data = User::find(\Auth::user()->id);
         $data->email = $request->email;
         if($data->save()){
-            $profile = $data->profile;
-            $profile->firstname = $request->firstname;
-            $profile->middlename = $request->middlename;
-            $profile->lastname = $request->lastname;
-            $profile->gender = $request->gender;
-            $profile->mobile = $request->mobile;
-            $profile->save();
+            $employee = $data->employee;
+            $employee->firstname = $request->firstname;
+            $employee->middlename = $request->middlename;
+            $employee->lastname = $request->lastname;
+            $employee->gender = $request->gender;
+            $employee->mobile = $request->mobile;
+            $employee->save();
         }
         
         return [

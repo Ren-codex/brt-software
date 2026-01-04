@@ -15,12 +15,12 @@ class ViewResource extends JsonResource
 
         return [
             'code' => $code,
-            'avatar' => ($this->profile && $this->profile->avatar && $this->profile->avatar !== 'noavatar.jpg')
-            ? asset('storage/' . $this->profile->avatar) 
+            'avatar' => ($this->employee && $this->employee->avatar && $this->employee->avatar !== 'noavatar.jpg')
+            ? asset('storage/' . $this->employee->avatar) 
             : asset('images/avatars/avatar.jpg'), 
-            'name' => $this->profile->name,
-            'fullname' => $this->profile->fullname,
-            'mobile' => $this->profile->mobile,
+            'name' => $this->employee->name,
+            'fullname' => $this->employee->fullname,
+            'mobile' => $this->employee->mobile,
             'email' => $this->email,
             'username' => $this->username,
             'roles' => RoleResource::collection($this->myroles),
