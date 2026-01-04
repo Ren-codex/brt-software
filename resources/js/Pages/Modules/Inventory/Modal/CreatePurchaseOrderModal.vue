@@ -103,7 +103,6 @@
                                             ref="amountComponent"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
                                             class="form-control"
-                                            ref="amountComponent"
                                         />
                                         <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                             {{ form.errors[`items.${index}.unit_cost`] }}
