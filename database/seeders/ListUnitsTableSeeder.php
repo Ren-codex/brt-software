@@ -30,6 +30,7 @@ class ListUnitsTableSeeder extends Seeder
             array (
                 'id' => 2,
                 'name' => 'Sack',
+                'description' => '',
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
@@ -37,6 +38,7 @@ class ListUnitsTableSeeder extends Seeder
             array (
                 'id' => 3,
                 'name' => 'Bag',
+                'description' => '',
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
@@ -44,6 +46,7 @@ class ListUnitsTableSeeder extends Seeder
             array (
                 'id' => 4,
                 'name' => 'Ton',
+                'description' => '',
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
@@ -51,6 +54,7 @@ class ListUnitsTableSeeder extends Seeder
             array (
                 'id' => 5,
                 'name' => 'Pound',
+                'description' => '',
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
