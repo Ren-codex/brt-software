@@ -14,16 +14,17 @@ class ArInvoice extends Model
         'status_id',
         'invoice_number',
         'invoice_date',
-        'amount_balance',
         'amount_paid',
         'balance_due',
+        'total_discount',
+        'created_by',
     ];
 
     protected $casts = [
         'invoice_date' => 'date',
-        'amount_balance' => 'decimal:2',
         'amount_paid' => 'decimal:2',
         'balance_due' => 'decimal:2',
+        'total_discount' => 'decimal:2',
     ];
 
     public function salesOrder()

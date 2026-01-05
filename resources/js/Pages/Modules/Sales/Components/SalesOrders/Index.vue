@@ -96,8 +96,7 @@
                                     <th style="width: 12%;" class="text-center border-none">Customer</th>
                                     <th style="width: 12%;" class="text-center border-none">Date</th>
                                     <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment Mode</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment Term</th>
+                                    <th style="width: 12%;" class="text-center border-none">Total Amount</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
@@ -120,8 +119,7 @@
                                                 {{ list.status?.name || 'Unknown' }}
                                             </span>
                                         </td>
-                                        <td class="text-center">{{ list.payment_mode }}</td>
-                                        <td class="text-center">{{ list.payment_term }}</td>
+                                        <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <b-button v-if="list.status?.slug == 'delivered'" @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary" v-b-tooltip.hover title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">
@@ -134,10 +132,10 @@
                                                          @click.stop="openEdit(list,index)" variant="outline-primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
-                                                <b-button v-if="(list.status?.slug != 'approved'  && list.status?.slug != 'cancelled' && list.status?.slug != 'closed' &&  list.status?.slug == 'pending') && $page.props.roles.includes('Sales Manager')"
+                                                <!-- <b-button v-if="(list.status?.slug != 'approved'  && list.status?.slug != 'cancelled' && list.status?.slug != 'closed' &&  list.status?.slug == 'pending') && $page.props.roles.includes('Sales Manager')"
                                                  @click.stop="onApproval(list.id)" variant="outline-primary" v-b-tooltip.hover title="Approve" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-check-line"></i>
-                                                </b-button>
+                                                </b-button> -->
 
                                                 
                                                 <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' || list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
@@ -473,6 +471,14 @@ export default {
                 }
             })
             .catch(err => console.log(err));
+        },
+
+        formatCurrency(value) {
+            if (!value) return '₱0.00';
+            return '₱' + Number(value).toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
         },
 
         getStockPercentage(quantity) {

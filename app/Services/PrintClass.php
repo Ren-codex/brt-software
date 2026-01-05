@@ -21,11 +21,14 @@ class PrintClass
             case 'remittance':
                 return $this->printRemittance($id);
             break;
+            case 'invoice':
+                return $this->printArInvoice($id);
+            break;
         }
     }
 
-    public function printSalesOrder($id){   
-        $sales_order = SalesOrder::with('status' , 'items.product.brand' , 'items.product.unit' )->findOrFail($id); 
+    public function printSalesOrder($id){
+        $sales_order = SalesOrder::with('status' , 'items.product.brand' , 'items.product.unit', 'created_by' )->findOrFail($id);
         $items = $sales_order->items;
 
         $array = [
@@ -63,6 +66,22 @@ class PrintClass
 
         $pdf = \PDF::loadView('prints.remittance',$array)->setPaper('A4', 'portrait');
         return $pdf->stream('remittance-'.$remittance->remittance_no.'.pdf');
+
+    }
+
+    public function printArInvoice($id){
+        $ar_invoice = \App\Models\ArInvoice::with('status', 'salesOrder.customer', 'salesOrder.items.product.brand', 'salesOrder.items.product.unit', 'salesOrder.created_by', 'salesOrder.approved_by')->findOrFail($id);
+        $sales_order = $ar_invoice->salesOrder;
+        $items = $sales_order->items;
+
+        $array = [
+            'ar_invoice' => $ar_invoice,
+            'sales_order' => $sales_order,
+            'items' => $items,
+        ];
+
+        $pdf = \PDF::loadView('prints.sales_order',$array)->setPaper('A4', 'portrait');
+        return $pdf->stream($ar_invoice->invoice_number.'.pdf');
 
     }
 

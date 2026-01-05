@@ -1,5 +1,7 @@
-  - [ ] Update ArInvoice model: rename generateArNumber to generateInvoiceNumber
-- [ ] Update ArInvoiceController: change 'ar_number' to 'invoice_number' in search query
-- [ ] Update ArInvoiceClass: change all 'ar_number' to 'invoice_number', update method call
-- [ ] Update ArInvoicesTableSeeder: change 'ar_number' to 'invoice_number'
-- [ ] Update Vue component: change list.ar_number to list.invoice_number
+- [x] Add `use App\Models\ArInvoice;` to SalesOrderClass.php
+- [x] Wrap the save method in DB::transaction
+- [x] Implement invoice creation after updating sales order totals
+- [x] Test the save functionality (skipped per user request)
+- [x] Add total_discount to ar_invoices table
+- [x] Update ArInvoice model fillable and casts
+- [x] Update ArInvoiceClass and SalesOrderClass to save total_discount in invoice

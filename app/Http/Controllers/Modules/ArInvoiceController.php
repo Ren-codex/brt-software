@@ -6,9 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\ArInvoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\PrintClass;
 
 class ArInvoiceController extends Controller
 {
+    public $print;
+
+    public function __construct(PrintClass $print)
+    {
+        $this->print = $print;
+    }
     public function index(Request $request)
     {
         $query = ArInvoice::with(['salesOrder.customer', 'salesOrder.salesOrderItems.product', 'status']);
@@ -43,8 +50,12 @@ class ArInvoiceController extends Controller
         return back()->with($arInvoices);
     }
 
-    public function show($id)
+    public function show($id, Request $request)
     {
+        if ($request->type === 'print') {
+            return $this->print->print($id, $request);
+        }
+
         $arInvoice = ArInvoice::with(['salesOrder.customer', 'salesOrder.salesOrderItems.product', 'status'])
                              ->findOrFail($id);
 
