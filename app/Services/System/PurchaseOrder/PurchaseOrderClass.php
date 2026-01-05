@@ -10,9 +10,18 @@ use App\Http\Resources\System\PurchaseOrder\PurchaseOrderResource;
 use App\Http\Resources\System\PurchaseOrder\ViewResource;
 use App\Models\ListStatus;
 use App\Models\PurchaseOrderLog;
+use App\Services\SeriesService;
 
 class PurchaseOrderClass
 {
+    protected $series_service;
+
+    public function __construct(
+        SeriesService $series_service,
+    ) { 
+        $this->series_service = $series_service;
+    }
+
     public function list($request)
     {
         $data = PurchaseOrder::paginate($request->count ?? 10);
@@ -29,7 +38,7 @@ class PurchaseOrderClass
     {
         $data = DB::transaction(function () use ($request) {
             $poData = [
-                'po_number' => $this->generatePoNumber(),
+                'pr_number' => $this->series_service->get('purchase_request'),
                 'po_date' => now(),
                 'total_amount' => $request->total_amount,
                 'status_id' => ListStatus::where('name', 'Pending')->first()->id,
@@ -86,6 +95,11 @@ class PurchaseOrderClass
             $oldStatus = $purchaseOrder->status->name;
             $newStatus = ListStatus::findOrFail($request->status_id)->name;
 
+            if($newStatus == 'Approved'){
+                $purchaseOrder->po_number = $this->series_service->get('purchase_order');
+                $purchaseOrder->approved_by_id = Auth::id();
+                $purchaseOrder->approved_date = now();
+            }
             $purchaseOrder->status_id = $request->status_id;
             $purchaseOrder->save();
 

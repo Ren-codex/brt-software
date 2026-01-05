@@ -22,7 +22,7 @@
                       <i class="ri-check-line"></i>
                       <span>Approval</span>
                     </button>
-                    <button v-if="purchaseOrder.status?.name === 'approved'" class="create-btn" @click="receiveStock">
+                    <button v-if="purchaseOrder.status?.name === 'Approved'" class="create-btn" @click="receiveStock">
                       <i class="ri-inbox-line"></i>
                       <span>Receive Stock</span>
                     </button>
@@ -213,16 +213,23 @@
       {{ toastMessage }}
     </div>
   </div>
+
+  <CreateReceivedStockModal ref="receiveModal" :dropdowns="dropdowns" @add="handleReceiveSuccess" />
 </template>
 
 <script>
+import CreateReceivedStockModal from '../../Modal/CreateReceivedStockModal.vue';
+
 export default {
   name: "PurchaseOrderDetails",
+  components: {
+    CreateReceivedStockModal,
+  },
   props: {
     purchaseOrder: Object,
     dropdowns: Object,
   },
-  emits: ['back', 'toast', 'fetch', 'refresh'],
+  emits: ['back', 'toast', 'fetch'],
   data() {
     return {
       showModal: false,
@@ -281,8 +288,7 @@ export default {
     },
     
     receiveStock() {
-      // This would open the receive stock modal in the parent component
-      this.$emit('toast', 'Receive stock functionality would open the receive modal');
+      this.$refs.receiveModal.show(this.purchaseOrder);
     },
     
     printPurchaseOrder() {
@@ -301,7 +307,7 @@ export default {
           this.showToast('Purchase order updated successfully');
           this.showModal = false;
           this.remarks = '';
-          this.$emit('refresh');
+          this.$inertia.visit('/inventory');
         },
         onError: () => {
           this.showToast('Failed to approve purchase order');
@@ -318,6 +324,16 @@ export default {
       setTimeout(() => {
         this.isToastVisible = false;
       }, 3000);
+    },
+    handleReceiveSuccess(status) {
+      console.log(status);
+      
+      if(status == 'success') {
+        this.showToast('Stock received successfully');
+        this.$inertia.visit('/inventory');
+      } else {
+        this.showToast('Failed to receive stock');
+      }
     },
   }
 };

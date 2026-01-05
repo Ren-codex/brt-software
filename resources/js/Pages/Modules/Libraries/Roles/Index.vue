@@ -41,9 +41,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Definition</th>
+                                    <th>Title</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -54,9 +52,7 @@
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                                 }">
                                     <td>{{ index + 1}}</td>
-                                    <td>{{ list.name }}</td>
-                                    <td>{{ list.type }}</td>
-                                    <td>{{ list.definition }}</td>
+                                    <td>{{ list.title }}</td>
                                     <td>
                                         <div class="action-buttons">
                                             <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">

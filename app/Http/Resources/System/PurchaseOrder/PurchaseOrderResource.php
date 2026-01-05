@@ -18,6 +18,7 @@ class PurchaseOrderResource extends JsonResource
         return [
             'id' => $this->id,
             'po_number' => $this->po_number,
+            'pr_number' => $this->pr_number,
             'po_date' => $this->po_date,
             'total_amount' => $this->total_amount,
             'status' => $this->status,
@@ -27,6 +28,8 @@ class PurchaseOrderResource extends JsonResource
             'created_by' => $this->created_by ? new ViewResource($this->created_by) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'approved_by' => $this->approved_by_id ? new ViewResource($this->approved_by) : null,
+            'approved_date' => $this->approved_date,
         ];
     }
 }
