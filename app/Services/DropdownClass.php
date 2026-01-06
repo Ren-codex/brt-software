@@ -6,6 +6,8 @@ use App\Models\ListAcademic;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\ListRole;
+use App\Models\ListPosition;
+use App\Models\ListSalary;
 use App\Models\ListStatus;
 use App\Models\ListUnit;
 use App\Models\ListBrand;
@@ -73,6 +75,31 @@ class DropdownClass
         });
         return  $data;
     }
+
+    public function positions(){
+        $data = ListPosition::where('is_active',1)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'title' => $item->title,
+            ];
+        });
+        return  $data;
+    }
+
+    public function salaries(){
+        $data = ListSalary::where('is_active',1)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'amount' => $item->amount,   
+            ];
+        });
+        return  $data;
+    }
+
+
+
+
+
         
     public function suppliers(){
         $data = ListSupplier::get()->map(function ($item) {

@@ -213,7 +213,7 @@ export default {
           </div>
 
 
-          <BDropdown variant="link" class="ms-sm-3 header-item topbar-user" toggle-class="rounded-circle arrow-none" menu-class="dropdown-menu-end" :offset="{ alignmentAxis: -14, crossAxis: 0, mainAxis: 0 }">
+          <BDropdown variant="link" class="ms-sm-3 header-item topbar-user" toggle-class="arrow-none" menu-class="dropdown-menu-end" :offset="{ alignmentAxis: -14, crossAxis: 0, mainAxis: 0 }">
             <template #button-content>
               <span class="d-flex align-items-center">
                 <img v-if="$page.props.user.data.avatar" class="rounded-circle header-profile-user" :src="$page.props.user.data.avatar" :alt="$page.props.user.data.username">

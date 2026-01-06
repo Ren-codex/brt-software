@@ -13,10 +13,6 @@
                 <p class="header-subtitle mb-0">Manage and organize your purchase order catalog</p>
               </div>
             </div>
-            <button class="create-btn" @click="openCreatePurchaseOrder">
-              <i class="ri-add-line"></i>
-              <span>Add Purchase Order</span>
-            </button>
           </div>
         </div>
 
@@ -59,9 +55,9 @@
                     </th>
                     <th>Supplier</th>
                     <th>
-                      <div class="sortable-header" @click="toggleSort('amount')">
-                        Total Amount
-                        <i v-if="sortBy === 'amount'" 
+                      <div class="sortable-header" @click="toggleSort('approved_by')">
+                        Approved By
+                        <i v-if="sortBy === 'approved_by'" 
                           :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
                         </i>
                       </div>
@@ -90,7 +86,7 @@
                     <td>
                       <strong>{{ list.po_number }}</strong>
                     </td>
-                    <td>{{ formatDate(list.po_date) }}</td>
+                    <td>{{ formatDate(list.approved_date) }}</td>
                     <td>
                       <div class="supplier-info">
                         <div class="supplier-name">{{ list.supplier ? list.supplier.name : '' }}</div>
@@ -101,7 +97,7 @@
                     </td>
                     <td>
                       <div class="amount-cell">
-                        <span class="amount-value">{{ formatCurrency(list.total_amount) }}</span>
+                        <span class="amount-value">{{ list.approved_by?.name }}</span>
                       </div>
                     </td>
                     <td>
@@ -186,7 +182,7 @@ export default {
           order.status && order.status.id == this.selectedStatus
         );
       }
-      
+
       return this.sortList(filtered);
     }
   },
@@ -213,7 +209,7 @@ export default {
       this.$refs.createModal.show();
     },
     
-    openEdit(data, index) {
+    openEdit(data, index) {      
       this.$refs.createModal.edit(data, index);
     },
     

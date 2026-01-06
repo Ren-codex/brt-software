@@ -1,22 +1,24 @@
 <template>
     <BRow>
-        <div class="col-md-10">
-            <div class="card shadow-lg border-0" >
-                <div class="card-header bg-primary"  >
-                    <div class="d-flex mb-n3">
-                        <div class="flex-shrink-0 me-3">
-                            <div style="height:2.5rem;width:2.5rem;">
-                                <span class="avatar-title rounded p-2 mt-n1">
-                                    <i class="ri-user-2-line text-white fs-24"></i>
-                                </span>
+        <div class="col-md-9">
+            <div class="library-card">
+                <div class="library-card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="header-icon">
+                                <i class="ri-shopping-cart-line fs-24"></i>
+                            </div>
+                            <div>
+                                <h4 class="header-title mb-1">Account Receivable Invoices</h4>
+                                <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
                             </div>
                         </div>
-                        <div class="flex-grow-1">
-                            <h5 class=" fs-14"><span class="text-white">Account Receivable Invoices</span></h5>
-                            <p class="text-white-50 text-truncate-two-lines fs-12">A comprehensive Account Receivable Invoices</p>
-                        </div>
-
+                        <button class="create-btn" @click="openCreate">
+                            <i class="ri-add-line"></i>
+                            <span>Create Invoice</span>
+                        </button>
                     </div>
+
                 </div>
 
       
@@ -35,7 +37,8 @@
 
 
                     <div class="table-responsive table-card">
-                        <table class="table align-middle table-hover mb-0" style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <table class="table align-middle table-hover mb-0"
+                            style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
                                 <tr class="fs-12 fw-bold text-muted">
                                     <th style="width: 3%; border: none;">#</th>
@@ -49,22 +52,25 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <template v-for="(list,index) in lists" :key="index">
+                                <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" :class="{
                                         'bg-primary bg-opacity-10': index === selectedRow,
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
-                                            <i v-if="expandedRows.includes(index)" class="ri-arrow-down-s-line text-primary"></i>
+                                            <i v-if="expandedRows.includes(index)"
+                                                class="ri-arrow-down-s-line text-primary"></i>
                                             <i v-else class="ri-arrow-right-s-line text-muted"></i>
-                                            {{ index + 1}}
+                                            {{ index + 1 }}
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
                                         <td class="text-center">{{ list.sales_order?.so_number || '-' }}</td>
                                         <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.invoice_date }}</td>
                                         <td class="text-center">
-                                            <b-badge :style="{ 'background-color': list.status?.bg_color, color: '#fff' }" class="px-3 py-2 rounded-pill">
+                                            <b-badge
+                                                :style="{ 'background-color': list.status?.bg_color, color: '#fff' }"
+                                                class="px-3 py-2 rounded-pill">
                                                 {{ list.status?.name }}
                                             </b-badge>
                                         </td>
@@ -101,10 +107,14 @@
                                                     <div class="col-md-6">
                                                         <div class="card border-0 shadow-sm bg-white">
                                                             <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Sales Order Details</h6>
-                                                                <p class="mb-1"><strong>Sales Order:</strong> {{ list.sales_order?.so_number || '-' }}</p>
-                                                                <p class="mb-1"><strong>Customer:</strong> {{ list.sales_order?.customer?.name || '-' }}</p>
-                                                                <p class="mb-0"><strong>Order Date:</strong> {{ list.sales_order?.order_date || '-' }}</p>
+                                                                <h6 class="card-title text-muted small mb-2">Sales Order
+                                                                    Details</h6>
+                                                                <p class="mb-1"><strong>Sales Order:</strong> {{
+                                                                    list.sales_order?.so_number || '-' }}</p>
+                                                                <p class="mb-1"><strong>Customer:</strong> {{
+                                                                    list.sales_order?.customer?.name || '-' }}</p>
+                                                                <p class="mb-0"><strong>Order Date:</strong> {{
+                                                                    list.sales_order?.order_date || '-' }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -130,7 +140,7 @@
                         <hr class="mb-0">
                     </h4>
                 </div>
-     
+
                 <div class="card-body">
                     <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
@@ -213,7 +223,7 @@ import Payment from '../ARInvoices/Modals/Payment.vue';
 export default {
     components: { PageHeader, Pagination, Multiselect, Payment },
     props: ['dropdowns'],
-    data(){
+    data() {
         return {
             currentUrl: window.location.origin,
             lists: [],
@@ -261,20 +271,20 @@ export default {
         }
     },
     watch: {
-        "filter.keyword"(newVal){
+        "filter.keyword"(newVal) {
             this.checkSearchStr(newVal);
         }
     },
-    created(){
-       this.fetch();
-       this.fetchMetrics();
-       this.fetchStock();
+    created() {
+        this.fetch();
+        this.fetchMetrics();
+        this.fetchStock();
     },
     methods: {
-        checkSearchStr: _.debounce(function(string) {
+        checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
-        fetch(page_url){
+        fetch(page_url) {
             page_url = page_url || '/ar-invoices';
             axios.get(page_url,{
                 params : {
@@ -283,14 +293,14 @@ export default {
                     count: 10
                 }
             })
-            .then(response => {
-                if(response){
-                    this.lists = response.data.data;
-                    this.meta = response.data.meta;
-                    this.links = response.data.links;
-                }
-            })
-            .catch(err => console.log(err));
+                .then(response => {
+                    if (response) {
+                        this.lists = response.data.data;
+                        this.meta = response.data.meta;
+                        this.links = response.data.links;
+                    }
+                })
+                .catch(err => console.log(err));
         },
         onPayment(data){
             let title = "Record Payment";
@@ -317,32 +327,32 @@ export default {
             }
         },
 
-        fetchMetrics(){
-            axios.get('/ar-invoices',{
-                params : {
+        fetchMetrics() {
+            axios.get('/ar-invoices', {
+                params: {
                     option: 'dashboard'
                 }
             })
-            .then(response => {
-                if(response){
-                    this.metrics = response.data;
-                }
-            })
-            .catch(err => console.log(err));
+                .then(response => {
+                    if (response) {
+                        this.metrics = response.data;
+                    }
+                })
+                .catch(err => console.log(err));
         },
 
-        fetchStock(){
-            axios.get('/ar-invoices',{
-                params : {
+        fetchStock() {
+            axios.get('/ar-invoices', {
+                params: {
                     option: 'stock'
                 }
             })
-            .then(response => {
-                if(response){
-                    this.stock = response.data;
-                }
-            })
-            .catch(err => console.log(err));
+                .then(response => {
+                    if (response) {
+                        this.stock = response.data;
+                    }
+                })
+                .catch(err => console.log(err));
         },
 
         getStockPercentage(quantity) {

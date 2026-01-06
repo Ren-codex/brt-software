@@ -2,7 +2,7 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-lg" @click.stop>
             <div class="modal-header">
-                <h2>{{ editable ? 'Update Purchase Order' : 'Create Purchase Order' }}</h2>
+                <h2>{{ editable ? 'Update Purchase Request' : 'Create Purchase Request' }}</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -58,6 +58,7 @@
 
                             <div class="item-body">
                                 <!-- Product Selection -->
+                                
                                 <div class="form-group">
                                     <label>Product</label>
                                     <select v-model="item.product_id" class="form-control"
@@ -97,11 +98,12 @@
 
                                     <div class="form-group">
                                         <label>Unit Cost</label>
-                                        <!-- FIXED: Proper Amount component binding -->
-                                        <Amount ref="amount" :model-value="item.unit_cost"
-                                            @update:model-value="updateUnitCost(item, $event)"
+                                    
+                                        <Amount @amount="amount(index , item.unit_cost)"
+                                            ref="amountComponent"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
-                                            class="form-control amount-input" />
+                                            class="form-control"
+                                        />
                                         <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                             {{ form.errors[`items.${index}.unit_cost`] }}
                                         </span>
@@ -160,7 +162,7 @@
                             :disabled="form.processing || form.items.length === 0">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Processing...' : (editable ? 'Update Order' : 'Create Order') }}
+                            {{ form.processing ? 'Processing...' : (editable ? 'Update Request' : 'Create Request') }}
                         </button>
                     </div>
                 </form>
@@ -202,11 +204,23 @@ export default {
             return this.form.items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
         },
     },
+
+
+  
+
     methods: {
         show() {
             this.form.reset();
             this.form.clearErrors();
-            this.form.items = [];
+
+            this.form.items = [
+                {
+                    product_id: null,
+                    quantity: 0,
+                    unit_cost: 0.00,
+                    total_cost: 0,
+                }
+            ];
             this.addItem();
             this.editable = false;
             this.saveSuccess = false;
@@ -219,7 +233,7 @@ export default {
             this.form.id = data.id;
             this.form.supplier_id = data.supplier ? data.supplier.id : null;
             this.form.items = data.items ? data.items.map(item => ({
-                product_id: item.product_id,
+                product_id: item.product.id,
                 quantity: Math.round(item.quantity),
                 unit_cost: parseFloat(item.unit_cost) || 0,
                 total_cost: parseFloat(item.total_cost) || 0,
@@ -304,10 +318,15 @@ export default {
         
         duplicateItem(index) {
             const itemToDuplicate = { ...this.form.items[index] };
+            console.log('Duplicating item:', itemToDuplicate.unit_cost);
             this.form.items.splice(index + 1, 0, {
-                ...itemToDuplicate,
-                product_id: null,
+                quantity: itemToDuplicate.quantity,
+                unit_cost: itemToDuplicate.unit_cost,
+                total_cost: itemToDuplicate.total_cost,
+                product_id: itemToDuplicate.product_id,
             });
+
+            console.log('New item added:', this.form.items[index + 1]);
         },
         
         calculateTotal(item) {
@@ -336,31 +355,23 @@ export default {
         },
         
         // FIXED: Update unit cost method
-        updateUnitCost(item, value) {
-            // If value is a string (from Amount component), parse it
-            if (typeof value === 'string') {
-                // Remove currency symbol and commas
-                const cleanValue = value.replace(/[₱,]/g, '');
-                const num = parseFloat(cleanValue);
-                item.unit_cost = isNaN(num) ? 0 : num;
-            } else {
-                // If it's already a number
-                item.unit_cost = value || 0;
-            }
-            this.calculateTotal(item);
+        amount(index ,val){
+            this.$refs.amountComponent[index].emitValue(val.toFixed(2) ) ;
         },
-        
+
+        cleanCurrency(value) {
+            if (!value) return 0;
+            // Remove ₱, commas, and spaces
+            const cleaned = value.toString().replace(/[^0-9.]/g, "");
+            return parseFloat(cleaned);
+        },
+
         // FIXED: Format currency method
-        formatCurrency(value) {
-            if (!value && value !== 0) return '₱0.00';
-            
-            const num = parseFloat(value);
-            if (isNaN(num)) return '₱0.00';
-            
-            return '₱' + num.toLocaleString('en-PH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+        formatCurrency(amount) {
+            return new Intl.NumberFormat('en-PH', {
+                style: 'currency',
+                currency: 'PHP'
+            }).format(amount);
         },
     },
 };
@@ -435,7 +446,7 @@ export default {
 
 /* Modal Header */
 .modal-header {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    background: #3a8674;
     color: white;
     padding: 0.875rem 1.25rem;
     display: flex;
@@ -567,7 +578,7 @@ export default {
 
 /* Items Section */
 .btn-add-item {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    background: #3a8674;
     color: white;
     border: none;
     padding: 0.5rem 0.875rem;
@@ -821,7 +832,7 @@ export default {
 }
 
 .btn-save {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    background:#3a8674;
     color: white;
     box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
 }

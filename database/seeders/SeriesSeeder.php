@@ -18,5 +18,29 @@ class SeriesSeeder extends Seeder
             'max_digit' => 6,
             'starting_value' => 1
         ));
+
+        Series::create(array(
+            'name' => 'Batch Code',
+            'slug' => 'batch_code',
+            'prefix' => 'BATCH',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
+
+        Series::create(array(
+            'name' => 'Purchase Request',
+            'slug' => 'pr_number',
+            'prefix' => 'PR',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
+
+        Series::create(array(
+            'name' => 'Purchase Order',
+            'slug' => 'po_number',
+            'prefix' => 'PO',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
     }
 }
