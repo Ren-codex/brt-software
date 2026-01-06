@@ -137,13 +137,9 @@
                                                     <i class="ri-check-line"></i>
                                                 </b-button> -->
 
-                                                
+                                        
                                                 <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' || list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
-                                                </b-button>
-
-                                                <b-button v-if="list.status?.slug == 'approved'" @click.stop="onPayment(list.id)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
                                         </td>
@@ -302,7 +298,7 @@
     <Cancel @cancel="fetch()" ref="cancel"/>
      <Approval @approve="fetch()" ref="approval"/>
     <Adjustment @update="fetch()"  ref="adjustment"/>
-    <Payment @approve="fetch()" ref="payment"/>
+
     
 </template>
 <script>
@@ -314,11 +310,11 @@ import Cancel from './Modals/Cancel.vue';
 import Create from './Modals/Create.vue';
 import Adjustment from './Modals/Adjustment.vue';
 import Approval from './Modals/Approval.vue';
-import Payment from './Modals/Payment.vue';
+
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval, Payment },
-    props: ['dropdowns'],
+    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
+    props: ['dropdowns' , 'invoices'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -419,10 +415,7 @@ export default {
         onPrint(id){
             window.open(`/sales-orders/${id}?option=print&type=sales_order`);
         },
-        onPayment(id){
-            let title = "Sales Order";
-            this.$refs.payment.show(id , title, '/sales-orders');
-        },
+    
 
         onSalesAdjustment(id){
             let title = "Sales Order";

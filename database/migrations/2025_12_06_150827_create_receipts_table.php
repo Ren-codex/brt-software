@@ -24,6 +24,7 @@ return new class extends Migration
             $table->date('receipt_date');
             $table->decimal('amount_paid' , 2);
             $table->string('payment_mode');
+            $table->string('billing_account')->nullable();
             $table->timestamps();
         });
     }

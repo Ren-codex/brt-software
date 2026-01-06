@@ -18,12 +18,12 @@ class SalesOrderRequest extends FormRequest
         return [
             'order_date' => 'required|date',
             'customer_id' => 'required|exists:customers,id',
-            // 'items' => 'required|array|min:1',
-            // 'items.*.product_id' => 'required|exists:products,id',
-            // 'items.*.quantity' => 'required|integer|min:1',
-            // 'items.*.unit_cost' => 'required|numeric|min:0',
-            // 'items.*.batch_code' => 'required|string',
-            // 'items.*.discount_per_unit' => 'nullable|numeric|min:0',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_cost' => 'required|numeric|min:0',
+            'items.*.batch_code' => 'required|string',
+            'items.*.discount_per_unit' => 'nullable|numeric|min:0',
 
         ];
 

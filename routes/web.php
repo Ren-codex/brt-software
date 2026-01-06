@@ -16,6 +16,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::post('/sales-orders/adjustment/{id}', [App\Http\Controllers\Modules\SalesAdjustmentController::class, 'store']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
+    Route::post('/ar-invoices/{id}/payment', [App\Http\Controllers\Modules\ArInvoiceController::class, 'payment']);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
 
     Route::middleware(['role:Administrator'])->group(function () {

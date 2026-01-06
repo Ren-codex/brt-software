@@ -41,7 +41,7 @@ class SalesOrderController extends Controller
                         'customers' => $this->dropdown->customers(),
                         'brands' => $this->dropdown->brands(),
                         'products' => $this->dropdown->products(),
-                        'batch_codes' => $this->dropdown->batch_codes()
+                        'batch_codes' => $this->dropdown->batch_codes(),
                     ]
                 ]);
             break;

@@ -13,7 +13,6 @@ class SalesOrder extends Model
         'status_id',
         'total_amount',
         'total_discount',
-        
         'added_by_id',
         'updated_by_id',
         'transferred_to',
@@ -37,10 +36,16 @@ class SalesOrder extends Model
         return $this->hasMany(SalesOrderItem::class, 'sales_order_id');
     }
 
+    public function invoices()
+    {
+        return $this->hasMany(ArInvoice::class, 'sales_order_id');
+    }
+
     public function created_by()
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
+
 
     public function logs()
     {

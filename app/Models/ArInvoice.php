@@ -27,7 +27,7 @@ class ArInvoice extends Model
         'total_discount' => 'decimal:2',
     ];
 
-    public function salesOrder()
+    public function sales_order()
     {
         return $this->belongsTo(SalesOrder::class);
     }
