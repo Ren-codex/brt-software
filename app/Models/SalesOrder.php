@@ -9,16 +9,14 @@ class SalesOrder extends Model
     protected $fillable = [
         'so_number',
         'order_date',
-        'payment_mode',
-        'payment_term',
-        'transferred_to',
-        'transferred_at',
         'customer_id',
         'status_id',
         'total_amount',
         'total_discount',
         'added_by_id',
         'updated_by_id',
+        'transferred_to',
+        'transferred_at',
         'approved_by_id',
         'approved_at',
     ];
@@ -38,10 +36,16 @@ class SalesOrder extends Model
         return $this->hasMany(SalesOrderItem::class, 'sales_order_id');
     }
 
+    public function invoices()
+    {
+        return $this->hasMany(ArInvoice::class, 'sales_order_id');
+    }
+
     public function created_by()
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
+
 
     public function logs()
     {

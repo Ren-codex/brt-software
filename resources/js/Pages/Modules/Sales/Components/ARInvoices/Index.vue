@@ -21,77 +21,20 @@
 
                 </div>
 
-                <div class="card-body bg-white">
-                    <div class="search-section">
-                        <div class="search-wrapper">
-                            <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
-                                placeholder="Search purchase request..." class="search-input">
-                        </div>
+      
+                <div class="card-body bg-white mb-3 me-3">
+                    <b-row class="mb-3 ms-1 me-1 ">
+                        <b-col lg>
+                            <div class="input-group">
+                                <span class="input-group-text bg-primary text-white">
+                                    <i class="ri-search-line"></i>
+                                </span>
+                                <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search AR Invoice" class="form-control border-primary">
 
-                    </div>
-                    
-
-                    <div class="mb-2">
-                        <b-button @click="showStock = !showStock" variant="outline-primary" size="sm" class="mb-3">
-                            <i class="ri-eye-line me-1"></i> Stock Availability
-                        </b-button>
-                        <b-collapse v-model="showStock">
-                            <div class="card border-primary shadow-sm" style="border-radius: 10px;">
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">Total KG Left</p>
-                                                <h5 class="text-primary mb-0">{{ stock.total_kg_left || 0 }} kg</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">5kg Sacks Left</p>
-                                                <h5 class="text-success mb-0">{{ stock.five_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">10kg Sacks Left</p>
-                                                <h5 class="text-info mb-0">{{ stock.ten_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">25kg Sacks Left</p>
-                                                <h5 class="text-warning mb-0">{{ stock.twenty_five_kg_sacks_left || 0 }}
-                                                </h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div v-if="stock.products && stock.products.length > 0" class="mt-3">
-                                        <h6 class="text-muted">Product Details by Brand:</h6>
-                                        <div v-for="(brandGroup, brandIndex) in groupedProducts" :key="brandIndex"
-                                            class="mb-4">
-                                            <h6 class="text-primary mb-2">
-                                                <i class="ri-building-line me-2"></i>{{ brandGroup.brand || 'No Brand'
-                                                }}
-                                            </h6>
-                                            <div class="row">
-                                                <div v-for="product in brandGroup.products" :key="product.product_name"
-                                                    class="col-md-6 mb-2">
-                                                    <div
-                                                        class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                                        <span class="small">{{ product.product_name }}</span>
-                                                        <span class="badge bg-secondary">{{ product.total_quantity }} x
-                                                            {{ product.pack_size }} {{ product.unit }} ({{
-                                                            product.total_kg }} kg)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
-                        </b-collapse>
-                    </div>
+                        </b-col>
+                    </b-row>
+
 
                     <div class="table-responsive table-card">
                         <table class="table align-middle table-hover mb-0"
@@ -120,7 +63,7 @@
                                             <i v-else class="ri-arrow-right-s-line text-muted"></i>
                                             {{ index + 1 }}
                                         </td>
-                                        <td class="text-center fw-semibold">{{ list.ar_number }}</td>
+                                        <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
                                         <td class="text-center">{{ list.sales_order?.so_number || '-' }}</td>
                                         <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.invoice_date }}</td>
@@ -134,25 +77,11 @@
                                         <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="onSalesAdjustment(list.id)"
-                                                    variant="outline-secondary" v-b-tooltip.hover
-                                                    title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-refund-line"></i>
-                                                </b-button>
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info"
-                                                    v-b-tooltip.hover title="Print" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button @click.stop="openEdit(list, index)" variant="outline-primary"
-                                                    v-b-tooltip.hover title="Edit" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-pencil-fill"></i>
-                                                </b-button>
-                                                <b-button @click.stop="onCancel(list.id)" variant="outline-danger"
-                                                    v-b-tooltip.hover title="Delete" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-close-line"></i>
+                                                <b-button v-if="list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' " @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
+                                                    <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
                                         </td>
@@ -167,16 +96,11 @@
                                                     <div class="col-md-6">
                                                         <div class="card border-0 shadow-sm bg-white">
                                                             <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Invoice
-                                                                    Information</h6>
-                                                                <p class="mb-1"><strong>Invoice Date:</strong> {{
-                                                                    list.invoice_date }}</p>
-                                                                <p class="mb-1"><strong>Amount Balance:</strong> ₱{{
-                                                                    list.amount_balance?.toFixed(2) }}</p>
-                                                                <p class="mb-1"><strong>Amount Paid:</strong> ₱{{
-                                                                    list.amount_paid?.toFixed(2) }}</p>
-                                                                <p class="mb-0"><strong>Balance Due:</strong> ₱{{
-                                                                    list.balance_due?.toFixed(2) }}</p>
+                                                                <h6 class="card-title text-muted small mb-2">Invoice Information</h6>
+                                                                <p class="mb-1"><strong>Invoice Date:</strong> {{ list.invoice_date }}</p>
+                                                                <p class="mb-1"><strong>Amount Balance:</strong> ₱{{ list.balance_due?.toFixed(2) }}</p>
+                                                                <p class="mb-1"><strong>Amount Paid:</strong> ₱{{ list.amount_paid?.toFixed(2) }}</p>
+                                                                <p class="mb-0"><strong>Balance Due:</strong> ₱{{ list.balance_due?.toFixed(2) }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -203,88 +127,84 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
-                        :links="links" :pagination="meta" />
+                <div class="card-footer bg-light border-0 mt-3">
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
-        <div class="col-md-3 ">
-            <div class="card shadow-lg border-0 bg-primary">
-                <div class="card-header border-0  bg-primary">
-                    <h4 class="text-white">
+        <div class="col-md-2 ">
+            <div class="card shadow-lg border-0 text-primary" >
+                <div class="card-header border-0  text-primary" >
+                    <h4  >
                         <i class="ri-dashboard-line "></i> Quick Stats
                         <hr class="mb-0">
                     </h4>
                 </div>
 
                 <div class="card-body">
-                    <div class="metric-card mb-3 p-3 bg-white bg-opacity-10 rounded"
-                        style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-shopping-cart-line text-white fs-18"></i>
+                                <span class="avatar-title bg-primary text-white rounded">
+                                    <i class="ri-file-list-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Total Sales Orders</p>
-                                <h4 class="mb-0 text-white">{{ metrics.total_sales_orders }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Total Invoices</p>
+                                <h4 class="mb-0">{{ metrics.total_invoices }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card mb-3 p-3 bg-white bg-opacity-10 rounded"
-                        style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-calendar-line text-white fs-18"></i>
+                                <span class="avatar-title bg-info text-white rounded">
+                                    <i class="ri-calendar-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Today's Orders</p>
-                                <h4 class="mb-0 text-white">{{ metrics.today_orders }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Today's Invoices</p>
+                                <h4 class="mb-0">{{ metrics.today_invoices }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card mb-3 p-3 bg-white bg-opacity-10 rounded"
-                        style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-money-dollar-circle-line text-white fs-18"></i>
+                                <span class="avatar-title bg-success text-white rounded">
+                                    <i class="ri-money-dollar-circle-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Total Revenue</p>
-                                <h4 class="mb-0 text-white">₱{{ metrics.total_revenue?.toFixed(2) }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Outstanding Balance</p>
+                                <h4 class="mb-0">₱{{ metrics.outstanding_balance?.toFixed(2) }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-time-line text-white fs-18"></i>
+                                <span class="avatar-title bg-warning text-white rounded">
+                                    <i class="ri-time-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Pending Orders</p>
-                                <h4 class="mb-0 text-white">{{ metrics.pending_orders }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Pending Invoices</p>
+                                <h4 class="mb-0">{{ metrics.pending_invoices }}</h4>
                             </div>
                         </div>
                     </div>
 
-                    <div class="metric-card p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded">
-                                    <i class="ri-time-line text-white fs-18"></i>
+                                <span class="avatar-title bg-success text-white rounded">
+                                    <i class="ri-check-circle-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-white-50 fw-semibold fs-12 mb-1">Cancelled Orders</p>
-                                <h4 class="mb-0 text-white">{{ metrics.cancelled_orders }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Paid Invoices</p>
+                                <h4 class="mb-0">{{ metrics.paid_invoices }}</h4>
                             </div>
                         </div>
                     </div>
@@ -292,16 +212,16 @@
             </div>
         </div>
     </BRow>
-
+    <Payment @approve="fetch()"  ref="payment"/>
 </template>
 <script>
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
-
+import Payment from '../ARInvoices/Modals/Payment.vue';
 export default {
-    components: { PageHeader, Pagination, Multiselect },
+    components: { PageHeader, Pagination, Multiselect, Payment },
     props: ['dropdowns'],
     data() {
         return {
@@ -316,10 +236,11 @@ export default {
             selectedRow: null,
             units: [],
             metrics: {
-                total_sales_orders: 0,
-                today_orders: 0,
-                total_revenue: 0,
-                pending_orders: 0
+                total_invoices: 0,
+                outstanding_balance: 0,
+                paid_invoices: 0,
+                pending_invoices: 0,
+                today_invoices: 0
             },
             stock: {
                 products: []
@@ -365,8 +286,9 @@ export default {
         }, 300),
         fetch(page_url) {
             page_url = page_url || '/ar-invoices';
-            axios.get(page_url, {
-                params: {
+            axios.get(page_url,{
+                params : {
+                    option: 'lists',
                     keyword: this.filter.keyword,
                     count: 10
                 }
@@ -380,27 +302,13 @@ export default {
                 })
                 .catch(err => console.log(err));
         },
-        openCreate() {
-            this.$refs.create.show();
+        onPayment(data){
+            let title = "Record Payment";
+            this.$refs.payment.show(data, title, '/ar-invoices');
         },
 
-        openEdit(data, index) {
-            this.selectedRow = index;
-            this.$refs.create.edit(data, index);
-        },
-
-        onCancel(id) {
-            let title = "Sales Order";
-            this.$refs.cancel.show(id, title, '/sales-orders');
-        },
-
-        onPrint(id) {
-            window.open(`/sales-orders/${id}?option=print&type=sales_order`);
-        },
-
-        onSalesAdjustment(id) {
-            let title = "Sales Order";
-            this.$refs.adjustment.show(id);
+        onPrint(id){
+            window.open(`/ar-invoices/${id}?option=print&type=ar_invoice`);
         },
 
         selectRow(index) {

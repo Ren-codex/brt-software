@@ -5,6 +5,7 @@ namespace App\Services\Modules;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\SalesOrder;
+use App\Models\ArInvoice;
 use App\Models\InventoryStocks;
 use App\Models\ReceivedItem;
 use App\Models\Product;
@@ -38,7 +39,6 @@ class SalesOrderClass
 
 
     public function save($request){
-
         // Validate stock availability for all items
         foreach($request->items as $item){
             if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'], $item['batch_code'])) {
@@ -47,12 +47,9 @@ class SalesOrderClass
             }
         }
 
-
         $data = new SalesOrder();
         $data->so_number = SalesOrder::generateSONumber();
         $data->order_date = $request->order_date;
-        $data->payment_mode = $request->payment_mode;
-        $data->payment_term = $request->payment_term;
         $data->customer_id = $request->customer_id;
         $data->added_by_id = auth()->user()->id;
         $data->status_id = 1; //set to pending
@@ -61,12 +58,15 @@ class SalesOrderClass
         $totalAmount = 0;
         $totalDiscount = 0;
 
+
         foreach($request->items as $item){
             $price = $item['unit_cost']; // map unit_cost to price
             $discount = $item['discount_per_unit'] ?? 0;
             $quantity = $item['quantity'];
+            $discount_amount = $price * ($discount / 100);
 
             $data->items()->create([
+                'sales_order_id' => $data->id,
                 'product_id' => $item['product_id'],
                 'quantity' => $quantity,
                 'price' => $price,
@@ -74,11 +74,12 @@ class SalesOrderClass
                 'discount_per_unit' => $discount,
             ]);
 
-            $totalAmount += ($price - $discount) * $quantity;
-            $totalDiscount += $discount * $quantity;
+            $totalAmount += ($price - $discount_amount) * $quantity;
+            $totalDiscount += $discount_amount * $quantity;
+
 
             // Deduct inventory
-            $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Sale - SO#' . $data->so_number);
+            $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Sale - SO#' . $data->so_number, $item['batch_code']);
         }
 
         // Update totals
@@ -90,6 +91,19 @@ class SalesOrderClass
         // Reload the data with relationships
         $data = SalesOrder::with('items')->find($data->id);
 
+
+        // Create AR Invoice
+        $invoice = new ArInvoice();
+        $invoice->sales_order_id = $data->id;
+        $invoice->invoice_number = ArInvoice::generateInvoiceNumber();
+        $invoice->invoice_date = $data->order_date;
+        $invoice->amount_paid = 0;
+        $invoice->balance_due = $data->total_amount;
+        $invoice->total_discount = $data->total_discount;
+        $invoice->status_id = 8; // Unpaid
+        $invoice->created_by = auth()->user()->id;
+        $invoice->save();
+
         return [
             'data' => new SalesOrderResource($data),
             'message' => 'Sales Order saved successfully!',
@@ -99,67 +113,73 @@ class SalesOrderClass
 
 
     public function update($request){
-        return DB::transaction(function () use ($request) {
-            $data = SalesOrder::findOrFail($request->id);
+        $data = SalesOrder::findOrFail($request->id);
 
-            // Restore old stock
-            foreach($data->items as $item){
-                $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number, $item->batch_code);
+        // Restore old stock
+        foreach($data->items as $item){
+            $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number, $item->batch_code);
+        }
+
+        $data->update([
+            'customer_id' => $request->customer_id,
+            'order_date' => $request->order_date,
+        ]);
+
+        // Clear existing items
+        $data->items()->delete();
+
+        // Validate stock availability for new items
+        foreach($request->items as $item){
+            if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'], $item['batch_code'])) {
+                $product = Product::find($item['product_id']);
+                throw new \Exception('Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']);
             }
+        }
 
-            $data->update([
-                'customer_id' => $request->customer_id,
-                'payment_mode' => $request->payment_mode,
-                'payment_term' => $request->payment_term,
-                'order_date' => $request->order_date,
+        // Add new items
+        $totalAmount = 0;
+        $totalDiscount = 0;
+        foreach($request->items as $item){
+            $price = $item['unit_cost']; // map unit_cost to price
+            $discount = $item['discount_per_unit'] ?? 0;
+            $quantity = $item['quantity'];
+            $discount_amount = $price * ($discount / 100);
+
+            $data->items()->create([
+                'product_id' => $item['product_id'],
+                'quantity' => $quantity,
+                'price' => $price,
+                'batch_code' => $item['batch_code'],
+                'discount_per_unit' => $discount,
             ]);
 
-            // Clear existing items
-            $data->items()->delete();
+            $totalAmount += ($price - $discount_amount) * $quantity;
+            $totalDiscount += $discount_amount * $quantity;
 
-            // Validate stock availability for new items
-            foreach($request->items as $item){
-                if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'])) {
-                    $product = Product::find($item['product_id']);
-                    throw new \Exception('Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product'));
-                }
-            }
+            // Deduct new inventory
+            $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Update Sale - SO#' . $data->so_number, $item['batch_code']);
+        }
 
-            // Add new items
-            $totalAmount = 0;
-            $totalDiscount = 0;
-            foreach($request->items as $item){
-                $price = $item['unit_cost']; // map unit_cost to price
-                $discount = $item['discount_per_unit'] ?? 0;
-                $quantity = $item['quantity'];
+        // Update totals
+        $data->update([
+            'total_amount' => $totalAmount,
+            'total_discount' => $totalDiscount,
+        ]);
 
-                $data->items()->create([
-                    'product_id' => $item['product_id'],
-                    'quantity' => $quantity,
-                    'price' => $price,
-                    'batch_code' => $item['batch_code'],
-                    'discount_per_unit' => $discount,
-                ]);
-
-                $totalAmount += ($price - $discount) * $quantity;
-                $totalDiscount += $discount * $quantity;
-
-                // Deduct new inventory
-                $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Update Sale - SO#' . $data->so_number, $item['batch_code']);
-            }
-
-            // Update totals
-            $data->update([
-                'total_amount' => $totalAmount,
+        // Update associated invoice
+        $invoice = $data->invoices()->first();
+        if ($invoice) {
+            $invoice->update([
+                'balance_due' => $totalAmount,
                 'total_discount' => $totalDiscount,
             ]);
+        }
 
-            return [
-                'data' => new SalesOrderResource($data),
-                'message' => 'Sales Order updated successfully!',
-                'info' => "You've successfully updated the Sales Order"
-            ];
-        });
+        return [
+            'data' => new SalesOrderResource($data),
+            'message' => 'Sales Order updated successfully!',
+            'info' => "You've successfully updated the Sales Order"
+        ];
     }
 
     public function approve($id){
@@ -179,18 +199,16 @@ class SalesOrderClass
     }
 
     public function cancel($id){
-        DB::transaction(function () use ($id) {
-            $data = SalesOrder::findOrFail($id);
+        $data = SalesOrder::findOrFail($id);
 
-            // Restore stock
-            foreach($data->items as $item){
-                $this->inventoryService->addStock($item->product_id, $item->quantity, 'Cancel SO - Restore Stock - SO#' . $data->so_number, $item->batch_code);
-            }
+        // Restore stock
+        foreach($data->items as $item){
+            $this->inventoryService->addStock($item->product_id, $item->quantity, 'Cancel SO - Restore Stock - SO#' . $data->so_number, $item->batch_code);
+        }
 
-            $data->update([
-                'status_id' => 2, //set to cancelled
-            ]);
-        });
+        $data->update([
+            'status_id' => 2, //set to cancelled
+        ]);
 
         return [
             'data' => SalesOrder::find($id),

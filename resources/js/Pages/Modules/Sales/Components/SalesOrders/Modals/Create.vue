@@ -79,160 +79,107 @@
                                                 <th style="width: 5%;" class="text-center">Quantity</th>
                                                 <th style="width: 12%;" class="text-center">Price</th>
                                                 <th style="width: 15%;" class="text-center">Total Cost</th>
-                                                <!-- <th style="width: 10%;" class="text-center">Discount</th>
-                                              <th style="width: 15%;" class="text-center">Total Discount </th> -->
-                                                <th style="width: 10%;" class="text-center">Actions</th>
-                                            </tr>
-                                        </thead>
+                                              <th style="width: 10%;" class="text-center">Discount</th>
+                                              <th style="width: 15%;" class="text-center">Total Discount </th>
+                                              <th style="width: 10%;" class="text-center">Actions</th>
+                                          </tr>
+                                      </thead>
 
-                                        <tbody class="table-white fs-12">
-                                            <tr v-for="(list, index) in form.items" v-bind:key="index"
-                                                @click="selectRow(index)" :class="{
-                                                    'bg-info-subtle': index === selectedRow
-                                                }">
-                                                <td>
-                                                    {{ index + 1 }}
-                                                </td>
-                                                <td>
-                                                    <b-form-select v-model="list.product_id"
-                                                        :options="availableProducts" value-field="value"
-                                                        text-field="name" size="sm"
-                                                        :class="{ 'input-error': form.errors['items.' + index + '.product_id'] }"
-                                                        @change="onProductChange(index)">
-                                                        <template #first>
-                                                            <b-form-select-option :value="null" disabled>
-                                                                Select Product
-                                                            </b-form-select-option>
-                                                        </template>
-                                                    </b-form-select>
-                                                </td>
-                                                <td class="text-center">
-                                                    <span>
-                                                        {{ getProduct(list.product_id).batch_code || '-' }}
-                                                    </span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <div class="text-center">
-                                                        <div class="fw-bold">{{ getProduct(list.product_id).name || '-'
-                                                            }}</div>
-                                                        <small class="text-muted">Available: {{
-                                                            getProduct(list.product_id).available || 0
-                                                            }}</small>
-                                                    </div>
-                                                </td>
-
-                                                <td class="text-center">
-                                                    <input class="text-center" type="number"
-                                                        v-model.number="list.quantity"
-                                                        :class="{ 'input-error': form.errors['items.' + index + '.quantity'] }"
-                                                        @input="updateItemTotal(index)" />
-                                                </td>
-
-                                                <td class="text-center">
-                                                    {{ formatCurrency(getProduct(list.product_id).price) }}
-                                                </td>
-                                                <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}
-                                                </td>
-                                                <!-- <td class="text-center">
-                                                {{  formatCurrency(list.discount_per_unit) }}
-                                            </td>                        
-                                            <td class="text-center">{{ formatCurrency(calculateDiscountedTotal(list)) }}</td> -->
-                                                <td class="text-center">
-                                                    <div class="d-flex justify-content-center gap-1">
-
-                                                        <b-button @click="removeItem(list.id)" variant="danger"
-                                                            v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
-                                                            <i class="ri-delete-bin-line"></i>
-                                                        </b-button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                      <tbody class="table-white fs-12">
+                                          <tr v-for="(list,index) in form.items" v-bind:key="index" @click="selectRow(index)" :class="{
+                                              'bg-info-subtle': index === selectedRow
+                                          }">
+                                            <td >
+                                                {{ index + 1}}
+                                            </td>
+                                            <td >
+                                                <b-form-select
+                                                    v-model="list.product_id"
+                                                    :options="availableProducts"
+                                                    value-field="value"
+                                                    text-field="name"
+                                                    size="sm"
+                                                    :class="{ 'input-error': form.errors['items.' + index + '.product_id'] }"
+                                                    @change="onProductChange(index)"
+                                                >
+                                                    <template #first>
+                                                        <b-form-select-option :value="null" disabled>
+                                                            Select Product
+                                                        </b-form-select-option>
+                                                    </template>
+                                                </b-form-select>
+                                            </td>
+                                            <td class="text-center">
+                                               <span >
+                                                    {{ getProduct(list.product_id).batch_code || '-' }}
+                                               </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="text-center">
+                                                    <div class="fw-bold">{{ getProduct(list.product_id).name || '-' }}</div>
+                                                    <small class="text-muted">Available: {{ getProduct(list.product_id).available || 0 }}</small>
+                                                </div>
+                                            </td>
+                                      
+                                            <td class="text-center">
+                                                <input 
+                                                    class="text-center"
+                                                    type="number" 
+                                                    v-model.number="list.quantity" 
+                                                    :class="{ 'input-error': form.errors['items.' + index + '.quantity'] }"
+                                                    @input="updateItemTotal(index)"
+                                                />
+                                            </td>
+                                      
+                                            <td class="text-center">
+                                                {{ formatCurrency(getProduct(list.product_id).price) }}
+                                            </td>
+                                            <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}</td>
+                                            <td class="text-center">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="10"
+                                                    v-model.number="list.discount_per_unit"
+                                                    @input="updateItemTotal(index)"
+                                                    class="text-end"
+                                                    style="width: 80px;"
+                                                />
+                                            </td>
+                                            <td class="text-center">{{ formatCurrency(calculateDiscountedTotal(list)) }}</td>
+                                              <td class="text-center">
+                                                  <div class="d-flex justify-content-center gap-1">
+                                                      
+                                                      <b-button @click="removeItem(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
+                                                          <i class="ri-delete-bin-line"></i>
+                                                      </b-button>
+                                                  </div>
+                                              </td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <b-card class="bg-light p-1 rounded">
-                                <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Customer Information
-                                </h5>
-                                <div v-if="form.customer_id" class="mt-1">
-                                    <ul class="list-unstyled">
-                                        <li><strong>Name:</strong> {{ getCustomer(form.customer_id)?.name || '-' }}</li>
-                                        <li><strong>Address:</strong> {{ getCustomer(form.customer_id)?.address || '-'
-                                            }}</li>
-                                        <li><strong>Contact:</strong> {{ getCustomer(form.customer_id)?.contact_number
-                                            || '-' }}</li>
-                                        <li><strong>Email:</strong> {{ getCustomer(form.customer_id)?.email || '-' }}
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div v-else class="mt-3 text-muted">
-                                    <p class="text-center">Select a customer to view information</p>
-                                </div>
-                            </b-card>
-                            <b-card class="bg-light p-1 rounded">
-                                <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Payment Mode<span
-                                        class="text-danger">*</span>
-                                </h5>
-                                <div class="mt-3 mb-3">
-                                    <div class="payment-mode-buttons">
-                                        <b-button v-for="mode in paymentModes" :key="mode"
-                                            :class="{ 'selected-payment-mode': form.payment_mode === mode }"
-                                            variant="outline-primary" @click="selectPaymentMode(mode)"
-                                            class="me-2 mb-2 text-center" size="sm">
-                                            <i :class="getPaymentModeIcon(mode)" class="me-1"></i>
-                                            {{ mode }}
-                                        </b-button>
-                                    </div>
-                                    <span class="error-message" v-if="form.errors.payment_mode">{{
-                                        form.errors.payment_mode }}</span>
-                                </div>
-                                <div class="form-row" v-if="form.payment_mode">
-
-                                    <div class="form-group form-group-half" v-if="form.payment_mode !== 'Cash'">
-                                        <label for="billing_account" class="form-label">Billing Account<span
-                                                class="text-danger">*</span></label>
-                                        <div class="input-wrapper">
-                                            <i class="ri-bank-card-line input-icon"></i>
-                                            <text-input type="text" id="billing_account" v-model="form.billing_account"
-                                                class="form-control"
-                                                :class="{ 'input-error': form.errors.billing_account }"
-                                                @input="handleInput('billing_account')"
-                                                placeholder="Enter Billing Account" />
-                                        </div>
-                                        <span class="error-message" v-if="form.errors.billing_account">{{
-                                            form.errors.billing_account }}</span>
-                                    </div>
-                                </div>
-                                <div class="form-row" v-if="form.payment_mode">
-
-                                    <div class="form-group form-group-half">
-                                        <label for="payment_term" class="form-label">Payment Term<span
-                                                class="text-danger">*</span></label>
-                                        <div class="input-wrapper">
-                                            <i class="ri-bank-card-line input-icon"></i>
-                                            <b-form-select v-model="form.payment_term"
-                                                :options="['Net 15', 'Net 30', 'Net 60', 'Cash on Delivery', 'Due on Receipt', 'Immediate Payment']"
-                                                text-field="name" value-field="value"
-                                                :class="{ 'input-error': form.errors.payment_term }"
-                                                class="form-control">
-                                                <template #first>
-                                                    <b-form-select-option :value="null" disabled>Select Payment
-                                                        Term</b-form-select-option>
-                                                </template>
-                                            </b-form-select>
-
-                                        </div>
-                                        <span class="error-message" v-if="form.errors.payment_term">{{
-                                            form.errors.payment_term }}</span>
-                                    </div>
-                                </div>
-
-
-                            </b-card>
-                            <b-card class=" bg-light mt-4 p-3 rounded">
-                                <div class="form-group form-group-half mt-0">
+                    </div>
+                    <div class="col-md-3">
+                        <b-card class="bg-light p-1 rounded">
+                            <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Customer Information</h5>
+                            <div v-if="form.customer_id" class="mt-1">
+                                <ul class="list-unstyled">
+                                    <li><strong>Name:</strong> {{ getCustomer(form.customer_id)?.name || '-' }}</li>
+                                    <li><strong>Address:</strong> {{ getCustomer(form.customer_id)?.address || '-' }}</li>
+                                    <li><strong>Contact:</strong> {{ getCustomer(form.customer_id)?.contact_number || '-' }}</li>
+                                    <li><strong>Email:</strong> {{ getCustomer(form.customer_id)?.email || '-' }}</li>
+                                </ul>
+                            </div>
+                            <div v-else class="mt-3 text-muted">
+                                <p class="text-center">Select a customer to view information</p>
+                            </div>
+                        </b-card>
+                   
+                         <b-card class=" bg-light mt-4 p-3 rounded">
+                                <div class="form-group form-group-half mt-0" >
                                     <label class="form-label text-primary">Order Summary</label>
                                     <div class="input-wrapper">
                                         <div class="d-flex justify-content-between">
@@ -241,28 +188,15 @@
                                                 calculateItemTotal(item), 0))
                                                 }}</span>
                                         </div>
-                                        <!-- <div class="d-flex justify-content-between">
+                                        <div class="d-flex justify-content-between">
                                             <span>Item Discounts:</span>
                                             <span>{{ formatCurrency(form.items.reduce((total, item) => total + calculateDiscountedTotal(item), 0)) }}</span>
-                                        </div> -->
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span>Discount (%):</span>
-                                            <input type="number" min="0" max="100" step="10"
-                                                v-model.number="form.discount_percentage" @input="updateDiscountAmount"
-                                                class="text-end" style="width: 80px;" />
                                         </div>
-                                        <div class="d-flex justify-content-between">
-                                            <span>Discount Amount:</span>
-                                            <span>{{ formatCurrency(form.discount_amount) }}</span>
-                                        </div>
+
                                         <hr />
                                         <div class="d-flex justify-content-between fw-bold">
                                             <span>Calculated Total:</span>
-                                            <span>{{formatCurrency(form.items.reduce((total, item) => total +
-                                                calculateItemTotal(item), 0) -
-                                                form.items.reduce((total, item) => total +
-                                                calculateDiscountedTotal(item), 0) -
-                                                form.discount_amount) }}</span>
+                                            <span>{{ formatCurrency(form.items.reduce((total, item) => total + calculateItemTotal(item), 0) - form.items.reduce((total, item) => total + calculateDiscountedTotal(item), 0)) }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -318,20 +252,13 @@ export default {
             currentUrl: window.location.origin,
             form: useForm({
                 id: null,
-                payment_mode: null,
                 order_date: new Date().toISOString().slice(0, 10),  // current date
                 customer_id: null,
                 status_id: null,
                 billing_account: null,
-                payment_term: null,
-                total_amount: 0.00,
-                discount_percentage: 0,
-                total_discount: 0.00,
                 items: [],
                 option: 'lists'
             }),
-
-            paymentModes: ['Cash', 'Credit Card', 'Debit Card', 'Bank Transfer'],
             showModal: false,
             editable: false,
             saveSuccess: false,
@@ -409,12 +336,9 @@ export default {
         },
         edit(data, index) {
             this.form.id = data.id;
-            this.form.payment_mode = data.payment_mode;
             this.form.order_date = data.order_date;
             this.form.customer_id = data.customer?.id;
             this.form.status_id = data.status_id;
-            this.form.discount_percentage = data.discount_percentage || 0;
-            this.form.discount_amount = data.discount_amount || 0;
             this.form.items = data.items.map(item => ({
                 id: item.id || Date.now(), // ensure each item has a unique ID
                 product_id: item.product_id,
@@ -503,19 +427,14 @@ export default {
 
         calculateDiscountedTotal(item) {
             const discount = parseFloat(item.discount_per_unit) || 0;
+            const price = parseFloat(item.unit_cost) || 0;
             const quantity = parseFloat(item.quantity) || 0;
-            return discount * quantity;
+            return (price * discount / 100) * quantity;
         },
 
         updateItemTotal(index) {
             // In Vue 3, to trigger reactivity update for array elements
             this.form.items.splice(index, 1, { ...this.form.items[index] });
-            this.updateDiscountAmount();
-        },
-
-        selectPaymentMode(mode) {
-            this.form.payment_mode = mode;
-            this.form.errors.payment_mode = false;
         },
 
         onProductChange(index) {
@@ -538,12 +457,7 @@ export default {
             return icons[mode] || 'ri-money-dollar-circle-line';
         },
 
-        updateDiscountAmount() {
-            const subtotal = this.form.items.reduce((total, item) => total + this.calculateItemTotal(item), 0);
-            const itemDiscounts = this.form.items.reduce((total, item) => total + this.calculateDiscountedTotal(item), 0);
-            const discountableAmount = subtotal - itemDiscounts;
-            this.form.discount_amount = discountableAmount * (this.form.discount_percentage / 100);
-        }
+
 
 
     }

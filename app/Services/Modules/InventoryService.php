@@ -36,11 +36,12 @@ class InventoryService
      *
      * @param int $productId
      * @param int $quantity
+     * @param string|null $batchCode
      * @return bool
      */
-    public function hasSufficientStock($productId, $quantity)
+    public function hasSufficientStock($productId, $quantity, $batchCode = null)
     {
-        return $this->getCurrentStock($productId) >= $quantity;
+        return $this->getCurrentStock($productId, $batchCode) >= $quantity;
     }
 
     /**
@@ -107,13 +108,22 @@ class InventoryService
      * @param int $productId
      * @param int $quantity
      * @param string $reason
+     * @param string|null $batchCode
      */
-    public function addStock($productId, $quantity, $reason)
+    public function addStock($productId, $quantity, $reason, $batchCode = null)
     {
-        // Get the most recent inventory stock for the product (LIFO)
-        $stock = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
+        // Get the most recent inventory stock for the product (LIFO), optionally filtered by batch_code
+        $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
             $query->where('product_id', $productId);
-        })->orderBy('created_at', 'desc')->first();
+        });
+
+        if ($batchCode) {
+            $query->whereHas('receivedItem.receivedStock', function ($query) use ($batchCode) {
+                $query->where('batch_code', $batchCode);
+            });
+        }
+
+        $stock = $query->orderBy('created_at', 'desc')->first();
 
         if ($stock) {
             $previousQuantity = $stock->quantity;

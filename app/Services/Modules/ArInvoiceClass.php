@@ -6,17 +6,25 @@ use Illuminate\Support\Facades\DB;
 
 use App\Models\ArInvoice;
 use App\Models\SalesOrder;
+use App\Models\Receipt;
 use App\Http\Resources\Modules\ArInvoiceResource;
+use App\Services\PrintClass;
 
 
 class ArInvoiceClass
 {
+    protected $print;
+
+    public function __construct(PrintClass $print)
+    {
+        $this->print = $print;
+    }
     public function lists($request){
         $data = ArInvoiceResource::collection(
-            ArInvoice::with(['salesOrder.customer', 'salesOrder.salesOrderItems.product', 'status'])
+            ArInvoice::with(['sales_order.customer', 'sales_order.items.product', 'status'])
                 ->when($request->keyword, function ($query,$keyword) {
                     $query->where('invoice_number', 'LIKE', "%{$keyword}%")
-                          ->orWhereHas('salesOrder', function($q) use ($keyword){
+                          ->orWhereHas('sales_order', function($q) use ($keyword){
                               $q->where('so_number', 'LIKE', "%{$keyword}%")
                                 ->orWhereHas('customer', function($cq) use ($keyword){
                                     $cq->where('name', 'LIKE', "%{$keyword}%");
@@ -32,92 +40,20 @@ class ArInvoiceClass
         return $data;
     }
 
-    public function save($request){
-        DB::transaction(function () use ($request) {
-            $salesOrder = SalesOrder::findOrFail($request->sales_order_id);
-
-            // Create AR Invoice
-            $data = new ArInvoice();
-            $data->sales_order_id = $request->sales_order_id;
-            $data->invoice_number = ArInvoice::generateInvoiceNumber();
-            $data->invoice_date = $request->invoice_date ?? now();
-            $data->amount_balance = $salesOrder->total_amount;
-            $data->amount_paid = 0;
-            $data->balance_due = $salesOrder->total_amount;
-            $data->status_id = 2; // Unpaid
-            $data->created_by = auth()->user()->id;
-            $data->save();
-
-            return $data;
-        });
-
-        return [
-            'data' => ArInvoice::with(['salesOrder.customer', 'status'])->find($data->id),
-            'message' => 'AR Invoice created successfully!',
-            'info' => "You've successfully created the AR Invoice"
-        ];
-    }
-
-    public function update($request){
-        return DB::transaction(function () use ($request) {
-            $data = ArInvoice::findOrFail($request->id);
-
-            $data->update([
-                'invoice_date' => $request->invoice_date,
-                'status_id' => $request->status_id,
-            ]);
-
-            return [
-                'data' => ArInvoice::with(['salesOrder.customer', 'status'])->find($data->id),
-                'message' => 'AR Invoice updated successfully!',
-                'info' => "You've successfully updated the AR Invoice"
-            ];
-        });
-    }
-
-    public function approve($id){
-        $data = ArInvoice::findOrFail($id);
-
-        $data->update([
-            'status_id' => 4, // Approved
-            'approved_by' => auth()->user()->id,
-            'approved_at' => now(),
-        ]);
-
-        return [
-            'data' => ArInvoice::find($id),
-            'message' => 'AR Invoice approved successfully!',
-            'info' => "You've successfully approved the AR Invoice"
-        ];
-    }
-
-    public function cancel($id){
-        $data = ArInvoice::findOrFail($id);
-
-        $data->update([
-            'status_id' => 5, // Cancelled
-        ]);
-
-        return [
-            'data' => ArInvoice::find($id),
-            'message' => 'AR Invoice cancelled successfully!',
-            'info' => "You've successfully cancelled the AR Invoice"
-        ];
-    }
 
     public function dashboard(){
-        $total_ar_invoices = ArInvoice::count();
+        $total_invoices = ArInvoice::count();
+        $outstanding_balance = ArInvoice::sum('balance_due') ?? 0.00;
+        $paid_invoices = ArInvoice::where('balance_due', 0)->count();
+        $pending_invoices = ArInvoice::where('balance_due', '>', 0)->count();
         $today_invoices = ArInvoice::whereDate('created_at', today())->count();
-        $total_revenue = ArInvoice::sum('amount_balance') ?? 0;
-        $pending_invoices = ArInvoice::where('status_id', 2)->count(); // Unpaid
-        $cancelled_invoices = ArInvoice::where('status_id', 5)->count(); // Cancelled
 
         return [
-            'total_sales_orders' => $total_ar_invoices,
-            'today_orders' => $today_invoices,
-            'total_revenue' => $total_revenue,
-            'pending_orders' => $pending_invoices,
-            'cancelled_orders' => $cancelled_invoices,
+            'total_invoices' => $total_invoices,
+            'outstanding_balance' => (float) $outstanding_balance,
+            'paid_invoices' => $paid_invoices,
+            'pending_invoices' => $pending_invoices,
+            'today_invoices' => $today_invoices,
         ];
     }
 
@@ -130,5 +66,47 @@ class ArInvoiceClass
             'twenty_five_kg_sacks_left' => 0,
             'products' => []
         ];
+    }
+
+    public function payment($request, $id = null){
+        $ar_invoice = ArInvoice::findOrFail($id ?: $request->id);
+
+        $receipt = new Receipt();
+        $receipt->receipt_number = Receipt::generateReceiptNumber();
+        $receipt->receipt_date = $request->payment_date;
+        $receipt->amount_paid = $request->payment_amount;
+        $receipt->payment_mode = $request->payment_mode;
+        if($request->billing_account){
+            $receipt->billing_account = $request->billing_account;
+        }
+        $receipt->status_id = 1; // Pending
+        $receipt->customer_id = $ar_invoice->sales_order->customer_id;
+        $receipt->ar_invoice_id = $ar_invoice->id;
+        $receipt->save();
+
+        dd($receipt);
+
+        // Update AR Invoice
+        $ar_invoice->amount_paid =  $ar_invoice->amount_paid + $request->payment_amount;
+        $ar_invoice->balance_due = $ar_invoice->balance_due - $request->payment_amount;
+
+        if($ar_invoice->balance_due == 0){
+           $ar_invoice->status_id = 9; // PAID
+        }
+        else{
+            $ar_invoice->status_id = 11; // PARTIALLY PAID
+        }
+        $ar_invoice->update();
+
+        return [
+            'data' => new ArInvoiceResource($ar_invoice),
+            'message' => 'Payment saved successfully!',
+            'info' => "Payment successfully saved"
+        ];
+    }
+
+    public function print($request){
+        $arInvoice = ArInvoice::with(['sales_order.customer', 'sales_order.items.product', 'status'])->find($request->id);
+        return $this->print->generate($arInvoice, 'ar_invoice');
     }
 }
