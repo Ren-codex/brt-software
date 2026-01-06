@@ -1,34 +1,31 @@
 <template>
     <BRow>
-        <div class="col-md-10">
-            <div class="card shadow-lg border-0" >
-                <div class="card-header bg-primary"  >
-                    <div class="d-flex mb-n3">
-                        <div class="flex-shrink-0 me-3">
-                            <div style="height:2.5rem;width:2.5rem;">
-                                <span class="avatar-title rounded p-2 mt-n1">
-                                    <i class="ri-shopping-cart-line fs-24"></i>
-                                </span>
+        <div class="col-md-9">
+            <div class="library-card">
+                <div class="library-card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="header-icon">
+                                <i class="ri-shopping-cart-line fs-24"></i>
+                            </div>
+                            <div>
+                                <h4 class="header-title mb-1">Receipts</h4>
+                                <p class="header-subtitle mb-0">A comprehensive list of Receipts</p>
                             </div>
                         </div>
-                        <div class="flex-grow-1 text-white">
-                            <h5 class=" fs-14"><span class="text-white">Receipts</span></h5>
-                            <p class=" text-truncate-two-lines fs-12">A comprehensive list of Receipts</p>
+                      
+                    </div>
+
+                </div>
+                <div class="card-body ">
+                    <div class="search-section">
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                                placeholder="Search purchase request..." class="search-input">
                         </div>
 
                     </div>
-                </div>
-                <div class="card-body ">
-                    <b-row class="mb-3 ms-1 me-1">
-                        <b-col lg>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white border-primary">
-                                    <i class="ri-search-line"></i>
-                                </span>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search Receipt" class="form-control border-primary">
-                            </div>
-                        </b-col>
-                    </b-row>
 
 
 
@@ -131,7 +128,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2  bg-light">
+        <div class="col-md-3  bg-light">
             <div class="card shadow-lg border-0 bg-light" >
                 <div class="card-header border-0  " >
                     <h4 >

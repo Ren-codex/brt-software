@@ -2,72 +2,72 @@
   <div>
     <Head title="Sales" />
     <PageHeader title="Sales Management" pageTitle="List" />
-    <BRow no-gutters>
-      <BCol md="2" class="border-end" style="min-height: 80vh;">
-        <ul class="nav flex-column nav-pills">
 
-          <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'sales_orders' }"
-              @click.prevent="changeTab('sales_orders')"
-              >Sales Orders</a
-            >
-          </li>
-
-          <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'ar_invoices' }"
-              @click.prevent="changeTab('ar_invoices')"
-              >Account Receivable Invoices</a
-            >
-          </li>
-          <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'receipts' }"
-              @click.prevent="changeTab('receipts')"
-              >Receipts</a
-            >
-          </li>
-          <li class="nav-item">
-            <a
-              href="#"
-              class="nav-link"
-              :class="{ active: activeTab === 'remittance' }"
-              @click.prevent="changeTab('remittance')"
-              >Remittances</a
-            >
-          </li>
-        </ul>
-      </BCol>
-      <BCol md="10">
-
-        <div v-if="activeTab === 'sales_orders'" class="card shadow-sm p-3">
-          <SalesOrders :dropdowns="dropdowns"/>
+    <div class="inventory-container">
+      <!-- Minimal Vertical Tabs -->
+      <div class="inventory-sidebar">
+        <div class="inventory-sidebar-header">
+          <i class="ri-shopping-cart-2-line"></i>
+          <h4>Sales</h4>
         </div>
 
-
-        <div v-if="activeTab === 'ar_invoices'" class="card shadow-sm p-3">
-          <ARInvoices :dropdowns="dropdowns"/>
+        <div class="inventory-sidebar-tabs">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            class="inventory-sidebar-tab"
+            :class="{ 'inventory-tab-active': activeTab === tab.id }"
+            @click="changeTab(tab.id)"
+          >
+            <div class="inventory-tab-icon">
+              <i :class="tab.icon"></i>
+            </div>
+            <div class="inventory-tab-text">
+              <span class="inventory-tab-title">{{ tab.label }}</span>
+              <span class="inventory-tab-subtitle">{{ tab.description }}</span>
+            </div>
+          </button>
         </div>
 
-        <div v-if="activeTab === 'receipts'" class="card shadow-sm p-3">
-           <Receipts :dropdowns="dropdowns"/>
+        <div class="inventory-sidebar-footer">
+          <div class="inventory-stats">
+            <div class="inventory-stat-item">
+              <i class="ri-shopping-cart-2-line"></i>
+              <span>{{ listCustomers.length || 0 }} Orders</span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div v-if="activeTab === 'remittance'" class="card shadow-sm p-3">
-          <Remittances :dropdowns="dropdowns" />
+      <!-- Main Content -->
+      <div class="inventory-main">
+        <!-- Tab Content -->
+        <div class="inventory-main-content">
+          <transition name="inventory-fade" mode="out-in">
+            <div :key="activeTab" class="inventory-tab-content">
+              <div v-if="activeTab === 'sales_orders'" class="card shadow-sm p-3">
+                <SalesOrders :dropdowns="dropdowns"/>
+              </div>
+
+              <div v-if="activeTab === 'ar_invoices'" class="card shadow-sm p-3">
+                <ARInvoices :dropdowns="dropdowns"/>
+              </div>
+
+              <div v-if="activeTab === 'receipts'" class="card shadow-sm p-3">
+                 <Receipts :dropdowns="dropdowns"/>
+              </div>
+
+              <div v-if="activeTab === 'remittance'" class="card shadow-sm p-3">
+                <Remittances :dropdowns="dropdowns" />
+              </div>
+            </div>
+          </transition>
         </div>
-      </BCol>
-    </BRow>
+      </div>
+    </div>
   </div>
 
-    
+
 </template>
 
 <script>
@@ -92,6 +92,32 @@ export default {
       meta: null,
       links: null,
       selectedRow: null,
+      tabs: [
+        {
+          id: 'sales_orders',
+          label: 'Sales Orders',
+          icon: 'ri-shopping-bag-line',
+          description: 'Manage sales orders'
+        },
+        {
+          id: 'ar_invoices',
+          label: 'AR Invoices',
+          icon: 'ri-file-list-line',
+          description: 'Account receivable invoices'
+        },
+        {
+          id: 'receipts',
+          label: 'Receipts',
+          icon: 'ri-money-dollar-circle-line',
+          description: 'Payment receipts'
+        },
+        {
+          id: 'remittance',
+          label: 'Remittances',
+          icon: 'ri-bank-line',
+          description: 'Remittance records'
+        },
+      ]
     };
   },
   watch: {

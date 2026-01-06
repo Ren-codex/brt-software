@@ -179,23 +179,32 @@
       </div>
     </div>
   </div>
-  <b-modal v-model="showModal" title="Approve Purchase Order" size="lg" centered hide-footer>
-    <div class="mb-3">
-      <label for="remarks" class="form-label">Remarks</label>
-      <textarea
-        id="remarks"
-        v-model="remarks"
-        class="form-control"
-        rows="4"
-        placeholder="Enter your remarks here..."
-      ></textarea>
+  <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h2>Approve Purchase Order</h2>
+        <button class="close-btn" @click="onCancel">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="remarks">Remarks</label>
+          <textarea
+            id="remarks"
+            v-model="remarks"
+            class="form-control textarea-control"
+            rows="4"
+            placeholder="Enter your remarks here..."
+          ></textarea>
+        </div>
+        <div class="form-actions">
+        <button class="btn btn-cancel" @click="onCancel">Cancel</button>
+        <button class="btn btn-cancel" @click="updateStatus('Disapproved')">Disapprove</button>
+        <button class="btn btn-save" @click="updateStatus('Approved')">Approve</button>
+      </div>
+      </div>
+      
     </div>
-    <div slot="modal-footer">
-      <b-button variant="secondary" @click="onCancel">Cancel</b-button>
-      <b-button variant="danger" @click="updateStatus('Disapproved')">Disapprove</b-button>
-      <b-button variant="success" @click="updateStatus('Approved')">Approve</b-button>
-    </div>
-  </b-modal>
+  </div>
   
   <!-- Toast Notification -->
   <div v-if="isToastVisible" class="toast-notification">
