@@ -58,7 +58,6 @@ class SalesOrderClass
         $totalAmount = 0;
         $totalDiscount = 0;
 
-
         foreach($request->items as $item){
             $price = $item['unit_cost']; // map unit_cost to price
             $discount = $item['discount_per_unit'] ?? 0;
@@ -88,10 +87,12 @@ class SalesOrderClass
             'total_discount' => $totalDiscount,
         ]);
 
+ 
+
         // Reload the data with relationships
-        $data = SalesOrder::with('items')->find($data->id);
+        $data = SalesOrder::with(['items', 'customer', 'status', 'added_by'])->find($data->id);
 
-
+       
         // Create AR Invoice
         $invoice = new ArInvoice();
         $invoice->sales_order_id = $data->id;
@@ -101,9 +102,8 @@ class SalesOrderClass
         $invoice->balance_due = $data->total_amount;
         $invoice->total_discount = $data->total_discount;
         $invoice->status_id = 8; // Unpaid
-        $invoice->created_by = auth()->user()->id;
         $invoice->save();
-
+    
         return [
             'data' => new SalesOrderResource($data),
             'message' => 'Sales Order saved successfully!',

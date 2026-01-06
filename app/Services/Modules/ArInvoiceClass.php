@@ -69,12 +69,12 @@ class ArInvoiceClass
     }
 
     public function payment($request, $id = null){
-        $ar_invoice = ArInvoice::findOrFail($id ?: $request->id);
+        $ar_invoice = ArInvoice::findOrFail($request->id);
 
         $receipt = new Receipt();
         $receipt->receipt_number = Receipt::generateReceiptNumber();
         $receipt->receipt_date = $request->payment_date;
-        $receipt->amount_paid = $request->payment_amount;
+        $receipt->amount_paid = $request->amount_paid;
         $receipt->payment_mode = $request->payment_mode;
         if($request->billing_account){
             $receipt->billing_account = $request->billing_account;
@@ -84,20 +84,24 @@ class ArInvoiceClass
         $receipt->ar_invoice_id = $ar_invoice->id;
         $receipt->save();
 
-        dd($receipt);
+        dd(  $receipt);
+
+
 
         // Update AR Invoice
-        $ar_invoice->amount_paid =  $ar_invoice->amount_paid + $request->payment_amount;
-        $ar_invoice->balance_due = $ar_invoice->balance_due - $request->payment_amount;
-
-        if($ar_invoice->balance_due == 0){
-           $ar_invoice->status_id = 9; // PAID
+        $ar_invoice->amount_paid =  $ar_invoice->amount_paid + $request->amount_paid;
+        $ar_invoice->balance_due = $ar_invoice->balance_due - $request->amount_paid;
+       
+  
+        if($ar_invoice->balance_due == 0.00){
+           $ar_invoice->status_id = 9; // PAID'
         }
         else{
             $ar_invoice->status_id = 11; // PARTIALLY PAID
         }
         $ar_invoice->update();
-
+      
+        
         return [
             'data' => new ArInvoiceResource($ar_invoice),
             'message' => 'Payment saved successfully!',
