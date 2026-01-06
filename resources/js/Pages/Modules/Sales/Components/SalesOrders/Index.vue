@@ -1,26 +1,28 @@
 <template>
     <BRow>
-       
+
         <div class="col-md-9">
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-primary">
-                    <div class="d-flex mb-n3">
-                        <div class="flex-shrink-0 me-3">
-                            <div style="height:2.5rem;width:2.5rem;">
-                                <span class="avatar-title rounded p-2 mt-n1">
-                                    <i class="ri-shopping-cart-line fs-24"></i>
-                                </span>
+            <div class="library-card">
+                <div class="library-card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="header-icon">
+                                <i class="ri-shopping-cart-line fs-24"></i>
+                            </div>
+                            <div>
+                                <h4 class="header-title mb-1">Sales Orders</h4>
+                                <p class="header-subtitle mb-0">A comprehensive list of Sales Orders</p>
                             </div>
                         </div>
-                        <div class="flex-grow-1 text-white">
-                            <h5 class=" fs-14"><span class="text-white">Sales Orders</span></h5>
-                            <p class=" text-truncate-two-lines fs-12">A comprehensive list of Sales Orders</p>
-                        </div>
-
+                        <button class="create-btn" @click="openCreate">
+                            <i class="ri-add-line"></i>
+                            <span>Create Order</span>
+                        </button>
                     </div>
+
                 </div>
                 <div class="card-body ">
-                    <b-row class="mb-3 ms-1 me-1">
+                    <!-- <b-row class="mb-3 ms-1 me-1">
                         <b-col lg>
                             <div class="input-group">
                                 <span class="input-group-text bg-primary text-white border-primary">
@@ -34,9 +36,17 @@
                                 </b-button>
                             </div>
                         </b-col>
-                    </b-row>
+                    </b-row> -->
+                    <div class="search-section">
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                                placeholder="Search purchase request..." class="search-input">
+                        </div>
 
-                    <div class="mb-4">
+                    </div>
+
+                    <div class="mb-2">
                         <b-button @click="showStock = !showStock" variant="outline-primary" size="sm" class="mb-3">
                             <i class="ri-eye-line me-1"></i> Stock Availability
                         </b-button>

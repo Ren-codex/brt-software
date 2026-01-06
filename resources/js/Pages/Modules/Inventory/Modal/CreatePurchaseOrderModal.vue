@@ -446,7 +446,7 @@ export default {
 
 /* Modal Header */
 .modal-header {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    background: #3a8674;
     color: white;
     padding: 0.875rem 1.25rem;
     display: flex;
@@ -578,7 +578,7 @@ export default {
 
 /* Items Section */
 .btn-add-item {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    background: #3a8674;
     color: white;
     border: none;
     padding: 0.5rem 0.875rem;
@@ -832,7 +832,7 @@ export default {
 }
 
 .btn-save {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    background:#3a8674;
     color: white;
     box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
 }

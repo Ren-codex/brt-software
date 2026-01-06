@@ -14,6 +14,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -41,6 +42,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -72,11 +74,13 @@
     opacity: 0;
     transform: translateX(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
   }
 }
+
 
 .inventory-sidebar-header i {
   font-size: 18px;
@@ -120,15 +124,24 @@
   animation-fill-mode: both;
 }
 
-.inventory-sidebar-tab:nth-child(1) { animation-delay: 0.1s; }
-.inventory-sidebar-tab:nth-child(2) { animation-delay: 0.2s; }
-.inventory-sidebar-tab:nth-child(3) { animation-delay: 0.3s; }
+.inventory-sidebar-tab:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.inventory-sidebar-tab:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.inventory-sidebar-tab:nth-child(3) {
+  animation-delay: 0.3s;
+}
 
 @keyframes tab-appear {
   from {
     opacity: 0;
     transform: translateX(-15px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -164,6 +177,7 @@
     opacity: 0;
     transform: translateY(-50%) scaleX(0);
   }
+
   to {
     opacity: 1;
     transform: translateY(-50%) scaleX(1);
@@ -244,6 +258,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -300,6 +315,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -312,6 +328,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -323,6 +340,7 @@
     opacity: 1;
     transform: translateY(0);
   }
+
   to {
     opacity: 0;
     transform: translateY(-10px);
@@ -348,6 +366,7 @@
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -355,9 +374,12 @@
 }
 
 @keyframes toast-fade {
-  0%, 80% {
+
+  0%,
+  80% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
   }
@@ -391,13 +413,27 @@
     display: flex;
     padding: 8px;
   }
-
+  .inventory-sidebar-header {
+  display: none;
+  }
   .inventory-sidebar-tab {
     flex-direction: column;
     text-align: center;
     min-width: 100px;
     padding: 12px;
     margin: 0 2px;
+  }
+
+  .inventory-tab-title {
+    display: block;
+    font-weight: 500;
+    font-size: 13px;
+    margin-bottom: 1px;
+    transition: transform 0.3s ease;
+  }
+
+  .inventory-tab-subtitle {
+    display: none
   }
 
   .inventory-sidebar-tab:hover {
