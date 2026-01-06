@@ -41,6 +41,16 @@ class SalesOrder extends Model
         return $this->hasMany(ArInvoice::class, 'sales_order_id');
     }
 
+    public function added_by()
+    {
+        return $this->belongsTo(User::class, 'added_by_id');
+    }
+
+    public function approved_by()
+    {
+        return $this->belongsTo(User::class, 'approved_by_id');
+    }
+
     public function created_by()
     {
         return $this->belongsTo(User::class, 'created_by_id');
