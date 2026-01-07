@@ -29,7 +29,7 @@ class SeriesSeeder extends Seeder
 
         Series::create(array(
             'name' => 'Purchase Request',
-            'slug' => 'pr_number',
+            'slug' => 'purchase_request',
             'prefix' => 'PR',
             'max_digit' => 6,
             'starting_value' => 1
@@ -37,7 +37,7 @@ class SeriesSeeder extends Seeder
 
         Series::create(array(
             'name' => 'Purchase Order',
-            'slug' => 'po_number',
+            'slug' => 'purchase_order',
             'prefix' => 'PO',
             'max_digit' => 6,
             'starting_value' => 1

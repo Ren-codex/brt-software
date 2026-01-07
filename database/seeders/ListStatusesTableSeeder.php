@@ -136,6 +136,18 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            9 => 
+            array (
+                'id' => 10,
+                'name' => 'Completed',
+                'slug' => 'completed',
+                'description' => 'Completed status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#000000',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

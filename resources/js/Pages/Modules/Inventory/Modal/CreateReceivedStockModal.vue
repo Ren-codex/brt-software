@@ -1,98 +1,54 @@
 <template>
-  <div>
-    <b-modal
-      id="createReceivedStockModal"
-      ref="createReceivedStockModal"
-      size="lg"
-      title="Create Received Stock"
-      @hidden="resetForm"
-      @ok="handleSubmit"
-      ok-title="Save"
-      cancel-title="Cancel"
-      :ok-disabled="form.items.length === 0"
-      persistent
-    >
-      <form @submit.prevent="handleSubmit">
-        <div v-if="errorMessage" class="alert alert-danger" role="alert">
-          {{ errorMessage }}
-        </div>
+  <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h2>Create Received Stock</h2>
+        <button class="close-btn" @click="onCancel">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form @submit.prevent="handleSubmit">
+          <div v-if="errorMessage" class="alert alert-danger" role="alert">
+            {{ errorMessage }}
+          </div>
 
-        <div class="mb-3">
-          <h6>Purchase Order Items</h6>
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Ordered</th>
-                <th>Received</th>
-                <th>To Receive</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in editableItems" :key="item.id">
-                <td style="width: 30%">{{ item.product ? item.product.brand.name : 'N/A' }}</td>
-                <td>
-                  <input
-                    type="number"
-                    v-model="item.quantity"
-                    class="form-control"
-                    min="0"
-                    step="1"
-                    :disabled="item.status !== 'pending'"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    v-model="item.editable_quantity"
-                    class="form-control"
-                    min="0"
-                    step="1"
-                    :disabled="item.status !== 'pending'"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    v-model="item.editable_quantity"
-                    class="form-control"
-                    min="0"
-                    step="1"
-                    :disabled="item.status !== 'pending'"
-                  />
-                </td>
-                <td style="width: 10%">
-                  <div v-if="item.status == 'pending'" class="d-flex">
-                    <b-button
-                      variant="success"
-                      size="sm"
-                      class="rounded-circle d-flex align-items-center justify-content-center p-0"
-                      style="width: 32px; height: 32px;"
-                      @click="addToReceived(index)"
-                    >
-                      <i class="ri-check-line"></i>
-                    </b-button>
-                    <b-button
-                      variant="danger"
-                      size="sm"
-                      class="rounded-circle d-flex align-items-center justify-content-center p-0"
-                      style="width: 32px; height: 32px;"
-                      @click="addToRejected(index)"
-                    >
-                      <i class="ri-close-line"></i>
-                    </b-button>
-                  </div>
-                  <div v-else>
-                    <span>{{ item.status }}</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="mb-3">
+            <h6>Purchase Order Items</h6>
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Ordered</th>
+                  <th>Received</th>
+                  <th>To Receive</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, index) in form.items" :key="item.id">
+                  <td style="width: 30%">{{ item.product ? item.product.name : 'N/A' }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ item.received_quantity}}</td>
+                  <td>
+                    <input
+                      type="number"
+                      v-model="item.to_received_quantity"
+                      :class="['form-control', { 'is-invalid': item.to_received_quantity > item.quantity - item.received_quantity }]"
+                      min="0"
+                      :max="item.quantity - item.received_quantity"
+                      step="1"
+                      :disabled="item.status !== 'pending'"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </form>
+        <div class="form-actions">
+          <button class="btn btn-cancel" @click="onCancel">Cancel</button>
+          <button class="btn btn-save" @click="handleSubmit()" :disabled="form.processing">Submit</button>
         </div>
-      </form>
-    </b-modal>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -108,12 +64,10 @@ export default {
   emits: ['add'],
   data() {
     return {
-      editableItems: [],
+      showModal: false,
       form: {
         po_id: '',
         supplier_id: '',
-        received_date: '',
-        batch_code: '',
         items: [],
       },
       errorMessage: '',
@@ -121,82 +75,63 @@ export default {
     };
   },
   methods: {
-    async getNextBatchCode() {
-      try {
-        const response = await axios.get('/received-stocks/next-batch-code');
-        this.form.batch_code = response.data.batch_code;
-      } catch (error) {
-        console.error('Error fetching batch code:', error);
-      }
-    },
     async show(data) {
       this.purchaseOrder = data;
-      // Fetch next batch code
-      await this.getNextBatchCode();
-
-      // Set form fields
       this.form.po_id = this.purchaseOrder.id;
       this.form.supplier_id = this.purchaseOrder.supplier.id;
-      this.form.received_date = new Date().toISOString().split('T')[0]; // Today's date
-
-      // Initialize editable items
-      this.editableItems = this.purchaseOrder.items
+      this.form.items = this.purchaseOrder.items
       .filter(item => item.status === 'pending')
       .map(item => ({
         ...item,
-        editable_quantity: item.quantity,
-        editable_unit_cost: item.unit_cost,
+        po_item_id: item.id,
+        product_id: item.product.id,
+        product_name: item.product?.name,
+        to_received_quantity: 0,
       }));
 
 
-      this.$refs.createReceivedStockModal.show();
-    },
-    edit(data, index) {
-      // Implement edit logic if needed
+      this.showModal = true;
     },
     resetForm() {
-      this.editableItems = [];
       this.form = {
         po_id: '',
         supplier_id: '',
-        received_date: '',
-        batch_code: '',
         items: [],
       };
       this.errorMessage = '';
     },
-    addToReceived(index) {
-      const item = this.editableItems[index];
-      const totalCost = item.editable_quantity * item.editable_unit_cost;
-      this.form.items.push({
-        product_id: item.product.id,
-        quantity: item.editable_quantity,
-        unit_cost: item.editable_unit_cost,
-        total_cost: totalCost,
-        po_item_id: item.id,
-      });
-      item.status = 'received';
-    },
-    addToRejected(index) {
-      const item = this.editableItems[index];
-      item.status = 'not included';
-    },
     async handleSubmit() {
-      if (this.form.items.length === 0) {
-        this.errorMessage = 'Please add at least one item to receive.';
-        return;
+      // Validate to_received_quantity does not exceed quantity - received_quantity
+      for (const item of this.form.items) {
+        const maxAllowed = item.quantity - item.received_quantity;
+        if (item.to_received_quantity > maxAllowed) {
+          this.errorMessage = `To receive quantity for ${item.product ? item.product.brand.name : 'N/A'}, must not exceed ${maxAllowed}.`;
+          return; // Prevent submission
+        }
       }
 
+      this.errorMessage = ''; // Clear any previous error
+
       try {
-        await axios.post('/received-stocks', this.form);
-        this.$emit('add', 'success');
+        await axios.post('/received-stocks', this.form)
+        .then(response => {
+          this.hide();
+          this.$emit('add', 'success');
+          this.$inertia.reload();
+          this.resetForm();
+        });
       } catch (error) {
         console.error('Error submitting received stock:', error);
-        // Optionally, set this.errorMessage based on error response
-      } finally {
-        this.$refs.createReceivedStockModal.hide();
+        this.errorMessage = 'An error occurred while submitting. Please try again.';
       }
     },
+    hide() {
+      this.showModal = false;
+      this.resetForm();
+    },
+    onCancel() {
+      this.hide();
+    }
   },
 };
 </script>
