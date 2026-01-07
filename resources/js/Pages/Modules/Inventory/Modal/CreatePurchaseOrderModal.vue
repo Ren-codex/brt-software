@@ -99,7 +99,7 @@
                                     <div class="form-group">
                                         <label>Unit Cost</label>
                                     
-                                        <Amount @amount="amount(index , item.unit_cost)"
+                                        <Amount @amount="amount(index, $event)"
                                             ref="amountComponent"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
                                             class="form-control"
@@ -193,9 +193,6 @@ export default {
             saveSuccess: false,
         };
     },
-    mounted() {
-        this.addItem();
-    },
     computed: {
         totalAmount() {
             return this.form.items.reduce((sum, item) => sum + (parseFloat(item.total_cost) || 0), 0);
@@ -217,11 +214,10 @@ export default {
                 {
                     product_id: null,
                     quantity: 0,
-                    unit_cost: 0.00,
+                    unit_cost: 0,
                     total_cost: 0,
                 }
             ];
-            this.addItem();
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
@@ -235,7 +231,7 @@ export default {
             this.form.items = data.items ? data.items.map(item => ({
                 product_id: item.product.id,
                 quantity: Math.round(item.quantity),
-                unit_cost: parseFloat(item.unit_cost) || 0,
+                unit_cost: item.unit_cost || 0,
                 total_cost: parseFloat(item.total_cost) || 0,
             })) : [];
             this.editable = true;
@@ -249,7 +245,7 @@ export default {
             const formattedItems = this.form.items.map(item => ({
                 product_id: item.product_id,
                 quantity: parseInt(item.quantity) || 0,
-                unit_cost: parseFloat(item.unit_cost) || 0,
+                unit_cost: parseInt(item.unit_cost) || 0,
                 total_cost: parseFloat(item.total_cost) || 0,
             }));
             
@@ -355,8 +351,9 @@ export default {
         },
         
         // FIXED: Update unit cost method
-        amount(index ,val){
-            this.$refs.amountComponent[index].emitValue(val.toFixed(2) ) ;
+        amount(index, val) {
+            this.form.items[index].unit_cost = this.cleanCurrency(val);
+            this.calculateTotal(this.form.items[index]);
         },
 
         cleanCurrency(value) {
