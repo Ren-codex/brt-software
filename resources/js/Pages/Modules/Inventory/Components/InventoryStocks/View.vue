@@ -36,6 +36,9 @@
                     </div>
                   </div>
                   <div class="d-flex gap-2">
+                    <button class="create-btn" @click="updatePrice()">
+                      <span>Update Price</span>
+                    </button>
                     <button v-if="data.quantity > 0" class="create-btn" @click="adjustStock">
                       <i class="ri-edit-line"></i>
                       <span>Adjust Stocks</span>
@@ -101,6 +104,10 @@
                       <div>
                         <label class="form-label mb-3">Additional Information</label>
                         <div class="mb-3">
+                          <label class="form-label">Expiration Date</label>
+                          <p class="text-muted">{{ formatDate(data.expiration_date) }}</p>
+                        </div>
+                        <div class="mb-3">
                           <label class="form-label">Created At</label>
                           <p class="text-muted">{{ formatDate(data.created_at) }}</p>
                         </div>
@@ -161,6 +168,12 @@
       </div>
     </div>
 
+    <UpdatePriceModal
+      :inventoryStock="data"
+      @saved="$inertia.reload()"
+      ref="updatePriceDialog"
+    />
+
     <AdjustStockModal
       :inventoryStock="data"
       @saved="$inertia.reload()"
@@ -171,10 +184,12 @@
 
 <script>
 import AdjustStockModal from '../../Modal/AdjustStockModal.vue';
+import UpdatePriceModal from '../../Modal/UpdatePriceModal.vue';
 
 export default {
   components: {
     AdjustStockModal,
+    UpdatePriceModal,
   },
   props: {
     inventory_stock_data: Object,
@@ -190,6 +205,9 @@ export default {
     },
   },
   methods: {
+    updatePrice() {
+      this.$refs.updatePriceDialog.show();
+    },
     adjustStock() {
       this.$refs.adjustStockDialog.show();
     },
