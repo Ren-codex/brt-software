@@ -1,39 +1,37 @@
 <template>
     <BRow>
         <div class="col-md-12">
-            <div class="card shadow-lg border-0" >
-                <div class="card-header bg-primary"  >
-                    <div class="d-flex mb-n3">
-                        <div class="flex-shrink-0 me-3">
-                            <div style="height:2.5rem;width:2.5rem;">
-                                <span class="avatar-title rounded p-2 mt-n1">
-                                    <i class="ri-file-list-line text-white fs-24"></i>
-                                </span>
+            <div class="library-card">
+                <div class="library-card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="header-icon">
+                                <i class="ri-shopping-cart-line fs-24"></i>
+                            </div>
+                            <div>
+                                <h4 class="header-title mb-1">Remittances</h4>
+                                <p class="header-subtitle mb-0">Manage remittances</p>
                             </div>
                         </div>
-                        <div class="flex-grow-1">
-                            <h5 class=" fs-14"><span class="text-white">Remittances</span></h5>
-                            <p class="text-white-50 text-truncate-two-lines fs-12">Manage remittances</p>
+                        <button class="create-btn" @click="openCreate">
+                            <i class="ri-add-line"></i>
+                            <span>Prepare Remittance</span>
+                        </button>
+                    </div>
+
+                </div>
+            
+                <div class="card-body bg-white">
+                    <div class="search-section">
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                                placeholder="Search purchase request..." class="search-input">
                         </div>
 
                     </div>
-                </div>
-                <div class="card-body bg-white">
-                    <b-row class="mb-3 ms-1 me-1">
-                        <b-col lg>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white">
-                                    <i class="ri-search-line"></i>
-                                </span>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search Remittances" class="form-control border-primary">
-                                <b-button type="button" variant="primary" @click="openCreate" class="d-flex align-items-center">
-                                    <i class="ri-add-circle-fill me-1"></i> Prepare Remittance
-                                </b-button>
-                            </div>
-                        </b-col>
-                    </b-row>
 
-                    <div class="table-responsive table-card mt-5">
+                    <div class="table-responsive table-card mt-2">
                         <b-tabs v-model="tabIndex">
                             <b-tab title="Open">
                                 <table class="table align-middle table-hover mb-0" style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">

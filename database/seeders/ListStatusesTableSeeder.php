@@ -103,9 +103,9 @@ class ListStatusesTableSeeder extends Seeder
             7 => 
             array (
                 'id' => 8,
-                'name' => 'Invoiced',
-                'slug' => 'invoiced',
-                'description' => 'Invoiced status',
+                'name' => 'Unpaid',
+                'slug' => 'unpaid',
+                'description' => 'Unpaid status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#28a745',
                 'created_at' => '2025-01-01 00:00:00',
@@ -115,6 +115,19 @@ class ListStatusesTableSeeder extends Seeder
             8 => 
             array (
                 'id' => 9,
+                'name' => 'Paid',
+                'slug' => 'paid',
+                'description' => 'Paid status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#000000',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+
+            9 => 
+            array (
+                'id' => 10,
                 'name' => 'Closed',
                 'slug' => 'closed',
                 'description' => 'Closed status',

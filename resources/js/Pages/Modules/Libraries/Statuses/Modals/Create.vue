@@ -12,7 +12,7 @@
                     <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 80vh; overflow: auto;">
                 <form @submit.prevent="submit" id="statusForm">
                     <!-- Name Field -->
                     <div class="form-group">

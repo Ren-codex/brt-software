@@ -4,80 +4,67 @@ namespace App\Http\Controllers\Modules;
 
 use App\Http\Controllers\Controller;
 use App\Models\ArInvoice;
+use App\Models\Receipt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\PrintClass;
+use App\Services\Modules\ArInvoiceClass;
+use App\Http\Requests\Modules\PaymentRequest;
+use App\Traits\HandlesTransaction;
 
 class ArInvoiceController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = ArInvoice::with(['salesOrder.customer', 'salesOrder.salesOrderItems.product', 'status']);
+    use HandlesTransaction;
 
-        // Search functionality
-        if ($request->has('keyword') && !empty($request->keyword)) {
-            $keyword = $request->keyword;
-            $query->where(function ($q) use ($keyword) {
-                $q->where('invoice_number', 'like', '%' . $keyword . '%')
-                  ->orWhereHas('salesOrder', function ($sq) use ($keyword) {
-                      $sq->where('so_number', 'like', '%' . $keyword . '%')
-                        ->orWhereHas('customer', function ($cq) use ($keyword) {
-                            $cq->where('name', 'like', '%' . $keyword . '%');
-                        });
-                  });
-            });
+    public $print, $invoice ;
+
+    public function __construct(PrintClass $print , ArInvoiceClass $invoice)
+    {
+        $this->print = $print;
+        $this->invoice = $invoice;
+    }
+    public function index(Request $request){
+        switch($request->option){
+            case 'lists':
+                return $this->invoice->lists($request);
+            break;
+            case 'dashboard':
+                return $this->invoice->dashboard();
+            break;
+            case 'stock':
+                return $this->invoice->stockAvailability();
+            break;
+            case 'print':
+                return $this->invoice->print($request);
+            break;
+            default:
+                return inertia('Modules/Sales/Components/ARInvoices/Index', [
+                    'dropdowns' => [
+
+                    ]
+                ]);
+            break;
         }
-
-        // Dashboard metrics
-        if ($request->option === 'dashboard') {
-            return $this->getDashboardMetrics();
-        }
-
-        // Stock information
-        if ($request->option === 'stock') {
-            return $this->getStockInfo();
-        }
-
-        $arInvoices = $query->orderBy('created_at', 'desc')
-                           ->paginate($request->get('count', 10));
-
-        return back()->with($arInvoices);
     }
 
-    public function show($id)
+    public function update(PaymentRequest $request, $id)
     {
-        $arInvoice = ArInvoice::with(['salesOrder.customer', 'salesOrder.salesOrderItems.product', 'status'])
-                             ->findOrFail($id);
-
-        return back()->with($arInvoice);
+        $result = $this->handleTransaction(function () use ($request, $id) {
+            switch($request->option){
+                case 'payment':
+                    return $this->invoice->payment($request, $id);
+                break;
+            }
+        });
     }
 
-    private function getDashboardMetrics()
-    {
-        $totalArInvoices = ArInvoice::count();
-        $todayArInvoices = ArInvoice::whereDate('created_at', today())->count();
-        $totalRevenue = ArInvoice::sum('amount_balance');
-        $pendingInvoices = ArInvoice::where('status_id', 2)->count(); // Assuming 2 is unpaid
-        $cancelledInvoices = ArInvoice::where('status_id', 5)->count(); // Assuming 5 is cancelled
 
-        return back()->with([
-            'total_sales_orders' => $totalArInvoices,
-            'today_orders' => $todayArInvoices,
-            'total_revenue' => $totalRevenue ?? 0,
-            'pending_orders' => $pendingInvoices,
-            'cancelled_orders' => $cancelledInvoices
-        ]);
+    
+    public function show($id , Request $request){
+        return $this->print->print($id, $request);
     }
 
-    private function getStockInfo()
-    {
-        // This might need to be adjusted based on your actual stock logic
-        // For now, returning empty stock info since AR invoices don't directly relate to stock
-        return back()->with([
-            'total_kg_left' => 0,
-            'five_kg_sacks_left' => 0,
-            'ten_kg_sacks_left' => 0,
-            'twenty_five_kg_sacks_left' => 0,
-            'products' => []
-        ]);
-    }
+
+
+   
 }

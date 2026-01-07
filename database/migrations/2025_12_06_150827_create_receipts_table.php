@@ -21,9 +21,12 @@ return new class extends Migration
             $table->unsignedInteger('status_id');
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->string('receipt_number')->unique();
+            $table->unsignedInteger('remittance_id')->nullable();
+            $table->foreign('remittance_id')->references('id')->on('remittances')->onDelete('set null');
             $table->date('receipt_date');
             $table->decimal('amount_paid' , 2);
             $table->string('payment_mode');
+            $table->string('billing_account')->nullable();
             $table->timestamps();
         });
     }
