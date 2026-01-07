@@ -15,6 +15,9 @@ class InventoryStockResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'inventory_adjustments' => $this->inventoryAdjustments ? InventoryAdjustmentResource::collection($this->inventoryAdjustments) : [],
+            'retail_price' => $this->retail_price,
+            'wholesale_price' => $this->wholesale_price,
+            'expiration_date' => $this->expiration_date,
         ];
     }
 }

@@ -88,8 +88,14 @@
                       </div>
                       <div class="col-md-6">
                         <div class="mb-3">
-                          <label class="form-label">Total Cost</label>
-                          <p class="text-muted">{{ formatCurrency((data.received_item?.unit_cost || 0) * data.quantity) }}</p>
+                          <label class="form-label">Retail Price</label>
+                          <p class="text-muted">{{ formatCurrency(data.retail_price) }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Wholesale Price</label>
+                          <p class="text-muted">{{ formatCurrency(data.wholesale_price) }}</p>
                         </div>
                       </div>
                       <div>
