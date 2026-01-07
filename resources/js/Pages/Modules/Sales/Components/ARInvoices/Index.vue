@@ -1,6 +1,6 @@
 <template>
     <BRow>
-        <div class="col-md-9">
+        <div class="col-lg-9 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                     <div class="d-flex align-items-center justify-content-between">
@@ -21,7 +21,7 @@
 
                 </div>
 
-                <div class="card-body bg-white">
+                <div class="card-body bg-white m-2 p-3">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
@@ -209,7 +209,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 ">
+        <div class="col-lg-3 ">
             <div class="card shadow-lg border-0 bg-primary">
                 <div class="card-header border-0  bg-primary">
                     <h4 class="text-white">
@@ -261,7 +261,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
                                 <span class="avatar-title bg-white bg-opacity-25 rounded">

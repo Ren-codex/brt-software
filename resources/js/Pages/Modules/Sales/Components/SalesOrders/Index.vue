@@ -1,7 +1,6 @@
 <template>
     <BRow>
-
-        <div class="col-md-9">
+        <div class="col-lg-9 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                     <div class="d-flex align-items-center justify-content-between">
@@ -21,7 +20,7 @@
                     </div>
 
                 </div>
-                <div class="card-body ">
+                <div class="card-body m-2 p-3">
                     <!-- <b-row class="mb-3 ms-1 me-1">
                         <b-col lg>
                             <div class="input-group">
@@ -125,7 +124,7 @@
                             <tbody class="fs-12">
                                 <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" :class="{
-                                        'bg-primary bg-opacity-10': index === selectedRow,
+                                        'bg-primary bg-opacity-10 ': index === selectedRow,
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
@@ -138,9 +137,9 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
-                                            <span
-                                                :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
-                                                {{ list.status?.name || 'Unknown' }}
+                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                                <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
+                                                {{ list.status ? list.status.name : '' }}
                                             </span>
                                         </td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
@@ -190,7 +189,7 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRows.includes(index)" class="bg-light">
+                                    <tr v-if="expandedRows.includes(index)" style="background-color: #c4dad2e0;">
                                         <td colspan="8" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
@@ -262,14 +261,14 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0">
+                <div class="card-footer bg-light border-0 m-3">
                     <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
-        <div class="col-md-3  bg-light">
-            <div class="card shadow-lg border-0 bg-light">
+        <div class="col-lg-3">
+            <div class="card shadow-lg border-0" >
                 <div class="card-header border-0  ">
                     <h4>
                         <i class="ri-dashboard-line "></i> Quick Stats
@@ -277,8 +276,8 @@
                     </h4>
                 </div>
 
-                <div class="card-body">
-                    <div class="metric-card mb-3 p-3 e bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                <div class="card-body ">
+                    <div class="metric-card mb-3 p-3 e bg-opacity-10 rounded" style="backdrop-filter: blur(10px); background-color: #e9efec;">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
                                 <span class="avatar-title  bg-opacity-25 rounded">
@@ -291,7 +290,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px); background-color: #e9efec;">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
                                 <span class="avatar-title  bg-opacity-25 rounded">
@@ -305,7 +304,7 @@
                         </div>
                     </div>
 
-                    <div class="metric-card p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px); background-color: #e9efec;">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
                                 <span class="avatar-title  bg-opacity-25 rounded">
@@ -319,7 +318,7 @@
                         </div>
                     </div>
 
-                    <div class="metric-card p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px); background-color: #e9efec;">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
                                 <span class="avatar-title  bg-opacity-25 rounded">
@@ -333,7 +332,7 @@
                         </div>
                     </div>
 
-                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px); background-color: #e9efec;">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
                                 <span class="avatar-title  bg-opacity-25 rounded">
@@ -510,7 +509,16 @@ export default {
                 })
                 .catch(err => console.log(err));
         },
+        getStatusStyle(status) {
+            if (!status) return {};
 
+            return {
+                color: status.text_color || '#000000',
+                backgroundColor: status.bg_color || '#ffffff',
+                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
+                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
+            };
+        },
         fetchStock() {
             axios.get('/sales-orders', {
                 params: {
@@ -539,3 +547,17 @@ export default {
     }
 }
 </script>
+<style scoped>
+    .status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  cursor: default;
+    }
+</style>

@@ -45,19 +45,19 @@
         <div class="inventory-main-content">
           <transition name="inventory-fade" mode="out-in">
             <div :key="activeTab" class="inventory-tab-content">
-              <div v-if="activeTab === 'sales_orders'" class="card shadow-sm p-3">
+              <div v-if="activeTab === 'sales_orders'" class="shadow-sm p-3">
                 <SalesOrders :dropdowns="dropdowns"/>
               </div>
 
-              <div v-if="activeTab === 'ar_invoices'" class="card shadow-sm p-3">
+              <div v-if="activeTab === 'ar_invoices'" class="shadow-sm p-3">
                 <ARInvoices :dropdowns="dropdowns"/>
               </div>
 
-              <div v-if="activeTab === 'receipts'" class="card shadow-sm p-3">
+              <div v-if="activeTab === 'receipts'" class="shadow-sm p-3">
                  <Receipts :dropdowns="dropdowns"/>
               </div>
 
-              <div v-if="activeTab === 'remittance'" class="card shadow-sm p-3">
+              <div v-if="activeTab === 'remittance'" class="shadow-sm p-3">
                 <Remittances :dropdowns="dropdowns" />
               </div>
             </div>
