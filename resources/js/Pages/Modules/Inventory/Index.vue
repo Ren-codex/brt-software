@@ -307,7 +307,7 @@ export default {
               const allPurchaseOrders = response.data.data;
               // Separate based on status
               this.listPurchaseRequests = allPurchaseOrders.filter(order => order.status?.name === 'Pending');
-              this.listPurchaseOrders = allPurchaseOrders.filter(order => order.status?.name === 'Approved');
+              this.listPurchaseOrders = allPurchaseOrders.filter(order => order.status?.name === 'Approved' || order.status?.name === 'Completed');
               this.meta = response.data.meta;
               this.links = response.data.links;
             }

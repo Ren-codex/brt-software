@@ -17,7 +17,7 @@ class SalesOrderItem extends Model
 
     public function sales_order()
     {
-        return $this->belongsTo('App\Models\SalesOrder', 'sales_order_id', 'id')->with('items.product');
+        return $this->belongsTo('App\Models\SalesOrder', 'sales_order_id', 'id')->with('items');
     }
 
     public function batch_code()

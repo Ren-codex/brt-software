@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('receipts', function (Blueprint $table) {
-            $table->unsignedInteger('remittance_id')->nullable()->after('ar_invoice_id');
-            $table->foreign('remittance_id')->references('id')->on('remittances')->onDelete('set null');
+        Schema::table('purchase_order_items', function (Blueprint $table) {
+            $table->integer('received_quantity')->default(0);
         });
     }
 
@@ -22,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('receipts', function (Blueprint $table) {
+        Schema::table('purchase_order_items', function (Blueprint $table) {
             //
         });
     }

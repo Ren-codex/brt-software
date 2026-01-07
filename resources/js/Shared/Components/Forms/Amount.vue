@@ -1,5 +1,5 @@
 <template>
-    <input type="text" class="form-control test" v-money="money" v-model.lazy="value" :readonly="readonly" style="min-height: 38.4px !important; background-color: #f5f6f7;">
+    <input type="text" class="form-control test" v-money="money" v-model="value" :readonly="readonly" style="min-height: 38.4px !important; background-color: #f5f6f7;">
 </template>
 <script>
 import {VMoney} from 'v-money'

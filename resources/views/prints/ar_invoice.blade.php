@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Order - {{ $sales_order->so_number }}</title>
+    <title>AR Invoice - {{ $ar_invoice->invoice_number }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -123,8 +123,7 @@
 
         .signature-box {
             text-align: center;
-            width: 200px;
-            margin-top:50px;
+            width: 120px;
         }
 
         .signature-line {
@@ -136,24 +135,22 @@
 <body>
     <div class="header">
         <div class="company-name">BOUYANT RICE TRADING</div>
-        <div class="document-title">SALES INVOICE</div>
+        <div class="document-title">INVOICE</div>
     </div>
 
     <div class="order-info">
         <div class="info-section">
             <h3>Invoice Details</h3>
-            <p>Invoice Number: {{ isset($ar_invoice) ? $ar_invoice->invoice_number : $sales_order->so_number }}</p>
-            <p>Invoice Date: {{ isset($ar_invoice) ? \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('M d, Y') : \Carbon\Carbon::parse($sales_order->order_date)->format('M d, Y') }}</p>
-            @if(isset($ar_invoice))
+            <p>Invoice Number: {{ $ar_invoice->invoice_number }}</p>
+            <p>Invoice Date: {{ \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('M d, Y') }}</p>
             <p>SO Number: {{ $sales_order->so_number }}</p>
-            @endif
+            <p>Status: {{ $ar_invoice->status->name ?? 'N/A' }}</p>
         </div>
         <div class="info-section">
             <h3>Customer</h3>
-            <p>Name: {{ $sales_order->customer->name ?? 'N/A' }}</p>
-            <p>Address: {{ $sales_order->customer->address ?? 'N/A'  }}</p>
-            <p>Contact Number: {{ $sales_order->customer->contact_number ?? 'N/A'  }}</p>
-            <p>Email: {{ $sales_order->customer->email ?? 'N/A'  }}</p>
+            <p>Customer: {{ $sales_order->customer->name ?? 'N/A' }}</p>
+            <p>Payment Mode: {{ $sales_order->payment_mode ?? 'N/A' }}</p>
+            <p>Payment Term: {{ $sales_order->payment_term ?? 'N/A' }}</p>
         </div>
     </div>
 
@@ -191,12 +188,6 @@
             <span class="total-amount">PHP {{ number_format($sales_order->total_discount, 2) }}</span>
         </div>
 
-        @if(isset($ar_invoice))
-        <div class="total-row">
-            <span class="total-label">Total:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_amount, 2) }}</span>
-        </div>
-
         <div class="total-row">
             <span class="total-label">Amount Paid:</span>
             <span class="total-amount">PHP {{ number_format($ar_invoice->amount_paid, 2) }}</span>
@@ -206,24 +197,21 @@
             <span class="total-label">Balance Due:</span>
             <span class="total-amount">PHP {{ number_format($ar_invoice->balance_due, 2) }}</span>
         </div>
-        @else
-        <div class="total-row grand-total">
-            <span class="total-label">TOTAL:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_amount, 2) }}</span>
-        </div>
-        @endif
     </div>
 
     <div style="clear: both;"></div>
 
     <div class="signature-section">
-        <div class="signature-box mb-3">
+        <div class="signature-box">
             <div class="signature-line"></div>
             <strong>Prepared By</strong>
         </div>
-
         <div class="signature-box">
-            <div class="signature-line mb-3"></div>
+            <div class="signature-line"></div>
+            <strong>Approved By</strong>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line"></div>
             <strong>Received By</strong>
         </div>
     </div>
