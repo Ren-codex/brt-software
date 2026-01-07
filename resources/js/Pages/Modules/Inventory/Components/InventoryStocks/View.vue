@@ -132,6 +132,7 @@
                     <tr>
                       <th>Date</th>
                       <th>Quantity</th>
+                      <th>Type</th>
                       <th>Reason</th>
                       <th>Adjusted By</th>
                     </tr>
@@ -140,6 +141,7 @@
                     <tr v-for="(log, index) in data.inventory_adjustments" :key="log.id">
                       <td>{{ formatDate(log.adjustment_date) }}</td>
                       <td>{{ log.previous_quantity }} → {{ log.new_quantity }}</td>
+                      <td>{{ log.type }}</td>
                       <td>{{ log.reason }}</td>
                       <td>{{ log.received_by ? log.received_by.name : 'N/A' }}</td>
                     </tr>

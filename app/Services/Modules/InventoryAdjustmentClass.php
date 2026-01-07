@@ -24,6 +24,7 @@ class InventoryAdjustmentClass
                 'new_quantity' =>  $request->new_quantity,
                 'previous_quantity' =>  $request->previous_quantity,
                 'reason' =>  $request->reason,
+                'type' =>  $request->type,
                 'adjustment_date' =>  now(),
                 'adjusted_by_id' =>  Auth::id(),
             ]);

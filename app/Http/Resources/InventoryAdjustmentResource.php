@@ -21,6 +21,7 @@ class InventoryAdjustmentResource extends JsonResource
             'new_quantity' => $this->new_quantity,
             'previous_quantity' => $this->previous_quantity,
             'reason' => $this->reason,
+            'type' => $this->type,
             'adjustment_date' => $this->adjustment_date,
             'received_by' => $this->adjustedBy ? new ViewResource($this->adjustedBy) : null,
             'created_at' => $this->created_at,

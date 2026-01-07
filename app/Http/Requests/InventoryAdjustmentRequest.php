@@ -24,6 +24,7 @@ class InventoryAdjustmentRequest extends FormRequest
         return [
             'inventory_stocks_id' => 'required|exists:inventory_stocks,id',
             'new_quantity' => 'required|integer|min:1',
+            'type' => 'required|string',
             'previous_quantity' => 'required|integer',
             'reason' => 'nullable|string|max:255',
         ];

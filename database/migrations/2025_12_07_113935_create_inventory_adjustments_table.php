@@ -22,7 +22,7 @@ return new class extends Migration
             $table->date('adjustment_date');
             $table->unsignedInteger('adjusted_by_id');
             $table->foreign('adjusted_by_id')->references('id')->on('users')->onDelete('cascade');
-            $table->integer('type'); // 1 for addition, 2 for subtraction
+            $table->string('type'); // 1 for addition, 2 for subtraction
             $table->timestamps();
         });
     }

@@ -19,6 +19,23 @@
         </div>
         <form @submit.prevent="saveQuantity">
           <div class="form-group">
+            <label for="type" class="form-label">Adjustment Type</label>
+            <div class="input-wrapper">
+              <select
+                id="type"
+                v-model="form.type"
+                class="form-control"
+                :class="{ 'input-error': form.errors.type }"
+              >
+                <option value="received items">Received Items</option>
+                <option value="inventory count">Inventory Count</option>
+                <option value="loss">Loss</option>
+                <option value="damage">Damage</option>
+              </select>
+            </div>
+            <span class="error-message" v-if="form.errors.type">{{ form.errors.type }}</span>
+          </div>
+          <div class="form-group">
             <label for="new_quantity" class="form-label">New Quantity</label>
             <div class="input-wrapper">
               <i class="ri-inbox-unarchive-line input-icon"></i>
@@ -78,6 +95,7 @@ export default {
         new_quantity: '',
         previous_quantity: '',
         reason: '',
+        type: '',
       }),
       showModal: false,
       saveSuccess: false,
