@@ -1,53 +1,54 @@
 <template>
-  <div>
-    <b-modal
-      id="createReceivedStockModal"
-      ref="createReceivedStockModal"
-      size="lg"
-      title="Create Received Stock"
-    >
-      <form @submit.prevent="handleSubmit">
-        <div v-if="errorMessage" class="alert alert-danger" role="alert">
-          {{ errorMessage }}
-        </div>
+  <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h2>Create Received Stock</h2>
+        <button class="close-btn" @click="onCancel">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form @submit.prevent="handleSubmit">
+          <div v-if="errorMessage" class="alert alert-danger" role="alert">
+            {{ errorMessage }}
+          </div>
 
-        <div class="mb-3">
-          <h6>Purchase Order Items</h6>
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Ordered</th>
-                <th>Received</th>
-                <th>To Receive</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in form.items" :key="item.id">
-                <td style="width: 30%">{{ item.product ? item.product.name : 'N/A' }}</td>
-                <td>{{ item.quantity }}</td>
-                <td>{{ item.received_quantity}}</td>
-                <td>
-                  <input
-                    type="number"
-                    v-model="item.to_received_quantity"
-                    :class="['form-control', { 'is-invalid': item.to_received_quantity > item.quantity - item.received_quantity }]"
-                    min="0"
-                    :max="item.quantity - item.received_quantity"
-                    step="1"
-                    :disabled="item.status !== 'pending'"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="mb-3">
+            <h6>Purchase Order Items</h6>
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Ordered</th>
+                  <th>Received</th>
+                  <th>To Receive</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, index) in form.items" :key="item.id">
+                  <td style="width: 30%">{{ item.product ? item.product.name : 'N/A' }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ item.received_quantity}}</td>
+                  <td>
+                    <input
+                      type="number"
+                      v-model="item.to_received_quantity"
+                      :class="['form-control', { 'is-invalid': item.to_received_quantity > item.quantity - item.received_quantity }]"
+                      min="0"
+                      :max="item.quantity - item.received_quantity"
+                      step="1"
+                      :disabled="item.status !== 'pending'"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </form>
+        <div class="form-actions">
+          <button class="btn btn-cancel" @click="onCancel">Cancel</button>
+          <button class="btn btn-save" @click="handleSubmit()" :disabled="form.processing">Submit</button>
         </div>
-      </form>
-      <template v-slot:footer>
-          <b-button @click="hide()" variant="light" block>Cancel</b-button>
-          <b-button @click="handleSubmit()" variant="primary" :disabled="form.processing" block>Submit</b-button>
-      </template>
-    </b-modal>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -63,6 +64,7 @@ export default {
   emits: ['add'],
   data() {
     return {
+      showModal: false,
       form: {
         po_id: '',
         supplier_id: '',
@@ -88,7 +90,7 @@ export default {
       }));
 
 
-      this.$refs.createReceivedStockModal.show();
+      this.showModal = true;
     },
     resetForm() {
       this.form = {
@@ -113,7 +115,7 @@ export default {
       try {
         await axios.post('/received-stocks', this.form)
         .then(response => {
-          this.$refs.createReceivedStockModal.hide();
+          this.hide();
           this.$emit('add', 'success');
           this.$inertia.reload();
           this.resetForm();
@@ -124,8 +126,11 @@ export default {
       }
     },
     hide() {
-      this.$refs.createReceivedStockModal.hide();
+      this.showModal = false;
       this.resetForm();
+    },
+    onCancel() {
+      this.hide();
     }
   },
 };
