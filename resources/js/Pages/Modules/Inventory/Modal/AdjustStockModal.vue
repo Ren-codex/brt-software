@@ -109,6 +109,7 @@ export default {
         this.form.inventory_stocks_id = this.inventoryStock ? this.inventoryStock.id : null;
         this.form.new_quantity = this.inventoryStock ? this.inventoryStock.quantity : 0;
         this.form.previous_quantity = this.inventoryStock ? this.inventoryStock.quantity : 0;
+        this.form.type = 'inventory count';
     },
     saveQuantity() {
       if (this.new_quantity < 0) {

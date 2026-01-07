@@ -89,7 +89,7 @@
                         <span class="error-message" v-if="form.errors.unit_id">{{ form.errors.unit_id }}</span>
                     </div>
 
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label for="price" class="form-label">Price</label>
                         <div class="input-wrapper">
                             <i class="ri-money-dollar-circle-line input-icon"></i>
@@ -103,7 +103,7 @@
                             />
                         </div>
                         <span class="error-message" v-if="form.errors.price">{{ form.errors.price }}</span>
-                    </div>
+                    </div> -->
 
                     <div class="form-actions">
                         <button type="button" class="btn btn-cancel" @click="hide">
@@ -113,7 +113,7 @@
                         <button type="submit" class="btn btn-save" :disabled="form.processing">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : 'Save Information' }}
+                            {{ form.processing ? 'Saving...' : 'Save' }}
                         </button>
                     </div>
                 </form>
@@ -169,7 +169,7 @@ export default {
                         this.saveSuccess = true;
                         this.form.reset();
                         setTimeout(() => {
-                            this.$emit('add', true);
+                            this.$emit('add');
                             this.hide();
                         }, 1500);
                     },
