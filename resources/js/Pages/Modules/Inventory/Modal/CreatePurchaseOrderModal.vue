@@ -98,12 +98,15 @@
 
                                     <div class="form-group">
                                         <label>Unit Cost</label>
-                                    
-                                        <Amount @amount="amount(index, $event)"
+                                        <input type="number" v-model="item.unit_cost" class="form-control"
+                                            :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
+                                            @input="calculateTotal(item); handleInput(`items.${index}.unit_cost`)"
+                                            step="1" min="0" required>
+                                        <!-- <Amount @amount="amount(index, $event)"
                                             ref="amountComponent"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
                                             class="form-control"
-                                        />
+                                        /> -->
                                         <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                             {{ form.errors[`items.${index}.unit_cost`] }}
                                         </span>
@@ -230,10 +233,12 @@ export default {
             this.form.supplier_id = data.supplier ? data.supplier.id : null;
             this.form.items = data.items ? data.items.map(item => ({
                 product_id: item.product.id,
-                quantity: Math.round(item.quantity),
+                quantity: item.quantity,
                 unit_cost: item.unit_cost || 0,
-                total_cost: parseFloat(item.total_cost) || 0,
+                total_cost: item.total_cost || 0,
             })) : [];
+            console.log(this.form.items);
+            
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
@@ -360,6 +365,8 @@ export default {
             if (!value) return 0;
             // Remove ₱, commas, and spaces
             const cleaned = value.toString().replace(/[^0-9.]/g, "");
+            console.log(value);
+            
             return parseFloat(cleaned);
         },
 

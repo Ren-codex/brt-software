@@ -38,4 +38,18 @@ class InventoryStockController extends Controller
             'inventory_stock_data' => $this->inventoryStock->view($id)
         ]);
     }
+
+    public function update(Request $request, $id)
+    {
+        $result = $this->handleTransaction(function () use ($request) {
+            return $this->inventoryStock->update($request);
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
 }

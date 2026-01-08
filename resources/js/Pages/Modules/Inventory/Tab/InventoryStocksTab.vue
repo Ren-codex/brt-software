@@ -44,7 +44,7 @@
                         <th>Product</th>
                         <th>Unit Cost</th>
                         <th>Quantity</th>
-                      
+                        <th>Expiration Date</th>                      
                       </tr>
                     </thead>
                     <tbody>
@@ -65,12 +65,16 @@
                             <small class="text-muted d-block">{{ list.received_item.product.code || 'No Code' }}</small>
                           </div>
                         </td>
-                        <td>{{ formatCurrency(list.received_item.unit_cost) }}</td>
+                        <td><b>{{ formatCurrency(list.received_item.unit_cost) }}</b>
+                          <br>Retail Price: {{ formatCurrency(list.retail_price) }}
+                          <br>Wholesale Price: {{ formatCurrency(list.wholesale_price) }}
+                        </td>
                         <td>
                           <span class="quantity-badge" :class="getQuantityClass(list.quantity)">
                             {{ list.quantity }}
                           </span>
                         </td>
+                        <td>{{ list.expiration_date ? formatDate(list.expiration_date) : '--' }}</td>
                         <!-- <td>
                           <div class="action-buttons" @click.stop>
                             <button @click.stop="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">

@@ -77,6 +77,9 @@ class ReceivedStockService
                         InventoryStocks::create([
                             'received_item_id' => $receivedItem->id,
                             'quantity' => $itemData['to_received_quantity'],
+                            'retail_price' => $itemData['retail_price'],
+                            'wholesale_price' => $itemData['wholesale_price'],
+                            'expiration_date' => $itemData['expiration_date'],
                         ]);
                     }
                 }
