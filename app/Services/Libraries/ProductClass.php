@@ -30,7 +30,7 @@ class ProductClass
             'pack_size' => $request->pack_size,
             'unit_id' => $request->unit_id,
             'brand_id' => $request->brand_id,
-            'price' => $request->price,
+            // 'price' => $request->price,
         ]);
 
         return [
@@ -47,7 +47,7 @@ class ProductClass
             'pack_size' => $request->pack_size,
             'unit_id' => $request->unit_id,
             'brand_id' => $request->brand_id,
-            'price' => $request->price,
+            // 'price' => $request->price,
         ]);
 
         return [

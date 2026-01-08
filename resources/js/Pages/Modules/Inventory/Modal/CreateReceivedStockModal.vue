@@ -1,6 +1,6 @@
 <template>
   <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
-    <div class="modal-container modal-lg">
+    <div class="modal-container modal-xl">
       <div class="modal-header">
         <h2>Create Received Stock</h2>
         <button class="close-btn" @click="onCancel">&times;</button>
@@ -20,13 +20,16 @@
                   <th>Ordered</th>
                   <th>Received</th>
                   <th>To Receive</th>
+                  <th>Retail Price</th>
+                  <th>Wholesale Price</th>
+                  <th>Expiration Date</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(item, index) in form.items" :key="item.id">
-                  <td style="width: 30%">{{ item.product ? item.product.name : 'N/A' }}</td>
-                  <td>{{ item.quantity }}</td>
-                  <td>{{ item.received_quantity}}</td>
+                  <td style="width: 30%" class="bg-faded-gray">{{ item.product ? item.product.name : 'N/A' }}</td>
+                  <td class="bg-faded-gray">{{ item.quantity }}</td>
+                  <td class="bg-faded-gray">{{ item.received_quantity}}</td>
                   <td>
                     <input
                       type="number"
@@ -35,6 +38,34 @@
                       min="0"
                       :max="item.quantity - item.received_quantity"
                       step="1"
+                      :disabled="item.status !== 'pending'"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      v-model="item.retail_price"
+                      class="form-control"
+                      min="0"
+                      step="0.01"
+                      :disabled="item.status !== 'pending'"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      v-model="item.wholesale_price"
+                      class="form-control"
+                      min="0"
+                      step="0.01"
+                      :disabled="item.status !== 'pending'"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      v-model="item.expiration_date"
+                      class="form-control"
                       :disabled="item.status !== 'pending'"
                     />
                   </td>
@@ -87,6 +118,9 @@ export default {
         product_id: item.product.id,
         product_name: item.product?.name,
         to_received_quantity: 0,
+        retail_price: 0,
+        wholesale_price: 0,
+        expiration_date: null,
       }));
 
 
@@ -135,3 +169,8 @@ export default {
   },
 };
 </script>
+<style scoped>
+.bg-faded-gray {
+  background-color: #f8f8f8;
+}
+</style>

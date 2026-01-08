@@ -106,6 +106,13 @@
                     <div class="collapse menu-dropdown" id="sidebarDashboards">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
+                                <Link href="/libraries/products" class="nav-link" 
+                                    :class="{'active': $page.url === '/libraries/products' }"
+                                    data-key="t-basic">
+                                    Products
+                                </Link>
+                            </li>
+                            <li class="nav-item">
                                 <Link href="/libraries/suppliers" class="nav-link" 
                                     :class="{'active': $page.url === '/libraries/suppliers' }"
                                     data-key="t-basic">

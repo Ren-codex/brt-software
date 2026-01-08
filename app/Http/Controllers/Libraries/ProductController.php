@@ -21,15 +21,20 @@ class ProductController extends Controller
         $this->product = $product;
     }
 
-    public function index(Request $request){
+    public function index(Request $request){   
         switch($request->option){
             case 'lists':
                 return $this->product->lists($request);
             break;
             default:
-                return inertia('Modules/Libraries/Products/Index');
+                return inertia('Modules/Libraries/Products/Index',[
+                    'dropdowns' => [
+                        'brands' => $this->dropdown->brands(),
+                        'units' => $this->dropdown->units(),
+                    ]
+                ]); 
             break;
-        }
+        }   
     }
 
     public function update(ProductRequest $request){

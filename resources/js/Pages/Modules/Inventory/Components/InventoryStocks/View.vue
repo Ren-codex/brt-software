@@ -36,6 +36,9 @@
                     </div>
                   </div>
                   <div class="d-flex gap-2">
+                    <button class="create-btn" @click="updatePrice()">
+                      <span>Update Price</span>
+                    </button>
                     <button v-if="data.quantity > 0" class="create-btn" @click="adjustStock">
                       <i class="ri-edit-line"></i>
                       <span>Adjust Stocks</span>
@@ -88,12 +91,22 @@
                       </div>
                       <div class="col-md-6">
                         <div class="mb-3">
-                          <label class="form-label">Total Cost</label>
-                          <p class="text-muted">{{ formatCurrency((data.received_item?.unit_cost || 0) * data.quantity) }}</p>
+                          <label class="form-label">Retail Price</label>
+                          <p class="text-muted">{{ formatCurrency(data.retail_price) }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Wholesale Price</label>
+                          <p class="text-muted">{{ formatCurrency(data.wholesale_price) }}</p>
                         </div>
                       </div>
                       <div>
                         <label class="form-label mb-3">Additional Information</label>
+                        <div class="mb-3">
+                          <label class="form-label">Expiration Date</label>
+                          <p class="text-muted">{{ formatDate(data.expiration_date) }}</p>
+                        </div>
                         <div class="mb-3">
                           <label class="form-label">Created At</label>
                           <p class="text-muted">{{ formatDate(data.created_at) }}</p>
@@ -132,6 +145,7 @@
                     <tr>
                       <th>Date</th>
                       <th>Quantity</th>
+                      <th>Type</th>
                       <th>Reason</th>
                       <th>Adjusted By</th>
                     </tr>
@@ -140,6 +154,7 @@
                     <tr v-for="(log, index) in data.inventory_adjustments" :key="log.id">
                       <td>{{ formatDate(log.adjustment_date) }}</td>
                       <td>{{ log.previous_quantity }} → {{ log.new_quantity }}</td>
+                      <td>{{ log.type }}</td>
                       <td>{{ log.reason }}</td>
                       <td>{{ log.received_by ? log.received_by.name : 'N/A' }}</td>
                     </tr>
@@ -153,6 +168,12 @@
       </div>
     </div>
 
+    <UpdatePriceModal
+      :inventoryStock="data"
+      @saved="$inertia.reload()"
+      ref="updatePriceDialog"
+    />
+
     <AdjustStockModal
       :inventoryStock="data"
       @saved="$inertia.reload()"
@@ -163,10 +184,12 @@
 
 <script>
 import AdjustStockModal from '../../Modal/AdjustStockModal.vue';
+import UpdatePriceModal from '../../Modal/UpdatePriceModal.vue';
 
 export default {
   components: {
     AdjustStockModal,
+    UpdatePriceModal,
   },
   props: {
     inventory_stock_data: Object,
@@ -182,6 +205,9 @@ export default {
     },
   },
   methods: {
+    updatePrice() {
+      this.$refs.updatePriceDialog.show();
+    },
     adjustStock() {
       this.$refs.adjustStockDialog.show();
     },

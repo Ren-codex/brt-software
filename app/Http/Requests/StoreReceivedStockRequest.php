@@ -32,6 +32,9 @@ class StoreReceivedStockRequest extends FormRequest
             'items.*.total_cost' => 'required|numeric|min:0',
             'items.*.to_received_quantity' => 'required|numeric|min:0',
             'items.*.po_item_id' => 'required|exists:purchase_order_items,id',
+            'items.*.retail_price' => 'nullable|numeric|min:0',
+            'items.*.wholesale_price' => 'nullable|numeric|min:0',
+            'items.*.expiration_date' => 'nullable|date',
         ];
     }
 }
