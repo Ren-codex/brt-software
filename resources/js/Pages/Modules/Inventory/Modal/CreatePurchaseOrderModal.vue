@@ -596,8 +596,8 @@ export default {
 
 /* Item Card */
 .item-card {
-    background: white;
-    border: 1px solid #e9ecef;
+    background: #f5f7f6;
+    border: 1px solid #9ad9ab;
     border-radius: 10px;
     padding: 16px;
     margin-bottom: 12px;

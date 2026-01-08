@@ -13,27 +13,19 @@
                                 <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
-                            <i class="ri-add-line"></i>
-                            <span>Create Invoice</span>
-                        </button>
                     </div>
 
                 </div>
 
       
-                <div class="card-body bg-white mb-3 me-3">
-                    <b-row class="mb-3 ms-1 me-1 ">
-                        <b-col lg>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white">
-                                    <i class="ri-search-line"></i>
-                                </span>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search AR Invoice" class="form-control border-primary">
-
-                            </div>
-                        </b-col>
-                    </b-row>
+                <div class="card-body bg-white m-2 p-3">
+                    <div class="search-section">
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                                placeholder="Search purchase request..." class="search-input">
+                        </div>
+                    </div>
 
 
                     <div class="table-responsive table-card">
@@ -132,17 +124,10 @@
                 </div>
             </div>
         </div>
-<<<<<<< HEAD
         <div class="col-lg-3 ">
             <div class="card shadow-lg border-0 bg-primary">
                 <div class="card-header border-0  bg-primary">
                     <h4 class="text-white">
-=======
-        <div class="col-md-2 ">
-            <div class="card shadow-lg border-0 text-primary" >
-                <div class="card-header border-0  text-primary" >
-                    <h4  >
->>>>>>> 63fa8dc671dd1da2b261c4c567bcd8040475be62
                         <i class="ri-dashboard-line "></i> Quick Stats
                         <hr class="mb-0">
                     </h4>
@@ -188,11 +173,7 @@
                             </div>
                         </div>
                     </div>
-<<<<<<< HEAD
-                    <div class="metric-card mb-3 p-3 bg-white bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
-=======
                     <div class="metric-card mb-3 p-3 bg-light rounded">
->>>>>>> 63fa8dc671dd1da2b261c4c567bcd8040475be62
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
                                 <span class="avatar-title bg-warning text-white rounded">
