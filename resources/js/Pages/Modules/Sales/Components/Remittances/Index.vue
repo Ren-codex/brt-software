@@ -1,6 +1,6 @@
 <template>
     <BRow>
-        <div class="col-md-12 mb-4">
+        <div class="col-md-9 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                     <div class="d-flex align-items-center justify-content-between">
@@ -25,7 +25,7 @@
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
                                 placeholder="Search purchase request..." class="search-input">
                         </div>
 
@@ -123,6 +123,71 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="card shadow-lg border-0 text-primary">
+                <div class="card-header border-0 text-primary">
+                    <h4>
+                        <i class="ri-dashboard-line"></i> Quick Stats
+                        <hr class="mb-0">
+                    </h4>
+                </div>
+
+                <div class="card-body">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-primary text-white rounded">
+                                    <i class="ri-file-list-line fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="fw-semibold fs-12 mb-1">Total Remittances</p>
+                                <h4 class="mb-0">{{ metrics.total_remittances }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-info text-white rounded">
+                                    <i class="ri-calendar-line fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="fw-semibold fs-12 mb-1">Today's Remittances</p>
+                                <h4 class="mb-0">{{ metrics.today_remittances }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-warning text-white rounded">
+                                    <i class="ri-time-line fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="fw-semibold fs-12 mb-1">Open Remittances</p>
+                                <h4 class="mb-0">{{ metrics.open_remittances }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-card p-3 bg-light rounded">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-success text-white rounded">
+                                    <i class="ri-money-dollar-circle-line fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="fw-semibold fs-12 mb-1">Total Amount Remitted</p>
+                                <h4 class="mb-0">₱{{ metrics.total_amount_remitted?.toFixed(2) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </BRow>
     <Create @add="fetch" ref="create"/>
 </template>
@@ -146,8 +211,9 @@ export default {
             expandedRows: [],
             metrics: {
                 total_remittances: 0,
-                open_count: 0,
-                liquidated_count: 0
+                total_amount_remitted: 0,
+                today_remittances: 0,
+                open_remittances: 0
             }
         }
     },
@@ -173,6 +239,7 @@ export default {
     created(){
         this.debouncedSearch = _.debounce(this.fetch, 500);
         this.fetch();
+        this.fetchMetrics();
     },
     methods: {
         fetch(){
@@ -208,6 +275,20 @@ export default {
             } else {
                 this.expandedRows = [index];
             }
+        },
+
+        fetchMetrics() {
+            axios.get('/remittances', {
+                params: {
+                    option: 'dashboard'
+                }
+            })
+                .then(response => {
+                    if (response) {
+                        this.metrics = response.data;
+                    }
+                })
+                .catch(err => console.log(err));
         }
     }
 }

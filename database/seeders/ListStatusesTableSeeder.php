@@ -125,7 +125,7 @@ class ListStatusesTableSeeder extends Seeder
             ),
 
 
-            9 => 
+            9 =>
             array (
                 'id' => 10,
                 'name' => 'Closed',
@@ -137,14 +137,14 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
 
-            9 => 
+            10 =>
             array (
-                'id' => 10,
-                'name' => 'Completed',
-                'slug' => 'completed',
-                'description' => 'Completed status',
-                'text_color' => '#ffffff',
-                'bg_color' => '#000000',
+                'id' => 11,
+                'name' => 'Partially Paid',
+                'slug' => 'partially-paid',
+                'description' => 'Partially Paid status',
+                'text_color' => '#000000',
+                'bg_color' => '#ffc107',
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),

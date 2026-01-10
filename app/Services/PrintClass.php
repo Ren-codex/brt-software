@@ -10,7 +10,6 @@ class PrintClass
 {  
 
     public function print($id, $request){
-
         switch($request->type){
             case 'sales_order':
                 return $this->printSalesOrder($id);
@@ -23,6 +22,9 @@ class PrintClass
             break;
             case 'invoice':
                 return $this->printArInvoice($id);
+            break;
+            case 'receipt':
+                return $this->printReceipt($id);
             break;
         }
     }
@@ -82,6 +84,25 @@ class PrintClass
 
         $pdf = \PDF::loadView('prints.sales_order',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($ar_invoice->invoice_number.'.pdf');
+
+    }
+
+    public function printReceipt($id){
+        $receipt = \App\Models\Receipt::with('status', 'customer', 'ar_invoice.sales_order.items.product.brand', 'ar_invoice.sales_order.items.product.unit', 'ar_invoice.sales_order.customer')->findOrFail($id);
+
+        $ar_invoice = $receipt->arInvoice;
+        $sales_order = $ar_invoice ? $ar_invoice->salesOrder : null;
+        $items = $sales_order ? $sales_order->items : [];
+
+        $array = [
+            'receipt' => $receipt,
+            'ar_invoice' => $ar_invoice,
+            'sales_order' => $sales_order,
+            'items' => $items,
+        ];
+
+        $pdf = \PDF::loadView('prints.receipt',$array)->setPaper('A4', 'portrait');
+        return $pdf->stream($receipt->receipt_number.'.pdf');
 
     }
 

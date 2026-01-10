@@ -5,10 +5,13 @@
 
     <div class="inventory-container">
       <!-- Minimal Vertical Tabs -->
-      <div class="inventory-sidebar">
+      <div class="inventory-sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
         <div class="inventory-sidebar-header">
           <i class="ri-shopping-cart-2-line"></i>
-          <h4>Sales</h4>
+          <h4 v-if="!isSidebarCollapsed">Sales</h4>
+          <button class="sidebar-toggle-btn" @click="toggleSidebar" title="Toggle Sidebar">
+            <i :class="isSidebarCollapsed ? 'ri-arrow-right-s-line' : 'ri-arrow-left-s-line'"></i>
+          </button>
         </div>
 
         <div class="inventory-sidebar-tabs">
@@ -22,14 +25,14 @@
             <div class="inventory-tab-icon">
               <i :class="tab.icon"></i>
             </div>
-            <div class="inventory-tab-text">
+            <div class="inventory-tab-text" v-if="!isSidebarCollapsed">
               <span class="inventory-tab-title">{{ tab.label }}</span>
               <span class="inventory-tab-subtitle">{{ tab.description }}</span>
             </div>
           </button>
         </div>
 
-        <div class="inventory-sidebar-footer">
+        <div class="inventory-sidebar-footer" v-if="!isSidebarCollapsed">
           <div class="inventory-stats">
             <div class="inventory-stat-item">
               <i class="ri-shopping-cart-2-line"></i>
@@ -84,7 +87,8 @@ export default {
   props: ['dropdowns'],
   data() {
     return {
-      activeTab: 'sales_orders',
+      isSidebarCollapsed: false,
+      activeTab: localStorage.getItem('sales_active_tab') || 'sales_orders',
       filter: {
         keyword: '',
       },
@@ -130,8 +134,12 @@ export default {
     this.debouncedSearch = _.debounce(this.fetchSalesOrders, 500);
   },
   methods: {
+    toggleSidebar() {
+      this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    },
     changeTab(tab) {
       this.activeTab = tab;
+      localStorage.setItem('sales_active_tab', tab);
       this.selectedRow = null;
       this.filter.keyword = '';
     },
@@ -185,3 +193,65 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.inventory-sidebar-header {
+  position: relative;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+  border-radius: 6px;
+  color: #6c757d;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px 8px;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(108, 117, 125, 0.1);
+  color: #495057;
+  border-color: rgba(108, 117, 125, 0.5);
+}
+
+.inventory-sidebar {
+  transition: width 0.3s ease;
+}
+
+.inventory-sidebar.sidebar-collapsed {
+  width: 80px;
+}
+
+.inventory-sidebar.sidebar-collapsed .inventory-sidebar-header h4 {
+  display: none;
+}
+
+.inventory-sidebar.sidebar-collapsed .inventory-sidebar-tab {
+  justify-content: center;
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+.inventory-sidebar.sidebar-collapsed .inventory-tab-text {
+  display: none;
+}
+
+.inventory-sidebar-tab {
+  transition: all 0.3s ease;
+}
+
+.inventory-sidebar-tab:hover {
+  background: rgba(0, 123, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.inventory-sidebar.sidebar-collapsed .inventory-sidebar-tab:hover {
+  transform: none;
+}
+</style>

@@ -10,6 +10,7 @@ class Receipt extends Model
         'receipt_number',
         'receipt_date',
         'amount_paid',
+        'balance_due',
         'payment_mode',
         'billing_account',
         'status_id',
@@ -18,7 +19,10 @@ class Receipt extends Model
         'remittance_id',
     ];
 
-
+    public function ar_invoice()
+    {
+        return $this->belongsTo('App\Models\ArInvoice', 'ar_invoice_id');
+    }
 
     public function status()
     {
