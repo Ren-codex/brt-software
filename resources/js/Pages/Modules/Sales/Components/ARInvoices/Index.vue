@@ -13,10 +13,10 @@
                                 <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
+                        <!-- <button class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
                             <span>Create Invoice</span>
-                        </button>
+                        </button> -->
                     </div>
 
                 </div>
@@ -134,7 +134,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2 ">
+        <div class="col-md-3 ">
             <div class="card shadow-lg border-0 text-primary" >
                 <div class="card-header border-0  text-primary" >
                     <h4  >
