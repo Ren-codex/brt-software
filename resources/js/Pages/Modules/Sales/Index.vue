@@ -60,6 +60,10 @@
               <div v-if="activeTab === 'remittance'" class="card shadow-sm p-3">
                 <Remittances :dropdowns="dropdowns" />
               </div>
+
+              <div v-if="activeTab === 'revenue-reports'" class="card shadow-sm p-3">
+                <RevenueReports :dropdowns="dropdowns" />
+              </div>
             </div>
           </transition>
         </div>
@@ -78,9 +82,10 @@ import SalesOrders from "@/Pages/Modules/Sales/Components/SalesOrders/Index.vue"
 import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
 import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
 import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
+import RevenueReports from "@/Pages/Modules/Sales/Components/RevenueReports/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, ARInvoices, Receipts, Remittances },
+  components: { PageHeader, Pagination, SalesOrders, ARInvoices, Receipts, Remittances, RevenueReports },
   props: ['dropdowns'],
   data() {
     return {
@@ -116,6 +121,12 @@ export default {
           label: 'Remittances',
           icon: 'ri-bank-line',
           description: 'Remittance records'
+        },
+        {
+          id: 'revenue-reports',
+          label: 'Revenue Reports',
+          icon: 'ri-bar-chart-line',
+          description: 'Revenue reports'
         },
       ]
     };

@@ -19,6 +19,9 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
 
+    // Make revenue reports available to all authenticated users (not just administrators)
+    Route::get('/api/revenue-reports', [App\Http\Controllers\Modules\RevenueReportController::class, 'index']);
+
     Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
         Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);

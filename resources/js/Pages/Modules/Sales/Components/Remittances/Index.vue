@@ -156,10 +156,10 @@ export default {
             return this.tabIndex === 0 ? 'open' : 'liquidated';
         },
         openRemittance() {
-            return this.lists.filter(r => r.status.name != 'liquidated');
+            return this.lists.filter(r => r.status.slug != 'liquidated');
         },
         liquidatedRemittance() {
-            return this.lists.filter(r => r.status.name === 'liquidated');
+            return this.lists.filter(r => r.status.slug === 'liquidated');
         }
     },
     watch: {
