@@ -354,7 +354,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices'],
+    props: ['dropdowns' , 'invoices' ],
     data(){
         return {
             currentUrl: window.location.origin,

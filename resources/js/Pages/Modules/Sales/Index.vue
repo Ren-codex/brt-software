@@ -84,7 +84,7 @@ export default {
   props: ['dropdowns'],
   data() {
     return {
-      activeTab: 'sales_orders',
+      activeTab: localStorage.getItem('sales_active_tab') || 'sales_orders',
       filter: {
         keyword: '',
       },
@@ -132,6 +132,7 @@ export default {
   methods: {
     changeTab(tab) {
       this.activeTab = tab;
+      localStorage.setItem('sales_active_tab', tab);
       this.selectedRow = null;
       this.filter.keyword = '';
     },
