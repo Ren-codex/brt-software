@@ -151,7 +151,7 @@ no<template>
                   </div>
               </div>
             </div>
-        </div>
+    
     </BRow>
     <Create @add="fetch()" :dropdowns="dropdowns" ref="create" />
 </template>
