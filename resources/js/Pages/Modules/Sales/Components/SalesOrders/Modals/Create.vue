@@ -47,6 +47,8 @@
 
                                 </div>
 
+
+
                                 <div class="form-group">
                                     <div class="input-wrapper ">
                                         <label for="customer_id" class="form-label text-center">New</label>
@@ -132,7 +134,23 @@
                                             </td>
                                       
                                             <td class="text-center">
-                                                {{ formatCurrency(getProduct(list.product_id).price) }}
+                                                <b-form-select
+                                                    v-model="list.price_type"
+                                                    :options="priceTypeOptions"
+                                                    value-field="value"
+                                                    text-field="text"
+                                                    size="sm"
+                                                    @change="onPriceTypeChange(index)"
+                                                >
+                                                    <template #first>
+                                                        <b-form-select-option :value="null" disabled>
+                                                            Select Type
+                                                        </b-form-select-option>
+                                                    </template>
+                                                </b-form-select>
+                                            </td>
+                                            <td class="text-center">
+                                                {{ formatCurrency(list.unit_cost) }}
                                             </td>
                                             <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}</td>
                                             <td class="text-center">
@@ -268,6 +286,12 @@ export default {
     computed: {
         availableProducts() {
             return this.dropdowns.products.filter(product => product.available > 0);
+        },
+        priceTypeOptions() {
+            return [
+                { value: 'retail', text: 'Retail Price' },
+                { value: 'wholesale', text: 'Wholesale Price' }
+            ];
         }
     },
     methods: {
@@ -314,6 +338,7 @@ export default {
                 quantity: 1,
                 unit_cost: 0,
                 discount_per_unit: 0,
+                price_type: 'retail', // default to retail per item
             });
         },
 
@@ -346,6 +371,7 @@ export default {
                 quantity: item.quantity,
                 unit_cost: item.unit_cost,
                 discount_per_unit: item.discount_per_unit || 0,
+                price_type: item.price_type || 'retail', // default to retail if not set
             }));
             this.editable = true;
             this.saveSuccess = false;
@@ -442,9 +468,14 @@ export default {
             const product = this.dropdowns.products.find(p => p.value === product_id);
             if (product) {
                 this.form.items[index].batch_code = product.batch_code || null;
-                this.form.items[index].unit_cost = parseFloat(product.price) || 0;
+                const price = this.form.items[index].price_type === 'wholesale' ? product.wholesale_price : product.retail_price;
+                this.form.items[index].unit_cost = parseFloat(price) || 0;
             }
             this.updateItemTotal(index);
+        },
+
+        onPriceTypeChange(index) {
+            this.onProductChange(index);
         },
 
         getPaymentModeIcon(mode) {

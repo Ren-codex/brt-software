@@ -90,6 +90,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return date('F d, Y g:i a', strtotime($value));
     }
 
+    public function getNameAttribute()
+    {
+        return $this->username;
+    }
+
     public function getActivitylogOptions(): LogOptions {
         return LogOptions::defaults()
         ->logOnly(['username','kradworkz','is_active'])

@@ -122,12 +122,32 @@ class DropdownClass
                     return $receivedItem->inventoryStocks->sum('quantity') > 0;
                 })?->receivedStock?->batch_code ?? null;
             }
+            $retail_price = $item->price; // default
+            $wholesale_price = $item->price; // default
+            if ($available_quantity > 0) {
+                $firstReceivedItemWithStock = $item->receivedItems->first(function ($receivedItem) {
+                    return $receivedItem->inventoryStocks->sum('quantity') > 0;
+                });
+                if ($firstReceivedItemWithStock) {
+                    $firstInventoryStock = $firstReceivedItemWithStock->inventoryStocks->first();
+                    if ($firstInventoryStock) {
+                        if ($firstInventoryStock->retail_price) {
+                            $retail_price = $firstInventoryStock->retail_price;
+                        }
+                        if ($firstInventoryStock->wholesale_price) {
+                            $wholesale_price = $firstInventoryStock->wholesale_price;
+                        }
+                    }
+                }
+            }
             return [
                 'value' => $item->id,
                 'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
                 'batch_code' => $batch_code,
                 'available_quantity' => $available_quantity,
-                'price' => $item->price,
+                'retail_price' => $retail_price,
+                'wholesale_price' => $wholesale_price,
+                'price' => $retail_price, // default to retail for backward compatibility
                 'available' => $available_quantity,
             ];
         });

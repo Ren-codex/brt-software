@@ -77,64 +77,113 @@
                 </div>
 
                 <!-- Purchase Orders List -->
-                <PurchaseOrdersTab 
-                  v-else-if="activeTab === 'purchaseOrders'" 
-                  :listPurchaseOrders="listPurchaseOrders" 
-                  :meta="meta"
-                  :links="links" 
-                  :filter="filter" 
-                  :dropdowns="dropdowns" 
-                  @fetch="fetchPurchaseOrders"
-                  @update-keyword="updateKeyword" 
-                  @toast="showToast"
-                  @view-details="openPurchaseOrderDetails"
-                />
+                <div class="row" v-if="activeTab === 'purchaseOrders'">
+                  <div class="col-md-9">
+                    <PurchaseOrdersTab
+                      :listPurchaseOrders="listPurchaseOrders"
+                      :meta="meta"
+                      :links="links"
+                      :filter="filter"
+                      :dropdowns="dropdowns"
+                      @fetch="fetchPurchaseOrders"
+                      @update-keyword="updateKeyword"
+                      @toast="showToast"
+                      @view-details="openPurchaseOrderDetails"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <QuickStatsSidebar
+                      :activeTab="activeTab"
+                      :listProducts="listProducts"
+                      :listPurchaseOrders="listPurchaseOrders"
+                      :listPurchaseRequests="listPurchaseRequests"
+                      :listInventoryStocks="listInventoryStocks"
+                    />
+                  </div>
+                </div>
 
                 <!-- Purchase Request List -->
-                <PurchaseRequestsTab
-                  v-else-if="activeTab === 'purchaseRequests'"
-                  :listPurchaseRequests="listPurchaseRequests"
-                  :listPurchaseOrders="listPurchaseOrders"
-                  :meta="meta"
-                  :links="links"
-                  :filter="filter"
-                  :dropdowns="dropdowns"
-                  @fetch="fetchPurchaseOrders"
-                  @update-keyword="updateKeyword"
-                  @toast="showToast"
-                  @view-details="openPurchaseOrderDetails"
-                />
+                <div class="row" v-if="activeTab === 'purchaseRequests'">
+                  <div class="col-md-9">
+                    <PurchaseRequestsTab
+                      :listPurchaseRequests="listPurchaseRequests"
+                      :listPurchaseOrders="listPurchaseOrders"
+                      :meta="meta"
+                      :links="links"
+                      :filter="filter"
+                      :dropdowns="dropdowns"
+                      @fetch="fetchPurchaseOrders"
+                      @update-keyword="updateKeyword"
+                      @toast="showToast"
+                      @view-details="openPurchaseOrderDetails"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <QuickStatsSidebar
+                      :activeTab="activeTab"
+                      :listProducts="listProducts"
+                      :listPurchaseOrders="listPurchaseOrders"
+                      :listPurchaseRequests="listPurchaseRequests"
+                      :listInventoryStocks="listInventoryStocks"
+                    />
+                  </div>
+                </div>
 
-                <ProductsTab 
-                  v-else-if="activeTab === 'products'" 
-                  :listProducts="listProducts" 
-                  :meta="meta" 
-                  :links="links"
-                  :filter="filter" 
-                  :dropdowns="dropdowns" 
-                  @fetch="fetchProducts" 
-                  @update-keyword="updateKeyword"
-                  @toast="showToast" 
-                />
+                <div class="row" v-if="activeTab === 'products'">
+                  <div class="col-md-9">
+                    <ProductsTab
+                      :listProducts="listProducts"
+                      :meta="meta"
+                      :links="links"
+                      :filter="filter"
+                      :dropdowns="dropdowns"
+                      @fetch="fetchProducts"
+                      @update-keyword="updateKeyword"
+                      @toast="showToast"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <QuickStatsSidebar
+                      :totalProducts="listProducts.length"
+                      :totalPurchaseOrders="listPurchaseOrders.length"
+                      :totalStockItems="listInventoryStocks.length"
+                      :inventoryValue="calculateInventoryValue()"
+                      :pendingRequests="listPurchaseRequests.length"
+                      :lowStockItems="calculateLowStockItems()"
+                    />
+                  </div>
+                </div>
 
-                <InventoryStocksTab 
-                  v-else-if="activeTab === 'inventoryStocks'" 
-                  :listInventoryStocks="listInventoryStocks"
-                  :meta="meta" 
-                  :links="links" 
-                  :filter="filter" 
-                  :dropdowns="dropdowns" 
-                  @fetch="fetchInventoryStocks"
-                  @update-keyword="updateKeyword" 
-                  @toast="showToast"
-                  @view-details="openInventoryStockDetails"
-                />
+                <div class="row" v-if="activeTab === 'inventoryStocks'">
+                  <div class="col-md-9">
+                    <InventoryStocksTab
+                      :listInventoryStocks="listInventoryStocks"
+                      :meta="meta"
+                      :links="links"
+                      :filter="filter"
+                      :dropdowns="dropdowns"
+                      @fetch="fetchInventoryStocks"
+                      @update-keyword="updateKeyword"
+                      @toast="showToast"
+                      @view-details="openInventoryStockDetails"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <QuickStatsSidebar
+                      :activeTab="activeTab"
+                      :listProducts="listProducts"
+                      :listPurchaseOrders="listPurchaseOrders"
+                      :listPurchaseRequests="listPurchaseRequests"
+                      :listInventoryStocks="listInventoryStocks"
+                    />
+                  </div>
+                </div>
               </div>
             </transition>
           </div>
         </div>
       </div>
-    
+
     <!-- Toast -->
     <div v-if="isToastVisible" class="inventory-toast">
       <div class="inventory-toast-content">
@@ -159,20 +208,22 @@ import ProductsTab from './Tab/ProductsTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import PurchaseOrderDetails from './Components/PurchaseOrders/View.vue';
 import InventoryStockDetails from './Components/InventoryStocks/View.vue'; // Add this import
+import QuickStatsSidebar from './Components/QuickStatsSidebar.vue';
 import CreatePurchaseOrderModal from './Modal/CreatePurchaseOrderModal.vue';
 import CreateReceivedStockModal from './Modal/CreateReceivedStockModal.vue';
 import Delete from '@/Shared/Components/Modals/Delete.vue';
 
 export default {
   name: "InventoryManagement",
-  components: { 
-    PageHeader, 
-    PurchaseOrdersTab, 
+  components: {
+    PageHeader,
+    PurchaseOrdersTab,
     PurchaseRequestsTab,
-    ProductsTab, 
-    InventoryStocksTab, 
+    ProductsTab,
+    InventoryStocksTab,
     PurchaseOrderDetails,
     InventoryStockDetails,
+    QuickStatsSidebar,
     CreatePurchaseOrderModal,
     CreateReceivedStockModal,
     Delete
@@ -456,6 +507,16 @@ export default {
         this.fetchInventoryStocks();
       }
     }, 500),
+
+    calculateInventoryValue() {
+      return this.listInventoryStocks.reduce((total, stock) => {
+        return total + (stock.retail_price * stock.quantity);
+      }, 0);
+    },
+
+    calculateLowStockItems() {
+      return this.listInventoryStocks.filter(stock => stock.quantity < 10).length;
+    },
   },
 };
 </script>
@@ -519,6 +580,16 @@ export default {
 
 .inventory-sidebar.sidebar-collapsed .inventory-sidebar-tab:hover {
   transform: none;
+}
+
+.inventory-stats-section {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .inventory-stats-section {
+    margin-bottom: 15px;
+  }
 }
 </style>
 
