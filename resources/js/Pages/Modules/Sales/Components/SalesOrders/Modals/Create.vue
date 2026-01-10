@@ -1,6 +1,6 @@
 <template>
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
-        <div class="modal-container modal-xl " @click.stop>
+        <div class="modal-container modal-fullscreen " @click.stop>
             <div class="modal-header ">
                 <h2>{{ editable ? 'Update Supplier' : 'Add Sales Order' }}</h2>
                 <button class="close-btn" @click="hide">
@@ -466,7 +466,7 @@ export default {
 
 <style scoped>
 .modal-container {
-    max-width: 95%;
+    max-width: 100%;
     width: 100%;
     position: relative;
 }
