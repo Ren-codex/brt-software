@@ -16,12 +16,21 @@ class InventoryAdjustmentClass
             DB::beginTransaction();
 
             $inventoryStock = InventoryStocks::findOrFail($request->inventory_stocks_id);
-            $inventoryStock->quantity = $request->new_quantity;
+            if (in_array($request->type, ['received items', 'inventory count'])) {
+                $inventoryStock->quantity += $request->new_quantity;
+            } elseif (in_array($request->type, ['loss', 'damage'])) {
+                $inventoryStock->quantity -= $request->new_quantity;
+                if ($inventoryStock->quantity < 0) {
+                    $inventoryStock->quantity = 0;
+                }
+            } else {
+                $inventoryStock->quantity = $request->new_quantity;
+            }
             $inventoryStock->update();
                 
             $data = InventoryAdjustment::create([
                 'inventory_stocks_id' =>  $request->inventory_stocks_id,
-                'new_quantity' =>  $request->new_quantity,
+                'new_quantity' =>  $inventoryStock->quantity,
                 'previous_quantity' =>  $request->previous_quantity,
                 'reason' =>  $request->reason,
                 'type' =>  $request->type,

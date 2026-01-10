@@ -46,7 +46,7 @@ class InventoryStockClass
                 InventoryAdjustment::create([
                     'inventory_stocks_id' =>  $request->inventory_stocks_id,
                     'new_quantity' =>  $request->retail_price,
-                    'previous_quantity' =>  $inventoryStock->retail_price,
+                    'previous_quantity' =>  $inventoryStock->retail_price || 0,
                     'reason' =>  $request->reason,
                     'type' =>  'update retail price',
                     'adjustment_date' =>  now(),
@@ -58,7 +58,7 @@ class InventoryStockClass
                 InventoryAdjustment::create([
                     'inventory_stocks_id' =>  $request->inventory_stocks_id,
                     'new_quantity' =>  $request->wholesale_price,
-                    'previous_quantity' =>  $inventoryStock->wholesale_price,
+                    'previous_quantity' =>  $inventoryStock->wholesale_price || 0,
                     'reason' =>  $request->reason,
                     'type' =>  'update wholesale price',
                     'adjustment_date' =>  now(),

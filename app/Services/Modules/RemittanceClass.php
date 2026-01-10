@@ -42,14 +42,14 @@ class RemittanceClass
                 'remittance_date' =>  Carbon::now(),
                 'summary' =>  $request->summary,
                 'total_amount' =>  $request->total_amount,
-                'status_id' =>  1,
+                'status_id' =>  11,
                 'created_by_id' =>  Auth::user()->id,
             ]);
 
             if ($request->has('receipts') && is_array($request->receipts)) {
                 foreach ($request->receipts as $receiptId) {
                     Receipt::where('id', $receiptId)->update([
-                        'status_id' => 8,
+                        'status_id' => 12,
                         'remittance_id' => $data->id,
                     ]);
                 }
@@ -108,7 +108,7 @@ class RemittanceClass
             db::beginTransaction();
 
             $data = Remittance::findOrFail($id);
-            $data->status_id = ($request->status == 'Approve') ? 7 : 6;
+            $data->status_id = ($request->status == 'Approve') ? 12 : 6;
             $data->approved_by_id = Auth::user()->id;
             $data->approved_at = Carbon::now();
             $data->remarks = $request->remarks;
@@ -117,7 +117,7 @@ class RemittanceClass
             if($request->status == 'Approve'){
                 $receipts = Receipt::where('remittance_id', $data->id)->get();
                 foreach ($receipts as $receipt) {
-                    $receipt->status_id = 9;
+                    $receipt->status_id = 12;
                     $receipt->update();
                 }
             }

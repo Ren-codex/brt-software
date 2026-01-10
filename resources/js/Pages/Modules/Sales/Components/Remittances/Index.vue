@@ -181,7 +181,7 @@
                             </div>
                             <div class="flex-grow-1 ms-3">
                                 <p class="fw-semibold fs-12 mb-1">Total Amount Remitted</p>
-                                <h4 class="mb-0">₱{{ metrics.total_amount_remitted?.toFixed(2) }}</h4>
+                                <h4 class="mb-0">₱{{ Number(metrics.total_amount_remitted).toFixed(2) }}</h4>
                             </div>
                         </div>
                     </div>
@@ -222,10 +222,10 @@ export default {
             return this.tabIndex === 0 ? 'open' : 'liquidated';
         },
         openRemittance() {
-            return this.lists.filter(r => r.status.name != 'liquidated');
+            return this.lists.filter(r => r.status.slug != 'liquidated');
         },
         liquidatedRemittance() {
-            return this.lists.filter(r => r.status.name === 'liquidated');
+            return this.lists.filter(r => r.status.slug === 'liquidated');
         }
     },
     watch: {

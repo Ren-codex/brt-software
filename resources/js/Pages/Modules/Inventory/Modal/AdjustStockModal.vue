@@ -35,17 +35,22 @@
             </div>
             <span class="error-message" v-if="form.errors.type">{{ form.errors.type }}</span>
           </div>
-          <div class="form-group">
-            <label for="new_quantity" class="form-label">New Quantity</label>
+          <div class="form-group" style="position: relative;">
+            <label for="new_quantity" class="form-label">
+              {{ quantityLabel }}
+            </label>
+            <span style="position: absolute; top: 0; right: 0; font-size: 1.2em; color: #666;">
+              Total: <span style="color: rgb(61, 141, 122);font-size: 1.5em;"><b>{{ adjustedTotal }}</b></span>
+            </span>
             <div class="input-wrapper">
-              <i class="ri-inbox-unarchive-line input-icon"></i>
+              <i :class="inputIcon + ' input-icon'"></i>
               <input
                 type="number"
                 id="new_quantity"
                 v-model="form.new_quantity"
                 class="form-control"
                 min="0"
-                placeholder="Enter new quantity"
+                placeholder="Enter value"
                 :class="{ 'input-error': form.errors.new_quantity }"
                 @change="handleInput('new_quantity')"
               >
@@ -69,7 +74,7 @@
               <i class="ri-close-line"></i>
               Cancel
             </button>
-            <button type="submit" class="btn btn-save" :disabled="form.new_quantity == form.previous_quantity">
+            <button type="submit" class="btn btn-save">
               <i class="ri-save-line"></i>
               Save
             </button>
@@ -101,13 +106,53 @@ export default {
       saveSuccess: false,
     };
   },
+  computed: {
+    quantityLabel() {
+      if (this.form.type === 'received items' || this.form.type === 'inventory count') {
+        return 'Plus Count';
+      } else if (this.form.type === 'loss' || this.form.type === 'damage') {
+        return 'Minus Count';
+      } else {
+        return 'New Count';
+      }
+    },
+    quantityIcon() {
+      if (this.form.type === 'received items' || this.form.type === 'inventory count') {
+        return 'ri-add-line';
+      } else if (this.form.type === 'loss' || this.form.type === 'damage') {
+        return 'ri-subtract-line';
+      } else {
+        return '';
+      }
+    },
+    inputIcon() {
+      if (this.form.type === 'received items' || this.form.type === 'inventory count') {
+        return 'ri-add-line';
+      } else if (this.form.type === 'loss' || this.form.type === 'damage') {
+        return 'ri-subtract-line';
+      } else {
+        return 'ri-inbox-unarchive-line';
+      }
+    },
+    adjustedTotal() {
+      const prev = parseFloat(this.form.previous_quantity) || 0;
+      const newQty = parseFloat(this.form.new_quantity) || 0;
+      if (this.form.type === 'received items' || this.form.type === 'inventory count') {
+        return prev + newQty;
+      } else if (this.form.type === 'loss' || this.form.type === 'damage') {
+        return Math.max(0, prev - newQty);
+      } else {
+        return newQty;
+      }
+    }
+  },
   methods: {
     show() {
         this.form.reset();
         this.saveSuccess = false;
         this.showModal = true;
         this.form.inventory_stocks_id = this.inventoryStock ? this.inventoryStock.id : null;
-        this.form.new_quantity = this.inventoryStock ? this.inventoryStock.quantity : 0;
+        this.form.new_quantity = 0;
         this.form.previous_quantity = this.inventoryStock ? this.inventoryStock.quantity : 0;
         this.form.type = 'inventory count';
     },

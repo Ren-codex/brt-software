@@ -5,13 +5,13 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <b-button @click.stop="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.id == 1">
+                        <b-button @click.stop="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.id == 11">
                             <i class="ri-check-line"></i>
                         </b-button>
                         <b-button @click.stop="onPrint(item.id)" size="sm" class="btn-default me-1">
                             <i class="ri-printer-line"></i>
                         </b-button>
-                        <b-button @click.stop="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.id != 7">
+                        <b-button @click.stop="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.id != 12">
                             <i class="ri-delete-bin-line"></i>
                         </b-button>
                     </div>
