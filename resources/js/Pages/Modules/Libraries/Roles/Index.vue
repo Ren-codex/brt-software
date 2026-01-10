@@ -42,6 +42,8 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Definition</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -52,15 +54,17 @@
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                                 }">
                                     <td>{{ index + 1}}</td>
-                                    <td>{{ list.title }}</td>
+                                    <td>{{ list.name }}</td>
+                                    <td>{{ list.type }}</td>
+                                    <td>{{ list.definition }}</td>
                                     <td>
                                         <div class="action-buttons">
                                             <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                                                 <i class="ri-pencil-line"></i>
                                             </button>
-                                            <button @click="openDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                                            <!-- <button @click="openDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
                                                 <i class="ri-delete-bin-line"></i>
-                                            </button>
+                                            </button> -->
                                         </div>
                                     </td>
                                 </tr>
