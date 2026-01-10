@@ -178,7 +178,7 @@ export default {
   emits: ['fetch'],
   data() {
     return {
-      activeTab: 'purchaseRequests',
+      activeTab: localStorage.getItem('inventory_active_tab') || 'purchaseRequests',
       currentView: 'list',
       filter: {
         keyword: '',
@@ -194,21 +194,21 @@ export default {
       selectedPurchaseOrder: null,
       selectedInventoryStock: null, // Add this
       tabs: [
-        { 
-          id: 'purchaseRequests', 
-          label: 'Purchase Requests', 
+        {
+          id: 'purchaseRequests',
+          label: 'Purchase Requests',
           icon: 'ri-shopping-cart-2-line',
           description: 'Manage purchase requests'
         },
-        { 
-          id: 'purchaseOrders', 
-          label: 'Purchase Orders', 
+        {
+          id: 'purchaseOrders',
+          label: 'Purchase Orders',
           icon: 'ri-box-3-line',
           description: 'List of purchase orders'
         },
-        { 
-          id: 'inventoryStocks', 
-          label: 'Inventory Stocks', 
+        {
+          id: 'inventoryStocks',
+          label: 'Inventory Stocks',
           icon: 'ri-box-3-line',
           description: 'Current stock levels'
         },
@@ -249,17 +249,18 @@ export default {
   methods: {
     changeTab(tab) {
       this.activeTab = tab;
+      localStorage.setItem('inventory_active_tab', tab);
       this.currentView = 'list';
       this.selectedPurchaseOrder = null;
       this.selectedInventoryStock = null; // Clear stock selection
       this.filter.keyword = '';
-      
+
       const url = new URL(window.location);
       url.searchParams.set('tab', tab);
       url.searchParams.delete('po_id');
       url.searchParams.delete('stock_id');
       window.history.pushState({}, '', url);
-      
+
       if (tab === 'products') {
         this.fetchProducts();
       } else if (tab === 'purchaseOrders') {
