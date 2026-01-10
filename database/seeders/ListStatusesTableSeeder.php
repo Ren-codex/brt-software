@@ -148,6 +148,18 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            11 =>
+            array (
+                'id' => 12,
+                'name' => 'For Payment',
+                'slug' => 'for-payment',
+                'description' => 'For Payment status',
+                'text_color' => '#000000',
+                'bg_color' => '#ffc107',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         
