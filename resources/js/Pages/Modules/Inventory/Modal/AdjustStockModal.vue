@@ -74,7 +74,7 @@
               <i class="ri-close-line"></i>
               Cancel
             </button>
-            <button type="submit" class="btn btn-save" :disabled="form.new_quantity == form.previous_quantity">
+            <button type="submit" class="btn btn-save">
               <i class="ri-save-line"></i>
               Save
             </button>
