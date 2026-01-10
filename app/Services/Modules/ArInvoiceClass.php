@@ -84,23 +84,24 @@ class ArInvoiceClass
         $receipt->ar_invoice_id = $ar_invoice->id;
         $receipt->save();
 
-        dd(  $receipt);
-
-
-
         // Update AR Invoice
         $ar_invoice->amount_paid =  $ar_invoice->amount_paid + $request->amount_paid;
         $ar_invoice->balance_due = $ar_invoice->balance_due - $request->amount_paid;
-       
-  
+
+
         if($ar_invoice->balance_due == 0.00){
            $ar_invoice->status_id = 9; // PAID'
         }
         else{
             $ar_invoice->status_id = 11; // PARTIALLY PAID
         }
-        $ar_invoice->update();
-      
+        $ar_invoice->save();
+
+        $receipt = Receipt::findOrFail($receipt->id);
+        $receipt->update([
+            'balance_due' => $ar_invoice->balance_due,
+        ]);
+
         
         return [
             'data' => new ArInvoiceResource($ar_invoice),

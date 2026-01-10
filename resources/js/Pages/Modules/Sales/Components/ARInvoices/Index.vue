@@ -13,27 +13,25 @@
                                 <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
+                        <!-- <button class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
                             <span>Create Invoice</span>
-                        </button>
+                        </button> -->
                     </div>
 
                 </div>
 
       
                 <div class="card-body bg-white mb-3 me-3">
-                    <b-row class="mb-3 ms-1 me-1 ">
-                        <b-col lg>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white">
-                                    <i class="ri-search-line"></i>
-                                </span>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search AR Invoice" class="form-control border-primary">
+                
+                    <div class="search-section">
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                placeholder="Search purchase request..." class="search-input">
+                        </div>
 
-                            </div>
-                        </b-col>
-                    </b-row>
+                    </div>
 
 
                     <div class="table-responsive table-card">
@@ -48,6 +46,7 @@
                                     <th style="width: 12%;" class="text-center border-none">Invoice Date</th>
                                     <th style="width: 12%;" class="text-center border-none">Status</th>
                                     <th style="width: 12%;" class="text-center border-none">Balance Due</th>
+                                    <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
@@ -75,12 +74,13 @@
                                             </b-badge>
                                         </td>
                                         <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
+                                        <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' " @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0" @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
@@ -132,7 +132,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2 ">
+        <div class="col-md-3 ">
             <div class="card shadow-lg border-0 text-primary" >
                 <div class="card-header border-0  text-primary" >
                     <h4  >

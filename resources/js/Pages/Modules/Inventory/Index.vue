@@ -4,12 +4,15 @@
     <PageHeader title="Inventory Management" pageTitle="List" />
     
       <div class="inventory-container">
-        <!-- Minimal Vertical Tabs -->
-        <div class="inventory-sidebar">
-          <div class="inventory-sidebar-header">
-            <i class="ri-stack-line"></i>
-            <h4>Inventory</h4>
-          </div>
+      <!-- Minimal Vertical Tabs -->
+      <div class="inventory-sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
+        <div class="inventory-sidebar-header">
+          <i class="ri-stack-line"></i>
+          <h4 v-if="!isSidebarCollapsed">Inventory</h4>
+          <button class="sidebar-toggle-btn" @click="toggleSidebar" title="Toggle Sidebar">
+            <i :class="isSidebarCollapsed ? 'ri-arrow-right-s-line' : 'ri-arrow-left-s-line'"></i>
+          </button>
+        </div>
           
           <div class="inventory-sidebar-tabs">
             <button 
@@ -22,14 +25,14 @@
               <div class="inventory-tab-icon">
                 <i :class="tab.icon"></i>
               </div>
-              <div class="inventory-tab-text">
+              <div class="inventory-tab-text" v-if="!isSidebarCollapsed">
                 <span class="inventory-tab-title">{{ tab.label }}</span>
                 <span class="inventory-tab-subtitle">{{ tab.description }}</span>
               </div>
             </button>
           </div>
           
-          <div class="inventory-sidebar-footer">
+          <div class="inventory-sidebar-footer" v-if="!isSidebarCollapsed">
             <div class="inventory-stats">
               <div class="inventory-stat-item">
                 <i class="ri-box-3-line"></i>
@@ -178,7 +181,8 @@ export default {
   emits: ['fetch'],
   data() {
     return {
-      activeTab: 'purchaseRequests',
+      isSidebarCollapsed: false,
+      activeTab: localStorage.getItem('inventory_active_tab') || 'purchaseRequests',
       currentView: 'list',
       filter: {
         keyword: '',
@@ -194,21 +198,21 @@ export default {
       selectedPurchaseOrder: null,
       selectedInventoryStock: null, // Add this
       tabs: [
-        { 
-          id: 'purchaseRequests', 
-          label: 'Purchase Requests', 
+        {
+          id: 'purchaseRequests',
+          label: 'Purchase Requests',
           icon: 'ri-shopping-cart-2-line',
           description: 'Manage purchase requests'
         },
-        { 
-          id: 'purchaseOrders', 
-          label: 'Purchase Orders', 
+        {
+          id: 'purchaseOrders',
+          label: 'Purchase Orders',
           icon: 'ri-box-3-line',
           description: 'List of purchase orders'
         },
-        { 
-          id: 'inventoryStocks', 
-          label: 'Inventory Stocks', 
+        {
+          id: 'inventoryStocks',
+          label: 'Inventory Stocks',
           icon: 'ri-box-3-line',
           description: 'Current stock levels'
         },
@@ -247,19 +251,23 @@ export default {
     }
   },
   methods: {
+    toggleSidebar() {
+      this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    },
     changeTab(tab) {
       this.activeTab = tab;
+      localStorage.setItem('inventory_active_tab', tab);
       this.currentView = 'list';
       this.selectedPurchaseOrder = null;
       this.selectedInventoryStock = null; // Clear stock selection
       this.filter.keyword = '';
-      
+
       const url = new URL(window.location);
       url.searchParams.set('tab', tab);
       url.searchParams.delete('po_id');
       url.searchParams.delete('stock_id');
       window.history.pushState({}, '', url);
-      
+
       if (tab === 'products') {
         this.fetchProducts();
       } else if (tab === 'purchaseOrders') {
@@ -451,5 +459,68 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.inventory-sidebar-header {
+  position: relative;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+  border-radius: 6px;
+  color: #6c757d;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px 8px;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(108, 117, 125, 0.1);
+  color: #495057;
+  border-color: rgba(108, 117, 125, 0.5);
+}
+
+.inventory-sidebar {
+  transition: width 0.3s ease;
+}
+
+.inventory-sidebar.sidebar-collapsed {
+  width: 80px;
+}
+
+.inventory-sidebar.sidebar-collapsed .inventory-sidebar-header h4 {
+  display: none;
+}
+
+.inventory-sidebar.sidebar-collapsed .inventory-sidebar-tab {
+  justify-content: center;
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+.inventory-sidebar.sidebar-collapsed .inventory-tab-text {
+  display: none;
+}
+
+.inventory-sidebar-tab {
+  transition: all 0.3s ease;
+}
+
+.inventory-sidebar-tab:hover {
+  background: rgba(0, 123, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.inventory-sidebar.sidebar-collapsed .inventory-sidebar-tab:hover {
+  transform: none;
+}
+</style>
+
 
 

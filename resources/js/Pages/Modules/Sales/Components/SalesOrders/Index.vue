@@ -253,8 +253,8 @@
             </div>
         </div>
         <div class="col-md-3  bg-light">
-            <div class="card shadow-lg border-0 bg-light">
-                <div class="card-header border-0  ">
+            <div class="card shadow-lg border-0 text-primary">
+                <div class="card-header border-0 text-primary">
                     <h4>
                         <i class="ri-dashboard-line "></i> Quick Stats
                         <hr class="mb-0">
@@ -262,71 +262,71 @@
                 </div>
 
                 <div class="card-body">
-                    <div class="metric-card mb-3 p-3 e bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-shopping-cart-line  fs-18"></i>
+                                <span class="avatar-title bg-primary text-white rounded">
+                                    <i class="ri-shopping-cart-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Total Sales Orders</p>
-                                <h4 class="mb-0 ">{{ metrics.total_sales_orders }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Total Sales Orders</p>
+                                <h4 class="mb-0">{{ metrics.total_sales_orders }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-calendar-line  fs-18"></i>
+                                <span class="avatar-title bg-info text-white rounded">
+                                    <i class="ri-calendar-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Today's Orders</p>
-                                <h4 class="mb-0 ">{{ metrics.today_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-time-line  fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Pending Orders</p>
-                                <h4 class="mb-0 ">{{ metrics.pending_orders }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Today's Orders</p>
+                                <h4 class="mb-0">{{ metrics.today_orders }}</h4>
                             </div>
                         </div>
                     </div>
 
-                    <div class="metric-card p-3  bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-time-line  fs-18"></i>
+                                <span class="avatar-title bg-warning text-white rounded">
+                                    <i class="ri-time-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Cancelled Orders</p>
-                                <h4 class="mb-0 ">{{ metrics.cancelled_orders }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Pending Orders</p>
+                                <h4 class="mb-0">{{ metrics.pending_orders }}</h4>
                             </div>
                         </div>
                     </div>
 
-                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
+                    <div class="metric-card mb-3 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-money-dollar-circle-line  fs-18"></i>
+                                <span class="avatar-title bg-danger text-white rounded">
+                                    <i class="ri-close-line fs-18"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Total Revenue</p>
-                                <h4 class="mb-0 ">₱{{ metrics.total_revenue }}</h4>
+                                <p class="fw-semibold fs-12 mb-1">Cancelled Orders</p>
+                                <h4 class="mb-0">{{ metrics.cancelled_orders }}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card p-3 bg-light rounded">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-success text-white rounded">
+                                    <i class="ri-money-dollar-circle-line fs-18"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="fw-semibold fs-12 mb-1">Total Revenue</p>
+                                <h4 class="mb-0">₱{{ metrics.total_revenue }}</h4>
                             </div>
                         </div>
                     </div>
@@ -354,7 +354,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices'],
+    props: ['dropdowns' , 'invoices' ],
     data(){
         return {
             currentUrl: window.location.origin,

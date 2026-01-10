@@ -21,7 +21,7 @@
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
                                 placeholder="Search purchase request..." class="search-input">
                         </div>
 
@@ -40,7 +40,7 @@
                                     <th style="width: 12%;" class="text-center border-none">Amount Balance</th>
                                     <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
                                     <th style="width: 12%;" class="text-center border-none">Payment Mode</th>
-               
+                                    <th style="width: 12%;" class="text-center border-none">Status</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
@@ -55,35 +55,19 @@
                                         <td class="text-center fw-semibold">{{ list.receipt_number }}</td>
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.receipt_date }}</td>
+                                        <td class="text-center">{{ list.balance_due }}</td>
                                         <td class="text-center">₱{{ list.amount_paid }}</td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">
-                                            <span class="badge" :class="list.status?.slug === 'paid' ? 'bg-success' : 'bg-warning'">
+                                            <span
+                                                :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
                                                 {{ list.status?.name || 'Unknown' }}
                                             </span>
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button v-if="list.status?.slug == 'delivered'" @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary" v-b-tooltip.hover title="Sales Adjustment" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-refund-line"></i>
-                                                </b-button>
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
-                                                </b-button>
-                                                <b-button v-if="list.status?.slug == 'pending'"
-                                                         @click.stop="openEdit(list,index)" variant="outline-primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-pencil-fill"></i>
-                                                </b-button>
-                                                <b-button v-if="list.status?.slug != 'approved' && $page.props.roles.includes('Sales Manager')"
-                                                 @click.stop="onApproval(list.id)" variant="outline-primary" v-b-tooltip.hover title="Approve" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-check-line"></i>
-                                                </b-button>
-                                                <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' && list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-close-line"></i>
-                                                </b-button>
-
-                                                <b-button v-if="list.status?.slug == 'approved'" @click.stop="onPayment(list.id)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
                                         </td>
@@ -263,7 +247,9 @@ export default {
             .catch(err => console.log(err));
         },
 
-
+        onPrint(id) {
+            window.open(`/sales-orders/${id}?option=print&type=receipt`);
+        },
 
          getCustomer(customer_id){
             const product = this.dropdowns.customers.find(u => u.value === customer_id);

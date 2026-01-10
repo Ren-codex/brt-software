@@ -47,6 +47,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::post('/inventory-stocks/{id}/update-price', [App\Http\Controllers\InventoryStockController::class, 'update']);
 
         Route::get('/receipts', [App\Http\Controllers\Libraries\ReceiptController::class, 'index']);
+        Route::get('/receipts/{id}/print', [App\Http\Controllers\Libraries\ReceiptController::class, 'print']);
         Route::resource('/remittances', App\Http\Controllers\RemittanceController::class);
         Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
         Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
