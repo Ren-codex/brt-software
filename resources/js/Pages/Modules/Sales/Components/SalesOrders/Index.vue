@@ -21,21 +21,7 @@
 
                 </div>
                 <div class="card-body m-2 p-3">
-                    <!-- <b-row class="mb-3 ms-1 me-1">
-                        <b-col lg>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white border-primary">
-                                    <i class="ri-search-line"></i>
-                                </span>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                    placeholder="Search Sales Order" class="form-control border-primary">
-                                <b-button type="button" variant="primary" @click="openCreate"
-                                    class="d-flex align-items-center">
-                                    <i class="ri-add-circle-fill me-1"></i> Create Order
-                                </b-button>
-                            </div>
-                        </b-col>
-                    </b-row> -->
+                   
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>

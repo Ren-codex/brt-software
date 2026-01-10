@@ -22,24 +22,17 @@
                         </button>
                     </div>
                 </div>
-                <div class="library-card-body">
+               <div class="card-body m-2 p-3">
                     <div class="search-section">
-                        <div class="input-group mb-1">
-                            <span class="input-group-text"> <i class="ri-search-line search-icon"></i></span>
-                            <input type="text" v-model="filter.keyword" placeholder="Search User" class="form-control"
-                                style="width: 20%;">
-                            <Multiselect class="white" style="width: 13%;" :options="dropdowns.statuses"
-                                v-model="filter.status" label="name" :searchable="true" placeholder="Select Status" />
-                            <span @click="refresh()" class="input-group-text" v-b-tooltip.hover title="Refresh"
-                                style="cursor: pointer;">
-                                <i class="bx bx-refresh search-icon"></i>
-                            </span>
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                placeholder="Search Employee..." class="search-input">
                         </div>
+
                     </div>
-                </div>
-                <div class="card-body bg-white rounded-bottom">
-                    <div class="table-responsive table-card"
-                        style="margin-top: -39px; height: calc(100vh - 465px); overflow: auto;">
+
+                    <div style="overflow: auto;">
                         <table class="table align-middle table-striped table-centered mb-0">
                             <thead class="table-light thead-fixed">
                                 <tr class="fs-11">
@@ -76,73 +69,9 @@
                                         <span v-if="list.is_active" class="badge bg-success">Active</span>
                                         <span v-else class="badge bg-danger">Inactive</span>
                                     </td>
-                                    <td class="text-end">
-                                        <div class="d-flex gap-3 justify-content-center">
+                                   
 
-                                            <div class="dropdown" @click.stop>
-                                                <button
-                                                    class="btn btn-light btn-icon btn-sm dropdown material-shadow-none"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false"> <i
-                                                        class="ri-more-fill align-bottom"></i> </button>
-                                                <ul class="dropdown-menu dropdownmenu-primary dropdown-menu-end">
-                                                    <!-- <li>
-                                                        <Link :href="`/users/${list.code}`" class="dropdown-item d-flex align-items-center" role="button">
-                                                            <i class="ri-eye-fill me-2"></i> View
-                                                        </Link>
-                                                    </li> -->
-                                                    <li>
-                                                        <a @click="openUpdate(list, index)"
-                                                            class="dropdown-item d-flex align-items-center"
-                                                            role="button">
-                                                            <i class="ri-edit-2-fill me-2"></i> Update
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <hr class="dropdown-divider">
-                                                    </li>
-                                                    <li>
-                                                        <a @click="openRole(list, index)"
-                                                            class="dropdown-item d-flex align-items-center"
-                                                            role="button">
-                                                            <i class="ri-group-2-line me-2"></i> Set Roles
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <hr class="dropdown-divider">
-                                                    </li>
-                                                    <li>
-                                                        <a @click="openActivation('activation', list, index)"
-                                                            class="dropdown-item d-flex align-items-center"
-                                                            :class="(list.is_active) ? 'text-danger' : 'text-success'"
-                                                            href="#removeFileItemModal" data-id="1"
-                                                            data-bs-toggle="modal" role="button">
-                                                            <span v-if="list.is_active"><i
-                                                                    class="ri-lock-2-fill me-2"></i> Deactivate
-                                                                User</span>
-                                                            <span v-else><i class="ri-lock-unlock-line me-2"></i>
-                                                                Activate User</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                            </div>
-                                            </div>
-                                    </td>
-                                    <td>
-                                        <h5 class="fs-13 mb-0 fw-semibold text-primary text-uppercase">{{ list.name }}
-                                        </h5>
-                                        <p class="fs-12 text-muted mb-0">
-                                            <span class="badge bg-primary-subtle text-info me-1"
-                                                v-for="role in list.roles" v-bind:key="role.id">{{ role.name }}</span>
-                                        </p>
-                                    </td>
-                                    <td class="text-center">{{ list.username }}</td>
-                                    <td class="text-center">{{ list.email }}</td>
-                                    <td class="text-center">{{ list.mobile }}</td>
-                                    <td class="text-center">
-                                        <span v-if="list.is_active" class="badge bg-success">Active</span>
-                                        <span v-else class="badge bg-danger">Inactive</span>
-                                    </td>
+                                   
                                     <td>
                                         <div class="action-buttons">
                                             <button @click="viewUser(list)" class="action-btn action-btn-view"
@@ -170,8 +99,9 @@
                         </table>
                     </div>
                 </div>
-                <div class="pagination-section">
-                    <Pagination v-if="meta" @fetch="fetch" :lists="lists.length" :links="links" :pagination="meta" />
+                <div class="card-footer">
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
+                        :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>

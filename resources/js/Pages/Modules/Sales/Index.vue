@@ -45,7 +45,7 @@
       <!-- Main Content -->
       <div class="inventory-main">
         <!-- Tab Content -->
-        <div class="inventory-main-content">
+        <div>
           <transition name="inventory-fade" mode="out-in">
             <div :key="activeTab" class="inventory-tab-content">
               <div v-if="activeTab === 'sales_orders'" class="shadow-sm p-3">

@@ -85,6 +85,7 @@
                                                     class="password-toggle" 
                                                     type="button" 
                                                     @click="togglePassword = !togglePassword"
+                                                    style="width: auto!important;"
                                                 >
                                                     <i :class="togglePassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
                                                 </BButton>
@@ -105,11 +106,11 @@
                                                     Remember me
                                                 </label>
                                             </div>
-                                            <div>
+                                            <!-- <div>
                                                 <Link href="/forgot-password" class="forgot-password-link">
                                                     Forgot Password?
                                                 </Link>
-                                            </div>
+                                            </div> -->
                                         </div>
 
                                         <!-- Submit Button -->
@@ -120,6 +121,7 @@
                                                 type="submit" 
                                                 :class="{ 'opacity-25': form.processing }" 
                                                 :disabled="form.processing"
+                                                style="justify-content: center!important;"
                                             >
                                                 <span v-if="!form.processing">Sign In</span>
                                                 <span v-else>
