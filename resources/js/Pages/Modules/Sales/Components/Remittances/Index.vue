@@ -1,6 +1,6 @@
 <template>
     <BRow>
-        <div class="col-md-9">
+        <div class="col-md-9 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                     <div class="d-flex align-items-center justify-content-between">
@@ -21,7 +21,7 @@
 
                 </div>
             
-                <div class="card-body bg-white">
+                <div class="card-body bg-white m-2 p-3">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>

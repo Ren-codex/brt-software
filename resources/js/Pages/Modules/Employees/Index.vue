@@ -151,9 +151,9 @@ no<template>
                   </div>
               </div>
             </div>
+        </div>
     </BRow>
-    <Create  @add="fetch()" :dropdowns="dropdowns" ref="create"/>
-    <DeleteModal ref="deleteModal" :title="deleteModalTitle" :message="deleteModalMessage" />
+    <Create @add="fetch()" :dropdowns="dropdowns" ref="create" />
 </template>
 <script>
 import _ from 'lodash';
@@ -166,7 +166,7 @@ import Create from './Modals/Create.vue';
 export default {
     components: { PageHeader, Pagination, Multiselect, Create, DeleteModal },
     props: ['dropdowns'],
-    data(){
+    data() {
         return {
             currentUrl: window.location.origin,
             lists: [],
@@ -183,42 +183,42 @@ export default {
         }
     },
     watch: {
-        "filter.keyword"(newVal){
+        "filter.keyword"(newVal) {
             this.checkSearchStr(newVal);
         }
     },
-    created(){
-       this.fetch();
+    created() {
+        this.fetch();
     },
     methods: {
-        checkSearchStr: _.debounce(function(string) {
+        checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
-        fetch(page_url){
+        fetch(page_url) {
             page_url = page_url || '/employees';
-            axios.get(page_url,{
-                params : {
+            axios.get(page_url, {
+                params: {
                     keyword: this.filter.keyword,
-                    count: 10, 
+                    count: 10,
                     option: 'lists'
                 }
             })
-            .then(response => {
-                if(response){
-                    this.lists = response.data.data;
-                    this.meta = response.data.meta;
-                    this.links = response.data.links;          
-                }
-            })
-            .catch(err => console.log(err));
+                .then(response => {
+                    if (response) {
+                        this.lists = response.data.data;
+                        this.meta = response.data.meta;
+                        this.links = response.data.links;
+                    }
+                })
+                .catch(err => console.log(err));
         },
-        openCreate(){
+        openCreate() {
             this.$refs.create.show();
         },
 
-        openEdit(data,index){
+        openEdit(data, index) {
             this.selectedRow = index;
-            this.$refs.create.edit(data , index);
+            this.$refs.create.edit(data, index);
         },
 
         toggleActive(data) {
@@ -269,4 +269,3 @@ export default {
     }
 }
 </script>
-

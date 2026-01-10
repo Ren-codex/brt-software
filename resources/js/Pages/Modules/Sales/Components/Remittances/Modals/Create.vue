@@ -11,18 +11,21 @@
                     <i class="ri-checkbox-circle-fill"></i>
                     <span>Your information has been saved successfully!</span>
                 </div>
-                
+
                 <form @submit.prevent="submit">
                     <div class="mb-3 d-flex align-items-center gap-2">
-                        <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt" class="form-control" />
-                        <b-button size="sm" variant="outline-primary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</b-button>
+                        <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt"
+                            class="form-control" />
+                        <b-button size="sm" variant="outline-primary" @click="toggleSelectAll">{{ allSelected ?
+                            'Unselect All' : 'Select All' }}</b-button>
                     </div>
 
                     <div class="table-responsive" style="max-height: 180px; overflow:auto;">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width:40px"><input type="checkbox" :checked="allSelected" @change="toggleSelectAll" /></th>
+                                    <th style="width:40px"><input type="checkbox" :checked="allSelected"
+                                            @change="toggleSelectAll" /></th>
                                     <th>#</th>
                                     <th>Receipt No.</th>
                                     <th>Customer</th>
@@ -124,7 +127,7 @@ export default {
                 total_amount: 0,
             }),
             saveSuccess: false,
-        }; 
+        };
     },
     computed: {
         allSelected() {
@@ -167,24 +170,24 @@ export default {
                     count: 100
                 }
             })
-            .then(res => {
-                if (res && res.data) {
-                    // Assume data is array
-                    this.orders = res.data.data || res.data;
-                    // Reset selectedIds to only those still present
-                    this.selectedIds = this.selectedIds.filter(id => this.orders.find(o => o.id === id));
-                    // apply client-side filter (displayed list)
-                    this.applyFilter();
-                }
-            })
-            .catch(err => console.error(err));
+                .then(res => {
+                    if (res && res.data) {
+                        // Assume data is array
+                        this.orders = res.data.data || res.data;
+                        // Reset selectedIds to only those still present
+                        this.selectedIds = this.selectedIds.filter(id => this.orders.find(o => o.id === id));
+                        // apply client-side filter (displayed list)
+                        this.applyFilter();
+                    }
+                })
+                .catch(err => console.error(err));
         },
         applyFilter() {
             if (!this.keyword) {
                 this.filteredOrders = this.orders;
             } else {
                 const kw = this.keyword.toLowerCase();
-                this.filteredOrders = this.orders.filter(o => ((o.receipt_number || '') + ' ' + (o.customer?.name || '' ) + ' ' + (o.payment_mode || '')).toLowerCase().includes(kw));
+                this.filteredOrders = this.orders.filter(o => ((o.receipt_number || '') + ' ' + (o.customer?.name || '') + ' ' + (o.payment_mode || '')).toLowerCase().includes(kw));
             }
         },
 
@@ -217,7 +220,7 @@ export default {
                         this.saveSuccess = false;
                         this.submitting = false;
                     }, 1500);
-                    
+
                 },
             });
         }
@@ -226,10 +229,48 @@ export default {
 </script>
 
 <style scoped>
-.modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);z-index:50}
-.modal-container{background:#fff;border-radius:8px;overflow:hidden;width:100%;}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee}
-.modal-body{padding:16px}
-.close-btn{background:transparent;border:0}
-.form-actions .btn{min-width:140px}
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 50
+}
+
+.modal-container {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee
+}
+
+.modal-body {
+    padding: 16px
+}
+
+.close-btn {
+    background: transparent;
+    border: 0
+}
+
+.form-actions .btn {
+    min-width: 140px
+}
+@media (max-width: 768px) {
+    .modal-container {
+        max-height: 85vh;
+        overflow-y: auto;
+        margin: 0 10px;
+    }
+}
 </style>
