@@ -39,9 +39,8 @@
                                     <th style="width: 12%;" class="text-center border-none">Payment Date</th>
                                     <th style="width: 12%;" class="text-center border-none">Amount Balance</th>
                                     <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
-                                    <th style="width: 12%;" class="text-center border-none">Amount Balance</th>
                                     <th style="width: 12%;" class="text-center border-none">Payment Mode</th>
-               
+                                    <th style="width: 12%;" class="text-center border-none">Status</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
@@ -60,7 +59,8 @@
                                         <td class="text-center">₱{{ list.amount_paid }}</td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">
-                                            <span class="badge" :class="list.status?.slug === 'paid' ? 'bg-success' : 'bg-warning'">
+                                            <span
+                                                :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
                                                 {{ list.status?.name || 'Unknown' }}
                                             </span>
                                         </td>
@@ -247,7 +247,9 @@ export default {
             .catch(err => console.log(err));
         },
 
-
+        onPrint(id) {
+            window.open(`/sales-orders/${id}?option=print&type=receipt`);
+        },
 
          getCustomer(customer_id){
             const product = this.dropdowns.customers.find(u => u.value === customer_id);
