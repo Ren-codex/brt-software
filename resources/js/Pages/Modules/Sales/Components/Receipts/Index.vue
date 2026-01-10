@@ -21,7 +21,7 @@
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
                                 placeholder="Search purchase request..." class="search-input">
                         </div>
 

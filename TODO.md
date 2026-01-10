@@ -1,4 +1,11 @@
-- [x] Edit app/Services/Modules/ArInvoiceClass.php to change $ar_invoice->update(); to $ar_invoice->save();
-- [x] Edit app/Http/Controllers/Modules/ArInvoiceController.php to return $result; after the handleTransaction call
-- [x] Edit resources/js/Pages/Modules/Sales/Components/ARInvoices/Modals/Payment.vue to remove this.form.amount_paid = data.amount_paid;
-- [ ] Test the payment functionality
+# Dashboard Enhancement Plan
+
+## Tasks
+- [x] Update DashboardController to fetch and pass statistics data
+- [x] Redesign Dashboard Vue component with statistics cards
+- [x] Add ApexCharts for sales and payment charts
+- [x] Test dashboard display and data accuracy
+
+## Completed
+- [x] Analyze current dashboard and available data
+- [x] Confirm plan with user
