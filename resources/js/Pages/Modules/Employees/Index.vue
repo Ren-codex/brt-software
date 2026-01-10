@@ -1,5 +1,5 @@
-<template>
-    <PageHeader title="EMployee Management" pageTitle="List" />
+no<template>
+    <PageHeader title="Employee Management" pageTitle="List" />
     <BRow>
              <div class="col-md-12">
               <div class="card bg-light-subtle shadow-none border">
@@ -60,12 +60,18 @@
                                   <tr class="fs-11">
                                       <th style="width: 3%;">#</th>
                                       <th style="width: 12%;" >Name</th>
-                                      <th style="width: 12%;" >Email</th>
-                                      <th style="width: 10%;" >Contact</th>
-                                      <th style="width: 12%;" >Address</th>
-                                      <th style="width: 6%;"  class="text-center">Regular</th>
-                                      <th style="width: 6%;" >Active</th>
-                                      <th style="width: 8%;" >Created</th>
+                                      <th style="width: 8%;" >Position</th>
+                                      <th style="width: 8%;" >Email</th>
+                                      <th style="width: 7%;" >Contact</th>
+                                      <th style="width: 7%;" >Birthdate</th>
+                                      <th style="width: 5%;" >Sex</th>
+                                      <th style="width: 5%;" >Religion</th>
+                                      <th style="width: 8%;" >Address</th>
+                                      <th style="width: 4%;"  class="text-center">Regular</th>
+                                      <th style="width: 4%;"  class="text-center">Blacklisted</th>
+                                      <th style="width: 4%;" >Active</th>
+                                
+                                      <th style="width: 6%;" >Created</th>
                                       <th style="width: 8%;" class="text-center">Actions</th>
                                   </tr>
                               </thead>
@@ -81,18 +87,36 @@
                                         {{ index + 1}}
                                       </td>
 
-                                      <td >{{ list.name }}</td>
-                                      <td >{{ list.email || '-' }}</td>
-                                      <td >{{ list.contact_number }}</td>
-                                      <td >{{ list.address }}</td>
+                                      <td>
+                                          <div class="d-flex align-items-center">
+                                              <div class="avatar-xs me-2">
+                                                  <img v-if="list.avatar" :src="'/storage/' + list.avatar" alt="Avatar" class="rounded-circle avatar-xs">
+                                                  <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
+                                                      <i class="ri-user-line text-muted"></i>
+                                                  </div>
+                                              </div>
+                                              <span>{{ list.fullname }}</span>
+                                          </div>
+                                      </td>
+                                      <td>{{ list.position ? list.position.title : '-' }}</td>
+                                      <td>{{ list.email || '-' }}</td>
+                                      <td>{{ list.mobile || '-' }}</td>
+                                      <td>{{ list.birthdate || '-' }}</td>
+                                      <td>{{ list.sex || '-' }}</td>
+                                      <td>{{ list.religion || '-' }}</td>
+                                      <td>{{ list.address || '-' }}</td>
 
-
-                                      <td  class="text-center">
+                                      <td class="text-center">
                                         <i v-if="list.is_regular === 1" class="ri-check-line text-success fs-16"></i>
                                         <i v-else class="ri-close-line text-muted fs-16"></i>
                                       </td>
 
-                                      <td >
+                                      <td class="text-center">
+                                        <i v-if="list.is_blacklisted === 1" class="ri-close-line text-danger fs-16"></i>
+                                        <i v-else class="ri-check-line text-success fs-16"></i>
+                                      </td>
+
+                                      <td>
                                         <b-form-checkbox
                                           :checked="list.is_active === 1"
                                           @change="toggleActive(list)"
@@ -101,7 +125,9 @@
                                         />
                                       </td>
 
-                                      <td >
+                                   
+
+                                      <td>
                                         {{ list.created_at }}
                                       </td>
 
@@ -110,9 +136,9 @@
                                               <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                   <i class="ri-pencil-fill"></i>
                                               </b-button>
-                                              <b-button @click="onDelete(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
+                                              <!-- <b-button @click="onDelete(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
                                                   <i class="ri-delete-bin-line"></i>
-                                              </b-button>
+                                              </b-button> -->
                                           </div>
                                       </td>
                                   </tr>
@@ -126,17 +152,19 @@
               </div>
             </div>
     </BRow>
-    <Create @add="fetch()" :dropdowns="dropdowns" ref="create"/>
+    <Create  @add="fetch()" :dropdowns="dropdowns" ref="create"/>
+    <DeleteModal ref="deleteModal" :title="deleteModalTitle" :message="deleteModalMessage" />
 </template>
 <script>
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
+import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
 import Create from './Modals/Create.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create },
+    components: { PageHeader, Pagination, Multiselect, Create, DeleteModal },
     props: ['dropdowns'],
     data(){
         return {
@@ -149,7 +177,9 @@ export default {
             },
             index: null,
             selectedRow: null,
-            units: []
+            units: [],
+            deleteModalTitle: 'Delete Employee',
+            deleteModalMessage: 'Are you sure you want to delete this employee? This action cannot be undone.'
         }
     },
     watch: {
@@ -191,11 +221,37 @@ export default {
             this.$refs.create.edit(data , index);
         },
 
-        onDelete(id){
-            let title = "Employee";
-            this.$refs.delete.show(id , title, '/employees');
+        toggleActive(data) {
+            axios.patch(`/employees/toggle-active/${data.id}`, {
+                is_active: data.is_active === 1 ? 0 : 1
+            })
+            .then(response => {
+                this.fetch();
+                this.$toast.success(response.data.message);
+            })
+            .catch(err => {
+                console.log(err);
+                this.$toast.error('Failed to update employee status');
+            });
         },
 
+        async onDelete(id) {
+            this.deleteModalTitle = 'Delete Employee';
+            this.deleteModalMessage = 'Are you sure you want to delete this employee? This action cannot be undone.';
+            const confirmed = await this.$refs.deleteModal.show();
+
+            if (confirmed) {
+                axios.delete(`/employees/${id}`)
+                .then(response => {
+                    this.fetch();
+                    this.$toast.success(response.data.message);
+                })
+                .catch(err => {
+                    console.log(err);
+                    this.$toast.error('Failed to delete employee');
+                });
+            }
+        },
 
         selectRow(index) {
             if (this.selectedRow === index) {
@@ -203,6 +259,12 @@ export default {
             } else {
                 this.selectedRow = index;
             }
+        },
+
+        onEmployeeSaved() {
+            this.fetch();
+            
+            //this.$toast.success('Employee saved successfully!');
         }
     }
 }

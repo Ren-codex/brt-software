@@ -4,6 +4,8 @@ import { createApp, h } from 'vue';
 import { createInertiaApp, Link, Head } from '@inertiajs/vue3';
 import BootstrapVueNext from 'bootstrap-vue-next';
 import VueApexCharts from "vue3-apexcharts";
+import Toast from "vue-toastification";
+import "vue-toastification/dist/index.css";
 import Layout from '@/Shared/Layouts/Main.vue'
 import store from "@/Shared/State/store";
 import AOS from 'aos';
@@ -34,6 +36,7 @@ createInertiaApp({
             .use(store)
             .use(BootstrapVueNext)
             .use(VueApexCharts)
+            .use(Toast)
             .component("Link", Link)
             .component("Head", Head)
             .mount(el);

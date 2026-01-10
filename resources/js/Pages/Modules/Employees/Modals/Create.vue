@@ -13,7 +13,37 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form @submit.prevent="submit">
+                <form @submit.prevent="submit" enctype="multipart/form-data">
+                    <!-- Profile Picture Section -->
+                    <div class="form-row">
+                        <div class="form-group form-group-full">
+                            <label class="form-label">Profile Picture</label>
+                            <div class="profile-picture-container">
+                                <div class="profile-picture-preview">
+                                    <img v-if="previewImage" :src="previewImage" alt="Profile Preview" class="profile-image">
+                                    <div v-else class="profile-placeholder">
+                                        <i class="ri-user-line"></i>
+                                    </div>
+                                </div>
+                                <div class="profile-upload-controls">
+                                    <input
+                                        type="file"
+                                        ref="avatarInput"
+                                        @change="handleAvatarChange"
+                                        accept="image/*"
+                                        style="display: none"
+                                    >
+                                    <button type="button" @click="$refs.avatarInput.click()" class="btn btn-outline-primary btn-sm">
+                                        <i class="ri-camera-line"></i> Choose Image
+                                    </button>
+                                    <button type="button" v-if="form.avatar" @click="removeAvatar" class="btn btn-outline-danger btn-sm ms-2">
+                                        <i class="ri-delete-bin-line"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group form-group-half">
                             <label for="firstname" class="form-label">First Name</label>
@@ -21,12 +51,12 @@
                                 <i class="ri-user-line input-icon"></i>
                                 <input
                                     type="text"
-                                    id="name"
+                                    id="firstname"
                                     v-model="form.firstname"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.firstname }"
                                     placeholder="Enter firstname"
-                                    @input="handleInput('name')"
+                                    @input="handleInput('firstname')"
                                 >
                             </div>
                             <span class="error-message" v-if="form.errors.firstname">{{ form.errors.firstname }}</span>
@@ -38,47 +68,47 @@
                                 <i class="ri-user-line input-icon"></i>
                                 <input
                                     type="text"
-                                    id="name"
+                                    id="middlename"
                                     v-model="form.middlename"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.middlename }"
                                     placeholder="Enter middlename"
-                                    @input="handleInput('name')"
+                                    @input="handleInput('middlename')"
                                 >
                             </div>
                             <span class="error-message" v-if="form.errors.middlename">{{ form.errors.middlename }}</span>
                         </div>
 
-                        
+
                         <div class="form-group form-group-half">
-                            <label for="name" class="form-label">Last Name</label>
+                            <label for="lastname" class="form-label">Last Name</label>
                             <div class="input-wrapper">
                                 <i class="ri-user-line input-icon"></i>
                                 <input
                                     type="text"
-                                    id="name"
+                                    id="lastname"
                                     v-model="form.lastname"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.lastname }"
                                     placeholder="Enter lastname"
-                                    @input="handleInput('name')"
+                                    @input="handleInput('lastname')"
                                 >
                             </div>
                             <span class="error-message" v-if="form.errors.lastname">{{ form.errors.lastname }}</span>
                         </div>
 
                          <div class="form-group form-group-half">
-                            <label for="name" class="form-label">Suffix</label>
+                            <label for="suffix" class="form-label">Suffix</label>
                             <div class="input-wrapper">
                                 <i class="ri-user-line input-icon"></i>
                                 <input
                                     type="text"
-                                    id="name"
+                                    id="suffix"
                                     v-model="form.suffix"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.suffix }"
                                     placeholder="Enter suffix"
-                                    @input="handleInput('name')"
+                                    @input="handleInput('suffix')"
                                 >
                             </div>
                             <span class="error-message" v-if="form.errors.suffix">{{ form.errors.suffix }}</span>
@@ -94,29 +124,30 @@
                                 <i class="ri-user-line input-icon"></i>
                                 <input
                                     type="email"
-                                    id="name"
+                                    id="email"
                                     v-model="form.email"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.email }"
                                     placeholder="Enter Email"
-                                    @input="handleInput('name')"
+                                    @input="handleInput('email')"
                                 >
                             </div>
                             <span class="error-message" v-if="form.errors.email">{{ form.errors.email }}</span>
                         </div>
 
                         <div class="form-group form-group-half">
-                            <label for="contact_number" class="form-label">Contact Number</label>
+                            <label for="mobile" class="form-label">Contact Number</label>
                             <div class="input-wrapper">
-                                <i class="ri-user-line input-icon"></i>
+                                <i class="ri-phone-line input-icon"></i>
                                 <input
-                                    type="number"
-                                    id="name"
+                                    type="text"
+                                    id="mobile"
                                     v-model="form.mobile"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.mobile }"
-                                    placeholder="Enter contact number"
-                                    @input="handleInput('name')"
+                                    placeholder="09XXXXXXXXX"
+                                    maxlength="11"
+                                    @input="handleInput('mobile')"
                                 >
                             </div>
                             <span class="error-message" v-if="form.errors.mobile">{{ form.errors.mobile }}</span>
@@ -124,16 +155,16 @@
 
 
                          <div class="form-group form-group-half">
-                            <label for="contact_number" class="form-label">Birthdate</label>
+                            <label for="birthdate" class="form-label">Birthdate</label>
                             <div class="input-wrapper">
                                 <i class="ri-user-line input-icon"></i>
                                 <input
                                     type="date"
-                                    id="name"
+                                    id="birthdate"
                                     v-model="form.birthdate"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.birthdate }"
-                                    @input="handleInput('name')"
+                                    @input="handleInput('birthdate')"
                                 >
                             </div>
                             <span class="error-message" v-if="form.errors.birthdate">{{ form.errors.birthdate }}</span>
@@ -143,15 +174,18 @@
                             <label for="sex" class="form-label">Sex</label>
                             <div class="input-wrapper">
                                 <i class="ri-user-line input-icon"></i>
-                                <input
-                                    type="text"
-                                    id="sex"
-                                    v-model="form.sex"
+                                <b-form-select
                                     class="form-control"
+                                    v-model="form.sex"
+                                    :options="sexOptions"
                                     :class="{ 'input-error': form.errors.sex }"
-                                    placeholder="Enter sex"
-                                    @input="handleInput('sex')"
+                                    text-field="text"
+                                    value-field="value"
                                 >
+                                 <template #first>
+                                    <b-form-select-option :value="null" disabled>Select Sex</b-form-select-option>
+                                </template>
+                                </b-form-select>
                             </div>
                             <span class="error-message" v-if="form.errors.sex">{{ form.errors.sex }}</span>
                         </div>
@@ -208,7 +242,7 @@
                                  <template #first>
                                     <b-form-select-option :value="null" disabled  >Select Position</b-form-select-option>
                                 </template>
-                                </b-form-select>    
+                                </b-form-select>
                             </div>
                             <span class="error-message" v-if="form.errors.position_id">{{ form.errors.position_id }}</span>
                         </div>
@@ -286,17 +320,23 @@ export default {
                 religion: null,
                 address: null,
                 position_id: null,
+                avatar: null,
                 is_regular: 0,
                 is_active: 1,
                 is_blacklisted: 0,
                 option: 'lists'
             }),
+            sexOptions: [
+                { value: 'Male', text: 'Male' },
+                { value: 'Female', text: 'Female' }
+            ],
             togglePassword: false,
             toggleConfirm: false,
             passwordMismatch: false,
             showModal: false,
             editable: false,
             saveSuccess: false,
+            previewImage: null,
         }
     },
     methods: { 
@@ -305,6 +345,7 @@ export default {
             this.form.is_active = 1;
             this.form.is_regular = 0;
             this.form.is_blacklisted = 0;
+            this.previewImage = null;
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
@@ -322,9 +363,11 @@ export default {
             this.form.religion = data.religion;
             this.form.address = data.address;
             this.form.position_id = data.position_id;
+            this.form.avatar = null; // Don't set to filename, only set when new file selected
             this.form.is_regular = data.is_regular;
             this.form.is_active = data.is_active;
             this.form.is_blacklisted = data.is_blacklisted;
+            this.previewImage = data.avatar ? `${this.currentUrl}/storage/${data.avatar}` : null;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
@@ -335,11 +378,12 @@ export default {
                     preserveScroll: true,
                     onSuccess: (response) => {
                         this.saveSuccess = true;
-                        setTimeout(() => {
+                          setTimeout(() => {
                             this.$emit('add', true);
                             this.form.reset();
                             this.hide();
-                        }, 1500);
+                            }, 1500);
+                       
                     },
                 });
             } else {
@@ -351,7 +395,7 @@ export default {
                             this.$emit('add', true);
                             this.form.reset();
                             this.hide();
-                        }, 1500);
+                         }, 1500);
                     },
                 });
             }
@@ -359,9 +403,28 @@ export default {
         handleInput(field) {
             this.form.errors[field] = false;
         },
+        handleAvatarChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.form.avatar = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.previewImage = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+        removeAvatar() {
+            this.form.avatar = null;
+            this.previewImage = null;
+            if (this.$refs.avatarInput) {
+                this.$refs.avatarInput.value = '';
+            }
+        },
         hide() {
             this.form.reset();
             this.form.clearErrors();
+            this.previewImage = null;
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = false;
@@ -392,5 +455,47 @@ export default {
     padding: 1rem;
     border-top: 1px solid #ddd;
     z-index: 10;
+}
+
+/* Profile Picture Styles */
+.profile-picture-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.profile-picture-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px dashed #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+.profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-placeholder {
+    color: #6c757d;
+    font-size: 2rem;
+}
+
+.profile-upload-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-upload-controls button {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
 }
 </style>

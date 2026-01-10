@@ -28,6 +28,12 @@ return new class extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedInteger('position_id')->nullable();
             $table->foreign('position_id')->references('id')->on('list_positions')->onDelete('cascade');
+            $table->string('email', 255)->nullable()->unique();
+            $table->boolean('is_regular')->default(0);
+            $table->boolean('is_active')->default(1);
+            $table->boolean('is_blacklisted')->default(0);
+            $table->unsignedInteger('added_by_id')->nullable();
+            $table->foreign('added_by_id')->references('id')->on('users')->onDelete('set null');
             $table->timestamps();
         });
     }
