@@ -10,6 +10,7 @@ class Receipt extends Model
         'receipt_number',
         'receipt_date',
         'amount_paid',
+        'balance_due',
         'payment_mode',
         'billing_account',
         'status_id',

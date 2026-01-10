@@ -1,0 +1,4 @@
+- [x] Edit app/Services/Modules/ArInvoiceClass.php to change $ar_invoice->update(); to $ar_invoice->save();
+- [x] Edit app/Http/Controllers/Modules/ArInvoiceController.php to return $result; after the handleTransaction call
+- [x] Edit resources/js/Pages/Modules/Sales/Components/ARInvoices/Modals/Payment.vue to remove this.form.amount_paid = data.amount_paid;
+- [ ] Test the payment functionality
