@@ -37,8 +37,9 @@ class EmployeeController extends Controller
     }
 
     public function store(EmployeeRequest $request){
-        $result = $this->handleTransaction(function () use ($request) {
-            return $this->employee->save($request);
+        $userId = auth()->id();
+        $result = $this->handleTransaction(function () use ($request, $userId) {
+            return $this->employee->save($request, $userId);
         });
 
         return back()->with([
@@ -49,7 +50,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function update(Request $request){
+    public function update(EmployeeRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->employee->update($request);
         });
@@ -80,10 +81,8 @@ class EmployeeController extends Controller
             return $this->employee->delete($id);
         });
 
-        return back()->with([
-            'data' => $result['data'],
+        return response()->json([
             'message' => $result['message'],
-            'info' => $result['info'],
             'status' => $result['status'],
         ]);
     }

@@ -44,7 +44,8 @@
                         <th>Product</th>
                         <th>Unit Cost</th>
                         <th>Quantity</th>
-                        <th>Expiration Date</th>                      
+                        <th>Expiration Date</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -75,19 +76,22 @@
                           </span>
                         </td>
                         <td>{{ list.expiration_date ? formatDate(list.expiration_date) : '--' }}</td>
-                        <!-- <td>
+                        <td>
                           <div class="action-buttons" @click.stop>
                             <button @click.stop="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
                               <i class="ri-eye-fill"></i>
+                            </button>
+                            <button @click.stop="updatePrice(list)" class="action-btn action-btn-price" v-b-tooltip.hover title="Update Price">
+                              <i class="ri-price-tag-line"></i>
                             </button>
                             <button v-if="list.quantity > 0" @click.stop="adjustStock(list)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Adjust Stock">
                               <i class="ri-edit-box-line"></i>
                             </button>
                           </div>
-                        </td> -->
+                        </td>
                       </tr>
                       <tr v-if="availableStocks.length === 0">
-                        <td colspan="8" class="text-center py-4">
+                        <td colspan="9" class="text-center py-4">
                           <div class="empty-state">
                             <i class="ri-inbox-line empty-icon"></i>
                             <p class="mb-0">No available stocks found</p>
@@ -168,15 +172,22 @@
         </div>
       </div>
     </div>
+
+    <UpdatePriceModal
+      :inventoryStock="selectedStock"
+      @saved="handlePriceUpdate"
+      ref="updatePriceModal"
+    />
   </BRow>
 </template>
 
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
+import UpdatePriceModal from '../Modal/UpdatePriceModal.vue';
 
 export default {
   name: "InventoryStocksTab",
-  components: { Pagination },
+  components: { Pagination, UpdatePriceModal },
   props: {
     listInventoryStocks: Array,
     meta: Object,
@@ -189,6 +200,7 @@ export default {
     return {
       selectedRow: null,
       localKeyword: this.filter.keyword,
+      selectedStock: null,
     };
   },
   computed: {
@@ -250,6 +262,17 @@ export default {
         maximumFractionDigits: 2
       });
     },
+
+    updatePrice(stock) {
+      this.selectedStock = stock;
+      this.$refs.updatePriceModal.show();
+    },
+
+    handlePriceUpdate() {
+      this.$emit('toast', 'Price updated successfully');
+      this.$emit('fetch');
+      this.selectedStock = null;
+    },
   },
 };
 </script>
@@ -302,6 +325,15 @@ export default {
 
 .action-btn-view:hover {
   background: #d0e7ff;
+}
+
+.action-btn-price {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.action-btn-price:hover {
+  background: #c8e6c9;
 }
 
 .action-btn-edit {

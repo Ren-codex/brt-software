@@ -10,17 +10,23 @@ class EmployeeClass
 {
     public function lists($request){
         $data = EmployeeResource::collection(
-            Employee::when($request->keyword, function ($query,$keyword) {
+            Employee::with(['user', 'position', 'added_by'])
+                ->when($request->keyword, function ($query,$keyword) {
+                    $keyword = strtolower($keyword);
                     $query->where(function($q) use ($keyword) {
-                        $q->whereHas('account', function($q) use ($keyword) {
-                            $q->where('name', 'LIKE', "%{$keyword}%")
-                              ->orWhere('email', 'LIKE', "%{$keyword}%")
-                              ->orWhere('username', 'LIKE', "%{$keyword}%");
-                        })
-                        ->whereHas('position', function($q) use ($keyword) {
-                            $q->where('title', 'LIKE', "%{$keyword}%")
-                              ->orWhere('short', 'LIKE', "%{$keyword}%");
-                        });
+                        $q->whereRaw('LOWER(firstname) LIKE ?', ["%{$keyword}%"])
+                          ->orWhereRaw('LOWER(lastname) LIKE ?', ["%{$keyword}%"])
+                          ->orWhereRaw('LOWER(email) LIKE ?', ["%{$keyword}%"])
+                          ->orWhereRaw('LOWER(mobile) LIKE ?', ["%{$keyword}%"])
+                          ->orWhereRaw('LOWER(address) LIKE ?', ["%{$keyword}%"])
+                          ->orWhereHas('user', function($q) use ($keyword) {
+                              $q->WhereRaw('LOWER(email) LIKE ?', ["%{$keyword}%"])
+                                ->orWhereRaw('LOWER(username) LIKE ?', ["%{$keyword}%"]);
+                          })
+                          ->orWhereHas('position', function($q) use ($keyword) {
+                              $q->whereRaw('LOWER(title) LIKE ?', ["%{$keyword}%"])
+                                ->orWhereRaw('LOWER(short) LIKE ?', ["%{$keyword}%"]);
+                          });
                     });
                 })
                 ->orderBy('created_at', 'DESC')
@@ -29,7 +35,12 @@ class EmployeeClass
         return $data;
     }
 
-    public function save($request){
+    public function save($request, $userId = null){
+        $avatarPath = null;
+        if ($request->hasFile('avatar')) {
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        }
+
         $data = Employee::create([
             'firstname' => $request->firstname,
             'middlename' => $request->middlename,
@@ -42,10 +53,11 @@ class EmployeeClass
             'religion' => $request->religion,
             'address' => $request->address,
             'position_id' => $request->position_id,
+            'avatar' => $avatarPath,
             'is_regular' => $request->is_regular,
             'is_active' => $request->is_active,
             'is_blacklisted' => $request->is_blacklisted,
-            'added_by_id' => auth()->id(),
+            'added_by_id' => $userId ?: auth()->id(),
         ]);
 
         return [
@@ -57,6 +69,12 @@ class EmployeeClass
 
     public function update($request){
         $data = Employee::findOrFail($request->id);
+
+        $avatarPath = $data->avatar;
+        if ($request->hasFile('avatar')) {
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        }
+  
         $data->update([
             'firstname' => $request->firstname,
             'middlename' => $request->middlename,
@@ -69,6 +87,7 @@ class EmployeeClass
             'religion' => $request->religion,
             'address' => $request->address,
             'position_id' => $request->position_id,
+            'avatar' => $avatarPath,
             'is_regular' => $request->is_regular,
             'is_active' => $request->is_active,
             'is_blacklisted' => $request->is_blacklisted,
@@ -89,7 +108,7 @@ class EmployeeClass
 
         return [
             'data' => new EmployeeResource($data),
-            'message' => 'EMployee status updated successfully!',
+            'message' => 'Employee status updated successfully!',
             'info' => "You've successfully updated the employee status"
         ];
     }
@@ -99,8 +118,8 @@ class EmployeeClass
         $data->delete();
 
         return [
-            'data' => $data,
-            'message' => 'Employee deleted was successful!',
+            'data' => null,
+            'message' => 'Employee deleted successfully!',
             'info' => "You've successfully deleted the employee"
         ];
     }
