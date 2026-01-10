@@ -30,6 +30,8 @@ return new class extends Migration
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
             $table->unsignedInteger('status_id');
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
+            $table->unsignedInteger('sub_status_id')->nullable();
+            $table->foreign('sub_status_id')->references('id')->on('list_statuses')->onDelete('set null');
             $table->timestamps();
         });
     }

@@ -112,11 +112,13 @@
                             <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
                                 <tr class="fs-12 fw-bold text-muted">
                                     <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 12%;" class="text-center border-none">Order Number</th>
-                                    <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 12%;" class="text-center border-none">Date</th>
-                                    <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 12%;" class="text-center border-none">Total Amount</th>
+                                    <th style="width: 10%;" class="text-center border-none">Order Number</th>
+                                    <th style="width: 10%;" class="text-center border-none">Customer</th>
+                                    <th style="width: 10%;" class="text-center border-none">Date</th>
+                                    <th style="width: 10%;" class="text-center border-none">Status</th>
+                                    <th style="width: 10%;" class="text-center border-none">Substatus</th>
+                                    <th style="width: 10%;" class="text-center border-none">Total Amount</th>
+                                    <th style="width: 8%;" class="text-center border-none">Paid %</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
@@ -141,10 +143,28 @@
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
                                         </td>
+                                          <td class="text-center">
+                                            <span
+                                                v-if="list.sub_status?.name"
+                                                :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
+                                                {{ list.sub_status?.name  }}
+                                            </span>
+                                        </td>
                                         <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <div class="progress" style="width: 60px; height: 8px; margin-right: 8px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" 
+                                                         :style="{ width: calculatePercentagePaid(list) + '%' }" 
+                                                         :aria-valuenow="calculatePercentagePaid(list)" 
+                                                         aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <small class="text-muted">{{ calculatePercentagePaid(list) }}%</small>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button v-if="list.status?.slug == 'delivered'"
+                                                <b-button v-if="list.status?.slug == 'for-payment'"
                                                     @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary"
                                                     v-b-tooltip.hover title="Sales Adjustment" size="sm"
                                                     class="btn-icon rounded-circle">
@@ -155,7 +175,7 @@
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.slug == 'pending'"
+                                                <b-button v-if="list.status?.slug == 'for-payment'"
                                                     @click.stop="openEdit(list, index)" variant="outline-primary"
                                                     v-b-tooltip.hover title="Edit" size="sm"
                                                     class="btn-icon rounded-circle">
@@ -532,6 +552,14 @@ export default {
         getProduct(product_id) {
             const product = this.dropdowns.products.find(u => u.value === product_id);
             return product ? product : [];
+        },
+
+        calculatePercentagePaid(list) {
+            if (!list.total_amount || list.total_amount == 0) return 0;
+            // Calculate total paid as total_amount minus the remaining balance_due
+            const balanceDue = list.invoices && list.invoices.length > 0 ? list.invoices[0].balance_due || 0 : list.total_amount;
+            const totalPaid = list.total_amount - balanceDue;
+            return Math.min(Math.round((totalPaid / list.total_amount) * 100), 100);
         },
     }
 }

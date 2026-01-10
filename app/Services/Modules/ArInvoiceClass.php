@@ -89,11 +89,20 @@ class ArInvoiceClass
         $ar_invoice->balance_due = $ar_invoice->balance_due - $request->amount_paid;
 
 
+        // fetch Sales order
+        $sales_order = SalesOrder::findOrFail($ar_invoice->sales_order_id);
+
         if($ar_invoice->balance_due == 0.00){
            $ar_invoice->status_id = 9; // PAID'
+            $sales_order->update([
+                'status_id' => 10,// CLOSED,
+            ]);
         }
         else{
             $ar_invoice->status_id = 11; // PARTIALLY PAID
+            $sales_order->update([
+                'status_id' => 11,// PARTIALLY PAID
+            ]);
         }
         $ar_invoice->save();
 

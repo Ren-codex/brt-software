@@ -25,9 +25,13 @@ class SalesOrderClass
 
     public function lists($request){
         $data = SalesOrderResource::collection(
-            SalesOrder::when($request->keyword, function ($query,$keyword) {
-                    $query->where('name', 'LIKE', "%{$keyword}%")
+            SalesOrder::with('invoices')
+                ->when($request->keyword, function ($query,$keyword) {
+                    $query->where('so_number', 'LIKE', "%{$keyword}%")
                           ->orWhereHas('status', function($q) use ($keyword){
+                              $q->where('name', 'LIKE', "%{$keyword}%");
+                          })
+                          ->orWhereHas('customer', function($q) use ($keyword){
                               $q->where('name', 'LIKE', "%{$keyword}%");
                           });
                 })
@@ -52,7 +56,7 @@ class SalesOrderClass
         $data->order_date = $request->order_date;
         $data->customer_id = $request->customer_id;
         $data->added_by_id = auth()->user()->id;
-        $data->status_id = 1; //set to pending
+        $data->status_id = 12; //set to "For Payment"
         $data->save();
 
         $totalAmount = 0;
