@@ -20,6 +20,7 @@ class ReceiptResource extends JsonResource
             'customer_id' => $this->customer_id,
             'customer' => $this->customer,
             'ar_invoice_id' => $this->ar_invoice_id,
+            'status' => $this->status,
             'created_at' => Carbon::parse($this->created_at)->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at,
         ];
