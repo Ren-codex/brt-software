@@ -23,17 +23,15 @@
 
       
                 <div class="card-body bg-white mb-3 me-3">
-                    <b-row class="mb-3 ms-1 me-1 ">
-                        <b-col lg>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white">
-                                    <i class="ri-search-line"></i>
-                                </span>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search AR Invoice" class="form-control border-primary">
+                
+                    <div class="search-section">
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                placeholder="Search purchase request..." class="search-input">
+                        </div>
 
-                            </div>
-                        </b-col>
-                    </b-row>
+                    </div>
 
 
                     <div class="table-responsive table-card">
