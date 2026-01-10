@@ -201,7 +201,6 @@ export default {
             this.invoice = data;
             this.form.id = data.id;
             this.form.balance_due = data.balance_due;
-            this.form.amount_paid = data.amount_paid;
             this.title = title;
             this.route = route;
         },

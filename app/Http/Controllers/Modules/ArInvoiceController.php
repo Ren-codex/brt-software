@@ -56,6 +56,13 @@ class ArInvoiceController extends Controller
                 break;
             }
         });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
     }
 
 
