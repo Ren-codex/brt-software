@@ -46,7 +46,6 @@ class PositionController extends Controller
     }
 
     public function store(PositionRequest $request){
-        dd($request);
         $result = $this->handleTransaction(function () use ($request) {
             return $this->position->save($request);
         });

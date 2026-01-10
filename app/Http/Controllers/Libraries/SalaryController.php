@@ -33,7 +33,6 @@ class SalaryController extends Controller
     }
 
     public function store(Request $request){
-        dd($request->all());
         $result = $this->handleTransaction(function () use ($request) {
             return $this->salary->save($request);
         });

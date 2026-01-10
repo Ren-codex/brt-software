@@ -46,7 +46,7 @@ class WelcomeController extends Controller
     $recomputed = hash_hmac('sha256', $clean, $secret);
 
     $match = hash_equals($embedded, $recomputed);
-dd($match);
+    
     return inertia('Public/Verification/Index', [
         'result' => [
             'status'  => $match ? 'valid' : 'tampered',
