@@ -11,7 +11,7 @@ localStorage.setItem('hoverd', false);
  * Vertical layout
  */
 export default {
-  components: { Menu, Footer, Navigation, Configuration, simplebar},
+  components: { Menu, Footer, Navigation, Configuration, simplebar },
   data() {
     return {
       isMenuCondensed: false,
@@ -85,7 +85,7 @@ export default {
   }
 };
 </script>
-  
+
 <template>
   <div id="layout-wrapper">
     <Navigation />
@@ -94,24 +94,41 @@ export default {
       <!-- ========== App Menu ========== -->
       <div class="app-menu navbar-menu">
         <!-- LOGO -->
-        <div class="navbar-brand-box">
+        <div class="navbar-brand-box mt-4">
           <!-- Dark Logo-->
           <Link href="/" class="logo logo-dark">
-            <span class="logo-sm">
-              <img src="@assets/images/logo-sm.png" alt="" height="28" />
-            </span>
-            <span class="logo-lg">
-              <img src="@assets/images/logo-dark.png" alt="" height="30" />
-            </span>
+          <span class="logo-sm">
+            <img src="@assets/images/logo-sm.png" alt="" height="28" />
+          </span>
+          <span class="logo-lg">
+            <img src="@assets/images/logo-dark.png" alt="" height="30" />
+          </span>
           </Link>
           <!-- Light Logo-->
-          <Link href="/" class="logo logo-light">
-            <span class="logo-sm">
-              <img src="@assets/images/logo-sm.png" alt="" height="28" />
-            </span>
-            <span class="logo-lg">
-              <img src="@assets/images/logo-light.png" alt="" height="30" />
-            </span>
+          <Link href="/" class="logo logo-light ">
+          <span class="logo-sm">
+            <img src="@assets/images/logo-sm.png" alt="" height="28" />
+          </span>
+          <span class="logo-lg">
+            <div style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: white;
+                border-radius: 50%;
+                position: relative;
+                height: 50px;
+                width: 50px;
+                overflow: hidden;
+                padding: 2px;">
+
+              <img class="img-fluid" src="@assets/images/brt-logo.png" alt="Bouyant Rice Trading Logo" style="
+                max-width: 100%;
+                max-height: 100%;
+                object-fit: contain;
+                display: block;" />
+            </div>
+          </span>
           </Link>
           <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
             id="vertical-hover" @click="initActiveMenu">
