@@ -21,15 +21,35 @@ class RemittanceController extends Controller
         $this->print = $print;
     }
 
-    public function index(Request $request){   
+    public function index(Request $request){
         switch($request->option){
             case 'lists':
                 return $this->remittance->lists($request);
             break;
-            default:
-                return inertia('Modules/Sales/Components/Remittances/Index'); 
+            case 'dashboard':
+                return $this->getDashboardMetrics();
             break;
-        }   
+            default:
+                return inertia('Modules/Sales/Components/Remittances/Index');
+            break;
+        }
+    }
+
+    private function getDashboardMetrics()
+    {
+        $totalRemittances = \App\Models\Remittance::count();
+        $totalAmountRemitted = \App\Models\Remittance::sum('total_amount');
+        $todayRemittances = \App\Models\Remittance::whereDate('created_at', today())->count();
+        $openRemittances = \App\Models\Remittance::whereHas('status', function($q) {
+            $q->where('name', '!=', 'liquidated');
+        })->count();
+
+        return response()->json([
+            'total_remittances' => $totalRemittances,
+            'total_amount_remitted' => $totalAmountRemitted,
+            'today_remittances' => $todayRemittances,
+            'open_remittances' => $openRemittances
+        ]);
     }
 
     public function store(RemittanceRequest $request){
