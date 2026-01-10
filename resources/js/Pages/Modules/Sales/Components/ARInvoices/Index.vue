@@ -1,6 +1,6 @@
 <template>
     <BRow>
-        <div class="col-md-9">
+        <div class="col-lg-9 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                     <div class="d-flex align-items-center justify-content-between">
@@ -22,16 +22,15 @@
                 </div>
 
       
-                <div class="card-body bg-white mb-3 me-3">
-                
+                <div class="card-body bg-white m-2 p-3">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
                             <input type="text" v-model="filter.keyword" @input="debouncedSearch"
                                 placeholder="Search purchase request..." class="search-input">
                         </div>
-
                     </div>
+                    
 
 
                     <div class="table-responsive table-card">
@@ -132,10 +131,10 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 ">
-            <div class="card shadow-lg border-0 text-primary" >
-                <div class="card-header border-0  text-primary" >
-                    <h4  >
+        <div class="col-lg-3 ">
+            <div class="card shadow-lg border-0 bg-primary">
+                <div class="card-header border-0  bg-primary">
+                    <h4 class="text-white">
                         <i class="ri-dashboard-line "></i> Quick Stats
                         <hr class="mb-0">
                     </h4>

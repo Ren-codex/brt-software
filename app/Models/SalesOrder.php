@@ -11,6 +11,7 @@ class SalesOrder extends Model
         'order_date',
         'customer_id',
         'status_id',
+        'sub_status_id',
         'total_amount',
         'total_discount',
         'added_by_id',
@@ -24,6 +25,11 @@ class SalesOrder extends Model
     public function status()
     {
         return $this->belongsTo(ListStatus::class, 'status_id');
+    }
+
+    public function sub_status()
+    {
+        return $this->belongsTo(ListStatus::class, 'sub_status_id');
     }
 
     public function customer()

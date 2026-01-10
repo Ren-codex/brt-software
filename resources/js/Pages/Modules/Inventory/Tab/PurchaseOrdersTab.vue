@@ -323,7 +323,7 @@ export default {
       if (!status || !status.bg_color) return {};
 
       return {
-        '--hover-color': status.bg_color + '10'
+        '--hover-color': status.bg_color
       };
     },
 

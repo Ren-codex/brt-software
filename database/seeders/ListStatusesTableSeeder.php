@@ -149,9 +149,9 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
 
-            10 => 
+            11 => 
             array (
-                'id' => 11,
+                'id' => 12,
                 'name' => 'Open',
                 'slug' => 'open',
                 'description' => 'Open status',
@@ -161,14 +161,26 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
 
-            11 => 
+            12 => 
             array (
-                'id' => 12,
+                'id' => 13,
                 'name' => 'Liquidated',
                 'slug' => 'liquidated',
                 'description' => 'Liquidated status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#000000',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            13 =>
+            array (
+                'id' => 14,
+                'name' => 'For Payment',
+                'slug' => 'for-payment',
+                'description' => 'For Payment status',
+                'text_color' => '#000000',
+                'bg_color' => '#ffc107',
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),

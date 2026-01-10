@@ -1,7 +1,6 @@
 <template>
     <BRow>
-
-        <div class="col-md-9">
+        <div class="col-lg-9 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                     <div class="d-flex align-items-center justify-content-between">
@@ -21,22 +20,8 @@
                     </div>
 
                 </div>
-                <div class="card-body ">
-                    <!-- <b-row class="mb-3 ms-1 me-1">
-                        <b-col lg>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white border-primary">
-                                    <i class="ri-search-line"></i>
-                                </span>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                    placeholder="Search Sales Order" class="form-control border-primary">
-                                <b-button type="button" variant="primary" @click="openCreate"
-                                    class="d-flex align-items-center">
-                                    <i class="ri-add-circle-fill me-1"></i> Create Order
-                                </b-button>
-                            </div>
-                        </b-col>
-                    </b-row> -->
+                <div class="card-body m-2 p-3">
+                   
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
@@ -113,18 +98,20 @@
                             <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
                                 <tr class="fs-12 fw-bold text-muted">
                                     <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 12%;" class="text-center border-none">Order Number</th>
-                                    <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 12%;" class="text-center border-none">Date</th>
-                                    <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 12%;" class="text-center border-none">Total Amount</th>
+                                    <th style="width: 10%;" class="text-center border-none">Order Number</th>
+                                    <th style="width: 10%;" class="text-center border-none">Customer</th>
+                                    <th style="width: 10%;" class="text-center border-none">Date</th>
+                                    <th style="width: 10%;" class="text-center border-none">Status</th>
+                                    <th style="width: 10%;" class="text-center border-none">Substatus</th>
+                                    <th style="width: 10%;" class="text-center border-none">Total Amount</th>
+                                    <th style="width: 8%;" class="text-center border-none">Paid %</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
                                 <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" :class="{
-                                        'bg-primary bg-opacity-10': index === selectedRow,
+                                        'bg-primary bg-opacity-10 ': index === selectedRow,
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
@@ -137,15 +124,33 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
+                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                                <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
+                                                {{ list.status ? list.status.name : '' }}
+                                            </span>
+                                        </td>
+                                          <td class="text-center">
                                             <span
-                                                :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
-                                                {{ list.status?.name || 'Unknown' }}
+                                                v-if="list.sub_status?.name"
+                                                :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
+                                                {{ list.sub_status?.name  }}
                                             </span>
                                         </td>
                                         <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <div class="progress" style="width: 60px; height: 8px; margin-right: 8px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" 
+                                                         :style="{ width: calculatePercentagePaid(list) + '%' }" 
+                                                         :aria-valuenow="calculatePercentagePaid(list)" 
+                                                         aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <small class="text-muted">{{ calculatePercentagePaid(list) }}%</small>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button v-if="list.status?.slug == 'delivered'"
+                                                <b-button v-if="list.status?.slug == 'for-payment'"
                                                     @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary"
                                                     v-b-tooltip.hover title="Sales Adjustment" size="sm"
                                                     class="btn-icon rounded-circle">
@@ -156,7 +161,7 @@
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.slug == 'pending'"
+                                                <b-button v-if="list.status?.slug == 'for-payment'"
                                                     @click.stop="openEdit(list, index)" variant="outline-primary"
                                                     v-b-tooltip.hover title="Edit" size="sm"
                                                     class="btn-icon rounded-circle">
@@ -174,7 +179,7 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRows.includes(index)" class="bg-light">
+                                    <tr v-if="expandedRows.includes(index)" style="background-color: #c4dad2e0;">
                                         <td colspan="8" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
@@ -246,15 +251,15 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0">
+                <div class="card-footer bg-light border-0 m-3">
                     <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
-        <div class="col-md-3  bg-light">
-            <div class="card shadow-lg border-0 text-primary">
-                <div class="card-header border-0 text-primary">
+        <div class="col-lg-3">
+            <div class="card shadow-lg border-0" >
+                <div class="card-header border-0  ">
                     <h4>
                         <i class="ri-dashboard-line "></i> Quick Stats
                         <hr class="mb-0">
@@ -491,7 +496,16 @@ export default {
                 })
                 .catch(err => console.log(err));
         },
+        getStatusStyle(status) {
+            if (!status) return {};
 
+            return {
+                color: status.text_color || '#000000',
+                backgroundColor: status.bg_color || '#ffffff',
+                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
+                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
+            };
+        },
         fetchStock() {
             axios.get('/sales-orders', {
                 params: {
@@ -525,6 +539,28 @@ export default {
             const product = this.dropdowns.products.find(u => u.value === product_id);
             return product ? product : [];
         },
+
+        calculatePercentagePaid(list) {
+            if (!list.total_amount || list.total_amount == 0) return 0;
+            // Calculate total paid as total_amount minus the remaining balance_due
+            const balanceDue = list.invoices && list.invoices.length > 0 ? list.invoices[0].balance_due || 0 : list.total_amount;
+            const totalPaid = list.total_amount - balanceDue;
+            return Math.min(Math.round((totalPaid / list.total_amount) * 100), 100);
+        },
     }
 }
 </script>
+<style scoped>
+    .status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  cursor: default;
+    }
+</style>

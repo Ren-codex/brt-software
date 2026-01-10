@@ -39,18 +39,15 @@
                     </div>
                     
                     <div class="form-row">
-                      <div class="form-group form-group-half">
-                            <label for="type" class="form-label">Type</label>
-                              <div class="input-wrapper">
-                                <i class="ri-align-left input-icon"></i>
-                                <b-form-textarea
-                                    id="textarea-rows"
-                                    placeholder="Enter the reason"
-                                    rows="8"
-                                    v-model="form.reason"
-                                    :class="{ 'input-error': form.errors.reason }"
-                                ></b-form-textarea>
-                            </div>
+                      <div class="form-group">
+                            <label for="reason" class="form-label">Reason</label>
+                            <b-form-textarea
+                                id="textarea-rows"
+                                placeholder="Enter the reason"
+                                rows="8"
+                                v-model="form.reason"
+                                :class="{ 'input-error': form.errors.reason }"
+                            ></b-form-textarea>
                             <span class="error-message" v-if="form.errors.reason">{{ form.errors.reason }}</span>
                         </div>
                     </div>
