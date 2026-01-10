@@ -77,7 +77,7 @@
                 </div>
 
                 <!-- Purchase Orders List -->
-                <div class="row" v-if="activeTab === 'purchaseOrders'">
+                <div class="row" v-if="activeTab === 'purchaseOrders' && currentView === 'list'">
                   <div class="col-md-9">
                     <PurchaseOrdersTab
                       :listPurchaseOrders="listPurchaseOrders"
@@ -103,7 +103,7 @@
                 </div>
 
                 <!-- Purchase Request List -->
-                <div class="row" v-if="activeTab === 'purchaseRequests'">
+                <div class="row" v-if="activeTab === 'purchaseRequests' && currentView === 'list'">
                   <div class="col-md-9">
                     <PurchaseRequestsTab
                       :listPurchaseRequests="listPurchaseRequests"
@@ -154,7 +154,7 @@
                   </div>
                 </div>
 
-                <div class="row" v-if="activeTab === 'inventoryStocks'">
+                <div class="row" v-if="activeTab === 'inventoryStocks' && currentView === 'list'">
                   <div class="col-md-9">
                     <InventoryStocksTab
                       :listInventoryStocks="listInventoryStocks"
