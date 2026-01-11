@@ -50,7 +50,7 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <Link href="/reports" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/reports') }">
                     <i class="ri-bar-chart-2-fill"></i>
@@ -58,7 +58,7 @@
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
-                </li>
+                </li> -->
                 <li class="nav-item">
                     <Link href="/inventory" class="nav-link menu-link"
                     :class="{'active': $page.component.startsWith('Modules/Inventory/Index') }">
@@ -86,7 +86,7 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <Link href="/receipts" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/receipts') }">
                     <i class="ri-file-list-3-fill"></i>
@@ -94,7 +94,7 @@
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
-                </li>
+                </li> -->
 
                 <li class="nav-item">
                     <Link href="/expenses" class="nav-link menu-link"

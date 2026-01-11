@@ -8,10 +8,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="success-alert" v-if="saveSuccess">
-                    <i class="ri-checkbox-circle-fill"></i>
-                    <span>Purchase order has been {{ editable ? 'updated' : 'created' }} successfully.</span>
-                </div>
+              
                 <form @submit.prevent="submit" class="purchase-order-form">
                     <!-- Supplier Section (same as before) -->
                     <div class="form-group">
@@ -58,7 +55,7 @@
 
                             <div class="item-body">
                                 <!-- Product Selection -->
-                                
+
                                 <div class="form-group">
                                     <label>Product</label>
                                     <select v-model="item.product_id" class="form-control"
@@ -154,6 +151,10 @@
                             </div>
                         </div>
                     </div>
+                      <div class="success-alert" v-if="saveSuccess">
+                    <i class="ri-checkbox-circle-fill"></i>
+                    <span>Purchase order has been {{ editable ? 'updated' : 'created' }} successfully.</span>
+                </div>
 
                     <!-- Form Actions -->
                     <div class="form-actions">
@@ -206,7 +207,7 @@ export default {
     },
 
 
-  
+
 
     methods: {
         show() {
@@ -225,7 +226,7 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
         },
-        
+
         edit(data, index) {
             this.form.reset();
             this.form.clearErrors();
@@ -238,22 +239,22 @@ export default {
                 total_cost: item.total_cost || 0,
             })) : [];
             console.log(this.form.items);
-            
+
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
         },
-        
+
         submit() {
             this.form.total_amount = this.totalAmount;
-    
+
             const formattedItems = this.form.items.map(item => ({
                 product_id: item.product_id,
                 quantity: parseInt(item.quantity) || 0,
                 unit_cost: parseInt(item.unit_cost) || 0,
                 total_cost: parseFloat(item.total_cost) || 0,
             }));
-            
+
             this.form.items = formattedItems;
 
             if (this.editable) {
@@ -282,11 +283,11 @@ export default {
                 });
             }
         },
-        
+
         handleInput(field) {
             this.form.errors[field] = false;
         },
-        
+
         hide() {
             this.form.reset();
             this.form.clearErrors();
@@ -294,7 +295,7 @@ export default {
             this.saveSuccess = false;
             this.showModal = false;
         },
-        
+
         addItem() {
             this.form.items.push({
                 product_id: null,
@@ -303,7 +304,7 @@ export default {
                 total_cost: 0,
             });
         },
-        
+
         removeItem(index) {
             if (this.form.items.length > 1) {
                 this.form.items.splice(index, 1);
@@ -316,7 +317,7 @@ export default {
                 };
             }
         },
-        
+
         duplicateItem(index) {
             const itemToDuplicate = { ...this.form.items[index] };
             console.log('Duplicating item:', itemToDuplicate.unit_cost);
@@ -329,13 +330,13 @@ export default {
 
             console.log('New item added:', this.form.items[index + 1]);
         },
-        
+
         calculateTotal(item) {
             const quantity = parseFloat(item.quantity) || 0;
             const unitCost = parseFloat(item.unit_cost) || 0;
             item.total_cost = quantity * unitCost;
         },
-        
+
         adjustQuantity(item, action) {
             let currentQuantity = parseFloat(item.quantity) || 0;
 
@@ -347,14 +348,14 @@ export default {
 
             this.calculateTotal(item);
         },
-        
+
         validateQuantity(item) {
             if (item.quantity < 0) {
                 item.quantity = 0;
                 this.calculateTotal(item);
             }
         },
-        
+
         // FIXED: Update unit cost method
         amount(index, val) {
             this.form.items[index].unit_cost = this.cleanCurrency(val);
@@ -366,7 +367,7 @@ export default {
             // Remove ₱, commas, and spaces
             const cleaned = value.toString().replace(/[^0-9.]/g, "");
             console.log(value);
-            
+
             return parseFloat(cleaned);
         },
 
@@ -384,7 +385,7 @@ export default {
 
 
 <style scoped>
-    .cost-input .form-control {
+.cost-input .form-control {
     padding-left: 1rem !important;
 }
 
@@ -574,6 +575,7 @@ export default {
         opacity: 0;
         transform: translateY(-8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -836,7 +838,7 @@ export default {
 }
 
 .btn-save {
-    background:#3a8674;
+    background: #3a8674;
     color: white;
     box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
 }
@@ -862,6 +864,7 @@ export default {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -922,11 +925,11 @@ export default {
         padding: 0.5rem 0.875rem;
         font-size: 0.75rem;
     }
-    
+
     .item-card {
         padding: 12px;
     }
-    
+
     .summary-section {
         padding: 16px;
     }

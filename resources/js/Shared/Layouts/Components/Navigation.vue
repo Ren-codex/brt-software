@@ -204,13 +204,13 @@ export default {
               <i class="bx bx-fullscreen fs-22"></i>
             </BButton>
           </div>
-
+<!-- 
           <div class="ms-1 header-item d-none d-sm-flex">
             <BButton type="button" variant="ghost-secondary" class="btn-icon btn-topbar rounded-circle light-dark-mode"
               @click="toggleDarkMode">
               <i class="bx bx-moon fs-22"></i>
             </BButton>
-          </div>
+          </div> -->
 
 
           <BDropdown variant="link" class="ms-sm-3 me-3 header-item topbar-user" toggle-class="arrow-none" menu-class="dropdown-menu-end" :offset="{ alignmentAxis: -14, crossAxis: 0, mainAxis: 0 }">
