@@ -45,7 +45,7 @@
                         <th>Unit Cost</th>
                         <th>Quantity</th>
                         <th>Expiration Date</th>
-                        <th>Actions</th>
+                    
                       </tr>
                     </thead>
                     <tbody>
@@ -76,19 +76,7 @@
                           </span>
                         </td>
                         <td>{{ list.expiration_date ? formatDate(list.expiration_date) : '--' }}</td>
-                        <td>
-                          <div class="action-buttons" @click.stop>
-                            <button @click.stop="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
-                              <i class="ri-eye-fill"></i>
-                            </button>
-                            <button @click.stop="updatePrice(list)" class="action-btn action-btn-price" v-b-tooltip.hover title="Update Price">
-                              <i class="ri-price-tag-line"></i>
-                            </button>
-                            <button v-if="list.quantity > 0" @click.stop="adjustStock(list)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Adjust Stock">
-                              <i class="ri-edit-box-line"></i>
-                            </button>
-                          </div>
-                        </td>
+                       
                       </tr>
                       <tr v-if="availableStocks.length === 0">
                         <td colspan="9" class="text-center py-4">

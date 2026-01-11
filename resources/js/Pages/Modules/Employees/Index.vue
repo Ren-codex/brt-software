@@ -2,59 +2,39 @@ no<template>
     <PageHeader title="Employee Management" pageTitle="List" />
     <BRow>
              <div class="col-md-12">
-              <div class="card bg-light-subtle shadow-none border">
-                  <div class="card-header bg-light-subtle">
-                      <div class="d-flex mb-n3">
-                          <div class="flex-shrink-0 me-3">
-                              <div style="height:2.5rem;width:2.5rem;">
-                                  <span class="avatar-title bg-primary-subtle rounded p-2 mt-n1">
-                                      <i class="ri-shopping-cart-line text-primary fs-24"></i>
-                                  </span>
-                              </div>
-                          </div>
-                          <div class="flex-grow-1">
-                              <h5 class="mb-0 fs-14"><span class="text-body">List of Employees</span></h5>
-                              <p class="text-muted text-truncate-two-lines fs-12">A comprehensive list of employees</p>
-                          </div>
-                          <div class="flex-shrink-0" style="width: 45%;">
-                            
-                          </div>
-                      </div>
-                  </div>
-                        <div class="card-body bg-white border-bottom shadow-none">
-                      <b-row class="mb-2 ms-1 me-1" style="margin-top: 12px;">
-                          <b-col lg>
-                              <div class="input-group mb-1">
-                                  <span class="input-group-text"> <i class="ri-search-line search-icon"></i></span>
-                                  <input type="text" v-model="filter.keyword" @input="debouncedSearch" placeholder="Search Employee" class="form-control" style="width: 20%;">
-                                  <b-button type="button" variant="primary" @click="openCreate">
-                                      <i class="ri-add-circle-fill align-bottom me-1"></i> Create
-                                  </b-button>
-                              </div>
-                          </b-col>
-                      </b-row>
-                  </div>
+              <div class="library-card">
+                <div class="library-card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="header-icon">
+                                <i class="ri-shopping-cart-line fs-24"></i>
+                            </div>
+                            <div>
+                                <h4 class="header-title mb-1">List of Employees</h4>
+                                <p class="header-subtitle mb-0">A comprehensive list of employees</p>
+                            </div>
+                        </div>
+                        <button class="create-btn" @click="openCreate">
+                            <i class="ri-add-line"></i>
+                            <span>Employee</span>
+                        </button>
+                    </div>
 
-                  <div class="card bg-white border-bottom shadow-none" no-body>
-                      <div class="d-flex">
-                          <div class="flex-grow-1">
-                              <ul class="nav nav-tabs nav-tabs-custom nav-primary fs-12" role="tablist">
-                                  <li class="nav-item">
-                                      <BLink @click="viewStatus(null,null)" class="nav-link py-3 active" data-bs-toggle="tab" role="tab" aria-selected="true">
-                                      <i class="ri-apps-2-line me-1 align-bottom"></i> All
-                                      </BLink>
-                                  </li>
-                              </ul>
-                          </div>
-                          <div class="flex-shrink-0">
-                              <div class="d-flex flex-wrap gap-2 mt-3">
-                                
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-                  <div class="card-body bg-white rounded-bottom">
-                      <div class="table-responsive table-card" style="margin-top: -39px; overflow: auto;">
+                </div>
+              
+               <div class="card-body m-2 p-3">
+                   
+                    <div class="search-section">
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                                placeholder="Search employee..." class="search-input">
+                        </div>
+
+                    </div>
+
+                  
+                      <div class="table-responsive table-card" style="overflow: auto;">
                           <table class="table align-middle table-striped table-centered mb-0">
                               <thead class="table-light thead-fixed">
                                   <tr class="fs-11">

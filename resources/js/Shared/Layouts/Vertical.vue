@@ -94,7 +94,7 @@ export default {
       <!-- ========== App Menu ========== -->
       <div class="app-menu navbar-menu">
         <!-- LOGO -->
-        <div class="navbar-brand-box mt-4">
+        <div class="navbar-brand-box mt-2"style="text-align: center; padding:0!important;">
           <!-- Dark Logo-->
           <Link href="/" class="logo logo-dark">
           <span class="logo-sm">
@@ -107,9 +107,12 @@ export default {
           <!-- Light Logo-->
           <Link href="/" class="logo logo-light ">
           <span class="logo-sm">
-            <img src="@assets/images/logo-sm.png" alt="" height="28" />
+            <img src="@assets/images/sidebar-logo-sm.png" alt="" height="50" />
           </span>
-          <span class="logo-lg">
+           <span class="logo-lg">
+            <img src="@assets/images/sidebar-logo-light.png" alt="" height="90" />
+          </span>
+          <!-- <span class="logo-lg">
             <div style="
                 display: flex;
                 align-items: center;
@@ -128,9 +131,9 @@ export default {
                 object-fit: contain;
                 display: block;" />
             </div>
-          </span>
+          </span> -->
           </Link>
-          <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
+          <button type="button" class="btn btn-sm p-2 fs-20 header-item float-end btn-vertical-sm-hover"
             id="vertical-hover" @click="initActiveMenu">
             <i class="ri-record-circle-line"></i>
           </button>
