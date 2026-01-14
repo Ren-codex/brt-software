@@ -25,8 +25,6 @@ class ProductsTableSeeder extends Seeder
                 'is_active' => 1,
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
-                'price' => 250.00, // Price per pack
-                
             ),
             1 =>
             array (
@@ -43,7 +41,6 @@ class ProductsTableSeeder extends Seeder
             array (
                 'id' => 3,
                 'pack_size' => 5,
-                'price' => 270.00, // Price per pack
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 2, // Basmati Rice
                 'is_active' => 1,
@@ -54,7 +51,6 @@ class ProductsTableSeeder extends Seeder
             array (
                 'id' => 4,
                 'pack_size' => 10,
-                'price' => 520.00, // Price per pack
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 2, // Basmati Rice
                 'is_active' => 1,
@@ -65,7 +61,6 @@ class ProductsTableSeeder extends Seeder
             array (
                 'id' => 5,
                 'pack_size' => 5,
-                'price' => 220.00, // Price per pack
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 3, // Brown Rice
                 'is_active' => 1,
@@ -76,7 +71,6 @@ class ProductsTableSeeder extends Seeder
             array (
                 'id' => 6,
                 'pack_size' => 1,
-                'price' => 1200.00, // Price per sack
                 'unit_id' => 2, // Sack
                 'brand_id' => 4, // White Rice
                 'is_active' => 1,
