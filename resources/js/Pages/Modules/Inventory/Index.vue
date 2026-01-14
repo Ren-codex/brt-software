@@ -108,6 +108,7 @@
                     <PurchaseRequestsTab
                       :listPurchaseRequests="listPurchaseRequests"
                       :listPurchaseOrders="listPurchaseOrders"
+                      :listPRDisapproved="listPRDisapproved"
                       :meta="meta"
                       :links="links"
                       :filter="filter"
@@ -241,6 +242,7 @@ export default {
       listProducts: [],
       listPurchaseOrders: [],
       listPurchaseRequests: [],
+      listPRDisapproved: [],
       listInventoryStocks: [],
       meta: null,
       links: null,
@@ -367,6 +369,7 @@ export default {
               // Separate based on status
               this.listPurchaseRequests = allPurchaseOrders.filter(order => order.status?.name === 'Pending');
               this.listPurchaseOrders = allPurchaseOrders.filter(order => order.status?.name === 'Approved' || order.status?.name === 'Completed');
+              this.listPRDisapproved = allPurchaseOrders.filter(order => order.status?.name === 'Disapproved');
               this.meta = response.data.meta;
               this.links = response.data.links;
             }

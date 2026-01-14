@@ -34,3 +34,8 @@
 - [x] Test delete employee functionality
 - [x] Test search functionality
 - [x] Test toggle active functionality
+
+## Purchase Requests Tab Enhancement
+- [x] Add Disapproved tab to PurchaseRequestsTab.vue
+- [x] Update filteredAndSortedList computed property to handle disapproved tab
+- [x] Make empty state message dynamic based on active tab
