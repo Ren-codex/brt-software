@@ -23,9 +23,7 @@ class InventoryService
         });
 
         if ($batchCode) {
-            $query->whereHas('receivedItem.receivedStock', function ($query) use ($batchCode) {
-                $query->where('batch_code', $batchCode);
-            });
+            $query->where('batch_code', $batchCode);
         }
 
         return $query->sum('quantity');
@@ -63,9 +61,7 @@ class InventoryService
         });
 
         if ($batchCode) {
-            $query->whereHas('receivedItem.receivedStock', function ($query) use ($batchCode) {
-                $query->where('batch_code', $batchCode);
-            });
+            $query->where('batch_code', $batchCode);
         }
 
         $inventoryStocks = $query->orderBy('created_at')->get();
@@ -118,9 +114,7 @@ class InventoryService
         });
 
         if ($batchCode) {
-            $query->whereHas('receivedItem.receivedStock', function ($query) use ($batchCode) {
-                $query->where('batch_code', $batchCode);
-            });
+            $query->where('batch_code', $batchCode);
         }
 
         $stock = $query->orderBy('created_at', 'desc')->first();

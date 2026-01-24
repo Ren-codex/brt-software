@@ -62,12 +62,23 @@
                     />
                   </td>
                   <td>
-                    <input
-                      type="date"
-                      v-model="item.expiration_date"
-                      class="form-control"
-                      :disabled="item.status !== 'pending'"
-                    />
+                    <div class="form-check">
+                      <input
+                        type="checkbox"
+                        v-model="item.has_expiry"
+                        class="form-check-input"
+                        :disabled="item.status !== 'pending'"
+                      />
+                      <!-- <label class="form-check-label">Has Expiry</label> -->
+                    </div>
+                    <div v-if="item.has_expiry">
+                      <input
+                        type="date"
+                        v-model="item.expiration_date"
+                        class="form-control"
+                        :disabled="item.status !== 'pending'"
+                      />
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -121,6 +132,7 @@ export default {
         retail_price: 0,
         wholesale_price: 0,
         expiration_date: null,
+        has_expiry: false,
       }));
 
 

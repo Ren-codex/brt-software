@@ -12,6 +12,7 @@ class InventoryStocks extends Model
         'retail_price',
         'wholesale_price',
         'expiration_date',
+        'batch_code',
     ];
 
     public function receivedItem()

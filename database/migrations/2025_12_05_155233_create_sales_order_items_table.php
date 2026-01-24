@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unsignedInteger('sales_order_id');
             $table->foreign('sales_order_id')->references('id')->on('sales_orders')->onDelete('cascade');
             $table->string('batch_code');
-            $table->foreign('batch_code')->references('batch_code')->on('received_stocks')->onDelete('cascade');
+            $table->foreign('batch_code')->references('batch_code')->on('inventory_stocks')->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -30,7 +30,6 @@ class ProductsTableSeeder extends Seeder
             array (
                 'id' => 2,
                 'pack_size' => 10,
-                'price' => 480.00, // Price per pack
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 1, // Jasmine Rice
                 'is_active' => 1,
