@@ -379,9 +379,10 @@ export default {
                     onSuccess: (response) => {
                         this.saveSuccess = true;
                           setTimeout(() => {
-                            this.$emit('add', true);
+                            this.$emit('update', true);
                             this.form.reset();
                             this.hide();
+                        
                             }, 1500);
                        
                     },

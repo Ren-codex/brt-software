@@ -1,9 +1,9 @@
-no<template>
-    <PageHeader title="Employee Management" pageTitle="List" />
+<template>
+    <PageHeader :title="currentView === 'list' ? 'Employee Management' : 'Employee Details'" :pageTitle="currentView === 'list' ? 'List' : 'Details'" />
     <BRow>
-             <div class="col-md-12">
-              <div class="library-card">
-                <div class="library-card-header">
+        <div class="col-md-12">
+            <div class="library-card">
+                <div class="library-card-header" v-if="currentView === 'list'">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
@@ -19,121 +19,118 @@ no<template>
                             <span>Employee</span>
                         </button>
                     </div>
-
                 </div>
-              
-               <div class="card-body m-2 p-3">
-                   
+
+
+                <div class="card-body m-2 p-3" v-if="currentView === 'list'">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
                             <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
                                 placeholder="Search employee..." class="search-input">
                         </div>
-
                     </div>
 
-                  
-                      <div class="table-responsive table-card" style="overflow: auto;">
-                          <table class="table align-middle table-striped table-centered mb-0">
-                              <thead class="table-light thead-fixed">
-                                  <tr class="fs-11">
-                                      <th style="width: 3%;">#</th>
-                                      <th style="width: 12%;" >Name</th>
-                                      <th style="width: 8%;" >Position</th>
-                                      <th style="width: 8%;" >Email</th>
-                                      <th style="width: 7%;" >Contact</th>
-                                      <th style="width: 7%;" >Birthdate</th>
-                                      <th style="width: 5%;" >Sex</th>
-                                      <th style="width: 5%;" >Religion</th>
-                                      <th style="width: 8%;" >Address</th>
-                                      <th style="width: 4%;"  class="text-center">Regular</th>
-                                      <th style="width: 4%;"  class="text-center">Blacklisted</th>
-                                      <th style="width: 4%;" >Active</th>
-                                
-                                      <th style="width: 6%;" >Created</th>
-                                      <th style="width: 8%;" class="text-center">Actions</th>
-                                  </tr>
-                              </thead>
+                    <div class="table-responsive table-card" style="overflow: auto;">
+                        <table class="table align-middle table-striped table-centered mb-0">
+                            <thead class="table-light thead-fixed">
+                                <tr class="fs-11">
+                                    <th style="width: 3%;">#</th>
+                                    <th style="width: 12%;">Name</th>
+                                    <th style="width: 8%;">Position</th>
+                                    <th style="width: 8%;">Email</th>
+                                    <th style="width: 7%;">Contact</th>
+                                    <th style="width: 7%;">Birthdate</th>
+                                    <th style="width: 5%;">Sex</th>
+                                    <th style="width: 5%;">Religion</th>
+                                    <th style="width: 8%;">Address</th>
+                                    <th style="width: 4%;" class="text-center">Regular</th>
+                                    <th style="width: 4%;" class="text-center">Blacklisted</th>
+                                    <th style="width: 4%;">Active</th>
+                                    <th style="width: 6%;">Created</th>
+                                    <th style="width: 8%;" class="text-center">Actions</th>
+                                </tr>
+                            </thead>
 
-
-                              <tbody class="table-white fs-12">
-                                  <tr v-for="(list,index) in lists" v-bind:key="index" @click="selectRow(index)" :class="{
-                                      'bg-info-subtle': index === selectedRow,
-                                      'bg-danger-subtle': list.is_active === 0 && index !== selectedRow,
-                                      'bg-warning-subtle': list.is_blacklisted === 1
-                                  }">
-                                      <td class="text-center">
+                            <tbody class="table-white fs-12">
+                                <tr v-for="(list,index) in lists" v-bind:key="index" @click="openView(list)" :class="{
+                                    'bg-info-subtle': index === selectedRow,
+                                    'bg-danger-subtle': list.is_active === 0 && index !== selectedRow,
+                                    'bg-warning-subtle': list.is_blacklisted === 1
+                                }">
+                                    <td class="text-center">
                                         {{ index + 1}}
-                                      </td>
+                                    </td>
 
-                                      <td>
-                                          <div class="d-flex align-items-center">
-                                              <div class="avatar-xs me-2">
-                                                  <img v-if="list.avatar" :src="'/storage/' + list.avatar" alt="Avatar" class="rounded-circle avatar-xs">
-                                                  <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
-                                                      <i class="ri-user-line text-muted"></i>
-                                                  </div>
-                                              </div>
-                                              <span>{{ list.fullname }}</span>
-                                          </div>
-                                      </td>
-                                      <td>{{ list.position ? list.position.title : '-' }}</td>
-                                      <td>{{ list.email || '-' }}</td>
-                                      <td>{{ list.mobile || '-' }}</td>
-                                      <td>{{ list.birthdate || '-' }}</td>
-                                      <td>{{ list.sex || '-' }}</td>
-                                      <td>{{ list.religion || '-' }}</td>
-                                      <td>{{ list.address || '-' }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-xs me-2">
+                                                <img v-if="list.avatar" :src="'/storage/' + list.avatar" alt="Avatar" class="rounded-circle avatar-xs">
+                                                <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
+                                                    <i class="ri-user-line text-muted"></i>
+                                                </div>
+                                            </div>
+                                            <span>{{ list.fullname }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ list.position ? list.position.title : '-' }}</td>
+                                    <td>{{ list.email || '-' }}</td>
+                                    <td>{{ list.mobile || '-' }}</td>
+                                    <td>{{ list.birthdate || '-' }}</td>
+                                    <td>{{ list.sex || '-' }}</td>
+                                    <td>{{ list.religion || '-' }}</td>
+                                    <td>{{ list.address || '-' }}</td>
 
-                                      <td class="text-center">
+                                    <td class="text-center">
                                         <i v-if="list.is_regular === 1" class="ri-check-line text-success fs-16"></i>
                                         <i v-else class="ri-close-line text-muted fs-16"></i>
-                                      </td>
+                                    </td>
 
-                                      <td class="text-center">
+                                    <td class="text-center">
                                         <i v-if="list.is_blacklisted === 1" class="ri-close-line text-danger fs-16"></i>
                                         <i v-else class="ri-check-line text-success fs-16"></i>
-                                      </td>
+                                    </td>
 
-                                      <td>
+                                    <td>
                                         <b-form-checkbox
-                                          :checked="list.is_active === 1"
-                                          @change="toggleActive(list)"
-                                          switch
-                                          size="md"
+                                            :checked="list.is_active === 1"
+                                            @change="toggleActive(list)"
+                                            switch
+                                            size="md"
                                         />
-                                      </td>
+                                    </td>
 
-                                   
-
-                                      <td>
+                                    <td>
                                         {{ list.created_at }}
-                                      </td>
+                                    </td>
 
-                                      <td class="text-center">
-                                          <div class="d-flex justify-content-center gap-1">
-                                              <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
-                                                  <i class="ri-pencil-fill"></i>
-                                              </b-button>
-                                              <!-- <b-button @click="onDelete(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
-                                                  <i class="ri-delete-bin-line"></i>
-                                              </b-button> -->
-                                          </div>
-                                      </td>
-                                  </tr>
-                              </tbody>
-                          </table>
-                      </div>
-                  </div>
-                  <div class="card-footer">
-                      <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
-                  </div>
-              </div>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
+                                                <i class="ri-pencil-fill"></i>
+                                            </b-button>
+                                            <!-- <b-button @click="onDelete(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </b-button> -->
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div v-else>
+                    <Details @update="fetch()" :employee="selectedEmployee" :backToList="backToList" :openEdit="openEdit" :selectedEmployee="selectedEmployee" :selectedRow="selectedRow" />
+                </div>
+
+                <div class="card-footer" v-if="currentView === 'list'">
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
+                </div>
             </div>
-    
+        </div>
     </BRow>
-    <Create @add="fetch()" :dropdowns="dropdowns" ref="create" />
+    <Create @add="fetch()" @update="fetch()"  :dropdowns="dropdowns" ref="create" />
 </template>
 <script>
 import _ from 'lodash';
@@ -142,9 +139,10 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
 import Create from './Modals/Create.vue';
+import Details from './Details.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, Create, DeleteModal },
+    components: { PageHeader, Pagination, Multiselect, Create, Details, DeleteModal },
     props: ['dropdowns'],
     data() {
         return {
@@ -157,6 +155,8 @@ export default {
             },
             index: null,
             selectedRow: null,
+            selectedEmployee: {},
+            currentView: 'list',
             units: [],
             deleteModalTitle: 'Delete Employee',
             deleteModalMessage: 'Are you sure you want to delete this employee? This action cannot be undone.'
@@ -199,6 +199,7 @@ export default {
         openEdit(data, index) {
             this.selectedRow = index;
             this.$refs.create.edit(data, index);
+
         },
 
         toggleActive(data) {
@@ -241,9 +242,20 @@ export default {
             }
         },
 
+        openView(data) {
+            this.selectedEmployee = data;
+            this.currentView = 'details';
+        },
+
+        backToList() {
+            this.currentView = 'list';
+            this.selectedEmployee = {};
+            this.selectedRow = null;
+        },
+
         onEmployeeSaved() {
             this.fetch();
-            
+
             //this.$toast.success('Employee saved successfully!');
         }
     }
