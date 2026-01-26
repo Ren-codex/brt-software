@@ -12,7 +12,7 @@ Route::get('/landing', function () {
 
 Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
-    Route::resource('/sales', App\Http\Controllers\Modules\SalesController::class);
+    Route::resource('/sales', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::post('/sales-orders/adjustment/{id}', [App\Http\Controllers\Modules\SalesAdjustmentController::class, 'store']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
@@ -32,8 +32,10 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
         Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
         Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
-        
+        Route::resource('/payroll', App\Http\Controllers\Modules\PayrollController::class);
+
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
+        Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
 
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);

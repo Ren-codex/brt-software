@@ -12,6 +12,7 @@ use App\Models\ListStatus;
 use App\Models\ListUnit;
 use App\Models\ListBrand;
 use App\Models\Customer;
+use App\Models\Employee;
 use App\Models\ListSupplier;
 use App\Models\Product;
 use App\Models\InventoryStocks;
@@ -95,11 +96,6 @@ class DropdownClass
         });
         return  $data;
     }
-
-
-
-
-
         
     public function suppliers(){
         $data = ListSupplier::get()->map(function ($item) {
@@ -170,5 +166,15 @@ class DropdownClass
         return  $data;
     }
 
-
+    public function employees(){
+        $data = Employee::with('position')->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->lastname . ', ' . $item->firstname . ' ' . ($item->middlename ? strtoupper($item->middlename[0]) . '.' : ''),
+                'position_name' => $item->position ? $item->position->title : null,
+                'basic_salary' => $item->position ? $item->position->rate_per_day : null,
+            ];
+        });
+        return  $data;
+    }
 }

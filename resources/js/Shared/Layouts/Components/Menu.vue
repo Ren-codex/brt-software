@@ -108,7 +108,7 @@
                 <li class="nav-item">
                     <Link href="/payroll" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/payroll') }">
-                    <i class="ri-bank-card-fill"></i>
+                    <i class="ri-wallet-2-line"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Payroll</span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
@@ -196,14 +196,14 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item">
+                            <!-- <li class="nav-item submenu-item">
                                 <Link href="/libraries/salaries" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/salaries' }"
                                     data-key="t-basic">
-                                    <!-- <span class="submenu-dot"></span> -->
+                                    <span class="submenu-dot"></span>
                                     <span class="submenu-text">Salaries</span>
                                 </Link>
-                            </li>
+                            </li> -->
 
                         </ul>
                     </div>

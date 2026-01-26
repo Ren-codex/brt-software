@@ -12,6 +12,9 @@ class ListPositionResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'rate_per_day' => $this->rate_per_day,
+            'is_active' => $this->is_active,
+            'created_at' => $this->created_at->toDateTimeString(),
         ];
     }
 }
