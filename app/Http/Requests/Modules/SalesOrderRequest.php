@@ -22,7 +22,7 @@ class SalesOrderRequest extends FormRequest
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_cost' => 'required|numeric|min:0',
-            'items.*.batch_code' => 'required|string|exists:received_stocks,batch_code',
+            'items.*.batch_code' => 'required|string|exists:inventory_stocks,batch_code',
             'items.*.discount_per_unit' => 'nullable|numeric|min:0',
 
         ];

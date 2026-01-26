@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('inventory_stocks', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
+            $table->string('batch_code')->unique();
             $table->unsignedInteger('received_item_id');
             $table->foreign('received_item_id')->references('id')->on('received_items')->onDelete('cascade');
             $table->integer('quantity');

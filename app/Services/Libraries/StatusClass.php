@@ -27,6 +27,7 @@ class StatusClass
 
         $data = ListStatus::create([
             'name' =>  $request->name,
+            'slug' => str_replace(' ', '-', strtolower($request->name)),
             'description' =>  $request->description,
             'text_color' =>  $request->text_color,
             'bg_color' =>  $request->bg_color,
@@ -43,6 +44,7 @@ class StatusClass
         $data = ListStatus::findOrFail($request->id);
          $data->update([
             'name' =>  $request->name,
+            'slug' => str_replace(' ', '-', strtolower($request->name)),
             'description' =>  $request->description,
             'text_color' =>  $request->text_color,
             'bg_color' =>  $request->bg_color,

@@ -11,7 +11,6 @@ class Product extends Model
         'pack_size',
         'unit_id',
         'is_active',
-        'price',
     ];
 
     public function unit()

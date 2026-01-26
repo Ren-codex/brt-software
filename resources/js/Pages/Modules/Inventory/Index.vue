@@ -77,11 +77,8 @@
                 </div>
 
                 <!-- Purchase Orders List -->
-                <div class="row" v-if="activeTab === 'purchaseOrders'">
-                  <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'" style="position: relative;">
-                    <button @click="toggleRightSidebar" class="right-sidebar-toggle-btn" title="Toggle Right Sidebar">
-                      <i :class="isRightSidebarCollapsed ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
-                    </button>
+                <div class="row" v-if="activeTab === 'purchaseOrders' && currentView === 'list'">
+                  <div class="col-md-9">
                     <PurchaseOrdersTab
                       :listPurchaseOrders="listPurchaseOrders"
                       :meta="meta"
@@ -106,14 +103,12 @@
                 </div>
 
                 <!-- Purchase Request List -->
-                <div class="row" v-if="activeTab === 'purchaseRequests'">
-                  <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'" style="position: relative;">
-                    <button @click="toggleRightSidebar" class="right-sidebar-toggle-btn" title="Toggle Right Sidebar">
-                      <i :class="isRightSidebarCollapsed ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
-                    </button>
+                <div class="row" v-if="activeTab === 'purchaseRequests' && currentView === 'list'">
+                  <div class="col-md-9">
                     <PurchaseRequestsTab
                       :listPurchaseRequests="listPurchaseRequests"
                       :listPurchaseOrders="listPurchaseOrders"
+                      :listPRDisapproved="listPRDisapproved"
                       :meta="meta"
                       :links="links"
                       :filter="filter"
@@ -163,11 +158,8 @@
                   </div>
                 </div>
 
-                <div class="row" v-if="activeTab === 'inventoryStocks'">
-                  <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'" style="position: relative;">
-                    <button @click="toggleRightSidebar" class="right-sidebar-toggle-btn" title="Toggle Right Sidebar">
-                      <i :class="isRightSidebarCollapsed ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
-                    </button>
+                <div class="row" v-if="activeTab === 'inventoryStocks' && currentView === 'list'">
+                  <div class="col-md-9">
                     <InventoryStocksTab
                       :listInventoryStocks="listInventoryStocks"
                       :meta="meta"
@@ -254,6 +246,7 @@ export default {
       listProducts: [],
       listPurchaseOrders: [],
       listPurchaseRequests: [],
+      listPRDisapproved: [],
       listInventoryStocks: [],
       meta: null,
       links: null,
@@ -383,6 +376,7 @@ export default {
               // Separate based on status
               this.listPurchaseRequests = allPurchaseOrders.filter(order => order.status?.name === 'Pending');
               this.listPurchaseOrders = allPurchaseOrders.filter(order => order.status?.name === 'Approved' || order.status?.name === 'Completed');
+              this.listPRDisapproved = allPurchaseOrders.filter(order => order.status?.name === 'Disapproved');
               this.meta = response.data.meta;
               this.links = response.data.links;
             }

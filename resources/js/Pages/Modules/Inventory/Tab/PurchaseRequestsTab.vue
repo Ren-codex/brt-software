@@ -35,6 +35,12 @@
               >
                 Approved
               </button>
+              <button
+                :class="['tab-btn', { active: activeTab === 'disapproved' }]"
+                @click="setActiveTab('disapproved')"
+              >
+                Disapproved
+              </button>
             </div>
           </div>
 
@@ -147,7 +153,7 @@
                   <tr v-if="filteredAndSortedList.length === 0">
                     <td colspan="7" class="text-center py-4">
                       <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                      <p class="mt-2 mb-0">No pending purchase request found</p>
+                      <p class="mt-2 mb-0">{{ getEmptyStateMessage() }}</p>
                       <small class="text-muted">Try changing your search or filter criteria</small>
                     </td>
                   </tr>
@@ -180,6 +186,7 @@ export default {
   props: {
     listPurchaseRequests: Array,
     listPurchaseOrders: Array,
+    listPRDisapproved: Array,
     meta: Object,
     links: Object,
     filter: Object,
@@ -204,6 +211,8 @@ export default {
         filtered = this.listPurchaseRequests;
       } else if (this.activeTab === 'approved') {
         filtered = this.listPurchaseOrders;
+      } else if (this.activeTab === 'disapproved') {
+        filtered = this.listPRDisapproved;
       }
 
       // Additional filter by selectedStatus if needed
@@ -345,10 +354,23 @@ export default {
     
     getRowStyle(status) {
       if (!status || !status.bg_color) return {};
-      
+
       return {
         '--hover-color': status.bg_color + '10'
       };
+    },
+
+    getEmptyStateMessage() {
+      switch (this.activeTab) {
+        case 'pending':
+          return 'No pending purchase request found';
+        case 'approved':
+          return 'No approved purchase request found';
+        case 'disapproved':
+          return 'No disapproved purchase request found';
+        default:
+          return 'No purchase request found';
+      }
     }
   },
 };

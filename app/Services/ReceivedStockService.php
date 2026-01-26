@@ -41,7 +41,7 @@ class ReceivedStockService
                 'po_id' => $data['po_id'],
                 'supplier_id' => $data['supplier_id'],
                 'received_date' => Carbon::now(),
-                'batch_code' => $this->series_service->get('batch_code'),
+                'received_no' => $this->series_service->get('received_no'),
                 'received_by_id' => Auth::id(),
             ]);
 
@@ -53,7 +53,7 @@ class ReceivedStockService
                             'po_id' => $data['po_id'],
                             'user_id' => Auth::id(),
                             'action' => 'Received',
-                            'remarks' => 'Received ' . $itemData['to_received_quantity'] . ' stocks of product (' . $itemData['product_name'] . ') with batch code: ' . $receivedStock->batch_code,
+                            'remarks' => 'Received ' . $itemData['to_received_quantity'] . ' stocks of product (' . $itemData['product_name'] . ') with received_no: ' . $receivedStock->received_no,
                         ]);
 
                         $receivedItem = ReceivedItem::create([
@@ -80,6 +80,7 @@ class ReceivedStockService
                             'retail_price' => $itemData['retail_price'],
                             'wholesale_price' => $itemData['wholesale_price'],
                             'expiration_date' => $itemData['expiration_date'],
+                            'batch_code' => $this->series_service->get('batch_code'),
                         ]);
                     }
                 }
@@ -117,7 +118,7 @@ class ReceivedStockService
 
     public function getNextBatchCode()
     {
-        $latestBatchCode = ReceivedStock::orderBy('batch_code', 'desc')->value('batch_code');
+        $latestBatchCode = InventoryStocks::orderBy('batch_code', 'desc')->value('batch_code');
 
         if (!$latestBatchCode) {
             return 'BATCH-001';
