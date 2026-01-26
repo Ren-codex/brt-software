@@ -139,7 +139,7 @@
                                 <Link href="/libraries/products" class="nav-link submenu-link" 
                                     :class="{'active': $page.url === '/libraries/products' }"
                                     data-key="t-basic">
-                                    <span class="submenu-dot"></span>
+                                    <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Products</span>
                                 </Link>
                             </li>
@@ -147,7 +147,7 @@
                                 <Link href="/libraries/suppliers" class="nav-link submenu-link" 
                                     :class="{'active': $page.url === '/libraries/suppliers' }"
                                     data-key="t-basic">
-                                    <span class="submenu-dot"></span>
+                                    <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Suppliers</span>
                                 </Link>
                             </li>
@@ -155,7 +155,7 @@
                                 <Link href="/libraries/statuses" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/statuses' }"
                                     data-key="t-basic">
-                                    <span class="submenu-dot"></span>
+                                    <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Statuses</span>
                                 </Link>
                             </li>
@@ -164,7 +164,7 @@
                                 <Link href="/libraries/brands" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/brands' }"
                                     data-key="t-basic">
-                                    <span class="submenu-dot"></span>
+                                    <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Brands</span>
                                   </Link>
                             </li>
@@ -173,7 +173,7 @@
                                 <Link href="/libraries/units" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/units' }"
                                     data-key="t-basic">
-                                    <span class="submenu-dot"></span>
+                                    <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Units</span>
                                 </Link>
                             </li>
@@ -182,7 +182,7 @@
                                 <Link href="/libraries/roles" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/roles' }"
                                     data-key="t-basic">
-                                    <span class="submenu-dot"></span>
+                                    <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Roles</span>
                                 </Link>
                             </li>
@@ -191,7 +191,7 @@
                                 <Link href="/libraries/positions" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/positions' }"
                                     data-key="t-basic">
-                                    <span class="submenu-dot"></span>
+                                    <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Positions</span>
                                 </Link>
                             </li>
@@ -200,7 +200,7 @@
                                 <Link href="/libraries/salaries" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/salaries' }"
                                     data-key="t-basic">
-                                    <span class="submenu-dot"></span>
+                                    <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Salaries</span>
                                 </Link>
                             </li>

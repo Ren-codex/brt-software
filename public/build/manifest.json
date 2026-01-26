@@ -163,10 +163,6 @@
     "file": "assets/remixicon-B83Wci9r.woff2",
     "src": "public/fonts/remixicon.woff2"
   },
-  "public/images/brt-logo.png": {
-    "file": "assets/brt-logo-ZAHc8T31.png",
-    "src": "public/images/brt-logo.png"
-  },
   "public/images/logo-dark.png": {
     "file": "assets/logo-dark-DsEUmtME.png",
     "src": "public/images/logo-dark.png"
@@ -178,6 +174,14 @@
   "public/images/logo-sm.png": {
     "file": "assets/logo-sm-C9p9en_o.png",
     "src": "public/images/logo-sm.png"
+  },
+  "public/images/sidebar-logo-light.png": {
+    "file": "assets/sidebar-logo-light-Dt7rNc0_.png",
+    "src": "public/images/sidebar-logo-light.png"
+  },
+  "public/images/sidebar-logo-sm.png": {
+    "file": "assets/sidebar-logo-sm-iwktxZUp.png",
+    "src": "public/images/sidebar-logo-sm.png"
   },
   "public/images/sidebar/img-1.jpg": {
     "file": "assets/img-1-C6VsSbnm.jpg",
@@ -196,12 +200,12 @@
     "src": "public/images/sidebar/img-4.jpg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-BYHjch1q.js",
+    "file": "assets/app-B6LXwdRR.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-B3GYiaB1.css"
+      "assets/app-_k6fxFPz.css"
     ],
     "assets": [
       "assets/logo-sm-C9p9en_o.png",
@@ -211,7 +215,8 @@
       "assets/img-2-B0ULeiCa.jpg",
       "assets/img-3-h1U1KdmN.jpg",
       "assets/img-4-iSVl4_tu.jpg",
-      "assets/brt-logo-ZAHc8T31.png",
+      "assets/sidebar-logo-sm-iwktxZUp.png",
+      "assets/sidebar-logo-light-Dt7rNc0_.png",
       "assets/hkgrotesk-light-CFOlwwJU.eot",
       "assets/hkgrotesk-light-Bch7Jc8H.woff",
       "assets/hkgrotesk-regular-C5FQFgYW.eot",

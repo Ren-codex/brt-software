@@ -22,7 +22,7 @@ class SalesOrderItem extends Model
 
     public function batch_code()
     {
-        return $this->belongsTo('App\Models\ReceivedStock', 'batch_code', 'batch_code');
+        return $this->belongsTo('App\Models\InventoryStocks', 'batch_code', 'batch_code');
     }
 
     public function product()

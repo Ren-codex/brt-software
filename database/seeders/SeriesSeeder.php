@@ -42,5 +42,13 @@ class SeriesSeeder extends Seeder
             'max_digit' => 6,
             'starting_value' => 1
         ));
+
+        Series::create(array(
+            'name' => 'Received Number',
+            'slug' => 'received_no',
+            'prefix' => 'REC',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
     }
 }

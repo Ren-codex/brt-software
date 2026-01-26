@@ -10,7 +10,7 @@ class ReceivedStock extends Model
         'po_id',
         'supplier_id',
         'received_date',
-        'batch_code',
+        'received_no',
         'received_by_id',
     ];
 

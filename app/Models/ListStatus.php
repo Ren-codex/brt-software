@@ -8,6 +8,7 @@ class ListStatus extends Model
 {
     protected $fillable = [
         'name',
+        'slug',
         'description',
         'text_color',
         'bg_color',

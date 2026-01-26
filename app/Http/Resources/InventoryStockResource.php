@@ -10,6 +10,7 @@ class InventoryStockResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'batch_code' => $this->batch_code,
             'quantity' => $this->quantity,
             'received_item' => $this->receivedItem ? new ReceivedItemResource($this->receivedItem) : null,
             'created_at' => $this->created_at,
