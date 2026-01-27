@@ -51,6 +51,9 @@
               <div v-if="activeTab === 'payroll_management'" class="shadow-sm p-3">
                 <PayrollManagement :dropdowns="dropdowns" />
               </div>
+              <div v-if="activeTab === 'payroll_settings'" class="shadow-sm p-3">
+                <PayrollSettings :dropdowns="dropdowns" />
+              </div>
             </div>
           </transition>
         </div>
@@ -62,10 +65,11 @@
 <script>
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
-import PayrollManagement from './Components/Payrolls/Index.vue'
+import PayrollManagement from './Components/Payrolls/Index.vue';
+import PayrollSettings from './Components/Settings/Index.vue';
 
 export default {
-  components: { PageHeader, PayrollManagement },
+  components: { PageHeader, PayrollManagement, PayrollSettings },
   props: ['dropdowns'],
   data() {
     return {

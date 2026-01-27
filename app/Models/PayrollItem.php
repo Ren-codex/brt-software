@@ -34,4 +34,14 @@ class PayrollItem extends Model
     {
         return $this->belongsTo(Employee::class);
     }
+
+    // Get the current overtime rate from PayrollSetting
+    public function getOvertimeRate()
+    {
+        $setting = PayrollSetting::active()
+            ->effectiveOn($this->payroll->pay_period_start ?? now())
+            ->first();
+
+        return $setting ? $setting->overtime_rate : 1.5; // Default to 1.5 if no setting
+    }
 }

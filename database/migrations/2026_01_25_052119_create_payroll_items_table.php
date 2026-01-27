@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payroll_items', function (Blueprint $table) {
-            $table->id();
+            $table->engine = 'InnoDB';
+            $table->increments('id');
             $table->decimal('basic_salary', 15, 2);
             $table->decimal('overtime_hours', 8, 2)->default(0);
-            $table->decimal('overtime_rate', 15, 2)->default(0);
             $table->decimal('deductions', 15, 2)->default(0);
             $table->decimal('total_days', 8, 2)->default(0);
             $table->decimal('net_salary', 15, 2);

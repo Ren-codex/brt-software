@@ -26,7 +26,7 @@ class PayrollController extends Controller
             default:
                 return inertia('Modules/Payroll/Index', [
                     'dropdowns' => [
-                        'employees' => $this->dropdown->employees()
+                        'employees' => $this->dropdown->employees(),
                     ]
                 ]);
             break;
@@ -42,7 +42,6 @@ class PayrollController extends Controller
             'items.*.employee_id' => 'required|exists:employees,id',
             'items.*.basic_salary' => 'required|numeric|min:0',
             'items.*.overtime_hours' => 'nullable|numeric|min:0',
-            'items.*.overtime_rate' => 'nullable|numeric|min:0',
             'items.*.deductions' => 'nullable|numeric|min:0',
             'items.*.total_days' => 'nullable|integer|min:0',
             'items.*.net_salary' => 'required|numeric|min:0',
@@ -61,7 +60,6 @@ class PayrollController extends Controller
                     'employee_id' => $item['employee_id'],
                     'basic_salary' => $item['basic_salary'],
                     'overtime_hours' => $item['overtime_hours'] ?? 0,
-                    'overtime_rate' => $item['overtime_rate'] ?? 0,
                     'deductions' => $item['deductions'] ?? 0,
                     'net_salary' => $item['net_salary'],
                 ]);

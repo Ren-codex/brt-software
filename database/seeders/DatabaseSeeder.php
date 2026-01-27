@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ReceivedItemsTableSeeder::class);
         $this->call(InventoryStocksTableSeeder::class);
         $this->call(SeriesSeeder::class);
+        $this->call(PayrollSettingsTableSeeder::class);
 
     }
 }
