@@ -55,6 +55,8 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
         
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class);
+        Route::get('/payroll-templates/available-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'getAvailableEmployees']);
+        Route::resource('/payroll-templates', App\Http\Controllers\Modules\PayrollTemplateController::class);
     });
 });
 
