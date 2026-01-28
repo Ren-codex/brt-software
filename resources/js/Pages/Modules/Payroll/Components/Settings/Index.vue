@@ -87,16 +87,26 @@
       @close="closeModal"
       @saved="handleSaved"
     />
+    <!-- Logs Modal -->
+    <Logs v-model="showLogsModal" :selectedSetting="selectedSetting" @close="closeLogsModal" />
+    <!-- Toast Notification -->
+    <div v-if="isToastVisible" class="toast-notification">
+      <div class="toast-content">
+        <i class="ri-check-line text-white me-2"></i>
+        {{ toastMessage }}
+      </div>
+    </div>
 </template>
 
 <script>
 import _ from 'lodash';
 import axios from 'axios'
 import PayrollSettingModal from './Modal.vue'
+import Logs from './Logs.vue'
 import Pagination from "@/Shared/Components/Pagination.vue";
 
 export default {
-  components: { PayrollSettingModal, Pagination },
+  components: { PayrollSettingModal, Logs, Pagination },
   props: ['dropdown'],
   data() {
     return {
@@ -109,7 +119,10 @@ export default {
       localKeyword: '',
       showCreateModal: false,
       showEditModal: false,
-      selectedSetting: null
+      selectedSetting: null,
+      showLogsModal: false,
+      isToastVisible: false,
+      toastMessage: '',
     }
   },
   watch: {
@@ -145,8 +158,8 @@ export default {
       this.filter.keyword = value;
     },
     viewSetting(setting) {
-      this.selectedSetting = setting
-      this.$toast.info(`Viewing setting`)
+      this.selectedSetting = setting;
+      this.showLogsModal = true;
     },
     editSetting(setting) {
       this.selectedSetting = { ...setting }
@@ -160,6 +173,14 @@ export default {
     handleSaved() {
       this.closeModal()
       this.fetchPayrollSettings()
+      this.showToast('Payroll setting updated successfully');
+    },
+    showToast(message) {
+      this.toastMessage = message;
+      this.isToastVisible = true;
+      setTimeout(() => {
+        this.isToastVisible = false;
+      }, 3000);
     },
   }
 }
@@ -176,5 +197,35 @@ export default {
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
   cursor: default;
+}
+
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background-color: #28a745;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 </style>

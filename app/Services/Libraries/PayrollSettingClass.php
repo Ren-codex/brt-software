@@ -4,6 +4,9 @@ namespace App\Services\Libraries;
 
 use App\Models\PayrollSetting;
 use App\Http\Resources\Libraries\PayrollSettingResource;
+use Illuminate\Support\Facades\Auth;
+use App\Models\PayrollSettingLog;
+use Illuminate\Support\Facades\DB;
 
 class PayrollSettingClass
 {
@@ -21,15 +24,35 @@ class PayrollSettingClass
     }
 
     public function update($request){
-        $data = PayrollSetting::findOrFail($request->id);
-        $data->update([
-            'value' => $request->value,
-        ]);
+        try{
+            db::beginTransaction();
 
-        return [
-            'data' => new PayrollSettingResource($data),
-            'message' => 'Payroll setting updated was successful!',
-            'info' => "You've successfully updated the payroll setting"
-        ];
+            $data = PayrollSetting::findOrFail($request->id);
+            $oldValue = $data->value;
+
+            $data->update([
+                'value' => $request->value,
+            ]);
+
+            PayrollSettingLog::create([
+                'changed_data' => "Updated payroll setting '{$data->field_name}' from {$oldValue} → {$request->value}",
+                'updated_by_id' => Auth::user()->id,
+                'payroll_setting_id' => $data->id,
+            ]);
+
+            db::commit();
+
+            return [
+                'data' => new PayrollSettingResource($data),
+                'message' => 'Payroll setting updated was successful!',
+                'info' => "You've successfully updated the payroll setting"
+            ];
+        }catch(\Exception $e){
+            return [
+                'error' => true,
+                'message' => 'An error occurred while updating the payroll setting.',
+                'info' => $e->getMessage()
+            ];
+        }
     }
 }

@@ -12,4 +12,9 @@ class PayrollSetting extends Model
         'value',
         'is_active'
     ];
+
+    public function logs()
+    {
+        return $this->hasMany(PayrollSettingLog::class, 'payroll_setting_id');
+    }
 }

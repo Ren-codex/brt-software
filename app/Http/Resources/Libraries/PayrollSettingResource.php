@@ -15,6 +15,7 @@ class PayrollSettingResource extends JsonResource
             'formula' => $this->formula,
             'value' => $this->value,
             'is_active' => $this->is_active,
+            'logs' => $this->logs ? PayrollSettingLogResource::collection($this->logs) : [],
         ];
     }
 }
