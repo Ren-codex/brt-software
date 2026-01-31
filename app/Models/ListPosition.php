@@ -16,4 +16,9 @@ class ListPosition extends Model
     {
         return $this->belongsTo('App\Models\ListSalary', 'salary_id', 'id');
     }
+
+    public static function getID($title){
+        $position = self::where('title', $title)->first();
+        return $position ? $position->id : null;
+    }
 }

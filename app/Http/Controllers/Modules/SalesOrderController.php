@@ -44,7 +44,8 @@ class SalesOrderController extends Controller
                         'batch_codes' => $this->dropdown->batch_codes(),
                         'sales_reps' => $this->dropdown->sales_reps(),
                         'drivers' => $this->dropdown->drivers(),
-                    ]
+                    ],
+      
                 ]);
             break;
         }
@@ -54,7 +55,6 @@ class SalesOrderController extends Controller
         $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);
         });
-
 
         return back()->with([
             'data' => $result['data'],
