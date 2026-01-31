@@ -48,6 +48,7 @@
                                 :class="{ 'input-error': form.errors.price_type }"
                                 text-field="text"
                                 value-field="value"
+                                @change="onPriceTypeChange"
                                 >
                                  <template #first>
                                     <b-form-select-option :value="null" disabled  >Select Price Type</b-form-select-option>
@@ -71,7 +72,7 @@
                                     :class="{ 'input-error': form.errors.quantity }"
                                     placeholder="Enter Quantity"
                                     :max="selectedProductStock"
-                                    @input="validateQuantity"
+                                    @input="  "
                                 />
 
                             </div>
@@ -84,17 +85,18 @@
                             <span class="error-message" v-if="form.errors.quantity">{{ form.errors.quantity }}</span>
                         </div>
                          <div class="form-group form-group-half">
-                            <label for="unit_cost" class="form-label">Unit Cost</label>
+                            <label for="price" class="form-label">Price</label>
                             <div class="input-wrapper">
                                 <i class="ri-cash-line input-icon"></i>
-                                <Amount
-                                    @amount="updateUnitCost($event)"
-                                    :class="{ 'input-error': form.errors.unit_cost }"
+                                <input
+                                    type="text"
+                                    :value="formatCurrency(form.price)"
                                     class="form-control"
-                                    ref="amountComponent"
+                                    :class="{ 'input-error': form.errors.price }"
+                                    readonly
                                 />
                             </div>
-                            <span class="error-message" v-if="form.errors.unit_cost">{{ form.errors.unit_cost }}</span>
+                            <span class="error-message" v-if="form.errors.price">{{ form.errors.price }}</span>
                         </div>
                     </div>
 
@@ -145,7 +147,7 @@
                             <i class="ri-close-line"></i>
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || form.unit_cost == 0 || !form.product_id)">
+                        <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || form.price === 0 || !form.product_id || !form.price_type  || !form.batch_code)">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
                             {{ form.processing ? 'Saving...' : 'Add Item' }}
@@ -176,10 +178,10 @@ export default {
                 id: null,
                 brand_id: null,
                 quantity: 0,
-                unit_cost: 0.00,
+                price: 0.00,
                 product_id: null,
                 batch_code: null,
-                price_type: null,
+                price_type: 'retail',
                 discount_per_unit: 0,
             }),
 
@@ -204,17 +206,18 @@ export default {
             return product ? product.available : null;
         }
     },
+
+
     methods: {
         show() {
             this.form.reset();
             this.form.quantity = 0;
-            this.form.unit_cost = 0.00;
+            this.form.price = 0.00;
             this.form.discount_per_unit = 0;
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
             this.$nextTick(() => {
-                this.$refs.amountComponent.emitValue(0.00);
                 this.$refs.discountComponent.emitValue(0.00);
             });
         },
@@ -222,7 +225,7 @@ export default {
             this.form.id = data.id;
             this.form.brand_id = data.brand_id;
             this.form.quantity = data.quantity;
-            this.$refs.amountComponent.emitValue(data.unit_cost);
+            this.form.price = data.price;
             this.form.product_id = data.product_id;
             this.form.batch_code = data.batch_code;
             this.form.price_type = data.price_type || 'retail';
@@ -246,7 +249,7 @@ export default {
                 id: this.form.id,
                 brand_id: this.form.brand_id,
                 quantity: this.form.quantity,
-                unit_cost: Number(this.form.unit_cost).toFixed(2), // 2 decimals
+                price: Number(this.form.price).toFixed(2), // 2 decimals
                 product_id: this.form.product_id,
                 batch_code: this.form.batch_code,
                 price_type: this.form.price_type,
@@ -270,7 +273,7 @@ export default {
             this.form.errors[field] = false;
         },
         hide() {
-            this.form.unit_cost = null;
+            this.form.price = null;
             this.form.reset();
             this.form.clearErrors();
             this.editable = false;
@@ -278,16 +281,7 @@ export default {
             this.showModal = false;
         },
 
-        updateUnitCost(value) {
-            if (typeof value === 'string') {
-                const cleanValue = value.replace(/[₱,]/g, '');
-                const num = parseFloat(cleanValue);
-                this.form.unit_cost = isNaN(num) ? 0 : num;
-            } else {
-                this.form.unit_cost = value || 0;
-            }
-            this.validateDiscount();
-        },
+
 
         updateDiscountPerUnit(value) {
             if (typeof value === 'string') {
@@ -306,10 +300,16 @@ export default {
             if (product) {
                 this.form.batch_code = product.batch_code || null;
                 const price = this.form.price_type === 'wholesale' ? product.wholesale_price : product.retail_price;
-                this.$refs.amountComponent.emitValue(parseFloat(price) || 0);
+                this.form.price = parseFloat(price).toFixed(2) || 0;
             } else {
                 this.form.batch_code = null;
-                this.$refs.amountComponent.emitValue(0);
+                this.form.price = 0;
+            }
+        },
+
+        onPriceTypeChange() {
+            if (this.form.product_id) {
+                this.onProductChange();
             }
         },
 
@@ -326,7 +326,7 @@ export default {
 
         validateDiscount() {
             this.handleInput('discount_per_unit');
-            const totalCost = parseFloat(this.form.unit_cost) * parseFloat(this.form.quantity);
+            const totalCost = parseFloat(this.form.price).toFixed(2) * parseFloat(this.form.quantity);
             const totalDiscount = parseFloat(this.form.discount_per_unit) * parseFloat(this.form.quantity);
 
             if (totalDiscount > totalCost) {

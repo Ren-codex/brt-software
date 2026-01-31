@@ -20,7 +20,10 @@ class SalesOrder extends Model
         'transferred_at',
         'approved_by_id',
         'approved_at',
-        'assigned_to',
+        'sales_rep_id',
+        'driver_id',
+        'payment_mode',
+        'due_date',
     ];
 
     protected $casts = [
@@ -61,12 +64,17 @@ class SalesOrder extends Model
         return $this->belongsTo(User::class, 'transferred_to');
     }
 
-    public function assignedTo()
+    public function salesRep()
     {
-        return $this->belongsTo(Employee::class, 'assigned_to');
+        return $this->belongsTo(Employee::class, 'sales_rep_id');
     }
 
-    public function salesOrderItems()
+    public function driver()
+    {
+        return $this->belongsTo(Employee::class, 'driver_id');
+    }
+
+    public function items()
     {
         return $this->hasMany(SalesOrderItem::class);
     }

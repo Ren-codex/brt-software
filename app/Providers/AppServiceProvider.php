@@ -30,10 +30,10 @@ class AppServiceProvider extends ServiceProvider
             LoginFailed::class
         );
 
-        Inertia::share('auth', function () {
-            return [
+        Inertia::share([
+            'auth' => [
                 'user' => auth()->user(),
-            ];
-        });
+            ],
+        ]);
     }
 }
