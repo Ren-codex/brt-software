@@ -44,8 +44,6 @@
                         <th>Product</th>
                         <th>Unit Cost</th>
                         <th>Quantity</th>
-                        <th>Expiration Date</th>
-                    
                       </tr>
                     </thead>
                     <tbody>
@@ -58,7 +56,14 @@
                       >
                         <td>{{ index + 1 }}</td>
                         <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
-                        <td>{{ list.received_item.received_stock.batch_code }}</td>
+                        <td style="width: 20%">{{ list.batch_code }}
+                          <span 
+                            class="status-badge"
+                            v-if="list.expiration_date"
+                          >
+                            EXP: {{ formatDate(list.expiration_date) }}
+                          </span>
+                        </td>
                         <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
                         <td>
                           <div class="product-info">
@@ -74,9 +79,7 @@
                           <span class="quantity-badge" :class="getQuantityClass(list.quantity)">
                             {{ list.quantity }}
                           </span>
-                        </td>
-                        <td>{{ list.expiration_date ? formatDate(list.expiration_date) : '--' }}</td>
-                       
+                        </td>                       
                       </tr>
                       <tr v-if="availableStocks.length === 0">
                         <td colspan="9" class="text-center py-4">
@@ -369,5 +372,20 @@ export default {
     width: 28px;
     height: 28px;
   }
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  cursor: default;
+  background-color: #7a848e;
+  color: white;
 }
 </style>

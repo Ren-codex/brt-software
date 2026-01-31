@@ -30,7 +30,7 @@
                   <td style="width: 30%" class="bg-faded-gray">{{ item.product ? item.product.name : 'N/A' }}</td>
                   <td class="bg-faded-gray">{{ item.quantity }}</td>
                   <td class="bg-faded-gray">{{ item.received_quantity}}</td>
-                  <td>
+                  <td style="width: 15%">
                     <input
                       type="number"
                       v-model="item.to_received_quantity"
@@ -41,7 +41,7 @@
                       :disabled="item.status !== 'pending'"
                     />
                   </td>
-                  <td>
+                  <td style="width: 15%">
                     <input
                       type="number"
                       v-model="item.retail_price"
@@ -51,7 +51,7 @@
                       :disabled="item.status !== 'pending'"
                     />
                   </td>
-                  <td>
+                  <td style="width: 15%">
                     <input
                       type="number"
                       v-model="item.wholesale_price"
@@ -62,12 +62,23 @@
                     />
                   </td>
                   <td>
-                    <input
-                      type="date"
-                      v-model="item.expiration_date"
-                      class="form-control"
-                      :disabled="item.status !== 'pending'"
-                    />
+                    <div class="form-check">
+                      <input
+                        type="checkbox"
+                        v-model="item.has_expiry"
+                        class="form-check-input"
+                        :disabled="item.status !== 'pending'"
+                      />
+                      <!-- <label class="form-check-label">Has Expiry</label> -->
+                    </div>
+                    <div v-if="item.has_expiry">
+                      <input
+                        type="date"
+                        v-model="item.expiration_date"
+                        class="form-control"
+                        :disabled="item.status !== 'pending'"
+                      />
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -117,10 +128,11 @@ export default {
         po_item_id: item.id,
         product_id: item.product.id,
         product_name: item.product?.name,
-        to_received_quantity: 0,
+        to_received_quantity: item.quantity - item.received_quantity,
         retail_price: 0,
         wholesale_price: 0,
         expiration_date: null,
+        has_expiry: false,
       }));
 
 

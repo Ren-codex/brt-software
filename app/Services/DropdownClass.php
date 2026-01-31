@@ -14,7 +14,7 @@ use App\Models\ListBrand;
 use App\Models\Customer;
 use App\Models\ListSupplier;
 use App\Models\Product;
-use App\Models\ReceivedStock;
+use App\Models\InventoryStocks;
 use App\Models\Employee;
 
 
@@ -120,9 +120,15 @@ class DropdownClass
             });
             $batch_code = null;
             if ($available_quantity > 0) {
-                $batch_code = $item->receivedItems->first(function ($receivedItem) {
+                $firstReceivedItemWithStock = $item->receivedItems->first(function ($receivedItem) {
                     return $receivedItem->inventoryStocks->sum('quantity') > 0;
-                })?->receivedStock?->batch_code ?? null;
+                });
+                if ($firstReceivedItemWithStock) {
+                    $firstInventoryStock = $firstReceivedItemWithStock->inventoryStocks->first();
+                    if ($firstInventoryStock) {
+                        $batch_code = $firstInventoryStock->batch_code;
+                    }
+                }
             }
             $retail_price = $item->price; // default
             $wholesale_price = $item->price; // default
@@ -157,7 +163,7 @@ class DropdownClass
     }
 
     public function batch_codes(){
-        $data = ReceivedStock::get()->map(function ($item) {
+        $data = InventoryStocks::get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'code' => $item->batch_code

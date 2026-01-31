@@ -50,7 +50,6 @@ class SalesOrderClass
                 throw new \Exception('Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']);
             }
         }
-
         $data = new SalesOrder();
         $data->so_number = SalesOrder::generateSONumber();
         $data->order_date = $request->order_date;
