@@ -1,4 +1,4 @@
-<template>
+ <template>
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-fullscreen " @click.stop>
             <div class="modal-header ">
@@ -68,7 +68,7 @@
                                         <i class="ri-user-line input-icon"></i>
                                         <b-form-select v-model="form.sales_rep_id" :options="dropdowns.sales_reps"
                                             text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.customer_id }" class="form-control">
+                                            :class="{ 'input-error': form.errors.sales_rep_id }" class="form-control">
                                             <template #first>
                                                 <b-form-select-option :value="null" disabled>Select
                                                     Sales Rep</b-form-select-option>
@@ -77,8 +77,8 @@
 
                                     </div>
 
-                                    <span class="error-message" v-if="form.errors.customer_id">{{
-                                        form.errors.customer_id }}</span>
+                                    <span class="error-message" v-if="form.errors.sales_rep_id">{{
+                                        form.errors.sales_rep_id }}</span>
 
                                 </div>
 
@@ -163,21 +163,12 @@
                                                     <span :class="list.price_type === 'retail' ? 'badge bg-success mb-1' : 'badge bg-warning mb-1'">
                                                         {{ list.price_type === 'retail' ? 'Retail' : 'Wholesale' }}
                                                     </span>
-                                                    <small class="text-muted">{{ formatCurrency(list.unit_cost) }}</small>
+                                                    <small class="text-muted">{{ formatCurrency(list.price) }}</small>
                                                 </div>
                                             </td>
                                             <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}</td>
                                             <td class="text-center">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    v-model.number="list.discount_per_unit"
-                                                    @input="updateItemTotal(index)"
-                                                    class="form-control text-center"
-                                                    style="width: 100px; margin: 0 auto;"
-                                                    placeholder="0.00"
-                                                />
+                                               {{ formatCurrency(list.discount_per_unit) }}
                                             </td>
                                             <td class="text-center">{{ formatCurrency(calculateDiscountedTotal(list)) }}</td>
                                               <td class="text-center">
@@ -246,7 +237,7 @@
                             </div>
                         </div>
 
-                        <div v-if="form.payment_mode !== 'Cash Sales'" class="card border-0 shadow-sm">
+                        <div v-if="form.payment_mode === 'Credit'" class="card border-0 shadow-sm">
                             <div class="card-header bg-light">
 
                                  <label for="due_date" class="form-label">Due Date<span
@@ -296,20 +287,21 @@
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Your information has been saved successfully!</span>
                     </div>
-                    <div class="form-actions d-flex justify-content-between">
-
-                        <div>
-                            <button type="button" class="btn btn-cancel me-2" @click="hide">
-                                <i class="ri-close-line"></i>
-                                Cancel
-                            </button>
-                            <button type="submit" class="btn btn-save"
-                                :disabled="form.processing || !form.customer_id || !form.order_date">
-                                <i class="ri-save-line" v-if="!form.processing"></i>
-                                <i class="ri-loader-4-line spinner" v-else></i>
-                                {{ form.processing ? 'Saving...' : 'Save Order' }}
-                            </button>
-                        </div>
+                    <div class="error-alert" v-if="form.errors.stock">
+                        <i class="ri-error-warning-line"></i>
+                        <span>{{ form.errors.stock }}</span>
+                    </div>
+                    <div class="form-actions d-flex justify-content-end">
+                        <button type="button" class="btn btn-cancel me-2" @click="hide">
+                            <i class="ri-close-line"></i>
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-save"
+                            :disabled="form.processing || !form.customer_id || !form.order_date">
+                            <i class="ri-save-line" v-if="!form.processing"></i>
+                            <i class="ri-loader-4-line spinner" v-else></i>
+                            {{ form.processing ? 'Saving...' : 'Save Order' }}
+                        </button>
                     </div>
                 </form>
 
@@ -343,7 +335,7 @@ export default {
                 id: null,
                 order_date: new Date().toISOString().slice(0, 10),  // current date
                 due_date: null,
-                customer_id: this.$page.props.auth?.id || null,
+                customer_id: null,
                 sales_rep_id: null,
                 driver_id: null,
                 status_id: null,
@@ -357,8 +349,10 @@ export default {
             saveSuccess: false,
             selectedRow: null,
             payment_modes: [
-                'Cash Sales',
-                'Credit Sales'
+                'Cash',
+                'Credit',
+                'Debit Card',
+                'Bank Transfer',
             ],
         }
     },
@@ -415,7 +409,7 @@ export default {
                 product_id: null,
                 batch_code: null,
                 quantity: 1,
-                unit_cost: 0,
+                price: 0,
                 discount_per_unit: 0,
                 price_type: 'retail', // default to retail per item
             });
@@ -436,21 +430,23 @@ export default {
             this.showModal = true;
             // Set default sales rep to current user if they are a sales rep
             if (this.$page.props.auth?.user?.employee && this.$page.props.auth.user.employee.position_id === 3) {
-                this.form.assigned_to = this.$page.props.auth.user.employee.id;
+                this.form.sales_rep_id = this.$page.props.auth.user.employee.id;
             }
         },
         edit(data, index) {
             this.form.id = data.id;
-            this.form.order_date = data.order_date;
+            this.form.order_date = new Date().toISOString().slice(0, 10);  // set to current date
             this.form.customer_id = data.customer?.id;
-            this.form.assigned_to = data.assigned_to;
+            this.form.sales_rep_id = data.sales_rep_id;
+            this.form.driver_id = data.driver_id;
             this.form.status_id = data.status_id;
+            this.form.payment_mode = data.payment_mode;
             this.form.items = data.items.map(item => ({
                 id: item.id || Date.now(), // ensure each item has a unique ID
                 product_id: item.product_id,
                 batch_code: item.batch_code,
                 quantity: item.quantity,
-                unit_cost: item.unit_cost,
+                price: item.price,
                 discount_per_unit: item.discount_per_unit || 0,
                 price_type: item.price_type || 'retail', // default to retail if not set
             }));
@@ -534,9 +530,9 @@ export default {
         },
 
         calculateItemTotal(item) {
-            const unitCost = parseFloat(item.unit_cost) || 0;
+            const price = parseFloat(item.price) || 0;
             const quantity = parseFloat(item.quantity) || 0;
-            return unitCost * quantity;
+            return price * quantity;
         },
 
         calculateDiscountedTotal(item) {
@@ -545,10 +541,7 @@ export default {
             return discount * quantity;
         },
 
-        updateItemTotal(index) {
-            // In Vue 3, to trigger reactivity update for array elements
-            this.form.items.splice(index, 1, { ...this.form.items[index] });
-        },
+
 
         updateDiscount(item, index, value) {
             if (typeof value === 'string') {
@@ -558,7 +551,6 @@ export default {
             } else {
                 item.discount_per_unit = value || 0;
             }
-            this.updateItemTotal(index);
         },
 
         updateDiscountAmount() {
@@ -573,9 +565,8 @@ export default {
             if (product) {
                 this.form.items[index].batch_code = product.batch_code || null;
                 const price = this.form.items[index].price_type === 'wholesale' ? product.wholesale_price : product.retail_price;
-                this.form.items[index].unit_cost = parseFloat(price) || 0;
+                this.form.items[index].price = parseFloat(price) || 0;
             }
-            this.updateItemTotal(index);
         },
 
         onPriceTypeChange(index) {
@@ -585,7 +576,6 @@ export default {
 
         selectPaymentMode(mode) {
             this.form.payment_mode = mode;
-            this.form.payment_term = mode === 'Cash Sales' ? 'cash' : 'credit';
         },
 
         getPaymentModeIcon(mode) {

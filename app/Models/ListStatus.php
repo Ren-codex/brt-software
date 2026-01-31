@@ -13,4 +13,9 @@ class ListStatus extends Model
         'text_color',
         'bg_color',
     ];
+
+    public static function getBySlug($slug)
+    {
+        return self::where('slug', $slug)->first();
+    }
 }
