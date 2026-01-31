@@ -6,6 +6,7 @@ use App\Listeners\LoginFailed;
 use App\Listeners\LoginSuccessful;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,5 +29,11 @@ class AppServiceProvider extends ServiceProvider
             LoginSuccessful::class,
             LoginFailed::class
         );
+
+        Inertia::share('auth', function () {
+            return [
+                'user' => auth()->user(),
+            ];
+        });
     }
 }

@@ -343,7 +343,7 @@ export default {
                 id: null,
                 order_date: new Date().toISOString().slice(0, 10),  // current date
                 due_date: null,
-                customer_id: this.$page.props.auth.id,
+                customer_id: this.$page.props.auth?.id || null,
                 sales_rep_id: null,
                 driver_id: null,
                 status_id: null,
@@ -435,7 +435,7 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
             // Set default sales rep to current user if they are a sales rep
-            if (this.$page.props.auth.user.employee && this.$page.props.auth.user.employee.position_id === 3) {
+            if (this.$page.props.auth?.user?.employee && this.$page.props.auth.user.employee.position_id === 3) {
                 this.form.assigned_to = this.$page.props.auth.user.employee.id;
             }
         },
