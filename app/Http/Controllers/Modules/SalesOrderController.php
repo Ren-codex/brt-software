@@ -42,6 +42,8 @@ class SalesOrderController extends Controller
                         'brands' => $this->dropdown->brands(),
                         'products' => $this->dropdown->products(),
                         'batch_codes' => $this->dropdown->batch_codes(),
+                        'sales_reps' => $this->dropdown->sales_reps(),
+                        'drivers' => $this->dropdown->drivers(),
                     ]
                 ]);
             break;
@@ -53,6 +55,7 @@ class SalesOrderController extends Controller
             return $this->sales_order->save($request);
         });
 
+
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
@@ -62,7 +65,24 @@ class SalesOrderController extends Controller
     }
 
 
-    public function update(Request $request){
+    public function update(SalesOrderRequest $request, $id){
+        $request->merge(['id' => $id]);
+        $result = $this->handleTransaction(function () use ($request) {
+            return $this->sales_order->update($request);
+        });
+
+  
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+
+    }
+
+    public function updateAction(Request $request){
         $result = $this->handleTransaction(function () use ($request) {
             switch($request->action){
                 case 'approve':

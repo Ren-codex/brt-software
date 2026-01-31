@@ -101,8 +101,7 @@
                                     <th style="width: 10%;" class="text-center border-none">Order Number</th>
                                     <th style="width: 10%;" class="text-center border-none">Customer</th>
                                     <th style="width: 10%;" class="text-center border-none">Date</th>
-                                    <th style="width: 10%;" class="text-center border-none">Status</th>
-                                    <th style="width: 10%;" class="text-center border-none">Substatus</th>
+                                    <th style="width: 8%;" class="text-center border-none">Status</th>
                                     <th style="width: 10%;" class="text-center border-none">Total Amount</th>
                                     <th style="width: 8%;" class="text-center border-none">Paid %</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
@@ -124,18 +123,18 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                            <span class="status-badge fs-10" :style="getStatusStyle(list.status)">
                                                 <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
                                         </td>
-                                          <td class="text-center">
+                                          <!-- <td class="text-center">
                                             <span
                                                 v-if="list.sub_status?.name"
                                                 :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
                                                 {{ list.sub_status?.name  }}
                                             </span>
-                                        </td>
+                                        </td> -->
                                         <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex align-items-center justify-content-center">
@@ -180,7 +179,7 @@
                                         </td>
                                     </tr>
                                     <tr v-if="expandedRows.includes(index)" style="background-color: #c4dad2e0;">
-                                        <td colspan="8" class="p-0">
+                                        <td colspan="12" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Order Details

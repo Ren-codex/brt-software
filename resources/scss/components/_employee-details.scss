@@ -1,0 +1,1072 @@
+
+/* Employee Details Page Styles */
+
+.emp-create-btn {
+    background: #3D8D7A;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: rgba(12, 78, 57, 0.5);
+        border-color: rgba(12, 78, 57, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    i {
+        font-size: 0.95rem;
+    }
+}
+
+.emp-profile-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+/* Profile Header */
+.emp-profile-header {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    background-color: #c4dad2;
+}
+
+.emp-profile-avatar-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.emp-avatar-container {
+    position: relative;
+}
+
+.emp-avatar-preview {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid #e0e0e0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.emp-avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.emp-avatar-placeholder {
+    color: white;
+    font-size: 48px;
+    opacity: 0.9;
+}
+
+.emp-btn-change-photo {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: #007bff;
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.emp-profile-title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 12px 0;
+}
+
+.emp-profile-title {
+    text-align: center;
+}
+
+.emp-profile-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.emp-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.emp-badge-primary {
+    background: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+}
+
+.emp-badge-secondary {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #e1bee7;
+}
+
+.emp-badge-success {
+    background: #e8f5e9;
+    color: #388e3c;
+    border: 1px solid #c8e6c9;
+}
+
+.emp-badge-danger {
+    background: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+}
+
+.emp-badge-dark {
+    background: #424242;
+    color: white;
+    border: 1px solid #616161;
+}
+
+.emp-info-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.emp-info-card-header {
+    padding: 9px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.emp-info-card-header i {
+    font-size: 18px;
+    color: #6c757d;
+}
+
+.emp-info-card-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.emp-info-card-body {
+    padding: 24px;
+}
+
+.emp-info-row {
+    margin-bottom: 20px;
+}
+
+.emp-info-row:last-child {
+    margin-bottom: 0;
+}
+
+.emp-info-label {
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.emp-info-value {
+    font-size: 16px;
+    color: #2c3e50;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.emp-info-value i {
+    color: #adb5bd;
+}
+
+.emp-info-value.emp-highlight {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.emp-status-indicator {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.emp-status-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.emp-status-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.emp-status-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.emp-section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 20px 0;
+}
+
+/* Statistics Cards */
+.emp-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.emp-stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+}
+
+/* Activities Section */
+.emp-activities-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.emp-activity-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+    transition: transform 0.3s;
+}
+
+.emp-activity-card:hover {
+    transform: translateX(4px);
+    border-color: #667eea;
+}
+
+.emp-activity-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.emp-activity-content {
+    flex: 1;
+}
+
+.emp-activity-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.emp-activity-time {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+.emp-activity-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.emp-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.emp-in-progress {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.emp-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.emp-activity-amount {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+/* Incentives Earning Per Payroll */
+.emp-incentives-section {
+    margin-bottom: 24px;
+}
+
+.emp-incentives-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+}
+
+.emp-incentives-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.emp-incentives-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.emp-incentives-period {
+    font-size: 14px;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.emp-incentives-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.emp-incentives-stat {
+    text-align: center;
+}
+
+.emp-stat-label {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.emp-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.emp-stat-change {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.emp-stat-change.emp-positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.emp-progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+.emp-progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #3D8D7A 0%, #2E6B5C 100%);
+    border-radius: 5px;
+    transition: width 0.4s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .emp-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .emp-profile-container {
+        padding: 16px;
+    }
+
+    .emp-profile-header {
+        flex-direction: column;
+        gap: 24px;
+        align-items: flex-start;
+    }
+
+    .emp-profile-avatar-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .emp-avatar-preview {
+        width: 80px;
+        height: 80px;
+    }
+
+    .emp-avatar-placeholder {
+        font-size: 36px;
+    }
+
+    .emp-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .emp-performance-stats {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .emp-activity-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .emp-activity-content {
+        text-align: center;
+    }
+}
+
+/* Employee Loans Section */
+.emp-stats-section {
+    margin-bottom: 24px;
+}
+
+.emp-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.emp-section-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.emp-section-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Loan Summary Card */
+.emp-loan-summary-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.emp-loan-main-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: #c4dad2;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.emp-loan-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3D8D7A 0%, #2E6B5C 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.emp-loan-title-section {
+    flex: 1;
+}
+
+.emp-loan-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 4px 0;
+}
+
+.emp-loan-period {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.emp-loan-trend {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.emp-loan-trend.emp-positive {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.emp-loan-trend.emp-negative {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Main Stats */
+.emp-loan-main-stats {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 24px;
+    padding: 24px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+@media (max-width: 768px) {
+    .emp-loan-main-stats {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+.emp-primary-stat {
+    text-align: center;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+}
+
+.emp-stat-number {
+    font-size: 40px;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1.2;
+    margin-bottom: 8px;
+    font-family: 'Inter', sans-serif;
+}
+
+.emp-stat-label {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.emp-progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.emp-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.emp-progress-percentage {
+    font-weight: 600;
+    color: #3D8D7A;
+    background: rgba(61, 141, 122, 0.1);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+}
+
+.emp-progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+.emp-progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #3D8D7A 0%, #2E6B5C 100%);
+    border-radius: 5px;
+    transition: width 0.4s ease;
+}
+
+.emp-progress-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.emp-progress-detail strong {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* Loan Details Grid */
+.emp-loan-details-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 24px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+@media (max-width: 992px) {
+    .emp-loan-details-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .emp-loan-details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.emp-detail-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.emp-detail-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #3D8D7A;
+}
+
+.emp-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.emp-detail-header i {
+    font-size: 20px;
+    color: #3D8D7A;
+}
+
+.emp-detail-title {
+    font-size: 13px;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.emp-detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.emp-detail-main-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1.2;
+}
+
+.emp-detail-main-value.emp-text-danger {
+    color: #d32f2f;
+}
+
+.emp-detail-main-value.emp-text-success {
+    color: #388e3c;
+}
+
+.emp-detail-sub-value {
+    font-size: 13px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Loan Footer */
+.emp-loan-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.emp-footer-details {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.emp-footer-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.emp-footer-label {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.emp-footer-value {
+    font-size: 14px;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.emp-btn-view-details {
+    background: #3D8D7A;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.emp-btn-view-details:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: rgba(12, 78, 57, 0.5);
+    border-color: rgba(12, 78, 57, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.emp-btn-collapse {
+    background: transparent;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.emp-btn-collapse:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #3D8D7A;
+}
+
+/* Enhanced Incentives Section */
+.emp-incentives-section {
+    margin-bottom: 24px;
+}
+
+.emp-incentives-card {
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.emp-incentives-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    border-color: #3D8D7A;
+}
+
+.emp-incentives-header {
+    padding: 24px;
+    background: #c4dad2;
+    border-bottom: 1px solid rgba(61, 141, 122, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.emp-incentives-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.emp-incentives-header h3::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 24px;
+    background: #c4dad2;
+    border-radius: 2px;
+}
+
+.emp-incentives-period {
+    font-size: 14px;
+    color: #3D8D7A;
+    background: rgba(61, 141, 122, 0.1);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    border: 1px solid rgba(61, 141, 122, 0.2);
+}
+
+.emp-incentives-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 24px;
+}
+
+@media (max-width: 992px) {
+    .emp-incentives-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .emp-incentives-stats {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+.emp-incentives-stat {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.emp-incentives-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    border-color: #3D8D7A;
+    background: white;
+}
+
+.emp-incentives-stat::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #3D8D7A 0%, #2E6B5C 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.emp-incentives-stat:hover::before {
+    opacity: 1;
+}
+
+.emp-incentives-stat .emp-stat-label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+}
+
+.emp-incentives-stat .emp-stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    line-height: 1.2;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.emp-incentives-stat:nth-child(1) .emp-stat-value {
+    color: #3D8D7A;
+}
+
+.emp-incentives-stat:nth-child(2) .emp-stat-value {
+    color: #2c3e50;
+}
+
+.emp-incentives-stat:nth-child(3) .emp-stat-value {
+    color: #495057;
+}
+
+.emp-incentives-stat .emp-stat-change {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0.3px;
+}
+
+.emp-incentives-stat .emp-stat-change.emp-positive {
+    background: linear-gradient(135deg, rgba(61, 141, 122, 0.15) 0%, rgba(46, 107, 92, 0.1) 100%);
+    color: #155724;
+    border: 1px solid rgba(61, 141, 122, 0.2);
+}
+
+.emp-incentives-stat .emp-stat-change.emp-positive::before {
+    content: '↑';
+    font-weight: 800;
+}
+
+/* Optional: Add icons to each stat */
+.emp-incentives-stat:nth-child(1)::after {
+    content: '💰';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 24px;
+    opacity: 0.1;
+}
+
+.emp-incentives-stat:nth-child(2)::after {
+    content: '📊';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 24px;
+    opacity: 0.1;
+}
+
+.emp-incentives-stat:nth-child(3)::after {
+    content: '🌾';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 24px;
+    opacity: 0.1;
+}
+
+/* Mobile responsiveness for incentives section */
+@media (max-width: 768px) {
+    .emp-incentives-header {
+        padding: 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .emp-incentives-header h3 {
+        font-size: 18px;
+    }
+
+    .emp-incentives-stat {
+        padding: 16px;
+    }
+
+    .emp-incentives-stat .emp-stat-value {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 480px) {
+    .emp-incentives-stats {
+        padding: 20px 16px;
+    }
+
+    .emp-incentives-stat .emp-stat-value {
+        font-size: 24px;
+    }
+
+    .emp-incentives-stat .emp-stat-label {
+        font-size: 12px;
+    }
+}

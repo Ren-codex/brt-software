@@ -3,12 +3,14 @@
 namespace App\Services\Modules;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 use App\Models\SalesOrder;
 use App\Models\ArInvoice;
 use App\Models\InventoryStocks;
 use App\Models\ReceivedItem;
 use App\Models\Product;
+use App\Models\ListStatus;
 use App\Models\InventoryAdjustment;
 use App\Http\Resources\Modules\SalesOrderResource;
 use App\Services\Modules\InventoryService;
@@ -25,7 +27,7 @@ class SalesOrderClass
 
     public function lists($request){
         $data = SalesOrderResource::collection(
-            SalesOrder::with('invoices')
+            SalesOrder::with(['items', 'arInvoices'])
                 ->when($request->keyword, function ($query,$keyword) {
                     $query->where('so_number', 'LIKE', "%{$keyword}%")
                           ->orWhereHas('status', function($q) use ($keyword){
@@ -43,41 +45,55 @@ class SalesOrderClass
 
 
     public function save($request){
+   
+                
         // Validate stock availability for all items
         foreach($request->items as $item){
             if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'], $item['batch_code'])) {
                 $product = Product::find($item['product_id']);
-                throw new \Exception('Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']);
+                throw ValidationException::withMessages(['stock' => 'Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']]);
             }
         }
+
+        //dd( $request->all());
         $data = new SalesOrder();
         $data->so_number = SalesOrder::generateSONumber();
+        //dd(SalesOrder::generateSONumber());
         $data->order_date = $request->order_date;
         $data->customer_id = $request->customer_id;
+        $data->sales_rep_id = $request->sales_rep_id;
+        $data->driver_id = $request->driver_id;
+        $data->payment_mode = $request->payment_mode;
+        $data->due_date = $request->due_date;
         $data->added_by_id = auth()->user()->id;
-        $data->status_id = 12; //set to "For Payment"
+        $data->status_id = ListStatus::getBySlug('for-payment')->id; //set to "For Payment" 
+
         $data->save();
+
+        //dd($data->id);
+
 
         $totalAmount = 0;
         $totalDiscount = 0;
 
         foreach($request->items as $item){
-            $price = $item['unit_cost']; // map unit_cost to price
-            $discount = $item['discount_per_unit'] ?? 0;
+            $price = $item['price']; // map price to price
+            $discount_per_unit = $item['discount_per_unit'] ?? 0;
             $quantity = $item['quantity'];
-            $discount_amount = $price * ($discount / 100);
+            $total_discount_amount = $discount_per_unit * $quantity;
 
+       
             $data->items()->create([
-                'sales_order_id' => $data->id,
                 'product_id' => $item['product_id'],
                 'quantity' => $quantity,
                 'price' => $price,
+                'price_type' => $item['price_type'],
                 'batch_code' => $item['batch_code'],
-                'discount_per_unit' => $discount,
+                'discount_per_unit' => $discount_per_unit,
             ]);
 
-            $totalAmount += ($price - $discount_amount) * $quantity;
-            $totalDiscount += $discount_amount * $quantity;
+            $totalAmount += ($price * $quantity) - $total_discount_amount;
+            $totalDiscount += $total_discount_amount;
 
 
             // Deduct inventory
@@ -90,12 +106,12 @@ class SalesOrderClass
             'total_discount' => $totalDiscount,
         ]);
 
- 
+       
 
         // Reload the data with relationships
-        $data = SalesOrder::with(['items', 'customer', 'status', 'added_by'])->find($data->id);
-
-       
+        $data = SalesOrder::with(['items', 'customer', 'status', 'addedBy'])->find($data->id);
+ 
+     
         // Create AR Invoice
         $invoice = new ArInvoice();
         $invoice->sales_order_id = $data->id;
@@ -104,8 +120,9 @@ class SalesOrderClass
         $invoice->amount_paid = 0;
         $invoice->balance_due = $data->total_amount;
         $invoice->total_discount = $data->total_discount;
-        $invoice->status_id = 8; // Unpaid
+        $invoice->status_id = ListStatus::getBySlug('unpaid')->id; // Unpaid
         $invoice->save();
+        
     
         return [
             'data' => new SalesOrderResource($data),
@@ -116,6 +133,7 @@ class SalesOrderClass
 
 
     public function update($request){
+
         $data = SalesOrder::findOrFail($request->id);
 
         // Restore old stock
@@ -126,6 +144,11 @@ class SalesOrderClass
         $data->update([
             'customer_id' => $request->customer_id,
             'order_date' => $request->order_date,
+            'sales_rep_id' => $request->sales_rep_id,
+            'driver_id' => $request->driver_id,
+            'payment_mode' => $request->payment_mode,
+            'due_date' => $request->due_date,
+            'updated_by_id' => auth()->user()->id,
         ]);
 
         // Clear existing items
@@ -135,7 +158,7 @@ class SalesOrderClass
         foreach($request->items as $item){
             if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'], $item['batch_code'])) {
                 $product = Product::find($item['product_id']);
-                throw new \Exception('Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']);
+                throw ValidationException::withMessages(['stock' => 'Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']]);
             }
         }
 
@@ -143,21 +166,22 @@ class SalesOrderClass
         $totalAmount = 0;
         $totalDiscount = 0;
         foreach($request->items as $item){
-            $price = $item['unit_cost']; // map unit_cost to price
-            $discount = $item['discount_per_unit'] ?? 0;
+            $price = $item['price']; // map price to price
+            $discount_per_unit = $item['discount_per_unit'] ?? 0;
             $quantity = $item['quantity'];
-            $discount_amount = $price * ($discount / 100);
+            $total_discount_amount = $discount_per_unit * $quantity;
 
             $data->items()->create([
                 'product_id' => $item['product_id'],
                 'quantity' => $quantity,
                 'price' => $price,
+                'price_type' => $item['price_type'],
                 'batch_code' => $item['batch_code'],
-                'discount_per_unit' => $discount,
+                'discount_per_unit' => $discount_per_unit,
             ]);
 
-            $totalAmount += ($price - $discount_amount) * $quantity;
-            $totalDiscount += $discount_amount * $quantity;
+            $totalAmount += ($price * $quantity) - $total_discount_amount;
+            $totalDiscount += $total_discount_amount;
 
             // Deduct new inventory
             $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Update Sale - SO#' . $data->so_number, $item['batch_code']);
@@ -170,13 +194,16 @@ class SalesOrderClass
         ]);
 
         // Update associated invoice
-        $invoice = $data->invoices()->first();
+        $invoice = $data->arInvoices()->first();
         if ($invoice) {
             $invoice->update([
                 'balance_due' => $totalAmount,
                 'total_discount' => $totalDiscount,
             ]);
         }
+
+        // Reload the data with relationships
+        $data = SalesOrder::with(['items', 'customer', 'status', 'addedBy', 'arInvoices'])->find($data->id);
 
         return [
             'data' => new SalesOrderResource($data),
@@ -189,7 +216,7 @@ class SalesOrderClass
         $data = SalesOrder::findOrFail($id);
 
         $data->update([
-            'status_id' => 5, //set to approved
+            'status_id' => ListStatus::getBySlug('approved')->id, //set to approved
             'approved_by_id' => auth()->user()->id,
             'approved_at' => now(),
         ]);
@@ -210,7 +237,7 @@ class SalesOrderClass
         }
 
         $data->update([
-            'status_id' => 2, //set to cancelled
+            'status_id' => ListStatus::getBySlug('cancelled')->id, //set to cancelled
         ]);
 
         return [
@@ -223,9 +250,9 @@ class SalesOrderClass
     public function dashboard(){
         $total_sales_orders = SalesOrder::count();
         $today_orders = SalesOrder::whereDate('created_at', today())->count();
-        $total_revenue = SalesOrder::where('status_id', '!=', 2)->sum('total_amount') ?? 0; // Exclude cancelled orders (status_id 2)
-        $pending_orders = SalesOrder::where('status_id', 1)->count(); // Assuming status_id 1 is pending
-        $cancelled_orders = SalesOrder::where('status_id', 2)->count(); // status_id 2 is cancelled
+        $total_revenue = SalesOrder::where('status_id', '!=', ListStatus::getBySlug('cancelled')->id)->sum('total_amount') ?? 0; // Exclude cancelled orders (status_id 2)
+        $pending_orders = SalesOrder::where('status_id', ListStatus::getBySlug('pending')->id)->count(); // Assuming status_id 1 is pending
+        $cancelled_orders = SalesOrder::where('status_id', ListStatus::getBySlug('cancelled')->id)->count(); // status_id 2 is cancelled
 
         return [
             'total_sales_orders' => $total_sales_orders,
@@ -285,7 +312,7 @@ class SalesOrderClass
 
      public function adjustment(){
         // Get all sales orders with status 'adjusted' (assuming status_id 3 is 'adjusted')
-        $adjusted_orders = SalesOrder::where('status_id', 3)->with('items')->get();
+        $adjusted_orders = SalesOrder::where('status_id', ListStatus::getBySlug('adjusted')->id)->with('items')->get();
 
         return $adjusted_orders; 
     }

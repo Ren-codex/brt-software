@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('sales_orders', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
+            $table->date('due_date')->nullable();
             $table->string('so_number',50)->unique();
+            $table->string('payment_mode',50);
             $table->date('order_date');
             $table->date('transferred_at')->nullable();
             $table->decimal('total_amount', 15, 2)->default(0);
@@ -32,6 +34,11 @@ return new class extends Migration
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->unsignedInteger('sub_status_id')->nullable();
             $table->foreign('sub_status_id')->references('id')->on('list_statuses')->onDelete('set null');
+            $table->unsignedInteger('sales_rep_id');
+            $table->foreign('sales_rep_id')->references('id')->on('employees');
+            $table->unsignedInteger('driver_id');
+            $table->foreign('driver_id')->references('id')->on('employees');
+            
             $table->timestamps();
         });
     }

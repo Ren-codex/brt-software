@@ -20,68 +20,83 @@ class SalesOrder extends Model
         'transferred_at',
         'approved_by_id',
         'approved_at',
+        'sales_rep_id',
+        'driver_id',
+        'payment_mode',
+        'due_date',
     ];
+
+    protected $casts = [
+        'order_date' => 'date',
+        'transferred_at' => 'date',
+        'approved_at' => 'date',
+        'total_amount' => 'decimal:2',
+        'total_discount' => 'decimal:2',
+    ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
 
     public function status()
     {
-        return $this->belongsTo(ListStatus::class, 'status_id');
+        return $this->belongsTo(ListStatus::class);
     }
 
-    public function sub_status()
+    public function subStatus()
     {
         return $this->belongsTo(ListStatus::class, 'sub_status_id');
     }
 
-    public function customer()
-    {
-        return $this->belongsTo(Customer::class, 'customer_id');
-    }
-
-    public function items()
-    {
-        return $this->hasMany(SalesOrderItem::class, 'sales_order_id');
-    }
-
-    public function invoices()
-    {
-        return $this->hasMany(ArInvoice::class, 'sales_order_id');
-    }
-
-    public function added_by()
+    public function addedBy()
     {
         return $this->belongsTo(User::class, 'added_by_id');
     }
 
-    public function approved_by()
+    public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by_id');
     }
 
-    public function created_by()
+    public function transferredTo()
     {
-        return $this->belongsTo(User::class, 'created_by_id');
+        return $this->belongsTo(User::class, 'transferred_to');
     }
 
-
-    public function logs()
+    public function salesRep()
     {
-        return $this->hasMany(PurchaseOrderLog::class, 'po_id');
+        return $this->belongsTo(Employee::class, 'sales_rep_id');
     }
-    
-    public static function generateSONumber($date = null)
+
+    public function driver()
     {
-        if ($date) {
-            $year = date("y", strtotime($date));  // 'y' gives the last two digits of the year
-            $month = date("m", strtotime($date));
-        } else {
-            $year = date("y", strtotime("now"));  // 'y' gives the last two digits of the year
-            $month = date("m", strtotime("now"));
-        }
+        return $this->belongsTo(Employee::class, 'driver_id');
+    }
 
-        $count = self::whereYear('order_date', date("Y", strtotime($date ?? "now")))
-                     ->whereMonth('order_date', $month)
-                     ->count() + 1;
+    public function items()
+    {
+        return $this->hasMany(SalesOrderItem::class);
+    }
 
-        return 'SO-' . $year . '-' . $month . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+    public function arInvoices()
+    {
+        return $this->hasMany(ArInvoice::class);
+    }
+
+    public static function generateSoNumber($date = null)
+    {
+        $date = $date ?: now();
+        $year = $date->format('Y');
+        $month = $date->format('m');
+
+        $lastSo = self::whereYear('created_at', $year)
+                      ->whereMonth('created_at', $month)
+                      ->orderBy('id', 'desc')
+                      ->first();
+
+        $sequence = $lastSo ? intval(substr($lastSo->so_number, -4)) + 1 : 1;
+
+        return 'SO-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }
