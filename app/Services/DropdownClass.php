@@ -179,6 +179,27 @@ class DropdownClass
         return  $data;
     }
 
+    public function sales_reps(){
+        $data = Employee::where('position_id', 2)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->fullname,
+            ];
+        });
+        return  $data;
+    }
+
+    public function drivers(){
+        $data = Employee::where('position_id', 3)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->fullname,
+            ];
+        });
+        return  $data;
+    }
+
+
     public function payroll_settings(){
         $data = PayrollSetting::where('is_active',1)->get()->map(function ($item) {
             return [

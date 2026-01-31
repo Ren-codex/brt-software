@@ -29,6 +29,32 @@ class ListPositionsTableSeeder extends Seeder
                 'created_at' => '2024-08-25 14:41:28',
                 'updated_at' => '2024-08-25 14:41:28',
             ),
+
+            1 => 
+            array (
+                'id' => 2,
+                'is_active' => 1,
+                'title' => 'Sales Rep',
+                'slug' => 'sales-rep',
+                'short' => 'SR',
+                'is_regular' => 1,
+                'salary_id' => 1,
+                'created_at' => '2024-08-25 14:41:28',
+                'updated_at' => '2024-08-25 14:41:28',
+            ),
+
+                 2 => 
+            array (
+                'id' => 3,
+                'is_active' => 1,
+                'title' => 'Driver',
+                'slug' => 'driver',
+                'short' => 'driver',
+                'is_regular' => 1,
+                'salary_id' => 1,
+                'created_at' => '2024-08-25 14:41:28',
+                'updated_at' => '2024-08-25 14:41:28',
+            ),
         ));
 
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');

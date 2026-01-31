@@ -200,12 +200,20 @@
     "src": "public/images/sidebar/img-4.jpg"
   },
   "resources/js/app.js": {
+<<<<<<< HEAD
     "file": "assets/app-COvuWAbu.js",
+=======
+    "file": "assets/app-Deb_-jhb.js",
+>>>>>>> d708003ee4e8b0dbb4cb02aed1d110a6e260ba59
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
+<<<<<<< HEAD
       "assets/app-DtxoZoQz.css"
+=======
+      "assets/app-bj3CEGFM.css"
+>>>>>>> d708003ee4e8b0dbb4cb02aed1d110a6e260ba59
     ],
     "assets": [
       "assets/logo-sm-C9p9en_o.png",
