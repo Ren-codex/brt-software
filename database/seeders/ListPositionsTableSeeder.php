@@ -44,7 +44,7 @@ class ListPositionsTableSeeder extends Seeder
                 'updated_at' => '2024-08-25 14:41:28',
             ),
 
-                 2 => 
+            2 => 
             array (
                 'id' => 3,
                 'is_active' => 1,

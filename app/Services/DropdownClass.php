@@ -173,7 +173,7 @@ class DropdownClass
     }
 
     public function sales_reps(){
-        $data = Employee::where('position_id', 2)->get()->map(function ($item) {
+        $data = Employee::where('position_id', ListPosition::getID('Sales Rep'))->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->fullname,
@@ -183,7 +183,7 @@ class DropdownClass
     }
 
     public function drivers(){
-        $data = Employee::where('position_id', 3)->get()->map(function ($item) {
+        $data = Employee::where('position_id', ListPosition::getID('Driver'))->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->fullname,
