@@ -11,10 +11,6 @@
                     <i class="ri-pencil-fill"></i>
                     Edit
                 </button>
-                <button class="emp-create-btn" @click="printProfile">
-                    <i class="ri-printer-line"></i>
-                    Print
-                </button>
             </div>
         </div>
         
@@ -130,151 +126,166 @@
             <!-- Right Column - Rice Orders & Payments -->
             <div class="col-md-8">
                 <!-- Rice Orders Summary -->
-                <div class="emp-info-card">
-                    <div class="emp-info-card-header">
-                        <i class="ri-bowl-line"></i>
-                        <h3>Rice Order Summary</h3>
-                        <div class="ml-auto">
-                            <button class="emp-create-btn" @click="showOrderHistory">
-                                <i class="ri-history-line"></i>
-                                View All
-                            </button>
+                <div class="emp-incentives-section">
+                    <div class="emp-incentives-card">
+                        <div class="emp-incentives-header">
+                            <h3>Rice Orders Summary</h3>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <select v-model="selectedMonth" class="emp-create-btn emp-month-filter">
+                                    <option v-for="month in months" :key="month.value" :value="month.value">
+                                        {{ month.label }}
+                                    </option>
+                                </select><select v-model="selectedYear" class="emp-create-btn emp-month-filter">
+                                    <option v-for="year in years" :key="year" :value="year">
+                                        {{ year }}
+                                    </option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="emp-info-card-body">
-                        <div class="emp-stats-grid">
-                            <div class="emp-stat-card">
+                        <div class="emp-incentives-stats">
+                            <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Total Orders</div>
-                                <div class="emp-stat-number">{{ customer.total_orders || 0 }}</div>
+                                <div class="emp-stat-value">{{ customer.total_orders || 0 }}</div>
                                 <div class="emp-stat-change" :class="getTrendClass(customer.order_trend)">
                                     <i :class="getTrendIcon(customer.order_trend)"></i>
                                     {{ customer.order_trend || '0%' }}
                                 </div>
                             </div>
-                            <div class="emp-stat-card">
+                            <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Total Rice Ordered</div>
-                                <div class="emp-stat-number">{{ customer.total_rice_ordered || 0 }}</div>
-                                <div class="emp-stat-label">kilograms</div>
+                                <div class="emp-stat-value">{{ customer.total_rice_ordered || 0 }} kg</div>
+                                <div class="emp-stat-change emp-positive">0%</div>
                             </div>
-                            <div class="emp-stat-card">
+                            <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Total Amount</div>
-                                <div class="emp-stat-number">₱{{ customer.total_amount || 0 }}</div>
-                                <div class="emp-stat-label">Lifetime Value</div>
-                            </div>
-                            <div class="emp-stat-card">
-                                <div class="emp-stat-label">Avg. Order Value</div>
-                                <div class="emp-stat-number">₱{{ customer.avg_order_value || 0 }}</div>
-                                <div class="emp-stat-label">Per Order</div>
-                            </div>
-                        </div>
-
-                        <!-- Rice Variety Breakdown -->
-                        <div class="emp-section-title mt-4">Rice Varieties Ordered</div>
-                        <div class="emp-activities-grid">
-                            <div class="emp-activity-card" v-for="variety in customer.rice_varieties || []" :key="variety.id">
-                                <div class="emp-activity-icon">
-                                    <i class="ri-seedling-line"></i>
-                                </div>
-                                <div class="emp-activity-content">
-                                    <div class="emp-activity-title">{{ variety.name }}</div>
-                                    <div class="emp-activity-time">{{ variety.type }}</div>
-                                    <div class="emp-activity-status" :class="getStockClass(variety.quantity)">
-                                        {{ variety.quantity || 0 }} kg
-                                    </div>
-                                </div>
-                                <div class="emp-activity-amount">
-                                    ₱{{ variety.total_value || 0 }}
-                                </div>
+                                <div class="emp-stat-value">₱{{ customer.total_amount || 0 }}</div>
+                                <div class="emp-stat-change emp-positive">0%</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Payment Due Dates -->
-                <div class="emp-info-card mt-4">
-                    <div class="emp-info-card-header">
-                        <i class="ri-calendar-event-line"></i>
-                        <h3>Payment Due Dates</h3>
-                        <div class="ml-auto">
-                            <button class="emp-create-btn" @click="showPaymentSchedule">
-                                <i class="ri-calendar-schedule-line"></i>
-                                Schedule
+                <div class="emp-stats-section mt-2">
+                    <div class="emp-section-header">
+                        <h2 class="emp-section-title">Payment Due Dates</h2>
+                    </div>
+
+                    <div class="emp-loan-summary-card">
+                        <div class="emp-loan-main-header">
+                            <div class="emp-loan-icon">
+                                <i class="ri-calendar-event-line"></i>
+                            </div>
+                            <div class="emp-loan-title-section">
+                                <h3 class="emp-loan-title">Outstanding Payments</h3>
+                                <div class="emp-loan-period">As of {{ currentDate }}</div>
+                            </div>
+                            <button @click="toggleLoanCollapse" class="emp-create-btn">
+                                <i :class="loanCollapsed ? 'ri-arrow-down-s-line' : 'ri-arrow-up-s-line'"></i>
                             </button>
                         </div>
-                    </div>
-                    <div class="emp-info-card-body">
-                        <div class="emp-loan-summary-card">
-                            <!-- Due Dates Summary -->
-                            <div class="emp-loan-main-header">
-                                <div class="emp-loan-icon">
-                                    <i class="ri-money-dollar-circle-line"></i>
+
+                        <div class="emp-loan-main-stats">
+                            <div class="emp-primary-stat">
+                                <div class="emp-stat-number">₱{{ customer.total_due || 0 }}</div>
+                                <div class="emp-stat-label">Total Due</div>
+                            </div>
+
+                            <div class="emp-progress-section">
+                                <div class="emp-progress-header">
+                                    <span>Payment Progress</span>
+                                    <span class="emp-progress-percentage">{{ getPaymentProgress(customer) }}%</span>
                                 </div>
-                                <div class="emp-loan-title-section">
-                                    <div class="emp-loan-title">Outstanding Payments</div>
-                                    <div class="emp-loan-period">As of {{ currentDate }}</div>
+                                <div class="emp-progress-bar">
+                                    <div class="emp-progress-fill" :style="{ width: getPaymentProgress(customer) + '%' }"></div>
                                 </div>
-                                <div class="emp-loan-trend" :class="getDueStatusClass(customer.due_status)">
-                                    {{ customer.due_status || 'No Dues' }}
+                                <div class="emp-progress-details">
+                                    <span class="emp-progress-detail">Paid: <strong>₱{{ customer.paid_amount || 0 }}</strong></span>
+                                    <span class="emp-progress-detail">Pending: <strong>₱{{ customer.total_due || 0 }}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-show="!loanCollapsed" class="emp-loan-details-grid">
+                            <div class="emp-detail-card">
+                                <div class="emp-detail-header">
+                                    <i class="ri-calendar-todo-line"></i>
+                                    <span class="emp-detail-title">Payment Terms</span>
+                                </div>
+                                <div class="emp-detail-content">
+                                    <div class="emp-detail-main-value">12 Months</div>
+                                    <div class="emp-detail-sub-value">4 Remaining</div>
                                 </div>
                             </div>
 
-                            <!-- Main Due Stats -->
-                            <div class="emp-loan-main-stats">
-                                <div class="emp-primary-stat">
-                                    <div class="emp-stat-number">₱{{ customer.total_due || 0 }}</div>
-                                    <div class="emp-stat-label">Total Due</div>
+                            <div class="emp-detail-card">
+                                <div class="emp-detail-header">
+                                    <i class="ri-time-line"></i>
+                                    <span class="emp-detail-title">Unpaid Months</span>
                                 </div>
-                                <div class="emp-progress-section">
-                                    <div class="emp-progress-header">
-                                        <span>Payment Progress</span>
-                                        <span class="emp-progress-percentage">{{ getPaymentProgress(customer) }}%</span>
-                                    </div>
-                                    <div class="emp-progress-bar">
-                                        <div class="emp-progress-fill" :style="{ width: getPaymentProgress(customer) + '%' }"></div>
-                                    </div>
-                                    <div class="emp-progress-details">
-                                        <div>Paid: <strong>₱{{ customer.paid_amount || 1000 }}</strong></div>
-                                        <div>Pending: <strong>₱{{ customer.total_due || 0 }}</strong></div>
-                                    </div>
+                                <div class="emp-detail-content">
+                                    <div class="emp-detail-main-value emp-text-danger">4</div>
+                                    <div class="emp-detail-sub-value">₱1,600 Due</div>
                                 </div>
                             </div>
 
-                            <!-- Due Dates Grid -->
-                            <div class="emp-loan-details-grid">
-                                <div class="emp-detail-card" v-for="due in customer.due_dates || []" :key="due.id">
-                                    <div class="emp-detail-header">
-                                        <i class="ri-calendar-check-line"></i>
-                                        <div class="emp-detail-title">Due {{ formatRelativeDate(due.due_date) }}</div>
-                                    </div>
-                                    <div class="emp-detail-content">
-                                        <div class="emp-detail-main-value" :class="getDueAmountClass(due)">
-                                            ₱{{ due.amount }}
-                                        </div>
-                                        <div class="emp-detail-sub-value">{{ formatDate(due.due_date) }}</div>
-                                        <div class="emp-detail-sub-value">Order: {{ due.order_id }}</div>
-                                    </div>
+                            <div class="emp-detail-card">
+                                <div class="emp-detail-header">
+                                    <i class="ri-checkbox-circle-line"></i>
+                                    <span class="emp-detail-title">Paid Months</span>
+                                </div>
+                                <div class="emp-detail-content">
+                                    <div class="emp-detail-main-value emp-text-success">8</div>
+                                    <div class="emp-detail-sub-value">₱3,200 Paid</div>
                                 </div>
                             </div>
 
-                            <!-- Due Dates Footer -->
-                            <div class="emp-loan-footer">
-                                <div class="emp-footer-details">
-                                    <div class="emp-footer-detail">
-                                        <div class="emp-footer-label">Next Due Date</div>
-                                        <div class="emp-footer-value">{{ getNextDueDate(customer) }}</div>
-                                    </div>
-                                    <div class="emp-footer-detail">
-                                        <div class="emp-footer-label">Overdue Amount</div>
-                                        <div class="emp-footer-value" :class="{'emp-text-danger': customer.overdue_amount > 1000}">
-                                            ₱{{ customer.overdue_amount || 1000 }}
-                                        </div>
-                                    </div>
+                            <div class="emp-detail-card">
+                                <div class="emp-detail-header">
+                                    <i class="ri-calendar-event-line"></i>
+                                    <span class="emp-detail-title">Next Due</span>
                                 </div>
-                                <button class="emp-btn-view-details" @click="processPayment">
-                                    <i class="ri-money-dollar-circle-line"></i>
-                                    Process Payment
-                                </button>
+                                <div class="emp-detail-content">
+                                    <div class="emp-detail-main-value">Feb 15</div>
+                                    <div class="emp-detail-sub-value">Next Month</div>
+                                </div>
                             </div>
+                        </div>
+
+                        <div v-show="!loanCollapsed" class="emp-loan-details-grid">
+                            <div class="emp-detail-card" v-for="due in customer.due_dates || []" :key="due.id">
+                                <div class="emp-detail-header">
+                                    <i class="ri-calendar-check-line"></i>
+                                    <div class="emp-detail-title">Due {{ formatRelativeDate(due.due_date) }}</div>
+                                </div>
+                                <div class="emp-detail-content">
+                                    <div class="emp-detail-main-value" :class="getDueAmountClass(due)">
+                                        ₱{{ due.amount }}
+                                    </div>
+                                    <div class="emp-detail-sub-value">{{ formatDate(due.due_date) }}</div>
+                                    <div class="emp-detail-sub-value">Order: {{ due.order_id }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="emp-loan-footer">
+                            <div class="emp-footer-details">
+                                <div class="emp-footer-detail">
+                                    <span class="emp-footer-label">Total Paid Amount</span>
+                                    <span class="emp-footer-value">₱{{ customer.paid_amount || 0 }}</span>
+                                </div>
+                                <div class="emp-footer-detail">
+                                    <span class="emp-footer-label">Remaining Amount</span>
+                                    <span class="emp-footer-value">₱{{ customer.total_due || 0 }}</span>
+                                </div>
+                                <div class="emp-footer-detail">
+                                    <span class="emp-footer-label">Remaining Days</span>
+                                    <span class="emp-footer-value">{{ getRemainingDays(customer) }}</span>
+                                </div>
+                            </div>
+                            <button class="emp-btn-view-details" @click="processPayment">
+                                <i class="ri-money-dollar-circle-line"></i>
+                                Process Payment
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -320,7 +331,25 @@ export default {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
-            })
+            }),
+            selectedYear: new Date().getFullYear(),
+            selectedMonth: new Date().getMonth() + 1,
+            years: Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i),
+            months: [
+                { value: 1, label: 'January' },
+                { value: 2, label: 'February' },
+                { value: 3, label: 'March' },
+                { value: 4, label: 'April' },
+                { value: 5, label: 'May' },
+                { value: 6, label: 'June' },
+                { value: 7, label: 'July' },
+                { value: 8, label: 'August' },
+                { value: 9, label: 'September' },
+                { value: 10, label: 'October' },
+                { value: 11, label: 'November' },
+                { value: 12, label: 'December' }
+            ],
+            loanCollapsed: true
         }
     },
     methods: {
@@ -423,17 +452,36 @@ export default {
         
         getNextDueDate(customer) {
             if (!customer.due_dates || customer.due_dates.length === 0) return 'No pending dues';
-            
+
             const now = new Date();
             const upcomingDues = customer.due_dates.filter(due => {
                 const dueDate = new Date(due.due_date);
                 return dueDate >= now;
             });
-            
+
             if (upcomingDues.length === 0) return 'No upcoming dues';
-            
+
             upcomingDues.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
             return this.formatDate(upcomingDues[0].due_date);
+        },
+
+        getRemainingDays(customer) {
+            if (!customer.due_dates || customer.due_dates.length === 0) return 'N/A';
+
+            const now = new Date();
+            const upcomingDues = customer.due_dates.filter(due => {
+                const dueDate = new Date(due.due_date);
+                return dueDate >= now;
+            });
+
+            if (upcomingDues.length === 0) return 'N/A';
+
+            upcomingDues.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+            const nextDueDate = new Date(upcomingDues[0].due_date);
+            const diffTime = nextDueDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays > 0 ? `${diffDays} days` : 'Overdue';
         },
         
         getActivityIconClass(type) {
@@ -483,8 +531,10 @@ export default {
             this.$emit('processPayment', this.customer);
         },
         
-        printProfile() {
-            window.print();
+
+
+        toggleLoanCollapse() {
+            this.loanCollapsed = !this.loanCollapsed;
         }
     },
     computed: {
