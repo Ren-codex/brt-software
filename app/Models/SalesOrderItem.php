@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class SalesOrderItem extends Model
 {
     protected $fillable = [
-        'sales_order_id',
+        't',
         'product_id',
         'quantity',
         'price',
+        'price_type',
         'batch_code',
         'discount_per_unit'
     ];
