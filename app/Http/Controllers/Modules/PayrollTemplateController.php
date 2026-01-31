@@ -10,6 +10,7 @@ use App\Http\Requests\Modules\PayrollTemplateRequest;
 use App\Traits\HandlesTransaction;
 use App\Services\Modules\PayrollTemplateClass as PayrollTemplateService;
 use App\Http\Resources\Modules\PayrollTemplateResource;
+use App\Http\Requests\Modules\AddEmployeesRequest;
 
 class PayrollTemplateController extends Controller
 {
@@ -21,9 +22,9 @@ class PayrollTemplateController extends Controller
         $this->payrollTemplate = $payrollTemplate;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $payrollTemplate = $this->payrollTemplate->getAll();
+        $payrollTemplate = $this->payrollTemplate->getAll($request);
         return PayrollTemplateResource::collection($payrollTemplate);
     }
 
@@ -61,11 +62,43 @@ class PayrollTemplateController extends Controller
             return $this->payrollTemplate->update($request, $id);
         });
 
+        return new PayrollTemplateResource($result['data']);
+    }
+
+    public function destroy($id)
+    {
+        $result = $this->handleTransaction(function () use ($id) {
+            return $this->payrollTemplate->delete($id);
+        });
+
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
-            'status' => $result['status'] ?? true,
+            'status' => $result['status'],
         ]);
+    }
+
+    public function removeEmployee($templateId, $employeeId)
+    {
+        $result = $this->handleTransaction(function () use ($templateId, $employeeId) {
+            return $this->payrollTemplate->removeEmployee($templateId, $employeeId);
+        });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
+
+    public function addEmployees(AddEmployeesRequest $request, $templateId)
+    {
+        $result = $this->handleTransaction(function () use ($request, $templateId) {
+            return $this->payrollTemplate->addEmployees($request, $templateId);
+        });
+
+        return new PayrollTemplateResource($result['data']);
     }
 }

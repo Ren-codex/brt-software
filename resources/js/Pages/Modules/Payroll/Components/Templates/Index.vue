@@ -25,7 +25,7 @@
                       <!-- Left Column - Templates List -->
                       <div class="col-lg-5 col-xl-4">
                         <div class="templates-list-section">
-                          <div class="templates-grid">
+                          <div class="templates-grid" v-if="payrollTemplates.length > 0">
                             <div 
                               v-for="template in payrollTemplates" 
                               :key="template.id"
@@ -83,28 +83,34 @@
                               </b-card>
                             </div>
                           </div>
+                          <div v-else class="text-center py-5">
+                            <div class="mb-4">
+                              <i class="ri-file-list-3-line text-muted" style="font-size: 64px;"></i>
+                            </div>
+                            <h4 class="text-muted mb-3">No Templates Found</h4>
+                            <p class="text-muted mb-4">Create a new payroll template to get started</p>
+                          </div>
                         </div>
                       </div>
                       <!-- Right Column - Selected Template Details -->
                       <div class="col-lg-7 col-xl-8">
-                        <div class="employees-section" v-if="selectedTemplate">
+                        <div class="employees-section" v-if="selectedTemplate && selectedTemplate.length !== 0">
                           <div class="section-header d-flex justify-content-between align-items-center mb-4">
                             <div>
-                              <h5 class="mb-1">Employees in <span class="text-primary">{{ selectedTemplate.name }}</span></h5>
+                              <h5 class="mb-1">Employees in <span class="text-primary">{{ selectedTemplate.name }}</span> Template</h5>
                               <p class="text-muted mb-0">{{ selectedTemplate.employees.length }} employees assigned</p>
                             </div>
                             <div class="search-section d-flex">
                               <div class="search-wrapper">
                                 <i class="ri-search-line search-icon"></i>
-                                <input 
-                                  type="text" 
-                                  v-model="localKeyword" 
-                                  @input="updateKeyword($event.target.value)"
-                                  placeholder="Search employees..." 
+                                <input
+                                  type="text"
+                                  v-model="localKeyword"
+                                  placeholder="Search employees..."
                                   class="search-input"
                                 >
                               </div>
-                              <b-button variant="primary" size="sm">
+                              <b-button variant="primary" size="sm" @click="addEmployee(selectedTemplate)" class="ms-1">
                                 <i class="ri-add-line me-1"></i>
                               </b-button>
                             </div>
@@ -208,9 +214,10 @@
     </BRow>
     <!-- Create/Edit Modal -->
     <PayrollTemplateModal
-      v-if="showCreateModal || showEditModal"
+      v-if="showCreateModal || showEditTitleModal || showEmployeeModal"
       :template="selectedTemplate"
-      :is-edit="showEditModal"
+      :is-edit-title="showEditTitleModal"
+      :is-add-employee="showEmployeeModal"
       @close="closeModal"
       @saved="handleSaved"
     />
@@ -221,6 +228,9 @@
         {{ toastMessage }}
       </div>
     </div>
+
+    <DeleteModal ref="delete" @delete="successDeletion" />
+    <DeleteModal ref="removeEmployee" @delete="successRemoval" />
 </template>
 
 <script>
@@ -228,9 +238,10 @@ import _ from 'lodash';
 import axios from 'axios'
 import PayrollTemplateModal from './Modal.vue'
 import Pagination from "@/Shared/Components/Pagination.vue";
+import DeleteModal from '@/Shared/Components/Modals/Delete.vue';
 
 export default {
-  components: { PayrollTemplateModal, Pagination },
+  components: { PayrollTemplateModal, Pagination, DeleteModal },
   props: ['dropdowns'],
   data() {
     return {
@@ -242,11 +253,13 @@ export default {
       },
       localKeyword: '',
       showCreateModal: false,
-      showEditModal: false,
+      showEditTitleModal: false,
+      showEmployeeModal: false,
       selectedTemplate: null,
       isToastVisible: false,
       toastMessage: '',
       employeeSortOrder: 'asc',
+      selectedEmployee: null,
     }
   },
   computed: {
@@ -280,7 +293,9 @@ export default {
       this.fetchPayrollTemplates();
     }, 300),
     async fetchPayrollTemplates(page_url) {
-      page_url = page_url || '/payroll-templates';
+      if (typeof page_url !== 'string' || !page_url) {
+        page_url = '/payroll-templates';
+      }
       axios.get(page_url, {
         params: {
           keyword: this.filter.keyword,
@@ -321,26 +336,21 @@ export default {
 
     editTemplate(template) {
       this.selectedTemplate = { ...template }
-      this.showEditModal = true
+      this.showEditTitleModal = true;
     },
     confirmDelete(template) {
-      if (confirm(`Are you sure you want to delete template ${template.name}?`)) {
-        this.deleteTemplate(template.id)
-      }
+      let title = "Payroll Template";
+      this.$refs.delete.show(template.id , title, '/payroll-templates');
     },
-    async deleteTemplate(id) {
-      try {
-        await axios.delete(`/payroll-templates/${id}`)
-        this.$toast.success('Template deleted successfully')
-        this.fetchPayrollTemplates()
-      } catch (error) {
-        console.error('Error deleting template:', error)
-        this.$toast.error('Failed to delete template')
-      }
+    successDeletion() {
+      this.fetchPayrollTemplates();
+      this.showToast('Payroll template deleted successfully');
+      this.selectedTemplate = [];
     },
     closeModal() {
       this.showCreateModal = false
-      this.showEditModal = false
+      this.showEditTitleModal = false
+      this.showEmployeeModal = false
       this.selectedTemplate = null
     },
     handleSaved() {
@@ -357,7 +367,24 @@ export default {
     },
     getStatusStyle(status) {
       return status === 'active' ? 'background-color: #28a745; color: white;' : 'background-color: #6c757d; color: white;';
-    }
+    },
+    async removeEmployee(employee) {
+      let title = "Employee from Payroll Template";
+      this.$refs.removeEmployee.show(employee.id , title, `/payroll-templates/${this.selectedTemplate.id}/employees`);
+      this.selectedEmployee = employee;
+    },
+    successRemoval() {
+      this.fetchPayrollTemplates();
+      const index = this.selectedTemplate.employees.findIndex(emp => emp.id === this.selectedEmployee.id);
+      if (index !== -1) {
+        this.selectedTemplate.employees.splice(index, 1);
+      }
+      this.showToast('Employee removed from template successfully');
+    },
+    addEmployee(template) {
+      this.selectedTemplate = { ...template }
+      this.showEmployeeModal = true;
+    },
   }
 }
 </script>

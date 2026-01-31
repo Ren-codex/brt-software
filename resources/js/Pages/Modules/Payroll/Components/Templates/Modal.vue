@@ -2,7 +2,8 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-lg">
             <div class="modal-header">
-                <h2>{{ isEdit ? 'Edit' : 'Create' }} Payroll Template</h2>
+                <h2 v-if="isAddEmployee">Add Employee to Payroll Template</h2>
+                <h2 v-else>{{ isEditTitle ? 'Edit' : 'Create' }} Payroll Template</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -10,19 +11,19 @@
             <div class="modal-body">
                 <form @submit.prevent="saveTemplate" class="payroll-template-form">
                     <!-- Template Name -->
-                    <div class="form-group">
+                    <div class="form-group" v-if="!isAddEmployee">
                         <label class="form-label">Template Name</label>
                         <div class="input-wrapper">
                             <i class="ri-file-text-line input-icon"></i>
-                            <input type="text" v-model="form.name" class="form-control" required>
+                            <input type="text" v-model="form.name" class="form-control" required placeholder="Enter template name">
                         </div>
 
                     </div>
 
                     <!-- Select Employees -->
-                    <div class="form-group">
+                    <div class="form-group" v-if="!isEditTitle">
                         <label class="form-label">Select Employees</label>
-                        <div class="employee-selection">
+                        <div class="employee-selection" v-if="paginatedEmployees.length > 0">
                             <div class="select-all">
                                 <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" id="select-all">
                                 <label for="select-all" class="select-all-label">Select All</label>
@@ -51,6 +52,9 @@
                                 </button>
                             </div>
                         </div>
+                        <div v-else>
+                            <p>No employee available to select.</p>
+                        </div>
                     </div>
 
                     <!-- Form Actions -->
@@ -62,7 +66,7 @@
                         <button type="submit" class="btn btn-save" :disabled="loading">
                             <i class="ri-save-line" v-if="!loading"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ loading ? 'Processing...' : (isEdit ? 'Update Template' : 'Create Template') }}
+                            {{ loading ? 'Processing...' : (isEditTitle ? 'Update Template' : 'Create Template') }}
                         </button>
                     </div>
                 </form>
@@ -77,7 +81,8 @@ import axios from 'axios'
 export default {
   props: {
     template: Object,
-    isEdit: Boolean
+    isEditTitle: Boolean,
+    isAddEmployee: Boolean,
   },
 
   data() {
@@ -97,7 +102,7 @@ export default {
   },
 
   mounted() {
-    if (this.isEdit && this.template) {
+    if (this.isEditTitle && this.template) {
       this.form = { ...this.template }
     }
     this.showModal = true
@@ -156,8 +161,13 @@ export default {
       this.loading = true
 
       try {
-        if (this.isEdit) {
+        if (this.isEditTitle) {
           await axios.put(`/payroll-templates/${this.template.id}`, this.form);
+        } if (this.isAddEmployee) {
+          await axios.post(`/payroll-templates/${this.template.id}/add-employees`, {
+            payroll_template_id: this.template.id,
+            employee_ids: this.form.employee_ids
+          });
         } else {
           await axios.post('/payroll-templates', this.form);
         }
