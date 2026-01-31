@@ -64,9 +64,9 @@ class SalesOrderClass
 
         foreach($request->items as $item){
             $price = $item['unit_cost']; // map unit_cost to price
-            $discount = $item['discount_per_unit'] ?? 0;
+            $discount_per_unit = $item['discount_per_unit'] ?? 0;
             $quantity = $item['quantity'];
-            $discount_amount = $price * ($discount / 100);
+            $total_discount_amount = $discount_per_unit * $quantity;
 
             $data->items()->create([
                 'sales_order_id' => $data->id,
@@ -74,11 +74,11 @@ class SalesOrderClass
                 'quantity' => $quantity,
                 'price' => $price,
                 'batch_code' => $item['batch_code'],
-                'discount_per_unit' => $discount,
+                'discount_per_unit' => $discount_per_unit,
             ]);
 
-            $totalAmount += ($price - $discount_amount) * $quantity;
-            $totalDiscount += $discount_amount * $quantity;
+            $totalAmount += ($price * $quantity) - $total_discount_amount;
+            $totalDiscount += $total_discount_amount;
 
 
             // Deduct inventory
@@ -127,6 +127,10 @@ class SalesOrderClass
         $data->update([
             'customer_id' => $request->customer_id,
             'order_date' => $request->order_date,
+            'assigned_to' => $request->assigned_to,
+            'payment_mode' => $request->payment_mode,
+            'payment_term' => $request->payment_term,
+            'due_date' => $request->due_date,
         ]);
 
         // Clear existing items
@@ -145,20 +149,20 @@ class SalesOrderClass
         $totalDiscount = 0;
         foreach($request->items as $item){
             $price = $item['unit_cost']; // map unit_cost to price
-            $discount = $item['discount_per_unit'] ?? 0;
+            $discount_per_unit = $item['discount_per_unit'] ?? 0;
             $quantity = $item['quantity'];
-            $discount_amount = $price * ($discount / 100);
+            $total_discount_amount = $discount_per_unit * $quantity;
 
             $data->items()->create([
                 'product_id' => $item['product_id'],
                 'quantity' => $quantity,
                 'price' => $price,
                 'batch_code' => $item['batch_code'],
-                'discount_per_unit' => $discount,
+                'discount_per_unit' => $discount_per_unit,
             ]);
 
-            $totalAmount += ($price - $discount_amount) * $quantity;
-            $totalDiscount += $discount_amount * $quantity;
+            $totalAmount += ($price * $quantity) - $total_discount_amount;
+            $totalDiscount += $total_discount_amount;
 
             // Deduct new inventory
             $this->inventoryService->deductStock($item['product_id'], $item['quantity'], 'Update Sale - SO#' . $data->so_number, $item['batch_code']);

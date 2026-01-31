@@ -15,21 +15,71 @@
             </div>
             <div class="modal-body">
                 <form @submit.prevent="submit">
+                  <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="product_id" class="form-label">Product</label>
+                            <div class="input-wrapper">
+                                <i class="ri-bar-chart-2-line input-icon"></i>
+                                <b-form-select
+                                class="form-control"
+                                v-model="form.product_id"
+                                :options="dropdowns.products"
+                                :class="{ 'input-error': form.errors.product_id }"
+                                text-field="name"
+                                value-field="value"
+                                @change="onProductChange"
+                                >
+                                 <template #first>
+                                    <b-form-select-option :value="null" disabled  >Select Product</b-form-select-option>
+                                </template>
+                                </b-form-select>
+                            </div>
+                            <span class="error-message" v-if="form.errors.product_id">{{ form.errors.product_id }}</span>
+                        </div>
+
+                        <div class="form-group form-group-half">
+                            <label for="price_type" class="form-label">Price Type</label>
+                            <div class="input-wrapper">
+                                <i class="ri-price-tag-3-line input-icon"></i>
+                                <b-form-select
+                                class="form-control"
+                                v-model="form.price_type"
+                                :options="priceTypeOptions"
+                                :class="{ 'input-error': form.errors.price_type }"
+                                text-field="text"
+                                value-field="value"
+                                >
+                                 <template #first>
+                                    <b-form-select-option :value="null" disabled  >Select Price Type</b-form-select-option>
+                                </template>
+                                </b-form-select>
+                            </div>
+                            <span class="error-message" v-if="form.errors.price_type">{{ form.errors.price_type }}</span>
+                        </div>
+
+                    </div>
                     <div class="form-row">
                          <div class="form-group form-group-half">
                             <label for="quantity" class="form-label">Quantity</label>
                             <div class="input-wrapper">
                                 <i class="ri-stack-line input-icon"></i>
-                                <TextInput 
-                                    type="number" 
-                                    id="quantity" 
-                                    v-model.number="form.quantity" 
+                                <TextInput
+                                    type="number"
+                                    id="quantity"
+                                    v-model.number="form.quantity"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.quantity }"
                                     placeholder="Enter Quantity"
-                                    @input="handleInput('quantity')"
+                                    :max="selectedProductStock"
+                                    @input="validateQuantity"
                                 />
-  
+
+                            </div>
+                            <div v-if="selectedProductStock !== null" class="stock-info">
+                                <small class="text-muted">
+                                    <i class="ri-information-line"></i>
+                                    Available Stock: <strong>{{ selectedProductStock }}</strong>
+                                </small>
                             </div>
                             <span class="error-message" v-if="form.errors.quantity">{{ form.errors.quantity }}</span>
                         </div>
@@ -49,27 +99,40 @@
                     </div>
 
 
+                  
+
                     <div class="form-row">
                         <div class="form-group form-group-half">
-                            <label for="product_id" class="form-label">Product</label>
+                            <label for="batch_code" class="form-label">Batch Code</label>
                             <div class="input-wrapper">
-                                <i class="ri-bar-chart-2-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.product_id"
-                                :options="dropdowns.products"
-                                :class="{ 'input-error': form.errors.product_id }"
-                                text-field="name"
-                                value-field="value"
-                                >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Product</b-form-select-option>
-                                </template>
-                                </b-form-select>    
+                                <i class="ri-barcode-line input-icon"></i>
+                                <TextInput
+                                    type="text"
+                                    id="batch_code"
+                                    v-model="form.batch_code"
+                                    class="form-control"
+                                    :class="{ 'input-error': form.errors.batch_code }"
+                                    placeholder="Batch Code"
+                                    readonly
+                                    @input="handleInput('batch_code')"
+                                />
                             </div>
-                            <span class="error-message" v-if="form.errors.product_id">{{ form.errors.product_id }}</span>
+                            <span class="error-message" v-if="form.errors.batch_code">{{ form.errors.batch_code }}</span>
                         </div>
 
+                        <div class="form-group form-group-half">
+                            <label for="discount_per_unit" class="form-label">Discount per Unit (Amount)</label>
+                            <div class="input-wrapper">
+                                <i class="ri-cash-line input-icon"></i>
+                                <Amount
+                                    @amount="updateDiscountPerUnit($event)"
+                                    :class="{ 'input-error': form.errors.discount_per_unit }"
+                                    class="form-control"
+                                    ref="discountComponent"
+                                />
+                            </div>
+                            <span class="error-message" v-if="form.errors.discount_per_unit">{{ form.errors.discount_per_unit }}</span>
+                        </div>
                     </div>
 
   
@@ -85,7 +148,7 @@
                         <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || form.unit_cost == 0 || !form.product_id)">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : 'Save Order' }}
+                            {{ form.processing ? 'Saving...' : 'Add Item' }}
                         </button>
                     </div>  
 
@@ -115,6 +178,9 @@ export default {
                 quantity: 0,
                 unit_cost: 0.00,
                 product_id: null,
+                batch_code: null,
+                price_type: null,
+                discount_per_unit: 0,
             }),
 
             togglePassword: false,
@@ -125,13 +191,32 @@ export default {
             saveSuccess: false,
         }
     },
-    methods: { 
+    computed: {
+        priceTypeOptions() {
+            return [
+                { value: 'retail', text: 'Retail Price' },
+                { value: 'wholesale', text: 'Wholesale Price' }
+            ];
+        },
+        selectedProductStock() {
+            if (!this.form.product_id) return null;
+            const product = this.dropdowns.products.find(p => p.value === this.form.product_id);
+            return product ? product.available : null;
+        }
+    },
+    methods: {
         show() {
             this.form.reset();
-            this.$refs.amountComponent.emitValue(0.00);
+            this.form.quantity = 0;
+            this.form.unit_cost = 0.00;
+            this.form.discount_per_unit = 0;
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
+            this.$nextTick(() => {
+                this.$refs.amountComponent.emitValue(0.00);
+                this.$refs.discountComponent.emitValue(0.00);
+            });
         },
         edit(data, index) {
             this.form.id = data.id;
@@ -139,6 +224,9 @@ export default {
             this.form.quantity = data.quantity;
             this.$refs.amountComponent.emitValue(data.unit_cost);
             this.form.product_id = data.product_id;
+            this.form.batch_code = data.batch_code;
+            this.form.price_type = data.price_type || 'retail';
+            this.form.discount_per_unit = data.discount_per_unit || 0;
             this.form.total_amount = data.total_amount;
             this.editable = true;
             this.saveSuccess = false;
@@ -146,14 +234,27 @@ export default {
         },
 
         submit() {
+            // Re-validate discount before submitting
+            this.validateDiscount();
+
+            // // Check for any validation errors before submitting
+            // if (Object.keys(this.form.errors).length > 0) {
+            //     return; // Prevent submission if there are errors
+            // }
+
             const itemData = {
                 id: this.form.id,
                 brand_id: this.form.brand_id,
                 quantity: this.form.quantity,
                 unit_cost: Number(this.form.unit_cost).toFixed(2), // 2 decimals
                 product_id: this.form.product_id,
+                batch_code: this.form.batch_code,
+                price_type: this.form.price_type,
+                discount_per_unit: this.form.discount_per_unit,
                 total_amount: this.form.amount || 0,
             };
+
+            console.log('Submitting item:', itemData); // Debug log
 
             if (this.editable) {
                 this.$emit('update', itemData );
@@ -185,6 +286,54 @@ export default {
             } else {
                 this.form.unit_cost = value || 0;
             }
+            this.validateDiscount();
+        },
+
+        updateDiscountPerUnit(value) {
+            if (typeof value === 'string') {
+                const cleanValue = value.replace(/[₱,]/g, '');
+                const num = parseFloat(cleanValue);
+                this.form.discount_per_unit = isNaN(num) ? 0 : num;
+            } else {
+                this.form.discount_per_unit = value || 0;
+            }
+            this.validateDiscount();
+        },
+
+        onProductChange() {
+            const product_id = this.form.product_id;
+            const product = this.dropdowns.products.find(p => p.value === product_id);
+            if (product) {
+                this.form.batch_code = product.batch_code || null;
+                const price = this.form.price_type === 'wholesale' ? product.wholesale_price : product.retail_price;
+                this.$refs.amountComponent.emitValue(parseFloat(price) || 0);
+            } else {
+                this.form.batch_code = null;
+                this.$refs.amountComponent.emitValue(0);
+            }
+        },
+
+        validateQuantity() {
+            this.handleInput('quantity');
+            if (this.selectedProductStock !== null && this.form.quantity > this.selectedProductStock) {
+                this.form.errors.quantity = `Quantity cannot exceed available stock (${this.selectedProductStock})`;
+                this.form.quantity = this.selectedProductStock;
+            } else {
+                this.form.errors.quantity = null;
+            }
+            this.validateDiscount();
+        },
+
+        validateDiscount() {
+            this.handleInput('discount_per_unit');
+            const totalCost = parseFloat(this.form.unit_cost) * parseFloat(this.form.quantity);
+            const totalDiscount = parseFloat(this.form.discount_per_unit) * parseFloat(this.form.quantity);
+
+            if (totalDiscount > totalCost) {
+                this.form.errors.discount_per_unit = 'Total discount cannot exceed total cost';
+            } else {
+                this.form.errors.discount_per_unit = null;
+            }
         },
 
 
@@ -201,5 +350,26 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.stock-info {
+    margin-top: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #17a2b8;
+}
+
+.stock-info small {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.stock-info strong {
+    color: #17a2b8;
+}
+</style>
+
+
 
 
