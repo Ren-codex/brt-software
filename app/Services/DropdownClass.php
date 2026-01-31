@@ -15,6 +15,8 @@ use App\Models\Customer;
 use App\Models\ListSupplier;
 use App\Models\Product;
 use App\Models\InventoryStocks;
+use App\Models\Employee;
+
 
 
 class DropdownClass
@@ -165,6 +167,26 @@ class DropdownClass
             return [
                 'value' => $item->id,
                 'code' => $item->batch_code
+            ];
+        });
+        return  $data;
+    }
+
+    public function sales_reps(){
+        $data = Employee::where('position_id', 2)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->fullname,
+            ];
+        });
+        return  $data;
+    }
+
+    public function drivers(){
+        $data = Employee::where('position_id', 3)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->fullname,
             ];
         });
         return  $data;
