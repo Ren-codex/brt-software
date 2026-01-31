@@ -17,6 +17,7 @@ use App\Models\ListSupplier;
 use App\Models\Product;
 use App\Models\InventoryStocks;
 use App\Models\PayrollSetting;
+use App\Models\PayrollTemplate;
 
 class DropdownClass
 {  
@@ -185,7 +186,24 @@ class DropdownClass
                 'slug' => $item->slug,
                 'field' => $item->field,
                 'formula' => $item->formula,
-                'value_amount' => $item->value,
+                'value' => $item->value,
+            ];
+        });
+        return  $data;
+    }
+
+    public function payroll_templates(){
+        $data = PayrollTemplate::where('is_active',1)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+                'employees' => $item->employees->map(function ($emp) {
+                    return [
+                        'id' => $emp->id,
+                        'name' => $emp->lastname . ', ' . $emp->firstname . ' ' . ($emp->middlename ? strtoupper($emp->middlename[0]) . '.' : ''),
+                        'basic_salary' => $emp->position ? $emp->position->rate_per_day : null,
+                    ];
+                }),
             ];
         });
         return  $data;

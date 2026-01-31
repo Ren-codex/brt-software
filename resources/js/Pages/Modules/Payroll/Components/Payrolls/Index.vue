@@ -159,7 +159,7 @@
       v-if="showCreateModal || showEditModal"
       :payroll="selectedPayroll"
       :is-edit="showEditModal"
-      :employees="dropdowns.employees"
+      :dropdowns="dropdowns"
       @close="closeModal"
       @saved="handleSaved"
     />
@@ -188,13 +188,6 @@ export default {
       selectedPayroll: null,
       selectedRow: null,
       expandedRows: [],
-      metrics: {
-        total_payrolls: 0,
-        pending_payrolls: 0,
-        approved_payrolls: 0,
-        paid_payrolls: 0,
-        cancelled_payrolls: 0
-      }
     }
   },
   watch: {
@@ -203,30 +196,10 @@ export default {
     }
   },
   created() {
-    this.fetch();
-    this.fetchMetrics();
   },
   methods: {
     checkSearchStr: _.debounce(function (string) {
-      this.fetch();
     }, 300),
-    async fetch(page_url) {
-      page_url = page_url || '/api/payrolls';
-      axios.get(page_url, {
-        params: {
-          keyword: this.filter.keyword,
-          count: 10
-        }
-      })
-        .then(response => {
-          if (response) {
-            this.payrolls = response.data.data;
-            this.meta = response.data.meta;
-            this.links = response.data.links;
-          }
-        })
-        .catch(err => console.log(err));
-    },
     updateKeyword(value) {
       this.filter.keyword = value;
     },
@@ -236,19 +209,6 @@ export default {
       } else {
         this.expandedRows.push(index);
       }
-    },
-    fetchMetrics() {
-      axios.get('/api/payrolls', {
-        params: {
-          option: 'dashboard'
-        }
-      })
-        .then(response => {
-          if (response) {
-            this.metrics = response.data;
-          }
-        })
-        .catch(err => console.log(err));
     },
     viewPayroll(payroll) {
       this.selectedPayroll = payroll
@@ -264,16 +224,6 @@ export default {
         this.deletePayroll(payroll.id)
       }
     },
-    async deletePayroll(id) {
-      try {
-        await axios.delete(`/api/payrolls/${id}`)
-        this.$toast.success('Payroll deleted successfully')
-        this.fetch()
-      } catch (error) {
-        console.error('Error deleting payroll:', error)
-        this.$toast.error('Failed to delete payroll')
-      }
-    },
     closeModal() {
       this.showCreateModal = false
       this.showEditModal = false
@@ -281,7 +231,6 @@ export default {
     },
     handleSaved() {
       this.closeModal()
-      this.fetch()
     },
     formatDate(date) {
       return new Date(date).toLocaleDateString()

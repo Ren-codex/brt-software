@@ -23,8 +23,8 @@ class PayrollSettingsTableSeeder extends Seeder
             [
                 'field_name' => 'Overtime Rate',
                 'slug' => 'overtime-rate',
-                'formula' => '(Daily Rate / Hours Per Day) * OT Hours * x',
-                'value' => 1.5,
+                'formula' => '((Daily Rate / Hours Per Day) * x) * OT Hours',
+                'value' => 1.25,
                 'is_active' => true,
             ],
             [

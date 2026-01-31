@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
-use App\Models\Employee;
 use DB;
 use App\Services\DropdownClass;
 
@@ -27,6 +26,8 @@ class PayrollController extends Controller
                 return inertia('Modules/Payroll/Index', [
                     'dropdowns' => [
                         'employees' => $this->dropdown->employees(),
+                        'payroll_settings' => $this->dropdown->payroll_settings(),
+                        'payroll_templates' => $this->dropdown->payroll_templates(),
                     ]
                 ]);
             break;
