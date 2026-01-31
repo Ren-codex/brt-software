@@ -57,6 +57,7 @@ class ArInvoiceController extends Controller
             }
         });
 
+
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
