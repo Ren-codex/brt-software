@@ -60,6 +60,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::post('/payroll-templates/{templateId}/add-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'addEmployees']);
         Route::delete('/payroll-templates/{templateId}/employees/{employeeId}', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'removeEmployee']);
         Route::resource('/payroll', App\Http\Controllers\Modules\PayrollController::class);
+        Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
     });
 });
 

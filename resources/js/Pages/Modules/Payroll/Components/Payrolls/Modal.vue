@@ -71,7 +71,7 @@
                     <th>Daily Salary</th>
                     <th>Total Days</th>
                     <th>OT Hrs</th>
-                    <th>Incentives</th>
+                    <!-- <th>Incentives</th> -->
                     <th>Deductions</th>
                     <th>Net Salary</th>
                   </tr>
@@ -100,28 +100,38 @@
                         placeholder="0"
                       >
                     </td>                    
-                    <td>
+                    <!-- <td>
                       <div class="incentive-cell">
                         <span class="incentive-value">₱ {{ parseFloat(employee.incentives || 0).toFixed(2) }}</span>
                         <button type="button" class="btn btn-sm btn-outline-primary" @click="openIncentiveModal(employee)" title="Add incentive">
                           <i class="ri-add-line"></i>
                         </button>
                       </div>
-                    </td>
+                    </td> -->
                     <td>
+                      <input
+                        type="number"
+                        v-model.number="employee.deductions"
+                        class="form-control form-control-sm"
+                        min="0"
+                        step="0.5"
+                        placeholder="0"
+                      >
+                    </td>
+                    <!-- <td>
                       <div class="incentive-cell">
                         <span class="incentive-value">₱ {{ parseFloat(employee.deductions || 0).toFixed(2) }}</span>
                         <button type="button" class="btn btn-sm btn-outline-primary" @click="openDeductionModal(employee)" title="Edit deduction">
                           <i class="ri-edit-line"></i>
                         </button>
                       </div>
-                    </td>
+                    </td> -->
                     <td class="net-salary-cell">
                       <strong>₱ {{ formatCurrency(calculateEmployeeNet(employee)) }}</strong>
                     </td>
                   </tr>
                   <tr class="total-row" v-if="form.payroll_template && selectedEmployees.length">
-                    <td colspan="6" class="total-label">Grand Total</td>
+                    <td colspan="5" class="total-label">Grand Total</td>
                     <td class="total-amount">
                       <strong>₱ {{ formatCurrency(calculateTotalSalary()) }}</strong>
                     </td>
@@ -141,10 +151,10 @@
                       <label>Overtime Rate:</label>
                       <code>((Daily Salary / {{ hours_per_day }}) × {{ overtime_rate }}) × OT Hours</code>
                     </div>
-                    <div class="formula-item">
+                    <!-- <div class="formula-item">
                       <label>Incentive Rate:</label>
                       <code>((Product Packaging (kg) × Sold) / 25) × {{ incentive_rate }}</code>
-                    </div>
+                    </div> -->
                   </div>
                 </transition>
               </div>
@@ -180,15 +190,6 @@
     :incentive="incentiveInput"
     @close="closeIncentiveModal"
     @save="onSaveIncentive"
-  />
-  <IncentiveModal
-    :show="showDeductionModal"
-    :employee="currentDeductionEmployee"
-    :incentive="deductionInput"
-    @close="closeDeductionModal"
-    @save="onSaveDeduction"
-    title="Deduction"
-    label="Deduction Amount"
   />
 </template>
 
@@ -538,7 +539,7 @@ export default {
 .table thead th:nth-child(5),
 .table thead th:nth-child(6),
 .table thead th:nth-child(7) {
-  width: 13.33%;
+  width: 18%;
   min-width: 90px;
 }
 

@@ -57,6 +57,9 @@
               <div v-if="activeTab === 'payroll_settings'" class="shadow-sm p-3">
                 <PayrollSettings :dropdowns="dropdowns" />
               </div>
+              <div v-if="activeTab === 'sales_incentives'" class="shadow-sm p-3">
+                <SalesIncentives :dropdowns="dropdowns" />
+              </div>
             </div>
           </transition>
         </div>
@@ -71,9 +74,10 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PayrollManagement from './Components/Payrolls/Index.vue';
 import PayrollSettings from './Components/Settings/Index.vue';
 import PayrollTemplate from './Components/Templates/Index.vue';
+import SalesIncentives from './Components/SalesIncentives/Index.vue';
 
 export default {
-  components: { PageHeader, PayrollManagement, PayrollSettings, PayrollTemplate },
+  components: { PageHeader, PayrollManagement, PayrollSettings, PayrollTemplate, SalesIncentives },
   props: ['dropdowns'],
   data() {
     return {
@@ -108,6 +112,12 @@ export default {
           label: 'Settings',
           icon: 'ri-settings-2-line',
           description: 'Manage payroll settings'
+        },
+        {
+          id: 'sales_incentives',
+          label: 'Sales Incentives',
+          icon: 'ri-trophy-line',
+          description: 'Manage sales incentives'
         },
       ]
     }

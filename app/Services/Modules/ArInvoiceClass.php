@@ -8,6 +8,7 @@ use App\Models\ArInvoice;
 use App\Models\SalesOrder;
 use App\Models\Receipt;
 use App\Http\Resources\Modules\ArInvoiceResource;
+use App\Models\SalesOrderIncentive;
 use App\Services\PrintClass;
 
 
@@ -96,6 +97,20 @@ class ArInvoiceClass
            $ar_invoice->status_id = 9; // PAID'
             $sales_order->update([
                 'status_id' => 10,// CLOSED,
+            ]);
+
+            $sold_quantity = $sales_order->items->sum('quantity');
+            $product_total_kg = $sales_order->items->sum(function($item){
+                return $item->product->pack_size;
+            });
+
+            SalesOrderIncentive::create([
+                'sales_order_id' => $sales_order->id,
+                'employee_id' => $sales_order->sales_rep_id,
+                'sold_quantity' => $sold_quantity,
+                'product_total_kg' => $product_total_kg,
+                'amount' => ($product_total_kg * $sold_quantity) / 25,
+                'payroll_id' => null, // To be assigned when added to payroll
             ]);
         }
         else{
