@@ -69,6 +69,7 @@ class ArInvoiceController extends Controller
 
     
     public function show($id , Request $request){
+        dd($request->all());
         return $this->print->print($id, $request);
     }
 
