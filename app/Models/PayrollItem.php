@@ -14,7 +14,8 @@ class PayrollItem extends Model
         'overtime_hours',
         'overtime_rate',
         'deductions',
-        'net_salary'
+        'net_salary',
+        'total_days',
     ];
 
     protected $casts = [

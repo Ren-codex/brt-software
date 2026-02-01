@@ -52,7 +52,7 @@
                     <i class="ri-layout-grid-line input-icon"></i>
                     <select v-model="form.payroll_template" class="form-control" :class="{ 'input-error': form.errors.payroll_template }" @change="handleInput('payroll_template'); fetchEmployees()" required>
                       <option value="">Select Payroll Template</option>
-                      <option v-for="template in dropdowns.payroll_templates" :key="template.value" :value="template">{{ template.name }}</option>
+                      <option v-for="template in payrollTemplates" :key="template.id" :value="template">{{ template.name }}</option>
                     </select>
                   </div>
                   <span class="error-message" v-if="form.errors.payroll_template">{{ form.errors.payroll_template }}</span>
@@ -78,7 +78,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="(employee, index) in selectedEmployees" :key="employee.value">
-                    <td class="employee-name">{{ employee.name }}</td>
+                    <td class="employee-name">{{ employee.fullname }}</td>
                     <td class="salary-cell">₱ {{ parseFloat(employee.basic_salary).toFixed(2) }}</td>
                     <td>
                       <input
@@ -167,6 +167,11 @@
           <i class="ri-close-line"></i>
           Cancel
         </button>
+        <button type="button" class="btn btn-draft" :disabled="loading" @click="saveDraft">
+          <i class="ri-draft-line" v-if="!loading"></i>
+          <i class="ri-loader-4-line spinner" v-else></i>
+          {{ loading ? 'Saving...' : 'Save as Draft' }}
+        </button>
         <button type="submit" class="btn btn-save" :disabled="loading" @click="savePayroll">
           <i class="ri-save-line" v-if="!loading"></i>
           <i class="ri-loader-4-line spinner" v-else></i>
@@ -176,14 +181,6 @@
     </div>
   </div>
 
-  <EmployeeSelector
-    :show="showEmployeeSelector"
-    :employees="employees"
-    :selectedEmployeeIds.sync="selectedEmployeeIds"
-    :selectedEmployees="selectedEmployees"
-    @close="showEmployeeSelector = false"
-    @add="handleAdd"
-  />
   <IncentiveModal
     :show="showIncentiveModal"
     :employee="currentIncentiveEmployee"
@@ -195,12 +192,10 @@
 
 <script>
 import axios from 'axios'
-import EmployeeSelector from './EmployeeSelector.vue'
 import IncentiveModal from './IncentiveModal.vue'
 
 export default {
   components: {
-    EmployeeSelector,
     IncentiveModal
   },
 
@@ -216,7 +211,8 @@ export default {
         pay_period_start: '',
         pay_period_end: '',
         payroll_template: '',
-        errors: {}
+        errors: {},
+        status: 'pending',
       },
       selectedEmployees: [],
       selectedEmployeeIds: [],
@@ -235,11 +231,13 @@ export default {
       currentDeductionEmployee: null,
       deductionInput: 0,
       showComputationModal: false,
+      payrollTemplates: [],
     }
   },
 
   mounted() {
-    this.fetchEmployees()
+    this.fetchEmployees();
+    this.fetchPayrollTemplates();
 
     const today = new Date()
     this.form.pay_period_start = today.toISOString().slice(0, 10);
@@ -267,6 +265,16 @@ export default {
 
     handleInput(field) {
       this.form.errors[field] = false
+    },
+
+    async fetchPayrollTemplates() {
+      axios.get('/payroll-templates')
+        .then(response => {
+          if (response) {
+            this.payrollTemplates = response.data.data;
+          }
+        })
+        .catch(err => console.log(err));
     },
 
     async fetchEmployees() {
@@ -393,12 +401,12 @@ export default {
         return
       }
 
-      this.loading = true
+      this.loading = true;
 
       const payload = {
         pay_period_start: this.form.pay_period_start,
         pay_period_end: this.form.pay_period_end,
-        payroll_template: this.form.payroll_template,
+        payroll_template_id: this.form.payroll_template.id,
         items: this.selectedEmployees.map(e => {
           return {
             employee_id: e.value || e.id,
@@ -407,23 +415,23 @@ export default {
             overtime_rate: e.overtime_rate,
             total_days: e.total_days,
             deductions: e.deductions,
-            incentives: e.incentives || 0,
             net_salary: parseFloat(this.calculateEmployeeNet(e).toFixed(2))
           };
-        })
+        }),
+        total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),
+        status: this.form.status,
       }
 
       try {
         this.isEdit
-          ? await axios.put(`/api/payrolls/${this.payroll.id}`, payload)
-          : await axios.post('/api/payrolls', payload)
+          ? await axios.put(`/payrolls/${this.payroll.id}`, payload)
+          : await axios.post('/payrolls', payload)
 
         this.saveSuccess = true
         this.form.errors = {}
-        setTimeout(() => {
-          this.hide()
-        }, 1500)
-        this.$emit('saved')
+        this.$emit('saved');
+        this.$emit('close');
+        this.showModal = false;
       } catch (error) {
         if (error.response && error.response.data.errors) {
           this.form.errors = error.response.data.errors
@@ -431,6 +439,11 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+
+    async saveDraft() {
+      this.form.status = 'draft';
+      this.savePayroll();
     }
   }
 }
@@ -689,6 +702,32 @@ export default {
   background: #f0f7f6;
   border-color: #2d6d5e;
   color: #2d6d5e;
+}
+
+.btn-draft {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #d1d5db;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-draft:hover:not(:disabled) {
+  background: #e8e8e8;
+  border-color: #aaa;
+  color: #333;
+}
+
+.btn-draft:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Total Row */

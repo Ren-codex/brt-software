@@ -122,15 +122,6 @@ export default {
       ]
     }
   },
-  watch: {
-    'activeTab'(newVal) {
-      this.fetchPayrolls();
-    }
-  },
-  mounted() {
-    this.fetchPayrolls()
-    this.debouncedSearch = _.debounce(this.fetchPayrolls, 500);
-  },
   methods: {
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
@@ -139,103 +130,6 @@ export default {
       this.activeTab = tab;
       localStorage.setItem('payroll_active_tab', tab);
     },
-    async fetchPayrolls() {
-      try {
-        const params = {
-          ...this.filters,
-          page: this.filters.page
-        }
-
-        const response = await axios.get('/api/payrolls', { params })
-        if (response.data) {
-          this.payrolls = response.data.data || []
-          this.meta = {
-            current_page: response.data.current_page || 1,
-            last_page: response.data.last_page || 1,
-            total: response.data.total || 0,
-            links: {
-              prev: response.data.prev_page_url || null,
-              next: response.data.next_page_url || null
-            }
-          }
-        } else {
-          this.payrolls = []
-          this.meta = null
-        }
-      } catch (error) {
-        console.error('Error fetching payrolls:', error)
-        this.$toast.error('Failed to load payroll data')
-        this.payrolls = []
-        this.meta = null
-      }
-    },
-    changePage(page) {
-      this.filters.page = page
-      this.fetchPayrolls()
-    },
-    viewPayroll(payroll) {
-      this.selectedPayroll = payroll
-      // You can implement a detailed view modal here
-      this.$toast.info(`Viewing payroll for ${payroll.employee?.name}`)
-    },
-    editPayroll(payroll) {
-      this.selectedPayroll = { ...payroll }
-      this.showEditModal = true
-    },
-    confirmDelete(payroll) {
-      if (confirm(`Are you sure you want to delete payroll for ${payroll.employee?.name}?`)) {
-        this.deletePayroll(payroll.id)
-      }
-    },
-    async deletePayroll(id) {
-      try {
-        await axios.delete(`/api/payrolls/${id}`)
-        this.$toast.success('Payroll deleted successfully')
-        this.fetchPayrolls()
-      } catch (error) {
-        console.error('Error deleting payroll:', error)
-        this.$toast.error('Failed to delete payroll')
-      }
-    },
-    closeModal() {
-      this.showCreateModal = false
-      this.showEditModal = false
-      this.selectedPayroll = null
-    },
-    handleSaved() {
-      this.closeModal()
-      this.fetchPayrolls()
-    },
-    formatDate(date) {
-      return new Date(date).toLocaleDateString()
-    },
-    formatCurrency(amount) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-      }).format(amount)
-    },
-    getStatusColor(status) {
-      const colors = {
-        draft: 'secondary',
-        pending: 'warning',
-        approved: 'info',
-        paid: 'success'
-      }
-      return colors[status] || 'secondary'
-    },
-    getTotalBasicSalary(payroll) {
-      return payroll.items?.reduce((sum, item) => sum + (item.basic_salary || 0), 0) || 0
-    },
-    getTotalOvertime(payroll) {
-      return payroll.items?.reduce((sum, item) => sum + ((item.overtime_hours || 0) * (item.overtime_rate || 0)), 0) || 0
-    },
-    getTotalDeductions(payroll) {
-      return payroll.items?.reduce((sum, item) => sum + (item.deductions || 0), 0) || 0
-    },
-    getTotalNetSalary(payroll) {
-      return payroll.items?.reduce((sum, item) => sum + (item.net_salary || 0), 0) || 0
-    }
   }
 }
 </script>

@@ -17,8 +17,12 @@ return new class extends Migration
             $table->string('payroll_no')->unique();
             $table->date('pay_period_start');
             $table->date('pay_period_end');
-            $table->enum('status', ['draft', 'pending', 'approved', 'paid'])->default('draft');
+            $table->enum('status', ['draft', 'pending', 'approved', 'paid'])->default('pending');
             $table->decimal('total_amount', 15, 2)->default(0);
+            $table->unsignedInteger('payroll_template_id')->nullable();
+            $table->foreign('payroll_template_id')->references('id')->on('payroll_templates')->onDelete('set null');
+            $table->unsignedInteger('created_by')->nullable();
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
             $table->timestamps();
         });
     }

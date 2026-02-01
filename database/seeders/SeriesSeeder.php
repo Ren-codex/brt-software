@@ -50,5 +50,13 @@ class SeriesSeeder extends Seeder
             'max_digit' => 6,
             'starting_value' => 1
         ));
+
+        Series::create(array(
+            'name' => 'Payroll Number',
+            'slug' => 'payroll_number',
+            'prefix' => 'PAY',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
     }
 }

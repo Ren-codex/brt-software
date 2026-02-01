@@ -263,54 +263,6 @@ export default {
         this.links = {}
       }
     },
-    editIncentive(incentive) {
-      this.selectedIncentive = { ...incentive };
-      this.form = {
-        employee_id: incentive.employee_id,
-        sold_quantity: incentive.sold_quantity,
-        product_total_kg: incentive.product_total_kg,
-        amount: incentive.amount,
-        status: incentive.status
-      };
-      this.showModal = true;
-    },
-    async saveIncentive() {
-      try {
-        const url = this.selectedIncentive?.id
-          ? `/api/sales-incentives/${this.selectedIncentive.id}`
-          : '/api/sales-incentives';
-        const method = this.selectedIncentive?.id ? 'put' : 'post';
-
-        const config = { method, url, data: this.form };
-        await axios(config);
-
-        this.$toast?.success?.(
-          this.selectedIncentive?.id
-            ? 'Incentive updated successfully'
-            : 'Incentive created successfully'
-        );
-        this.closeModal();
-        this.fetchIncentives();
-      } catch (error) {
-        console.error('Error saving incentive:', error);
-        this.$toast?.error?.('Failed to save incentive');
-      }
-    },
-    confirmDelete(incentive) {
-      if (confirm(`Are you sure you want to delete this incentive?`)) {
-        this.deleteIncentive(incentive.id);
-      }
-    },
-    async deleteIncentive(id) {
-      try {
-        await axios.delete(`/api/sales-incentives/${id}`);
-        this.$toast?.success?.('Incentive deleted successfully');
-        this.fetchIncentives();
-      } catch (error) {
-        console.error('Error deleting incentive:', error);
-        this.$toast?.error?.('Failed to delete incentive');
-      }
-    },
     closeModal() {
       this.showModal = false;
       this.selectedIncentive = null;

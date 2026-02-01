@@ -4,23 +4,24 @@ namespace App\Http\Controllers\Modules;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\Payroll;
-use App\Models\PayrollItem;
-use DB;
+use App\Http\Requests\PayrollRequest;
 use App\Services\DropdownClass;
+use App\Services\Modules\PayrollClass;
 
 class PayrollController extends Controller
 {
-    public $employee,$dropdown;
+    public $employee,$dropdown, $payroll;
 
-    public function __construct(DropdownClass $dropdown){
+    public function __construct(DropdownClass $dropdown, PayrollClass $payroll){
         $this->dropdown = $dropdown;
+        $this->payroll = $payroll;
     }
 
     public function index(Request $request){
         switch($request->option){
             case 'lists':
-                return $this->lists($request);
+                $payrolls = $this->payroll->lists($request);
+                return response()->json($payrolls);
             break;
             default:
                 return inertia('Modules/Payroll/Index', [
@@ -34,112 +35,27 @@ class PayrollController extends Controller
         }
     }
 
-    public function store(Request $request)
+    public function store(PayrollRequest $request)
     {
-        $request->validate([
-            'pay_period_start' => 'required|date',
-            'pay_period_end' => 'required|date',
-            'items' => 'required|array|min:1',
-            'items.*.employee_id' => 'required|exists:employees,id',
-            'items.*.basic_salary' => 'required|numeric|min:0',
-            'items.*.overtime_hours' => 'nullable|numeric|min:0',
-            'items.*.deductions' => 'nullable|numeric|min:0',
-            'items.*.total_days' => 'nullable|integer|min:0',
-            'items.*.net_salary' => 'required|numeric|min:0',
-        ]);
-
-        DB::transaction(function () use ($request) {
-            $payroll = Payroll::create([
-                'pay_period_start' => $request->pay_period_start,
-                'pay_period_end' => $request->pay_period_end,
-                'status' => 'draft'
-            ]);
-
-            foreach ($request->items as $item) {
-                PayrollItem::create([
-                    'payroll_id' => $payroll->id,
-                    'employee_id' => $item['employee_id'],
-                    'basic_salary' => $item['basic_salary'],
-                    'overtime_hours' => $item['overtime_hours'] ?? 0,
-                    'deductions' => $item['deductions'] ?? 0,
-                    'net_salary' => $item['net_salary'],
-                ]);
-            }
-        });
-
-        return response()->json(['message' => 'Payroll created successfully']);
+        $result = $this->payroll->store($request);
+        return response()->json($result);
     }
 
     public function show(Request $request, $id)
     {
-        $payroll = Payroll::with('items.employee')->findOrFail($id);
+        $payroll = $this->payroll->show($id);
         return response()->json($payroll);
     }
 
-    public function update(Request $request, $id)
+    public function update(PayrollRequest $request, $id)
     {
-        $request->validate([
-            'pay_period_start' => 'required|date',
-            'pay_period_end' => 'required|date',
-            'items' => 'required|array|min:1',
-            'items.*.employee_id' => 'required|exists:employees,id',
-            'items.*.basic_salary' => 'required|numeric|min:0',
-            'items.*.overtime_hours' => 'nullable|numeric|min:0',
-            'items.*.overtime_rate' => 'nullable|numeric|min:0',
-            'items.*.deductions' => 'nullable|numeric|min:0',
-            'items.*.total_days' => 'nullable|integer|min:0',
-            'items.*.net_salary' => 'required|numeric|min:0',
-        ]);
-
-        $payroll = Payroll::findOrFail($id);
-
-        DB::transaction(function () use ($request, $payroll) {
-            $payroll->update([
-                'pay_period_start' => $request->pay_period_start,
-                'pay_period_end' => $request->pay_period_end,
-            ]);
-
-            // Delete existing items
-            $payroll->items()->delete();
-
-            // Create new items
-            foreach ($request->items as $item) {
-                PayrollItem::create([
-                    'payroll_id' => $payroll->id,
-                    'employee_id' => $item['employee_id'],
-                    'basic_salary' => $item['basic_salary'],
-                    'overtime_hours' => $item['overtime_hours'] ?? 0,
-                    'overtime_rate' => $item['overtime_rate'] ?? 0,
-                    'deductions' => $item['deductions'] ?? 0,
-                    'total_days' => $item['total_days'] ?? 0,
-                    'net_salary' => $item['net_salary'],
-                ]);
-            }
-        });
-
-        return response()->json(['message' => 'Payroll updated successfully']);
+        $result = $this->payroll->update($request, $id);
+        return response()->json($result);
     }
 
     public function destroy($id)
     {
-        $payroll = Payroll::findOrFail($id);
-        $payroll->delete();
-
-        return response()->json(['message' => 'Payroll deleted successfully']);
-    }
-
-    private function lists(Request $request){
-        $employees = \App\Models\Employee::with(['position.salary'])
-            ->where('is_active', 1)
-            ->when($request->keyword, function($query) use ($request){
-                $query->where(function($q) use ($request){
-                    $q->where('firstname', 'like', '%'.$request->keyword.'%')
-                      ->orWhere('lastname', 'like', '%'.$request->keyword.'%')
-                      ->orWhere('email', 'like', '%'.$request->keyword.'%');
-                });
-            })
-            ->paginate($request->count ?? 10);
-
-        return response()->json($employees);
+        $result = $this->payroll->destroy($id);
+        return response()->json($result);
     }
 }

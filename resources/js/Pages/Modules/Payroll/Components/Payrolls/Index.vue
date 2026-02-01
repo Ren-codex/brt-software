@@ -35,11 +35,10 @@
                                 <tr class="fs-12 fw-bold text-muted">
                                     <th style="width: 3%; border: none;">#</th>
                                     <th style="width: 15%;" class="text-center border-none">Pay Period</th>
-                                    <th style="width: 20%;" class="text-center border-none">Employees</th>
-                                    <th style="width: 10%;" class="text-center border-none">Total Basic Salary</th>
-                                    <th style="width: 10%;" class="text-center border-none">Total Overtime</th>
-                                    <th style="width: 10%;" class="text-center border-none">Total Deductions</th>
+                                    <th style="width: 20%;" class="text-center border-none">Payroll No.</th>
+                                    <th style="width: 20%;" class="text-center border-none">Payroll Name</th>
                                     <th style="width: 10%;" class="text-center border-none">Total Net Salary</th>
+                                    <th style="width: 10%;" class="text-center border-none">Payroll Clerk</th>
                                     <th style="width: 10%;" class="text-center border-none">Status</th>
                                     <th style="width: 12%;" class="text-center border-none">Actions</th>
                                 </tr>
@@ -50,26 +49,14 @@
                                         'bg-primary bg-opacity-10 ': index === selectedRow,
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
-                                        <td class="text-center">
-                                            <i v-if="expandedRows.includes(index)"
-                                                class="ri-arrow-down-s-line text-primary"></i>
-                                            <i v-else class="ri-arrow-right-s-line text-muted"></i>
-                                            {{ index + 1 }}
-                                        </td>
+                                        <td class="text-center">{{ index + 1 }}</td>
                                         <td class="text-center fw-semibold">{{ formatDate(payroll.pay_period_start) }} - {{ formatDate(payroll.pay_period_end) }}</td>
                                         <td class="text-center">
-                                            <div v-if="payroll.items && payroll.items.length > 0">
-                                                <span v-for="(item, idx) in payroll.items.slice(0, 3)" :key="item.id" class="badge bg-secondary me-1">
-                                                    {{ item.employee?.fullname || 'N/A' }}
-                                                </span>
-                                                <span v-if="payroll.items.length > 3" class="text-muted">+{{ payroll.items.length - 3 }} more</span>
-                                            </div>
-                                            <span v-else class="text-muted">No employees</span>
+                                            {{ payroll.payroll_no }}
                                         </td>
-                                        <td class="text-center">{{ formatCurrency(getTotalBasicSalary(payroll)) }}</td>
-                                        <td class="text-center">{{ formatCurrency(getTotalOvertime(payroll)) }}</td>
-                                        <td class="text-center">{{ formatCurrency(getTotalDeductions(payroll)) }}</td>
-                                        <td class="text-center fw-bold">{{ formatCurrency(getTotalNetSalary(payroll)) }}</td>
+                                        <td class="text-center">{{ payroll.payroll_name }}</td>
+                                        <td class="text-center fw-bold">{{ formatCurrency(payroll.total_amount) }}</td>
+                                        <td class="text-center">{{ payroll.created_by }}</td>
                                         <td class="text-center">
                                             <span class="status-badge" :style="getStatusStyle(payroll.status)">
                                                 {{ payroll.status }}
@@ -92,53 +79,6 @@
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-trash-line"></i>
                                                 </b-button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="expandedRows.includes(index)" style="background-color: #c4dad2e0;">
-                                        <td colspan="9" class="p-0">
-                                            <div class="p-4">
-                                                <h6 class="text-primary mb-3">
-                                                    <i class="ri-file-list-line me-2"></i>Payroll Details
-                                                </h6>
-                                                <div class="row g-3">
-                                                    <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm">
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Payroll Information</h6>
-                                                                <p class="mb-1"><strong>Pay Period:</strong> {{ formatDate(payroll.pay_period_start) }} - {{ formatDate(payroll.pay_period_end) }}</p>
-                                                                <p class="mb-1"><strong>Status:</strong> {{ payroll.status }}</p>
-                                                                <p class="mb-0"><strong>Total Employees:</strong> {{ payroll.items?.length || 0 }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm">
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Employee Items</h6>
-                                                                <div v-if="payroll.items && payroll.items.length > 0">
-                                                                    <table class="table table-sm table-borderless mb-0">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th class="fw-semibold">Employee</th>
-                                                                                <th class="fw-semibold">Basic Salary</th>
-                                                                                <th class="fw-semibold">Net Salary</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            <tr v-for="item in payroll.items" :key="item.id">
-                                                                                <td>{{ item.employee?.fullname || 'N/A' }}</td>
-                                                                                <td>{{ formatCurrency(item.basic_salary || 0) }}</td>
-                                                                                <td>{{ formatCurrency(item.net_salary || 0) }}</td>
-                                                                            </tr>
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                                <p v-else class="text-muted mb-0">No items found</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -187,7 +127,6 @@ export default {
       showEditModal: false,
       selectedPayroll: null,
       selectedRow: null,
-      expandedRows: [],
     }
   },
   watch: {
@@ -196,19 +135,31 @@ export default {
     }
   },
   created() {
+    this.fetchPayrolls();
   },
   methods: {
     checkSearchStr: _.debounce(function (string) {
     }, 300),
+    async fetchPayrolls() {
+      axios.get('/payrolls', {
+        params: {
+          keyword: this.filter.keyword,
+          count: 10,
+          option: 'lists',
+        }
+      })
+        .then(response => {
+          if (response) {
+            this.payrolls = response.data;
+            
+            this.meta = response.data.meta;
+            this.links = response.data.links;
+          }
+        })
+        .catch(err => console.log(err));
+    },
     updateKeyword(value) {
       this.filter.keyword = value;
-    },
-    toggleRowExpansion(index) {
-      if (this.expandedRows.includes(index)) {
-        this.expandedRows = this.expandedRows.filter(i => i !== index);
-      } else {
-        this.expandedRows.push(index);
-      }
     },
     viewPayroll(payroll) {
       this.selectedPayroll = payroll
@@ -228,17 +179,22 @@ export default {
       this.showCreateModal = false
       this.showEditModal = false
       this.selectedPayroll = null
+      this.fetchPayrolls()
     },
     handleSaved() {
       this.closeModal()
     },
     formatDate(date) {
-      return new Date(date).toLocaleDateString()
+      return new Date(date).toLocaleDateString('en-PH', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      })
     },
     formatCurrency(amount) {
-      return new Intl.NumberFormat('en-US', {
+      return new Intl.NumberFormat('en-PH', {
         style: 'currency',
-        currency: 'USD'
+        currency: 'PHP'
       }).format(amount)
     },
     getStatusStyle(status) {

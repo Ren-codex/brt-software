@@ -106,8 +106,8 @@
                     </Link>
                 </li>
                 <li class="nav-item">
-                    <Link href="/payroll" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/payroll') }">
+                    <Link href="payrolls" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/payrolls') }">
                     <i class="ri-wallet-2-line"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Payroll</span>
                     <span class="menu-link-bg"></span>
