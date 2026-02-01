@@ -38,7 +38,7 @@ class EmployeesTableSeeder extends Seeder
             1 =>
             array (
                 'id' => 2,
-                'lastname' => 'Driver',
+                'lastname' => 'Sales',
                 'firstname' => 'John',
                 'middlename' => 'Doe',
                 'mobile' => '09123456789',
@@ -55,7 +55,7 @@ class EmployeesTableSeeder extends Seeder
             2 =>
             array (
                 'id' => 3,
-                'lastname' => 'Sales',
+                'lastname' => 'Driver',
                 'firstname' => 'Jane',
                 'middlename' => 'Rep',
                 'mobile' => '09123456790',

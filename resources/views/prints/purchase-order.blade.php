@@ -3,447 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase Order - {{ $purchase_order->po_number }}</title>
+    <title>Sales Order - {{ $purchase_order->po_number }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 15mm;
-        }
-        * {
-            box-sizing: border-box;
-        }
+        @page { size: A4; margin: 10mm; }
         body {
-            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.5;
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
             color: #333;
             margin: 0;
-            padding: 0;
             background-color: #fff;
         }
-        
-        /* Header Section */
-        .letterhead {
-            border-bottom: 3px solid #2c3e50;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+
+        /* Header Layout */
+        .header-container {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            margin-bottom: 20px;
+        }
+        .company-branding {
+            display: flex;
+            align-items: center;
+        }
+        .logo-placeholder {
+            width: 60px;
+            height: 60px;
+            background-color: #C0392B; /* Red from the logo */
+            margin-right: 15px;
+            border-radius: 4px;
         }
         .company-info h1 {
-            margin: 0 0 5px 0;
-            font-size: 28px;
-            font-weight: 700;
-            color: #2c3e50;
-        }
-        .company-info .tagline {
-            color: #7f8c8d;
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-        .company-details {
-            font-size: 11px;
-            color: #555;
-        }
-        .document-type {
-            text-align: right;
-        }
-        .document-type h2 {
-            margin: 0;
-            font-size: 32px;
-            font-weight: 300;
-            color: #3498db;
-            letter-spacing: 2px;
-        }
-        .document-type .subtitle {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-        
-        /* PO Number Badge */
-        .po-header {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.2);
-        }
-        .po-number h3 {
             margin: 0;
             font-size: 18px;
-            font-weight: 600;
-        }
-        .po-date {
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        /* Info Cards */
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-        .info-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            background: #f9f9f9;
-        }
-        .info-card h4 {
-            margin: 0 0 12px 0;
             color: #2c3e50;
-            font-size: 14px;
-            font-weight: 600;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #3498db;
+            text-transform: capitalize;
         }
-        .info-row {
-            display: flex;
-            margin-bottom: 6px;
+        .order-title-block {
+            text-align: right;
         }
-        .info-label {
-            font-weight: 600;
-            color: #555;
-            min-width: 120px;
-        }
-        .info-value {
+        .order-title-block h2 {
+            margin: 0;
+            font-size: 24px;
             color: #333;
         }
-        
-        /* Items Table */
-        .items-section {
-            margin: 30px 0;
+
+        /* Addresses and Total Box */
+        .address-total-row {
+            display: flex;
+            margin-bottom: 20px;
         }
-        .section-title {
-            background: #2c3e50;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 6px 6px 0 0;
-            font-weight: 600;
-            font-size: 14px;
+        .address-col {
+            flex: 1;
         }
+        .address-label {
+            font-weight: bold;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 5px;
+            width: 80%;
+        }
+        .total-box {
+            width: 300px;
+            background-color: #E5E7E9;
+            padding: 15px;
+            text-align: right;
+        }
+        .total-box .total-label {
+            font-size: 16px;
+            font-weight: bold;
+            display: block;
+            text-align: left;
+        }
+        .total-box .total-amount {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        /* Gray Metadata Bar */
+        .meta-bar {
+            background-color: #D5DBDB;
+            display: flex;
+            padding: 5px 0;
+            margin-bottom: 10px;
+            border: 1px solid #BDC3C7;
+        }
+        .meta-item {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        /* Table Design */
         table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid #e0e0e0;
-        }
-        thead {
-            background: #f8f9fa;
         }
         th {
-            padding: 12px 10px;
+            background-color: #D5DBDB;
+            padding: 8px;
             text-align: left;
-            font-weight: 600;
-            color: #2c3e50;
-            border-bottom: 2px solid #dee2e6;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            border: 1px solid #BDC3C7;
         }
         td {
-            padding: 10px;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
         }
-        tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .total-row {
-            background-color: #f8f9fa;
-            font-weight: 600;
-        }
-        
-        /* Totals Section */
-        .totals-section {
-            margin-top: 25px;
-            display: flex;
-            justify-content: flex-end;
-        }
-        .totals-card {
-            width: 300px;
-            border: 2px solid #2c3e50;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .totals-header {
-            background: #2c3e50;
-            color: white;
-            padding: 10px 15px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .totals-body {
-            padding: 15px;
-        }
-        .total-row {
+        .text-right { text-align: right; }
+
+        /* Footer Summary */
+        .footer-grid {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px dashed #e0e0e0;
+            margin-top: 20px;
         }
-        .total-row:last-child {
-            border-bottom: none;
+        .summary-table {
+            width: 300px;
         }
-        .grand-total {
-            font-size: 16px;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid #2c3e50;
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
         }
-        
-        /* Footer */
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 10px;
-        }
-        .signatures {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin: 30px 0;
-            padding: 20px;
-        }
-        .signature-box {
-            text-align: center;
-        }
-        .signature-line {
-            width: 200px;
-            height: 1px;
-            background: #333;
-            margin: 40px auto 10px;
-        }
-        .signature-label {
-            font-size: 11px;
-            color: #555;
+        .grand-total-row {
+            background-color: #D5DBDB;
+            padding: 8px;
+            font-weight: bold;
             margin-top: 5px;
-        }
-        
-        /* Status Badge */
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .status-{{ strtolower($purchase_order->status->name) }} {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        /* Print Optimizations */
-        @media print {
-            body {
-                font-size: 11px;
-            }
-            .po-header {
-                background: #3498db !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .section-title {
-                background: #2c3e50 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .totals-header {
-                background: #2c3e50 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Letterhead -->
-    <div class="letterhead">
-        <div class="company-info">
-            <h1>Your Company Name</h1>
-            <div class="tagline">Quality Products & Services</div>
-            <div class="company-details">
-                123 Business Street, City, State 12345<br>
-                Phone: (123) 456-7890 | Email: info@company.com<br>
-                www.company.com
+
+    <div class="header-container">
+        <div class="company-branding">
+            <div class="logo-placeholder"></div>
+            <div class="company-info">
+                <h1>Molave Youngs Milling Corporation</h1>
+                287 Mabini St. Maloloy-on, Molave ZBDS 7023<br>
+                Philippines
             </div>
         </div>
-        <div class="document-type">
-            <h2>PO</h2>
-            <div class="subtitle">Purchase Order</div>
-        </div>
-    </div>
-    
-    <!-- PO Header -->
-    <div class="po-header">
-        <div class="po-number">
-            <h3>PO: {{ $purchase_order->po_number }}</h3>
-        </div>
-        <div class="po-date">
-            Date: {{ \Carbon\Carbon::parse($purchase_order->po_date)->format('F d, Y') }}
+        <div class="order-title-block">
+            <h2>Sales Order</h2>
+            <div>#{{ $purchase_order->po_number }}</div>
+            <div>{{ \Carbon\Carbon::parse($purchase_order->po_date)->format('m/d/Y') }}</div>
         </div>
     </div>
-    
-    <!-- Information Grid -->
-    <div class="info-grid">
-        <div class="info-card">
-            <h4>Supplier Information</h4>
-            <div class="info-row">
-                <div class="info-label">Supplier:</div>
-                <div class="info-value">{{ $purchase_order->supplier->name }}</div>
-            </div>
-            @if($purchase_order->supplier->address)
-            <div class="info-row">
-                <div class="info-label">Address:</div>
-                <div class="info-value">{{ $purchase_order->supplier->address }}</div>
-            </div>
-            @endif
-            @if($purchase_order->supplier->contact_person)
-            <div class="info-row">
-                <div class="info-label">Contact Person:</div>
-                <div class="info-value">{{ $purchase_order->supplier->contact_person }}</div>
-            </div>
-            @endif
-            @if($purchase_order->supplier->phone)
-            <div class="info-row">
-                <div class="info-label">Phone:</div>
-                <div class="info-value">{{ $purchase_order->supplier->phone }}</div>
-            </div>
-            @endif
+
+    <div class="address-total-row">
+        <div class="address-col">
+            <div class="address-label">Bill To</div>
+            <strong>{{ $purchase_order->supplier->name }}</strong><br>
+            {!! nl2br(e($purchase_order->supplier->address)) !!}
         </div>
-        
-        <div class="info-card">
-            <h4>Order Details</h4>
-            <div class="info-row">
-                <div class="info-label">Status:</div>
-                <div class="info-value">
-                    <span class="status-badge status-{{ strtolower($purchase_order->status->name) }}">
-                        {{ $purchase_order->status->name }}
-                    </span>
-                </div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Prepared By:</div>
-                <div class="info-value">{{ $purchase_order->created_by->profile->full_name ?? 'N/A' }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Created Date:</div>
-                <div class="info-value">{{ \Carbon\Carbon::parse($purchase_order->created_at)->format('M d, Y H:i') }}</div>
-            </div>
-            @if($purchase_order->expected_delivery)
-            <div class="info-row">
-                <div class="info-label">Expected Delivery:</div>
-                <div class="info-value">{{ \Carbon\Carbon::parse($purchase_order->expected_delivery)->format('M d, Y') }}</div>
-            </div>
-            @endif
+        <div class="address-col">
+            <div class="address-label">Ship To</div>
+            <strong>{{ $purchase_order->supplier->name }}</strong><br>
+            {!! nl2br(e($purchase_order->supplier->address)) !!}
+        </div>
+        <div class="total-box">
+            <span class="total-label">TOTAL</span>
+            <span class="total-amount">PHP {{ number_format($purchase_order->total_amount, 2) }}</span>
         </div>
     </div>
-    
-    <!-- Items Table -->
-    <div class="items-section">
-        <div class="section-title">Order Items</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 5%;">#</th>
-                    <th style="width: 40%;">Product Description</th>
-                    <th style="width: 10%;" class="text-center">Qty</th>
-                    <th style="width: 15%;" class="text-center">Unit</th>
-                    <th style="width: 15%;" class="text-right">Unit Price</th>
-                    <th style="width: 15%;" class="text-right">Line Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($items as $index => $item)
-                <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
-                    <td>
-                        <strong>{{ $item->product->brand->name }}</strong><br>
-                        <small style="color: #666;">SKU: {{ $item->product->sku ?? 'N/A' }}</small>
-                    </td>
-                    <td class="text-center">{{ number_format($item->quantity) }}</td>
-                    <td class="text-center">{{ $item->product->unit->name ?? 'N/A' }}</td>
-                    <td class="text-right">${{ number_format($item->unit_cost, 2) }}</td>
-                    <td class="text-right">${{ number_format($item->total_cost, 2) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+
+    <div class="meta-bar">
+        <div class="meta-item">Supplier SO #</div>
+        <div class="meta-item">Payment Terms</div>
+        <div class="meta-item">Load Order #</div>
+        <div class="meta-item">Delivery Date</div>
+        <div class="meta-item">Delivery Location</div>
     </div>
-    
-    <!-- Totals Section -->
-    <div class="totals-section">
-        <div class="totals-card">
-            <div class="totals-header">Order Summary</div>
-            <div class="totals-body">
-                <div class="total-row">
-                    <span>Subtotal:</span>
-                    <span>${{ number_format($purchase_order->items->sum(function($item) { return $item->quantity * $item->unit_price; }), 2) }}</span>
-                </div>
-                @if($purchase_order->tax_amount > 0)
-                <div class="total-row">
-                    <span>Tax ({{ $purchase_order->tax_rate ?? '0' }}%):</span>
-                    <span>${{ number_format($purchase_order->tax_amount, 2) }}</span>
-                </div>
-                @endif
-                @if($purchase_order->discount_amount > 0)
-                <div class="total-row">
-                    <span>Discount:</span>
-                    <span>-${{ number_format($purchase_order->discount_amount, 2) }}</span>
-                </div>
-                @endif
-                @if($purchase_order->shipping_amount > 0)
-                <div class="total-row">
-                    <span>Shipping:</span>
-                    <span>${{ number_format($purchase_order->shipping_amount, 2) }}</span>
-                </div>
-                @endif
-                <div class="total-row grand-total">
-                    <span>TOTAL AMOUNT:</span>
-                    <span>${{ number_format($purchase_order->total_amount, 2) }}</span>
+    <div class="meta-bar" style="background:none; border-top:none; margin-top:-11px;">
+        <div class="meta-item" style="font-weight:normal;">---</div>
+        <div class="meta-item" style="font-weight:normal;">7 Days</div>
+        <div class="meta-item" style="font-weight:normal;">---</div>
+        <div class="meta-item" style="font-weight:normal;">{{ \Carbon\Carbon::parse($purchase_order->expected_delivery)->format('m/d/Y') }}</div>
+        <div class="meta-item" style="font-weight:normal;">---</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 80px;">Quantity</th>
+                <th>Item</th>
+                <th>Description</th>
+                <th>UoM</th>
+                <th class="text-right">Unit Price</th>
+                <th class="text-right">Amount</th>
+                <th class="text-right">VAT Amount</th>
+                <th class="text-right">Gross Amt</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($items as $item)
+            <tr>
+                <td>{{ number_format($item->quantity) }}</td>
+                <td>
+                    <strong>{{ $item->product->sku }}</strong><br>
+                    {{ $item->product->brand->name }}
+                </td>
+                <td>{{ $item->product->description ?? $item->product->brand->name }}</td>
+                <td>Bg</td>
+                <td class="text-right">PHP {{ number_format($item->unit_cost, 2) }}</td>
+                <td class="text-right">PHP {{ number_format($item->total_cost, 2) }}</td>
+                <td class="text-right">PHP 0.00</td>
+                <td class="text-right">PHP {{ number_format($item->total_cost, 2) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <div class="footer-grid">
+        <div class="remarks">
+            <strong>Remarks:</strong><br>
+            30,000 kg - p up<br><br>
+            <strong>Sales Rep:</strong> {{ $purchase_order->created_by->profile->full_name ?? 'Jelsa Ayuda' }}
+        </div>
+        <div class="summary-table">
+            <div class="summary-row">
+                <span>Total Sales Before VAT</span>
+                <span>PHP {{ number_format($purchase_order->total_amount, 2) }}</span>
+            </div>
+            <div class="summary-row">
+                <span>VAT Amount</span>
+                <span>PHP 0.00</span>
+            </div>
+            <div class="grand-total-row">
+                <div class="summary-row" style="margin:0;">
+                    <span>Total Amount Due</span>
+                    <span>PHP {{ number_format($purchase_order->total_amount, 2) }}</span>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Signatures Section -->
-    <div class="signatures">
-        <div class="signature-box">
-            <div class="signature-label">Supplier's Signature & Stamp</div>
-            <div class="signature-line"></div>
-            <div class="signature-label">Date: ________________</div>
-        </div>
-        <div class="signature-box">
-            <div class="signature-label">Authorized Signature</div>
-            <div class="signature-line"></div>
-            <div class="signature-label">Date: ________________</div>
-        </div>
-    </div>
-    
-    <!-- Footer -->
-    <div class="footer">
-        <p>This is a system-generated purchase order. Please retain for your records.</p>
-        <p>Page 1 of 1 | Generated on {{ \Carbon\Carbon::now()->format('M d, Y H:i') }}</p>
-    </div>
+
 </body>
 </html>

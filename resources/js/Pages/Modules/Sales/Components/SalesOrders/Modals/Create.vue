@@ -327,7 +327,7 @@ import Customer from '@/Pages/Modules/Customers/Modals/Create.vue'
 
 export default {
     components: { InputLabel, TextInput, Multiselect, Amount, Item, Customer },
-    props: ['dropdowns', ],
+    props: ['dropdowns', 'user'],
     data() {
         return {
             currentUrl: window.location.origin,
@@ -429,9 +429,15 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
             // Set default sales rep to current user if they are a sales rep
-            if (this.$page.props.auth?.user?.employee && this.$page.props.auth.user.employee.position_id === 3) {
-                this.form.sales_rep_id = this.$page.props.auth.user.employee.id;
+            const userEmployeeId = this.$page.props.user.data.id;
+
+            if (userEmployeeId) {
+                const isSalesRep = this.dropdowns.sales_reps.some(rep => rep.value === userEmployeeId);
+                if (isSalesRep) {
+                    this.form.sales_rep_id = this.$page.props.user.data.id;
+                }
             }
+
         },
         edit(data, index) {
             this.form.id = data.id;

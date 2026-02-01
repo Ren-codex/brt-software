@@ -11,7 +11,7 @@
                 <span class="active-indicator"></span>
                 </Link>
             </li>
-            <template v-if="$page.props.roles.includes('Human Resource Officer')">
+            <template v-if="$page.props.roles.includes('Human Resource Officer') || $page.props.roles.includes('Administrator')">
                 <li class="menu-title">
                     <div class="menu-title-content">
                         <i class="ri-more-fill menu-title-icon"></i>
@@ -30,8 +30,8 @@
                 </li>
 
             </template>
-            <template v-if="$page.props.roles.includes('Administrator')">
-                <li class="nav-item">
+            <template v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Inventory Manager')">
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
                     <Link href="/users" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/users') }">
                     <i class="ri-team-fill"></i>
@@ -41,15 +41,6 @@
                     </Link>
                 </li>
 
-                <li class="nav-item">
-                    <Link href="/employees" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/employees') }">
-                    <i class="ri-team-fill"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Employees</span>
-                    <span class="menu-link-bg"></span>
-                    <span class="active-indicator"></span>
-                    </Link>
-                </li>
                 <!-- <li class="nav-item">
                     <Link href="/reports" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/reports') }">
@@ -59,7 +50,7 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li> -->
-                <li class="nav-item">
+                <li class="nav-item" v-if="$page.props.roles.includes('Inventory Manager') || $page.props.roles.includes('Administrator')">
                     <Link href="/inventory" class="nav-link menu-link"
                     :class="{'active': $page.component.startsWith('Modules/Inventory/Index') }">
                     <i class="ri-survey-fill"></i>
@@ -68,7 +59,7 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
                     <Link href="/sales-orders" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/sales-orders') }">
                     <i class="ri-shopping-cart-fill"></i>
@@ -77,7 +68,7 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                  <li class="nav-item">
+                  <li class="nav-item" v-if="$page.props.roles.includes('Sales Manager') || $page.props.roles.includes('Administrator')">
                     <Link href="/customers" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/customers') }">
                     <i class="ri-team-fill"></i>
@@ -86,17 +77,8 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <!-- <li class="nav-item">
-                    <Link href="/receipts" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/receipts') }">
-                    <i class="ri-file-list-3-fill"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Receipts</span>
-                    <span class="menu-link-bg"></span>
-                    <span class="active-indicator"></span>
-                    </Link>
-                </li> -->
 
-                <li class="nav-item">
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
                     <Link href="/expenses" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/expenses') }">
                     <i class="ri-money-dollar-circle-fill"></i>
@@ -114,7 +96,7 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
                     <Link href="/loans" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/loans') }">
                     <i class="ri-bank-card-fill"></i>
@@ -123,7 +105,7 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                 <li class="nav-item">
+                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
                    <BLink class="nav-link menu-link" href="#sidebarDashboards"
                     :class="{'active': $page.url.startsWith('/libraries') }"
                     data-bs-toggle="collapse" role="button" :aria-expanded="$page.url.startsWith('/libraries')" aria-controls="sidebarDashboards">

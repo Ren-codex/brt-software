@@ -91,7 +91,7 @@
                       @view-details="openPurchaseOrderDetails"
                     />
                   </div>
-                  <div class="col-md-3">
+                  <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                     <QuickStatsSidebar
                       :activeTab="activeTab"
                       :listProducts="listProducts"
@@ -119,7 +119,7 @@
                       @view-details="openPurchaseOrderDetails"
                     />
                   </div>
-                  <div class="col-md-3">
+                  <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                     <QuickStatsSidebar
                       :activeTab="activeTab"
                       :listProducts="listProducts"
@@ -131,7 +131,10 @@
                 </div>
 
                 <div class="row" v-if="activeTab === 'products'">
-                  <div class="col-md-9">
+                  <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'" style="position: relative;">
+                    <button @click="toggleRightSidebar" class="right-sidebar-toggle-btn" title="Toggle Right Sidebar">
+                      <i :class="isRightSidebarCollapsed ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
+                    </button>
                     <ProductsTab
                       :listProducts="listProducts"
                       :meta="meta"
@@ -143,7 +146,7 @@
                       @toast="showToast"
                     />
                   </div>
-                  <div class="col-md-3">
+                  <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                     <QuickStatsSidebar
                       :totalProducts="listProducts.length"
                       :totalPurchaseOrders="listPurchaseOrders.length"
@@ -169,7 +172,7 @@
                       @view-details="openInventoryStockDetails"
                     />
                   </div>
-                  <div class="col-md-3">
+                  <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                     <QuickStatsSidebar
                       :activeTab="activeTab"
                       :listProducts="listProducts"
@@ -234,6 +237,7 @@ export default {
   data() {
     return {
       isSidebarCollapsed: false,
+      isRightSidebarCollapsed: false,
       activeTab: localStorage.getItem('inventory_active_tab') || 'purchaseRequests',
       currentView: 'list',
       filter: {
@@ -306,6 +310,9 @@ export default {
   methods: {
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    },
+    toggleRightSidebar() {
+      this.isRightSidebarCollapsed = !this.isRightSidebarCollapsed;
     },
     changeTab(tab) {
       this.activeTab = tab;
@@ -593,6 +600,27 @@ export default {
   .inventory-stats-section {
     margin-bottom: 15px;
   }
+}
+
+.right-sidebar-toggle-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+  border-radius: 6px;
+  color: #6c757d;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px 8px;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.right-sidebar-toggle-btn:hover {
+  background: rgba(108, 117, 125, 0.1);
+  color: #495057;
+  border-color: rgba(108, 117, 125, 0.5);
 }
 </style>
 

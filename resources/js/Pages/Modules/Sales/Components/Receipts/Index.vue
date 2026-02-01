@@ -1,4 +1,4 @@
-<template>
+a tme<template>
     <BRow>
         <div class="col-md-9 mb-4">
             <div class="library-card">
@@ -45,6 +45,13 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
+                                <tr v-if="lists.length === 0">
+                                    <td colspan="9" class="text-center text-muted py-4">
+                                        <i class="ri-shopping-cart-line fs-1 text-muted mb-2"></i>
+                                        <div>No receipts found.</div>
+                                        <small>Receipts will appear here once they are created.</small>
+                                    </td>
+                                </tr>
                                 <template v-for="(list,index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" class="cursor-pointer transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
@@ -82,8 +89,8 @@
                                                     <div class="col-md-6">
                                                         <div class="card border-0 shadow-sm ">
                                                             <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Receipt Information</h6>
-                                                                <p class="mb-1"><strong>Payment Date:</strong> {{ list.payment_date }}</p>
+                                                <h6 class="card-title text-muted small mb-2">Receipt Information</h6>
+                                                                <p class="mb-1"><strong>Receipt Date:</strong> {{ list.receipt_date }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -248,9 +255,17 @@ export default {
         },
 
         onPrint(id) {
-            window.open(`/sales-orders/${id}?option=print&type=receipt`);
+            window.open(`/receipts/${id}/print`);
         },
 
+         getCustomer(customer_id){
+            const customer = this.dropdowns.customers.find(u => u.value === customer_id);
+            return customer ? customer : [];
+        },
+         getCustomer(customer_id){
+            const customer = this.dropdowns.customers.find(u => u.value === customer_id);
+            return customer ? customer : [];
+        },
          getCustomer(customer_id){
             const product = this.dropdowns.customers.find(u => u.value === customer_id);
             return customer ? customer : [];

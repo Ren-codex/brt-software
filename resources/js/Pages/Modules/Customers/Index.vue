@@ -1,9 +1,9 @@
 <template>
-    <PageHeader title="Customer Management" pageTitle="List" />
+    <PageHeader :title="currentView === 'list' ? 'Customer Management' : 'Customer Details'" :pageTitle="currentView === 'list' ? 'List' : 'Details'" />
     <BRow>
         <div class="col-md-12">
             <div class="library-card">
-                <div class="library-card-header">
+                <div class="library-card-header" v-if="currentView === 'list'">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
@@ -19,21 +19,19 @@
                             <span>Customer</span>
                         </button>
                     </div>
-
                 </div>
-            
-                <div class="card-body m-2 p-3">
+
+
+                <div class="card-body m-2 p-3" v-if="currentView === 'list'">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                placeholder="Search Employee..." class="search-input">
+                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
+                                placeholder="Search customer..." class="search-input">
                         </div>
-
                     </div>
-    
-                
-                    <div>
+
+                    <div class="table-responsive table-card" style="overflow: auto;">
                         <table class="table align-middle table-striped table-centered mb-0">
                             <thead class="table-light thead-fixed">
                                 <tr class="fs-11">
@@ -49,9 +47,8 @@
                                 </tr>
                             </thead>
 
-
                             <tbody class="table-white fs-12">
-                                <tr v-for="(list, index) in lists" v-bind:key="index" @click="selectRow(index)" :class="{
+                                <tr v-for="(list, index) in lists" v-bind:key="index" @click="openView(list)" :class="{
                                     'bg-info-subtle': index === selectedRow,
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow,
                                     'bg-warning-subtle': list.is_blacklisted === 1
@@ -97,26 +94,30 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer">
+
+                <div v-else>
+                    <Details @update="fetch()" :customer="selectedCustomer" :backToList="backToList" :openEdit="openEdit" :selectedCustomer="selectedCustomer" :selectedRow="selectedRow" />
+                </div>
+
+                <div class="card-footer" v-if="currentView === 'list'">
                     <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
     </BRow>
-    <Create @add="fetch()" :dropdowns="dropdowns" ref="create" />
-    <Delete @delete="fetch()" ref="delete" />
+    <Create @add="fetch()" @update="fetch()" :dropdowns="dropdowns" ref="create" />
 </template>
 <script>
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
-import Delete from "@/Shared/Components/Modals/Delete.vue";
 import Create from './Modals/Create.vue';
+import Details from './Details.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, Create, Delete },
+    components: { PageHeader, Pagination, Multiselect, Create, Details },
     props: ['dropdowns'],
     data() {
         return {
@@ -127,8 +128,11 @@ export default {
             filter: {
                 keyword: null
             },
+            localKeyword: null,
             index: null,
             selectedRow: null,
+            selectedCustomer: {},
+            currentView: 'list',
             units: []
         }
     },
@@ -171,18 +175,33 @@ export default {
             this.$refs.create.edit(data, index);
         },
 
-        onDelete(id) {
-            let title = "Customer";
-            this.$refs.delete.show(id, title, '/customers');
+        toggleActive(data) {
+            axios.patch(`/customers/toggle-active/${data.id}`, {
+                is_active: data.is_active === 1 ? 0 : 1
+            })
+            .then(response => {
+                this.fetch();
+                this.$toast.success(response.data.message);
+            })
+            .catch(err => {
+                console.log(err);
+                this.$toast.error('Failed to update customer status');
+            });
         },
 
+        openView(data) {
+            this.selectedCustomer = data;
+            this.currentView = 'details';
+        },
 
-        selectRow(index) {
-            if (this.selectedRow === index) {
-                this.selectedRow = null;
-            } else {
-                this.selectedRow = index;
-            }
+        backToList() {
+            this.currentView = 'list';
+            this.selectedCustomer = {};
+            this.selectedRow = null;
+        },
+
+        updateKeyword(value) {
+            this.filter.keyword = value;
         }
     }
 }

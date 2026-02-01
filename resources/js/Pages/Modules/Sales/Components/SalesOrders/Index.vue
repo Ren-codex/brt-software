@@ -338,7 +338,7 @@
             </div>
         </div>
     </BRow>
-    <Create @add="fetch()" :dropdowns="dropdowns" ref="create"/>
+    <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
      <Approval @approve="fetch()" ref="approval"/>
     <Adjustment @update="fetch()"  ref="adjustment"/>
@@ -358,7 +358,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' ],
+    props: ['dropdowns' , 'invoices' , 'user'],
     data(){
         return {
             currentUrl: window.location.origin,
