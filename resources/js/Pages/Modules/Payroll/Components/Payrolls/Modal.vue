@@ -193,6 +193,7 @@
 <script>
 import axios from 'axios'
 import IncentiveModal from './IncentiveModal.vue'
+import Swal from 'sweetalert2';
 
 export default {
   components: {
@@ -423,15 +424,25 @@ export default {
       }
 
       try {
-        this.isEdit
+        const response = this.isEdit
           ? await axios.put(`/payrolls/${this.payroll.id}`, payload)
           : await axios.post('/payrolls', payload)
 
-        this.saveSuccess = true
-        this.form.errors = {}
-        this.$emit('saved');
-        this.$emit('close');
-        this.showModal = false;
+        // Check if response has the alert structure
+        if (response.data && response.data.info && response.data.message && response.data.status === 'error') {
+          Swal.fire({
+            title: response.data.message,
+            text: response.data.info,
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
+        } else {
+          this.saveSuccess = true
+          this.form.errors = {}
+          this.$emit('saved');
+          this.$emit('close');
+          this.showModal = false;
+        }
       } catch (error) {
         if (error.response && error.response.data.errors) {
           this.form.errors = error.response.data.errors

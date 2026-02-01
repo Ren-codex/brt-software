@@ -34,23 +34,23 @@ class PayrollClass
 
     public function store($request)
     {
+        // Prevent creating a payroll when there's already an ongoing (not paid)
+        // payroll for the same template and period.
+        $exists = Payroll::where('payroll_template_id', $request->payroll_template_id)
+            ->where('pay_period_start', $request->pay_period_start)
+            ->where('pay_period_end', $request->pay_period_end)
+            ->where('status', '!=', 'paid')
+            ->exists();
+
+        if ($exists) {
+            return [
+                'message' => 'An ongoing payroll already exists for this template and period',
+                'info' => 'Please close or mark the existing payroll as paid before creating a new one',
+                'status' => 'error'
+            ];
+        }
+
         DB::transaction(function () use ($request) {
-            // Prevent creating a payroll when there's already an ongoing (not paid)
-            // payroll for the same template and period.
-            $exists = Payroll::where('payroll_template_id', $request->payroll_template_id)
-                ->where('pay_period_start', $request->pay_period_start)
-                ->where('pay_period_end', $request->pay_period_end)
-                ->where('status', '!=', 'paid')
-                ->exists();
-
-            if ($exists) {
-                return [
-                    'message' => 'An ongoing payroll already exists for this template and period',
-                    'info' => 'Please close or mark the existing payroll as paid before creating a new one',
-                    'status' => 'error'
-                ];
-            }
-
             $payroll = Payroll::create([
                 'payroll_no' => $this->series_service->get('payroll_number'),
                 'pay_period_start' => $request->pay_period_start,
@@ -73,8 +73,8 @@ class PayrollClass
                     'net_salary' => $item['net_salary'],
                 ]);
             }
-        });
 
+        });
         return [
             'message' => 'Payroll created successfully',
             'info' => "You've successfully created the payroll"

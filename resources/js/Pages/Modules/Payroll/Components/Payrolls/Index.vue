@@ -76,8 +76,9 @@
                                                 </b-button>
                                                 <b-button @click.stop="confirmDelete(payroll)" variant="outline-danger"
                                                     v-b-tooltip.hover title="Delete" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-trash-line"></i>
+                                                    class="btn-icon rounded-circle"
+                                                    v-if="payroll.status == 'draft'">
+                                                    <i class="ri-delete-bin-line"></i>
                                                 </b-button>
                                             </div>
                                         </td>
@@ -149,7 +150,7 @@ export default {
         }
       })
         .then(response => {
-          if (response) {
+          if (response.data) {
             this.payrolls = response.data;
             
             this.meta = response.data.meta;

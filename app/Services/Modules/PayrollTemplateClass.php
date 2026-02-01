@@ -77,8 +77,10 @@ class PayrollTemplateClass
         $payrollTemplate->delete();
 
         return [
+            'data' => $payrollTemplate,
             'message' => 'Payroll template deleted successfully!',
-            'info' => "You've successfully deleted the payroll template"
+            'info' => "You've successfully deleted the payroll template",
+            'status' => true,
         ];
     }
 

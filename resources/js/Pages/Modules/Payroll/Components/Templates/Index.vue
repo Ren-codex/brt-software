@@ -228,9 +228,6 @@
         {{ toastMessage }}
       </div>
     </div>
-
-    <DeleteModal ref="delete" @delete="successDeletion" />
-    <DeleteModal ref="removeEmployee" @delete="successRemoval" />
 </template>
 
 <script>
@@ -238,10 +235,10 @@ import _ from 'lodash';
 import axios from 'axios'
 import PayrollTemplateModal from './Modal.vue'
 import Pagination from "@/Shared/Components/Pagination.vue";
-import DeleteModal from '@/Shared/Components/Modals/Delete.vue';
+import Swal from 'sweetalert2';
 
 export default {
-  components: { PayrollTemplateModal, Pagination, DeleteModal },
+  components: { PayrollTemplateModal, Pagination },
   props: ['dropdowns'],
   data() {
     return {
@@ -338,14 +335,41 @@ export default {
       this.selectedTemplate = { ...template }
       this.showEditTitleModal = true;
     },
-    confirmDelete(template) {
-      let title = "Payroll Template";
-      this.$refs.delete.show(template.id , title, '/payroll-templates');
-    },
-    successDeletion() {
-      this.fetchPayrollTemplates();
-      this.showToast('Payroll template deleted successfully');
-      this.selectedTemplate = [];
+    async confirmDelete(template) {
+      const result = await Swal.fire({
+          title: 'Are you sure?',
+          text: 'You want to delete this template?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, delete it!'
+      });
+      if (result.isConfirmed) {
+          axios.delete(`/payroll-templates/${template.id}`)
+              .then(response => {
+                  if (response.data && response.data.info && response.data.message && response.data.status === false) {
+                    Swal.fire({
+                      title: response.data.message,
+                      text: response.data.info,
+                      icon: 'info',
+                      confirmButtonText: 'OK'
+                    });
+                  } else {
+                    this.fetchPayrollTemplates();
+                    this.showToast('Payroll template deleted successfully');
+                    this.selectedTemplate = [];
+                  }
+              })
+              .catch(error => {
+                  console.error(error);
+                  Swal.fire(
+                      'Error!',
+                      'Failed to delete unit.',
+                      'error'
+                  );
+              });
+      }
     },
     closeModal() {
       this.showCreateModal = false
@@ -377,11 +401,6 @@ export default {
     getStatusStyle(status) {
       return status === 'active' ? 'background-color: #28a745; color: white;' : 'background-color: #6c757d; color: white;';
     },
-    async removeEmployee(employee) {
-      let title = "Employee from Payroll Template";
-      this.$refs.removeEmployee.show(employee.id , title, `/payroll-templates/${this.selectedTemplate.id}/employees`);
-      this.selectedEmployee = employee;
-    },
     successRemoval() {
       this.fetchPayrollTemplates();
       const index = this.selectedTemplate.employees.findIndex(emp => emp.id === this.selectedEmployee.id);
@@ -389,6 +408,41 @@ export default {
         this.selectedTemplate.employees.splice(index, 1);
       }
       this.showToast('Employee removed from template successfully');
+    },
+    async removeEmployee(employee) {
+      const result = await Swal.fire({
+          title: 'Are you sure?',
+          text: 'You want to remove employee from this template?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, remove it!'
+      });
+      if (result.isConfirmed) {
+          axios.delete(`/payroll-templates/${this.selectedTemplate.id}/employees/${employee.id}`)
+              .then(response => {
+                  if (response.data && response.data.info && response.data.message && response.data.status === false) {
+                    Swal.fire({
+                      title: response.data.message,
+                      text: response.data.info,
+                      icon: 'info',
+                      confirmButtonText: 'OK'
+                    });
+                  } else {
+                    this.successRemoval();
+                  }
+              })
+              .catch(error => {
+                  console.error(error);
+                  Swal.fire(
+                      'Error!',
+                      'Failed to delete unit.',
+                      'error'
+                  );
+              });
+      }
+      this.selectedEmployee = employee;
     },
     addEmployee(template) {
       this.selectedTemplate = { ...template }

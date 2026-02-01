@@ -48,7 +48,7 @@ class PayrollTemplateController extends Controller
             return $this->payrollTemplate->save($request);
         });
 
-        return back()->with([
+        return response()->json([
             'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
@@ -71,7 +71,7 @@ class PayrollTemplateController extends Controller
             return $this->payrollTemplate->delete($id);
         });
 
-        return back()->with([
+        return response()->json([
             'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
@@ -85,7 +85,7 @@ class PayrollTemplateController extends Controller
             return $this->payrollTemplate->removeEmployee($templateId, $employeeId);
         });
 
-        return back()->with([
+        return response()->json([
             'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
