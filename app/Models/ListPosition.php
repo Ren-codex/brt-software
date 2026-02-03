@@ -8,14 +8,11 @@ class ListPosition extends Model
 {
       protected $fillable = [
         'title',
-        'short',
-        'salary_id'
+        'slug',
+        'rate_per_day',
+        'is_regular',
+        'is_active',
     ];
-
-    public function salary()
-    {
-        return $this->belongsTo('App\Models\ListSalary', 'salary_id', 'id');
-    }
 
     public static function getID($title){
         $position = self::where('title', $title)->first();

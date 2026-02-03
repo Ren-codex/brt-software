@@ -21,35 +21,33 @@
                             <input 
                                 type="text" 
                                 id="name" 
-                                v-model="form.name" 
+                                v-model="form.title" 
                                 class="form-control"
                                 :class="{ 'input-error': form.errors.title }"
                                 placeholder="Enter position name"
-                                @input="handleInput('name')"
+                                @input="handleInput('title')"
                             >
                         </div>
                         <span class="error-message" v-if="form.errors.title">{{ form.errors.title }}</span>
                     </div>
 
                     <div class="form-group">
-                        <label for="type" class="form-label">Short</label>
+                        <label for="type" class="form-label">Rate per day</label>
                         <div class="input-wrapper">
-                            <i class="ri-shield-user-line input-icon"></i>
-                            <input 
-                                type="text" 
-                                id="type" 
-                                v-model="form.short" 
+                            <i class="ri-cash-line input-icon"></i>
+                            <input
+                                type="text"
+                                id="type"
+                                v-model="form.rate_per_day"
                                 class="form-control"
-                                :class="{ 'input-error': form.errors.short }"
-                                placeholder="Enter short"
-                                @input="handleInput('short')"
+                                :class="{ 'input-error': form.errors.rate_per_day }"
+                                placeholder="Enter rate per day"
+                                @input="handleInput('rate_per_day')"
                             >
                         </div>
                         <span class="error-message" v-if="form.errors.short">{{ form.errors.short }}</span>
                     </div>
 
-              
-                    
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Your information has been saved successfully!</span>
@@ -78,6 +76,7 @@ import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import ColorInput from '@/Shared/Components/Forms/ColorInput.vue';
+import Swal from 'sweetalert2';
 
 export default {
     components: { InputLabel, TextInput, ColorInput, Multiselect },
@@ -88,9 +87,7 @@ export default {
             form: useForm({
                 id: null,
                 title: null,
-                short: null,
-                is_regular: null,
-                salary_id: null,
+                rate_per_day: null,
             }),
             togglePassword: false,
             toggleConfirm: false,
@@ -105,9 +102,7 @@ export default {
             this.form.defaults({
                 id: null,
                 title: null,
-                short: null,
-                is_regular: null,
-                salary_id: null,
+                rate_per_day: null,
                 }).reset();
             this.editable = false;
             this.saveSuccess = false;
@@ -115,9 +110,8 @@ export default {
         },
         edit(data, index) {
             this.form.id = data.id;
-            this.form.name = data.name;
-            this.form.type = data.type;
-            this.form.definition = data.definition;
+            this.form.title = data.title;
+            this.form.rate_per_day = data.rate_per_day;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
@@ -139,7 +133,7 @@ export default {
                     },
                 });
             } else {
-                this.form.post('/libraries/postions', {
+                this.form.post('/libraries/positions', {
                     preserveScroll: true,
                     onSuccess: (response) => {
                         Swal.fire({

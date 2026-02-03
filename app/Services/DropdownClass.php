@@ -12,12 +12,12 @@ use App\Models\ListStatus;
 use App\Models\ListUnit;
 use App\Models\ListBrand;
 use App\Models\Customer;
+use App\Models\Employee;
 use App\Models\ListSupplier;
 use App\Models\Product;
 use App\Models\InventoryStocks;
-use App\Models\Employee;
-
-
+use App\Models\PayrollSetting;
+use App\Models\PayrollTemplate;
 
 class DropdownClass
 {  
@@ -97,11 +97,6 @@ class DropdownClass
         });
         return  $data;
     }
-
-
-
-
-
         
     public function suppliers(){
         $data = ListSupplier::get()->map(function ($item) {
@@ -172,6 +167,18 @@ class DropdownClass
         return  $data;
     }
 
+    public function employees(){
+        $data = Employee::with('position')->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->lastname . ', ' . $item->firstname . ' ' . ($item->middlename ? strtoupper($item->middlename[0]) . '.' : ''),
+                'position_name' => $item->position ? $item->position->title : null,
+                'basic_salary' => $item->position ? $item->position->rate_per_day : null,
+            ];
+        });
+        return  $data;
+    }
+
     public function sales_reps(){
         $data = Employee::where('position_id', ListPosition::getID('Sales Rep'))->get()->map(function ($item) {
             return [
@@ -193,4 +200,33 @@ class DropdownClass
     }
 
 
+    public function payroll_settings(){
+        $data = PayrollSetting::where('is_active',1)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'slug' => $item->slug,
+                'field' => $item->field,
+                'formula' => $item->formula,
+                'value' => $item->value,
+            ];
+        });
+        return  $data;
+    }
+
+    public function payroll_templates(){
+        $data = PayrollTemplate::where('is_active',1)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+                'employees' => $item->employees->map(function ($emp) {
+                    return [
+                        'id' => $emp->id,
+                        'name' => $emp->lastname . ', ' . $emp->firstname . ' ' . ($emp->middlename ? strtoupper($emp->middlename[0]) . '.' : ''),
+                        'basic_salary' => $emp->position ? $emp->position->rate_per_day : null,
+                    ];
+                }),
+            ];
+        });
+        return  $data;
+    }
 }
