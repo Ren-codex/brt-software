@@ -4,7 +4,7 @@
         <ul class="navbar-nav h-100" id="navbar-nav">
             <li class="nav-item">
                 <Link href="/" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/Portal/Dashboard') }">
+                    :class="{'active': $page.component.startsWith('Modules/Dashboard/') }">
                 <i class="ri-apps-line"></i>
                 <span class="fw-semibold fs-14" data-key="t-dashboards">Dashboard</span>
                 <span class="menu-link-bg"></span>
@@ -21,7 +21,7 @@
                 </li>
                 <li class="nav-item">
                     <Link href="/employees" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/HumanResource/Employees') }">
+                    :class="{'active': $page.component.startsWith('Modules/Employees/') }">
                     <i class="ri-team-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Employees</span>
                     <span class="menu-link-bg"></span>
@@ -270,7 +270,7 @@
     border-radius: 12px;
     transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     z-index: 1;
     border: 1px solid transparent;
     background: rgba(241, 248, 249, 0);
@@ -310,7 +310,7 @@
 }
 
 .menu-link.active .menu-link-bg {
-    opacity: 1;
+  
     background: linear-gradient(135deg, #3D8D7A, #C4DAD2);
 }
 
