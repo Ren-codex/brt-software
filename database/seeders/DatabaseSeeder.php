@@ -19,7 +19,6 @@ class DatabaseSeeder extends Seeder
         $this->call(ListPositionsTableSeeder::class);
         $this->call(UsersTableSeeder::class);
         $this->call(UserRolesTableSeeder::class);
-        $this->call(EmployeesTableSeeder::class);
         $this->call(CustomersTableSeeder::class);
         $this->call(ListBrandsTableSeeder::class);
         $this->call(ListUnitsTableSeeder::class);
@@ -31,8 +30,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ReceivedItemsTableSeeder::class);
         $this->call(InventoryStocksTableSeeder::class);
         $this->call(SeriesSeeder::class);
+        $this->call(PayrollSettingsTableSeeder::class);
         $this->call(EmployeesTableSeeder::class);
-    
-
     }
 }

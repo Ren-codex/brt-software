@@ -25,8 +25,8 @@ class PositionClass
 
         $data = ListPosition::create([
             'title' =>  $request->title,
-            'short' =>  $request->short,
-            'salary_id' =>  $request->salary_id,
+            'slug' =>  \Str::slug($request->title),
+            'rate_per_day' =>  $request->rate_per_day,
         ]);
 
         return [
@@ -40,8 +40,8 @@ class PositionClass
         $data = ListPosition::findOrFail($request->id);
          $data->update([
             'title' =>  $request->title,
-            'short' =>  $request->short,
-            'salary_id' =>  $request->salary_id,
+            'slug' =>  \Str::slug($request->title),
+            'rate_per_day' =>  $request->rate_per_day,
         ]);
 
         return [

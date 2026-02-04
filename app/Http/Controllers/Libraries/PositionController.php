@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Libraries\PositionClass;
 use App\Http\Requests\Libraries\PositionRequest;
+use App\Models\ListPosition;
 
 class PositionController extends Controller
 {
@@ -68,6 +69,25 @@ class PositionController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+        ]);
+    }
+
+    // New method for toggling active status
+    public function toggleActive(Request $request, $id)
+    {
+        $position = ListPosition::findOrFail($id);
+
+        $request->validate([
+            'is_active' => 'required|boolean'
+        ]);
+
+        $position->is_active = $request->input('is_active');
+        $position->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Position active status updated successfully',
+            'data' => $position
         ]);
     }
 }

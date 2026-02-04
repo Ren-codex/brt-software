@@ -42,6 +42,8 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Title</th>
+                                    <th>Rate Per Day</th>
+                                    <th>Active</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -53,13 +55,19 @@
                                 }">
                                     <td>{{ index + 1}}</td>
                                     <td>{{ list.title }}</td>
+                                    <td>{{ list.rate_per_day }}</td>
+                                    <td>
+                                        <b-form-checkbox
+                                            :checked="list.is_active === 1"
+                                            @change="toggleActive(list)"
+                                            switch
+                                            size="md"
+                                        />
+                                    </td>
                                     <td>
                                         <div class="action-buttons">
                                             <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                                                 <i class="ri-pencil-line"></i>
-                                            </button>
-                                            <button @click="onDelete(list,index)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
-                                                <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -147,6 +155,24 @@ export default {
             } else {
                 this.selectedRow = index;
             }
+        },
+
+        toggleActive(position) {
+            const updatedStatus = position.is_active === 1 ? 0 : 1;
+            axios.patch(`/libraries/positions/${position.id}/toggle-active`, {
+                is_active: updatedStatus,
+            })
+            .then(response => {
+                if (response.data.status) {
+                position.is_active = updatedStatus;
+                this.$emit('toast', 'Status updated successfully');
+                } else {
+                console.error('Failed to update position active status:', response.data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating position active status:', error);
+            });
         }
     }
 }

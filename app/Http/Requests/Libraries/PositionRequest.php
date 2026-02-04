@@ -4,7 +4,7 @@ namespace App\Http\Requests\Libraries;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RoleRequest extends FormRequest
+class PositionRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,18 +15,16 @@ class RoleRequest extends FormRequest
     {
 
         return [
-            'title' => 'required|string|unique:list_salaries,title',
-            'short' => 'required|string',
-            'salary_id' => 'required|string|unique:list_salaries,id',
+            'title' => 'required|string|unique:list_positions,title' . ($this->input('id') ? ',' . $this->input('id') : ''),
+            'rate_per_day' => 'required|numeric',
         ];
 
     }
     public function messages()
     {
         return [
-            'name.required' => 'This field is required',
-            'type.required' => 'This field is required',
-            'salary_id.required' => 'This field is required',
+            'title.required' => 'This field is required',
+            'rate_per_day.required' => 'This field is required',
         ];
 
     }

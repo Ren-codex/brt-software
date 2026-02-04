@@ -31,7 +31,8 @@ class EmployeeResource extends JsonResource
             'position' => $this->position,
             'added_by' => $this->added_by,
             'created_at' => $this->created_at->format('F d, Y'),
-            'updated_at' => $this->updated_at->format('F d, Y')
+            'updated_at' => $this->updated_at->format('F d, Y'),
+            'basic_salary' => $this->position->rate_per_day ?? null,
         ];
     }
 }

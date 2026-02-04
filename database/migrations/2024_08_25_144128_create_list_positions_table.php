@@ -14,13 +14,14 @@ return new class extends Migration
         Schema::create('list_positions', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->boolean('is_active')->default(1);
             $table->string('title');
             $table->string('slug')->unique();
-            $table->string('short')->unique();
+            $table->decimal('rate_per_day', 15, 2);      
+            // $table->string('short')->unique();
             $table->boolean('is_regular')->default(0);
-            $table->unsignedInteger('salary_id');
-            $table->foreign('salary_id')->references('id')->on('list_salaries')->onDelete('cascade');
+            $table->boolean('is_active')->default(1);
+            // $table->unsignedInteger('salary_id');
+            // $table->foreign('salary_id')->references('id')->on('list_salaries')->onDelete('cascade');
             $table->timestamps();
         });
     }

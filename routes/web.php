@@ -12,7 +12,7 @@ Route::get('/landing', function () {
 
 Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
-    Route::resource('/sales', App\Http\Controllers\Modules\SalesController::class);
+    Route::resource('/sales', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::post('/sales-orders/adjustment/{id}', [App\Http\Controllers\Modules\SalesAdjustmentController::class, 'store']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
@@ -36,8 +36,9 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
 
         
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
+        Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
-
+        
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
         Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
         Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus']);
@@ -53,6 +54,14 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/remittances', App\Http\Controllers\RemittanceController::class);
         Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
         Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
+        
+        Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class);
+        Route::get('/payroll-templates/available-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'getAvailableEmployees']);
+        Route::resource('/payroll-templates', App\Http\Controllers\Modules\PayrollTemplateController::class);
+        Route::post('/payroll-templates/{templateId}/add-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'addEmployees']);
+        Route::delete('/payroll-templates/{templateId}/employees/{employeeId}', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'removeEmployee']);
+        Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class);
+        Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
     });
 });
 

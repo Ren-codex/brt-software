@@ -15,8 +15,7 @@ trait HandlesTransaction
             $data = $result['data'];
             $info = $result['info'];
             $message = $result['message'];
-            // $status = $status;
-            $status = true;
+            $status = $result['status'] ?? true;
         } catch (QueryException $e) {
             $info = 'Transaction failed: ' . $e->getMessage();
             $message = 'Error occured';
