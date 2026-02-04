@@ -198,7 +198,7 @@
             @foreach($items as $index => $item)
             <tr>
                 <td class="text-center">{{ $index + 1 }}</td>
-                <td>{{ $item->product->brand->name ?? '' }} {{ $item->product->pack_size }} {{ $item->product->unit->name }}</td>
+                <td>{{ $item->product->brand->name ?? '' }} {{ $item->product->pack_size ?? '' }} {{ $item->product->unit->name ?? '' }}</td>
                 <td class="text-center">{{ number_format($item->quantity) }}</td>
                 <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
                 <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>

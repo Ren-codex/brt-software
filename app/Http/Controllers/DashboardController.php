@@ -42,7 +42,7 @@ class DashboardController extends Controller
         }
 
         // Payment methods distribution
-        $paymentMethods = Receipt::selectRaw('payment_mode, SUM(amount_paid) as total')
+        $paymentMethods = SalesOrder::selectRaw('payment_mode, SUM(total_amount) as total')
                                 ->groupBy('payment_mode')
                                 ->get()
                                 ->map(function ($item) {

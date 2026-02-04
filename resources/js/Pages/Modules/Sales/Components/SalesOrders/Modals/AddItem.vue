@@ -178,7 +178,7 @@ export default {
                 id: null,
                 brand_id: null,
                 quantity: 0,
-                price: 0.00,
+                price: isNaN(0) ? 0 : 0.00,
                 product_id: null,
                 batch_code: null,
                 price_type: 'retail',
@@ -212,7 +212,7 @@ export default {
         show() {
             this.form.reset();
             this.form.quantity = 0;
-            this.form.price = 0.00;
+            this.form.price = isNaN(0) ? 0 : 0.00;
             this.form.discount_per_unit = 0;
             this.editable = false;
             this.saveSuccess = false;
@@ -300,10 +300,10 @@ export default {
             if (product) {
                 this.form.batch_code = product.batch_code || null;
                 const price = this.form.price_type === 'wholesale' ? product.wholesale_price : product.retail_price;
-                this.form.price = parseFloat(price).toFixed(2) || 0;
+                this.form.price = parseFloat(price || 0).toFixed(2);
             } else {
                 this.form.batch_code = null;
-                this.form.price = 0;
+                this.form.price = '0.00';
             }
         },
 

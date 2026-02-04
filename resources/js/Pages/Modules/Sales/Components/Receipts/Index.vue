@@ -255,7 +255,7 @@ export default {
         },
 
         onPrint(id) {
-            window.open(`/receipts/${id}/print`);
+            window.open(`/receipts/${id}?option=print&type=receipt`);
         },
 
          getCustomer(customer_id){

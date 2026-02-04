@@ -28,8 +28,6 @@ class PaymentRequest extends FormRequest
                 },
             ],
             'payment_date' => 'required|date',
-            'payment_mode' => 'required|string',
-            'billing_account' => 'nullable|string',
         ];
 
     }
@@ -38,7 +36,6 @@ class PaymentRequest extends FormRequest
         return [
             'amount_paid.required' => 'Amount paid is required',
             'payment_date.required' => 'Payment date is required',
-            'payment_mode.required' => 'Payment mode is required',
         ];
 
     }
