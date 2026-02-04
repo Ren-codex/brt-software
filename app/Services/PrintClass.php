@@ -72,8 +72,8 @@ class PrintClass
     }
 
     public function printArInvoice($id){
-        $ar_invoice = \App\Models\ArInvoice::with('status', 'salesOrder.customer', 'salesOrder.items.product.brand', 'salesOrder.items.product.unit', 'salesOrder.created_by', 'salesOrder.approved_by')->findOrFail($id);
-        $sales_order = $ar_invoice->salesOrder;
+        $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.created_by', 'sales_order.approved_by')->findOrFail($id);
+        $sales_order = $ar_invoice->sales_order;
         $items = $sales_order->items;
 
         $array = [
@@ -88,10 +88,10 @@ class PrintClass
     }
 
     public function printReceipt($id){
-        $receipt = \App\Models\Receipt::with('status', 'customer', 'ar_invoice.sales_order.items.product.brand', 'ar_invoice.sales_order.items.product.unit', 'ar_invoice.sales_order.customer')->findOrFail($id);
+        $receipt = \App\Models\Receipt::with('status', 'customer', 'arInvoice.sales_order.items.product.brand', 'arInvoice.sales_order.items.product.unit', 'arInvoice.sales_order.customer')->findOrFail($id);
 
         $ar_invoice = $receipt->arInvoice;
-        $sales_order = $ar_invoice ? $ar_invoice->salesOrder : null;
+        $sales_order = $ar_invoice ? $ar_invoice->sales_order : null;
         $items = $sales_order ? $sales_order->items : [];
 
         $array = [

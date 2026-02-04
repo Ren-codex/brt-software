@@ -57,6 +57,7 @@ class ArInvoiceController extends Controller
             }
         });
 
+
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
@@ -68,6 +69,7 @@ class ArInvoiceController extends Controller
 
     
     public function show($id , Request $request){
+        dd($request->all());
         return $this->print->print($id, $request);
     }
 

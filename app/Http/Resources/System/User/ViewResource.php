@@ -10,11 +10,8 @@ class ViewResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $hashids = new Hashids('krad',10);
-        $code = $hashids->encode($this->id);
 
         return [
-            'code' => $code,
             'avatar' => ($this->employee && $this->employee->avatar && $this->employee->avatar !== 'noavatar.jpg')
             ? asset('storage/' . $this->employee->avatar) 
             : asset('images/avatars/avatar.jpg'), 

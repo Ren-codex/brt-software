@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\ArInvoice;
 use App\Models\SalesOrder;
 use App\Models\Receipt;
+use App\Models\ListStatus;
 use App\Http\Resources\Modules\ArInvoiceResource;
 use App\Services\PrintClass;
 
@@ -75,14 +76,11 @@ class ArInvoiceClass
         $receipt->receipt_number = Receipt::generateReceiptNumber();
         $receipt->receipt_date = $request->payment_date;
         $receipt->amount_paid = $request->amount_paid;
-        $receipt->payment_mode = $request->payment_mode;
-        if($request->billing_account){
-            $receipt->billing_account = $request->billing_account;
-        }
-        $receipt->status_id = 1; // Pending
+        $receipt->status_id = ListStatus::getBySlug('pending')->id; // Pending
         $receipt->customer_id = $ar_invoice->sales_order->customer_id;
         $receipt->ar_invoice_id = $ar_invoice->id;
         $receipt->save();
+
 
         // Update AR Invoice
         $ar_invoice->amount_paid =  $ar_invoice->amount_paid + $request->amount_paid;
