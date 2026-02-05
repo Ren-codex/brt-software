@@ -26,8 +26,6 @@ return new class extends Migration
             $table->date('receipt_date');
             $table->decimal('amount_paid' , 15,2);
             $table->decimal('balance_due', 15, 2)->default(0);
-            $table->string('payment_mode');
-            $table->string('billing_account')->nullable();
             $table->timestamps();
         });
     }

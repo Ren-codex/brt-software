@@ -49,7 +49,7 @@ class SalesOrder extends Model
         return $this->belongsTo(ListStatus::class, 'sub_status_id');
     }
 
-    public function addedBy()
+    public function created_by()
     {
         return $this->belongsTo(User::class, 'added_by_id');
     }

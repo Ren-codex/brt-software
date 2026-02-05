@@ -38,7 +38,7 @@ return new class extends Migration
             $table->foreign('sales_rep_id')->references('id')->on('employees');
             $table->unsignedInteger('driver_id');
             $table->foreign('driver_id')->references('id')->on('employees');
-            
+            $table->string('billing_account')->nullable();
             $table->timestamps();
         });
     }

@@ -51,60 +51,9 @@
                         <hr>
                         <div class="text-center">
                             <h4 class="text-success mb-0">
-                                <i class="ri-money-dollar-circle-line me-2"></i>
-                                Outstanding Balance: ₱{{ form.balance_due?.toFixed(2) }}
+                                Outstanding Balance: <p class="fw-bold text-dark">{{ numberFormat(form.balance_due?.toFixed(2)) }}</p>
                             </h4>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Payment Mode Selection -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-primary">
-                            <i class="ri-bank-card-line me-2"></i>
-                            Select Payment Method
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="payment-mode-grid">
-                            <div
-                                v-for="mode in payment_modes"
-                                :key="mode"
-                                :class="{ 'selected-payment-mode': form.payment_mode === mode }"
-                                class="payment-mode-card"
-                                @click="selectPaymentMode(mode)"
-                            >
-                                <i :class="getPaymentModeIcon(mode)" class="payment-icon"></i>
-                                <span class="payment-label">{{ mode }}</span>
-                            </div>
-                        </div>
-                        <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
-                    </div>
-                </div>
-
-                <!-- Billing Account (if not Cash) -->
-                <div v-if="form.payment_mode && form.payment_mode !== 'Cash'" class="card border-0 shadow-sm mb-4">
-                    <div class="card-body">
-                        <label for="billing_account" class="form-label fw-semibold">
-                            <i class="ri-bank-card-line me-2 text-primary"></i>
-                            Billing Account <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-primary text-white">
-                                <i class="ri-bank-card-line"></i>
-                            </span>
-                            <input
-                                type="text"
-                                id="billing_account"
-                                v-model="form.billing_account"
-                                class="form-control"
-                                :class="{ 'is-invalid': form.errors.billing_account }"
-                                @input="handleInput('billing_account')"
-                                placeholder="Enter account number or details"
-                            />
-                        </div>
-                        <div class="invalid-feedback" v-if="form.errors.billing_account">{{ form.errors.billing_account }}</div>
                     </div>
                 </div>
 
@@ -125,8 +74,9 @@
                                 </label>
                                 <Amount
                                     v-model="form.amount_paid"
+                                    ref="amount_paid"
                                     id="payment_amount"
-                                    @input="handleInput('payment_amount')"
+                                    @input="handleInput('amount_paid')"
                                     class="form-control"
                                     :class="{ 'is-invalid': form.errors.amount_paid }"
                                 />
@@ -201,7 +151,7 @@ export default {
             this.invoice = data;
             this.form.id = data.id;
             this.form.balance_due = data.balance_due;
-            this.form.amount_paid = data.balance_due;
+            this.$refs.amount_paid.emitValue(this.form.balance_due?.toFixed(2));
             this.title = title;
             this.route = route;
         },
@@ -247,6 +197,14 @@ export default {
             this.form.payment_mode = mode;
             this.handleInput('payment_mode');
         },
+
+        numberFormat(value) {
+            return new Intl.NumberFormat('en-PH', {
+                style: 'currency',
+                currency: 'PHP',
+                minimumFractionDigits: 2
+            }).format(value);
+        }
 
 
    

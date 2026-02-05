@@ -19,7 +19,7 @@ class Receipt extends Model
         'remittance_id',
     ];
 
-    public function ar_invoice()
+    public function arInvoice()
     {
         return $this->belongsTo('App\Models\ArInvoice', 'ar_invoice_id');
     }
