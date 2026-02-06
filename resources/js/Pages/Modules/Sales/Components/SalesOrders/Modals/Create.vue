@@ -529,7 +529,9 @@ export default {
 
         formatCurrency(value) {
             if (!value) return '₱0.00';
-            return '₱' + Number(value).toLocaleString('en-PH', {
+            const num = Number(value);
+            if (isNaN(num)) return '₱0.00';
+            return '₱' + num.toLocaleString('en-PH', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
