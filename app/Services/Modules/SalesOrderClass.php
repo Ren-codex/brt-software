@@ -109,7 +109,7 @@ class SalesOrderClass
        
 
         // Reload the data with relationships
-        $data = SalesOrder::with(['items', 'customer', 'status', 'addedBy'])->find($data->id);
+        $data = SalesOrder::with(['items', 'customer', 'status', 'created_by'])->find($data->id);
  
      
         // Create AR Invoice
