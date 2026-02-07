@@ -474,6 +474,11 @@ export default {
             confirmButtonText: 'OK'
           });
         } else {
+          Swal.fire({
+            title: response.data.message,
+            text: response.data.info,
+            icon: 'success',
+          });
           this.saveSuccess = true
           this.form.errors = {}
           this.$emit('saved');
