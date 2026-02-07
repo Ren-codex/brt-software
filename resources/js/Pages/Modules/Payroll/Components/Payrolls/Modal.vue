@@ -31,7 +31,14 @@
                     <label class="form-label">Period Start *</label>
                     <div class="input-wrapper">
                       <i class="ri-calendar-line input-icon"></i>
-                      <input type="date" v-model="form.pay_period_start" class="form-control" :class="{ 'input-error': form.errors.pay_period_start }" @input="handleInput('pay_period_start')" required>
+                      <input 
+                        type="date" 
+                        v-model="form.pay_period_start" 
+                        class="form-control" 
+                        :class="{ 'input-error': form.errors.pay_period_start }" 
+                        @input="handleInput('pay_period_start')" 
+                        required
+                        :disabled="isEdit && form.status == 'pending'">
                     </div>
                     <span class="error-message" v-if="form.errors.pay_period_start">{{ form.errors.pay_period_start }}</span>
                   </div>
@@ -39,7 +46,14 @@
                     <label class="form-label">Period End *</label>
                     <div class="input-wrapper">
                       <i class="ri-calendar-line input-icon"></i>
-                      <input type="date" v-model="form.pay_period_end" class="form-control" :class="{ 'input-error': form.errors.pay_period_end }" @input="handleInput('pay_period_end')" required>
+                      <input 
+                        type="date" 
+                        v-model="form.pay_period_end" 
+                        class="form-control" 
+                        :class="{ 'input-error': form.errors.pay_period_end }" 
+                        @input="handleInput('pay_period_end')" 
+                        required
+                        :disabled="isEdit && form.status == 'pending'">
                     </div>
                     <span class="error-message" v-if="form.errors.pay_period_end">{{ form.errors.pay_period_end }}</span>
                   </div>
@@ -50,7 +64,12 @@
                   <label class="form-label">Payroll Template *</label>
                   <div class="input-wrapper">
                     <i class="ri-layout-grid-line input-icon"></i>
-                    <select v-model="form.payroll_template" class="form-control" :class="{ 'input-error': form.errors.payroll_template }" @change="handleInput('payroll_template'); fetchEmployees()" required>
+                    <select v-model="form.payroll_template"
+                      class="form-control"
+                      :class="{ 'input-error': form.errors.payroll_template }"
+                      @change="handleInput('payroll_template'); fetchEmployees()"
+                      required
+                      :disabled="isEdit">
                       <option value="">Select Payroll Template</option>
                       <option v-for="template in payrollTemplates" :key="template.id" :value="template">{{ template.name }}</option>
                     </select>
@@ -175,7 +194,7 @@
         <button type="submit" class="btn btn-save" :disabled="loading" @click="savePayroll">
           <i class="ri-save-line" v-if="!loading"></i>
           <i class="ri-loader-4-line spinner" v-else></i>
-          {{ loading ? 'Saving...' : (isEdit ? 'Update' : 'Create') }}
+          {{ loading ? 'Saving...' : 'Submit for Approval' }}
         </button>
       </div>
     </div>
@@ -233,11 +252,12 @@ export default {
       deductionInput: 0,
       showComputationModal: false,
       payrollTemplates: [],
+      makeStateDraft: false,
     }
   },
 
   mounted() {
-    this.fetchEmployees();
+    // this.fetchEmployees();
     this.fetchPayrollTemplates();
 
     const today = new Date()
@@ -273,6 +293,23 @@ export default {
         .then(response => {
           if (response) {
             this.payrollTemplates = response.data.data;
+            if(this.isEdit && this.payroll){
+              this.form.payroll_template = this.payrollTemplates.find(t => t.id === this.payroll.payroll_template_id) || '';
+              this.form.pay_period_start = this.payroll.pay_period_start.slice(0, 10);
+              this.form.pay_period_end = this.payroll.pay_period_end.slice(0, 10);
+              this.form.status = this.payroll.status;
+              this.selectedEmployees = this.payroll.payroll_items.map(item => {
+                return {
+                  value: item.employee_id,
+                  fullname: item.employee_name,
+                  basic_salary: item.basic_salary,
+                  total_days: item.total_days,
+                  overtime_hours: item.overtime_hours,
+                  deductions: item.deductions,
+                  incentives: item.incentives
+                }
+              })
+            }
           }
         })
         .catch(err => console.log(err));
@@ -420,7 +457,7 @@ export default {
           };
         }),
         total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),
-        status: this.form.status,
+        status: this.makeStateDraft == true ? "draft" : "pending",
       }
 
       try {
@@ -453,8 +490,8 @@ export default {
     },
 
     async saveDraft() {
-      this.form.status = 'draft';
-      this.savePayroll();
+      this.makeStateDraft = true;
+      await this.savePayroll();
     }
   }
 }
