@@ -64,15 +64,16 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="viewPayroll(payroll)" variant="outline-info"
-                                                    v-b-tooltip.hover title="View" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-eye-line"></i>
-                                                </b-button>
                                                 <b-button @click.stop="editPayroll(payroll)" variant="outline-primary"
-                                                    v-b-tooltip.hover title="Edit" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-pencil-fill"></i>
+                                                  v-b-tooltip.hover title="Edit" size="sm"
+                                                  class="btn-icon rounded-circle">
+                                                  <i class="ri-pencil-fill"></i>
+                                                </b-button>
+                                                <b-button @click.stop="printPayroll(payroll)" variant="outline-info"
+                                                    v-b-tooltip.hover title="Print" size="sm"
+                                                    class="btn-icon rounded-circle"
+                                                    v-if="payroll.status != 'draft'">
+                                                    <i class="ri-printer-line"></i>
                                                 </b-button>
                                                 <b-button @click.stop="confirmDelete(payroll)" variant="outline-danger"
                                                     v-b-tooltip.hover title="Delete" size="sm"
@@ -170,6 +171,9 @@ export default {
     editPayroll(payroll) {
       this.selectedPayroll = { ...payroll }
       this.showEditModal = true
+    },
+    printPayroll(payroll) {
+      window.open(`/payrolls/${payroll.id}/print`, '_blank');
     },
     confirmDelete(payroll) {
       if (confirm(`Are you sure you want to delete payroll?`)) {
