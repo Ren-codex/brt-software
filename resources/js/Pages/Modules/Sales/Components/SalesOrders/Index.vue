@@ -102,7 +102,7 @@
                                     <th style="width: 10%;" class="text-center border-none">Customer</th>
                                     <th style="width: 10%;" class="text-center border-none">Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Status</th>
-                                     <th style="width: 8%;" class="text-center border-none">SubStatus</th>
+                                     <!-- <th style="width: 8%;" class="text-center border-none">SubStatus</th> -->
                                     <th style="width: 10%;" class="text-center border-none">Total Amount</th>
                                     <th style="width: 10%;" class="text-center border-none">Due Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Paid %</th>
@@ -131,13 +131,13 @@
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
                                         </td>
-                                          <td class="text-center">
+                                          <!-- <td class="text-center">
                                             <span
                                                 v-if="list.sub_status?.name"
                                                 :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
                                                 {{ list.sub_status?.name  }}
                                             </span>
-                                        </td>
+                                        </td> -->
                                         <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
                                             {{ list.due_date }}
