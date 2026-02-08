@@ -64,15 +64,16 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="viewPayroll(payroll)" variant="outline-info"
-                                                    v-b-tooltip.hover title="View" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-eye-line"></i>
-                                                </b-button>
                                                 <b-button @click.stop="editPayroll(payroll)" variant="outline-primary"
-                                                    v-b-tooltip.hover title="Edit" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-pencil-fill"></i>
+                                                  v-b-tooltip.hover title="Edit" size="sm"
+                                                  class="btn-icon rounded-circle">
+                                                  <i class="ri-pencil-fill"></i>
+                                                </b-button>
+                                                <b-button @click.stop="printPayroll(payroll)" variant="outline-info"
+                                                    v-b-tooltip.hover title="Print" size="sm"
+                                                    class="btn-icon rounded-circle"
+                                                    v-if="payroll.status != 'draft'">
+                                                    <i class="ri-printer-line"></i>
                                                 </b-button>
                                                 <b-button @click.stop="confirmDelete(payroll)" variant="outline-danger"
                                                     v-b-tooltip.hover title="Delete" size="sm"
@@ -84,6 +85,9 @@
                                         </td>
                                     </tr>
                                 </template>
+                                <tr v-if="!payrolls.length">
+                                    <td colspan="8" class="text-center">No data available</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -111,6 +115,7 @@ import _ from 'lodash';
 import axios from 'axios'
 import PayrollModal from './Modal.vue'
 import Pagination from "@/Shared/Components/Pagination.vue";
+import Swal from 'sweetalert2';
 
 export default {
   components: { PayrollModal, Pagination },
@@ -162,18 +167,51 @@ export default {
     updateKeyword(value) {
       this.filter.keyword = value;
     },
-    viewPayroll(payroll) {
-      this.selectedPayroll = payroll
-      // You can implement a detailed view modal here
-      this.$toast.info(`Viewing payroll`)
-    },
     editPayroll(payroll) {
       this.selectedPayroll = { ...payroll }
       this.showEditModal = true
     },
-    confirmDelete(payroll) {
-      if (confirm(`Are you sure you want to delete payroll?`)) {
-        this.deletePayroll(payroll.id)
+    printPayroll(payroll) {
+      window.open(`/payrolls/${payroll.id}/print`, '_blank');
+    },
+    async confirmDelete(template) {
+      const result = await Swal.fire({
+          title: 'Are you sure?',
+          text: 'You want to delete this payroll?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, delete it!'
+      });
+      if (result.isConfirmed) {
+          axios.delete(`/payrolls/${template.id}`)
+              .then(response => {
+                  if (response.data && response.data.info && response.data.message && response.data.status === false) {
+                    Swal.fire({
+                      title: response.data.message,
+                      text: response.data.info,
+                      icon: 'info',
+                      confirmButtonText: 'OK'
+                    });
+                  } else {
+                    this.fetchPayrolls();
+                    Swal.fire({
+                      title: response.data.message,
+                      text: response.data.info,
+                      icon: 'success',
+                    });
+                    this.selectedPayroll = null;
+                  }
+              })
+              .catch(error => {
+                  console.error(error);
+                  Swal.fire(
+                      'Error!',
+                      'Failed to delete payroll.',
+                      'error'
+                  );
+              });
       }
     },
     closeModal() {
@@ -213,18 +251,6 @@ export default {
         boxShadow: `0 2px 4px ${statusInfo.bg_color}20`
       };
     },
-    getTotalBasicSalary(payroll) {
-      return payroll.items?.reduce((sum, item) => sum + (item.basic_salary || 0), 0) || 0
-    },
-    getTotalOvertime(payroll) {
-      return payroll.items?.reduce((sum, item) => sum + ((item.overtime_hours || 0) * (item.overtime_rate || 0)), 0) || 0
-    },
-    getTotalDeductions(payroll) {
-      return payroll.items?.reduce((sum, item) => sum + (item.deductions || 0), 0) || 0
-    },
-    getTotalNetSalary(payroll) {
-      return payroll.items?.reduce((sum, item) => sum + (item.net_salary || 0), 0) || 0
-    }
   }
 }
 </script>

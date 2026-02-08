@@ -23,7 +23,7 @@
                                 <b-form-select
                                 class="form-control"
                                 v-model="form.product_id"
-                                :options="dropdowns.products"
+                                :options="availableProducts"
                                 :class="{ 'input-error': form.errors.product_id }"
                                 text-field="name"
                                 value-field="value"
@@ -153,7 +153,7 @@
                             {{ form.processing ? 'Saving...' : 'Add Item' }}
                         </button>
                     </div>  
-
+                    
 
                 </form>
             </div>
@@ -204,6 +204,9 @@ export default {
             if (!this.form.product_id) return null;
             const product = this.dropdowns.products.find(p => p.value === this.form.product_id);
             return product ? product.available : null;
+        },
+        availableProducts() {
+            return this.dropdowns.products.filter(product => product.available > 0);
         }
     },
 
@@ -218,7 +221,7 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
             this.$nextTick(() => {
-                this.$refs.discountComponent.emitValue(0.00);
+            this.$refs.discountComponent.emitValue(0.00);
             });
         },
         edit(data, index) {
