@@ -72,7 +72,7 @@
                                     :class="{ 'input-error': form.errors.quantity }"
                                     placeholder="Enter Quantity"
                                     :max="selectedProductStock"
-                                    @input="  "
+                                    @input="validateQuantity"
                                 />
 
                             </div>
@@ -225,15 +225,15 @@ export default {
             this.form.id = data.id;
             this.form.brand_id = data.brand_id;
             this.form.quantity = data.quantity;
-            this.form.price = data.price || '0.00';
             this.form.product_id = data.product_id;
-            this.form.batch_code = data.batch_code;
             this.form.price_type = data.price_type || 'retail';
+            this.onProductChange(); // Recalculate price and batch_code based on current inventory
             this.form.discount_per_unit = data.discount_per_unit || 0;
             this.form.total_amount = data.total_amount;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
+            this.validateQuantity(); // Validate quantity against current stock
         },
 
         submit() {
@@ -297,6 +297,8 @@ export default {
         onProductChange() {
             const product_id = this.form.product_id;
             const product = this.dropdowns.products.find(p => p.value === product_id);
+            console.log(this.dropdowns.product, 77);
+            console.log(product, 888);
             if (product) {
                 this.form.batch_code = product.batch_code || null;
                 const price = this.form.price_type === 'wholesale' ? product.wholesale_price : product.retail_price;
@@ -310,6 +312,8 @@ export default {
         onPriceTypeChange() {
             if (this.form.product_id) {
                 this.onProductChange();
+            } else {
+                this.form.price = '0.00';
             }
         },
 

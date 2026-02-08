@@ -428,6 +428,10 @@ export default {
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
+            // Set default due date to 3 days ahead
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 3);
+            this.form.due_date = dueDate.toISOString().slice(0, 10);
             // Set default sales rep to current user if they are a sales rep
             const userEmployeeId = this.$page.props.user.data.id;
 
@@ -447,6 +451,7 @@ export default {
             this.form.driver_id = data.driver_id;
             this.form.status_id = data.status_id;
             this.form.payment_mode = data.payment_mode;
+            this.form.due_date = data.due_date;
             this.form.items = data.items.map(item => ({
                 id: item.id || Date.now(), // ensure each item has a unique ID
                 product_id: item.product_id,
