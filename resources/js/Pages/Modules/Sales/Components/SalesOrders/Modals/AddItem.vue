@@ -153,7 +153,7 @@
                             {{ form.processing ? 'Saving...' : 'Add Item' }}
                         </button>
                     </div>  
-
+                    
 
                 </form>
             </div>
@@ -218,7 +218,7 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
             this.$nextTick(() => {
-                this.$refs.discountComponent.emitValue(0.00);
+            this.$refs.discountComponent.emitValue(0.00);
             });
         },
         edit(data, index) {
