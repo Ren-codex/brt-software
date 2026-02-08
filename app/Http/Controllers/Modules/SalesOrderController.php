@@ -72,7 +72,7 @@ class SalesOrderController extends Controller
         });
 
   
-
+        dd(   $result );
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],

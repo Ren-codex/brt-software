@@ -125,8 +125,8 @@ class DropdownClass
                     }
                 }
             }
-            $retail_price = $item->price; // default
-            $wholesale_price = $item->price; // default
+            $retail_price = null;
+            $wholesale_price = null;
             if ($available_quantity > 0) {
                 $firstReceivedItemWithStock = $item->receivedItems->first(function ($receivedItem) {
                     return $receivedItem->inventoryStocks->sum('quantity') > 0;
@@ -134,12 +134,8 @@ class DropdownClass
                 if ($firstReceivedItemWithStock) {
                     $firstInventoryStock = $firstReceivedItemWithStock->inventoryStocks->first();
                     if ($firstInventoryStock) {
-                        if ($firstInventoryStock->retail_price) {
-                            $retail_price = $firstInventoryStock->retail_price;
-                        }
-                        if ($firstInventoryStock->wholesale_price) {
-                            $wholesale_price = $firstInventoryStock->wholesale_price;
-                        }
+                        $retail_price = $firstInventoryStock->retail_price;
+                        $wholesale_price = $firstInventoryStock->wholesale_price;
                     }
                 }
             }
