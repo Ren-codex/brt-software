@@ -106,8 +106,6 @@ class SalesOrderClass
             'total_discount' => $totalDiscount,
         ]);
 
-       
-
         // Reload the data with relationships
         $data = SalesOrder::with(['items', 'customer', 'status', 'created_by'])->find($data->id);
  
@@ -203,7 +201,7 @@ class SalesOrderClass
         }
 
         // Reload the data with relationships
-        $data = SalesOrder::with(['items', 'customer', 'status', 'addedBy', 'arInvoices'])->find($data->id);
+        $data = SalesOrder::with(['items', 'customer', 'status', 'updated_by', 'arInvoices'])->find($data->id);
 
         return [
             'data' => new SalesOrderResource($data),
