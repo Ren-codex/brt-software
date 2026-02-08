@@ -103,6 +103,7 @@
                                     <th style="width: 10%;" class="text-center border-none">Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Status</th>
                                     <th style="width: 10%;" class="text-center border-none">Total Amount</th>
+                                    <th style="width: 10%;" class="text-center border-none">Due Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Paid %</th>
                                     <th style="width: 6%;" class="text-center border-none">Actions</th>
                                 </tr>
@@ -124,7 +125,7 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge fs-10" :style="getStatusStyle(list.status)">
+                                            <span class="status-badge" :style="getStatusStyle(list.status)">
                                                 <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
@@ -138,6 +139,10 @@
                                         </td> -->
                                         <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
+                                            {{ list.due_date }}
+                                            <span v-if="isDueSoon(list)" class="badge bg-danger ms-1">Due Soon</span>
+                                        </td>
+                                        <td class="text-center">
                                             <div class="d-flex align-items-center justify-content-center">
                                                 <div class="progress" style="width: 60px; height: 8px; margin-right: 8px;">
                                                     <div class="progress-bar bg-success" role="progressbar" 
@@ -150,12 +155,12 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button v-if="list.status?.slug == 'for-payment'"
+                                                <!-- <b-button v-if="list.status?.slug == 'for-payment'"
                                                     @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary"
                                                     v-b-tooltip.hover title="Sales Adjustment" size="sm"
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-refund-line"></i>
-                                                </b-button>
+                                                </b-button> -->
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info"
                                                     v-b-tooltip.hover title="Print Invoice" size="sm"
                                                     class="btn-icon rounded-circle">
@@ -167,12 +172,7 @@
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
-                                                <!-- <b-button v-if="(list.status?.slug != 'approved'  && list.status?.slug != 'cancelled' && list.status?.slug != 'closed' &&  list.status?.slug == 'pending') && $page.props.roles.includes('Sales Manager')"
-                                                 @click.stop="onApproval(list.id)" variant="outline-primary" v-b-tooltip.hover title="Approve" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-check-line"></i>
-                                                </b-button> -->
 
-                                        
                                                 <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' || list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
                                                 </b-button>
@@ -561,15 +561,14 @@ export default {
 </script>
 <style scoped>
     .status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: all 0.3s ease;
-  cursor: default;
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        cursor: default;
     }
 </style>

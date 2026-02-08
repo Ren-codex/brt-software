@@ -28,6 +28,7 @@ class SalesOrder extends Model
 
     protected $casts = [
         'order_date' => 'date',
+        'due_date' => 'date',
         'transferred_at' => 'date',
         'approved_at' => 'date',
         'total_amount' => 'decimal:2',
@@ -54,9 +55,14 @@ class SalesOrder extends Model
         return $this->belongsTo(User::class, 'added_by_id');
     }
 
-    public function approvedBy()
+    public function approved_by()
     {
         return $this->belongsTo(User::class, 'approved_by_id');
+    }
+
+    public function updated_by()
+    {
+        return $this->belongsTo(User::class, 'updated_by_id');
     }
 
     public function transferredTo()

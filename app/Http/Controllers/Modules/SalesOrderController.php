@@ -56,6 +56,7 @@ class SalesOrderController extends Controller
             return $this->sales_order->save($request);
         });
 
+
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
@@ -71,8 +72,6 @@ class SalesOrderController extends Controller
             return $this->sales_order->update($request);
         });
 
-  
-        dd(   $result );
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
