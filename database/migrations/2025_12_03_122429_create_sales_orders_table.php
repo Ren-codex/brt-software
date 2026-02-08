@@ -23,6 +23,8 @@ return new class extends Migration
             $table->decimal('total_discount', 15, 2)->default(0);
             $table->unsignedInteger('added_by_id');
             $table->foreign('added_by_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedInteger('updated_by_id')->nullable();
+            $table->foreign('updated_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedInteger('approved_by_id')->nullable();
             $table->foreign('approved_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->date('approved_at')->nullable();

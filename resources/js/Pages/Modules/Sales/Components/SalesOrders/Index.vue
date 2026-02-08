@@ -111,6 +111,7 @@
                                 <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" :class="{
                                         'bg-primary bg-opacity-10 ': index === selectedRow,
+                                        'bg-danger bg-opacity-25': isDueSoon(list),
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
@@ -545,6 +546,15 @@ export default {
             const balanceDue = list.invoices && list.invoices.length > 0 ? list.invoices[0].balance_due || 0 : list.total_amount;
             const totalPaid = list.total_amount - balanceDue;
             return Math.min(Math.round((totalPaid / list.total_amount) * 100), 100);
+        },
+
+        isDueSoon(list) {
+            if (!list.due_date) return false;
+            const dueDate = new Date(list.due_date);
+            const today = new Date();
+            const diffTime = dueDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays <= 2 && diffDays >= 0;
         },
     }
 }
