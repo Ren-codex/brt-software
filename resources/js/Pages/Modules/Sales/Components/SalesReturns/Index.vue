@@ -9,14 +9,11 @@
                                 <i class="ri-shopping-cart-line fs-24"></i>
                             </div>
                             <div>
-                                <h4 class="header-title mb-1">Sales Orders</h4>
-                                <p class="header-subtitle mb-0">A comprehensive list of Sales Orders</p>
+                                <h4 class="header-title mb-1">Returned Sales Orders</h4>
+                                <p class="header-subtitle mb-0">A comprehensive list of Returned Sales Orders</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
-                            <i class="ri-add-line"></i>
-                            <span>Create Order</span>
-                        </button>
+
                     </div>
 
                 </div>
@@ -102,7 +99,6 @@
                                     <th style="width: 10%;" class="text-center border-none">Customer</th>
                                     <th style="width: 10%;" class="text-center border-none">Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Status</th>
-                                     <th style="width: 8%;" class="text-center border-none">SubStatus</th>
                                     <th style="width: 10%;" class="text-center border-none">Total Amount</th>
                                     <th style="width: 10%;" class="text-center border-none">Due Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Paid %</th>
@@ -131,13 +127,13 @@
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
                                         </td>
-                                          <td class="text-center">
+                                          <!-- <td class="text-center">
                                             <span
                                                 v-if="list.sub_status?.name"
                                                 :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
                                                 {{ list.sub_status?.name  }}
                                             </span>
-                                        </td>
+                                        </td> -->
                                         <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
                                             {{ list.due_date }}
@@ -156,27 +152,15 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button v-if="list.status?.slug == 'for-payment'"
-                                                    @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary"
-                                                    v-b-tooltip.hover title="Sales Adjustment" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-refund-line"></i>
-                                                </b-button>
+                                           
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info"
                                                     v-b-tooltip.hover title="Print Invoice" size="sm"
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.slug == 'for-payment'"
-                                                    @click.stop="openEdit(list, index)" variant="outline-primary"
-                                                    v-b-tooltip.hover title="Edit" size="sm"
-                                                    class="btn-icon rounded-circle">
-                                                    <i class="ri-pencil-fill"></i>
-                                                </b-button>
+                                           
 
-                                                <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' || list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
-                                                    <i class="ri-close-line"></i>
-                                                </b-button>
+
                                             </div>
                                         </td>
                                     </tr>
@@ -428,7 +412,8 @@ export default {
                 params: {
                     keyword: this.filter.keyword,
                     count: 10,
-                    option: 'lists'
+                    option: 'lists',
+                    status: 'sales-returned'
                 }
             })
                 .then(response => {
@@ -440,24 +425,9 @@ export default {
                 })
                 .catch(err => console.log(err));
         },
-        openCreate() {
-            this.$refs.create.show();
-        },
 
-        openEdit(data, index) {
-            this.selectedRow = index;
-            this.$refs.create.edit(data, index);
-        },
 
-        onCancel(id) {
-            let title = "Sales Order";
-            this.$refs.cancel.show(id, title, '/sales-orders');
-        },
 
-        onApproval(id) {
-            let title = "Sales Order";
-            this.$refs.approval.show(id, title, '/sales-orders');
-        },
         onPrint(id) {
             window.open(`/sales-orders/${id}?option=print&type=sales_order`);
         },

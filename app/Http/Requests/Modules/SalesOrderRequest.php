@@ -14,23 +14,31 @@ class SalesOrderRequest extends FormRequest
 
     public function rules(): array
     {
+        if($this->input('action') == 'adjustment'){
+            return [
+                'type' => 'required|string',
+                'reason' => 'required|string',
+            ];
+        }
+        else{
+             return [
+                'order_date' => 'required|date',
+                'customer_id' => 'required|exists:customers,id',
+                'sales_rep_id' => 'nullable|exists:employees,id',
+                'driver_id' => 'nullable|exists:employees,id',
+                'payment_mode' => 'required|string',
+                'due_date' => 'nullable|date|required_if:payment_mode,credit',
+                'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.quantity' => 'required|integer|min:1',
+                'items.*.price' => 'required|numeric|min:0',
+                'items.*.price_type' => 'required|string|in:retail,wholesale',
+                'items.*.batch_code' => 'required|string|exists:inventory_stocks,batch_code',
+                'items.*.discount_per_unit' => 'nullable|numeric|min:0',
 
-        return [
-            'order_date' => 'required|date',
-            'customer_id' => 'required|exists:customers,id',
-            'sales_rep_id' => 'nullable|exists:employees,id',
-            'driver_id' => 'nullable|exists:employees,id',
-            'payment_mode' => 'required|string',
-            'due_date' => 'nullable|date|required_if:payment_mode,credit',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'required|numeric|min:0',
-            'items.*.price_type' => 'required|string|in:retail,wholesale',
-            'items.*.batch_code' => 'required|string|exists:inventory_stocks,batch_code',
-            'items.*.discount_per_unit' => 'nullable|numeric|min:0',
-
-        ];
+            ];
+        }
+       
 
     }
     public function messages()
@@ -38,6 +46,8 @@ class SalesOrderRequest extends FormRequest
         return [
             'order_date.required' => 'This field is required',
             'customer_id.required' => 'This field is required',
+            'type' => 'This field is required',
+            'reason' => 'This field is required',
         ];
 
     }

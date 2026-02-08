@@ -37,6 +37,16 @@ class SalesOrderClass
                               $q->where('name', 'LIKE', "%{$keyword}%");
                           });
                 })
+                ->when($request->status, function ($query, $status) {
+                    $query->whereHas('status', function($q) use ($status){
+                        $q->where('slug', $status);
+                    });
+                })
+                ->when($request->sub_status, function ($query, $sub_status) {
+                    $query->whereHas('subStatus', function($q) use ($sub_status){
+                        $q->where('slug', $sub_status);
+                    });
+                })
                 ->orderBy('created_at', 'DESC')
                 ->paginate($request->count)
         );
@@ -308,10 +318,24 @@ class SalesOrderClass
         ];
     }
 
-     public function adjustment(){
-        // Get all sales orders with status 'adjusted' (assuming status_id 3 is 'adjusted')
-        $adjusted_orders = SalesOrder::where('status_id', ListStatus::getBySlug('adjusted')->id)->with('items')->get();
+    public function adjustment($request){
+        $sales_order = SalesOrder::findOrFail($request->id);
+  
 
-        return $adjusted_orders; 
+        // Set sub-status based on type
+        if ($request->type == 'Sales Return') {
+            $status = ListStatus::getBySlug('sales-returned');
+        } elseif ($request->type == 'Sales Allowance') {
+            $status = ListStatus::getBySlug('allowance-applied');
+        }
+
+        $sales_order->update([ 'status_id' => $status->id]);
+
+
+        return [
+            'data' => $sales_order,
+            'message' => 'Sales adjustment applied successfully!',
+            'info' => "You've successfully applied the sales adjustment"
+        ];
     }
 }

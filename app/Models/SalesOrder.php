@@ -45,7 +45,7 @@ class SalesOrder extends Model
         return $this->belongsTo(ListStatus::class);
     }
 
-    public function subStatus()
+    public function sub_status()
     {
         return $this->belongsTo(ListStatus::class, 'sub_status_id');
     }
