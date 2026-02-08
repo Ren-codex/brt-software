@@ -26,6 +26,9 @@ class PrintClass
             case 'receipt':
                 return $this->printReceipt($id);
             break;
+            case 'payroll':
+                return $this->printPayroll($id);
+            break;
         }
     }
 
@@ -103,6 +106,20 @@ class PrintClass
 
         $pdf = \PDF::loadView('prints.receipt',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($receipt->receipt_number.'.pdf');
+
+    }
+
+    public function printPayroll($id){
+        $payroll = \App\Models\Payroll::with('items.employee', 'template', 'creator')->findOrFail($id);
+        $items = $payroll->items;
+
+        $array = [
+            'payroll' => $payroll,
+            'items' => $items,
+        ];
+
+        $pdf = \PDF::loadView('prints.payroll',$array)->setPaper('A4', 'portrait');
+        return $pdf->stream($payroll->payroll_no.'.pdf');
 
     }
 

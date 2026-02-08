@@ -96,6 +96,9 @@ class PayrollClass
             $payroll->update([
                 'pay_period_start' => $request->pay_period_start,
                 'pay_period_end' => $request->pay_period_end,
+                'status' => $request->status,
+                'total_amount' => $request->total_amount,
+                'payroll_template_id' => $request->payroll_template_id,
             ]);
 
             // Delete existing items

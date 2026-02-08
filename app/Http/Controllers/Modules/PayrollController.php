@@ -7,14 +7,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PayrollRequest;
 use App\Services\DropdownClass;
 use App\Services\Modules\PayrollClass;
+use App\Services\PrintClass;
 
 class PayrollController extends Controller
 {
-    public $employee,$dropdown, $payroll;
+    public $employee,$dropdown, $payroll, $print;
 
-    public function __construct(DropdownClass $dropdown, PayrollClass $payroll){
+    public function __construct(DropdownClass $dropdown, PayrollClass $payroll, PrintClass $print){
         $this->dropdown = $dropdown;
         $this->payroll = $payroll;
+        $this->print = $print;
     }
 
     public function index(Request $request){
@@ -57,5 +59,11 @@ class PayrollController extends Controller
     {
         $result = $this->payroll->destroy($id);
         return response()->json($result);
+    }
+
+    public function printPayroll($id, Request $request)
+    {
+        $request->merge(['type' => 'payroll']);
+        return app(PrintClass::class)->print($id, $request);
     }
 }
