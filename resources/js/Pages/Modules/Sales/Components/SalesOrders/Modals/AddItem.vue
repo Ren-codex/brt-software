@@ -147,7 +147,7 @@
                             <i class="ri-close-line"></i>
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || form.price === 0 || !form.product_id || !form.price_type  || !form.batch_code)">
+                        <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || parseFloat(form.price) === 0 || !form.product_id || !form.price_type  || !form.batch_code)">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
                             {{ form.processing ? 'Saving...' : 'Add Item' }}
@@ -212,7 +212,7 @@ export default {
         show() {
             this.form.reset();
             this.form.quantity = 0;
-            this.form.price = isNaN(0) ? 0 : 0.00;
+            this.form.price = '0.00';
             this.form.discount_per_unit = 0;
             this.editable = false;
             this.saveSuccess = false;
@@ -225,7 +225,7 @@ export default {
             this.form.id = data.id;
             this.form.brand_id = data.brand_id;
             this.form.quantity = data.quantity;
-            this.form.price = data.price;
+            this.form.price = data.price || '0.00';
             this.form.product_id = data.product_id;
             this.form.batch_code = data.batch_code;
             this.form.price_type = data.price_type || 'retail';
@@ -249,7 +249,7 @@ export default {
                 id: this.form.id,
                 brand_id: this.form.brand_id,
                 quantity: this.form.quantity,
-                price: Number(this.form.price).toFixed(2), // 2 decimals
+                price: Number(this.form.price || 0).toFixed(2), // 2 decimals
                 product_id: this.form.product_id,
                 batch_code: this.form.batch_code,
                 price_type: this.form.price_type,
@@ -340,7 +340,9 @@ export default {
 
         formatCurrency(value) {
             if (!value) return '₱0.00';
-            return '₱' + Number(value).toLocaleString('en-PH', {
+            const num = Number(value);
+            if (isNaN(num)) return '₱0.00';
+            return '₱' + num.toLocaleString('en-PH', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
