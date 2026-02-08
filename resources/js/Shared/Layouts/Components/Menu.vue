@@ -12,13 +12,6 @@
                 </Link>
             </li>
             <template v-if="$page.props.roles.includes('Human Resource Officer') || $page.props.roles.includes('Administrator')">
-                <li class="menu-title">
-                    <div class="menu-title-content">
-                        <i class="ri-more-fill menu-title-icon"></i>
-                        <span class="menu-title-text" data-key="t-menu">Human Resource</span>
-                        <div class="menu-title-line"></div>
-                    </div>
-                </li>
                 <li class="nav-item">
                     <Link href="/employees" class="nav-link menu-link"
                     :class="{'active': $page.component.startsWith('Modules/HumanResource/Employees') }">
