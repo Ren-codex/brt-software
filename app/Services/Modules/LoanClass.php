@@ -41,6 +41,8 @@ class LoanClass
             'status' => $request->status,
             'purpose' => $request->purpose,
             'added_by_id' => $userId ?: auth()->id(),
+            'remaining_balance' => $request->amount,
+            'remaining_term_to_pay' => $request->term_months * 2,
         ]);
 
         return [

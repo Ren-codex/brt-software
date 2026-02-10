@@ -86,4 +86,9 @@ class Employee extends Model
     {
         return $this->belongsTo('App\Models\User', 'added_by_id');
     }
+
+    public function loans()
+    {
+        return $this->hasMany('App\Models\Loan', 'employee_id');
+    }
 }

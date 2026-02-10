@@ -16,6 +16,9 @@ class Loan extends Model
         'status',
         'purpose',
         'added_by_id',
+        'amtpaid',
+        'remaining_balance',
+        'remaining_term_to_pay',
     ];
 
     public function employee(): BelongsTo

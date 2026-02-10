@@ -253,6 +253,18 @@ export default {
       showComputationModal: false,
       payrollTemplates: [],
       makeStateDraft: false,
+
+    }
+  },
+
+  watch: {
+    'form.pay_period_start': function(newVal) {
+      if (newVal) {
+        const startDate = new Date(newVal);
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 14);
+        this.form.pay_period_end = endDate.toISOString().slice(0, 10);
+      }
     }
   },
 
@@ -262,7 +274,9 @@ export default {
 
     const today = new Date()
     this.form.pay_period_start = today.toISOString().slice(0, 10);
-    this.form.pay_period_end = today.toISOString().slice(0, 10);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 14);
+    this.form.pay_period_end = endDate.toISOString().slice(0, 10);
 
     const settings = this.dropdowns.payroll_settings;
     if (!settings) return 0;
@@ -305,7 +319,7 @@ export default {
                   basic_salary: item.basic_salary,
                   total_days: item.total_days,
                   overtime_hours: item.overtime_hours,
-                  deductions: item.deductions,
+                  deductions: this.calculateDeductions(item.employee.loans),
                   incentives: item.incentives
                 }
               })
@@ -323,7 +337,7 @@ export default {
         basic_salary: emp.basic_salary || 0,
         overtime_hours: 0,
         overtime_rate: (emp.basic_salary || 0) / 8,
-        deductions: 0,
+        deductions: this.calculateDeductions(emp.loans),
         incentives: 0,
         has_overtime: false
       }));
@@ -333,7 +347,7 @@ export default {
           total_days: 0,
           basic_salary: emp.basic_salary || 0,
           overtime_hours: 0,
-          deductions: 0,
+          deductions: this.calculateDeductions(emp.loans),
           incentives: 0,
           has_overtime: false
         }
@@ -497,6 +511,16 @@ export default {
     async saveDraft() {
       this.makeStateDraft = true;
       await this.savePayroll();
+    },
+
+    calculateDeductions(loans) {
+      const approvedLoans = loans.filter(loan => loan.status === 'approved');
+      const total = approvedLoans.reduce((total, loan) => {
+        const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / 2;
+        const deduction = (loan.remaining_balance / loan.remaining_term_to_pay) + interest;
+        return total + (isNaN(deduction) ? 0 : deduction);
+      }, 0);
+      return parseFloat(total.toFixed(2));
     }
   }
 }
