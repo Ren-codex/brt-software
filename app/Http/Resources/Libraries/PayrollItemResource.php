@@ -20,6 +20,7 @@ class PayrollItemResource extends JsonResource
             'deductions' => $this->deductions,
             'net_salary' => $this->net_salary,
             'total_days' => $this->total_days,
+            'loans' => $this->loans,
         ];
     }
 }

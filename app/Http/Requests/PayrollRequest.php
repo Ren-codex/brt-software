@@ -33,6 +33,7 @@ class PayrollRequest extends FormRequest
             'items.*.deductions' => 'nullable|numeric|min:0',
             'items.*.total_days' => 'nullable|numeric|min:0',
             'items.*.net_salary' => 'required|numeric|min:0',
+            'items.*.loans' => 'nullable|array',
             'total_amount' => 'required|numeric|min:0',
         ];
     }

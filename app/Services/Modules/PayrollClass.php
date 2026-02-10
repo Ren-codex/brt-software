@@ -71,6 +71,7 @@ class PayrollClass
                     'total_days' => $item['total_days'],
                     'deductions' => $item['deductions'],
                     'net_salary' => $item['net_salary'],
+                    'loans' => $item['loans'] ?? [],
                 ]);
             }
 
@@ -115,6 +116,7 @@ class PayrollClass
                     'deductions' => $item['deductions'] ?? 0,
                     'total_days' => $item['total_days'] ?? 0,
                     'net_salary' => $item['net_salary'],
+                    'loans' => $item['loans'] ?? [],
                 ]);
             }
         });

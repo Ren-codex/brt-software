@@ -3,7 +3,6 @@
     v-if="showModal"
     class="modal-overlay"
     :class="{ active: showModal }"
-    @click.self="hide"
   >
     <div class="modal-container modal-xl" @click.stop>
       <div class="modal-header">
@@ -91,7 +90,7 @@
                     <th>Total Days</th>
                     <th>OT Hrs</th>
                     <!-- <th>Incentives</th> -->
-                    <th>Deductions</th>
+                    <th>Loan Deductions</th>
                     <th>Net Salary</th>
                   </tr>
                 </thead>
@@ -127,15 +126,19 @@
                         </button>
                       </div>
                     </td> -->
-                    <td>
-                      <input
-                        type="number"
-                        v-model.number="employee.deductions"
-                        class="form-control form-control-sm"
-                        min="0"
-                        step="0.5"
-                        placeholder="0"
-                      >
+                    <td class="salary-cell">₱ {{ parseFloat(employee.deductions).toFixed(2) }}
+                      <div class="loan-container" v-if="employee.loans.length">
+                        <i class="ri-git-repository-line loan-icon"></i>
+                        <div class="loan-tooltip">
+                          <div v-for="loan in employee.loans" :key="loan.id" class="loan-detail">
+                            <strong>Loan ID:</strong> {{ loan.id }}<br>
+                            <strong>Balance:</strong> ₱ {{ parseFloat(loan.remaining_balance).toFixed(2) }}<br>
+                            <strong>Term Left:</strong> {{ loan.term_months }} months<br>
+                            <strong>Interest Rate:</strong> {{ Math.round(loan.interest_rate) }}%<br>
+                            <strong>Payroll Deduction:</strong> ₱ {{ loan.payroll_deduction ||((loan.remaining_balance / loan.remaining_term_to_pay) + (loan.remaining_balance * (loan.interest_rate / 100) / 2)).toFixed(2) }}
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <!-- <td>
                       <div class="incentive-cell">
@@ -191,7 +194,7 @@
           <i class="ri-loader-4-line spinner" v-else></i>
           {{ loading ? 'Saving...' : 'Save as Draft' }}
         </button>
-        <button type="submit" class="btn btn-save" :disabled="loading" @click="savePayroll">
+        <button type="submit" class="btn btn-save" :disabled="loading" @click="savePayroll" v-if="form.status == 'draft'">
           <i class="ri-save-line" v-if="!loading"></i>
           <i class="ri-loader-4-line spinner" v-else></i>
           {{ loading ? 'Saving...' : 'Submit for Approval' }}
@@ -232,7 +235,7 @@ export default {
         pay_period_end: '',
         payroll_template: '',
         errors: {},
-        status: 'pending',
+        status: 'draft',
       },
       selectedEmployees: [],
       selectedEmployeeIds: [],
@@ -319,8 +322,9 @@ export default {
                   basic_salary: item.basic_salary,
                   total_days: item.total_days,
                   overtime_hours: item.overtime_hours,
-                  deductions: this.calculateDeductions(item.employee.loans),
-                  incentives: item.incentives
+                  deductions: item.deductions,
+                  incentives: item.incentives,
+                  loans: item.loans || [],
                 }
               })
             }
@@ -339,7 +343,8 @@ export default {
         overtime_rate: (emp.basic_salary || 0) / 8,
         deductions: this.calculateDeductions(emp.loans),
         incentives: 0,
-        has_overtime: false
+        has_overtime: false,
+        loans: emp.loans || [],
       }));
 
       this.form.payroll_template.employees.forEach(emp => {
@@ -349,7 +354,8 @@ export default {
           overtime_hours: 0,
           deductions: this.calculateDeductions(emp.loans),
           incentives: 0,
-          has_overtime: false
+          has_overtime: false,
+          loans: emp.loans
         }
       });
     },
@@ -467,7 +473,16 @@ export default {
             overtime_rate: e.overtime_rate,
             total_days: e.total_days,
             deductions: e.deductions,
-            net_salary: parseFloat(this.calculateEmployeeNet(e).toFixed(2))
+            net_salary: parseFloat(this.calculateEmployeeNet(e).toFixed(2)),
+            loans: e.loans ? e.loans.map(loan => {
+              return {
+                id: loan.loan_id,
+                remaining_balance: loan.remaining_balance,
+                term_months: loan.term_months,
+                interest_rate: loan.interest_rate,
+                payroll_deduction: loan.payroll_deduction,
+              }
+            }) : [],
           };
         }),
         total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),
@@ -518,6 +533,16 @@ export default {
       const total = approvedLoans.reduce((total, loan) => {
         const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / 2;
         const deduction = (loan.remaining_balance / loan.remaining_term_to_pay) + interest;
+        this.selectedEmployees.forEach(employee => {
+          const employeeLoan = employee.loans.find(eLoan => eLoan.id === loan.id);
+          if (employeeLoan) {
+            employeeLoan.id = loan.id;
+            employeeLoan.remaining_balance = loan.remaining_balance;
+            employeeLoan.term_months = loan.term_months;
+            employeeLoan.interest_rate = loan.interest_rate;
+            employeeLoan.payroll_deduction = parseFloat(deduction.toFixed(2));
+          }
+        });
         return total + (isNaN(deduction) ? 0 : deduction);
       }, 0);
       return parseFloat(total.toFixed(2));
@@ -833,6 +858,59 @@ export default {
   white-space: nowrap;
 }
 
+/* Loan Tooltip */
+.loan-container {
+  position: relative;
+  display: inline-block;
+}
+
+.loan-icon {
+  color: #3D8D7A;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-left: 0.5rem;
+}
+
+.loan-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fffce3;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 250px;
+  max-width: 350px;
+  font-size: 0.85rem;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.loan-container:hover .loan-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.loan-detail {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.loan-detail:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.loan-detail strong {
+  color: #3D8D7A;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .employees-container {
@@ -857,6 +935,12 @@ export default {
 
   .formula-item code {
     font-size: 0.75rem;
+  }
+
+  .loan-tooltip {
+    min-width: 200px;
+    max-width: 280px;
+    font-size: 0.8rem;
   }
 }
 </style>

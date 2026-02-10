@@ -16,6 +16,7 @@ class PayrollItem extends Model
         'deductions',
         'net_salary',
         'total_days',
+        'loans',
     ];
 
     protected $casts = [
@@ -23,7 +24,8 @@ class PayrollItem extends Model
         'overtime_hours' => 'decimal:2',
         'overtime_rate' => 'decimal:2',
         'deductions' => 'decimal:2',
-        'net_salary' => 'decimal:2'
+        'net_salary' => 'decimal:2',
+        'loans' => 'array'
     ];
 
     public function payroll(): BelongsTo
