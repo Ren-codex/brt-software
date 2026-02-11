@@ -4,17 +4,18 @@
         <ul class="navbar-nav h-100" id="navbar-nav">
             <li class="nav-item">
                 <Link href="/" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/Dashboard/') }">
+                    :class="{ 'active': $page.component.startsWith('Modules/Dashboard/') }">
                 <i class="ri-apps-line"></i>
                 <span class="fw-semibold fs-14" data-key="t-dashboards">Dashboard</span>
                 <span class="menu-link-bg"></span>
                 <span class="active-indicator"></span>
                 </Link>
             </li>
-            <template v-if="$page.props.roles.includes('Human Resource Officer') || $page.props.roles.includes('Administrator')">
+            <template
+                v-if="$page.props.roles.includes('Human Resource Officer') || $page.props.roles.includes('Administrator')">
                 <li class="nav-item">
                     <Link href="/employees" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/Employees/') }">
+                        :class="{ 'active': $page.component.startsWith('Modules/Employees/') }">
                     <i class="ri-team-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Employees</span>
                     <span class="menu-link-bg"></span>
@@ -23,10 +24,12 @@
                 </li>
 
             </template>
-            <template v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Inventory Manager')">
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
+            <template
+                v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Inventory Manager')">
+                <li class="nav-item"
+                    v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
                     <Link href="/users" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/users') }">
+                        :class="{ 'active': $page.url.startsWith('/users') }">
                     <i class="ri-team-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Accounts</span>
                     <span class="menu-link-bg"></span>
@@ -43,27 +46,30 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li> -->
-                <li class="nav-item" v-if="$page.props.roles.includes('Inventory Manager') || $page.props.roles.includes('Administrator')">
+                <li class="nav-item"
+                    v-if="$page.props.roles.includes('Inventory Manager') || $page.props.roles.includes('Administrator')">
                     <Link href="/inventory" class="nav-link menu-link"
-                    :class="{'active': $page.component.startsWith('Modules/Inventory/Index') }">
+                        :class="{ 'active': $page.component.startsWith('Modules/Inventory/Index') }">
                     <i class="ri-survey-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Inventory Management</span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item" v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
+                <li class="nav-item"
+                    v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
                     <Link href="/sales-orders" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/sales-orders') }">
+                        :class="{ 'active': $page.url.startsWith('/sales-orders') }">
                     <i class="ri-shopping-cart-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Management</span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                  <li class="nav-item" v-if="$page.props.roles.includes('Sales Manager') || $page.props.roles.includes('Administrator')">
+                <li class="nav-item"
+                    v-if="$page.props.roles.includes('Sales Manager') || $page.props.roles.includes('Administrator')">
                     <Link href="/customers" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/customers') }">
+                        :class="{ 'active': $page.url.startsWith('/customers') }">
                     <i class="ri-team-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Customers</span>
                     <span class="menu-link-bg"></span>
@@ -71,9 +77,19 @@
                     </Link>
                 </li>
 
+
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+                    <Link href="/libraries/suppliers" class="nav-link menu-link"
+                        :class="{ 'active': $page.url.startsWith('/libraries/suppliers') }">
+                    <i class="ri-money-dollar-circle-fill"></i>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Suppliers</span>
+                    <span class="menu-link-bg"></span>
+                    <span class="active-indicator"></span>
+                    </Link>
+                </li>
                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
                     <Link href="/expenses" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/expenses') }">
+                        :class="{ 'active': $page.url.startsWith('/expenses') }">
                     <i class="ri-money-dollar-circle-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Expenses</span>
                     <span class="menu-link-bg"></span>
@@ -82,26 +98,28 @@
                 </li>
                 <li class="nav-item">
                     <Link href="payrolls" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/payrolls') }">
+                        :class="{ 'active': $page.url.startsWith('/payrolls') }">
                     <i class="ri-wallet-2-line"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Payroll</span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
+                <li class="nav-item"
+                    v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
                     <Link href="/loans" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/loans') }">
+                        :class="{ 'active': $page.url.startsWith('/loans') }">
                     <i class="ri-bank-card-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Loans</span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
-                   <BLink class="nav-link menu-link" href="#sidebarDashboards"
-                    :class="{'active': $page.url.startsWith('/libraries') }"
-                    data-bs-toggle="collapse" role="button" :aria-expanded="$page.url.startsWith('/libraries')" aria-controls="sidebarDashboards">
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+                    <BLink class="nav-link menu-link" href="#sidebarDashboards"
+                        :class="{ 'active': $page.url.startsWith('/libraries') }" data-bs-toggle="collapse"
+                        role="button" :aria-expanded="$page.url.startsWith('/libraries')"
+                        aria-controls="sidebarDashboards">
                         <i class="ri-folder-2-fill"></i>
                         <span data-key="t-dashboards">Libraries</span>
                         <i class="ri-arrow-down-s-line collapse-icon"></i>
@@ -111,66 +129,59 @@
                     <div class="collapse menu-dropdown" id="sidebarDashboards">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item submenu-item">
-                                <Link href="/libraries/products" class="nav-link submenu-link" 
-                                    :class="{'active': $page.url === '/libraries/products' }"
-                                    data-key="t-basic">
-                                    <!-- <span class="submenu-dot"></span> -->
-                                    <span class="submenu-text">Products</span>
+                                <Link href="/libraries/products" class="nav-link submenu-link"
+                                    :class="{ 'active': $page.url === '/libraries/products' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Products</span>
                                 </Link>
                             </li>
-                            <li class="nav-item submenu-item">
-                                <Link href="/libraries/suppliers" class="nav-link submenu-link" 
-                                    :class="{'active': $page.url === '/libraries/suppliers' }"
-                                    data-key="t-basic">
-                                    <!-- <span class="submenu-dot"></span> -->
-                                    <span class="submenu-text">Suppliers</span>
-                                </Link>
-                            </li>
+
                             <li class="nav-item submenu-item">
                                 <Link href="/libraries/statuses" class="nav-link submenu-link"
-                                    :class="{'active': $page.url === '/libraries/statuses' }"
-                                    data-key="t-basic">
-                                    <!-- <span class="submenu-dot"></span> -->
-                                    <span class="submenu-text">Statuses</span>
+                                    :class="{ 'active': $page.url === '/libraries/statuses' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Statuses</span>
                                 </Link>
                             </li>
 
                             <li class="nav-item submenu-item">
                                 <Link href="/libraries/brands" class="nav-link submenu-link"
-                                    :class="{'active': $page.url === '/libraries/brands' }"
-                                    data-key="t-basic">
-                                    <!-- <span class="submenu-dot"></span> -->
-                                    <span class="submenu-text">Brands</span>
-                                  </Link>
+                                    :class="{ 'active': $page.url === '/libraries/brands' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Brands</span>
+                                </Link>
                             </li>
 
                             <li class="nav-item submenu-item">
                                 <Link href="/libraries/units" class="nav-link submenu-link"
-                                    :class="{'active': $page.url === '/libraries/units' }"
-                                    data-key="t-basic">
-                                    <!-- <span class="submenu-dot"></span> -->
-                                    <span class="submenu-text">Units</span>
+                                    :class="{ 'active': $page.url === '/libraries/units' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Units</span>
                                 </Link>
                             </li>
 
                             <li class="nav-item submenu-item">
                                 <Link href="/libraries/roles" class="nav-link submenu-link"
-                                    :class="{'active': $page.url === '/libraries/roles' }"
-                                    data-key="t-basic">
-                                    <!-- <span class="submenu-dot"></span> -->
-                                    <span class="submenu-text">Roles</span>
+                                    :class="{ 'active': $page.url === '/libraries/roles' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Roles</span>
                                 </Link>
                             </li>
 
-                    
+                            <li class="nav-item submenu-item">
+                                <Link href="/libraries/suppliers" class="nav-link submenu-link"
+                                    :class="{ 'active': $page.url === '/libraries/suppliers' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Suppliers</span>
+                                </Link>
+                            </li>
 
 
                             <li class="nav-item submenu-item">
                                 <Link href="/libraries/positions" class="nav-link submenu-link"
-                                    :class="{'active': $page.url === '/libraries/positions' }"
-                                    data-key="t-basic">
-                                    <!-- <span class="submenu-dot"></span> -->
-                                    <span class="submenu-text">Positions</span>
+                                    :class="{ 'active': $page.url === '/libraries/positions' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Positions</span>
                                 </Link>
                             </li>
 
@@ -195,7 +206,7 @@
 /* ========== NAVIGATION MENU REDESIGN ========== */
 
 #navbar-nav {
-  
+
     position: relative;
 }
 
@@ -237,11 +248,11 @@
     right: 0;
     bottom: -4px;
     height: 1px;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(92, 246, 213, 0.3) 20%, 
-        rgba(92, 246, 184, 0.3) 80%, 
-        transparent 100%);
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(92, 246, 213, 0.3) 20%,
+            rgba(92, 246, 184, 0.3) 80%,
+            transparent 100%);
     animation: lineExpand 1s ease-out;
 }
 
@@ -303,7 +314,7 @@
 }
 
 .menu-link.active .menu-link-bg {
-  
+
     background: linear-gradient(135deg, #3D8D7A, #C4DAD2);
 }
 
@@ -377,11 +388,11 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: linear-gradient(to bottom, 
-        transparent 0%, 
-        rgba(92, 246, 210, 0.4) 30%, 
-        rgba(92, 246, 184, 0.4) 70%, 
-        transparent 100%);
+    background: linear-gradient(to bottom,
+            transparent 0%,
+            rgba(92, 246, 210, 0.4) 30%,
+            rgba(92, 246, 184, 0.4) 70%,
+            transparent 100%);
 }
 
 .submenu-item {
@@ -464,6 +475,7 @@
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -475,6 +487,7 @@
         opacity: 0;
         transform: translateX(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -486,6 +499,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -493,19 +507,25 @@
 }
 
 @keyframes gradientShift {
-    0%, 100% {
+
+    0%,
+    100% {
         background-position: 0% 50%;
     }
+
     50% {
         background-position: 100% 50%;
     }
 }
 
 @keyframes pulseIcon {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 0.7;
         transform: translateY(-50%) scale(1);
     }
+
     50% {
         opacity: 1;
         transform: translateY(-50%) scale(1.1);
@@ -516,18 +536,23 @@
     0% {
         box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
     }
+
     70% {
         box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
     }
+
     100% {
         box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
     }
 }
 
 @keyframes dotPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.2);
     }
+
     50% {
         box-shadow: 0 0 0 4px rgba(139, 92, 246, 0);
     }
@@ -538,6 +563,7 @@
         transform: scaleX(0);
         opacity: 0;
     }
+
     to {
         transform: scaleX(1);
         opacity: 1;
@@ -568,6 +594,7 @@
         transform: scale(0, 0);
         opacity: 0.5;
     }
+
     100% {
         transform: scale(40, 40);
         opacity: 0;
@@ -575,37 +602,92 @@
 }
 
 /* Staggered Animations */
-.nav-item:nth-child(1) { --animation-delay: 0.1s; }
-.nav-item:nth-child(2) { --animation-delay: 0.15s; }
-.nav-item:nth-child(3) { --animation-delay: 0.2s; }
-.nav-item:nth-child(4) { --animation-delay: 0.25s; }
-.nav-item:nth-child(5) { --animation-delay: 0.3s; }
-.nav-item:nth-child(6) { --animation-delay: 0.35s; }
-.nav-item:nth-child(7) { --animation-delay: 0.4s; }
-.nav-item:nth-child(8) { --animation-delay: 0.45s; }
-.nav-item:nth-child(9) { --animation-delay: 0.5s; }
-.nav-item:nth-child(10) { --animation-delay: 0.55s; }
+.nav-item:nth-child(1) {
+    --animation-delay: 0.1s;
+}
 
-.submenu-item:nth-child(1) { --submenu-delay: 0.1s; }
-.submenu-item:nth-child(2) { --submenu-delay: 0.15s; }
-.submenu-item:nth-child(3) { --submenu-delay: 0.2s; }
-.submenu-item:nth-child(4) { --submenu-delay: 0.25s; }
-.submenu-item:nth-child(5) { --submenu-delay: 0.3s; }
-.submenu-item:nth-child(6) { --submenu-delay: 0.35s; }
-.submenu-item:nth-child(7) { --submenu-delay: 0.4s; }
-.submenu-item:nth-child(8) { --submenu-delay: 0.45s; }
-.submenu-item:nth-child(9) { --submenu-delay: 0.5s; }
+.nav-item:nth-child(2) {
+    --animation-delay: 0.15s;
+}
+
+.nav-item:nth-child(3) {
+    --animation-delay: 0.2s;
+}
+
+.nav-item:nth-child(4) {
+    --animation-delay: 0.25s;
+}
+
+.nav-item:nth-child(5) {
+    --animation-delay: 0.3s;
+}
+
+.nav-item:nth-child(6) {
+    --animation-delay: 0.35s;
+}
+
+.nav-item:nth-child(7) {
+    --animation-delay: 0.4s;
+}
+
+.nav-item:nth-child(8) {
+    --animation-delay: 0.45s;
+}
+
+.nav-item:nth-child(9) {
+    --animation-delay: 0.5s;
+}
+
+.nav-item:nth-child(10) {
+    --animation-delay: 0.55s;
+}
+
+.submenu-item:nth-child(1) {
+    --submenu-delay: 0.1s;
+}
+
+.submenu-item:nth-child(2) {
+    --submenu-delay: 0.15s;
+}
+
+.submenu-item:nth-child(3) {
+    --submenu-delay: 0.2s;
+}
+
+.submenu-item:nth-child(4) {
+    --submenu-delay: 0.25s;
+}
+
+.submenu-item:nth-child(5) {
+    --submenu-delay: 0.3s;
+}
+
+.submenu-item:nth-child(6) {
+    --submenu-delay: 0.35s;
+}
+
+.submenu-item:nth-child(7) {
+    --submenu-delay: 0.4s;
+}
+
+.submenu-item:nth-child(8) {
+    --submenu-delay: 0.45s;
+}
+
+.submenu-item:nth-child(9) {
+    --submenu-delay: 0.5s;
+}
 
 /* Responsive */
 @media (max-width: 991.98px) {
     #navbar-nav {
         padding: 0.75rem 0.5rem;
     }
-    
+
     .menu-link {
         padding: 0.625rem 0.75rem;
     }
-    
+
     .menu-dropdown {
         margin-left: 2.5rem;
     }
@@ -649,10 +731,10 @@ body.vertical-collapsed .menu-link .collapse-icon {
 
     .menu-title-line {
         background: linear-gradient(90deg,
-            transparent 0%,
-            rgba(139, 92, 246, 0.5) 20%,
-            rgba(139, 92, 246, 0.5) 80%,
-            transparent 100%);
+                transparent 0%,
+                rgba(139, 92, 246, 0.5) 20%,
+                rgba(139, 92, 246, 0.5) 80%,
+                transparent 100%);
     }
 
     .submenu-link {
