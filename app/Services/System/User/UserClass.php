@@ -37,31 +37,52 @@ class UserClass
             'is_active' => 1,
         ]);
 
-        Employee::create([
-            'firstname' =>  $request->firstname,
-            'middlename' =>  $request->middlename,
-            'lastname' =>  $request->lastname,
-            'suffix' =>  $request->suffix,
-            'birthdate' =>  $request->birthdate,
-            'sex' =>  $request->sex,
-            'religion' =>  $request->religion,
-            'mobile' =>  $request->mobile,
-            'address' =>  $request->address,
-            'user_id' =>   $data->id,
-        ]);
-  
-        foreach($request->role_ids as $role_id){   
+        foreach($request->role_ids as $role_id){
             UserRole::create([
-                'role_id' =>  $role_id,   
+                'role_id' =>  $role_id,
                 'user_id' =>  $data->id,
                 'added_by_id' => \Auth::user()->id,
             ]);
         }
 
-  
+        $data = User::with('myroles.role')->find($data->id);
+
         return [
             'data' => new UserResource($data),
-            'message' => 'User update was successful!', 
+            'message' => 'User created successful!',
+            'info' => "You've successfully created the user."
+        ];
+    }
+
+    public function update($request){
+
+        $data = User::find($request->id);
+        $data->username = $request->username;
+        $data->email = $request->email;
+        if ($request->password) {
+            $data->password = bcrypt($request->password);
+        }
+        $data->save();
+
+        foreach($request->role_ids as $role_id){
+            $userRole = UserRole::where('role_id', $role_id)->where('user_id', $data->id)->first();
+            if ($userRole) {
+                $userRole->update(['is_active' => 1]);
+            } else {
+                UserRole::create([
+                    'role_id' => $role_id,
+                    'user_id' => $data->id,
+                    'added_by_id' => \Auth::user()->id,
+                    'is_active' => 1
+                ]);
+            }
+        }
+
+        $data = User::with('myroles.role')->find($data->id);
+
+        return [
+            'data' => new UserResource($data),
+            'message' => 'User update was successful!',
             'info' => "You've successfully updated the selected user."
         ];
     }
@@ -83,6 +104,7 @@ class UserClass
 
     public function list($request){
         $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+        ->with('roles')
         ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.employee:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.employee:user_id,firstname,middlename,lastname,suffix')
         ->paginate($request->count);
         return UserResource::collection($data);
@@ -121,6 +143,35 @@ class UserClass
             'message' => 'User update was successful!', 
             'info' => "You've successfully updated the selected user."
         ];
+    }
+
+    public function resetPassword($request){
+        $data = User::find($request->id);
+        $data->password = bcrypt($request->password);
+        $data->must_change = 1;
+        $data->save();
+
+        return [
+            'data' => new UserResource($data),
+            'message' => 'Password reset was successful!',
+            'info' => "You've successfully updated the selected user."
+        ];
+
+        
+    }
+
+    public function deactivate($request){
+        $data = User::find($request->id);
+        $data->is_active = !$data->is_active;
+        $data->save();
+
+        return [
+            'data' => new UserResource($data),
+            'message' => $data->is_active ? 'User activated successfully!' : 'User deactivated successfully!',
+            'info' => "You've successfully updated the selected user."
+        ];
+
+        
     }
 
     public function user_role($role_request){
