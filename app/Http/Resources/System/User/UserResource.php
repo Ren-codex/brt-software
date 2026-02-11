@@ -13,11 +13,11 @@ class UserResource extends JsonResource
         return [
             'id' => $this->id,
             'avatar' => ($this->employee && $this->employee->avatar && $this->employee->avatar !== 'noavatar.jpg')
-            ? asset('storage/' . $this->employee->avatar) 
-            : asset('images/avatars/avatar.jpg'), 
-            'name' => $this->employee->name,
-            'fullname' => $this->employee->fullname,
-            'mobile' => $this->employee->mobile,
+            ? asset('storage/' . $this->employee->avatar)
+            : asset('images/avatars/avatar.jpg'),
+            'name' => $this->employee ? $this->employee->fullname : $this->username,
+            'fullname' => $this->employee ? $this->employee->fullname : $this->username,
+            'mobile' => $this->employee ? $this->employee->mobile : null,
             'email' => $this->email,
             'username' => $this->username,
             'roles' => RoleResource::collection($this->myroles),
