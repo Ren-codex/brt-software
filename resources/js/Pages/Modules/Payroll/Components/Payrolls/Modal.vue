@@ -106,6 +106,7 @@
                         min="0"
                         step="1"
                         placeholder="0"
+                        :disabled="form.status != 'draft'"
                       >
                     </td>
                     <td>
@@ -116,6 +117,7 @@
                         min="0"
                         step="0.5"
                         placeholder="0"
+                        :disabled="form.status != 'draft'"
                       >
                     </td>                    
                     <!-- <td>
@@ -198,6 +200,11 @@
           <i class="ri-save-line" v-if="!loading"></i>
           <i class="ri-loader-4-line spinner" v-else></i>
           {{ loading ? 'Saving...' : 'Submit for Approval' }}
+        </button>
+        <button type="button" class="btn btn-warning" :disabled="loading" @click="approvePayroll" v-if="form.status == 'pending'">
+          <i class="ri-save-line" v-if="!loading"></i>
+          <i class="ri-loader-4-line spinner" v-else></i>
+          {{ loading ? 'Saving...' : 'Approve for Payroll' }}
         </button>
       </div>
     </div>

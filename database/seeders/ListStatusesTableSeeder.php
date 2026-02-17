@@ -184,6 +184,18 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            14 =>
+            array (
+                'id' => 15,
+                'name' => 'Draft',
+                'slug' => 'draft',
+                'description' => 'Draft status',
+                'text_color' => '#000000',
+                'bg_color' => '#adadad',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

@@ -64,6 +64,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/loans', App\Http\Controllers\Modules\LoanController::class);
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
+        Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);
     });
 });
 

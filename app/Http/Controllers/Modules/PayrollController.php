@@ -66,4 +66,15 @@ class PayrollController extends Controller
         $request->merge(['type' => 'payroll']);
         return app(PrintClass::class)->print($id, $request);
     }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $result = $this->payroll->updateStatus($request, $id);
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
 }

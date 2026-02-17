@@ -3,10 +3,12 @@
 namespace App\Services\Modules;
 
 use App\Http\Resources\Libraries\PayrollResource;
+use App\Models\ListStatus;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Services\SeriesService;
 use DB;
+use App\Models\PayrollLog;
 
 class PayrollClass
 {
@@ -39,7 +41,6 @@ class PayrollClass
         $exists = Payroll::where('payroll_template_id', $request->payroll_template_id)
             ->where('pay_period_start', $request->pay_period_start)
             ->where('pay_period_end', $request->pay_period_end)
-            ->where('status', '!=', 'paid')
             ->exists();
 
         if ($exists) {
@@ -55,7 +56,7 @@ class PayrollClass
                 'payroll_no' => $this->series_service->get('payroll_number'),
                 'pay_period_start' => $request->pay_period_start,
                 'pay_period_end' => $request->pay_period_end,
-                'status' => $request->status,
+                'status_id' => ListStatus::where('slug', $request->status)->first()->id,
                 'total_amount' => $request->total_amount,
                 'payroll_template_id' => $request->payroll_template_id,
                 'created_by' => auth()->user()->id,
@@ -75,6 +76,12 @@ class PayrollClass
                 ]);
             }
 
+            PayrollLog::create([
+                'payroll_id' => $payroll->id,
+                'action' => 'created',
+                'actioned_by_id' => auth()->user()->id,
+            ]);
+
         });
         return [
             'message' => 'Payroll created successfully',
@@ -92,12 +99,12 @@ class PayrollClass
     {
                 // create payroll items
         $payroll = Payroll::findOrFail($id);
-
+         // Prevent updating to a payroll when there's already an ongoing (not paid)
         DB::transaction(function () use ($request, $payroll) {
             $payroll->update([
                 'pay_period_start' => $request->pay_period_start,
                 'pay_period_end' => $request->pay_period_end,
-                'status' => $request->status,
+                'status_id' => ListStatus::where('slug', $request->status)->first()->id,
                 'total_amount' => $request->total_amount,
                 'payroll_template_id' => $request->payroll_template_id,
             ]);
@@ -119,6 +126,12 @@ class PayrollClass
                     'loans' => $item['loans'] ?? [],
                 ]);
             }
+
+            PayrollLog::create([
+                'payroll_id' => $payroll->id,
+                'action' => 'updated',
+                'actioned_by_id' => auth()->user()->id,
+            ]);
         });
 
         return [
@@ -137,5 +150,40 @@ class PayrollClass
             'message' => 'Payroll deleted successfully',
             'info' => "You've successfully deleted the payroll"
         ];
+    }
+
+    public function updateStatus($request, $id)
+    {
+        try{
+            DB::beginTransaction();
+            $payroll = Payroll::findOrFail($id);
+            $status = ListStatus::where('slug', $request->status)->first();
+            $payroll->update([
+                'status_id' => $status->id,
+            ]);
+    
+            PayrollLog::create([
+                'payroll_id' => $payroll->id,
+                'action' => 'status updated to '.$status->slug,
+                'actioned_by_id' => auth()->user()->id,
+                'remarks' => $request->remarks ?? null,
+            ]);
+    
+            DB::commit();
+
+            return [
+                'data' => $payroll,
+                'message' => 'Payroll status updated successfully',
+                'info' => "You've successfully updated the payroll status"
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return [
+                'data' => null,
+                'message' => 'Failed to update payroll status',
+                'info' => $e->getMessage(),
+                'status' => 'error'
+            ];
+        }
     }
 }

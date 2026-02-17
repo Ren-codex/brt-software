@@ -47,22 +47,42 @@
         <!-- Tab Content -->
         <div>
           <transition name="inventory-fade" mode="out-in">
-            <div :key="activeTab" class="inventory-tab-content">
-              <div v-if="activeTab === 'payroll_management'" class="shadow-sm p-3">
-                <PayrollManagement :dropdowns="dropdowns" />
+            <div :key="currentView" class="inventory-tab-content">
+              <!-- Payroll Details View -->
+              <div v-if="currentView === 'payrollDetails' && selectedPayroll" class="payroll-details-container">
+                <PayrollView
+                  :payroll="selectedPayroll"
+                  :dropdowns="dropdowns"
+                  @back="backToList"
+                  @toast="showToast"
+                  @fetch="fetchPayrolls"
+                />
               </div>
-              <div v-if="activeTab === 'payroll_templates'" class="shadow-sm p-3">
+
+              <!-- Payroll Management List -->
+              <div v-if="activeTab === 'payroll_management' && currentView === 'list'" class="shadow-sm p-3">
+                <PayrollManagement :dropdowns="dropdowns" @view="openPayrollDetails" />
+              </div>
+              <div v-if="activeTab === 'payroll_templates' && currentView === 'list'" class="shadow-sm p-3">
                 <PayrollTemplate :dropdowns="dropdowns" />
               </div>
-              <div v-if="activeTab === 'payroll_settings'" class="shadow-sm p-3">
+              <div v-if="activeTab === 'payroll_settings' && currentView === 'list'" class="shadow-sm p-3">
                 <PayrollSettings :dropdowns="dropdowns" />
               </div>
-              <div v-if="activeTab === 'sales_incentives'" class="shadow-sm p-3">
+              <div v-if="activeTab === 'sales_incentives' && currentView === 'list'" class="shadow-sm p-3">
                 <SalesIncentives :dropdowns="dropdowns" />
               </div>
             </div>
           </transition>
         </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div v-if="isToastVisible" class="inventory-toast">
+      <div class="inventory-toast-content">
+        <i class="ri-check-line"></i>
+        {{ toastMessage }}
       </div>
     </div>
   </div>
@@ -72,17 +92,19 @@
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PayrollManagement from './Components/Payrolls/Index.vue';
+import PayrollView from './Components/Payrolls/View.vue';
 import PayrollSettings from './Components/Settings/Index.vue';
 import PayrollTemplate from './Components/Templates/Index.vue';
 import SalesIncentives from './Components/SalesIncentives/Index.vue';
 
 export default {
-  components: { PageHeader, PayrollManagement, PayrollSettings, PayrollTemplate, SalesIncentives },
+  components: { PageHeader, PayrollManagement, PayrollView, PayrollSettings, PayrollTemplate, SalesIncentives },
   props: ['dropdowns'],
   data() {
     return {
       isSidebarCollapsed: false,
       activeTab: localStorage.getItem('payroll_active_tab') || 'payroll_management',
+      currentView: 'list',
       payrolls: [],
       meta: null,
       filters: {
@@ -94,6 +116,8 @@ export default {
       showCreateModal: false,
       showEditModal: false,
       selectedPayroll: null,
+      isToastVisible: false,
+      toastMessage: '',
       tabs: [
         {
           id: 'payroll_management',
@@ -129,6 +153,26 @@ export default {
     changeTab(tab) {
       this.activeTab = tab;
       localStorage.setItem('payroll_active_tab', tab);
+      this.currentView = 'list';
+      this.selectedPayroll = null;
+      this.filter.keyword = '';
+    },
+    openPayrollDetails(payroll) {
+      this.selectedPayroll = payroll;
+      this.currentView = 'payrollDetails';
+    },
+    backToList() {
+      this.currentView = 'list';
+      this.selectedPayroll = null;
+      // Optionally fetch updated data
+      // this.fetchPayrolls();
+    },
+    showToast(message) {
+      this.toastMessage = message;
+      this.isToastVisible = true;
+      setTimeout(() => {
+        this.isToastVisible = false;
+      }, 3000);
     },
   }
 }
@@ -193,5 +237,39 @@ export default {
 
 .inventory-sidebar.sidebar-collapsed .inventory-sidebar-tab:hover {
   transform: none;
+}
+
+.inventory-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background-color: #28a745;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+.inventory-toast-content {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.payroll-details-container {
+  margin: 20px;
 }
 </style>

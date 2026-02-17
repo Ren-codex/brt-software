@@ -58,8 +58,9 @@
                                         <td class="text-center fw-bold">{{ formatCurrency(payroll.total_amount) }}</td>
                                         <td class="text-center">{{ payroll.created_by }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :style="getStatusStyle(payroll.status)">
-                                                {{ payroll.status }}
+                                            <span class="status-badge" 
+                                              :style="{ color: payroll.status?.text_color, backgroundColor: payroll.status?.bg_color, padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }">
+                                                {{ payroll.status.slug }}
                                             </span>
                                         </td>
                                         <td class="text-center">
@@ -67,7 +68,7 @@
                                                 <b-button @click.stop="editPayroll(payroll)" variant="outline-primary"
                                                   v-b-tooltip.hover title="Edit" size="sm"
                                                   class="btn-icon rounded-circle">
-                                                  <i class="ri-pencil-fill"></i>
+                                                  <i :class="payroll.status === 'draft' ? 'ri-pencil-fill' : 'ri-eye-line'"></i>
                                                 </b-button>
                                                 <b-button @click.stop="printPayroll(payroll)" variant="outline-info"
                                                     v-b-tooltip.hover title="Print" size="sm"
@@ -168,8 +169,12 @@ export default {
       this.filter.keyword = value;
     },
     editPayroll(payroll) {
-      this.selectedPayroll = { ...payroll }
-      this.showEditModal = true
+      if (payroll.status === 'draft') {
+        this.selectedPayroll = { ...payroll }
+        this.showEditModal = true
+      } else {
+        this.$emit('view', payroll)
+      }
     },
     printPayroll(payroll) {
       window.open(`/payrolls/${payroll.id}/print`, '_blank');
@@ -235,21 +240,6 @@ export default {
         style: 'currency',
         currency: 'PHP'
       }).format(amount)
-    },
-    getStatusStyle(status) {
-      const statusMap = {
-        pending: { bg_color: '#ffc107', text_color: '#000000' },
-        approved: { bg_color: '#17a2b8', text_color: '#ffffff' },
-        paid: { bg_color: '#28a745', text_color: '#ffffff' },
-        cancelled: { bg_color: '#dc3545', text_color: '#ffffff' }
-      };
-      const statusInfo = statusMap[status] || { bg_color: '#6c757d', text_color: '#ffffff' };
-      return {
-        color: statusInfo.text_color,
-        backgroundColor: statusInfo.bg_color,
-        border: `1px solid ${statusInfo.bg_color}40`,
-        boxShadow: `0 2px 4px ${statusInfo.bg_color}20`
-      };
     },
   }
 }
