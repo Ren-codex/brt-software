@@ -17,16 +17,25 @@
                     </div>
                   </div>
                   <div class="d-flex gap-2">
-                    <button v-if="canApprove && payroll.status.slug === 'pending'" class="create-btn"
+                    <button v-if="canApprove && payroll.status.slug === 'approval'" class="create-btn"
                             @click="approvePayroll">
                       <i class="ri-check-line"></i>
                       <span>Approval</span>
                     </button>
+                    <button v-if="canApprove && payroll.status.slug === 'for-release'" class="create-btn"
+                            @click="releasePayroll">
+                      <i class="ri-check-line"></i>
+                      <span>Release Payroll</span>
+                    </button>
+                    <button v-if="canApprove && payroll.status.slug === 'approval'" class="create-btn"
+                            @click="draftPayroll" v-b-tooltip.hover title="Mark as Draft" style="margin-right: -8px">
+                      <i class="ri-file-edit-line"></i>
+                    </button>
                     <template v-if="payroll.status.slug === 'draft' && payroll.created_by_id === $page.props.user.id">
-                      <button @click="editPayroll" class="create-btn" v-b-tooltip.hover title="Edit">
+                      <button @click="editPayroll" class="create-btn" v-b-tooltip.hover title="Edit" style="margin-right: -8px">
                         <i class="ri-pencil-fill"></i>
                       </button>
-                      <button @click="deletePayroll" class="create-btn" v-b-tooltip.hover title="Delete">
+                      <button @click="deletePayroll" class="create-btn" v-b-tooltip.hover title="Delete" style="margin-right: -8px">
                         <i class="ri-delete-bin-line"></i>
                       </button>
                     </template>
@@ -60,7 +69,7 @@
                           <label class="form-label">Status</label>
                           <span
                             :style="{ color: payroll.status?.text_color, backgroundColor: payroll.status?.bg_color, padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }">
-                            {{ payroll.status.slug }}
+                            {{ payroll.status.name }}
                           </span>
                         </div>
                       </div>
@@ -215,13 +224,24 @@
       {{ toastMessage }}
     </div>
   </div>
+
+  <PayrollModal
+    v-if="showEditModal"
+    :payroll="payroll"
+    :is-edit="showEditModal"
+    :dropdowns="dropdowns"
+    @close="closeModal"
+    @saved="handleSaved"
+  />
 </template>
 
 <script>
 import Swal from 'sweetalert2';
+import PayrollModal from './Modal.vue'
 
 export default {
   name: "PayrollView",
+  components: { PayrollModal },
   props: {
     payroll: Object,
     dropdowns: Object,
@@ -233,6 +253,7 @@ export default {
       remarks: '',
       isToastVisible: false,
       toastMessage: '',
+      showEditModal: false,
     };
   },
   computed: {
@@ -274,9 +295,46 @@ export default {
       this.showModal = true;
     },
     
+    releasePayroll() {
+      Swal.fire({
+        title: 'Release Payroll',
+        text: 'Are you sure you want to release this payroll? This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Release',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#d33',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.$inertia.put(`/payrolls/${this.payroll.id}/status`, {
+            status: 'released',
+            id: this.payroll.id,
+            remarks: 'Payroll released'
+          }, {
+            onSuccess: () => {
+              Swal.fire(
+                'Released!',
+                'Payroll has been released successfully!',
+                'success'
+              );
+              this.$inertia.visit('/payrolls');
+            },
+            onError: () => {
+              Swal.fire(
+                'Error',
+                'Failed to release payroll!',
+                'error'
+              );
+            }
+          });
+        }
+      });
+    },
+    
     editPayroll() {
-      // This would open the edit modal in the parent component
-      this.$emit('toast', 'Edit functionality would open the edit modal');
+      this.showEditModal = true
+      console.log(this.showEditModal);
     },
     
     deletePayroll() {
@@ -326,6 +384,31 @@ export default {
         this.isToastVisible = false;
       }, 3000);
     },
+
+    draftPayroll() {
+      this.$inertia.put(`/payrolls/${this.payroll.id}/status`, {
+        status: 'draft',
+        id: this.payroll.id,
+        remarks: 'Payroll saved as draft'
+      }, {
+        onSuccess: () => {
+          this.$inertia.visit('/payrolls');
+        },
+        onError: () => {
+          this.$inertia.visit('/payrolls');
+        }
+      });
+    },
+
+    closeModal() {
+      this.showEditModal = false;
+    },
+
+    handleSaved() {
+      this.showToast('Payroll updated successfully!');
+      this.showEditModal = false;
+      this.$inertia.visit('/payrolls');
+    }
   }
 };
 </script>

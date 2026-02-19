@@ -196,6 +196,42 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            15 =>
+            array (
+                'id' => 16,
+                'name' => 'For Release',
+                'slug' => 'for-release',
+                'description' => 'For Release status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#007678',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            16 =>
+            array (
+                'id' => 17,
+                'name' => 'Completed',
+                'slug' => 'completed',
+                'description' => 'Completed status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#87efed',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            17 =>
+            array (
+                'id' => 18,
+                'name' => 'Approval',
+                'slug' => 'approval',
+                'description' => 'For Approval status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

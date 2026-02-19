@@ -60,7 +60,7 @@
                                         <td class="text-center">
                                             <span class="status-badge" 
                                               :style="{ color: payroll.status?.text_color, backgroundColor: payroll.status?.bg_color, padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }">
-                                                {{ payroll.status.slug }}
+                                                {{ payroll.status.name }}
                                             </span>
                                         </td>
                                         <td class="text-center">
@@ -68,7 +68,7 @@
                                                 <b-button @click.stop="editPayroll(payroll)" variant="outline-primary"
                                                   v-b-tooltip.hover title="Edit" size="sm"
                                                   class="btn-icon rounded-circle">
-                                                  <i :class="payroll.status === 'draft' ? 'ri-pencil-fill' : 'ri-eye-line'"></i>
+                                                  <i class="ri-eye-line"></i>
                                                 </b-button>
                                                 <b-button @click.stop="printPayroll(payroll)" variant="outline-info"
                                                     v-b-tooltip.hover title="Print" size="sm"
@@ -100,11 +100,9 @@
             </div>
         </div>
     </BRow>
-    <!-- Create/Edit Modal -->
     <PayrollModal
-      v-if="showCreateModal || showEditModal"
+      v-if="showCreateModal"
       :payroll="selectedPayroll"
-      :is-edit="showEditModal"
       :dropdowns="dropdowns"
       @close="closeModal"
       @saved="handleSaved"
@@ -131,7 +129,6 @@ export default {
       },
       localKeyword: '',
       showCreateModal: false,
-      showEditModal: false,
       selectedPayroll: null,
       selectedRow: null,
     }
@@ -169,12 +166,7 @@ export default {
       this.filter.keyword = value;
     },
     editPayroll(payroll) {
-      if (payroll.status === 'draft') {
-        this.selectedPayroll = { ...payroll }
-        this.showEditModal = true
-      } else {
-        this.$emit('view', payroll)
-      }
+      this.$emit('view', payroll)
     },
     printPayroll(payroll) {
       window.open(`/payrolls/${payroll.id}/print`, '_blank');

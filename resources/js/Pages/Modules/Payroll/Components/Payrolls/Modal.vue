@@ -37,7 +37,7 @@
                         :class="{ 'input-error': form.errors.pay_period_start }" 
                         @input="handleInput('pay_period_start')" 
                         required
-                        :disabled="isEdit && form.status == 'pending'">
+                        :disabled="isEdit && form.status == 'approval'">
                     </div>
                     <span class="error-message" v-if="form.errors.pay_period_start">{{ form.errors.pay_period_start }}</span>
                   </div>
@@ -52,7 +52,7 @@
                         :class="{ 'input-error': form.errors.pay_period_end }" 
                         @input="handleInput('pay_period_end')" 
                         required
-                        :disabled="isEdit && form.status == 'pending'">
+                        :disabled="isEdit && form.status == 'approval'">
                     </div>
                     <span class="error-message" v-if="form.errors.pay_period_end">{{ form.errors.pay_period_end }}</span>
                   </div>
@@ -106,7 +106,7 @@
                         min="0"
                         step="1"
                         placeholder="0"
-                        :disabled="form.status != 'draft'"
+                        :disabled="form.status !== 'draft'"
                       >
                     </td>
                     <td>
@@ -117,7 +117,7 @@
                         min="0"
                         step="0.5"
                         placeholder="0"
-                        :disabled="form.status != 'draft'"
+                        :disabled="form.status !== 'draft'"
                       >
                     </td>                    
                     <!-- <td>
@@ -200,11 +200,6 @@
           <i class="ri-save-line" v-if="!loading"></i>
           <i class="ri-loader-4-line spinner" v-else></i>
           {{ loading ? 'Saving...' : 'Submit for Approval' }}
-        </button>
-        <button type="button" class="btn btn-warning" :disabled="loading" @click="approvePayroll" v-if="form.status == 'pending'">
-          <i class="ri-save-line" v-if="!loading"></i>
-          <i class="ri-loader-4-line spinner" v-else></i>
-          {{ loading ? 'Saving...' : 'Approve for Payroll' }}
         </button>
       </div>
     </div>
@@ -305,7 +300,7 @@ export default {
   methods: {
     hide() {
       this.showModal = false
-      this.$emit('close')
+      this.$emit('close');
     },
 
     handleInput(field) {
@@ -321,7 +316,7 @@ export default {
               this.form.payroll_template = this.payrollTemplates.find(t => t.id === this.payroll.payroll_template_id) || '';
               this.form.pay_period_start = this.payroll.pay_period_start.slice(0, 10);
               this.form.pay_period_end = this.payroll.pay_period_end.slice(0, 10);
-              this.form.status = this.payroll.status;
+              this.form.status = this.payroll.status.slug;
               this.selectedEmployees = this.payroll.payroll_items.map(item => {
                 return {
                   value: item.employee_id,
@@ -483,7 +478,7 @@ export default {
             net_salary: parseFloat(this.calculateEmployeeNet(e).toFixed(2)),
             loans: e.loans ? e.loans.map(loan => {
               return {
-                id: loan.loan_id,
+                id: loan.id,
                 remaining_balance: loan.remaining_balance,
                 term_months: loan.term_months,
                 interest_rate: loan.interest_rate,
@@ -493,7 +488,7 @@ export default {
           };
         }),
         total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),
-        status: this.makeStateDraft == true ? "draft" : "pending",
+        status: this.makeStateDraft == true ? "draft" : "approval",
       }
 
       try {

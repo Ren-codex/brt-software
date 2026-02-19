@@ -41,6 +41,7 @@ class PayrollClass
         $exists = Payroll::where('payroll_template_id', $request->payroll_template_id)
             ->where('pay_period_start', $request->pay_period_start)
             ->where('pay_period_end', $request->pay_period_end)
+            ->where('status_id', '!=', ListStatus::where('slug', 'disapproved')->first()->id)
             ->exists();
 
         if ($exists) {
@@ -157,17 +158,59 @@ class PayrollClass
         try{
             DB::beginTransaction();
             $payroll = Payroll::findOrFail($id);
-            $status = ListStatus::where('slug', $request->status)->first();
-            $payroll->update([
-                'status_id' => $status->id,
-            ]);
+
+            if($request->status == 'released'){
+                $payroll->update([
+                    'status_id' => ListStatus::where('slug', 'completed')->first()->id,
+                ]);
+
+                PayrollLog::create([
+                    'payroll_id' => $payroll->id,
+                    'action' => 'released',
+                    'actioned_by_id' => auth()->user()->id,
+                    'remarks' => $request->remarks ?? null,
+                ]);
+
+                // Loan deduction logic
+                foreach ($payroll->items as $item) {
+                    $loans = $item->loans ?? [];
+                    foreach ($loans as $loanData) {
+                        if (isset($loanData['remaining_balance']) && isset($loanData['payroll_deduction']) && isset($loanData['term_months'])) {
+                            // Find the loan by employee and remaining balance
+                            $loan = \App\Models\Loan::findOrFail($loanData['id']);
+                            if ($loan) {
+                                $deduct = floatval($loanData['payroll_deduction']);
+                                $loan->remaining_balance = max(0, floatval($loan->remaining_balance) - $deduct);
+                                $loan->amtpaid = floatval($loan->amtpaid) + $deduct;
+                                $loan->remaining_term_to_pay = max(0, intval($loan->remaining_term_to_pay) - 1);
+                                // Optionally update status if fully paid
+                                if ($loan->remaining_balance <= 0) {
+                                    $loan->status = 'paid';
+                                }
+                                $loan->save();
+                            }
+                        }
+                    }
+                }
+            }else{
+                $status = '';
+                if($request->status == 'approved'){
+                    $status = ListStatus::where('slug', 'for-release')->first();
+                }else{
+                    $status = ListStatus::where('slug', $request->status)->first();
+                }
     
-            PayrollLog::create([
-                'payroll_id' => $payroll->id,
-                'action' => 'status updated to '.$status->slug,
-                'actioned_by_id' => auth()->user()->id,
-                'remarks' => $request->remarks ?? null,
-            ]);
+                $payroll->update([
+                    'status_id' => $status->id,
+                ]);
+        
+                PayrollLog::create([
+                    'payroll_id' => $payroll->id,
+                    'action' => 'status updated to '.$status->slug,
+                    'actioned_by_id' => auth()->user()->id,
+                    'remarks' => $request->remarks ?? null,
+                ]);
+            }
     
             DB::commit();
 
