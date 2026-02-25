@@ -3,11 +3,20 @@
 namespace App\Services\Modules;
 
 use App\Models\Employee;
+use App\Models\User;
 use App\Http\Resources\Modules\EmployeeResource;
+use App\Services\System\User\UserClass;
 
 
 class EmployeeClass
 {
+    protected $userClass;
+
+    public function __construct(UserClass $userClass)
+    {
+        $this->userClass = $userClass;
+    }
+
     public function lists($request){
         $data = EmployeeResource::collection(
             Employee::with(['user', 'position', 'added_by'])
@@ -41,6 +50,18 @@ class EmployeeClass
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
 
+        $user = null;
+        if ($request->filled('username') && $request->filled('password')) {
+            $userRequest = new \Illuminate\Http\Request([
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => $request->password,
+                'role_ids' => [] // No roles for employees by default
+            ]);
+            $userResult = $this->userClass->save($userRequest);
+            $user = User::find($userResult['data']['id']);
+        }
+
         $data = Employee::create([
             'firstname' => $request->firstname,
             'middlename' => $request->middlename,
@@ -57,11 +78,12 @@ class EmployeeClass
             'is_regular' => $request->is_regular,
             'is_active' => $request->is_active,
             'is_blacklisted' => $request->is_blacklisted,
+            'user_id' => $user ? $user->id : null,
             'added_by_id' => $userId ?: auth()->id(),
         ]);
 
         return [
-            'data' => new EmployeeResource($data),
+            'data' => new EmployeeResource($data->load('user')),
             'message' => 'Employee saved successfully!',
             'info' => "You've successfully saved the employee"
         ];
@@ -74,7 +96,35 @@ class EmployeeClass
         if ($request->hasFile('avatar')) {
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
-  
+
+        // Handle user account
+        $user = $data->user;
+        if ($request->filled('username')) {
+            if ($user) {
+                // Update existing user
+                $updateRequest = new \Illuminate\Http\Request([
+                    'id' => $user->id,
+                    'username' => $request->username,
+                    'email' => $request->email,
+                    'role_ids' => [] // Keep existing roles or empty
+                ]);
+                if ($request->filled('password')) {
+                    $updateRequest->merge(['password' => $request->password]);
+                }
+                $this->userClass->update($updateRequest);
+            } else {
+                // Create new user
+                $userRequest = new \Illuminate\Http\Request([
+                    'username' => $request->username,
+                    'email' => $request->email,
+                    'password' => $request->password,
+                    'role_ids' => []
+                ]);
+                $userResult = $this->userClass->save($userRequest);
+                $user = User::find($userResult['data']['id']);
+            }
+        }
+
         $data->update([
             'firstname' => $request->firstname,
             'middlename' => $request->middlename,
@@ -91,10 +141,11 @@ class EmployeeClass
             'is_regular' => $request->is_regular,
             'is_active' => $request->is_active,
             'is_blacklisted' => $request->is_blacklisted,
+            'user_id' => $user ? $user->id : $data->user_id,
         ]);
 
         return [
-            'data' => new EmployeeResource($data),
+            'data' => new EmployeeResource($data->load('user')),
             'message' => 'Employee updated successfully!',
             'info' => "You've successfully updated the employee"
         ];

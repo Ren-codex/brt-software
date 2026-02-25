@@ -280,11 +280,15 @@
             </div>
         </div>
     </div>
+      <Create @add="fetch()" @update="fetch()"  :dropdowns="dropdowns" ref="create" />
 </template>
 
 <script>
+
+import Create from './Modals/Create.vue';
 export default {
-    props: ['employee', 'backToList', 'openEdit', ],
+    components: {Create },
+    props: ['employee', 'backToList',  ],
     name: 'EmployeeDetails',
     data() {
         return {
@@ -330,7 +334,10 @@ export default {
         },
         toggleLoanCollapse() {
             this.loanCollapsed = !this.loanCollapsed;
-        }
+        },
+        openEdit(data) {
+            this.$refs.create.edit(data);
+        },
     }
 }
 </script>

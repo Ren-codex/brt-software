@@ -53,7 +53,7 @@
                             </thead>
 
                             <tbody class="table-white fs-12">
-                                <tr v-for="(list,index) in lists" v-bind:key="index" @click="openView(list)" :class="{
+                                <tr v-for="(list,index) in lists" v-bind:key="index" :class="{
                                     'bg-info-subtle': index === selectedRow,
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow,
                                     'bg-warning-subtle': list.is_blacklisted === 1
@@ -106,6 +106,9 @@
 
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
+                                            <b-button @click="openView(list)" variant="primary" v-b-tooltip.hover title="View" size="sm" class="btn-icon">
+                                                <i class="ri-eye-line"></i>
+                                            </b-button>
                                             <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                 <i class="ri-pencil-fill"></i>
                                             </b-button>
@@ -120,8 +123,10 @@
                     </div>
                 </div>
 
-                <div v-else>
-                    <Details @update="fetch()" :employee="selectedEmployee" :openEdit="openEdit(selectedEmployee)" :backToList="backToList" ref="details" />
+                
+
+                <div v-if="currentView === 'details'">
+                    <Details @update="fetch()" :employee="selectedEmployee"   :backToList="backToList" ref="details" />
                 </div>
 
                 <div class="card-footer" v-if="currentView === 'list'">
@@ -197,7 +202,7 @@ export default {
         },
 
         openEdit(data) {
-            this.$refs.details.edit(data);
+            this.$refs.create.edit(data);
         },
 
         toggleActive(data) {
