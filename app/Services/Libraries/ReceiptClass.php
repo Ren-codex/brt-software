@@ -11,7 +11,20 @@ use App\Http\Resources\Libraries\ReceiptResource;
 class ReceiptClass
 {
     public function lists($request){
+        $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Main Warehouse')->pluck('id');
+        $internalLocationIds = \App\Models\ListLocation::where('name', 'Main Warehouse')->pluck('id');
+
         return Receipt::with(['arInvoice.sales_order.customer', 'status'])
+            ->whereHas('arInvoice.sales_order', function ($q) use ($request, $externalLocationIds, $internalLocationIds) {
+                if ($request->is_external) {
+                    $q->whereIn('location_id', $externalLocationIds);
+                } else {
+                    $q->where(function ($subQ) use ($internalLocationIds) {
+                        $subQ->whereIn('location_id', $internalLocationIds)
+                             ->orWhereNull('location_id');
+                    });
+                }
+            })
             ->when($request->keyword, function($query) use ($request) {
                 $query->whereHas('arInvoice.sales_order.customer', function($q) use ($request) {
                     $q->where('name', 'like', '%' . $request->keyword . '%');

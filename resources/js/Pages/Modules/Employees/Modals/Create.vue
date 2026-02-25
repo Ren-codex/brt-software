@@ -118,22 +118,7 @@
                     </div>
 
                     <div class="form-row">
-                         <div class="form-group form-group-half">
-                            <label for="email" class="form-label">Email</label>
-                            <div class="input-wrapper">
-                                <i class="ri-user-line input-icon"></i>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    v-model="form.email"
-                                    class="form-control"
-                                    :class="{ 'input-error': form.errors.email }"
-                                    placeholder="Enter Email"
-                                    @input="handleInput('email')"
-                                >
-                            </div>
-                            <span class="error-message" v-if="form.errors.email">{{ form.errors.email }}</span>
-                        </div>
+                        
 
                         <div class="form-group form-group-half">
                             <label for="mobile" class="form-label">Contact Number</label>
@@ -227,7 +212,10 @@
                             <span class="error-message" v-if="form.errors.address">{{ form.errors.address }}</span>
                         </div>
 
-                          <div class="form-group form-group-half">
+                     </div>
+
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
                             <label for="position_id" class="form-label">Position</label>
                             <div class="input-wrapper">
                                 <i class="ri-bar-chart-2-line input-icon"></i>
@@ -271,6 +259,88 @@
                                 <span class="checkbox-label">{{ form.is_active ? 'Active' : 'Inactive' }}</span>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="email" class="form-label">Email</label>
+                            <div class="input-wrapper">
+                                <i class="ri-mail-line input-icon"></i>
+                            <b-form-input
+                                type="email"
+                                class="form-control"
+                                v-model="form.email"
+                                :options="dropdowns.positions"
+                                :class="{ 'input-error': form.errors.email }"
+                                text-field="title"
+                                value-field="value"
+                                >
+                                 <template #first>
+                                    <b-form-select-option :value="null" disabled  >Select Position</b-form-select-option>
+                                </template>
+                                </b-form-input>
+                            </div>
+                            <span class="error-message" v-if="form.errors.email">{{ form.errors.email }}</span>
+                        </div>
+
+                            <div class="form-group form-group-half">
+                                <label for="username" class="form-label">Username</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-bar-chart-2-line input-icon"></i>
+                                <b-form-input
+                                    type="text"
+                                    class="form-control"
+                                    v-model="form.username"
+                                    :options="dropdowns.positions"
+                                    :class="{ 'input-error': form.errors.username }"
+                                    text-field="title"
+                                    value-field="value"
+                                    >
+                                    <template #first>
+                                        <b-form-select-option :value="null" disabled  >Username</b-form-select-option>
+                                    </template>
+                                    </b-form-input>
+                                </div>
+                                <span class="error-message" v-if="form.errors.username">{{ form.errors.username }}</span>
+                            </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="email" class="form-label">Password</label>
+                            <div class="input-wrapper">
+                                <i class="ri-lock-line input-icon"></i>
+                            <b-form-input
+                                type="password"
+                                class="form-control"
+                                v-model="form.password"
+                                :options="dropdowns.positions"
+                                :class="{ 'input-error': form.errors.password }"
+                                text-field="title"
+                                value-field="value"
+                                >
+                                </b-form-input>
+                            </div>
+                            <span class="error-message" v-if="form.errors.password">{{ form.errors.password }}</span>
+                        </div>
+
+                            <div class="form-group form-group-half">
+                                <label for="username" class="form-label">Confirm Password</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-lock-line input-icon"></i>
+                                <b-form-input
+                                        type="text"
+                                        class="form-control"
+                                    v-model="form.confirm_password"
+                                    :options="dropdowns.positions"
+                                    :class="{ 'input-error': form.errors.confirm_password }"
+                                    text-field="title"
+                                    value-field="value"
+                                    >
+                                    </b-form-input>
+                                </div>
+                                <span class="error-message" v-if="form.errors.confirm_password">{{ form.errors.confirm_password }}</span>
+                            </div>
                     </div>
 
                     <div class="success-alert" v-if="saveSuccess">

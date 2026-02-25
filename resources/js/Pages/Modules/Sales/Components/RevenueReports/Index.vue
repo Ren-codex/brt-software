@@ -39,7 +39,7 @@
 
 <script>
 export default {
-  props: ['dropdowns'],
+  props: ['dropdowns', 'isExternal'],
   data() {
     return {
       reports: [],
@@ -53,7 +53,11 @@ export default {
     fetchReports() {
       this.loading = true;
       axios
-        .get('/api/revenue-reports')
+        .get('/api/revenue-reports', {
+          params: {
+            is_external: this.isExternal ? 1 : 0
+          }
+        })
         .then((response) => {
           this.reports = response.data || [];
           this.loading = false;

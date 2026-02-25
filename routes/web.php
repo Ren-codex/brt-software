@@ -15,6 +15,8 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::resource('/sales', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::post('/sales-orders/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderController::class, 'adjustment']);
+    Route::resource('/sales-orders-external', App\Http\Controllers\Modules\SalesOrderExternalController::class);
+    Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
     Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
@@ -33,6 +35,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
         Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
         Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
+        Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
 
         
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);

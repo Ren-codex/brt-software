@@ -174,7 +174,7 @@
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
 
-                                                <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' || list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.slug !== 'cancelled' && list.status?.slug !== 'sales-returned'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
                                                 </b-button>
                                             </div>
@@ -360,7 +360,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' , 'user'],
+    props: ['dropdowns' , 'invoices' , 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -423,7 +423,8 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url) {
-            page_url = page_url || '/sales-orders';
+            let baseUrl = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            page_url = page_url || baseUrl;
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -451,21 +452,24 @@ export default {
 
         onCancel(id) {
             let title = "Sales Order";
-            this.$refs.cancel.show(id, title, '/sales-orders');
+            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            this.$refs.cancel.show(id, title, url);
         },
 
         onApproval(id) {
             let title = "Sales Order";
-            this.$refs.approval.show(id, title, '/sales-orders');
+            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            this.$refs.approval.show(id, title, url);
         },
         onPrint(id) {
-            window.open(`/sales-orders/${id}?option=print&type=sales_order`);
+            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            window.open(`${url}/${id}?option=print&type=sales_order`);
         },
     
 
         onSalesAdjustment(id) {
             let title = "Sales Order";
-            this.$refs.adjustment.show(id);
+            this.$refs.adjustment.show(id, this.isExternal);
         },
 
         selectRow(index) {

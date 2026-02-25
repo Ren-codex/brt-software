@@ -22,8 +22,21 @@ class RemittanceClass
     }
 
     public function lists($request){
+        $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Main Warehouse')->pluck('id');
+        $internalLocationIds = \App\Models\ListLocation::where('name', 'Main Warehouse')->pluck('id');
+
         $data = RemittanceResource::collection(
-            Remittance::when($request->keyword, function ($query,$keyword) {
+            Remittance::whereHas('receipts.arInvoice.sales_order', function ($q) use ($request, $externalLocationIds, $internalLocationIds) {
+                if ($request->is_external) {
+                    $q->whereIn('location_id', $externalLocationIds);
+                } else {
+                    $q->where(function ($subQ) use ($internalLocationIds) {
+                        $subQ->whereIn('location_id', $internalLocationIds)
+                             ->orWhereNull('location_id');
+                    });
+                }
+            })
+            ->when($request->keyword, function ($query,$keyword) {
                     $query->where('remittance_no', 'LIKE', "%{$keyword}%");
                 })
                 ->orderBy('created_at', 'DESC')

@@ -24,6 +24,7 @@ class SalesOrder extends Model
         'driver_id',
         'payment_mode',
         'due_date',
+        'location_id',
     ];
 
     protected $casts = [
@@ -80,6 +81,11 @@ class SalesOrder extends Model
         return $this->belongsTo(Employee::class, 'driver_id');
     }
 
+    public function location()
+    {
+        return $this->belongsTo(ListLocation::class, 'location_id');
+    }
+
     public function items()
     {
         return $this->hasMany(SalesOrderItem::class);
@@ -90,19 +96,20 @@ class SalesOrder extends Model
         return $this->hasMany(ArInvoice::class);
     }
 
-    public static function generateSoNumber($date = null)
+    public static function generateSoNumber($date = null, $prefix = 'SO')
     {
         $date = $date ?: now();
         $year = $date->format('Y');
         $month = $date->format('m');
 
-        $lastSo = self::whereYear('created_at', $year)
+        $lastSo = self::where('so_number', 'LIKE', $prefix . '-%')
+                      ->whereYear('created_at', $year)
                       ->whereMonth('created_at', $month)
                       ->orderBy('id', 'desc')
                       ->first();
 
         $sequence = $lastSo ? intval(substr($lastSo->so_number, -4)) + 1 : 1;
 
-        return 'SO-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix . '-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }

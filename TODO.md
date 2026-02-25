@@ -1,11 +1,12 @@
-- [x] Define $user variable in withValidator method
+  - [x] Define $user variable in withValidator method
 - [x] Update email uniqueness check to exclude current user on update
 - [x] Remove mobile uniqueness check since not in form
 - [x] Change 'code' to 'username' in rules array
 - [x] Remove dd() in UserController store method
 - [x] Fix update method signature in UserController to include $id
 - [x] Fix update URL in Create.vue to use /users/{id}
-- [x] Add openActivation method in Index.vue
+  
+  - [x] Add openActivation method in Index.vue
 - [x] Add unique validation for username and email in rules method
 - [x] Make password required only for create, nullable for update
 - [x] Add update method in UserClass for general user updates

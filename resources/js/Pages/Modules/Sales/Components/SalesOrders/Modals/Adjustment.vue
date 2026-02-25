@@ -96,17 +96,20 @@ export default {
             }),
             showModal: false,
             saveSuccess: false,
+            isExternal: false,
         }
     },
     methods: { 
-        show(id) {
+        show(id, isExternal = false) {
             this.form.reset();
             this.form.id = id;
+            this.isExternal = isExternal;
             this.showModal = true;
         },
 
         submit() {
-             this.form.put(`/sales-orders/${this.form.id}`, {
+            let url = this.isExternal ? `/sales-orders-external/${this.form.id}` : `/sales-orders/${this.form.id}`;
+             this.form.put(url, {
                 onSuccess: () => {
                     this.saveSuccess = true;
                     this.$emit('update');
