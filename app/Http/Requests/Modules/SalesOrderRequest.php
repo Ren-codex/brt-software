@@ -21,13 +21,14 @@ class SalesOrderRequest extends FormRequest
             ];
         }
         else{
-             return [
+             $rules = [
                 'order_date' => 'required|date',
                 'customer_id' => 'required|exists:customers,id',
                 'sales_rep_id' => 'nullable|exists:employees,id',
                 'driver_id' => 'nullable|exists:employees,id',
                 'payment_mode' => 'required|string',
                 'due_date' => 'nullable|date|required_if:payment_mode,credit',
+                'location_id' => 'nullable|exists:list_locations,id',
                 'items' => 'required|array|min:1',
                 'items.*.product_id' => 'required|exists:products,id',
                 'items.*.quantity' => 'required|integer|min:1',
@@ -37,8 +38,14 @@ class SalesOrderRequest extends FormRequest
                 'items.*.discount_per_unit' => 'nullable|numeric|min:0',
 
             ];
+
+            if ($this->input('is_external')) {
+                $rules['location_id'] = 'required|exists:list_locations,id';
+            }
+
+            return $rules;
         }
-       
+
 
     }
     public function messages()

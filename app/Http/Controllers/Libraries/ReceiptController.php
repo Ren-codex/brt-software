@@ -47,8 +47,9 @@ class ReceiptController extends Controller
         ]);
     }
 
-    public function print($id, Request $request)
+    public function show($id, Request $request)
     {
+        dd('hey');
         return $this->print->print($id, $request);
     }
 }

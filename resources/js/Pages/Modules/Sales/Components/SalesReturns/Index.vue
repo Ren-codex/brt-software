@@ -344,7 +344,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' , 'user'],
+    props: ['dropdowns' , 'invoices' , 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -407,7 +407,7 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url) {
-            page_url = page_url || '/sales-orders';
+            page_url = page_url || (this.isExternal ? '/sales-orders-external' : '/sales-orders');
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -429,7 +429,8 @@ export default {
 
 
         onPrint(id) {
-            window.open(`/sales-orders/${id}?option=print&type=sales_order`);
+            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            window.open(`${url}/${id}?option=print&type=sales_order`);
         },
     
 

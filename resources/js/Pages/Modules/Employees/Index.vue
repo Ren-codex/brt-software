@@ -121,7 +121,7 @@
                 </div>
 
                 <div v-else>
-                    <Details @update="fetch()" :employee="selectedEmployee" :backToList="backToList" :openEdit="openEdit" :selectedEmployee="selectedEmployee" :selectedRow="selectedRow" />
+                    <Details @update="fetch()" :employee="selectedEmployee" :openEdit="openEdit(selectedEmployee)" :backToList="backToList" ref="details" />
                 </div>
 
                 <div class="card-footer" v-if="currentView === 'list'">
@@ -196,10 +196,8 @@ export default {
             this.$refs.create.show();
         },
 
-        openEdit(data, index) {
-            this.selectedRow = index;
-            this.$refs.create.edit(data, index);
-
+        openEdit(data) {
+            this.$refs.details.edit(data);
         },
 
         toggleActive(data) {

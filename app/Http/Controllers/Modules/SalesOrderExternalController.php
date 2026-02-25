@@ -12,7 +12,7 @@ use App\Services\Modules\SalesOrderClass;
 use App\Http\Requests\Modules\SalesOrderRequest;
 
 
-class SalesOrderController extends Controller
+class SalesOrderExternalController extends Controller
 {
     use HandlesTransaction;
 
@@ -27,6 +27,7 @@ class SalesOrderController extends Controller
     public function index(Request $request){
         switch($request->option){
             case 'lists':
+                $request->merge(['is_external' => true]);
                 return $this->sales_order->lists($request);
             break;
             case 'dashboard':
@@ -36,7 +37,7 @@ class SalesOrderController extends Controller
                 return $this->sales_order->stockAvailability();
             break;
             default:
-                return inertia('Modules/Sales/Index', [
+                return inertia('Modules/SalesExternal/Index', [
                     'dropdowns' => [
                         'customers' => $this->dropdown->customers(),
                         'brands' => $this->dropdown->brands(),
@@ -46,7 +47,7 @@ class SalesOrderController extends Controller
                         'drivers' => $this->dropdown->drivers(),
                         'locations' => $this->dropdown->locations(),
                     ],
-                    'isExternal' => false,
+                    'isExternal' => true,
 
                 ]);
             break;
@@ -54,10 +55,11 @@ class SalesOrderController extends Controller
     }
 
     public function store(SalesOrderRequest $request){
-        $request->merge(['is_external' => false]);
+        $request->merge(['is_external' => true]);
         $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);
         });
+
 
         return back()->with([
             'data' => $result['data'],
@@ -73,7 +75,7 @@ class SalesOrderController extends Controller
         $result = $this->handleTransaction(function () use ($request) {
                 switch($request->action){
                     case 'update':
-                        $request->merge(['is_external' => false]);
+                        $request->merge(['is_external' => true]);
                         return $this->sales_order->update($request->id);
                     break;
                     case 'approve':

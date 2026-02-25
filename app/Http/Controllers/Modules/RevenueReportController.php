@@ -21,7 +21,7 @@ class RevenueReportController extends Controller
     public function index(Request $request)
     {
         // Optional: gather filters from request for future usage
-        $filters = $request->only(['from', 'to', 'product_id']);
+        $filters = $request->only(['from', 'to', 'product_id', 'is_external']);
 
         $reports = $this->revenueReportService->getReports($filters);
 

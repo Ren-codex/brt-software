@@ -6,7 +6,7 @@
                     <i class="ri-arrow-left-line"></i>
                     Back to List
                 </button>
-                <button @click="openEdit(selectedEmployee, selectedRow)" variant="info" v-b-tooltip.hover title="Edit"
+                <button @click="openEdit(employee)" variant="info" v-b-tooltip.hover title="Edit"
                     class="emp-create-btn">
                     <i class="ri-pencil-fill"></i>
                     Edit
@@ -284,7 +284,7 @@
 
 <script>
 export default {
-    props: ['employee', 'backToList', 'openEdit', 'selectedEmployee', 'selectedRow'],
+    props: ['employee', 'backToList', 'openEdit', ],
     name: 'EmployeeDetails',
     data() {
         return {
