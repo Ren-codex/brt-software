@@ -200,6 +200,7 @@ import RemittanceDetails from './Details/RemittanceDetails.vue';
 
 export default {
     components: { Pagination, Create, RemittanceDetails },
+    props: ['isExternal'],
     data(){
         return {
             lists: [],
@@ -249,7 +250,8 @@ export default {
                 params : {
                     keyword: this.filter.keyword,
                     count: 10,
-                    option: 'lists'
+                    option: 'lists',
+                    is_external: this.isExternal ? 1 : 0
                 }
             })
             .then(response => {

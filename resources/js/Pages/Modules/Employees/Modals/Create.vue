@@ -114,26 +114,30 @@
                             <span class="error-message" v-if="form.errors.suffix">{{ form.errors.suffix }}</span>
                         </div>
 
-                    
+                        <div class="form-group form-group-half">
+                            <label for="position_id" class="form-label">Position</label>
+                            <div class="input-wrapper">
+                                <i class="ri-bar-chart-2-line input-icon"></i>
+                                <b-form-select
+                                class="form-control"
+                                v-model="form.position_id"
+                                :options="dropdowns.positions"
+                                :class="{ 'input-error': form.errors.position_id }"
+                                text-field="title"
+                                value-field="value"
+                                >
+                                 <template #first>
+                                    <b-form-select-option :value="null" disabled  >Select Position</b-form-select-option>
+                                </template>
+                                </b-form-select>
+                            </div>
+                            <span class="error-message" v-if="form.errors.position_id">{{ form.errors.position_id }}</span>
+                        </div>
+
                     </div>
 
                     <div class="form-row">
-                         <div class="form-group form-group-half">
-                            <label for="email" class="form-label">Email</label>
-                            <div class="input-wrapper">
-                                <i class="ri-user-line input-icon"></i>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    v-model="form.email"
-                                    class="form-control"
-                                    :class="{ 'input-error': form.errors.email }"
-                                    placeholder="Enter Email"
-                                    @input="handleInput('email')"
-                                >
-                            </div>
-                            <span class="error-message" v-if="form.errors.email">{{ form.errors.email }}</span>
-                        </div>
+
 
                         <div class="form-group form-group-half">
                             <label for="mobile" class="form-label">Contact Number</label>
@@ -227,26 +231,7 @@
                             <span class="error-message" v-if="form.errors.address">{{ form.errors.address }}</span>
                         </div>
 
-                          <div class="form-group form-group-half">
-                            <label for="position_id" class="form-label">Position</label>
-                            <div class="input-wrapper">
-                                <i class="ri-bar-chart-2-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.position_id"
-                                :options="dropdowns.positions"
-                                :class="{ 'input-error': form.errors.position_id }"
-                                text-field="title"
-                                value-field="value"
-                                >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Position</b-form-select-option>
-                                </template>
-                                </b-form-select>
-                            </div>
-                            <span class="error-message" v-if="form.errors.position_id">{{ form.errors.position_id }}</span>
-                        </div>
-                    </div>
+                     </div>
 
 
                     <div class="form-row">
@@ -273,11 +258,90 @@
                         </div>
                     </div>
 
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="email" class="form-label">Email</label>
+                            <div class="input-wrapper">
+                                <i class="ri-mail-line input-icon"></i>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    v-model="form.email"
+                                    class="form-control"
+                                    :class="{ 'input-error': form.errors.email }"
+                                    placeholder="Enter email"
+                                    @input="handleInput('email')"
+                                >
+                            </div>
+                            <span class="error-message" v-if="form.errors.email">{{ form.errors.email }}</span>
+                        </div>
+
+                        <div class="form-group form-group-half">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-wrapper">
+                                <i class="ri-user-line input-icon"></i>
+                                <input
+                                    type="text"
+                                    id="username"
+                                    v-model="form.username"
+                                    class="form-control"
+                                    :class="{ 'input-error': form.errors.username }"
+                                    placeholder="Enter username"
+                                    @input="handleInput('username')"
+                                >
+                            </div>
+                            <span class="error-message" v-if="form.errors.username">{{ form.errors.username }}</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-wrapper">
+                                <i class="ri-lock-line input-icon"></i>
+                                <input
+                                    :type="togglePassword ? 'text' : 'password'"
+                                    id="password"
+                                    v-model="form.password"
+                                    class="form-control"
+                                    :class="{ 'input-error': form.errors.password }"
+                                    placeholder="Enter password"
+                                    @input="handleInput('password')"
+                                >
+                                <button type="button" @click="togglePassword = !togglePassword" class="password-toggle">
+                                    <i :class="togglePassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                                </button>
+                            </div>
+                            <span class="error-message" v-if="form.errors.password">{{ form.errors.password }}</span>
+                        </div>
+
+                        <div class="form-group form-group-half">
+                            <label for="password_confirmation" class="form-label">Confirm Password</label>
+                            <div class="input-wrapper">
+                                <i class="ri-lock-line input-icon"></i>
+                                <input
+                                    :type="toggleConfirm ? 'text' : 'password'"
+                                    id="password_confirmation"
+                                    v-model="form.password_confirmation"
+                                    class="form-control"
+                                    :class="{ 'input-error': form.errors.password_confirmation }"
+                                    placeholder="Confirm password"
+                                    @input="handleInput('password_confirmation')"
+                                >
+                                <button type="button" @click="toggleConfirm = !toggleConfirm" class="password-toggle">
+                                    <i :class="toggleConfirm ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                                </button>
+                            </div>
+                            <span class="error-message" v-if="form.errors.password_confirmation">{{ form.errors.password_confirmation }}</span>
+                            <span class="error-message" v-if="passwordMismatch && !form.errors.password_confirmation">Passwords do not match</span>
+                        </div>
+                    </div>
+
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Your information has been saved successfully!</span>
                     </div>
-                    
+
                     <div class="form-actions">
                         <button type="button" class="btn btn-cancel" @click="hide">
                             <i class="ri-close-line"></i>
@@ -314,6 +378,9 @@ export default {
                 lastname: null,
                 suffix: null,
                 email: null,
+                username: null,
+                password: null,
+                password_confirmation: null,
                 mobile: null,
                 birthdate: null,
                 sex: null,
@@ -332,11 +399,25 @@ export default {
             ],
             togglePassword: false,
             toggleConfirm: false,
-            passwordMismatch: false,
             showModal: false,
             editable: false,
             saveSuccess: false,
             previewImage: null,
+            passwordMismatch: false,
+        }
+    },
+    computed: {
+        passwordsMatch() {
+            if (!this.form.password || !this.form.password_confirmation) return true;
+            return this.form.password === this.form.password_confirmation;
+        }
+    },
+    watch: {
+        'form.password'() {
+            this.checkPasswordMatch();
+        },
+        'form.password_confirmation'() {
+            this.checkPasswordMatch();
         }
     },
     methods: { 
@@ -357,6 +438,9 @@ export default {
             this.form.lastname = data.lastname;
             this.form.suffix = data.suffix;
             this.form.email = data.email;
+            this.form.username = data.user ? data.user.username : null;
+            this.form.password = null; // Don't prefill password
+            this.form.password_confirmation = null;
             this.form.mobile = data.mobile;
             this.form.birthdate = data.birthdate;
             this.form.sex = data.sex;
@@ -428,54 +512,212 @@ export default {
             this.previewImage = null;
             this.editable = false;
             this.saveSuccess = false;
+            this.passwordMismatch = false;
             this.showModal = false;
+        },
+        checkPasswordMatch() {
+            this.passwordMismatch = this.form.password && this.form.password_confirmation && this.form.password !== this.form.password_confirmation;
         }
     }
 }
 </script>
 
 <style scoped>
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+}
+
 .modal-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
     max-width: 95%;
     width: 100%;
     max-height: 90vh;
-    overflow-y: auto;
+    overflow: hidden;
     position: relative;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 32px;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px 16px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .modal-body {
-    padding-bottom: 80px; /* Space for fixed buttons */
+    padding: 32px;
+    max-height: calc(90vh - 140px);
+    overflow-y: auto;
 }
 
-.form-actions {
+/* Form Styles */
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.form-group-full {
+    flex: 1 1 100%;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #a0aec0;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+    color: #667eea;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    color: #a0aec0;
+    font-size: 1rem;
+    z-index: 1;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px 12px 40px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    background: #f8f9fa;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
     background: white;
-    padding: 1rem;
-    border-top: 1px solid #ddd;
-    z-index: 10;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-error {
+    border-color: #f56565 !important;
+    background: #fed7d7 !important;
+}
+
+.error-message {
+    color: #f56565;
+    font-size: 0.75rem;
+    margin-top: 4px;
+    display: block;
+}
+
+/* Select Styles */
+.form-control option {
+    padding: 8px;
 }
 
 /* Profile Picture Styles */
 .profile-picture-container {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 24px;
+    margin-bottom: 16px;
+    padding: 24px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #e2e8f0;
 }
 
 .profile-picture-preview {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    border: 2px dashed #ddd;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background-color: #f8f9fa;
+    background: white;
+    position: relative;
 }
 
 .profile-image {
@@ -485,18 +727,250 @@ export default {
 }
 
 .profile-placeholder {
-    color: #6c757d;
-    font-size: 2rem;
+    color: #a0aec0;
+    font-size: 3rem;
 }
 
 .profile-upload-controls {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 12px;
 }
 
 .profile-upload-controls button {
     font-size: 0.875rem;
-    padding: 0.375rem 0.75rem;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.btn-outline-primary {
+    background: white;
+    border: 2px solid #667eea;
+    color: #667eea;
+}
+
+.btn-outline-primary:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-outline-danger {
+    background: white;
+    border: 2px solid #f56565;
+    color: #f56565;
+}
+
+.btn-outline-danger:hover {
+    background: #f56565;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+/* Switch Styles */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.checkbox-label {
+    font-weight: 500;
+    color: #4a5568;
+}
+
+/* Success Alert */
+.success-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    animation: successSlideIn 0.3s ease-out;
+}
+
+@keyframes successSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.success-alert i {
+    font-size: 1.25rem;
+}
+
+/* Form Actions */
+.form-actions {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-cancel {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-cancel:hover {
+    background: #cbd5e0;
+    transform: translateY(-1px);
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-save:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-container {
+        max-width: 98%;
+        max-height: 95vh;
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .modal-body {
+        padding: 24px 20px;
+    }
+
+    .form-row {
+        gap: 16px;
+    }
+
+    .form-group {
+        min-width: 100%;
+    }
+
+    .profile-picture-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+    }
+
+    .form-actions {
+        padding: 20px 24px;
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-header {
+        padding: 16px 20px;
+    }
+
+    .modal-body {
+        padding: 20px 16px;
+    }
+
+    .form-actions {
+        padding: 16px 20px;
+    }
 }
 </style>

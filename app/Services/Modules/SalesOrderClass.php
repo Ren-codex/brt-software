@@ -26,29 +26,41 @@ class SalesOrderClass
     }
 
     public function lists($request){
+        $query = SalesOrder::with(['items', 'arInvoices'])
+            ->when($request->keyword, function ($query,$keyword) {
+                $query->where('so_number', 'LIKE', "%{$keyword}%")
+                      ->orWhereHas('status', function($q) use ($keyword){
+                          $q->where('name', 'LIKE', "%{$keyword}%");
+                      })
+                      ->orWhereHas('customer', function($q) use ($keyword){
+                          $q->where('name', 'LIKE', "%{$keyword}%");
+                      });
+            })
+            ->when($request->status, function ($query, $status) {
+                $query->whereHas('status', function($q) use ($status){
+                    $q->where('slug', $status);
+                });
+            })
+            ->when($request->sub_status, function ($query, $sub_status) {
+                $query->whereHas('subStatus', function($q) use ($sub_status){
+                    $q->where('slug', $sub_status);
+                });
+            });
+
+        if ($request->is_external) {
+            $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Main Warehouse')->pluck('id');
+            $query->whereIn('location_id', $externalLocationIds);
+        } else {
+            $internalLocationIds = \App\Models\ListLocation::where('name', 'Main Warehouse')->pluck('id');
+            $query->where(function ($q) use ($internalLocationIds) {
+                $q->whereIn('location_id', $internalLocationIds)
+                  ->orWhereNull('location_id');
+            });
+        }
+
         $data = SalesOrderResource::collection(
-            SalesOrder::with(['items', 'arInvoices'])
-                ->when($request->keyword, function ($query,$keyword) {
-                    $query->where('so_number', 'LIKE', "%{$keyword}%")
-                          ->orWhereHas('status', function($q) use ($keyword){
-                              $q->where('name', 'LIKE', "%{$keyword}%");
-                          })
-                          ->orWhereHas('customer', function($q) use ($keyword){
-                              $q->where('name', 'LIKE', "%{$keyword}%");
-                          });
-                })
-                ->when($request->status, function ($query, $status) {
-                    $query->whereHas('status', function($q) use ($status){
-                        $q->where('slug', $status);
-                    });
-                })
-                ->when($request->sub_status, function ($query, $sub_status) {
-                    $query->whereHas('subStatus', function($q) use ($sub_status){
-                        $q->where('slug', $sub_status);
-                    });
-                })
-                ->orderBy('created_at', 'DESC')
-                ->paginate($request->count)
+            $query->orderBy('created_at', 'DESC')
+                  ->paginate($request->count)
         );
         return $data;
     }
@@ -66,17 +78,21 @@ class SalesOrderClass
         }
 
         //dd( $request->all());
+        $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Main Warehouse')->pluck('id');
+        $isExternal = in_array($request->location_id, $externalLocationIds->toArray());
+        $prefix = $isExternal ? 'SO-EXT' : 'SO';
         $data = new SalesOrder();
-        $data->so_number = SalesOrder::generateSONumber();
+        $data->so_number = SalesOrder::generateSoNumber(null, $prefix);
         //dd(SalesOrder::generateSONumber());
         $data->order_date = $request->order_date;
         $data->customer_id = $request->customer_id;
         $data->sales_rep_id = $request->sales_rep_id;
         $data->driver_id = $request->driver_id;
         $data->payment_mode = $request->payment_mode;
-        $data->due_date = $request->due_date;
+        $data->due_date = $request->payment_mode === 'credit' ? $request->due_date : null;
+        $data->location_id = $request->location_id;
         $data->added_by_id = auth()->user()->id;
-        $data->status_id = ListStatus::getBySlug('for-payment')->id; //set to "For Payment" 
+        $data->status_id = ListStatus::getBySlug('for-payment')->id; //set to "For Payment"
 
         $data->save();
 
@@ -155,7 +171,8 @@ class SalesOrderClass
             'sales_rep_id' => $request->sales_rep_id,
             'driver_id' => $request->driver_id,
             'payment_mode' => $request->payment_mode,
-            'due_date' => $request->due_date,
+            'due_date' => $request->payment_mode === 'credit' ? $request->due_date : null,
+            'location_id' => $request->location_id,
             'updated_by_id' => auth()->user()->id,
         ]);
 
@@ -209,6 +226,8 @@ class SalesOrderClass
                 'total_discount' => $totalDiscount,
             ]);
         }
+
+
 
         // Reload the data with relationships
         $data = SalesOrder::with(['items', 'customer', 'status', 'updated_by', 'arInvoices'])->find($data->id);

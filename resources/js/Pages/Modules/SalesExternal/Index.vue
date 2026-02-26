@@ -1,14 +1,14 @@
 <template>
   <div>
-    <Head title="Sales" />
-    <PageHeader title="Sales Management" pageTitle="List" />
+    <Head title="Sales External" />
+    <PageHeader title="Sales Management External" pageTitle="List" />
 
     <div class="inventory-container">
       <!-- Minimal Vertical Tabs -->
       <div class="inventory-sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
         <div class="inventory-sidebar-header">
           <i class="ri-shopping-cart-2-line"></i>
-          <h4 v-if="!isSidebarCollapsed">Sales</h4>
+          <h4 v-if="!isSidebarCollapsed">Sales External</h4>
           <button class="sidebar-toggle-btn" @click="toggleSidebar" title="Toggle Sidebar">
             <i :class="isSidebarCollapsed ? 'ri-arrow-right-s-line' : 'ri-arrow-left-s-line'"></i>
           </button>
@@ -49,27 +49,27 @@
           <transition name="inventory-fade" mode="out-in">
             <div :key="activeTab" class="inventory-tab-content">
               <div v-if="activeTab === 'sales_orders'" class="shadow-sm p-3">
-                <SalesOrders :dropdowns="dropdowns"/>
+                <SalesOrders :dropdowns="dropdowns" :isExternal="true"/>
               </div>
 
               <div v-if="activeTab === 'sales_returns'" class="shadow-sm p-3">
-                <SalesReturns :dropdowns="dropdowns"/>
+                <SalesReturns :dropdowns="dropdowns" :isExternal="true"/>
               </div>
 
               <div v-if="activeTab === 'ar_invoices'" class="shadow-sm p-3">
-                <ARInvoices :dropdowns="dropdowns" :isExternal="false"/>
+                <ARInvoices :dropdowns="dropdowns" :isExternal="true"/>
               </div>
 
               <div v-if="activeTab === 'receipts'" class="shadow-sm p-3">
-                 <Receipts :dropdowns="dropdowns"/>
+                 <Receipts :dropdowns="dropdowns" :isExternal="true"/>
               </div>
 
               <div v-if="activeTab === 'remittance'" class="shadow-sm p-3">
-                <Remittances :dropdowns="dropdowns" />
+                <Remittances :dropdowns="dropdowns" :isExternal="true" />
               </div>
 
               <div v-if="activeTab === 'revenue-reports'" class="card shadow-sm p-3">
-                <RevenueReports :dropdowns="dropdowns" />
+                <RevenueReports :dropdowns="dropdowns" :isExternal="true" />
               </div>
             </div>
           </transition>
@@ -98,7 +98,7 @@ export default {
   data() {
     return {
       isSidebarCollapsed: false,
-      activeTab: localStorage.getItem('sales_active_tab') || 'sales_orders',
+      activeTab: localStorage.getItem('sales_external_active_tab') || 'sales_orders',
       filter: {
         keyword: '',
       },
@@ -161,7 +161,7 @@ export default {
     },
     changeTab(tab) {
       this.activeTab = tab;
-      localStorage.setItem('sales_active_tab', tab);
+      localStorage.setItem('sales_external_active_tab', tab);
       this.selectedRow = null;
       this.filter.keyword = '';
     },

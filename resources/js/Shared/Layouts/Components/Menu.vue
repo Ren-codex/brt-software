@@ -59,15 +59,29 @@
                 <li class="nav-item"
                     v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
                     <Link href="/sales-orders" class="nav-link menu-link"
+<<<<<<< HEAD
                         :class="{ 'active': $page.url.startsWith('/sales-orders') }">
+=======
+                    :class="{'active': $page.url.startsWith('/sales-orders') && !$page.url.startsWith('/sales-orders-external') }">
+>>>>>>> 785931004527eaf127716a6fe78a3d21a3e83d0e
                     <i class="ri-shopping-cart-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Management</span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item"
-                    v-if="$page.props.roles.includes('Sales Manager') || $page.props.roles.includes('Administrator')">
+
+                <li class="nav-item" v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
+                    <Link href="/sales-orders-external" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/sales-orders-external') }">
+                    <i class="ri-shopping-cart-fill"></i>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Management External</span>
+                    <span class="menu-link-bg"></span>
+                    <span class="active-indicator"></span>
+                    </Link>
+                </li>
+
+                  <li class="nav-item" v-if="$page.props.roles.includes('Sales Manager') || $page.props.roles.includes('Administrator')">
                     <Link href="/customers" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/customers') }">
                     <i class="ri-team-fill"></i>
@@ -157,6 +171,15 @@
                                     :class="{ 'active': $page.url === '/libraries/units' }" data-key="t-basic">
                                 <!-- <span class="submenu-dot"></span> -->
                                 <span class="submenu-text">Units</span>
+                                </Link>
+                            </li>
+
+                            <li class="nav-item submenu-item">
+                                <Link href="/libraries/locations" class="nav-link submenu-link"
+                                    :class="{'active': $page.url === '/libraries/locations' }"
+                                    data-key="t-basic">
+                                    <!-- <span class="submenu-dot"></span> -->
+                                    <span class="submenu-text">Locations</span>
                                 </Link>
                             </li>
 

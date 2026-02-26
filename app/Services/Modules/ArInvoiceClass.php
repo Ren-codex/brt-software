@@ -22,8 +22,21 @@ class ArInvoiceClass
         $this->print = $print;
     }
     public function lists($request){
+        $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Main Warehouse')->pluck('id');
+        $internalLocationIds = \App\Models\ListLocation::where('name', 'Main Warehouse')->pluck('id');
+
         $data = ArInvoiceResource::collection(
-            ArInvoice::with(['sales_order.customer', 'sales_order.items.product', 'status'])
+            ArInvoice::with(['sales_order.customer', 'sales_order.items.product', 'sales_order.status', 'status'])
+                ->whereHas('sales_order', function ($q) use ($request, $externalLocationIds, $internalLocationIds) {
+                    if ($request->is_external) {
+                        $q->whereIn('location_id', $externalLocationIds);
+                    } else {
+                        $q->where(function ($subQ) use ($internalLocationIds) {
+                            $subQ->whereIn('location_id', $internalLocationIds)
+                                 ->orWhereNull('location_id');
+                        });
+                    }
+                })
                 ->when($request->keyword, function ($query,$keyword) {
                     $query->where('invoice_number', 'LIKE', "%{$keyword}%")
                           ->orWhereHas('sales_order', function($q) use ($keyword){

@@ -79,7 +79,7 @@
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0" @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')" @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
@@ -221,7 +221,7 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import Payment from '../ARInvoices/Modals/Payment.vue';
 export default {
     components: { PageHeader, Pagination, Multiselect, Payment },
-    props: ['dropdowns'],
+    props: ['dropdowns', 'isExternal'],
     data() {
         return {
             currentUrl: window.location.origin,
@@ -289,7 +289,8 @@ export default {
                 params : {
                     option: 'lists',
                     keyword: this.filter.keyword,
-                    count: 10
+                    count: 10,
+                    is_external: this.isExternal ? 1 : 0
                 }
             })
                 .then(response => {

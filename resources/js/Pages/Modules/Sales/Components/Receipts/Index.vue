@@ -171,7 +171,7 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 
 export default {
     components: { PageHeader, Pagination },
-    props: ['dropdowns'],
+    props: ['dropdowns', 'isExternal'],
     data(){
         return {
 
@@ -210,7 +210,8 @@ export default {
                 params : {
                     keyword: this.filter.keyword,
                     count: 10,
-                    option: 'lists'
+                    option: 'lists',
+                    is_external: this.isExternal ? 1 : 0
                 }
             })
             .then(response => {
@@ -255,6 +256,7 @@ export default {
         },
 
         onPrint(id) {
+          console.log('Print receipt with ID:', id);
             window.open(`/receipts/${id}?option=print&type=receipt`);
         },
 
