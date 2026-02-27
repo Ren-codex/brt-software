@@ -65,7 +65,7 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar-xs me-2">
-                                                <img v-if="list.avatar" :src="'/storage/' + list.avatar" alt="Avatar" class="rounded-circle avatar-xs">
+                                                <img v-if="list.avatar" :src="getAvatarUrl(list.avatar)" alt="Avatar" class="rounded-circle avatar-xs">
                                                 <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
                                                     <i class="ri-user-line text-muted"></i>
                                                 </div>
@@ -112,9 +112,6 @@
                                             <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                 <i class="ri-pencil-fill"></i>
                                             </b-button>
-                                            <!-- <b-button @click="onDelete(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </b-button> -->
                                         </div>
                                     </td>
                                 </tr>
@@ -258,8 +255,20 @@ export default {
 
         onEmployeeSaved() {
             this.fetch();
+        },
 
-            //this.$toast.success('Employee saved successfully!');
+        getAvatarUrl(avatar) {
+            if (!avatar) return null;
+            // If avatar already has full URL or starts with storage/, return as-is
+            if (avatar.startsWith('http') || avatar.startsWith('storage/')) {
+                return '/' + avatar;
+            }
+            // If avatar already has avatars/ prefix
+            if (avatar.startsWith('avatars/')) {
+                return '/storage/' + avatar;
+            }
+            // Otherwise add avatars/ prefix
+            return '/storage/avatars/' + avatar;
         }
     }
 }

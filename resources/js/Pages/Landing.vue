@@ -281,10 +281,23 @@ const scrollToSection = (sectionId) => {
     }
 };
 
-const submitContactForm = () => {
-    // TODO: Implement API call to submit contact form
-    alert('Thank you for your message! We will get back to you soon.');
-    contactForm.value = { name: '', email: '', phone: '', message: '' };
+const submitContactForm = async () => {
+    try {
+        const response = await axios.post('/api/contacts', {
+            name: contactForm.value.name,
+            email: contactForm.value.email,
+            phone: contactForm.value.phone,
+            message: contactForm.value.message
+        });
+        
+        if (response.data.status) {
+            alert(response.data.message || 'Thank you for your message! We will get back to you soon.');
+            contactForm.value = { name: '', email: '', phone: '', message: '' };
+        }
+    } catch (error) {
+        console.error('Error submitting contact form:', error);
+        alert('There was an error sending your message. Please try again.');
+    }
 };
 
 // ============================================================================

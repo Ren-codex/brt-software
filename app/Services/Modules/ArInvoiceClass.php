@@ -22,20 +22,17 @@ class ArInvoiceClass
         $this->print = $print;
     }
     public function lists($request){
-        $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Main Warehouse')->pluck('id');
-        $internalLocationIds = \App\Models\ListLocation::where('name', 'Main Warehouse')->pluck('id');
-
         $data = ArInvoiceResource::collection(
             ArInvoice::with(['sales_order.customer', 'sales_order.items.product', 'sales_order.status', 'status'])
-                ->whereHas('sales_order', function ($q) use ($request, $externalLocationIds, $internalLocationIds) {
-                    if ($request->is_external) {
-                        $q->whereIn('location_id', $externalLocationIds);
-                    } else {
-                        $q->where(function ($subQ) use ($internalLocationIds) {
-                            $subQ->whereIn('location_id', $internalLocationIds)
-                                 ->orWhereNull('location_id');
-                        });
-                    }
+                ->when($request->location_id, function ($query, $locationId) {
+                    $query->whereHas('sales_order', function ($q) use ($locationId) {
+                        $q->where('location_id', $locationId);
+                    });
+                })
+                ->when($request->status, function ($query, $status) {
+                    $query->whereHas('status', function ($q) use ($status) {
+                        $q->where('slug', $status);
+                    });
                 })
                 ->when($request->keyword, function ($query,$keyword) {
                     $query->where('invoice_number', 'LIKE', "%{$keyword}%")
@@ -105,9 +102,9 @@ class ArInvoiceClass
         $sales_order = SalesOrder::findOrFail($ar_invoice->sales_order_id);
 
         if($ar_invoice->balance_due == 0.00){
-           $ar_invoice->status_id = 9; // PAID'
+           $ar_invoice->status_id = ListStatus::getBySlug('paid')->id; // Pending; // PAID'
             $sales_order->update([
-                'status_id' => 10,// CLOSED,
+                'status_id' => ListStatus::getBySlug('closed')->id,// CLOSED,
             ]);
 
             $sold_quantity = $sales_order->items->sum('quantity');
@@ -125,9 +122,9 @@ class ArInvoiceClass
             ]);
         }
         else{
-            $ar_invoice->status_id = 11; // PARTIALLY PAID
+            $ar_invoice->status_id = ListStatus::getBySlug('partially-paid')->id; // PARTIALLY PAID
             $sales_order->update([
-                'status_id' => 11,// PARTIALLY PAID
+                'status_id' => ListStatus::getBySlug('partially-paid')->id,// PARTIALLY PAID
             ]);
         }
         $ar_invoice->save();
