@@ -3,6 +3,8 @@
     <Head title="Sales" />
     <PageHeader title="Sales Management" pageTitle="List" />
 
+
+
     <div class="inventory-container">
       <!-- Minimal Vertical Tabs -->
       <div class="inventory-sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">

@@ -206,6 +206,30 @@ class DropdownClass
         return  $data;
     }
 
+    public function sales_statuses(){
+        // Get sales order related statuses
+        $data = ListStatus::whereIn('slug', [
+            'pending',
+            'approved',
+            'disapproved',
+            'cancelled',
+            'for-delivery',
+            'delivered',
+            'paid',
+            'unpaid',
+            'partially-paid',
+            'for-payment',
+            'liquidated'
+        ])->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+                'slug' => $item->slug
+            ];
+        });
+        return  $data;
+    }
+
 
     public function payroll_settings(){
         $data = PayrollSetting::where('is_active',1)->get()->map(function ($item) {

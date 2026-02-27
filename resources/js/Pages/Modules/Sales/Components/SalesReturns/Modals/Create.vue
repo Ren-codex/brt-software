@@ -104,6 +104,8 @@
                                 </div>
 
                              </div>
+
+                             
                             <div class="mb-2">
                                 <b-button :disabled="!form.customer_id || !form.order_date" @click="addItem()"
                                     size="sm" variant="primary">
@@ -111,6 +113,7 @@
                                     Add Item
                                 </b-button>
                             </div>
+                            
                             <div class="form-row">
                                 <div style="height: calc(100vh - 400px);  overflow: auto; width: 100%;">
 

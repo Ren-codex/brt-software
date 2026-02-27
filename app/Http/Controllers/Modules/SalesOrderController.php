@@ -45,6 +45,7 @@ class SalesOrderController extends Controller
                         'sales_reps' => $this->dropdown->sales_reps(),
                         'drivers' => $this->dropdown->drivers(),
                         'locations' => $this->dropdown->locations(),
+                        'sales_statuses' => $this->dropdown->sales_statuses(),
                     ],
                     'isExternal' => false,
 
@@ -54,10 +55,11 @@ class SalesOrderController extends Controller
     }
 
     public function store(SalesOrderRequest $request){
-        $request->merge(['is_external' => false]);
+     
         $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);
         });
+
 
         return back()->with([
             'data' => $result['data'],
