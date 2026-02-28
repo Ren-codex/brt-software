@@ -18,8 +18,11 @@ class ContactClass
                       ->orWhereRaw('LOWER(message) LIKE ?', ["%{$keyword}%"]);
                 });
             })
-            ->when($request->unread, function ($query) {
+            ->when($request->unread === true, function ($query) {
                 $query->where('is_read', false);
+            })
+            ->when($request->unread === false, function ($query) {
+                $query->where('is_read', true);
             })
             ->orderBy('created_at', 'DESC')
             ->paginate($request->count ?? 10)
@@ -44,9 +47,12 @@ class ContactClass
         ];
     }
 
-    public function markAsRead($id){
+public function markAsRead($id){
         $data = Contact::findOrFail($id);
         $data->update(['is_read' => true]);
+        
+        // Broadcast event using Reverb
+        event(new \App\Events\ContactReadEvent($data->id, true));
 
         return [
             'data' => new ContactResource($data),
