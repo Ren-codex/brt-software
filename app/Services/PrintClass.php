@@ -10,6 +10,7 @@ class PrintClass
 {  
 
     public function print($id, $request){
+
         switch($request->type){
             case 'sales_order':
                 return $this->printSalesOrder($id);
@@ -55,7 +56,8 @@ class PrintClass
             'items' => $items,
         ];
 
-        $pdf = \PDF::loadView('prints.purchase-order',$array)->setPaper('A4', 'portrait');
+
+        $pdf = \PDF::loadView('prints.purchase-order',$array)->setPaper('A4', 'landscape');
         return $pdf->stream('purchase-order-'.$purchase_order->po_number.'.pdf');
 
     }

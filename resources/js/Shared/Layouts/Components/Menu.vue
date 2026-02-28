@@ -59,11 +59,7 @@
                 <li class="nav-item"
                     v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
                     <Link href="/sales-orders" class="nav-link menu-link"
-<<<<<<< HEAD
-                        :class="{ 'active': $page.url.startsWith('/sales-orders') }">
-=======
                     :class="{'active': $page.url.startsWith('/sales-orders') && !$page.url.startsWith('/sales-orders-external') }">
->>>>>>> 785931004527eaf127716a6fe78a3d21a3e83d0e
                     <i class="ri-shopping-cart-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Management</span>
                     <span class="menu-link-bg"></span>
@@ -111,7 +107,7 @@
                     </Link>
                 </li>
                 <li class="nav-item">
-                    <Link href="payrolls" class="nav-link menu-link"
+                    <Link href="/payrolls" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/payrolls') }">
                     <i class="ri-wallet-2-line"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Payroll</span>
