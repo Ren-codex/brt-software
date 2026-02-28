@@ -68,7 +68,14 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
+        
+        // Contact Management
+        Route::resource('/contacts', App\Http\Controllers\Modules\ContactController::class);
+        Route::patch('/contacts/{id}/mark-read', [App\Http\Controllers\Modules\ContactController::class, 'markAsRead']);
     });
 });
+
+// Public route for submitting contact form from landing page
+Route::post('/api/contacts', [App\Http\Controllers\Modules\ContactController::class, 'store']);
 
 require __DIR__.'/auth.php';

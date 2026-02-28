@@ -395,7 +395,19 @@ export default {
             this.form.position_id = data.position_id;
             this.form.is_regular = data.is_regular;
             this.form.is_active = data.is_active;
-            this.previewImage = data.avatar ? `${this.currentUrl}/storage/${data.avatar}` : null;
+            this.form.is_blacklisted = data.is_blacklisted;
+            
+            // Handle avatar preview - construct the correct storage path
+            if (data.avatar) {
+                // Check if avatar already has 'avatars/' prefix or just the filename
+                const avatarPath = data.avatar.startsWith('avatars/') || data.avatar.startsWith('storage/') 
+                    ? data.avatar 
+                    : `avatars/${data.avatar}`;
+                this.previewImage = `${this.currentUrl}/storage/${avatarPath}`;
+            } else {
+                this.previewImage = null;
+            }
+            
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;

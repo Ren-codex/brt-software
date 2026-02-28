@@ -23,10 +23,36 @@
                 <div class="card-body m-2 p-3">
                    
                     <div class="search-section">
-                        <div class="search-wrapper">
-                            <i class="ri-search-line search-icon"></i>
-                            <input type="text"  v-model="filter.keyword" 
-                                placeholder="Search sales order..." class="search-input">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-search-line search-icon"></i>
+                                    <input type="text"  v-model="filter.keyword" 
+                                        placeholder="Search sales order..." class="search-input">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-map-pin-line search-icon"></i>
+                                    <select v-model="filter.location_id" @change="fetch()" class="search-input">
+                                        <option :value="null">All Locations</option>
+                                        <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
+                                            {{ location.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-flag-line search-icon"></i>
+                                    <select v-model="filter.status" @change="fetch()" class="search-input">
+                                        <option :value="null">All Status</option>
+                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug" >
+                                            {{ status.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -102,7 +128,7 @@
                                     <th style="width: 10%;" class="text-center border-none">Customer</th>
                                     <th style="width: 10%;" class="text-center border-none">Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Status</th>
-                                     <th style="width: 8%;" class="text-center border-none">SubStatus</th>
+                                     <!-- <th style="width: 8%;" class="text-center border-none">SubStatus</th> -->
                                     <th style="width: 10%;" class="text-center border-none">Total Amount</th>
                                     <th style="width: 10%;" class="text-center border-none">Due Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Paid %</th>
@@ -131,13 +157,13 @@
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
                                         </td>
-                                          <td class="text-center">
+                                          <!-- <td class="text-center">
                                             <span
                                                 v-if="list.sub_status?.name"
                                                 :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
                                                 {{ list.sub_status?.name  }}
                                             </span>
-                                        </td>
+                                        </td> -->
                                         <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
                                             {{ list.due_date }}
@@ -234,10 +260,6 @@
                                                                             </tr>
                                                                         </tbody>
                                                                     </table>
-                                                                    <!-- <div v-for="item in list.items" :key="item.id" class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                                                                        <span>{{ getProduct(item.product_id).name || 'Unknown Product' }}</span>
-                                                                        <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
-                                                                    </div> -->
                                                                 </div>
                                                                 <p v-else class="text-muted mb-0">No items found</p>
                                                             </div>
@@ -248,6 +270,13 @@
                                         </td>
                                     </tr>
                                 </template>
+                                <tr v-if="lists.length === 0">
+                                    <td colspan="9" class="text-center py-4">
+                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
+                                        <p class="mt-2 mb-0">No sales order found</p>
+                                        <small class="text-muted">Try changing your search or filter criteria</small>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -368,7 +397,9 @@ export default {
             meta: {},
             links: {},
             filter: {
-                keyword: null
+                keyword: null,
+                location_id: null,
+                status: null
             },
             index: null,
             selectedRow: null,
@@ -428,6 +459,8 @@ export default {
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
+                    location_id: this.filter.location_id,
+                    status: this.filter.status,
                     count: 10,
                     option: 'lists'
                 }

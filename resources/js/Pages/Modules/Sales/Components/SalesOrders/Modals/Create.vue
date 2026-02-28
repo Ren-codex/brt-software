@@ -2,7 +2,7 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-fullscreen " @click.stop>
             <div class="modal-header ">
-                <h2>{{ editable ? 'Update Supplier' : 'Add Sales Order' }}</h2>
+                <h2>{{ editable ? 'Update Sales Order' : 'Add Sales Order' }}</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -105,13 +105,13 @@
 
                              </div>
 
-                             <div v-if="$page.props.isExternal" class="form-row">
+                             <div class="form-row">
                                 <div class="form-group form-group-half">
                                     <label for="location_id" class="form-label">Location<span
                                         class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-map-pin-line input-icon"></i>
-                                        <b-form-select v-model="form.location_id" :options="filteredLocations"
+                                        <b-form-select v-model="form.location_id" :options="dropdowns.locations"
                                             text-field="name" value-field="value"
                                             :class="{ 'input-error': form.errors.location_id }" class="form-control">
                                             <template #first>
@@ -391,13 +391,7 @@ export default {
                 { value: 'wholesale', text: 'Wholesale Price' }
             ];
         },
-        filteredLocations() {
-            if (this.$page.props.isExternal) {
-                return this.dropdowns.locations.filter(location => location.name !== 'Main Warehouse');
-            } else {
-                return this.dropdowns.locations.filter(location => location.name === 'Main Warehouse');
-            }
-        }
+
     },
     methods: {
         cleanUnitCost(value) {

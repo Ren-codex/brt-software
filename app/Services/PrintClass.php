@@ -21,7 +21,7 @@ class PrintClass
             case 'remittance':
                 return $this->printRemittance($id);
             break;
-            case 'invoice':
+            case 'ar_invoice':
                 return $this->printArInvoice($id);
             break;
             case 'receipt':
@@ -105,6 +105,8 @@ class PrintClass
             'sales_order' => $sales_order,
             'items' => $items,
         ];
+
+        dd('hey');
 
         $pdf = \PDF::loadView('prints.receipt',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($receipt->receipt_number.'.pdf');

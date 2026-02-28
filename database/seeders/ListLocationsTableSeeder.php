@@ -21,7 +21,7 @@ class ListLocationsTableSeeder extends Seeder
             0 =>
             array (
                 'id' => 1,
-                'name' => 'Main Warehouse',
+                'name' => 'Zamboanga City',
                 'is_active' => 1,
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
@@ -29,7 +29,7 @@ class ListLocationsTableSeeder extends Seeder
             1 =>
             array (
                 'id' => 2,
-                'name' => 'Branch Office',
+                'name' => 'Dipolog City',
                 'is_active' => 1,
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
@@ -37,7 +37,7 @@ class ListLocationsTableSeeder extends Seeder
             2 =>
             array (
                 'id' => 3,
-                'name' => 'Retail Store',
+                'name' => 'Pagadian City',
                 'is_active' => 1,
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
