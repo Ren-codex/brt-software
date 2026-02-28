@@ -67,6 +67,7 @@ export default {
             try {
                 if (this.resolvePromise) {
                     this.resolvePromise(true);
+                     this.$emit('update', true);
                 }
                 this.showModal = false;
             } catch (error) {
@@ -75,6 +76,7 @@ export default {
                 }
             } finally {
                 this.loading = false;
+               
             }
         }
     }

@@ -86,7 +86,7 @@
                     <Link href="/contacts" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/contacts') }">
                     <i class="ri-mail-send-line"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Comment and Suggestions</span>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Guest Messages </span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
