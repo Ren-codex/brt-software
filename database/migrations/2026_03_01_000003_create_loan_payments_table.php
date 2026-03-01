@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedInteger('loan_id');
             $table->foreign('loan_id')->references('id')->on('loans')->onDelete('cascade');
             $table->decimal('amount', 15, 2);
-            $table->date('paid_date');
+            $table->string('paid_date');
             $table->string('paid_term');
             $table->text('remarks')->nullable();
             $table->unsignedInteger('added_by_id')->nullable();

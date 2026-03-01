@@ -20,7 +20,7 @@ class LoanPaymentResource extends JsonResource
             'loan_no' => $this->loan?->loan_no,
             'employee' => $this->loan?->employee?->fullname,
             'amount' => $this->amount,
-            'paid_date' => $this->paid_date?->format('Y-m-d'),
+            'paid_date' => $this->paid_date,
             'paid_term' => $this->paid_term,
             'remarks' => $this->remarks,
             'added_by_id' => $this->added_by_id,

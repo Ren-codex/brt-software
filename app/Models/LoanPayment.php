@@ -16,10 +16,6 @@ class LoanPayment extends Model
         'added_by_id',
     ];
 
-    protected $casts = [
-        'paid_date' => 'date',
-    ];
-
     public function loan(): BelongsTo
     {
         return $this->belongsTo(Loan::class);

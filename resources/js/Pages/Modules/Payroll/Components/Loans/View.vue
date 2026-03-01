@@ -120,7 +120,7 @@
               </div>
               <div style="margin-left: -15px" class="d-flex align-items-center gap-2">
                 <h4 class="header-title mb-1">Payments</h4>
-                <button v-if="loan.status == 'approved'" @click="addPayment" class="create-btn" style="right: 25px; position: absolute">
+                <button v-if="loan.status == 'approved'" type="button" @click="addPayment" class="create-btn" style="right: 25px; position: absolute">
                   Pay Now
                 </button>
               </div>
@@ -142,17 +142,11 @@
                   </tr>
                   <tr v-for="(payment, index) in loan.payments" :key="payment.id || index">
                     <td>{{ index + 1 }}</td>
-                    <td>{{ formatDate(payment.payment_date) }}</td>
+                    <td>{{ payment.paid_date }}</td>
                     <td>{{ formatCurrency(payment.amount) }}</td>
                   </tr>
                 </tbody>
               </table>
-              <div class="timeline-footer" v-if="hasMore">
-                <button class="btn-load-more" @click="loadMoreLogs">
-                  <i class="ri-arrow-down-line"></i>
-                  Show More
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -195,11 +189,9 @@
   </div>
 
   <Create @update="refresh" :dropdowns="dropdowns" ref="create" />
-  <PaymentModal
-    v-if="loan"
+  <LoanPaymentModal
     ref="paymentModal"
     :loan-id="loan.id"
-    :default-paid-date="todayDate"
     :monthly-amount="suggestedPaymentAmount"
     :remaining-months="remainingMonthsToPay"
     @saved="onPaymentSaved"
@@ -209,12 +201,12 @@
 <script>
 import Swal from 'sweetalert2';
 import Create from './Create.vue';
-import PaymentModal from './Modals/Payment.vue';
+import LoanPaymentModal from './Modals/Payment.vue';
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 
 export default {
   name: 'LoanView',
-  components: { Create, PaymentModal, TransactionLogs },
+  components: { Create, LoanPaymentModal, TransactionLogs },
   props: {
     dropdowns: Object,
     loan: {

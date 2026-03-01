@@ -41,8 +41,7 @@ class LoanPaymentClass
             $loan = Loan::findOrFail($request->loan_id);
             $amount = (float) $request->amount;
             $remainingBalance = (float) $loan->remaining_balance;
-            $paidTermMonths = max(1, (int) $request->input('paid_term_months', 1));
-            $paidTermLabel = $request->input('paid_term') ?: ($paidTermMonths . ' month(s)');
+            $paidTermMonths = max(1, (int) $request->input('paid_term', 1));
 
             if ($amount > $remainingBalance) {
                 throw ValidationException::withMessages([
@@ -54,7 +53,7 @@ class LoanPaymentClass
                 'loan_id' => $loan->id,
                 'amount' => $amount,
                 'paid_date' => $request->paid_date,
-                'paid_term' => $paidTermLabel,
+                'paid_term' => $paidTermMonths,
                 'remarks' => $request->remarks,
                 'added_by_id' => auth()->id(),
             ]);
