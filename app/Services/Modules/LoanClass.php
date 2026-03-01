@@ -60,7 +60,7 @@ class LoanClass
                 'remaining_term_to_pay' => $request->term_months * 2,
             ]);
     
-            $this->log($data->id, 'added', 'Loan created');
+            $this->log($data->id, 'created', 'Loan created');
     
             db::commit();
             return [
