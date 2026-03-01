@@ -26,9 +26,9 @@ class DashboardController extends Controller
     public function index(Request $request){
         // Sales Statistics
         $totalSales = SalesOrder::sum('total_amount');
-        $totalReceipts = Receipt::sum('amount_paid');
+        $totalReceipts = Receipt::count();
         $totalOutstanding = ArInvoice::sum('balance_due');
-        $totalCustomers = Customer::count();
+        $totalCustomers = SalesOrder::distinct('customer_id')->count('customer_id');
 
         // Monthly sales data for chart (last 12 months)
         $monthlySales = [];

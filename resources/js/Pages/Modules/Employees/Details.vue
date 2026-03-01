@@ -130,6 +130,44 @@
 
             <!-- Right Column - Statistics & Records -->
             <div class="col-md-8">
+                <!-- Account Details Section - Only show if employee has user account -->
+                <div v-if="employee.user" class="emp-incentives-section">
+                    <div class="emp-incentives-card">
+                        <div class="emp-incentives-header">
+                            <h3>
+                                <i class="ri-account-circle-line"></i>
+                                Account Details
+                            </h3>
+                        </div>
+                        <div class="emp-incentives-stats">
+                            <div class="emp-incentives-stat">
+                                <div class="emp-stat-label">Username</div>
+                                <div class="emp-stat-value" style="font-size: 20px;">
+                                    <i class="ri-user-line" style="font-size: 16px; color: #6c757d;"></i>
+                                    {{ employee.user.username || '-' }}
+                                </div>
+                            </div>
+                            <div class="emp-incentives-stat">
+                                <div class="emp-stat-label">Role</div>
+                                <div class="emp-stat-value" style="font-size: 20px;">
+                                    <i class="ri-shield-line" style="font-size: 16px; color: #6c757d;"></i>
+                                    {{ employee.user.role ? employee.user.role.title : '-' }}
+                                </div>
+                                
+                            </div>
+                            <div class="emp-incentives-stat">
+                                <div class="emp-stat-label">Account Status</div>
+                                <div class="emp-stat-value">
+                                    <span class="emp-status-indicator" :class="employee.user.is_active ? 'emp-status-success' : 'emp-status-danger'">
+                                        <i :class="employee.user.is_active ? 'ri-check-circle-line' : 'ri-close-circle-line'"></i>
+                                        {{ employee.user.is_active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Incentives Earning Per Payroll -->
                 <div class="emp-incentives-section">
                     <div class="emp-incentives-card">
@@ -292,7 +330,7 @@ export default {
     name: 'EmployeeDetails',
     data() {
         return {
-            loanCollapsed: true,
+            loanCollapsed: false,
             selectedYear: new Date().getFullYear(), // Current year
             selectedMonth: new Date().getMonth() + 1, // Current month (1-12)
             years: Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i), // Last 10 years

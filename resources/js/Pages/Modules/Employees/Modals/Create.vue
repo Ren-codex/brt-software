@@ -21,8 +21,12 @@
             <div class="modal-body">
                 <form @submit.prevent="submit">
                     <!-- Profile Picture - Simple -->
-                    <div class="profile-section">
-                        <div class="profile-picture">
+                    <div class="profile-section" :class="{ 'has-error': form.errors.avatar }">
+                        <div class="profile-section-header">
+                            <label>Profile Photo <span class="required">*</span></label>
+                            <span class="error-text" v-if="form.errors.avatar">{{ form.errors.avatar }}</span>
+                        </div>
+                        <div class="profile-picture" :class="{ 'error-border': form.errors.avatar }">
                             <img v-if="previewImage" :src="previewImage" alt="Profile">
                             <div v-else class="profile-placeholder">
                                 <i class="ri-user-line"></i>
@@ -247,9 +251,17 @@
                             Account Credentials
                         </h3>
 
-                        <div class="form-grid">
+                        <div class="toggle-wrapper" style="margin-bottom: 16px;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" v-model="needsAccount">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">{{ needsAccount ? 'Employee needs account access' : 'No account access required' }}</span>
+                        </div>
+
+                        <div class="form-grid" v-if="needsAccount">
                             <div class="form-group">
-                                <label>Username <span class="required">*</span></label>
+                                <label>Username</label>
                                 <input
                                     type="text"
                                     v-model="form.username"
@@ -261,7 +273,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Password <span class="required">*</span></label>
+                                <label>Password</label>
                                 <div class="password-input">
                                     <input
                                         :type="togglePassword ? 'text' : 'password'"
@@ -278,7 +290,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Confirm Password <span class="required">*</span></label>
+                                <label>Confirm Password</label>
                                 <div class="password-input">
                                     <input
                                         :type="toggleConfirm ? 'text' : 'password'"
@@ -359,6 +371,7 @@ export default {
             saveSuccess: false,
             previewImage: null,
             passwordMismatch: false,
+            needsAccount: false,
         }
     },
     watch: {
@@ -377,6 +390,7 @@ export default {
             this.previewImage = null;
             this.editable = false;
             this.saveSuccess = false;
+            this.needsAccount = false;
             this.showModal = true;
         },
         edit(data) {
@@ -407,6 +421,9 @@ export default {
             } else {
                 this.previewImage = null;
             }
+            
+            // Set needsAccount based on whether user exists
+            this.needsAccount = !!data.user;
             
             this.editable = true;
             this.saveSuccess = false;
@@ -465,6 +482,7 @@ export default {
             this.editable = false;
             this.saveSuccess = false;
             this.passwordMismatch = false;
+            this.needsAccount = true;
             this.showModal = false;
         },
         checkPasswordMatch() {
@@ -484,12 +502,13 @@ export default {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1050;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.3s ease;
 }
 
 .modal-overlay.active {
@@ -498,30 +517,28 @@ export default {
 
 .modal-container {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     width: 90%;
     max-width: 800px;
     max-height: 90vh;
     overflow: hidden;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 0.2s ease;
+    transform: translateY(30px) scale(0.95);
+    transition: all 0.3s ease;
 }
 
 .modal-overlay.active .modal-container {
-    transform: translateY(0);
-    opacity: 1;
+    transform: translateY(0) scale(1);
 }
 
 /* Simple Header */
 .modal-header {
     padding: 20px 24px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e9ecef;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
+    background: #C4DAD2;
 }
 
 .header-title {
@@ -532,30 +549,35 @@ export default {
 
 .header-title i {
     font-size: 24px;
-    color: #0ab39c;
+    color: #267A4C;
 }
 
 .header-title h2 {
     font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
+    font-weight: 700;
+    color: #16423C;
     margin: 0;
 }
 
 .close-btn {
-    background: none;
+    background: rgba(255, 255, 255, 0.2);
     border: none;
-    color: #9ca3af;
+    color: white;
     font-size: 20px;
     cursor: pointer;
     padding: 4px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .close-btn:hover {
-    background: #f3f4f6;
-    color: #4b5563;
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
 }
 
 /* Modal Body */
@@ -572,8 +594,20 @@ export default {
     gap: 20px;
     padding: 16px;
     background: #f9fafb;
-    border-radius: 8px;
+    border-radius: 12px;
     margin-bottom: 24px;
+}
+
+.profile-section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.profile-section-header label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2c3e50;
 }
 
 .profile-picture {
@@ -594,7 +628,7 @@ export default {
 .profile-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #0ab39c 0%, #3577f1 100%);
+    background: #3D8D7A;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -619,17 +653,17 @@ export default {
 .section-title {
     font-size: 1rem;
     font-weight: 600;
-    color: #374151;
+    color: #2c3e50;
     margin-bottom: 16px;
     padding-bottom: 8px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e9ecef;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .section-title i {
-    color: #0ab39c;
+    color: #267A4C;
 }
 
 /* Form Grid */
@@ -651,40 +685,40 @@ export default {
 
 .form-group label {
     font-size: 0.875rem;
-    font-weight: 500;
-    color: #4b5563;
+    font-weight: 600;
+    color: #2c3e50;
 }
 
 .required {
-    color: #ef4444;
+    color: #e74c3c;
     margin-left: 2px;
 }
 
 .form-group input,
 .form-group select {
     padding: 10px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
     font-size: 0.875rem;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     background: white;
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #0ab39c;
-    box-shadow: 0 0 0 3px rgba(10, 179, 156, 0.1);
+    border-color: #2e8b57;
+    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
 }
 
 .form-group input.error,
 .form-group select.error {
-    border-color: #ef4444;
+    border-color: #e74c3c;
     background: #fef2f2;
 }
 
 .error-text {
-    color: #ef4444;
+    color: #e74c3c;
     font-size: 0.75rem;
 }
 
@@ -705,15 +739,15 @@ export default {
     right: 8px;
     background: none;
     border: none;
-    color: #9ca3af;
+    color: #7f8c8d;
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .password-toggle:hover {
-    color: #0ab39c;
+    color: #2e8b57;
 }
 
 /* Toggle Switch */
@@ -727,8 +761,8 @@ export default {
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 44px;
-    height: 24px;
+    width: 50px;
+    height: 26px;
 }
 
 .toggle-switch input {
@@ -744,73 +778,73 @@ export default {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #d1d5db;
-    transition: 0.2s;
-    border-radius: 24px;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 26px;
 }
 
 .toggle-slider:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
+    height: 20px;
+    width: 20px;
     left: 3px;
     bottom: 3px;
     background-color: white;
-    transition: 0.2s;
+    transition: 0.3s;
     border-radius: 50%;
 }
 
 input:checked + .toggle-slider {
-    background: linear-gradient(135deg, #0ab39c 0%, #3577f1 100%);
+    background-color: #2e8b57;
 }
 
 input:checked + .toggle-slider:before {
-    transform: translateX(20px);
+    transform: translateX(24px);
 }
 
 .toggle-label {
     font-size: 0.875rem;
-    color: #4b5563;
+    color: #2c3e50;
 }
 
 .text-success {
-    color: #10b981;
+    color: #2e8b57;
 }
 
 .text-danger {
-    color: #ef4444;
+    color: #e74c3c;
 }
 
 /* Buttons */
 .btn-outline {
     padding: 6px 12px;
     background: white;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
     font-size: 0.875rem;
-    color: #4b5563;
+    color: #2c3e50;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    font-weight: 500;
 }
 
 .btn-outline:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
+    background: #f8f9fa;
+    border-color: #7f8c8d;
 }
 
 .btn-outline-danger {
-    color: #ef4444;
-    border-color: #fecaca;
+    color: #e74c3c;
+    border-color: #f8d7da;
 }
 
 .btn-outline-danger:hover {
-    background: #fee2e2;
-    border-color: #ef4444;
-    color: #dc2626;
+    background: #fef2f2;
+    border-color: #e74c3c;
 }
 
 /* Form Actions */
@@ -820,16 +854,16 @@ input:checked + .toggle-slider:before {
     gap: 12px;
     margin-top: 32px;
     padding-top: 20px;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #e9ecef;
 }
 
 .btn {
     padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 500;
+    border-radius: 8px;
+    font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     border: none;
     display: inline-flex;
     align-items: center;
@@ -837,23 +871,25 @@ input:checked + .toggle-slider:before {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #0ab39c 0%, #3577f1 100%);
+    background: #3D8D7A;
     color: white;
+    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(10, 179, 156, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(61, 141, 122, 0.4);
 }
 
 .btn-secondary {
-    background: white;
-    border: 1px solid #d1d5db;
-    color: #4b5563;
+    background: transparent;
+    border: 1px solid #e9ecef;
+    color: #7f8c8d;
 }
 
 .btn-secondary:hover {
-    background: #f9fafb;
+    background: #f8f9fa;
+    border-color: #7f8c8d;
 }
 
 .btn:disabled {
@@ -867,15 +903,16 @@ input:checked + .toggle-slider:before {
     align-items: center;
     gap: 12px;
     padding: 16px 20px;
-    background: linear-gradient(135deg, #0ab39c 0%, #3577f1 100%);
-    border-radius: 8px;
-    color: white;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-radius: 10px;
+    color: #155724;
     margin: 16px 0;
+    border: 1px solid #c3e6cb;
 }
 
 .success-message i {
     font-size: 1.25rem;
-    color: white;
+    color: #155724;
 }
 
 /* Animations */
