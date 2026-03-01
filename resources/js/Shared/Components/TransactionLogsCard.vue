@@ -18,18 +18,7 @@
 
     <div class="library-card-body p-0">
       <div v-if="normalizedLogs.length" class="timeline-container">
-        <div class="timeline-filters" v-if="normalizedLogs.length > showFilterAfter">
-          <div class="filter-group">
-            <select class="filter-select" v-model="timelineFilter">
-              <option value="all">All Activities</option>
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="timeline my-4">
+        <div class="timeline mt-4">
           <div
             v-for="(log, index) in displayedLogs"
             :key="log.id || index"
@@ -96,20 +85,15 @@ export default {
     },
     initialVisible: {
       type: Number,
-      default: 10
+      default: 4
     },
     logsPerPage: {
-      type: Number,
-      default: 10
-    },
-    showFilterAfter: {
       type: Number,
       default: 5
     }
   },
   data() {
     return {
-      timelineFilter: 'all',
       visibleLogs: this.initialVisible
     };
   },
@@ -117,46 +101,18 @@ export default {
     normalizedLogs() {
       return Array.isArray(this.logs) ? this.logs : [];
     },
-    filteredAndSortedLogs() {
-      let items = [...this.normalizedLogs];
-      const now = new Date();
-
-      switch (this.timelineFilter) {
-        case 'today':
-          items = items.filter(log => {
-            const logDate = new Date(log.created_at);
-            return logDate.toDateString() === now.toDateString();
-          });
-          break;
-        case 'week': {
-          const weekAgo = new Date(now);
-          weekAgo.setDate(now.getDate() - 7);
-          items = items.filter(log => new Date(log.created_at) >= weekAgo);
-          break;
-        }
-        case 'month': {
-          const monthAgo = new Date(now);
-          monthAgo.setMonth(now.getMonth() - 1);
-          items = items.filter(log => new Date(log.created_at) >= monthAgo);
-          break;
-        }
-      }
-
-      return items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    sortedLogs() {
+      return [...this.normalizedLogs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     },
     displayedLogs() {
-      return this.filteredAndSortedLogs.slice(0, this.visibleLogs);
+      return this.sortedLogs.slice(0, this.visibleLogs);
     },
     hasMore() {
-      return this.filteredAndSortedLogs.length > this.visibleLogs;
+      return this.sortedLogs.length > this.visibleLogs;
     }
   },
   watch: {
     logs() {
-      this.visibleLogs = this.initialVisible;
-      this.timelineFilter = 'all';
-    },
-    timelineFilter() {
       this.visibleLogs = this.initialVisible;
     }
   },
@@ -244,38 +200,6 @@ export default {
   position: relative;
   padding: 20px 0;
   background: #f3f4f6;
-}
-
-.timeline-filters {
-  padding: 0 24px 20px 24px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.filter-group {
-  display: flex;
-  gap: 12px;
-}
-
-.filter-select {
-  padding: 10px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 14px;
-  color: #1e293b;
-  background: #fff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 160px;
-}
-
-.filter-select:hover {
-  border-color: #cbd5e1;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .timeline {
@@ -459,14 +383,6 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .timeline-filters {
-    padding: 0 16px 16px 16px;
-  }
-
-  .filter-select {
-    width: 100%;
-  }
-
   .timeline {
     padding: 4px 12px 0;
   }
@@ -534,19 +450,6 @@ export default {
 
 .loan-logs-card.is-compact .timeline-container {
   padding: 8px 0;
-}
-
-.loan-logs-card.is-compact .timeline-filters {
-  padding: 0 10px 8px;
-}
-
-.loan-logs-card.is-compact .filter-select {
-  width: 100%;
-  min-width: 0;
-  padding: 6px 8px;
-  font-size: 11px;
-  border-width: 1px;
-  border-radius: 6px;
 }
 
 .loan-logs-card.is-compact .timeline {

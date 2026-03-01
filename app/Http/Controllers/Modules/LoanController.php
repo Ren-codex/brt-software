@@ -83,4 +83,15 @@ class LoanController extends Controller
             'status' => $result['status'],
         ]);
     }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $result = $this->loan->updateStatus($request, $id);
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
 }

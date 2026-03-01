@@ -62,7 +62,7 @@
                 <LoanView
                   :loan="selectedLoan"
                   :dropdowns="dropdowns"
-                  @back="backToList"
+                  @back="backToLoanList"
                   @view="openLoanDetails"
                 />
               </div>
@@ -192,6 +192,12 @@ export default {
       this.selectedLoan = null;
       // Optionally fetch updated data
       // this.fetchPayrolls();
+    },
+    backToLoanList() {
+      this.currentView = 'list';
+      this.selectedLoan = null;
+      this.fetchLoans();
+      this.changeTab('loan_management');
     },
     showToast(message) {
       this.toastMessage = message;

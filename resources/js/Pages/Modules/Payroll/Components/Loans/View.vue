@@ -15,7 +15,12 @@
                 </div>
               </div>
               <div class="d-flex gap-2">
-                <button @click="openEdit(loan)" class="create-btn" v-b-tooltip.hover title="Edit" style="margin-right: -8px">
+                <button v-if="canApprove && loan.status === 'pending'" class="create-btn"
+                        @click="approveLoan">
+                  <i class="ri-check-line"></i>
+                  <span>Approval</span>
+                </button>
+                <button v-if="loan.status === 'pending'" @click="openEdit(loan)" class="create-btn" v-b-tooltip.hover title="Edit" style="margin-right: -8px">
                   <i class="ri-pencil-fill"></i>
                 </button>
                 <button @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back">
@@ -80,7 +85,40 @@
         </div>
       </div>
       <div class="col-md-4">
-        <TransactionLogs :logs="loan.logs" :compact="true" />
+        <TransactionLogs :logs="loan.logs" :compact="true" :initial-visible="4" :logs-per-page="4" />
+      </div>
+    </div>
+    <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
+      <div class="modal-container modal-lg">
+        <div class="modal-header">
+          <h2>Approve Loan</h2>
+          <button class="close-btn" @click="onCancel">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="remarks">Remarks</label>
+            <textarea
+              id="remarks"
+              v-model="remarks"
+              class="form-control textarea-control"
+              rows="4"
+              placeholder="Enter your remarks here..."
+            ></textarea>
+          </div>
+          <div class="form-actions">
+          <button class="btn btn-cancel" @click="onCancel">Cancel</button>
+          <button class="btn btn-cancel" @click="updateStatus('disapproved')">Disapprove</button>
+          <button class="btn btn-save" @click="updateStatus('approved')">Approve</button>
+        </div>
+        </div>
+        
+      </div>
+    </div>
+    <!-- Toast Notification -->
+    <div v-if="isToastVisible" class="toast-notification">
+      <div class="toast-content">
+        <i class="ri-check-line text-white me-2"></i>
+        {{ toastMessage }}
       </div>
     </div>
   </div>
@@ -89,6 +127,7 @@
 </template>
 
 <script>
+import Swal from 'sweetalert2';
 import Create from './Create.vue';
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 
@@ -99,10 +138,32 @@ export default {
     dropdowns: Object,
     loan: {
       type: Object,
-      required: true
+      required: true,
     }
   },
   emits: ['back', 'edit', 'view'],
+  data() {
+    return {
+      showModal: false,
+      remarks: '',
+      isToastVisible: false,
+      toastMessage: '',
+    };
+  },
+  computed: {
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Checks if the current user has the role of Top Management or Administrator.
+ *
+ * @return {boolean} True if the user has the role, false otherwise.
+ */
+/*******  ead86683-cd87-499b-a18b-31c9fb252dab  *******/
+    canApprove() {
+      const roles = this.$page.props.roles;
+      const userRoles = roles ? Object.values(roles) : [];
+      return userRoles.some(role => ['Top Management', 'Administrator'].includes(role));
+    }
+  },
   methods: {
     formatDate(value) {
       if (!value) {
@@ -172,10 +233,51 @@ export default {
     },
 
     refresh(data) {
-      console.log(data);
-      
       this.$emit('view', data);
-    }
+    },
+
+    approveLoan() {
+      this.showModal = true;
+    },
+
+    updateStatus(status) {
+      this.$inertia.put(`/loans/${this.loan.id}/status`, {
+        status: status,
+        id: this.loan.id,
+        remarks: this.remarks
+      }, {
+        onSuccess: () => {
+          Swal.fire(
+              'Success',
+              'Loan updated successfully!',
+              'success'
+          );
+          this.showModal = false;
+          this.remarks = '';
+          this.$emit('back');
+        },
+        onError: () => {
+          Swal.fire(
+              'Error',
+              'Failed to update loan!',
+              'error'
+          );
+        }
+      });
+    },
+
+    onCancel() {
+      this.showModal = false;
+      this.remarks = '';
+    },
+
+    showToast(message) {
+      this.toastMessage = message;
+      this.isToastVisible = true;
+      setTimeout(() => {
+        this.isToastVisible = false;
+      }, 3000);
+    },
   }
 };
 </script>

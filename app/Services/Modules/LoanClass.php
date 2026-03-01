@@ -129,4 +129,20 @@ class LoanClass
             'remarks' => $remarks,
         ]);
     }
+
+    public function updateStatus($request, $id)
+    {
+        $loan = Loan::findOrFail($id);
+        $oldStatus = $loan->status;
+        $newStatus = $request->status;
+
+        $loan->update(['status' => $newStatus]);
+        $this->log($loan->id, $newStatus, "Loan status changed from {$oldStatus} to {$newStatus}");
+
+        return [
+            'data' => new LoanResource($loan),
+            'message' => "Loan status updated to '{$newStatus}' successfully!",
+            'info' => "You've successfully updated the loan status from '{$oldStatus}' to '{$newStatus}'"
+        ];
+    }
 }
