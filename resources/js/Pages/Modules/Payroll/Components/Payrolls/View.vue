@@ -111,7 +111,7 @@
                           <th>Employee</th>
                           <th>Basic Salary</th>
                           <th>Total Days</th>
-                          <th>Overtime Hours</th>
+                          <th>Earnings</th>
                           <th>Deductions</th>
                           <th>Net Salary</th>
                         </tr>
@@ -122,8 +122,19 @@
                           <td>{{ item.employee_name }}</td>
                           <td>{{ formatCurrency(item.basic_salary) }}</td>
                           <td>{{ formatCurrency(item.total_days) }}</td>
-                          <td>{{ formatCurrency(item.overtime_hours) }}</td>
-                          <td>{{ formatCurrency(item.deductions) }}
+                          <td>{{ formatCurrency(item.total_earnings) }}
+                            <div class="loan-container" v-if="item.earnings.length">
+                              <i class="ri-git-repository-line loan-icon"></i>
+                              <div class="loan-tooltip" style="left: 50%;">
+                                <div v-for="(earning, i) in item.earnings" :key="i" class="loan-detail">
+                                  <strong>#{{ i + 1 }}</strong><br>
+                                  <strong>Earning:</strong> {{ earning.description }}<br>
+                                  <strong>Amount:</strong> ₱ {{ parseFloat(earning.amount).toFixed(2) }}<br>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{{ formatCurrency(item.total_deductions) }}
                             <div class="loan-container" v-if="item.loans.length">
                               <i class="ri-git-repository-line loan-icon"></i>
                               <div class="loan-tooltip">
@@ -176,7 +187,7 @@
                   <tbody>
                     <tr v-for="(log, index) in payroll.logs" :key="log.id">
                       <td>{{ formatDate(log.created_at) }}</td>
-                      <td>{{ log.user?.name || 'N/A' }}</td>
+                      <td>{{ log.actioned_by || 'N/A' }}</td>
                       <td>{{ log.action }}</td>
                       <td>{{ log.remarks }}</td>
                     </tr>
@@ -338,8 +349,52 @@ export default {
     },
     
     deletePayroll() {
+      this.confirmDelete(this.payroll).then(() => {
+        this.showToast('Payroll deleted successfully!')  
+        this.$emit('toast', 'Delete functionality would open the delete modal');
+        this.$inertia.visit('/payrolls');
+      });
       // This would trigger the delete modal in the parent component
-      this.$emit('toast', 'Delete functionality would open the delete modal');
+    },
+
+    async confirmDelete(template) {
+      const result = await Swal.fire({
+          title: 'Are you sure?',
+          text: 'You want to delete this payroll?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, delete it!'
+      });
+      if (result.isConfirmed) {
+          axios.delete(`/payrolls/${template.id}`)
+              .then(response => {
+                  if (response.data && response.data.info && response.data.message && response.data.status === false) {
+                    Swal.fire({
+                      title: response.data.message,
+                      text: response.data.info,
+                      icon: 'info',
+                      confirmButtonText: 'OK'
+                    });
+                  } else {
+                    Swal.fire({
+                      title: response.data.message,
+                      text: response.data.info,
+                      icon: 'success',
+                    });
+                    this.selectedPayroll = null;
+                  }
+              })
+              .catch(error => {
+                  console.error(error);
+                  Swal.fire(
+                      'Error!',
+                      'Failed to delete payroll.',
+                      'error'
+                  );
+              });
+      }
     },
     
     printPayroll() {

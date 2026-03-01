@@ -68,10 +68,11 @@ class PayrollClass
                     'payroll_id' => $payroll->id,
                     'employee_id' => $item['employee_id'],
                     'basic_salary' => $item['basic_salary'],
-                    'overtime_hours' => $item['overtime_hours'],
-                    'overtime_rate' => $item['overtime_rate'],
                     'total_days' => $item['total_days'],
-                    'deductions' => $item['deductions'],
+                    'earnings' => $item['earnings'] ?? [],
+                    'deductions' => $item['deductions'] ?? [],
+                    'total_earnings' => $item['total_earnings'] ?? 0,
+                    'total_deductions' => $item['total_deductions'] ?? 0,
                     'net_salary' => $item['net_salary'],
                     'loans' => $item['loans'] ?? [],
                 ]);
@@ -182,7 +183,7 @@ class PayrollClass
                                 $deduct = floatval($loanData['payroll_deduction']);
                                 $loan->remaining_balance = max(0, floatval($loan->remaining_balance) - $deduct);
                                 $loan->amtpaid = floatval($loan->amtpaid) + $deduct;
-                                $loan->remaining_term_to_pay = max(0, intval($loan->remaining_term_to_pay) - 1);
+                                $loan->remaining_term_to_pay = max(0, intval($loan->remaining_term_to_pay) - ($loan->divisor == 1 ? 2 : 1));
                                 // Optionally update status if fully paid
                                 if ($loan->remaining_balance <= 0) {
                                     $loan->status = 'paid';

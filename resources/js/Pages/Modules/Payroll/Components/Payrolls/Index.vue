@@ -171,46 +171,7 @@ export default {
     printPayroll(payroll) {
       window.open(`/payrolls/${payroll.id}/print`, '_blank');
     },
-    async confirmDelete(template) {
-      const result = await Swal.fire({
-          title: 'Are you sure?',
-          text: 'You want to delete this payroll?',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#3085d6',
-          cancelButtonColor: '#d33',
-          confirmButtonText: 'Yes, delete it!'
-      });
-      if (result.isConfirmed) {
-          axios.delete(`/payrolls/${template.id}`)
-              .then(response => {
-                  if (response.data && response.data.info && response.data.message && response.data.status === false) {
-                    Swal.fire({
-                      title: response.data.message,
-                      text: response.data.info,
-                      icon: 'info',
-                      confirmButtonText: 'OK'
-                    });
-                  } else {
-                    this.fetchPayrolls();
-                    Swal.fire({
-                      title: response.data.message,
-                      text: response.data.info,
-                      icon: 'success',
-                    });
-                    this.selectedPayroll = null;
-                  }
-              })
-              .catch(error => {
-                  console.error(error);
-                  Swal.fire(
-                      'Error!',
-                      'Failed to delete payroll.',
-                      'error'
-                  );
-              });
-      }
-    },
+  
     closeModal() {
       this.showCreateModal = false
       this.showEditModal = false

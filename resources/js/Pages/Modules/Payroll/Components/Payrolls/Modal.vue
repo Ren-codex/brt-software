@@ -1,26 +1,27 @@
 <template>
-  <div
-    v-if="showModal"
-    class="modal-overlay"
-    :class="{ active: showModal }"
-  >
-    <div class="modal-container modal-xl" @click.stop>
-      <div class="modal-header">
+  <div>
+    <div
+      v-if="showModal"
+      class="modal-overlay"
+      :class="{ active: showModal }"
+    >
+      <div class="modal-container modal-xl" @click.stop>
+        <div class="modal-header">
         <h2>{{ isEdit ? 'Edit' : 'Create' }} Payroll</h2>
         <button class="close-btn" @click="hide">
           <i class="ri-close-line"></i>
         </button>
       </div>
-      <div class="modal-body">
-        <div class="success-alert" v-if="saveSuccess">
+          <div class="modal-body">
+          <div class="success-alert" v-if="saveSuccess">
           <i class="ri-checkbox-circle-fill"></i>
           <span>Your information has been saved successfully!</span>
         </div>
-        <div class="error-alert" v-if="form.errors.duplicate">
+          <div class="error-alert" v-if="form.errors.duplicate">
           <i class="ri-close-circle-fill"></i>
           <span>{{ form.errors.duplicate }}</span>
         </div>
-        <form @submit.prevent="savePayroll" class="payroll-form">
+          <form @submit.prevent="savePayroll" class="payroll-form">
           <!-- Payroll Period Section -->
           <div class="form-section">
             <div class="row">
@@ -87,75 +88,31 @@
                   <tr>
                     <th>Employee</th>
                     <th>Daily Salary</th>
-                    <th>Total Days</th>
-                    <th>OT Hrs</th>
-                    <!-- <th>Incentives</th> -->
-                    <th>Loan Deductions</th>
+                    <th>Working Days</th>
+                    <th>Earning</th>
+                    <th>Deductions</th>
                     <th>Net Salary</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(employee, index) in selectedEmployees" :key="employee.value">
                     <td class="employee-name">{{ employee.fullname }}</td>
-                    <td class="salary-cell">₱ {{ parseFloat(employee.basic_salary).toFixed(2) }}</td>
-                    <td>
-                      <input
-                        type="number"
-                        v-model.number="employee.total_days"
-                        class="form-control form-control-sm"
-                        min="0"
-                        step="1"
-                        placeholder="0"
-                        :disabled="form.status !== 'draft'"
-                      >
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        v-model.number="employee.overtime_hours"
-                        class="form-control form-control-sm"
-                        min="0"
-                        step="0.5"
-                        placeholder="0"
-                        :disabled="form.status !== 'draft'"
-                      >
-                    </td>                    
-                    <!-- <td>
-                      <div class="incentive-cell">
-                        <span class="incentive-value">₱ {{ parseFloat(employee.incentives || 0).toFixed(2) }}</span>
-                        <button type="button" class="btn btn-sm btn-outline-primary" @click="openIncentiveModal(employee)" title="Add incentive">
-                          <i class="ri-add-line"></i>
-                        </button>
-                      </div>
-                    </td> -->
-                    <td class="salary-cell">₱ {{ parseFloat(employee.deductions).toFixed(2) }}
-                      <div class="loan-container" v-if="employee.loans.length">
-                        <i class="ri-git-repository-line loan-icon"></i>
-                        <div class="loan-tooltip">
-                          <div v-for="loan in employee.loans" :key="loan.id" class="loan-detail">
-                            <strong>Loan ID:</strong> {{ loan.id }}<br>
-                            <strong>Balance:</strong> ₱ {{ parseFloat(loan.remaining_balance).toFixed(2) }}<br>
-                            <strong>Term Left:</strong> {{ loan.term_months }} months<br>
-                            <strong>Interest Rate:</strong> {{ Math.round(loan.interest_rate) }}%<br>
-                            <strong>Payroll Deduction:</strong> ₱ {{ loan.payroll_deduction ||((loan.remaining_balance / loan.remaining_term_to_pay) + (loan.remaining_balance * (loan.interest_rate / 100) / 2)).toFixed(2) }}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <!-- <td>
-                      <div class="incentive-cell">
-                        <span class="incentive-value">₱ {{ parseFloat(employee.deductions || 0).toFixed(2) }}</span>
-                        <button type="button" class="btn btn-sm btn-outline-primary" @click="openDeductionModal(employee)" title="Edit deduction">
-                          <i class="ri-edit-line"></i>
-                        </button>
-                      </div>
-                    </td> -->
+                    <td class="salary-cell">₱ {{ formatCurrency(employee.basic_salary) }}</td>
+                    <td class="salary-cell">{{ employee.total_days }}</td>
+                    <td class="salary-cell">₱ {{ formatCurrency(employee.total_earnings) }}</td>
+                    <td class="salary-cell">₱ {{ formatCurrency(employee.total_deductions) }}</td>
                     <td class="net-salary-cell">
-                      <strong>₱ {{ formatCurrency(calculateEmployeeNet(employee)) }}</strong>
+                      <strong>₱ {{ formatCurrency(employee.net_salary) }}</strong>
+                    </td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-outline-success ms-2" @click="openIndividualModal(employee)" title="Edit employee payroll">
+                        <i class="ri-arrow-right-line"></i>
+                      </button>
                     </td>
                   </tr>
                   <tr class="total-row" v-if="form.payroll_template && selectedEmployees.length">
-                    <td colspan="5" class="total-label">Grand Total</td>
+                    <td colspan="6" class="total-label">Grand Total</td>
                     <td class="total-amount">
                       <strong>₱ {{ formatCurrency(calculateTotalSalary()) }}</strong>
                     </td>
@@ -205,23 +162,24 @@
     </div>
   </div>
 
-  <IncentiveModal
-    :show="showIncentiveModal"
-    :employee="currentIncentiveEmployee"
-    :incentive="incentiveInput"
-    @close="closeIncentiveModal"
-    @save="onSaveIncentive"
+  <!-- Individual Employee Payroll Modal -->
+  <Individual
+    :show="showIndividualModal"
+    :employee="currentIndividualEmployee"
+    @close="() => showIndividualModal = false"
+    @save="onSaveIndividualPayroll"
   />
+  </div>
 </template>
 
 <script>
 import axios from 'axios'
-import IncentiveModal from './IncentiveModal.vue'
+import Individual from './Individual.vue';
 import Swal from 'sweetalert2';
 
 export default {
   components: {
-    IncentiveModal
+    Individual
   },
 
   props: {
@@ -256,6 +214,14 @@ export default {
       currentDeductionEmployee: null,
       deductionInput: 0,
       showComputationModal: false,
+      showLoanDeductionModal: false,
+      currentLoanDeductionEmployee: null,
+      loanDeductionInput: {
+        amount: '',
+        note: ''
+      },
+      showIndividualModal: false,
+      currentIndividualEmployee: null,
       payrollTemplates: [],
       makeStateDraft: false,
 
@@ -303,6 +269,35 @@ export default {
       this.$emit('close');
     },
 
+    openIndividualModal(employee) {
+      this.currentIndividualEmployee = employee;
+      this.showIndividualModal = true;
+    },
+
+    onSaveIndividualPayroll(data) {
+      // Match by a stable employee identifier and avoid undefined-to-undefined matches.
+      const targetId = data.value ?? data.id;
+      const index = this.selectedEmployees.findIndex((e) => {
+        const employeeId = e.value ?? e.id;
+        return targetId !== undefined && employeeId === targetId;
+      });
+      if (index !== -1) {
+        this.selectedEmployees[index] = {
+          ...this.selectedEmployees[index],
+          basic_salary: data.basic_salary,
+          total_days: data.total_days,
+          earnings: data.earnings,
+          deductions: data.deductions,
+          total_earnings: data.total_earnings,
+          total_deductions: data.total_deductions,
+          net_salary: data.net_salary,
+          selected_loans: data.selected_loans,
+        };
+      }
+      this.showIndividualModal = false;
+      this.currentIndividualEmployee = null;
+    },
+
     handleInput(field) {
       this.form.errors[field] = false
     },
@@ -323,9 +318,11 @@ export default {
                   fullname: item.employee_name,
                   basic_salary: item.basic_salary,
                   total_days: item.total_days,
-                  overtime_hours: item.overtime_hours,
+                  earnings: item.earnings,
                   deductions: item.deductions,
-                  incentives: item.incentives,
+                  total_earnings: item.total_earnings,
+                  total_deductions: item.total_deductions,
+                  net_salary: item.net_salary,
                   loans: item.loans || [],
                 }
               })
@@ -341,91 +338,27 @@ export default {
         ...emp,
         total_days: 0,
         basic_salary: emp.basic_salary || 0,
-        overtime_hours: 0,
-        overtime_rate: (emp.basic_salary || 0) / 8,
-        deductions: this.calculateDeductions(emp.loans),
-        incentives: 0,
-        has_overtime: false,
+        total_days: emp.total_days || 0,
+        earnings: emp.earnings || 0,
+        deductions: emp.deductions || 0,
+        total_earnings: emp.total_earnings || 0,
+        total_deductions: emp.total_deductions || 0,
+        tmp: this.calculateLoanDeduction(emp.loans),
         loans: emp.loans || [],
       }));
 
       this.form.payroll_template.employees.forEach(emp => {
         this.employeeDetails[emp.value] = {
-          total_days: 0,
+          total_days: emp.total_days || 0,
           basic_salary: emp.basic_salary || 0,
-          overtime_hours: 0,
-          deductions: this.calculateDeductions(emp.loans),
-          incentives: 0,
-          has_overtime: false,
-          loans: emp.loans
+          earnings: emp.earnings || 0,
+          deductions: emp.deductions || 0,
+          total_earnings: emp.total_earnings || 0,
+          total_deductions: emp.total_deductions || 0,
+          tmp: this.calculateLoanDeduction(emp.loans),
+          loans: emp.loans || [],
         }
       });
-    },
-
-    handleAdd(ids) {
-      this.selectedEmployeeIds = ids
-      this.addSelectedEmployees()
-    },
-
-    addSelectedEmployees() {
-      for (const id of this.selectedEmployeeIds) {
-        const emp = this.employees.find(e => e.value === id)
-        const d = this.employeeDetails[id]
-
-        if (!this.selectedEmployees.find(e => e.value === id)) {
-          this.selectedEmployees.push({ ...emp, ...d })
-        }
-      }
-
-      this.selectedEmployeeIds = []
-      this.showEmployeeSelector = false
-    },
-
-    removeEmployee(employee) {
-      const idx = this.selectedEmployees.findIndex(e => e.value === employee.value)
-      if (idx !== -1) this.selectedEmployees.splice(idx, 1)
-    },
-
-    openIncentiveModal(employee) {
-      this.currentIncentiveEmployee = employee
-      this.incentiveInput = Number(employee.incentives || 0)
-      this.showIncentiveModal = true
-    },
-
-    closeIncentiveModal() {
-      this.showIncentiveModal = false
-      this.currentIncentiveEmployee = null
-      this.incentiveInput = 0
-    },
-
-    saveIncentive() {
-      if (!this.currentIncentiveEmployee) return
-      this.currentIncentiveEmployee.incentives = Number(this.incentiveInput || 0)
-      this.closeIncentiveModal()
-    },
-
-    onSaveIncentive(value) {
-      if (!this.currentIncentiveEmployee) return
-      this.currentIncentiveEmployee.incentives = Number(value || 0)
-      this.closeIncentiveModal()
-    },
-
-    openDeductionModal(employee) {
-      this.currentDeductionEmployee = employee
-      this.deductionInput = Number(employee.deductions || 0)
-      this.showDeductionModal = true
-    },
-
-    closeDeductionModal() {
-      this.showDeductionModal = false
-      this.currentDeductionEmployee = null
-      this.deductionInput = 0
-    },
-
-    onSaveDeduction(value) {
-      if (!this.currentDeductionEmployee) return
-      this.currentDeductionEmployee.deductions = Number(value || 0)
-      this.closeDeductionModal()
     },
 
     openComputationModal() {
@@ -436,19 +369,17 @@ export default {
       this.showComputationModal = false
     },
 
-    calculateEmployeeNet(employee) {
-      const details = employee;
-      const ot = ((details.basic_salary / this.hours_per_day) * this.overtime_rate) * (details.overtime_hours || 0);
-      return (details.basic_salary * (details.total_days || 0)) + ot + (details.incentives || 0) - (details.deductions || 0);
-    },
-
     calculateTotalSalary() {
       return this.selectedEmployees.reduce((total, employee) => {
-        return total + (this.calculateEmployeeNet(employee) ?? 0);
+        return total + (employee.net_salary ?? 0);
       }, 0);
     },
 
     formatCurrency(value) {
+      // Handle undefined, null, empty string, or non-numeric values
+      if (value === undefined || value === null || value === '' || isNaN(value)) {
+        return '0.00';
+      }
       return parseFloat(value).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
@@ -471,20 +402,13 @@ export default {
           return {
             employee_id: e.value || e.id,
             basic_salary: e.basic_salary,
-            overtime_hours: e.overtime_hours,
-            overtime_rate: e.overtime_rate,
             total_days: e.total_days,
+            earnings: e.earnings,
             deductions: e.deductions,
-            net_salary: parseFloat(this.calculateEmployeeNet(e).toFixed(2)),
-            loans: e.loans ? e.loans.map(loan => {
-              return {
-                id: loan.id,
-                remaining_balance: loan.remaining_balance,
-                term_months: loan.term_months,
-                interest_rate: loan.interest_rate,
-                payroll_deduction: loan.payroll_deduction,
-              }
-            }) : [],
+            total_earnings: e.total_earnings,
+            total_deductions: e.total_deductions,
+            net_salary: e.net_salary,
+            loans: e.selected_loans.length > 0 ? e.selected_loans : [],
           };
         }),
         total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),
@@ -530,10 +454,36 @@ export default {
       await this.savePayroll();
     },
 
-    calculateDeductions(loans) {
+    getPayrollPeriodDivisor() {
+      if (!this.form.pay_period_start || !this.form.pay_period_end) return 2;
+
+      const startDate = new Date(this.form.pay_period_start);
+      const endDate = new Date(this.form.pay_period_end);
+      if (isNaN(startDate) || isNaN(endDate) || endDate < startDate) return 2;
+
+      const lastDayOfMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+      const isWholeMonth =
+        startDate.getDate() === 1 &&
+        endDate.getDate() === lastDayOfMonth &&
+        startDate.getMonth() === endDate.getMonth() &&
+        startDate.getFullYear() === endDate.getFullYear();
+
+      if (isWholeMonth) return 1;
+
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const periodDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+      if (periodDays === 15) return 2;
+
+      return 2;
+    },
+
+    calculateLoanDeduction(loans) {
+      if (!loans || !loans.length) return 0;
+      const divisor = this.getPayrollPeriodDivisor();
+      
       const approvedLoans = loans.filter(loan => loan.status === 'approved');
       const total = approvedLoans.reduce((total, loan) => {
-        const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / 2;
+        const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / divisor;
         const deduction = (loan.remaining_balance / loan.remaining_term_to_pay) + interest;
         this.selectedEmployees.forEach(employee => {
           const employeeLoan = employee.loans.find(eLoan => eLoan.id === loan.id);
@@ -543,12 +493,13 @@ export default {
             employeeLoan.term_months = loan.term_months;
             employeeLoan.interest_rate = loan.interest_rate;
             employeeLoan.payroll_deduction = parseFloat(deduction.toFixed(2));
+            employeeLoan.divisor = divisor;
           }
         });
         return total + (isNaN(deduction) ? 0 : deduction);
       }, 0);
       return parseFloat(total.toFixed(2));
-    }
+    },
   }
 }
 </script>

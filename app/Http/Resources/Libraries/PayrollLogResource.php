@@ -15,7 +15,7 @@ class PayrollLogResource extends JsonResource
             'id' => $this->id,
             'payroll_id' => $this->payroll_id,
             'action' => $this->action,
-            'actioned_by' => $this->actioned_by ? $this->actioned_by->fullname : null,
+            'actioned_by' => $this->actionedBy ? $this->actionedBy->employee->full_name : null,
             'created_at' => $this->created_at ? $this->created_at->toDateTimeString() : null,
             'remarks' => $this->remarks,
         ];
