@@ -35,62 +35,128 @@
             </div>
           </div>
 
-          <div class="library-card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Employee</label>
-                <p class="text-muted mb-0">{{ loan.employee?.fullname || '-' }}</p>
+          <div class="library-card-body emp-loan-summary-card">
+            <div class="emp-loan-main-stats">
+              <div class="emp-primary-stat">
+                <div class="emp-stat-number">{{ formatCurrency(remainingBalanceValue) }}</div>
+                <div class="emp-stat-label">Total Balance</div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Loan Type</label>
-                <p class="text-muted mb-0">{{ loan.loan_type || '-' }}</p>
+
+              <div class="emp-progress-section">
+                <div class="emp-progress-header">
+                  <span>Payment Progress</span>
+                  <span class="emp-progress-percentage">{{ loanProgressPercent }}% Complete</span>
+                </div>
+                <div class="emp-progress-bar">
+                  <div class="emp-progress-fill" :style="{ width: `${loanProgressPercent}%` }"></div>
+                </div>
+                <div class="emp-progress-details">
+                  <span class="emp-progress-detail">Paid: <strong>{{ formatCurrency(paidAmountValue) }}</strong></span>
+                  <span class="emp-progress-detail">Remaining: <strong>{{ formatCurrency(remainingBalanceValue) }}</strong></span>
+                </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Amount</label>
-                <p class="text-muted mb-0">{{ formatCurrency(loan.amount) }}</p>
+            </div>
+
+            <div class="emp-loan-details-grid" style="grid-template-columns: repeat(3, 1fr);">
+              <div class="emp-detail-card">
+                <div class="emp-detail-header">
+                  <i class="ri-money-dollar-circle-line"></i>
+                  <span class="emp-detail-title">Loan Amount</span>
+                </div>
+                <div class="emp-detail-content">
+                  <div class="emp-detail-main-value emp-text-success">{{ formatCurrency(totalAmountValue) }}</div>
+                  <div class="emp-detail-sub-value">{{ loan.interest_rate ? `${loan.interest_rate}% Interest` : '-' }}</div>
+                </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Interest Rate</label>
-                <p class="text-muted mb-0">{{ loan.interest_rate ? `${loan.interest_rate}%` : '-' }}</p>
+
+              <div class="emp-detail-card">
+                <div class="emp-detail-header">
+                  <i class="ri-calendar-todo-line"></i>
+                  <span class="emp-detail-title">Payment Terms</span>
+                </div>
+                  <div class="emp-detail-content">
+                    <div class="emp-detail-main-value">{{ loanTermMonths > 0 ? `${loanTermMonths} Months` : '-' }}</div>
+                    <div class="emp-detail-sub-value">{{ remainingTermMonths/2 }} Remaining</div>
+                  </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Term (Months)</label>
-                <p class="text-muted mb-0">{{ loan.term_months || '-' }}</p>
+
+              <div class="emp-detail-card">
+                <div class="emp-detail-header">
+                  <i class="ri-user-line"></i>
+                  <span class="emp-detail-title">Employee</span>
+                </div>
+                <div class="emp-detail-content">
+                  <div class="emp-detail-main-value" style="font-size: 18px">{{ loan.employee?.fullname || '-' }}</div>
+                  <div class="emp-detail-sub-value">Daily Rate: {{ formatCurrency(loan.employee?.monthly_salary ?? loan.employee?.salary ?? loan.employee?.basic_salary) }}</div>
+                </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Remaining Term</label>
-                <p class="text-muted mb-0">{{ loan.remaining_term_to_pay || '-' }}</p>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Amount Paid</label>
-                <p class="text-muted mb-0">{{ formatCurrency(loan.amtpaid) }}</p>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Remaining Balance</label>
-                <p class="text-muted mb-0">{{ formatCurrency(loan.remaining_balance) }}</p>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Status</label>
-                <p class="mb-0">
-                  <span :class="getStatusClass(loan.status)">
-                    {{ loan.status || '-' }}
-                  </span>
-                </p>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Created</label>
-                <p class="text-muted mb-0">{{ formatDate(loan.created_at) }}</p>
-              </div>
-              <div class="col-12">
-                <label class="form-label">Purpose</label>
-                <p class="text-muted mb-0">{{ loan.purpose || '-' }}</p>
+            </div>
+
+            <div class="emp-loan-footer">
+              <div class="emp-footer-details">
+                <div class="emp-footer-detail">
+                  <span class="emp-footer-label">Loan Date</span>
+                  <span class="emp-footer-value">{{ formatDate(loan.created_at) }}</span>
+                </div>
+                <div class="emp-footer-detail">
+                  <span class="emp-footer-label">Last Payment</span>
+                  <span class="emp-footer-value">{{ formatDate(latestPaymentDate) }}</span>
+                </div>
+                <div class="emp-footer-detail">
+                  <span class="emp-footer-label">Monthly Payment</span>
+                  <span class="emp-footer-value">{{ monthlyPaymentDisplay }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-4">
-        <TransactionLogs :logs="loan.logs" :compact="true" :initial-visible="4" :logs-per-page="4" />
+        <div class="library-card mb-4" style="height: 280px">
+          <div class="library-card-header">
+            <div class="d-flex align-items-center gap-3">
+              <div class="header-icon">
+                <i class="ri-wallet-3-line"></i>
+              </div>
+              <div style="margin-left: -15px" class="d-flex align-items-center gap-2">
+                <h4 class="header-title mb-1">Payments</h4>
+                <button v-if="loan.status == 'approved'" @click="addPayment" class="create-btn" style="right: 25px; position: absolute">
+                  Pay Now
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body m-2 p-3">
+            <div class="table-responsive table-card" style="overflow: auto;">
+              <table class="table align-middle table-striped table-centered mb-0">
+                <thead class="table-light thead-fixed">
+                  <tr class="fs-11">
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 15%;">Payment Date</th>
+                    <th style="width: 15%;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody class="table-white fs-12">
+                  <tr v-if="!loan.payments || !loan.payments.length">
+                    <td colspan="6" class="text-center text-muted py-3">No loan payments yet.</td>
+                  </tr>
+                  <tr v-for="(payment, index) in loan.payments" :key="payment.id || index">
+                    <td>{{ index + 1 }}</td>
+                    <td>{{ formatDate(payment.payment_date) }}</td>
+                    <td>{{ formatCurrency(payment.amount) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="timeline-footer" v-if="hasMore">
+                <button class="btn-load-more" @click="loadMoreLogs">
+                  <i class="ri-arrow-down-line"></i>
+                  Show More
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <TransactionLogs :logs="loan.logs" :compact="true" :initial-visible="2" :logs-per-page="2" />
       </div>
     </div>
     <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
@@ -129,16 +195,26 @@
   </div>
 
   <Create @update="refresh" :dropdowns="dropdowns" ref="create" />
+  <PaymentModal
+    v-if="loan"
+    ref="paymentModal"
+    :loan-id="loan.id"
+    :default-paid-date="todayDate"
+    :monthly-amount="suggestedPaymentAmount"
+    :remaining-months="remainingMonthsToPay"
+    @saved="onPaymentSaved"
+  />
 </template>
 
 <script>
 import Swal from 'sweetalert2';
 import Create from './Create.vue';
+import PaymentModal from './Modals/Payment.vue';
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 
 export default {
   name: 'LoanView',
-  components: { Create, TransactionLogs },
+  components: { Create, PaymentModal, TransactionLogs },
   props: {
     dropdowns: Object,
     loan: {
@@ -149,6 +225,7 @@ export default {
   emits: ['back', 'edit', 'view'],
   data() {
     return {
+      loanCollapsed: true,
       showModal: false,
       remarks: '',
       isToastVisible: false,
@@ -160,9 +237,126 @@ export default {
       const roles = this.$page.props.roles;
       const userRoles = roles ? Object.values(roles) : [];
       return userRoles.some(role => ['Top Management', 'Administrator'].includes(role));
+    },
+    totalAmountValue() {
+      return this.toNumber(this.loan?.amount, 0);
+    },
+    paidAmountValue() {
+      return this.toNumber(this.loan?.amtpaid, 0);
+    },
+    remainingBalanceValue() {
+      const remaining = this.toNumber(this.loan?.remaining_balance, null);
+      if (remaining !== null) {
+        return remaining;
+      }
+
+      return Math.max(this.totalAmountValue - this.paidAmountValue, 0);
+    },
+    loanProgressPercent() {
+      if (this.totalAmountValue <= 0) {
+        return 0;
+      }
+
+      const progress = (this.paidAmountValue / this.totalAmountValue) * 100;
+      return Math.min(100, Math.max(0, Math.round(progress)));
+    },
+    loanTermMonths() {
+      return this.toNumber(this.loan?.term_months, 0);
+    },
+    interestRateValue() {
+      return this.toNumber(this.loan?.interest_rate, 0);
+    },
+    totalAmountWithInterest() {
+      return this.totalAmountValue + (this.totalAmountValue * (this.interestRateValue / 100));
+    },
+    remainingTermMonths() {
+      const remaining = this.toNumber(this.loan?.remaining_term_to_pay, null);
+      if (remaining !== null) {
+        return remaining;
+      }
+
+      return Math.max(this.loanTermMonths - this.paidMonths, 0);
+    },
+    paidMonths() {
+      if (this.loanTermMonths > 0) {
+        return Math.max(this.loanTermMonths - this.remainingTermMonths, 0);
+      }
+
+      return Array.isArray(this.loan?.payments) ? this.loan.payments.length : 0;
+    },
+    unpaidMonths() {
+      return this.remainingTermMonths;
+    },
+    suggestedPaymentAmount() {
+      const divisor = this.remainingTermMonths / 2;
+      if (divisor <= 0) {
+        return Number(this.remainingBalanceValue.toFixed(2));
+      }
+
+      return Number((this.remainingBalanceValue / divisor).toFixed(2));
+    },
+    remainingMonthsToPay() {
+      const months = this.remainingTermMonths / 2;
+      return Math.max(0, Math.ceil(months));
+    },
+    todayDate() {
+      return new Date().toISOString().slice(0, 10);
+    },
+    monthlyPaymentDisplay() {
+      if (this.loanTermMonths <= 0) {
+        return '-';
+      }
+
+      return this.formatCurrency(this.totalAmountWithInterest / this.loanTermMonths);
+    },
+    loanPeriodLabel() {
+      return new Date().toLocaleDateString('en-PH', {
+        month: 'long',
+        year: 'numeric'
+      });
+    },
+    latestPayment() {
+      const payments = Array.isArray(this.loan?.payments)
+        ? this.loan.payments.filter(payment => payment?.payment_date || payment?.created_at)
+        : [];
+
+      if (!payments.length) {
+        return null;
+      }
+
+      return [...payments].sort((a, b) =>
+        new Date(b.payment_date || b.created_at).getTime() - new Date(a.payment_date || a.created_at).getTime()
+      )[0];
+    },
+    latestPaymentDate() {
+      return this.latestPayment?.payment_date || this.latestPayment?.created_at || null;
+    },
+    nextDueDate() {
+      if (!this.latestPaymentDate) {
+        return null;
+      }
+
+      const date = new Date(this.latestPaymentDate);
+      if (Number.isNaN(date.getTime())) {
+        return null;
+      }
+
+      date.setMonth(date.getMonth() + 1);
+      return date;
     }
   },
   methods: {
+    toNumber(value, fallback = 0) {
+      if (value === null || value === undefined || value === '') {
+        return fallback;
+      }
+
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : fallback;
+    },
+    toggleLoanCollapse() {
+      this.loanCollapsed = !this.loanCollapsed;
+    },
     formatDate(value) {
       if (!value) {
         return '-';
@@ -236,6 +430,39 @@ export default {
 
     approveLoan() {
       this.showModal = true;
+    },
+    addPayment() {
+      this.$refs.paymentModal.show();
+    },
+    onPaymentSaved(payload) {
+      const savedPayment = payload?.payment || {};
+      const amount = this.toNumber(payload?.amount, 0);
+      const paidTermMonths = this.toNumber(payload?.paidTermMonths, 0);
+      const paidAmount = this.toNumber(this.loan.amtpaid, 0) + amount;
+      const remainingBalance = Math.max(this.toNumber(this.loan.remaining_balance, 0) - amount, 0);
+      const remainingTerms = Math.max(this.toNumber(this.loan.remaining_term_to_pay, 0) - (paidTermMonths * 2), 0);
+
+      this.loan.amtpaid = paidAmount;
+      this.loan.remaining_balance = remainingBalance;
+      this.loan.remaining_term_to_pay = remainingTerms;
+      if (remainingBalance <= 0) {
+        this.loan.status = 'completed';
+      }
+
+      if (!Array.isArray(this.loan.payments)) {
+        this.loan.payments = [];
+      }
+
+      this.loan.payments.unshift({
+        id: savedPayment.id || Date.now(),
+        payment_date: savedPayment.paid_date || payload?.paid_date,
+        amount: savedPayment.amount ?? amount,
+        remarks: savedPayment.remarks ?? payload?.remarks ?? '-',
+        added_by: savedPayment.added_by || '-',
+        created_at: savedPayment.created_at || payload?.paid_date,
+      });
+
+      this.showToast(payload?.message || 'Loan payment saved successfully!');
     },
 
     updateStatus(status) {

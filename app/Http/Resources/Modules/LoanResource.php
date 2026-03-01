@@ -31,6 +31,9 @@ class LoanResource extends JsonResource
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at->format('F d, Y'),
             'employee' => new EmployeeResource($this->employee),
+            'payments' => LoanPaymentResource::collection(
+                $this->payments()->orderBy('created_at', 'DESC')->orderBy('id', 'DESC')->get()
+            ),
             'logs' => LoanLogResource::collection(
                 $this->logs()->with('actionedBy.employee')->orderBy('created_at', 'DESC')->get()
             ),

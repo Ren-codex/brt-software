@@ -46,6 +46,10 @@ class LoanClass
         try {
             db::beginTransaction();
 
+            $principal = (float) $request->amount;
+            $interestRate = (float) $request->interest_rate;
+            $totalWithInterest = $principal + ($principal * ($interestRate / 100));
+
             $data = Loan::create([
                 'loan_no' => $this->series_service->get('loan_number'),
                 'employee_id' => $request->employee_id,
@@ -56,7 +60,7 @@ class LoanClass
                 'status' => $request->status,
                 'purpose' => $request->purpose,
                 'added_by_id' => $userId ?: auth()->id(),
-                'remaining_balance' => $request->amount,
+                'remaining_balance' => $totalWithInterest,
                 'remaining_term_to_pay' => $request->term_months * 2,
             ]);
     
