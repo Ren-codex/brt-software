@@ -111,15 +111,6 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
-                    <Link href="/loans" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/loans') }">
-                    <i class="ri-bank-card-fill"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Loans</span>
-                    <span class="menu-link-bg"></span>
-                    <span class="active-indicator"></span>
-                    </Link>
-                </li>
                  <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
                    <BLink class="nav-link menu-link" href="#sidebarDashboards"
                     :class="{'active': $page.url.startsWith('/libraries') }"

@@ -95,9 +95,8 @@
                 <th>#</th>
                 <th>Employee Name</th>
                 <th>Basic Salary</th>
-                <th>Overtime Hours</th>
-                <th>Overtime Rate</th>
-                <th>Overtime Pay</th>
+                <th>Total Days</th>
+                <th>Earnings</th>
                 <th>Deductions</th>
                 <th>Net Salary</th>
             </tr>
@@ -108,17 +107,16 @@
                 <td>{{ $index + 1 }}</td>
                 <td>{{ $item->employee ? $item->employee->full_name : 'N/A' }}</td>
                 <td>{{ number_format($item->basic_salary ?? 0, 2) }}</td>
-                <td>{{ $item->overtime_hours ?? 0 }}</td>
-                <td>{{ number_format($item->overtime_rate ?? 0, 2) }}</td>
-                <td>{{ number_format(($item->overtime_hours ?? 0) * ($item->overtime_rate ?? 0), 2) }}</td>
-                <td>{{ number_format($item->deductions ?? 0, 2) }}</td>
+                <td>{{ number_format($item->total_days ?? 0, 0) }}</td>
+                <td>{{ number_format($item->total_earnings ?? 0, 2) }}</td>
+                <td>{{ number_format($item->total_deductions ?? 0, 2) }}</td>
                 <td>{{ number_format($item->net_salary ?? 0, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="7" style="text-align: right;">Total Net Salary:</td>
+                <td colspan="6" style="text-align: right;">Total Net Salary:</td>
                 <td>{{ number_format($payroll->total_amount, 2) }}</td>
             </tr>
         </tfoot>

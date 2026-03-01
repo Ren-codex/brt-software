@@ -341,7 +341,7 @@ export default {
           this.form.selected_loans = deduction.selectedLoans;
           deduction.selectedLoans.forEach(loan => {
             this.form.deductions.push({
-              description: `Loan #${loan.id}`,
+              description: `${loan.loan_no}`,
               amount: loan.deduction
             })
           })
@@ -371,8 +371,8 @@ export default {
       this.$emit('other-benefit')
     },
     isLoanDeduction(item) {
-      // Check if the deduction is a loan deduction (starts with "Loan #")
-      return item.description && item.description.startsWith('Loan #')
+      // Check if the deduction is a loan deduction (starts with "LN")
+      return item.description && item.description.startsWith('LN')
     },
     formatNumber(value) {
       return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')

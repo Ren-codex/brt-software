@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Loan extends Model
 {
     protected $fillable = [
+        'loan_no',
         'employee_id',
         'loan_type',
         'amount',
@@ -29,5 +31,10 @@ class Loan extends Model
     public function added_by(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by_id');
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(LoanLog::class);
     }
 }

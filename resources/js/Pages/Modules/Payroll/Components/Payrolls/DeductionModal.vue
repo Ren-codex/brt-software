@@ -23,7 +23,7 @@
               </div>
               <div class="loan-info">
                 <label :for="'loan-' + loan.id" class="loan-label">
-                  <span class="loan-id">Loan #{{ loan.id }}</span>
+                  <span class="loan-id">{{ loan.loan_no }}</span>
                   <span class="loan-balance">Balance: ₱ {{ parseFloat(loan.remaining_balance).toFixed(2) }}</span>
                 </label>
               </div>
@@ -168,7 +168,7 @@ computed: {
       }
       // Filter out loans that are already added
       return this.employee.loans.filter(loan => {
-        const loanDescription = `Loan #${loan.id}`
+        const loanDescription = `${loan.loan_no}`
         const isAlreadyAdded = this.existingDeductions.some(deduction => 
           deduction.description === loanDescription
         )
@@ -182,7 +182,7 @@ computed: {
       // Check if the current label matches any existing manual deduction (not loan deductions)
       return this.existingDeductions.find(deduction => 
         deduction.description === this.localDeductionLabel && 
-        !deduction.description.startsWith('Loan #')
+        !deduction.description.startsWith('LN')
       )
     },
     totalExistingDeductions() {

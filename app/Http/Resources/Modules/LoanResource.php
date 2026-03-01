@@ -16,6 +16,7 @@ class LoanResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'loan_no' => $this->loan_no,
             'employee_id' => $this->employee_id,
             'loan_type' => $this->loan_type,
             'amount' => $this->amount,
@@ -29,6 +30,10 @@ class LoanResource extends JsonResource
             'remaining_term_to_pay' => $this->remaining_term_to_pay,
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at->format('F d, Y'),
+            'employee' => new EmployeeResource($this->employee),
+            'logs' => LoanLogResource::collection(
+                $this->logs()->with('actionedBy.employee')->orderBy('created_at', 'DESC')->get()
+            ),
         ];
     }
 }

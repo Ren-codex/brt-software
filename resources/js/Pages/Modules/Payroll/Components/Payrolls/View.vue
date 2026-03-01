@@ -139,7 +139,7 @@
                               <i class="ri-git-repository-line loan-icon"></i>
                               <div class="loan-tooltip">
                                 <div v-for="loan in item.loans" :key="loan.id" class="loan-detail">
-                                  <strong>Loan ID:</strong> {{ loan.id }}<br>
+                                  <strong>Loan No:</strong> {{ loan.loan_no }}<br>
                                   <strong>Balance:</strong> ₱ {{ parseFloat(loan.remaining_balance).toFixed(2) }}<br>
                                   <strong>Term Left:</strong> {{ loan.term_months }} months<br>
                                   <strong>Interest Rate:</strong> {{ Math.round(loan.interest_rate) }}%<br>

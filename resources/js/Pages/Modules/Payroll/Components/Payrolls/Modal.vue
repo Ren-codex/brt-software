@@ -489,6 +489,7 @@ export default {
           const employeeLoan = employee.loans.find(eLoan => eLoan.id === loan.id);
           if (employeeLoan) {
             employeeLoan.id = loan.id;
+            employeeLoan.loan_no = loan.loan_no;
             employeeLoan.remaining_balance = loan.remaining_balance;
             employeeLoan.term_months = loan.term_months;
             employeeLoan.interest_rate = loan.interest_rate;

@@ -58,6 +58,14 @@
                   @fetch="fetchPayrolls"
                 />
               </div>
+              <div v-if="currentView === 'loanDetails' && selectedLoan" class="payroll-details-container">
+                <LoanView
+                  :loan="selectedLoan"
+                  :dropdowns="dropdowns"
+                  @back="backToList"
+                  @view="openLoanDetails"
+                />
+              </div>
 
               <!-- Payroll Management List -->
               <div v-if="activeTab === 'payroll_management' && currentView === 'list'" class="shadow-sm p-3">
@@ -71,6 +79,9 @@
               </div>
               <div v-if="activeTab === 'sales_incentives' && currentView === 'list'" class="shadow-sm p-3">
                 <SalesIncentives :dropdowns="dropdowns" />
+              </div>
+              <div v-if="activeTab === 'loan_management' && currentView === 'list'" class="shadow-sm p-3">
+                <LoanManagement ref="loanManagement" :dropdowns="dropdowns" @view="openLoanDetails" />
               </div>
             </div>
           </transition>
@@ -96,9 +107,11 @@ import PayrollView from './Components/Payrolls/View.vue';
 import PayrollSettings from './Components/Settings/Index.vue';
 import PayrollTemplate from './Components/Templates/Index.vue';
 import SalesIncentives from './Components/SalesIncentives/Index.vue';
+import LoanManagement from './Components/Loans/Index.vue';
+import LoanView from './Components/Loans/View.vue';
 
 export default {
-  components: { PageHeader, PayrollManagement, PayrollView, PayrollSettings, PayrollTemplate, SalesIncentives },
+  components: { PageHeader, PayrollManagement, PayrollView, PayrollSettings, PayrollTemplate, SalesIncentives, LoanManagement, LoanView },
   props: ['dropdowns'],
   data() {
     return {
@@ -116,6 +129,7 @@ export default {
       showCreateModal: false,
       showEditModal: false,
       selectedPayroll: null,
+      selectedLoan: null,
       isToastVisible: false,
       toastMessage: '',
       tabs: [
@@ -143,6 +157,12 @@ export default {
           icon: 'ri-trophy-line',
           description: 'Manage sales incentives'
         },
+        {
+          id: 'loan_management',
+          label: 'Loans',
+          icon: 'ri-bank-card-line',
+          description: 'Manage employee loans'
+        },
       ]
     }
   },
@@ -155,15 +175,21 @@ export default {
       localStorage.setItem('payroll_active_tab', tab);
       this.currentView = 'list';
       this.selectedPayroll = null;
-      this.filter.keyword = '';
+      this.selectedLoan = null;
+      this.filters.search = '';
     },
     openPayrollDetails(payroll) {
       this.selectedPayroll = payroll;
       this.currentView = 'payrollDetails';
     },
+    openLoanDetails(loan) {
+      this.selectedLoan = loan;
+      this.currentView = 'loanDetails';
+    },
     backToList() {
       this.currentView = 'list';
       this.selectedPayroll = null;
+      this.selectedLoan = null;
       // Optionally fetch updated data
       // this.fetchPayrolls();
     },
