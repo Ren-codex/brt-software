@@ -12,7 +12,6 @@
                 </Link>
             </li>
             <template v-if="$page.props.roles.includes('Human Resource Officer') || $page.props.roles.includes('Administrator')">
-               
                 <li class="nav-item">
                     <Link href="/employees" class="nav-link menu-link"
                     :class="{'active': $page.component.startsWith('Modules/Employees/') }">
@@ -55,13 +54,24 @@
                 </li>
                 <li class="nav-item" v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
                     <Link href="/sales-orders" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/sales-orders') }">
+                    :class="{'active': $page.url.startsWith('/sales-orders') && !$page.url.startsWith('/sales-orders-external') }">
                     <i class="ri-shopping-cart-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Management</span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
+
+                <!-- <li class="nav-item" v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
+                    <Link href="/sales-orders-external" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/sales-orders-external') }">
+                    <i class="ri-shopping-cart-fill"></i>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Management External</span>
+                    <span class="menu-link-bg"></span>
+                    <span class="active-indicator"></span>
+                    </Link>
+                </li> -->
+
                   <li class="nav-item" v-if="$page.props.roles.includes('Sales Manager') || $page.props.roles.includes('Administrator')">
                     <Link href="/customers" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/customers') }">
@@ -73,6 +83,16 @@
                 </li>
 
                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+                    <Link href="/contacts" class="nav-link menu-link"
+                    :class="{'active': $page.url.startsWith('/contacts') }">
+                    <i class="ri-mail-send-line"></i>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Guest Messages </span>
+                    <span class="menu-link-bg"></span>
+                    <span class="active-indicator"></span>
+                    </Link>
+                </li>
+                
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
                     <Link href="/expenses" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/expenses') }">
                     <i class="ri-money-dollar-circle-fill"></i>
@@ -81,6 +101,7 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
+                
                 <li class="nav-item">
                     <Link href="payrolls" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/payrolls') }">
@@ -151,6 +172,15 @@
                                     data-key="t-basic">
                                     <!-- <span class="submenu-dot"></span> -->
                                     <span class="submenu-text">Units</span>
+                                </Link>
+                            </li>
+
+                            <li class="nav-item submenu-item">
+                                <Link href="/libraries/locations" class="nav-link submenu-link"
+                                    :class="{'active': $page.url === '/libraries/locations' }"
+                                    data-key="t-basic">
+                                    <!-- <span class="submenu-dot"></span> -->
+                                    <span class="submenu-text">Locations</span>
                                 </Link>
                             </li>
 

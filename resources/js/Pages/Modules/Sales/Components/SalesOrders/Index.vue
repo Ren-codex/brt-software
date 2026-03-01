@@ -23,10 +23,36 @@
                 <div class="card-body m-2 p-3">
                    
                     <div class="search-section">
-                        <div class="search-wrapper">
-                            <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
-                                placeholder="Search purchase request..." class="search-input">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-search-line search-icon"></i>
+                                    <input type="text"  v-model="filter.keyword" 
+                                        placeholder="Search sales order..." class="search-input">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-map-pin-line search-icon"></i>
+                                    <select v-model="filter.location_id" @change="fetch()" class="search-input">
+                                        <option :value="null">All Locations</option>
+                                        <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
+                                            {{ location.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-flag-line search-icon"></i>
+                                    <select v-model="filter.status" @change="fetch()" class="search-input">
+                                        <option :value="null">All Status</option>
+                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug" >
+                                            {{ status.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -102,6 +128,7 @@
                                     <th style="width: 10%;" class="text-center border-none">Customer</th>
                                     <th style="width: 10%;" class="text-center border-none">Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Status</th>
+                                     <!-- <th style="width: 8%;" class="text-center border-none">SubStatus</th> -->
                                     <th style="width: 10%;" class="text-center border-none">Total Amount</th>
                                     <th style="width: 10%;" class="text-center border-none">Due Date</th>
                                     <th style="width: 8%;" class="text-center border-none">Paid %</th>
@@ -155,12 +182,12 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <!-- <b-button v-if="list.status?.slug == 'for-payment'"
+                                                <b-button v-if="list.status?.slug == 'for-payment'"
                                                     @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary"
                                                     v-b-tooltip.hover title="Sales Adjustment" size="sm"
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-refund-line"></i>
-                                                </b-button> -->
+                                                </b-button>
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info"
                                                     v-b-tooltip.hover title="Print Invoice" size="sm"
                                                     class="btn-icon rounded-circle">
@@ -173,7 +200,7 @@
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
 
-                                                <b-button v-if="list.status?.slug != 'cancelled' && list.status?.slug != 'closed' || list.status?.slug != 'approved'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.slug !== 'cancelled' && list.status?.slug !== 'sales-returned'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
                                                 </b-button>
                                             </div>
@@ -233,10 +260,6 @@
                                                                             </tr>
                                                                         </tbody>
                                                                     </table>
-                                                                    <!-- <div v-for="item in list.items" :key="item.id" class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                                                                        <span>{{ getProduct(item.product_id).name || 'Unknown Product' }}</span>
-                                                                        <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
-                                                                    </div> -->
                                                                 </div>
                                                                 <p v-else class="text-muted mb-0">No items found</p>
                                                             </div>
@@ -247,6 +270,13 @@
                                         </td>
                                     </tr>
                                 </template>
+                                <tr v-if="lists.length === 0">
+                                    <td colspan="9" class="text-center py-4">
+                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
+                                        <p class="mt-2 mb-0">No sales order found</p>
+                                        <small class="text-muted">Try changing your search or filter criteria</small>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -359,7 +389,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' , 'user'],
+    props: ['dropdowns' , 'invoices' , 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -367,7 +397,9 @@ export default {
             meta: {},
             links: {},
             filter: {
-                keyword: null
+                keyword: null,
+                location_id: null,
+                status: null
             },
             index: null,
             selectedRow: null,
@@ -422,10 +454,13 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url) {
-            page_url = page_url || '/sales-orders';
+            let baseUrl = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            page_url = page_url || baseUrl;
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
+                    location_id: this.filter.location_id,
+                    status: this.filter.status,
                     count: 10,
                     option: 'lists'
                 }
@@ -450,21 +485,24 @@ export default {
 
         onCancel(id) {
             let title = "Sales Order";
-            this.$refs.cancel.show(id, title, '/sales-orders');
+            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            this.$refs.cancel.show(id, title, url);
         },
 
         onApproval(id) {
             let title = "Sales Order";
-            this.$refs.approval.show(id, title, '/sales-orders');
+            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            this.$refs.approval.show(id, title, url);
         },
         onPrint(id) {
-            window.open(`/sales-orders/${id}?option=print&type=sales_order`);
+            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            window.open(`${url}/${id}?option=print&type=sales_order`);
         },
     
 
         onSalesAdjustment(id) {
             let title = "Sales Order";
-            this.$refs.adjustment.show(id);
+            this.$refs.adjustment.show(id, this.isExternal);
         },
 
         selectRow(index) {

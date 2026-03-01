@@ -192,7 +192,6 @@ export default {
             this.form.id = data.id;
             this.form.name = data.name;
             this.form.address = data.address;
-            this.form.contact_person = data.contact_person;
             this.form.contact_number = data.contact_number;
             this.form.email = data.email;
             this.form.is_active = data.is_active;

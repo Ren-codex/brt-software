@@ -2,7 +2,7 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-fullscreen " @click.stop>
             <div class="modal-header ">
-                <h2>{{ editable ? 'Update Supplier' : 'Add Sales Order' }}</h2>
+                <h2>{{ editable ? 'Update Sales Order' : 'Add Sales Order' }}</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -100,6 +100,30 @@
 
                                     <span class="error-message" v-if="form.errors.customer_id">{{
                                         form.errors.customer_id }}</span>
+
+                                </div>
+
+                             </div>
+
+                             <div class="form-row">
+                                <div class="form-group form-group-half">
+                                    <label for="location_id" class="form-label">Location<span
+                                        class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-map-pin-line input-icon"></i>
+                                        <b-form-select v-model="form.location_id" :options="dropdowns.locations"
+                                            text-field="name" value-field="value"
+                                            :class="{ 'input-error': form.errors.location_id }" class="form-control">
+                                            <template #first>
+                                                <b-form-select-option :value="null" disabled>Select
+                                                    Location</b-form-select-option>
+                                            </template>
+                                        </b-form-select>
+
+                                    </div>
+
+                                    <span class="error-message" v-if="form.errors.location_id">{{
+                                        form.errors.location_id }}</span>
 
                                 </div>
 
@@ -338,6 +362,7 @@ export default {
                 customer_id: null,
                 sales_rep_id: null,
                 driver_id: null,
+                location_id: null,
                 status_id: null,
                 billing_account: null,
                 payment_mode: null,
@@ -365,7 +390,8 @@ export default {
                 { value: 'retail', text: 'Retail Price' },
                 { value: 'wholesale', text: 'Wholesale Price' }
             ];
-        }
+        },
+
     },
     methods: {
         cleanUnitCost(value) {
@@ -449,6 +475,7 @@ export default {
             this.form.customer_id = data.customer?.id;
             this.form.sales_rep_id = data.sales_rep_id;
             this.form.driver_id = data.driver_id;
+            this.form.location_id = data.location_id;
             this.form.status_id = data.status_id;
             this.form.payment_mode = data.payment_mode;
             this.form.due_date = data.due_date;

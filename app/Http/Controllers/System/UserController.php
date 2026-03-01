@@ -41,10 +41,18 @@ class UserController extends Controller
         }   
     }
 
-     public function update(UserRequest $request ){
-
+     public function update($id, UserRequest $request ){
         $result = $this->handleTransaction(function () use ($request) {
             switch($request->option){
+                case 'users':
+                    return $this->user->update($request);
+                break;
+                case 'reset_password':
+                    return $this->user->resetPassword($request);
+                break;
+                case 'deactivate':
+                    return $this->user->deactivate($request);
+                break;
                 case 'status':
                     return $this->user->status($request);
                 break;

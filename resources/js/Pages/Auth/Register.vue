@@ -73,8 +73,24 @@
                                 </div>
                             </BCol>
                             <BCol lg="12"><hr class="text-muted mt-n1 mb-n3"/></BCol>
+                            <BCol lg="6" class="mt-1">
+                                <InputLabel for="password" value="Password" />
+                                <div class="input-group">
+                                    <input :type="togglePassword ? 'text' : 'password'" class="form-control password-input" placeholder="Enter password" id="password" v-model="form.password" required :class="{ 'is-invalid' : form.errors.password }">
+                                    <span class="input-group-text" style="cursor: pointer;" @click="togglePassword = !togglePassword"><i :class="togglePassword ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i></span>
+                                </div>
+                                <InputError :message="form.errors.password" />
+                            </BCol>
+                            <BCol lg="6" class="mt-1">
+                                <InputLabel for="password_confirmation" value="Confirm Password" />
+                                <div class="input-group">
+                                    <input :type="togglePassword_conf ? 'text' : 'password'" class="form-control password-input" placeholder="Confirm password" id="password_confirmation" v-model="form.password_confirmation" required :class="{ 'is-invalid' : form.errors.password_confirmation }">
+                                    <span class="input-group-text" style="cursor: pointer;" @click="togglePassword_conf = !togglePassword_conf"><i :class="togglePassword_conf ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i></span>
+                                </div>
+                                <InputError :message="form.errors.password_confirmation" />
+                            </BCol>
                         </BRow>
-                    </div>    
+                    </div>
                 </BCol>
             </BRow>
         </form>
@@ -109,11 +125,15 @@ export default {
                 laboratory_id: null,
                 laboratory_type: null,
                 role_id: null,
-                role: null
+                role: null,
+                password: '',
+                password_confirmation: ''
             }),
             has_lab: false,
             showModal: false,
-            editable: false
+            editable: false,
+            togglePassword: false,
+            togglePassword_conf: false
         }
     },
     watch: {

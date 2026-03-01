@@ -18,6 +18,7 @@ use App\Models\Product;
 use App\Models\InventoryStocks;
 use App\Models\PayrollSetting;
 use App\Models\PayrollTemplate;
+use App\Models\ListLocation;
 
 class DropdownClass
 {  
@@ -190,6 +191,40 @@ class DropdownClass
             return [
                 'value' => $item->id,
                 'name' => $item->fullname,
+            ];
+        });
+        return  $data;
+    }
+
+    public function locations(){
+        $data = ListLocation::where('is_active', 1)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name
+            ];
+        });
+        return  $data;
+    }
+
+    public function sales_statuses(){
+        // Get sales order related statuses
+        $data = ListStatus::whereIn('slug', [
+            'pending',
+            'approved',
+            'disapproved',
+            'cancelled',
+            'for-delivery',
+            'delivered',
+            'paid',
+            'unpaid',
+            'partially-paid',
+            'for-payment',
+            'liquidated'
+        ])->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+                'slug' => $item->slug
             ];
         });
         return  $data;

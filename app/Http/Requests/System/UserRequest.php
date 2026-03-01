@@ -15,42 +15,45 @@ class UserRequest extends FormRequest
 
     public function rules(): array
     {
-        if ($this->option === 'credential') {
+
+
+        if ($this->option === 'reset_password') {
             return [
-                'code' => 'required|string',
-                'email' => 'required|email',
-                'mobile' => 'required|string',
-                'kradworkz' => 'nullable|string',
+                'id' => 'required|exists:users,id',
+                'password' => 'required|string|min:8|regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+                'confirm_password' =>  'nullable|string|same:password',
             ];
         }
-        return [
-            //
+        else if($this->option === 'deactivate') {
+            return [
+                'id' => 'required|exists:users,id',
+            ];
+        }
+
+        $userParam = $this->route('user');
+        $userId = null;
+
+        if ($userParam) {
+            $userId = is_object($userParam) ? $userParam->id : $userParam;
+        }
+
+        $rules = [
+            'username' => 'required|string',
+            'email' => 'required|email',
         ];
-    }
 
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
+        if ($userId) {
+            $rules['username'] .= '|unique:users,username,' . $userId;
+            $rules['email'] .= '|unique:users,email,' . $userId;
+            $rules['password'] = 'nullable|string';
+            $rules['confirm_password'] = 'nullable|string|same:password';
+        } else {
+            $rules['username'] .= '|unique:users,username';
+            $rules['email'] .= '|unique:users,email';
+            $rules['password'] = 'required|string';
+            $rules['confirm_password'] = 'required|string|same:password';
+        }
 
-            if ($this->option === 'credential') {
-                if (\App\Models\User::where('email', $this->email)->exists()) {
-                    $validator->errors()->add('email', 'The email has already been taken.');
-                }
-
-                $mobileExists = \App\Models\Employee::all()->filter(function ($employee) use ($user) {
-                    try {
-                        return $employee->mobile 
-                            && decrypt($employee->mobile) === $this->mobile
-                            && $employee->id !== ($user->employee->id ?? null);
-                    } catch (\Exception $e) {
-                        return false;
-                    }
-                })->count();
-
-                if ($mobileExists) {
-                    $validator->errors()->add('mobile', 'The mobile number has already been taken.');
-                }
-            }
-        });
+        return $rules;
     }
 }

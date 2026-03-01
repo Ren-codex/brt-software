@@ -23,7 +23,7 @@
                                 <b-form-select
                                 class="form-control"
                                 v-model="form.type"
-                                :options="['Sales Return' , 'Sales Allowance']"
+                                :options="['Sales Return']"
                                 :class="{ 'input-error': form.errors.type }"
                                 text-field="name"
                                 value-field="value"
@@ -39,7 +39,7 @@
                     </div>
                     
                     <div class="form-row">
-                      <div class="form-group">
+                      <div class="form-group w-100">
                             <label for="reason" class="form-label">Reason</label>
                             <b-form-textarea
                                 id="textarea-rows"
@@ -92,20 +92,24 @@ export default {
                 id: null,
                 type: null,
                 reason: null,
+                action: 'adjustment'
             }),
             showModal: false,
             saveSuccess: false,
+            isExternal: false,
         }
     },
     methods: { 
-        show(id) {
+        show(id, isExternal = false) {
             this.form.reset();
             this.form.id = id;
+            this.isExternal = isExternal;
             this.showModal = true;
         },
 
         submit() {
-            this.form.post(`/sales-orders/adjustment/${this.form.id}`, {
+            let url = this.isExternal ? `/sales-orders-external/${this.form.id}` : `/sales-orders/${this.form.id}`;
+             this.form.put(url, {
                 onSuccess: () => {
                     this.saveSuccess = true;
                     this.$emit('update');

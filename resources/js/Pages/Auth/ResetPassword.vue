@@ -1,4 +1,4 @@
-<script setup>
+ <script setup>
 import { Link, Head, useForm } from '@inertiajs/vue3';
 import InputError from '@/Shared/Components/Forms/InputError.vue';
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
@@ -61,22 +61,20 @@ export default {
                                         </div>
                                         <div class="mb-3">
                                             <InputLabel for="password-input" value="Password" />
-                                            <div class="position-relative auth-pass-inputgroup">
-                                                <input :type="togglePassword ? 'text' : 'password'" class="form-control pe-5 password-input" placeholder="Enter password" id="password-input" v-model="form.password" required :class="{ 'is-invalid' : form.errors.password}">
-                                                <BButton variant="link" class="position-absolute end-0 top-0 text-decoration-none text-muted password-addon" type="button" id="password-addon" @click="togglePassword = !togglePassword"><i class="ri-eye-fill align-middle"></i>
-                                                </BButton>
-                                                <InputError :message="form.errors.password" />
+                                            <div class="input-group">
+                                                <input :type="togglePassword ? 'text' : 'password'" class="form-control password-input" placeholder="Enter password" id="password-input" v-model="form.password" required :class="{ 'is-invalid' : form.errors.password}">
+                                                <span class="input-group-text" style="cursor: pointer;" @click="togglePassword = !togglePassword"><i :class="togglePassword ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i></span>
                                             </div>
+                                            <InputError :message="form.errors.password" />
                                         </div>
 
                                         <div class="mb-3">
                                             <InputLabel for="password_confirmation" value="Confirm Password" />
-                                            <div class="position-relative auth-pass-inputgroup mb-3">
-                                                <input :type="togglePassword_conf ? 'text' : 'password'" class="form-control pe-5 password-input" placeholder="Confirm password" id="confirm-password-input" v-model="form.password_confirmation" required :class="{ 'is-invalid' : form.errors.password_confirmation}">
-                                                <BButton variant="link" class="position-absolute end-0 top-0 text-decoration-none text-muted password-addon" type="button" id="confirm-password-input" @click="togglePassword_conf = !togglePassword_conf"><i class="ri-eye-fill align-middle"></i>
-                                                </BButton>
-                                                <InputError :message="form.errors.password_confirmation" />
+                                            <div class="input-group">
+                                                <input :type="togglePassword_conf ? 'text' : 'password'" class="form-control password-input" placeholder="Confirm password" id="confirm-password-input" v-model="form.password_confirmation" required :class="{ 'is-invalid' : form.errors.password_confirmation}">
+                                                <span class="input-group-text" style="cursor: pointer;" @click="togglePassword_conf = !togglePassword_conf"><i :class="togglePassword_conf ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i></span>
                                             </div>
+                                            <InputError :message="form.errors.password_confirmation" />
                                         </div>
 
                                         <div class="mt-4">

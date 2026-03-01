@@ -14,7 +14,9 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::resource('/sales', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
-    Route::post('/sales-orders/adjustment/{id}', [App\Http\Controllers\Modules\SalesAdjustmentController::class, 'store']);
+    Route::post('/sales-orders/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderController::class, 'adjustment']);
+    Route::resource('/sales-orders-external', App\Http\Controllers\Modules\SalesOrderExternalController::class);
+    Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
     Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
@@ -33,6 +35,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
         Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
         Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
+        Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
 
         
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
@@ -65,7 +68,14 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
         Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);
+        
+        // Contact Management
+        Route::resource('/contacts', App\Http\Controllers\Modules\ContactController::class);
+        Route::patch('/contacts/{id}/mark-read', [App\Http\Controllers\Modules\ContactController::class, 'markAsRead']);
     });
 });
+
+// Public route for submitting contact form from landing page
+Route::post('/api/contacts', [App\Http\Controllers\Modules\ContactController::class, 'store']);
 
 require __DIR__.'/auth.php';

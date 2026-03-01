@@ -23,11 +23,23 @@ class RemittanceClass
 
     public function lists($request){
         $data = RemittanceResource::collection(
-            Remittance::when($request->keyword, function ($query,$keyword) {
-                    $query->where('remittance_no', 'LIKE', "%{$keyword}%");
-                })
-                ->orderBy('created_at', 'DESC')
-                ->paginate($request->count)
+            Remittance::whereHas('receipts.arInvoice.sales_order', function ($q) use ($request) {
+                $q->where(function ($subQ) use ($internalLocationIds) {
+                    $subQ->whereIn('location_id', $internalLocationIds)
+                            ->orWhereNull('location_id');
+                });
+                      
+            })
+            ->when($request->keyword, function ($query,$keyword) {
+                $query->where('remittance_no', 'LIKE', "%{$keyword}%");
+            })
+            ->when($request->status, function ($query, $status) {
+                $query->whereHas('status', function ($q) use ($status) {
+                    $q->where('slug', $status);
+                });
+            })
+            ->orderBy('created_at', 'DESC')
+            ->paginate($request->count)
         );
         return $data;
     }

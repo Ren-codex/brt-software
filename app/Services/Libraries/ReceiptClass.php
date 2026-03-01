@@ -12,10 +12,20 @@ class ReceiptClass
 {
     public function lists($request){
         return Receipt::with(['arInvoice.sales_order.customer', 'status'])
+            ->when($request->location_id, function ($query, $locationId) {
+                $query->whereHas('arInvoice.sales_order', function ($q) use ($locationId) {
+                    $q->where('location_id', $locationId);
+                });
+            })
             ->when($request->keyword, function($query) use ($request) {
                 $query->whereHas('arInvoice.sales_order.customer', function($q) use ($request) {
                     $q->where('name', 'like', '%' . $request->keyword . '%');
                 })->orWhere('receipt_number', 'like', '%' . $request->keyword . '%');
+            })
+            ->when($request->status, function ($query, $status) {
+                $query->whereHas('status', function ($q) use ($status) {
+                    $q->where('slug', $status);
+                });
             })
             ->orderBy('created_at', 'desc')
             ->paginate($request->count ?? 10);

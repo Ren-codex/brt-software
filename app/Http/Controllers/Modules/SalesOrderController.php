@@ -44,14 +44,18 @@ class SalesOrderController extends Controller
                         'batch_codes' => $this->dropdown->batch_codes(),
                         'sales_reps' => $this->dropdown->sales_reps(),
                         'drivers' => $this->dropdown->drivers(),
+                        'locations' => $this->dropdown->locations(),
+                        'sales_statuses' => $this->dropdown->sales_statuses(),
                     ],
-      
+                    'isExternal' => false,
+
                 ]);
             break;
         }
     }
 
     public function store(SalesOrderRequest $request){
+     
         $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);
         });
@@ -67,31 +71,26 @@ class SalesOrderController extends Controller
 
 
     public function update(SalesOrderRequest $request, $id){
-        $request->merge(['id' => $id]);
+
         $result = $this->handleTransaction(function () use ($request) {
-            return $this->sales_order->update($request);
-        });
+                switch($request->action){
+                    case 'update':
+                        $request->merge(['is_external' => false]);
+                        return $this->sales_order->update($request->id);
+                    break;
+                    case 'approve':
+                        return $this->sales_order->approve($request->id);
+                    break;
+                    case 'cancel':
+                        return $this->sales_order->cancel($request->id);
+                    break;
+                    case 'adjustment':
+                        return $this->sales_order->adjustment($request);
+                    break;
+                }
+            });
 
-        return back()->with([
-            'data' => $result['data'],
-            'message' => $result['message'],
-            'info' => $result['info'],
-            'status' => $result['status'],
-        ]);
 
-    }
-
-    public function updateAction(Request $request){
-        $result = $this->handleTransaction(function () use ($request) {
-            switch($request->action){
-                case 'approve':
-                    return $this->sales_order->approve($request->id);
-                break;
-                case 'cancel':
-                    return $this->sales_order->cancel($request->id);
-                break;
-            }
-        });
 
         return back()->with([
             'data' => $result['data'],

@@ -14,6 +14,9 @@ class RevenueReportService
      */
     public function getReports(array $filters = [])
     {
+        $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Main Warehouse')->pluck('id');
+        $internalLocationIds = \App\Models\ListLocation::where('name', 'Main Warehouse')->pluck('id');
+
         $query = DB::table('sales_order_items as soi')
             ->join('products as p', 'soi.product_id', '=', 'p.id')
             ->join('list_brands as lb', 'p.brand_id', '=', 'lb.id')
@@ -29,8 +32,19 @@ class RevenueReportService
             ->join('receipts as r', 'ai.id', '=', 'r.ar_invoice_id')
             ->join('remittances as rem', 'r.remittance_id', '=', 'rem.id')
             ->join('list_statuses as rs', 'r.status_id', '=', 'rs.id')
+            ->join('sales_orders as so', 'soi.sales_order_id', '=', 'so.id')
             ->where('rs.slug', '=', 'paid')
             ->whereNotNull('r.remittance_id')
+            ->where(function ($q) use ($filters, $externalLocationIds, $internalLocationIds) {
+                if (isset($filters['is_external']) && $filters['is_external']) {
+                    $q->whereIn('so.location_id', $externalLocationIds);
+                } else {
+                    $q->where(function ($subQ) use ($internalLocationIds) {
+                        $subQ->whereIn('so.location_id', $internalLocationIds)
+                             ->orWhereNull('so.location_id');
+                    });
+                }
+            })
             ->select(
                 'rem.remittance_date',
                 DB::raw("CONCAT(lb.name, ' ', p.pack_size, ' ', lu.name) as product_name"),

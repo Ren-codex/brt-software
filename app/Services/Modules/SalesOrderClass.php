@@ -26,19 +26,56 @@ class SalesOrderClass
     }
 
     public function lists($request){
+        $query = SalesOrder::with([
+            'items', 
+            'arInvoices',
+            'customer',
+            'status',
+            'sub_status',
+            'created_by',
+            'salesRep',
+            'driver'
+        ])
+            ->when($request->keyword, function ($query,$keyword) {
+                $query->where('so_number', 'LIKE', "%{$keyword}%")
+                      ->orWhereHas('status', function($q) use ($keyword){
+                          $q->where('name', 'LIKE', "%{$keyword}%");
+                      })
+                      ->orWhereHas('customer', function($q) use ($keyword){
+                          $q->where('name', 'LIKE', "%{$keyword}%");
+                      });
+            })
+            ->when($request->status, function ($query, $status) {
+                $query->whereHas('status', function($q) use ($status){
+                    $q->where('slug', $status);
+                });
+            })
+            ->when($request->sub_status, function ($query, $sub_status) {
+                $query->whereHas('subStatus', function($q) use ($sub_status){
+                    $q->where('slug', $sub_status);
+                });
+            })
+            ->when($request->location_id, function ($query, $location_id) {
+                $query->where('location_id', $location_id);
+            })
+            ->when($request->status_id, function ($query, $status_id) {
+                $query->where('status_id', $status_id);
+            });
+
+        // if ($request->is_external) {
+        //     $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Zamboanga City')->pluck('id');
+        //     $query->whereIn('location_id', $externalLocationIds);
+        // } else {
+        //     $internalLocationIds = \App\Models\ListLocation::where('name', 'Zamboanga City')->pluck('id');
+        //     $query->where(function ($q) use ($internalLocationIds) {
+        //         $q->whereIn('location_id', $internalLocationIds)
+        //           ->orWhereNull('location_id');
+        //     });
+        // }
+
         $data = SalesOrderResource::collection(
-            SalesOrder::with(['items', 'arInvoices'])
-                ->when($request->keyword, function ($query,$keyword) {
-                    $query->where('so_number', 'LIKE', "%{$keyword}%")
-                          ->orWhereHas('status', function($q) use ($keyword){
-                              $q->where('name', 'LIKE', "%{$keyword}%");
-                          })
-                          ->orWhereHas('customer', function($q) use ($keyword){
-                              $q->where('name', 'LIKE', "%{$keyword}%");
-                          });
-                })
-                ->orderBy('created_at', 'DESC')
-                ->paginate($request->count)
+            $query->orderBy('created_at', 'DESC')
+                  ->paginate($request->count)
         );
         return $data;
     }
@@ -46,7 +83,6 @@ class SalesOrderClass
 
     public function save($request){
    
-                
         // Validate stock availability for all items
         foreach($request->items as $item){
             if (!$this->inventoryService->hasSufficientStock($item['product_id'], $item['quantity'], $item['batch_code'])) {
@@ -55,23 +91,22 @@ class SalesOrderClass
             }
         }
 
-        //dd( $request->all());
+        $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Zamboanga City')->pluck('id');
+        $isExternal = in_array($request->location_id, $externalLocationIds->toArray());
+        $prefix = $isExternal ? 'SO-EXT' : 'SO';
         $data = new SalesOrder();
-        $data->so_number = SalesOrder::generateSONumber();
-        //dd(SalesOrder::generateSONumber());
+        $data->so_number = SalesOrder::generateSoNumber(null, $prefix);
         $data->order_date = $request->order_date;
         $data->customer_id = $request->customer_id;
         $data->sales_rep_id = $request->sales_rep_id;
         $data->driver_id = $request->driver_id;
         $data->payment_mode = $request->payment_mode;
-        $data->due_date = $request->due_date;
+        $data->due_date = strtolower($request->payment_mode) === 'credit' ? $request->due_date : null;
+        $data->location_id = $request->location_id;
         $data->added_by_id = auth()->user()->id;
-        $data->status_id = ListStatus::getBySlug('for-payment')->id; //set to "For Payment" 
+        $data->status_id = ListStatus::getBySlug('for-payment')->id; //set to "For Payment"
 
         $data->save();
-
-        //dd($data->id);
-
 
         $totalAmount = 0;
         $totalDiscount = 0;
@@ -145,7 +180,8 @@ class SalesOrderClass
             'sales_rep_id' => $request->sales_rep_id,
             'driver_id' => $request->driver_id,
             'payment_mode' => $request->payment_mode,
-            'due_date' => $request->due_date,
+            'due_date' => strtolower($request->payment_mode) === 'credit' ? $request->due_date : null,
+            'location_id' => $request->location_id,
             'updated_by_id' => auth()->user()->id,
         ]);
 
@@ -199,6 +235,8 @@ class SalesOrderClass
                 'total_discount' => $totalDiscount,
             ]);
         }
+
+
 
         // Reload the data with relationships
         $data = SalesOrder::with(['items', 'customer', 'status', 'updated_by', 'arInvoices'])->find($data->id);
@@ -308,10 +346,24 @@ class SalesOrderClass
         ];
     }
 
-     public function adjustment(){
-        // Get all sales orders with status 'adjusted' (assuming status_id 3 is 'adjusted')
-        $adjusted_orders = SalesOrder::where('status_id', ListStatus::getBySlug('adjusted')->id)->with('items')->get();
+    public function adjustment($request){
+        $sales_order = SalesOrder::findOrFail($request->id);
+  
 
-        return $adjusted_orders; 
+        // Set sub-status based on type
+        if ($request->type == 'Sales Return') {
+            $status = ListStatus::getBySlug('sales-returned');
+        } elseif ($request->type == 'Sales Allowance') {
+            $status = ListStatus::getBySlug('allowance-applied');
+        }
+
+        $sales_order->update([ 'status_id' => $status->id]);
+
+
+        return [
+            'data' => $sales_order,
+            'message' => 'Sales adjustment applied successfully!',
+            'info' => "You've successfully applied the sales adjustment"
+        ];
     }
 }

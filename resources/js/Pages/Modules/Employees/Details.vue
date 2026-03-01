@@ -6,7 +6,7 @@
                     <i class="ri-arrow-left-line"></i>
                     Back to List
                 </button>
-                <button @click="openEdit(selectedEmployee, selectedRow)" variant="info" v-b-tooltip.hover title="Edit"
+                <button @click="openEdit(employee)" variant="info" v-b-tooltip.hover title="Edit"
                     class="emp-create-btn">
                     <i class="ri-pencil-fill"></i>
                     Edit
@@ -280,11 +280,15 @@
             </div>
         </div>
     </div>
+      <Create @add="fetch()" @update="fetch()"  :dropdowns="dropdowns" ref="create" />
 </template>
 
 <script>
+
+import Create from './Modals/Create.vue';
 export default {
-    props: ['employee', 'backToList', 'openEdit', 'selectedEmployee', 'selectedRow'],
+    components: {Create },
+    props: ['employee', 'backToList',  ],
     name: 'EmployeeDetails',
     data() {
         return {
@@ -330,7 +334,10 @@ export default {
         },
         toggleLoanCollapse() {
             this.loanCollapsed = !this.loanCollapsed;
-        }
+        },
+        openEdit(data) {
+            this.$refs.create.edit(data);
+        },
     }
 }
 </script>

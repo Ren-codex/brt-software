@@ -3,6 +3,8 @@
     <Head title="Sales" />
     <PageHeader title="Sales Management" pageTitle="List" />
 
+
+
     <div class="inventory-container">
       <!-- Minimal Vertical Tabs -->
       <div class="inventory-sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
@@ -52,8 +54,12 @@
                 <SalesOrders :dropdowns="dropdowns"/>
               </div>
 
+              <div v-if="activeTab === 'sales_returns'" class="shadow-sm p-3">
+                <SalesReturns :dropdowns="dropdowns"/>
+              </div>
+
               <div v-if="activeTab === 'ar_invoices'" class="shadow-sm p-3">
-                <ARInvoices :dropdowns="dropdowns"/>
+                <ARInvoices :dropdowns="dropdowns" :isExternal="false"/>
               </div>
 
               <div v-if="activeTab === 'receipts'" class="shadow-sm p-3">
@@ -82,13 +88,14 @@ import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import SalesOrders from "@/Pages/Modules/Sales/Components/SalesOrders/Index.vue";
+import SalesReturns from "@/Pages/Modules/Sales/Components/SalesReturns/Index.vue";
 import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
 import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
 import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
 import RevenueReports from "@/Pages/Modules/Sales/Components/RevenueReports/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, ARInvoices, Receipts, Remittances, RevenueReports },
+  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, RevenueReports },
   props: ['dropdowns'],
   data() {
     return {
@@ -107,6 +114,12 @@ export default {
           label: 'Sales Orders',
           icon: 'ri-shopping-bag-line',
           description: 'Manage sales orders'
+        },
+        {
+          id: 'sales_returns',
+          label: 'Sales Returns',
+          icon: 'ri-shopping-bag-line',
+          description: 'Manage sales returns'
         },
         {
           id: 'ar_invoices',
