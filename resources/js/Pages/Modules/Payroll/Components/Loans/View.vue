@@ -15,14 +15,19 @@
                 </div>
               </div>
               <div class="d-flex gap-2">
-                <button v-if="canApprove && loan.status === 'pending'" class="create-btn"
-                        @click="approveLoan">
-                  <i class="ri-check-line"></i>
-                  <span>Approval</span>
-                </button>
-                <button v-if="loan.status === 'pending'" @click="openEdit(loan)" class="create-btn" v-b-tooltip.hover title="Edit" style="margin-right: -8px">
-                  <i class="ri-pencil-fill"></i>
-                </button>
+                <template v-if="loan.status === 'pending'">
+                  <button v-if="canApprove" class="create-btn"
+                          @click="approveLoan">
+                    <i class="ri-check-line"></i>
+                    <span>Approval</span>
+                  </button>
+                  <button @click="openEdit(loan)" class="create-btn" v-b-tooltip.hover title="Edit" style="margin-right: -8px">
+                    <i class="ri-pencil-fill"></i>
+                  </button>
+                  <button @click="deleteLoan" class="create-btn" v-b-tooltip.hover title="Delete" style="margin-right: -8px">
+                    <i class="ri-delete-bin-line"></i>
+                  </button>
+                </template>
                 <button @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back">
                   <i class="ri-arrow-left-line"></i>
                 </button>
@@ -270,6 +275,54 @@ export default {
       setTimeout(() => {
         this.isToastVisible = false;
       }, 3000);
+    },
+
+    deleteLoan() {
+      this.confirmDelete(this.loan).then(() => {
+        this.showToast('Loan deleted successfully!')  
+        this.$emit('toast', 'Delete functionality would open the delete modal');
+        this.$emit('back');
+      });
+    },
+
+    async confirmDelete(template) {
+      const result = await Swal.fire({
+          title: 'Are you sure?',
+          text: 'You want to delete this loan?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, delete it!'
+      });
+      if (result.isConfirmed) {
+          axios.delete(`/loans/${template.id}`)
+              .then(response => {
+                  if (response.data && response.data.info && response.data.message && response.data.status === false) {
+                    Swal.fire({
+                      title: response.data.message,
+                      text: response.data.info,
+                      icon: 'info',
+                      confirmButtonText: 'OK'
+                    });
+                  } else {
+                    Swal.fire({
+                      title: response.data.message,
+                      text: response.data.info,
+                      icon: 'success',
+                    });
+                    this.selectedLoan = null;
+                  }
+              })
+              .catch(error => {
+                  console.error(error);
+                  Swal.fire(
+                      'Error!',
+                      'Failed to delete loan.',
+                      'error'
+                  );
+              });
+      }
     },
   }
 };
