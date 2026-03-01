@@ -39,7 +39,7 @@
                 </span>
                 <span class="actor-name">{{ log.actioned_by || 'System' }}</span>
               </div>
-              <p class="log-description">{{ getLogDescription(log) }}</p>
+              <p class="log-description" v-if="log.remarks">{{ getLogDescription(log) }}</p>
             </div>
           </div>
         </div>

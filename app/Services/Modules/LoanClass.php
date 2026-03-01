@@ -136,8 +136,8 @@ class LoanClass
         $oldStatus = $loan->status;
         $newStatus = $request->status;
 
-        $loan->update(['status' => $newStatus]);
-        $this->log($loan->id, $newStatus, "Loan status changed from {$oldStatus} to {$newStatus}");
+        $loan->update(['status' => $newStatus == 'approved' ? 'approved' : 'rejected']);
+        $this->log($loan->id, $newStatus, $request->remarks);
 
         return [
             'data' => new LoanResource($loan),

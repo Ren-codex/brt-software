@@ -151,13 +151,6 @@ export default {
     };
   },
   computed: {
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Checks if the current user has the role of Top Management or Administrator.
- *
- * @return {boolean} True if the user has the role, false otherwise.
- */
-/*******  ead86683-cd87-499b-a18b-31c9fb252dab  *******/
     canApprove() {
       const roles = this.$page.props.roles;
       const userRoles = roles ? Object.values(roles) : [];
