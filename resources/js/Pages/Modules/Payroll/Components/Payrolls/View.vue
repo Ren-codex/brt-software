@@ -123,7 +123,7 @@
                           <td>{{ formatCurrency(item.basic_salary) }}</td>
                           <td>{{ formatCurrency(item.total_days) }}</td>
                           <td>{{ formatCurrency(item.total_earnings) }}
-                            <div class="loan-container" v-if="item.earnings.length">
+                            <div class="loan-container" v-if="item.earnings && item.earnings.length">
                               <i class="ri-git-repository-line loan-icon"></i>
                               <div class="loan-tooltip" style="left: 50%;">
                                 <div v-for="(earning, i) in item.earnings" :key="i" class="loan-detail">
@@ -135,7 +135,7 @@
                             </div>
                           </td>
                           <td>{{ formatCurrency(item.total_deductions) }}
-                            <div class="loan-container" v-if="item.loans.length">
+                            <!-- <div class="loan-container" v-if="Array.isArray(item.loans) && item.loans.length">
                               <i class="ri-git-repository-line loan-icon"></i>
                               <div class="loan-tooltip">
                                 <div v-for="loan in item.loans" :key="loan.id" class="loan-detail">
@@ -144,6 +144,16 @@
                                   <strong>Term Left:</strong> {{ loan.term_months }} months<br>
                                   <strong>Interest Rate:</strong> {{ Math.round(loan.interest_rate) }}%<br>
                                   <strong>Payroll Deduction:</strong> ₱ {{ loan.payroll_deduction ||((loan.remaining_balance / loan.remaining_term_to_pay) + (loan.remaining_balance * (loan.interest_rate / 100) / 2)).toFixed(2) }}
+                                </div>
+                              </div>
+                            </div> -->
+                            <div class="loan-container" v-if="item.deductions && item.deductions.length">
+                              <i class="ri-git-repository-line loan-icon"></i>
+                              <div class="loan-tooltip">
+                                <div v-for="(deduction, i) in item.deductions" :key="i" class="loan-detail">
+                                  <strong>#{{ i + 1 }}</strong><br>
+                                  <strong>Deduction:</strong> {{ deduction.description }}<br>
+                                  <strong>Amount:</strong> ₱ {{ parseFloat(deduction.amount).toFixed(2) }}<br>
                                 </div>
                               </div>
                             </div>
@@ -160,44 +170,7 @@
         </div>
       </div>
       <div class="col-sm-4">
-        <div class="library-card">
-          <div class="library-card-header">
-            <div class="d-flex align-items-center gap-3">
-              <div class="header-icon">
-                <i class="ri-history-line"></i>
-              </div>
-              <div>
-                <h4 class="header-title mb-1">Transaction Logs</h4>
-                <p class="header-subtitle mb-0">Activity history and remarks</p>
-              </div>
-            </div>
-          </div>
-          <div class="library-card-body">
-            <div class="table-section" v-if="payroll.logs && payroll.logs.length">
-              <div class="table-responsive">
-                <table class="table align-middle table-centered mb-0">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>User</th>
-                      <th>Action</th>
-                      <th>Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(log, index) in payroll.logs" :key="log.id">
-                      <td>{{ formatDate(log.created_at) }}</td>
-                      <td>{{ log.actioned_by || 'N/A' }}</td>
-                      <td>{{ log.action }}</td>
-                      <td>{{ log.remarks }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <p v-else>No transaction logs available.</p>
-          </div>
-        </div>
+        <TransactionLogs :logs="payroll.logs" :compact="true" :initial-visible="4" :logs-per-page="4" />
       </div>
     </div>
   </div>
@@ -249,10 +222,11 @@
 <script>
 import Swal from 'sweetalert2';
 import PayrollModal from './Modal.vue'
+import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 
 export default {
   name: "PayrollView",
-  components: { PayrollModal },
+  components: { PayrollModal, TransactionLogs },
   props: {
     payroll: Object,
     dropdowns: Object,

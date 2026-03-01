@@ -282,6 +282,10 @@ export default {
         return targetId !== undefined && employeeId === targetId;
       });
       if (index !== -1) {
+        const nextLoans = Array.isArray(data.loans)
+          ? data.loans
+          : (Array.isArray(data.selected_loans) ? data.selected_loans : this.selectedEmployees[index].loans || []);
+
         this.selectedEmployees[index] = {
           ...this.selectedEmployees[index],
           basic_salary: data.basic_salary,
@@ -291,7 +295,7 @@ export default {
           total_earnings: data.total_earnings,
           total_deductions: data.total_deductions,
           net_salary: data.net_salary,
-          selected_loans: data.selected_loans,
+          loans: nextLoans,
         };
       }
       this.showIndividualModal = false;
@@ -339,24 +343,24 @@ export default {
         total_days: 0,
         basic_salary: emp.basic_salary || 0,
         total_days: emp.total_days || 0,
-        earnings: emp.earnings || 0,
-        deductions: emp.deductions || 0,
+        earnings: Array.isArray(emp.earnings) ? emp.earnings : [],
+        deductions: Array.isArray(emp.deductions) ? emp.deductions : [],
         total_earnings: emp.total_earnings || 0,
         total_deductions: emp.total_deductions || 0,
         tmp: this.calculateLoanDeduction(emp.loans),
-        loans: emp.loans || [],
+        loans: Array.isArray(emp.loans) ? emp.loans : [],
       }));
 
       this.form.payroll_template.employees.forEach(emp => {
         this.employeeDetails[emp.value] = {
           total_days: emp.total_days || 0,
           basic_salary: emp.basic_salary || 0,
-          earnings: emp.earnings || 0,
-          deductions: emp.deductions || 0,
+          earnings: Array.isArray(emp.earnings) ? emp.earnings : [],
+          deductions: Array.isArray(emp.deductions) ? emp.deductions : [],
           total_earnings: emp.total_earnings || 0,
           total_deductions: emp.total_deductions || 0,
           tmp: this.calculateLoanDeduction(emp.loans),
-          loans: emp.loans || [],
+          loans: Array.isArray(emp.loans) ? emp.loans : [],
         }
       });
     },
@@ -371,7 +375,8 @@ export default {
 
     calculateTotalSalary() {
       return this.selectedEmployees.reduce((total, employee) => {
-        return total + (employee.net_salary ?? 0);
+        const netSalary = Number(employee.net_salary);
+        return total + (Number.isFinite(netSalary) ? netSalary : 0);
       }, 0);
     },
 
@@ -393,6 +398,11 @@ export default {
       }
 
       this.loading = true;
+      const normalizeLoans = (employee) => {
+        if (Array.isArray(employee.loans)) return employee.loans;
+        if (Array.isArray(employee.selected_loans)) return employee.selected_loans;
+        return [];
+      };
 
       const payload = {
         pay_period_start: this.form.pay_period_start,
@@ -408,7 +418,9 @@ export default {
             total_earnings: e.total_earnings,
             total_deductions: e.total_deductions,
             net_salary: e.net_salary,
-            loans: e.selected_loans.length > 0 ? e.selected_loans : [],
+            loans: normalizeLoans(e),
+            // Backward-compatible key to support legacy backend paths.
+            selected_loans: normalizeLoans(e),
           };
         }),
         total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),

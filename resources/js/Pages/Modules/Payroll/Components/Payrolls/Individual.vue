@@ -208,7 +208,7 @@ export default {
         earnings: [],
         deductions: [],
         total_days: 0, 
-        selected_loans: [],
+        loans: [],
       },
       showEarningModal: false,
       isEarningEdit: false,
@@ -253,7 +253,7 @@ export default {
         earnings: [],
         deductions: [],
         total_days: 0,
-        selected_loans: [],
+        loans: [],
       }
     },
     resetForm() {
@@ -273,7 +273,7 @@ export default {
         this.form.total_days = this.employee.total_days || 11;
         this.form.earnings = (this.employee.earnings || []).map(item => ({ ...item }));
         this.form.deductions = (this.employee.deductions || []).map(item => ({ ...item }));
-        this.form.selected_loans = (this.employee.selected_loans || []).map(loan => ({ ...loan }));
+        this.form.loans = (this.employee.loans || []).map(loan => ({ ...loan }));
       } else {
         this.resetForm()
       }
@@ -338,7 +338,7 @@ export default {
       } else {
         // Add each selected loan as an individual deduction item
         if (deduction.selectedLoans && deduction.selectedLoans.length) {
-          this.form.selected_loans = deduction.selectedLoans;
+          this.form.loans = deduction.selectedLoans;
           deduction.selectedLoans.forEach(loan => {
             this.form.deductions.push({
               description: `${loan.loan_no}`,
@@ -388,7 +388,7 @@ export default {
         total_earnings: this.totalEarnings,
         total_deductions: this.totalDeductions,
         net_salary: this.netPay,
-        selected_loans: this.form.selected_loans.map(loan => ({ ...loan })),
+        loans: this.form.loans.map(loan => ({ ...loan })),
       }
 
       this.$emit('save', payload)
