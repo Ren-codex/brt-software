@@ -20,4 +20,9 @@ class Expense extends Model
     {
         return $this->belongsTo(User::class, 'added_by_id');
     }
+
+    public function status_info(): BelongsTo
+    {
+        return $this->belongsTo(ListStatus::class, 'status', 'slug');
+    }
 }

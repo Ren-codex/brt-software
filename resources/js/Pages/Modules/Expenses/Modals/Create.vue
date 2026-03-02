@@ -45,19 +45,7 @@
                             </div>
                             <span class="error-message" v-if="form.errors.expense_date">{{ form.errors.expense_date }}</span>
                         </div>
-                        <div class="form-group form-group-half">
-                            <label for="status" class="form-label">Status</label>
-                            <div class="input-wrapper">
-                                <i class="ri-flag-line input-icon"></i>
-                                <select v-model="form.status" class="form-control" :class="{ 'input-error': form.errors.status }">
-                                    <option value="pending">Pending</option>
-                                    <option value="approved">Approved</option>
-                                    <option value="rejected">Rejected</option>
-                                    <option value="paid">Paid</option>
-                                </select>
-                            </div>
-                            <span class="error-message" v-if="form.errors.status">{{ form.errors.status }}</span>
-                        </div>
+                      
                     </div>
 
                     <div class="form-group">

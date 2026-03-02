@@ -20,6 +20,9 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
     Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
+     Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
+    Route::patch('/suppliers/{id}/toggle-active', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleActive']);
+    Route::patch('/suppliers/{id}/toggle-blacklist', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleBlacklist']);
     Route::resource('/receipts', App\Http\Controllers\Modules\ReceiptController::class);
 
     // Make revenue reports available to all authenticated users (not just administrators)
@@ -27,7 +30,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
 
     Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
-        Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
+        // Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
         Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
         Route::resource('/libraries/brands', App\Http\Controllers\Libraries\BrandController::class);
         Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
