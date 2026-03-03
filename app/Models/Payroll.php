@@ -12,7 +12,7 @@ class Payroll extends Model
         'pay_period_start',
         'pay_period_end',
         'total_amount',
-        'status',
+        'status_id',
         'payroll_template_id',
         'created_by',
     ];
@@ -35,5 +35,15 @@ class Payroll extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(PayrollLog::class);
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(ListStatus::class, 'status_id');
     }
 }

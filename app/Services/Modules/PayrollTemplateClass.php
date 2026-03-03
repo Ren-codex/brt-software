@@ -62,7 +62,7 @@ class PayrollTemplateClass
         $payrollTemplate = PayrollTemplate::findOrFail($id);
         
         $hasOngoingPayroll = Payroll::where('payroll_template_id', $payrollTemplate->id)
-        ->where('status', '!=', 'paid')
+        ->where('status_id', '!=', 9)
         ->exists();
 
         if ($hasOngoingPayroll) {

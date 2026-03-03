@@ -11,19 +11,23 @@ class PayrollItem extends Model
         'payroll_id',
         'employee_id',
         'basic_salary',
-        'overtime_hours',
-        'overtime_rate',
         'deductions',
+        'earnings',
+        'total_earnings',
+        'total_deductions',
         'net_salary',
         'total_days',
+        'loans',
     ];
 
     protected $casts = [
         'basic_salary' => 'decimal:2',
-        'overtime_hours' => 'decimal:2',
-        'overtime_rate' => 'decimal:2',
-        'deductions' => 'decimal:2',
-        'net_salary' => 'decimal:2'
+        'total_earnings' => 'decimal:2',
+        'total_deductions' => 'decimal:2',
+        'net_salary' => 'decimal:2',
+        'loans' => 'array',
+        'deductions' => 'array',
+        'earnings' => 'array',
     ];
 
     public function payroll(): BelongsTo
@@ -43,6 +47,6 @@ class PayrollItem extends Model
             ->effectiveOn($this->payroll->pay_period_start ?? now())
             ->first();
 
-        return $setting ? $setting->overtime_rate : 1.5; // Default to 1.5 if no setting
+        return $setting ? $setting->overtime_rate : 1.5;
     }
 }

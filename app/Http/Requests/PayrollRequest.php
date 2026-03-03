@@ -28,11 +28,13 @@ class PayrollRequest extends FormRequest
             'items' => 'required|array|min:1',
             'items.*.employee_id' => 'required|exists:employees,id',
             'items.*.basic_salary' => 'required|numeric|min:0',
-            'items.*.overtime_hours' => 'nullable|numeric|min:0',
-            'items.*.overtime_rate' => 'nullable|numeric|min:0',
-            'items.*.deductions' => 'nullable|numeric|min:0',
+            'items.*.deductions' => 'nullable|array|min:0',
+            'items.*.earnings' => 'nullable|array|min:0',
+            'items.*.total_earnings' => 'nullable|numeric|min:0',
+            'items.*.total_deductions' => 'nullable|numeric|min:0',
             'items.*.total_days' => 'nullable|numeric|min:0',
             'items.*.net_salary' => 'required|numeric|min:0',
+            'items.*.loans' => 'nullable|array',
             'total_amount' => 'required|numeric|min:0',
         ];
     }
