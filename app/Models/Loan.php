@@ -21,6 +21,12 @@ class Loan extends Model
         'amtpaid',
         'remaining_balance',
         'remaining_term_to_pay',
+        'approved_by_id',
+        'approved_at',
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
     ];
 
     public function employee(): BelongsTo
@@ -31,6 +37,11 @@ class Loan extends Model
     public function added_by(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by_id');
+    }
+
+    public function approved_by(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_id');
     }
 
     public function logs(): HasMany

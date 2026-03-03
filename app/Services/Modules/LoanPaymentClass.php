@@ -53,7 +53,7 @@ class LoanPaymentClass
                 'loan_id' => $loan->id,
                 'amount' => $amount,
                 'paid_date' => $request->paid_date,
-                'paid_term' => $paidTermMonths,
+                'paid_term' => $paidTermMonths * 2,
                 'remarks' => $request->remarks,
                 'added_by_id' => auth()->id(),
             ]);

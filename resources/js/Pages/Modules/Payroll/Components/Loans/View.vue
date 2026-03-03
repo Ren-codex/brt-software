@@ -95,24 +95,28 @@
             <div class="emp-loan-footer">
               <div class="emp-footer-details">
                 <div class="emp-footer-detail">
-                  <span class="emp-footer-label">Loan Date</span>
+                  <span class="emp-footer-label">Date Created</span>
                   <span class="emp-footer-value">{{ formatDate(loan.created_at) }}</span>
                 </div>
                 <div class="emp-footer-detail">
-                  <span class="emp-footer-label">Last Payment</span>
-                  <span class="emp-footer-value">{{ formatDate(latestPaymentDate) }}</span>
+                  <span class="emp-footer-label">Date Approved</span>
+                  <span class="emp-footer-value">{{ formatDate(loan.approved_at) }}</span>
                 </div>
                 <div class="emp-footer-detail">
+                  <span class="emp-footer-label">Approved by</span>
+                  <span class="emp-footer-value">{{ loan.approved_by || '-' }}</span>
+                </div>
+                <!-- <div class="emp-footer-detail">
                   <span class="emp-footer-label">Monthly Payment</span>
                   <span class="emp-footer-value">{{ monthlyPaymentDisplay }}</span>
-                </div>
+                </div> -->
               </div>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="library-card mb-4" style="height: 280px">
+        <div class="library-card mb-4" style="height: 230px">
           <div class="library-card-header">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
@@ -128,25 +132,33 @@
           </div>
           <div class="card-body m-2 p-3">
             <div class="table-responsive table-card" style="overflow: auto;">
-              <table class="table align-middle table-striped table-centered mb-0">
+              <table class="table align-middle table-centered mb-0">
                 <thead class="table-light thead-fixed">
                   <tr class="fs-11">
                     <th style="width: 5%;">#</th>
-                    <th style="width: 15%;">Payment Date</th>
+                    <th style="width: 30%;">Payment Date</th>
                     <th style="width: 15%;">Amount</th>
+                    <th style="width: 30%;">Date Paid</th>
                   </tr>
                 </thead>
                 <tbody class="table-white fs-12">
-                  <tr v-if="!loan.payments || !loan.payments.length">
-                    <td colspan="6" class="text-center text-muted py-3">No loan payments yet.</td>
+                  <tr v-if="!paymentHistory.length">
+                    <td colspan="3" class="text-center text-muted py-3">No loan payments yet.</td>
                   </tr>
-                  <tr v-for="(payment, index) in loan.payments" :key="payment.id || index">
+                  <tr v-for="(payment, index) in displayedPayments" :key="payment.id || index">
                     <td>{{ index + 1 }}</td>
                     <td>{{ payment.paid_date }}</td>
                     <td>{{ formatCurrency(payment.amount) }}</td>
+                    <td>{{ payment.created_at}}</td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+            <div v-if="paymentHistory.length" class="timeline-footer">
+              <button class="btn-load-more" @click="showPaymentHistoryModal = true">
+                <i class="ri-arrow-down-line"></i>
+                Show More
+              </button>
             </div>
           </div>
         </div>
@@ -179,6 +191,38 @@
         
       </div>
     </div>
+    <div v-if="showPaymentHistoryModal" class="modal-overlay active" @click.self="showPaymentHistoryModal = false">
+      <div class="modal-container modal-lg">
+        <div class="modal-header">
+          <h2>Payment History</h2>
+          <button class="close-btn" @click="showPaymentHistoryModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table align-middle table-striped table-centered mb-0">
+              <thead class="table-light">
+                <tr class="fs-11">
+                  <th style="width: 5%;">#</th>
+                  <th style="width: 20%;">Payment Date</th>
+                  <th style="width: 15%;">Amount</th>
+                  <th style="width: 30%;">Date Paid</th>
+                  <th style="width: 30%;">Collected By</th>
+                </tr>
+              </thead>
+              <tbody class="table-white fs-12">
+                <tr v-for="(payment, index) in paymentHistory" :key="payment.id || `history-${index}`">
+                  <td>{{ index + 1 }}</td>
+                  <td>{{ payment.paid_date }}</td>
+                  <td>{{ formatCurrency(payment.amount) }}</td>
+                  <td>{{ payment.created_at }}</td>
+                  <td>{{ payment.added_by }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Toast Notification -->
     <div v-if="isToastVisible" class="toast-notification">
       <div class="toast-content">
@@ -194,6 +238,8 @@
     :loan-id="loan.id"
     :monthly-amount="suggestedPaymentAmount"
     :remaining-months="remainingMonthsToPay"
+    :start-date="loan.approved_at"
+    :start-month-offset="paidMonthsCount"
     @saved="onPaymentSaved"
   />
 </template>
@@ -219,6 +265,7 @@ export default {
     return {
       loanCollapsed: true,
       showModal: false,
+      showPaymentHistoryModal: false,
       remarks: '',
       isToastVisible: false,
       toastMessage: '',
@@ -291,8 +338,17 @@ export default {
       const months = this.remainingTermMonths / 2;
       return Math.max(0, Math.ceil(months));
     },
+    paidMonthsCount() {
+      return Math.max(0, this.loanTermMonths - this.remainingMonthsToPay);
+    },
     todayDate() {
       return new Date().toISOString().slice(0, 10);
+    },
+    paymentHistory() {
+      return Array.isArray(this.loan?.payments) ? this.loan.payments : [];
+    },
+    displayedPayments() {
+      return this.paymentHistory.slice(0, 1);
     },
     monthlyPaymentDisplay() {
       if (this.loanTermMonths <= 0) {
@@ -375,6 +431,9 @@ export default {
         currency: 'PHP'
       }).format(Number(amount));
     },
+    paymentDateValue(payment) {
+      return payment?.payment_date || payment?.paid_date || payment?.created_at || null;
+    },
     getStatusClass(status) {
       switch (status) {
         case 'active':
@@ -447,7 +506,7 @@ export default {
 
       this.loan.payments.unshift({
         id: savedPayment.id || Date.now(),
-        payment_date: savedPayment.paid_date || payload?.paid_date,
+        paid_date: savedPayment.paid_date || payload?.paid_date,
         amount: savedPayment.amount ?? amount,
         remarks: savedPayment.remarks ?? payload?.remarks ?? '-',
         added_by: savedPayment.added_by || '-',
@@ -546,3 +605,40 @@ export default {
   }
 };
 </script>
+<style>
+.timeline-footer {
+  text-align: center;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 25px;
+}
+
+.btn-load-more {
+  background: none;
+  border: 2px solid #e2e8f0;
+  padding: 5px 8px;
+  border-radius: 40px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-load-more:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-2px);
+}
+
+.btn-load-more i {
+  transition: transform 0.2s ease;
+}
+
+.btn-load-more:hover i {
+  transform: translateY(2px);
+}
+</style>

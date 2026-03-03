@@ -168,6 +168,14 @@ export default {
       type: Number,
       default: 0,
     },
+    startDate: {
+      type: String,
+      default: '',
+    },
+    startMonthOffset: {
+      type: Number,
+      default: 0,
+    },
   },
   emits: ['saved'],
   data() {
@@ -185,8 +193,15 @@ export default {
     scheduleRows() {
       const rows = [];
       const months = Math.max(0, this.toNumber(this.remainingMonths, 0));
-      const start = this.form.created_at ? new Date(this.form.created_at) : new Date();
+      const start = this.startDate ? new Date(this.startDate) : new Date();
+      const offset = Math.max(0, this.toNumber(this.startMonthOffset, 0));
+
+      if (Number.isNaN(start.getTime())) {
+        start.setTime(Date.now());
+      }
+
       start.setDate(1);
+      start.setMonth(start.getMonth() + offset);
 
       for (let i = 0; i < months; i += 1) {
         const d = new Date(start);

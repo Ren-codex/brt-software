@@ -21,7 +21,7 @@ class LoanClass
     public function lists($request)
     {
         $data = LoanResource::collection(
-            Loan::with(['employee'])
+            Loan::with(['employee', 'approved_by.employee'])
                 ->when($request->keyword, function ($query, $keyword) {
                     $keyword = strtolower($keyword);
                     $query->where(function ($q) use ($keyword) {
@@ -140,7 +140,13 @@ class LoanClass
         $oldStatus = $loan->status;
         $newStatus = $request->status;
 
-        $loan->update(['status' => $newStatus == 'approved' ? 'approved' : 'rejected']);
+        $isApproved = $newStatus === 'approved';
+
+        $loan->update([
+            'status' => $isApproved ? 'approved' : 'rejected',
+            'approved_by_id' => $isApproved ? auth()->id() : null,
+            'approved_at' => $isApproved ? now() : null,
+        ]);
         $this->log($loan->id, $newStatus, $request->remarks);
 
         return [

@@ -25,12 +25,15 @@ class LoanResource extends JsonResource
             'status' => $this->status,
             'purpose' => $this->purpose,
             'added_by_id' => $this->added_by_id,
+            'approved_by_id' => $this->approved_by_id,
+            'approved_at' => $this->approved_at?->format('F d, Y h:i A'),
             'amtpaid' => $this->amtpaid,
             'remaining_balance' => $this->remaining_balance,
             'remaining_term_to_pay' => $this->remaining_term_to_pay,
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at->format('F d, Y'),
             'employee' => new EmployeeResource($this->employee),
+            'approved_by' => $this->approved_by?->employee?->fullname ?? $this->approved_by?->username,
             'payments' => LoanPaymentResource::collection(
                 $this->payments()->orderBy('created_at', 'DESC')->orderBy('id', 'DESC')->get()
             ),
