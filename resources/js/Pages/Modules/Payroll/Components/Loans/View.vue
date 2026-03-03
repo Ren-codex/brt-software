@@ -75,8 +75,8 @@
                   <span class="emp-detail-title">Payment Terms</span>
                 </div>
                   <div class="emp-detail-content">
-                    <div class="emp-detail-main-value">{{ loanTermMonths > 0 ? `${loanTermMonths} Months` : '-' }}</div>
-                    <div class="emp-detail-sub-value">{{ remainingTermMonths/2 }} Remaining</div>
+                    <div class="emp-detail-main-value">{{ loanTermMonths > 0 ? `${loanTermMonths} Terms` : '-' }}</div>
+                    <div class="emp-detail-sub-value">{{ remainingTermMonths }} Remaining</div>
                   </div>
               </div>
 
@@ -207,6 +207,7 @@
                   <th style="width: 15%;">Amount</th>
                   <th style="width: 30%;">Date Paid</th>
                   <th style="width: 30%;">Collected By</th>
+                  <th style="width: 30%;">Remarks</th>
                 </tr>
               </thead>
               <tbody class="table-white fs-12">
@@ -216,6 +217,7 @@
                   <td>{{ formatCurrency(payment.amount) }}</td>
                   <td>{{ payment.created_at }}</td>
                   <td>{{ payment.added_by }}</td>
+                  <td>{{ payment.remarks }}</td>
                 </tr>
               </tbody>
             </table>
@@ -236,10 +238,10 @@
   <LoanPaymentModal
     ref="paymentModal"
     :loan-id="loan.id"
-    :monthly-amount="suggestedPaymentAmount"
-    :remaining-months="remainingMonthsToPay"
+    :term-amount="suggestedPaymentAmount"
+    :remaining-terms="remainingTermsToPay"
     :start-date="loan.approved_at"
-    :start-month-offset="paidMonthsCount"
+    :start-term-offset="paidTermsCount"
     @saved="onPaymentSaved"
   />
 </template>
@@ -327,19 +329,19 @@ export default {
       return this.remainingTermMonths;
     },
     suggestedPaymentAmount() {
-      const divisor = this.remainingTermMonths / 2;
+      const divisor = this.remainingTermMonths;
       if (divisor <= 0) {
-        return Number(this.remainingBalanceValue.toFixed(2));
+        return this.remainingBalanceValue;
       }
 
-      return Number((this.remainingBalanceValue / divisor).toFixed(2));
+      return this.remainingBalanceValue / divisor;
     },
-    remainingMonthsToPay() {
-      const months = this.remainingTermMonths / 2;
-      return Math.max(0, Math.ceil(months));
+
+    remainingTermsToPay() {
+      return Math.max(0, Math.ceil(this.remainingTermMonths));
     },
-    paidMonthsCount() {
-      return Math.max(0, this.loanTermMonths - this.remainingMonthsToPay);
+    paidTermsCount() {
+      return Math.max(0, this.loanTermMonths - this.remainingTermsToPay);
     },
     todayDate() {
       return new Date().toISOString().slice(0, 10);
@@ -488,10 +490,10 @@ export default {
     onPaymentSaved(payload) {
       const savedPayment = payload?.payment || {};
       const amount = this.toNumber(payload?.amount, 0);
-      const paidTermMonths = this.toNumber(payload?.paidTermMonths, 0);
+      const paidTerms = this.toNumber(payload?.paidTerms, 0);
       const paidAmount = this.toNumber(this.loan.amtpaid, 0) + amount;
       const remainingBalance = Math.max(this.toNumber(this.loan.remaining_balance, 0) - amount, 0);
-      const remainingTerms = Math.max(this.toNumber(this.loan.remaining_term_to_pay, 0) - (paidTermMonths * 2), 0);
+      const remainingTerms = Math.max(this.toNumber(this.loan.remaining_term_to_pay, 0) - paidTerms, 0);
 
       this.loan.amtpaid = paidAmount;
       this.loan.remaining_balance = remainingBalance;

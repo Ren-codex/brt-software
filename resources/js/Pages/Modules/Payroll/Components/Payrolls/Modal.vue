@@ -495,8 +495,9 @@ export default {
       
       const approvedLoans = loans.filter(loan => loan.status === 'approved');
       const total = approvedLoans.reduce((total, loan) => {
-        const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / divisor;
-        const deduction = (loan.remaining_balance / loan.remaining_term_to_pay) + interest;
+        // const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / divisor;
+        // const deduction = (loan.remaining_balance / loan.remaining_term_to_pay) + interest;
+        const deduction = loan.remaining_balance / loan.remaining_term_to_pay;
         this.selectedEmployees.forEach(employee => {
           const employeeLoan = employee.loans.find(eLoan => eLoan.id === loan.id);
           if (employeeLoan) {

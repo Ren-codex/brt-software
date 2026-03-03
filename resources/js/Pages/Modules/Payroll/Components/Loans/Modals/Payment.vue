@@ -9,7 +9,7 @@
           </div>
           <div>
             <h2 class="header-title">Record Loan Payment</h2>
-            <p class="header-subtitle">Process monthly installment payment</p>
+              <p class="header-subtitle">Process 15-day installment payment</p>
           </div>
         </div>
         <button class="close-btn" @click="hide">
@@ -23,7 +23,7 @@
           <div class="section-header">
             <div class="section-title">
               <i class="ri-calendar-check-line"></i>
-              <h3>Select Payment Months</h3>
+              <h3>Select Payment Terms</h3>
             </div>
             <div class="selection-actions" v-if="scheduleRows.length">
               <button 
@@ -64,7 +64,8 @@
                         >
                       </div>
                     </th>
-                    <th>Payment Month</th>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 50%;">Payment Term</th>
                     <th class="text-right">Amount</th>
                   </tr>
                 </thead>
@@ -73,7 +74,7 @@
                     <td colspan="3">
                       <div class="empty-state">
                         <i class="ri-calendar-todo-line"></i>
-                        <p>No remaining monthly terms available</p>
+                        <p>No remaining terms available</p>
                       </div>
                     </td>
                   </tr>
@@ -95,6 +96,7 @@
                         >
                       </div>
                     </td>
+                    <td>{{ row.index }}</td>
                     <td>
                       <div class="month-info">
                         <span class="month-name">{{ row.label }}</span>
@@ -102,7 +104,7 @@
                       </div>
                     </td>
                     <td class="text-right">
-                      <span class="month-amount">{{ numberFormat(monthlyAmount) }}</span>
+                      <span class="month-amount">{{ numberFormat(termAmount) }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -128,7 +130,7 @@
           <div class="total-amount-wrapper">
             <span class="total-amount">{{ numberFormat(totalAmount) }}</span>
             <span class="total-months" v-if="selectedMonths.length">
-              ({{ selectedMonths.length }} month{{ selectedMonths.length > 1 ? 's' : '' }})
+              ({{ selectedMonths.length }} term{{ selectedMonths.length > 1 ? 's' : '' }})
             </span>
           </div>
         </div>
@@ -160,11 +162,11 @@ export default {
       type: [Number, String],
       required: true,
     },
-    monthlyAmount: {
+    termAmount: {
       type: Number,
       default: 0,
     },
-    remainingMonths: {
+    remainingTerms: {
       type: Number,
       default: 0,
     },
@@ -172,7 +174,7 @@ export default {
       type: String,
       default: '',
     },
-    startMonthOffset: {
+    startTermOffset: {
       type: Number,
       default: 0,
     },
@@ -192,23 +194,32 @@ export default {
   computed: {
     scheduleRows() {
       const rows = [];
-      const months = Math.max(0, this.toNumber(this.remainingMonths, 0));
+      const terms = Math.max(0, this.toNumber(this.remainingTerms, 0));
       const start = this.startDate ? new Date(this.startDate) : new Date();
-      const offset = Math.max(0, this.toNumber(this.startMonthOffset, 0));
+      const offset = Math.max(0, this.toNumber(this.startTermOffset, 0));
 
       if (Number.isNaN(start.getTime())) {
         start.setTime(Date.now());
       }
 
-      start.setDate(1);
-      start.setMonth(start.getMonth() + offset);
+      const startHalf = start.getDate() <= 15 ? 0 : 1;
+      const startMonthIndex = (start.getFullYear() * 12) + start.getMonth();
+      const startTermIndex = (startMonthIndex * 2) + startHalf + offset;
 
-      for (let i = 0; i < months; i += 1) {
-        const d = new Date(start);
-        d.setMonth(start.getMonth() + i);
+      for (let i = 0; i < terms; i += 1) {
+        const currentTermIndex = startTermIndex + i;
+        const monthIndex = Math.floor(currentTermIndex / 2);
+        const half = currentTermIndex % 2;
+        const year = Math.floor(monthIndex / 12);
+        const month = monthIndex % 12;
+        const d = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const startDay = half === 0 ? 1 : 16;
+        const endDay = half === 0 ? 15 : lastDay;
+
         rows.push({
           index: i + 1,
-          label: d.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' }),
+          label: `${d.toLocaleDateString('en-PH', { month: 'long' })} ${startDay}-${endDay}, ${year}`,
         });
       }
 
@@ -219,7 +230,7 @@ export default {
       if (!count) {
         return 0;
       }
-      return Number((this.monthlyAmount * count).toFixed(2));
+      return Number((this.termAmount * count).toFixed(2));
     },
     paidTermLabel() {
       if (!this.selectedMonths.length) {
@@ -228,7 +239,7 @@ export default {
       return this.scheduleRows
         .filter(row => this.selectedMonths.includes(row.index))
         .map(row => row.label)
-        .join(' • ');
+        .join(' | ');
     },
     isAllSelected() {
       return this.scheduleRows.length > 0 && 
@@ -340,7 +351,7 @@ export default {
 
       const amount = this.toNumber(this.totalAmount, 0);
       if (amount <= 0) {
-        this.errors.amount = ['Please select at least one month to pay.'];
+        this.errors.amount = ['Please select at least one term to pay.'];
         return;
       }
       
@@ -366,7 +377,7 @@ export default {
         this.$emit('saved', {
           payment: response?.data?.data || {},
           amount,
-          paidTermMonths: this.selectedMonths.length,
+          paidTerms: this.selectedMonths.length,
           message: response?.data?.message || 'Loan payment saved successfully!',
         });
 

@@ -6,6 +6,8 @@ use App\Http\Resources\Libraries\PayrollResource;
 use App\Models\ListStatus;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
+use App\Models\LoanPayment;
+use App\Models\LoanLog;
 use App\Services\SeriesService;
 use DB;
 use App\Models\PayrollLog;
@@ -183,12 +185,34 @@ class PayrollClass
                             $loan = \App\Models\Loan::findOrFail($loanData['id']);
                             if ($loan) {
                                 $deduct = floatval($loanData['payroll_deduction']);
+                                $deductionTerm = $loan->divisor == 1 ? 2 : 1;
+                                $newRemainingBalance = max(0, floatval($loan->remaining_balance) - $deduct);
+                                $periodStart = \Carbon\Carbon::parse($payroll->pay_period_start);
+                                $periodEnd = \Carbon\Carbon::parse($payroll->pay_period_end);
+                                $paidDateLabel = $periodStart->format('F j') . '-' . $periodEnd->format('j, Y');
+
+                                LoanPayment::create([
+                                    'loan_id' => $loan->id,
+                                    'amount' => $deduct,
+                                    'paid_date' => $paidDateLabel,
+                                    'paid_term' => $deductionTerm,
+                                    'remarks' => 'Auto deduction from payroll #' . $payroll->payroll_no,
+                                    'added_by_id' => auth()->id(),
+                                ]);
+
+                                LoanLog::create([
+                                    'loan_id' => $loan->id,
+                                    'action' => 'payment added',
+                                    'actioned_by_id' => auth()->id(),
+                                    'remarks' => 'Payroll deduction recorded: ' . number_format($deduct, 2) . ' (Payroll #' . $payroll->payroll_no . ')',
+                                ]);
+
                                 $loan->remaining_balance = max(0, floatval($loan->remaining_balance) - $deduct);
                                 $loan->amtpaid = floatval($loan->amtpaid) + $deduct;
-                                $loan->remaining_term_to_pay = max(0, intval($loan->remaining_term_to_pay) - ($loan->divisor == 1 ? 2 : 1));
+                                $loan->remaining_term_to_pay = max(0, intval($loan->remaining_term_to_pay) - $deductionTerm);
                                 // Optionally update status if fully paid
-                                if ($loan->remaining_balance <= 0) {
-                                    $loan->status = 'paid';
+                                if ($newRemainingBalance <= 0) {
+                                    $loan->status = 'completed';
                                 }
                                 $loan->save();
                             }

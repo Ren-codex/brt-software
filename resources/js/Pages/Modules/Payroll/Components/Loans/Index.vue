@@ -218,7 +218,7 @@ export default {
         case 'pending':
           return 'badge bg-warning';
         case 'completed':
-          return 'badge bg-info';
+          return 'badge bg-success';
         case 'rejected':
         case 'overdue':
           return 'badge bg-danger';
