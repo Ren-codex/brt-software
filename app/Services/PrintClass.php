@@ -114,7 +114,7 @@ class PrintClass
     }
 
     public function printPayroll($id){
-        $payroll = \App\Models\Payroll::with('items.employee', 'template', 'creator')->findOrFail($id);
+        $payroll = \App\Models\Payroll::with('items.employee', 'template', 'creator', 'approvedBy.employee')->findOrFail($id);
         $items = $payroll->items;
 
         $array = [

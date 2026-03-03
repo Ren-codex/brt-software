@@ -22,7 +22,8 @@ class PayrollClass
 
     public function lists($request)
     {
-        $payrolls = Payroll::when($request->keyword, function($query) use ($request){
+        $payrolls = Payroll::with(['status', 'template', 'creator.employee', 'approvedBy.employee', 'items.employee', 'logs.actionedBy.employee'])
+                ->when($request->keyword, function($query) use ($request){
                     $query->whereHas('items.employee', function($q) use ($request){
                         $q->where('firstname', 'like', '%'.$request->keyword.'%')
                         ->orWhere('lastname', 'like', '%'.$request->keyword.'%')
@@ -202,9 +203,19 @@ class PayrollClass
                     $status = ListStatus::where('slug', $request->status)->first();
                 }
     
-                $payroll->update([
+                $payload = [
                     'status_id' => $status->id,
-                ]);
+                ];
+
+                if ($request->status === 'approved') {
+                    $payload['approved_by_id'] = auth()->id();
+                    $payload['approved_at'] = now();
+                } elseif (in_array($request->status, ['draft', 'disapproved'])) {
+                    $payload['approved_by_id'] = null;
+                    $payload['approved_at'] = null;
+                }
+
+                $payroll->update($payload);
         
                 PayrollLog::create([
                     'payroll_id' => $payroll->id,

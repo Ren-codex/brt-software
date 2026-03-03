@@ -81,6 +81,8 @@
             <p><strong>Template:</strong> {{ $payroll->template ? $payroll->template->name : 'N/A' }}</p>
             <p><strong>Created By:</strong> {{ $payroll->creator ? $payroll->creator->name : 'N/A' }}</p>
             <p><strong>Created Date:</strong> {{ $payroll->created_at->format('M d, Y H:i') }}</p>
+            <p><strong>Approved By:</strong> {{ $payroll->approvedBy?->employee?->fullname ?? $payroll->approvedBy?->username ?? 'N/A' }}</p>
+            <p><strong>Approved At:</strong> {{ $payroll->approved_at ? $payroll->approved_at->format('M d, Y H:i') : 'N/A' }}</p>
         </div>
         <div class="info-box">
             <h3>Summary</h3>
