@@ -77,7 +77,7 @@
     <div class="info-section">
         <div class="info-box">
             <h3>Payroll Information</h3>
-            <p><strong>Status:</strong> {{ ucfirst($payroll->status) }}</p>
+            <p><strong>Status:</strong> {{ ucfirst($payroll->status->slug) }}</p>
             <p><strong>Template:</strong> {{ $payroll->template ? $payroll->template->name : 'N/A' }}</p>
             <p><strong>Created By:</strong> {{ $payroll->creator ? $payroll->creator->name : 'N/A' }}</p>
             <p><strong>Created Date:</strong> {{ $payroll->created_at->format('M d, Y H:i') }}</p>

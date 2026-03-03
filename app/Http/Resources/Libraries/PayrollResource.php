@@ -22,6 +22,7 @@ class PayrollResource extends JsonResource
             'created_by' => $this->creator ? $this->creator->employee->fullname : null,
             'payroll_template_id' => $this->payroll_template_id,
             'payroll_items' => $this->items ? PayrollItemResource::collection($this->items) : [],
+            'logs' => $this->logs ? PayrollLogResource::collection($this->logs) : [],
         ];
     }
 }

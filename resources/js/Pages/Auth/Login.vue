@@ -54,7 +54,7 @@
                                                     type="email" 
                                                     class="form-control" 
                                                     autofocus 
-                                                    placeholder="Please enter email" 
+                                                    placeholder="Enter email address" 
                                                     autocomplete="email" 
                                                     required 
                                                     :class="{ 'is-invalid': form.errors.email }" 
@@ -262,6 +262,10 @@ export default {
 .form-control {
     border: none;
     padding: 12px 15px;
+}
+
+.form-control::placeholder {
+    font-size: 1rem;
 }
 
 .form-control:focus {
