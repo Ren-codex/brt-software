@@ -55,7 +55,7 @@
                       <div class="col-md-6">
                         <div class="mb-3">
                           <label class="form-label">Pay Period</label>
-                          <p class="text-muted">{{ formatDate(payroll.pay_period_start) }} - {{ formatDate(payroll.pay_period_end) }}</p>
+                          <p class="text-muted">{{ payroll.payroll_period }}</p>
                         </div>
                       </div>
                       <div class="col-md-6">

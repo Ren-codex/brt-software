@@ -27,6 +27,7 @@ class PayrollResource extends JsonResource
             'payroll_template_id' => $this->payroll_template_id,
             'payroll_items' => $this->items ? PayrollItemResource::collection($this->items) : [],
             'logs' => $this->logs ? PayrollLogResource::collection($this->logs) : [],
+            'payroll_period' => $this->pay_period_start->format('F j') . '-' . $this->pay_period_end->format('j, Y')
         ];
     }
 }

@@ -74,9 +74,9 @@
               <div v-if="activeTab === 'payroll_templates' && currentView === 'list'" class="shadow-sm p-3">
                 <PayrollTemplate :dropdowns="dropdowns" />
               </div>
-              <div v-if="activeTab === 'payroll_settings' && currentView === 'list'" class="shadow-sm p-3">
+              <!-- <div v-if="activeTab === 'payroll_settings' && currentView === 'list'" class="shadow-sm p-3">
                 <PayrollSettings :dropdowns="dropdowns" />
-              </div>
+              </div> -->
               <div v-if="activeTab === 'sales_incentives' && currentView === 'list'" class="shadow-sm p-3">
                 <SalesIncentives :dropdowns="dropdowns" />
               </div>
@@ -145,12 +145,12 @@ export default {
           icon: 'ri-file-list-3-line',
           description: 'Manage payroll templates'
         },
-        {
-          id: 'payroll_settings',
-          label: 'Settings',
-          icon: 'ri-settings-2-line',
-          description: 'Manage payroll settings'
-        },
+        // {
+        //   id: 'payroll_settings',
+        //   label: 'Settings',
+        //   icon: 'ri-settings-2-line',
+        //   description: 'Manage payroll settings'
+        // },
         {
           id: 'sales_incentives',
           label: 'Sales Incentives',
