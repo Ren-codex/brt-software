@@ -219,6 +219,7 @@ export default {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -232,41 +233,54 @@ export default {
 
 .modal-container {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     max-width: 700px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
-    animation: modalFadeIn 0.3s ease-out;
+    transform: translateY(30px) scale(0.95);
+    transition: all 0.3s ease;
 }
 
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+.modal-overlay.active .modal-container {
+    transform: translateY(0) scale(1);
 }
 
 .modal-header {
     padding: 1.5rem;
-    border-bottom: 1px solid #dee2e6;
-    border-radius: 12px 12px 0 0;
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 20px 20px 0 0;
+    background: #C4DAD2;
+}
+
+.modal-header h4 {
+    color: #16423C;
+    font-weight: 700;
 }
 
 .close-btn {
-    background: none;
+    background: rgba(255, 255, 255, 0.2);
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
     position: absolute;
     top: 1rem;
     right: 1rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
 }
 
 .payment-mode-grid {
@@ -282,7 +296,7 @@ export default {
     justify-content: center;
     padding: 1.5rem 1rem;
     border: 2px solid #e9ecef;
-    border-radius: 8px;
+    border-radius: 10px;
     background: white;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -290,16 +304,16 @@ export default {
 }
 
 .payment-mode-card:hover {
-    border-color: #007bff;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+    border-color: #2e8b57;
+    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.15);
     transform: translateY(-2px);
 }
 
 .selected-payment-mode {
-    border-color: #007bff;
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border-color: #2e8b57;
+    background: #3D8D7A;
     color: white;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
 }
 
 .payment-icon {
@@ -313,27 +327,115 @@ export default {
 }
 
 .error-message {
-    color: #dc3545;
+    color: #e74c3c;
     font-size: 0.875rem;
     margin-top: 0.5rem;
 }
 
 .card {
-    border-radius: 8px;
+    border-radius: 12px;
 }
 
 .card-header {
-    border-radius: 8px 8px 0 0 !important;
+    border-radius: 12px 12px 0 0 !important;
+    background: #f9fafb;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.card-header h6 {
+    color: #267A4C;
+    font-weight: 600;
 }
 
 .btn {
-    border-radius: 6px;
+    border-radius: 8px;
     font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary {
+    background: #3D8D7A;
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(61, 141, 122, 0.4);
+    background: #3D8D7A;
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    border: 1px solid #e9ecef;
+    color: #7f8c8d;
+}
+
+.btn-outline-secondary:hover {
+    background: #f8f9fa;
+    border-color: #7f8c8d;
+    color: #2c3e50;
+}
+
+.form-control {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 10px 12px;
     transition: all 0.3s ease;
 }
 
-.btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.form-control:focus {
+    outline: none;
+    border-color: #2e8b57;
+    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+}
+
+.form-control.is-invalid {
+    border-color: #e74c3c;
+}
+
+.invalid-feedback {
+    color: #e74c3c;
+    font-size: 0.75rem;
+}
+
+.text-primary {
+    color: #267A4C !important;
+}
+
+.text-success {
+    color: #2e8b57 !important;
+}
+
+.text-danger {
+    color: #e74c3c !important;
+}
+
+.text-info {
+    color: #267A4C !important;
+}
+
+.text-muted {
+    color: #7f8c8d !important;
+}
+
+.text-dark {
+    color: #2c3e50 !important;
+}
+
+.text-white {
+    color: white !important;
+}
+
+.bg-primary {
+    background-color: #3D8D7A !important;
+}
+
+.bg-light {
+    background-color: #f9fafb !important;
 }
 </style>
