@@ -61,7 +61,7 @@
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <label class="form-label">Payroll Template *</label>
+                  <label class="form-label">Payroll Group *</label>
                   <div class="input-wrapper">
                     <i class="ri-layout-grid-line input-icon"></i>
                     <select v-model="form.payroll_template"
@@ -70,7 +70,7 @@
                       @change="handleInput('payroll_template'); fetchEmployees()"
                       required
                       :disabled="isEdit">
-                      <option value="">Select Payroll Template</option>
+                      <option value="">Select Payroll Group</option>
                       <option v-for="template in payrollTemplates" :key="template.id" :value="template">{{ template.name }}</option>
                     </select>
                   </div>

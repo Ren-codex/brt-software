@@ -36,7 +36,7 @@
                                     <th style="width: 3%; border: none;">#</th>
                                     <th style="width: 15%;" class="text-center border-none">Pay Period</th>
                                     <th style="width: 20%;" class="text-center border-none">Payroll No.</th>
-                                    <th style="width: 20%;" class="text-center border-none">Payroll Name</th>
+                                    <th style="width: 20%;" class="text-center border-none">Payroll Group</th>
                                     <th style="width: 10%;" class="text-center border-none">Total Net Salary</th>
                                     <th style="width: 10%;" class="text-center border-none">Payroll Clerk</th>
                                     <th style="width: 10%;" class="text-center border-none">Approved By</th>

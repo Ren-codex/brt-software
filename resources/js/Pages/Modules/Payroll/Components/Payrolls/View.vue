@@ -31,7 +31,7 @@
                             @click="draftPayroll" v-b-tooltip.hover title="Mark as Draft" style="margin-right: -8px">
                       <i class="ri-file-edit-line"></i>
                     </button>
-                    <template v-if="payroll.status.slug === 'draft' && payroll.created_by_id === $page.props.user.id">
+                    <template v-if="payroll.status.slug === 'draft' && payroll.created_by_id === $page.props.user.data.id">
                       <button @click="editPayroll" class="create-btn" v-b-tooltip.hover title="Edit" style="margin-right: -8px">
                         <i class="ri-pencil-fill"></i>
                       </button>
@@ -60,7 +60,7 @@
                       </div>
                       <div class="col-md-6">
                         <div class="mb-3">
-                          <label class="form-label">Payroll Template</label>
+                          <label class="form-label">Payroll Group</label>
                           <p class="text-muted">{{ payroll.payroll_name }}</p>
                         </div>
                       </div>

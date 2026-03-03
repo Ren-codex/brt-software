@@ -39,18 +39,27 @@ class PayrollClass
 
     public function store($request)
     {
-        // Prevent creating a payroll when there's already an ongoing (not paid)
-        // payroll for the same template and period.
-        $exists = Payroll::where('payroll_template_id', $request->payroll_template_id)
-            ->where('pay_period_start', $request->pay_period_start)
+        // Prevent creating a payroll when any of the selected employees already
+        // has an ongoing payroll for the same pay period.
+        $employeeIds = collect($request->items ?? [])
+            ->pluck('employee_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $exists = !empty($employeeIds) && Payroll::where('pay_period_start', $request->pay_period_start)
             ->where('pay_period_end', $request->pay_period_end)
             ->where('status_id', '!=', ListStatus::where('slug', 'disapproved')->first()->id)
+            ->whereHas('items', function ($query) use ($employeeIds) {
+                $query->whereIn('employee_id', $employeeIds);
+            })
             ->exists();
 
         if ($exists) {
             return [
-                'message' => 'An ongoing payroll already exists for this template and period',
-                'info' => 'Please close or mark the existing payroll as paid before creating a new one',
+                'message' => 'An ongoing payroll already exists for one or more employees in this period',
+                'info' => 'Please close or release the existing payroll before creating a new one',
                 'status' => 'error'
             ];
         }

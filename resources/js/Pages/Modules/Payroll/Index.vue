@@ -141,9 +141,9 @@ export default {
         },
         {
           id: 'payroll_templates',
-          label: 'Payroll Templates',
+          label: 'Payroll Groups',
           icon: 'ri-file-list-3-line',
-          description: 'Manage payroll templates'
+          description: 'Manage payroll groups'
         },
         // {
         //   id: 'payroll_settings',
