@@ -36,10 +36,12 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
         Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
         Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
+        Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class);
 
         
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
+        Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
         
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);

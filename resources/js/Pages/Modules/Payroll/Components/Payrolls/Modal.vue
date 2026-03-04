@@ -121,7 +121,7 @@
               </table>
 
               <!-- Formula Section -->
-              <div class="formula-section">
+              <!-- <div class="formula-section">
                 <button type="button" class="btn btn-sm btn-link formula-toggle" @click="openComputationModal">
                   <i :class="showComputationModal ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
                   {{ showComputationModal ? 'Hide' : 'Show' }} Calculation Formula
@@ -131,14 +131,14 @@
                     <div class="formula-item">
                       <label>Overtime Rate:</label>
                       <code>((Daily Salary / {{ hours_per_day }}) × {{ overtime_rate }}) × OT Hours</code>
-                    </div>
+                    </div> -->
                     <!-- <div class="formula-item">
                       <label>Incentive Rate:</label>
                       <code>((Product Packaging (kg) × Sold) / 25) × {{ incentive_rate }}</code>
                     </div> -->
-                  </div>
+                  <!-- </div>
                 </transition>
-              </div>
+              </div> -->
             </div>
           </div>
         </form>

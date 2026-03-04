@@ -74,9 +74,9 @@
               <div v-if="activeTab === 'payroll_templates' && currentView === 'list'" class="shadow-sm p-3">
                 <PayrollTemplate :dropdowns="dropdowns" />
               </div>
-              <!-- <div v-if="activeTab === 'payroll_settings' && currentView === 'list'" class="shadow-sm p-3">
-                <PayrollSettings :dropdowns="dropdowns" />
-              </div> -->
+              <div v-if="activeTab === 'payroll_items' && currentView === 'list'" class="shadow-sm p-3">
+                <PayrollItems :dropdowns="dropdowns" />
+              </div>
               <div v-if="activeTab === 'sales_incentives' && currentView === 'list'" class="shadow-sm p-3">
                 <SalesIncentives :dropdowns="dropdowns" />
               </div>
@@ -109,9 +109,10 @@ import PayrollTemplate from './Components/Templates/Index.vue';
 import SalesIncentives from './Components/SalesIncentives/Index.vue';
 import LoanManagement from './Components/Loans/Index.vue';
 import LoanView from './Components/Loans/View.vue';
+import PayrollItems from './Components/Items/Index.vue';
 
 export default {
-  components: { PageHeader, PayrollManagement, PayrollView, PayrollSettings, PayrollTemplate, SalesIncentives, LoanManagement, LoanView },
+  components: { PageHeader, PayrollManagement, PayrollView, PayrollItems, PayrollTemplate, SalesIncentives, LoanManagement, LoanView },
   props: ['dropdowns'],
   data() {
     return {
@@ -145,12 +146,12 @@ export default {
           icon: 'ri-file-list-3-line',
           description: 'Manage payroll groups'
         },
-        // {
-        //   id: 'payroll_settings',
-        //   label: 'Settings',
-        //   icon: 'ri-settings-2-line',
-        //   description: 'Manage payroll settings'
-        // },
+        {
+          id: 'payroll_items',
+          label: 'Payroll Items',
+          icon: 'ri-settings-2-line',
+          description: 'Manage payroll items'
+        },
         {
           id: 'sales_incentives',
           label: 'Sales Incentives',

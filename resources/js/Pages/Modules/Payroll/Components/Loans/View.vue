@@ -75,8 +75,8 @@
                   <span class="emp-detail-title">Payment Terms</span>
                 </div>
                   <div class="emp-detail-content">
-                    <div class="emp-detail-main-value">{{ loanTermMonths > 0 ? `${loanTermMonths} Terms` : '-' }}</div>
-                    <div class="emp-detail-sub-value">{{ remainingTermMonths }} Remaining</div>
+                    <div class="emp-detail-main-value">{{ loanTermMonths > 0 ? `${loanTermMonths} Months` : '-' }}</div>
+                    <div class="emp-detail-sub-value">{{ remainingTermMonths }} Remaining Term</div>
                   </div>
               </div>
 
@@ -341,7 +341,8 @@ export default {
       return Math.max(0, Math.ceil(this.remainingTermMonths));
     },
     paidTermsCount() {
-      return Math.max(0, this.loanTermMonths - this.remainingTermsToPay);
+      const totalHalfTerms = Math.max(0, this.loanTermMonths * 2);
+      return Math.max(0, totalHalfTerms - this.remainingTermsToPay);
     },
     todayDate() {
       return new Date().toISOString().slice(0, 10);

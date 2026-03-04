@@ -82,7 +82,7 @@
                     v-for="row in scheduleRows" 
                     :key="row.index"
                     class="schedule-row"
-                    :class="{ 'selected': isSelected(row.index) }"
+                    :class="{ 'selected': isSelected(row.index), 'disabled': isTermDisabled(row.index) }"
                     @click="toggleRow(row.index)"
                   >
                     <td class="text-center" @click.stop>
@@ -92,6 +92,7 @@
                           class="checkbox-input"
                           :value="row.index"
                           v-model="selectedMonths"
+                          :disabled="isTermDisabled(row.index)"
                           @change="handleRowChange"
                         >
                       </div>
@@ -292,6 +293,9 @@ export default {
         }
       }
       return true;
+    },
+    isTermDisabled(index) {
+      return !this.canSelect(index);
     },
     /**
      * Get the message for why a term cannot be selected
@@ -656,6 +660,15 @@ export default {
 
 .schedule-row.selected:hover {
   background: var(--theme-primary-soft);
+}
+
+.schedule-row.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.schedule-row.disabled:hover {
+  background: transparent;
 }
 
 .month-info {

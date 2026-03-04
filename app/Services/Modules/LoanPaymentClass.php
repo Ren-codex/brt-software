@@ -41,7 +41,9 @@ class LoanPaymentClass
             $loan = Loan::findOrFail($request->loan_id);
             $amount = (float) $request->amount;
             $remainingBalance = (float) $loan->remaining_balance;
-            $paidTermMonths = max(1, (int) $request->input('paid_term', 1));
+            // Each selected schedule row from the modal already represents one term unit
+            // (half-month for semi-monthly loans). Do not multiply again.
+            $paidTermUnits = max(1, (int) $request->input('paid_term', 1));
 
             if ($amount > $remainingBalance) {
                 throw ValidationException::withMessages([
@@ -53,14 +55,14 @@ class LoanPaymentClass
                 'loan_id' => $loan->id,
                 'amount' => $amount,
                 'paid_date' => $request->paid_date,
-                'paid_term' => $paidTermMonths * 2,
+                'paid_term' => $paidTermUnits,
                 'remarks' => $request->remarks,
                 'added_by_id' => auth()->id(),
             ]);
 
             $newAmtPaid = (float) $loan->amtpaid + $amount;
             $newRemainingBalance = max(0, $remainingBalance - $amount);
-            $newRemainingTerm = max(0, ((int) $loan->remaining_term_to_pay) - ($paidTermMonths * 2));
+            $newRemainingTerm = max(0, ((int) $loan->remaining_term_to_pay) - $paidTermUnits);
 
             $loan->update([
                 'amtpaid' => $newAmtPaid,
