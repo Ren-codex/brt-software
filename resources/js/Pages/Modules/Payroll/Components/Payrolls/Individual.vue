@@ -169,6 +169,7 @@
       :description="editingEarning ? editingEarning.description : ''"
       :amount="editingEarning ? editingEarning.amount : 0"
       :existingEarnings="form.earnings"
+      :earningDropdown="dropdowns.payroll_items ? dropdowns.payroll_items.filter(item => item.type === 'earning') : []"
       @close="showEarningModal = false"
       @save="handleEarningSave"
     />
@@ -182,6 +183,7 @@
       :description="editingDeduction ? editingDeduction.description : ''"
       :amount="editingDeduction ? editingDeduction.amount : 0"
       :existingDeductions="form.deductions"
+      :deductionDropdown="dropdowns.payroll_items ? dropdowns.payroll_items.filter(item => item.type === 'deduction') : []"
       @close="showDeductionModal = false"
       @save="handleDeductionSave"
     />
@@ -199,7 +201,8 @@ export default {
   },
   props: {
     show: Boolean,
-    employee: Object
+    employee: Object,
+    dropdowns: Object,
   },
   data() {
     return {

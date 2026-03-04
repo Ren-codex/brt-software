@@ -40,16 +40,24 @@
 
         <div class="form-group" v-if="!isEdit">
           <label class="form-label">Additional Manual Deduction</label>
-          <input 
-            type="text" 
+          <select
             v-model="localDeductionLabel" 
             class="form-control" 
             :class="{ 'is-invalid': existingManualDeduction }"
-            placeholder="Enter description (e.g. SSS, PhilHealth, etc.)">
-            <div v-if="existingManualDeduction" class="invalid-feedback">
-              Already exists
-            </div>
-            <br>
+          >
+            <option value="">Select deduction</option>
+            <option
+              v-for="item in manualDeductionOptions"
+              :key="item"
+              :value="item"
+            >
+              {{ item }}
+            </option>
+          </select>
+          <div v-if="existingManualDeduction" class="invalid-feedback">
+            Already exists
+          </div>
+          <br>
           <div class="input-wrapper mb-2">
             <i class="ri-cash-line input-icon"></i>
             <input 
@@ -98,6 +106,8 @@ props: {
     amount: { type: [Number, String], default: 0 },
     deduction: { type: [Number, String], default: 0 },
     existingDeductions: { type: Array, default: () => [] },
+    deductionDropdown: { type: Array, default: () => [] },
+    deductionsDropdown: { type: Array, default: () => [] },
   },
 data() {
     return {
@@ -161,7 +171,17 @@ watch: {
       immediate: true
     }
   },
-computed: {
+  computed: {
+    manualDeductionOptions() {
+      const source = this.deductionDropdown.length ? this.deductionDropdown : this.deductionsDropdown
+      if (!Array.isArray(source) || !source.length) {
+        return []
+      }
+
+      return [...new Set(source
+        .map(item => item?.description || item?.name || '')
+        .filter(Boolean))]
+    },
     normalizedEmployeeLoans() {
       if (!this.employee || !Array.isArray(this.employee.loans)) {
         return []

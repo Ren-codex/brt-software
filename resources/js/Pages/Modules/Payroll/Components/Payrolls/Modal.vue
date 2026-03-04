@@ -166,6 +166,7 @@
   <Individual
     :show="showIndividualModal"
     :employee="currentIndividualEmployee"
+    :dropdowns="dropdowns"
     @close="() => showIndividualModal = false"
     @save="onSaveIndividualPayroll"
   />
