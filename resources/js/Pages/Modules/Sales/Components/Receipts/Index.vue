@@ -286,7 +286,6 @@ export default {
         },
 
         onPrint(id) {
-          console.log('Print receipt with ID:', id);
             window.open(`/receipts/${id}?option=print&type=receipt`);
         },
 
