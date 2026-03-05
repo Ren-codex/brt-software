@@ -2,11 +2,10 @@
   <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
     <div class="modal-container modal-xl">
       <div class="modal-header">
-        <h2>Create Received Stock</h2>
+        <h2>Received Stock</h2>
         <button class="close-btn" @click="onCancel">&times;</button>
       </div>
-      <div class="modal-body" style="height: 75vh;
-    overflow-y: auto;">
+      <div class="modal-body">
         <form @submit.prevent="handleSubmit">
           <div v-if="errorMessage" class="alert alert-danger" role="alert">
             {{ errorMessage }}
@@ -125,6 +124,8 @@
             </div>
           </div>
         </form>
+      </div>
+      <div class="modal-footer">
         <div class="form-actions">
           <button class="btn btn-cancel" @click="onCancel">Cancel</button>
           <button class="btn btn-save" @click="handleSubmit()" :disabled="form.processing">Submit</button>
@@ -233,7 +234,33 @@ export default {
   background-color: #f8f8f8;
 }
 
-<style scoped>.table-responsive {
+.modal-container.modal-xl {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  flex-shrink: 0;
+  padding: 0.875rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.table-responsive {
   border-radius: 12px;
   border: 1px solid #edf2f7;
   overflow: hidden;

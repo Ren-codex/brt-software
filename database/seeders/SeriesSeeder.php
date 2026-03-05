@@ -22,7 +22,7 @@ class SeriesSeeder extends Seeder
         Series::create(array(
             'name' => 'Batch Code',
             'slug' => 'batch_code',
-            'prefix' => 'BATCH',
+            'prefix' => 'B',
             'max_digit' => 6,
             'starting_value' => 1
         ));
