@@ -121,6 +121,13 @@
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
+              <div class="row" v-if="activeTab === 'productSummary' && currentView === 'list'">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+                  <ProductSummary :listProducts="listProducts" :meta="meta" :links="links" :filter="filter"
+                    :dropdowns="dropdowns" @fetch="fetchProducts" @update-keyword="updateKeyword" @toast="showToast"
+                    @view-details="openInventoryStockDetails" />
+                </div>
+              </div>
             </div>
           </transition>
         </div>
@@ -159,11 +166,12 @@ import PurchaseRequestsTab from './Tab/PurchaseRequestsTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import PurchaseOrderDetails from './Components/PurchaseOrders/View.vue';
-import InventoryStockDetails from './Components/InventoryStocks/View.vue'; // Add this import
+import InventoryStockDetails from './Components/InventoryStocks/View.vue';
 import QuickStatsSidebar from './Components/QuickStatsSidebar.vue';
 import CreatePurchaseOrderModal from './Modal/CreatePurchaseOrderModal.vue';
 import CreateReceivedStockModal from './Modal/CreateReceivedStockModal.vue';
 import Delete from '@/Shared/Components/Modals/Delete.vue';
+import ProductSummary from './Components/InventoryStocks/ProductSummary.vue';
 
 export default {
   name: "InventoryManagement",
@@ -178,7 +186,8 @@ export default {
     QuickStatsSidebar,
     CreatePurchaseOrderModal,
     CreateReceivedStockModal,
-    Delete
+    Delete,
+    ProductSummary,
   },
   props: ['dropdowns'],
   emits: ['fetch'],
@@ -186,7 +195,7 @@ export default {
     return {
       isSidebarCollapsed: false,
       isRightSidebarCollapsed: true,
-      activeTab: localStorage.getItem('inventory_active_tab') || 'purchaseRequests',
+      activeTab: localStorage.getItem('inventory_active_tab') || 'productSummary',
       currentView: 'list',
       filter: {
         keyword: '',
@@ -215,11 +224,17 @@ export default {
           icon: 'ri-box-3-line',
           description: 'List of purchase orders'
         },
+        // {
+        //   id: 'inventoryStocks',
+        //   label: 'Inventory Stocks',
+        //   icon: 'ri-box-3-line',
+        //   description: 'Current stock levels'
+        // },
         {
-          id: 'inventoryStocks',
-          label: 'Inventory Stocks',
-          icon: 'ri-box-3-line',
-          description: 'Current stock levels'
+          id: 'productSummary',
+          label: 'Product Inventory',
+          icon: 'ri-survey-line',
+          description: 'List of products'
         },
       ]
     };
