@@ -12,7 +12,7 @@
                       <i class="ri-archive-line"></i>
                     </div>
                     <div>
-                      <h4 class="header-title mb-1">Inventory Stock #{{ data.id }}</h4>
+                      <h4 class="header-title mb-1">{{ data.batch_code }}</h4>
                       <p class="header-subtitle mb-0">View and manage inventory stock details</p>
                     </div>
                   </div>
@@ -108,26 +108,6 @@
                                 </p>
                               </div>
                             </div>
-                            
-                            <div class="col-md-6">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Batch Code</label>
-                                <p class="fw-semibold mb-0 d-flex align-items-center">
-                                  <i class="ri-barcode-line text-primary me-2"></i>
-                                  {{ data.batch_code || 'N/A' }}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div class="col-md-6">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Supplier</label>
-                                <p class="fw-semibold mb-0 d-flex align-items-center">
-                                  <i class="ri-truck-line text-primary me-2"></i>
-                                  {{ data.received_item?.received_stock?.supplier?.name || 'N/A' }}
-                                </p>
-                              </div>
-                            </div>
 
                             <div class="col-md-6">
                               <div class="info-item">
@@ -135,6 +115,16 @@
                                 <p class="fw-semibold mb-0 d-flex align-items-center">
                                   <i class="ri-shopping-bag-line text-primary me-2"></i>
                                   {{ data.received_item?.product?.name || 'N/A' }}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div class="col-md-12">
+                              <div class="info-item">
+                                <label class="text-muted small text-uppercase tracking-wide mb-1">Supplier</label>
+                                <p class="fw-semibold mb-0 d-flex align-items-center">
+                                  <i class="ri-truck-line text-primary me-2"></i>
+                                  {{ data.received_item?.received_stock?.supplier?.name || 'N/A' }}
                                 </p>
                               </div>
                             </div>
