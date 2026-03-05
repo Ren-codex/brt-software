@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Loan extends Model
 {
     protected $fillable = [
+        'loan_no',
         'employee_id',
         'loan_type',
         'amount',
@@ -19,6 +21,12 @@ class Loan extends Model
         'amtpaid',
         'remaining_balance',
         'remaining_term_to_pay',
+        'approved_by_id',
+        'approved_at',
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
     ];
 
     public function employee(): BelongsTo
@@ -29,5 +37,20 @@ class Loan extends Model
     public function added_by(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by_id');
+    }
+
+    public function approved_by(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_id');
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(LoanLog::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(LoanPayment::class);
     }
 }

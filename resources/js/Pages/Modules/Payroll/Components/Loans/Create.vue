@@ -13,7 +13,7 @@
                         <div class="form-group form-group-half">
                             <label for="employee_id" class="form-label">Employee <span class="text-danger">*</span></label>
                             <div class="input-wrapper">
-                                <i class="ri-user-line input-icon"></i>
+                                <!-- <i class="ri-user-line input-icon"></i> -->
                                 <Multiselect
                                     v-model="form.employee_id"
                                     :options="dropdowns.employees || []"
@@ -120,7 +120,7 @@ export default {
                 employee_id: null,
                 loan_type: '',
                 amount: '',
-                interest_rate: '',
+                interest_rate: 0,
                 term_months: '',
                 status: 'pending',
                 purpose: ''
@@ -158,13 +158,23 @@ export default {
                 this.form.put(`/loans/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (response) => {
+                        const updatedLoan =
+                            response?.props?.flash?.data?.data ||
+                            this.$page?.props?.flash?.data?.data;
                         this.saveSuccess = true;
                         this.form.reset();
+                        console.log(response);
+                        
+                        console.log('Updated Loan:', updatedLoan);
+                        
                         setTimeout(() => {
-                            this.$emit('update', true);
+                            this.$emit('update', updatedLoan);
                             this.hide();
                         }, 1500);
                     },
+                    onError: (error) => {
+                        console.log(error);
+                    }
                 });
             } else {
                 this.form.post('/loans', {

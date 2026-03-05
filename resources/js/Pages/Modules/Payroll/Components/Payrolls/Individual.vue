@@ -169,6 +169,7 @@
       :description="editingEarning ? editingEarning.description : ''"
       :amount="editingEarning ? editingEarning.amount : 0"
       :existingEarnings="form.earnings"
+      :earningDropdown="dropdowns.payroll_items ? dropdowns.payroll_items.filter(item => item.type === 'earning') : []"
       @close="showEarningModal = false"
       @save="handleEarningSave"
     />
@@ -182,6 +183,7 @@
       :description="editingDeduction ? editingDeduction.description : ''"
       :amount="editingDeduction ? editingDeduction.amount : 0"
       :existingDeductions="form.deductions"
+      :deductionDropdown="dropdowns.payroll_items ? dropdowns.payroll_items.filter(item => item.type === 'deduction') : []"
       @close="showDeductionModal = false"
       @save="handleDeductionSave"
     />
@@ -199,7 +201,8 @@ export default {
   },
   props: {
     show: Boolean,
-    employee: Object
+    employee: Object,
+    dropdowns: Object,
   },
   data() {
     return {
@@ -208,7 +211,7 @@ export default {
         earnings: [],
         deductions: [],
         total_days: 0, 
-        selected_loans: [],
+        loans: [],
       },
       showEarningModal: false,
       isEarningEdit: false,
@@ -253,7 +256,7 @@ export default {
         earnings: [],
         deductions: [],
         total_days: 0,
-        selected_loans: [],
+        loans: [],
       }
     },
     resetForm() {
@@ -273,7 +276,7 @@ export default {
         this.form.total_days = this.employee.total_days || 11;
         this.form.earnings = (this.employee.earnings || []).map(item => ({ ...item }));
         this.form.deductions = (this.employee.deductions || []).map(item => ({ ...item }));
-        this.form.selected_loans = (this.employee.selected_loans || []).map(loan => ({ ...loan }));
+        this.form.loans = (this.employee.loans || []).map(loan => ({ ...loan }));
       } else {
         this.resetForm()
       }
@@ -338,10 +341,10 @@ export default {
       } else {
         // Add each selected loan as an individual deduction item
         if (deduction.selectedLoans && deduction.selectedLoans.length) {
-          this.form.selected_loans = deduction.selectedLoans;
+          this.form.loans = deduction.selectedLoans;
           deduction.selectedLoans.forEach(loan => {
             this.form.deductions.push({
-              description: `Loan #${loan.id}`,
+              description: `${loan.loan_no}`,
               amount: loan.deduction
             })
           })
@@ -371,8 +374,8 @@ export default {
       this.$emit('other-benefit')
     },
     isLoanDeduction(item) {
-      // Check if the deduction is a loan deduction (starts with "Loan #")
-      return item.description && item.description.startsWith('Loan #')
+      // Check if the deduction is a loan deduction (starts with "LN")
+      return item.description && item.description.startsWith('LN')
     },
     formatNumber(value) {
       return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
@@ -388,7 +391,7 @@ export default {
         total_earnings: this.totalEarnings,
         total_deductions: this.totalDeductions,
         net_salary: this.netPay,
-        selected_loans: this.form.selected_loans.map(loan => ({ ...loan })),
+        loans: this.form.loans.map(loan => ({ ...loan })),
       }
 
       this.$emit('save', payload)

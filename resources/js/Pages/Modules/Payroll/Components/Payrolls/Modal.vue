@@ -61,7 +61,7 @@
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <label class="form-label">Payroll Template *</label>
+                  <label class="form-label">Payroll Group *</label>
                   <div class="input-wrapper">
                     <i class="ri-layout-grid-line input-icon"></i>
                     <select v-model="form.payroll_template"
@@ -70,7 +70,7 @@
                       @change="handleInput('payroll_template'); fetchEmployees()"
                       required
                       :disabled="isEdit">
-                      <option value="">Select Payroll Template</option>
+                      <option value="">Select Payroll Group</option>
                       <option v-for="template in payrollTemplates" :key="template.id" :value="template">{{ template.name }}</option>
                     </select>
                   </div>
@@ -121,7 +121,7 @@
               </table>
 
               <!-- Formula Section -->
-              <div class="formula-section">
+              <!-- <div class="formula-section">
                 <button type="button" class="btn btn-sm btn-link formula-toggle" @click="openComputationModal">
                   <i :class="showComputationModal ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
                   {{ showComputationModal ? 'Hide' : 'Show' }} Calculation Formula
@@ -131,14 +131,14 @@
                     <div class="formula-item">
                       <label>Overtime Rate:</label>
                       <code>((Daily Salary / {{ hours_per_day }}) × {{ overtime_rate }}) × OT Hours</code>
-                    </div>
+                    </div> -->
                     <!-- <div class="formula-item">
                       <label>Incentive Rate:</label>
                       <code>((Product Packaging (kg) × Sold) / 25) × {{ incentive_rate }}</code>
                     </div> -->
-                  </div>
+                  <!-- </div>
                 </transition>
-              </div>
+              </div> -->
             </div>
           </div>
         </form>
@@ -166,6 +166,7 @@
   <Individual
     :show="showIndividualModal"
     :employee="currentIndividualEmployee"
+    :dropdowns="dropdowns"
     @close="() => showIndividualModal = false"
     @save="onSaveIndividualPayroll"
   />
@@ -282,6 +283,10 @@ export default {
         return targetId !== undefined && employeeId === targetId;
       });
       if (index !== -1) {
+        const nextLoans = Array.isArray(data.loans)
+          ? data.loans
+          : (Array.isArray(data.selected_loans) ? data.selected_loans : this.selectedEmployees[index].loans || []);
+
         this.selectedEmployees[index] = {
           ...this.selectedEmployees[index],
           basic_salary: data.basic_salary,
@@ -291,7 +296,7 @@ export default {
           total_earnings: data.total_earnings,
           total_deductions: data.total_deductions,
           net_salary: data.net_salary,
-          selected_loans: data.selected_loans,
+          loans: nextLoans,
         };
       }
       this.showIndividualModal = false;
@@ -339,24 +344,24 @@ export default {
         total_days: 0,
         basic_salary: emp.basic_salary || 0,
         total_days: emp.total_days || 0,
-        earnings: emp.earnings || 0,
-        deductions: emp.deductions || 0,
+        earnings: Array.isArray(emp.earnings) ? emp.earnings : [],
+        deductions: Array.isArray(emp.deductions) ? emp.deductions : [],
         total_earnings: emp.total_earnings || 0,
         total_deductions: emp.total_deductions || 0,
         tmp: this.calculateLoanDeduction(emp.loans),
-        loans: emp.loans || [],
+        loans: Array.isArray(emp.loans) ? emp.loans : [],
       }));
 
       this.form.payroll_template.employees.forEach(emp => {
         this.employeeDetails[emp.value] = {
           total_days: emp.total_days || 0,
           basic_salary: emp.basic_salary || 0,
-          earnings: emp.earnings || 0,
-          deductions: emp.deductions || 0,
+          earnings: Array.isArray(emp.earnings) ? emp.earnings : [],
+          deductions: Array.isArray(emp.deductions) ? emp.deductions : [],
           total_earnings: emp.total_earnings || 0,
           total_deductions: emp.total_deductions || 0,
           tmp: this.calculateLoanDeduction(emp.loans),
-          loans: emp.loans || [],
+          loans: Array.isArray(emp.loans) ? emp.loans : [],
         }
       });
     },
@@ -371,7 +376,8 @@ export default {
 
     calculateTotalSalary() {
       return this.selectedEmployees.reduce((total, employee) => {
-        return total + (employee.net_salary ?? 0);
+        const netSalary = Number(employee.net_salary);
+        return total + (Number.isFinite(netSalary) ? netSalary : 0);
       }, 0);
     },
 
@@ -393,6 +399,11 @@ export default {
       }
 
       this.loading = true;
+      const normalizeLoans = (employee) => {
+        if (Array.isArray(employee.loans)) return employee.loans;
+        if (Array.isArray(employee.selected_loans)) return employee.selected_loans;
+        return [];
+      };
 
       const payload = {
         pay_period_start: this.form.pay_period_start,
@@ -408,7 +419,9 @@ export default {
             total_earnings: e.total_earnings,
             total_deductions: e.total_deductions,
             net_salary: e.net_salary,
-            loans: e.selected_loans.length > 0 ? e.selected_loans : [],
+            loans: normalizeLoans(e),
+            // Backward-compatible key to support legacy backend paths.
+            selected_loans: normalizeLoans(e),
           };
         }),
         total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),
@@ -483,12 +496,14 @@ export default {
       
       const approvedLoans = loans.filter(loan => loan.status === 'approved');
       const total = approvedLoans.reduce((total, loan) => {
-        const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / divisor;
-        const deduction = (loan.remaining_balance / loan.remaining_term_to_pay) + interest;
+        // const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / divisor;
+        // const deduction = (loan.remaining_balance / loan.remaining_term_to_pay) + interest;
+        const deduction = loan.remaining_balance / loan.remaining_term_to_pay;
         this.selectedEmployees.forEach(employee => {
           const employeeLoan = employee.loans.find(eLoan => eLoan.id === loan.id);
           if (employeeLoan) {
             employeeLoan.id = loan.id;
+            employeeLoan.loan_no = loan.loan_no;
             employeeLoan.remaining_balance = loan.remaining_balance;
             employeeLoan.term_months = loan.term_months;
             employeeLoan.interest_rate = loan.interest_rate;

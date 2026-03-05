@@ -9,13 +9,13 @@
                                 <i class="ri-file-list-3-line fs-24"></i>
                             </div>
                             <div>
-                                <h4 class="header-title mb-1">Payroll Templates</h4>
-                                <p class="header-subtitle mb-0">Manage payroll templates</p>
+                                <h4 class="header-title mb-1">Payroll Groups</h4>
+                                <p class="header-subtitle mb-0">Manage payroll groups</p>
                             </div>
                         </div>
                         <button class="create-btn" @click="showCreateModal = true">
                             <i class="ri-add-line"></i>
-                            <span>Add Template</span>
+                            <span>Add Group</span>
                         </button>
                     </div>
                 </div>
@@ -48,7 +48,7 @@
                                     <b-button 
                                       @click.stop="editTemplate(template)" 
                                       variant="outline-primary"
-                                      v-b-tooltip.hover title="Edit Template"
+                                      v-b-tooltip.hover title="Edit Group"
                                       size="sm"
                                       class="btn-icon rounded-circle me-1"
                                     >
@@ -57,7 +57,7 @@
                                     <b-button 
                                       @click.stop="confirmDelete(template)" 
                                       variant="outline-danger"
-                                      v-b-tooltip.hover title="Delete Template"
+                                      v-b-tooltip.hover title="Delete Group"
                                       size="sm"
                                       class="btn-icon rounded-circle"
                                     >
@@ -87,8 +87,8 @@
                             <div class="mb-4">
                               <i class="ri-file-list-3-line text-muted" style="font-size: 64px;"></i>
                             </div>
-                            <h4 class="text-muted mb-3">No Templates Found</h4>
-                            <p class="text-muted mb-4">Create a new payroll template to get started</p>
+                            <h4 class="text-muted mb-3">No Groups Found</h4>
+                            <p class="text-muted mb-4">Create a new payroll group to get started</p>
                           </div>
                         </div>
                       </div>
@@ -97,7 +97,7 @@
                         <div class="employees-section" v-if="selectedTemplate && selectedTemplate.length !== 0">
                           <div class="section-header d-flex justify-content-between align-items-center mb-4">
                             <div>
-                              <h5 class="mb-1">Employees in <span class="text-primary">{{ selectedTemplate.name }}</span> Template</h5>
+                              <h5 class="mb-1">Employees in <span class="text-primary">{{ selectedTemplate.name }}</span> Group</h5>
                               <p class="text-muted mb-0">{{ selectedTemplate.employees.length }} employees assigned</p>
                             </div>
                             <div class="search-section d-flex">
@@ -144,7 +144,7 @@
                                             </div>
                                           </div>
                                           <div>
-                                            <h6 class="mb-0">{{ employee.firstname }}, {{ employee.lastname }}</h6>
+                                            <h6 class="mb-0">{{ employee.fullname }}</h6>
                                           </div>
                                         </div>
                                       </td>
@@ -163,7 +163,7 @@
                                         <b-button 
                                           @click.stop="removeEmployee(employee)" 
                                           variant="outline-danger"
-                                          v-b-tooltip.hover title="Remove from template"
+                                          v-b-tooltip.hover title="Remove from group"
                                           size="sm"
                                           class="btn-icon rounded-circle"
                                         >
@@ -184,7 +184,7 @@
                                     No results for "{{ localKeyword }}"
                                   </p>
                                   <p class="text-muted mb-0" v-else>
-                                    No employees assigned to this template
+                                    No employees assigned to this group
                                   </p>
                                 </div>
                               </div>
@@ -197,8 +197,8 @@
                           <div class="mb-4">
                             <i class="ri-layout-grid-line text-muted" style="font-size: 64px;"></i>
                           </div>
-                          <h4 class="text-muted mb-3">Select a Template</h4>
-                          <p class="text-muted mb-4">Choose a payroll template from the list to view assigned employees</p>
+                          <h4 class="text-muted mb-3">Select a Group</h4>
+                          <p class="text-muted mb-4">Choose a payroll group from the list to view assigned employees</p>
                         </div>
                         <div class="card-footer bg-light border-0 m-3">
                             <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetchPayrollTemplates" :lists="payrollTemplates.length"
@@ -338,7 +338,7 @@ export default {
     async confirmDelete(template) {
       const result = await Swal.fire({
           title: 'Are you sure?',
-          text: 'You want to delete this template?',
+          text: 'You want to delete this group?',
           icon: 'warning',
           showCancelButton: true,
           confirmButtonColor: '#3085d6',
@@ -357,7 +357,7 @@ export default {
                     });
                   } else {
                     this.fetchPayrollTemplates();
-                    this.showToast('Payroll template deleted successfully');
+                    this.showToast('Payroll group deleted successfully');
                     this.selectedTemplate = [];
                   }
               })
@@ -384,10 +384,10 @@ export default {
         if (templateIndex !== -1) {
           this.payrollTemplates[templateIndex].employees = this.selectedTemplate.employees
         }
-        this.showToast('Employee(s) added to template successfully');
+        this.showToast('Employee(s) added to group successfully');
       } else {
         this.fetchPayrollTemplates()
-        this.showToast('Payroll template saved successfully');
+        this.showToast('Payroll group saved successfully');
         this.selectedTemplate = null
       }
     },
@@ -407,12 +407,12 @@ export default {
       if (index !== -1) {
         this.selectedTemplate.employees.splice(index, 1);
       }
-      this.showToast('Employee removed from template successfully');
+      this.showToast('Employee removed from group successfully');
     },
     async removeEmployee(employee) {
       const result = await Swal.fire({
           title: 'Are you sure?',
-          text: 'You want to remove employee from this template?',
+          text: 'You want to remove employee from this group?',
           icon: 'warning',
           showCancelButton: true,
           confirmButtonColor: '#3085d6',

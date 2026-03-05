@@ -19,6 +19,7 @@ use App\Models\InventoryStocks;
 use App\Models\PayrollSetting;
 use App\Models\PayrollTemplate;
 use App\Models\ListLocation;
+use App\Models\ListPayrollItem;
 
 class DropdownClass
 {  
@@ -256,6 +257,17 @@ class DropdownClass
                         'basic_salary' => $emp->position ? $emp->position->rate_per_day : null,
                     ];
                 }),
+            ];
+        });
+        return  $data;
+    }
+
+    public function payroll_items(){
+        $data = ListPayrollItem::where('is_active',1)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+                'type' => $item->type,
             ];
         });
         return  $data;

@@ -31,6 +31,7 @@ class PayrollController extends Controller
                         'employees' => $this->dropdown->employees(),
                         'payroll_settings' => $this->dropdown->payroll_settings(),
                         'payroll_templates' => $this->dropdown->payroll_templates(),
+                        'payroll_items' => $this->dropdown->payroll_items(),
                     ]
                 ]);
             break;

@@ -10,13 +10,20 @@
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Earning Description</label>
-          <input 
-            type="text" 
+          <select
             v-model="localDescription" 
             class="form-control" 
             :class="{ 'is-invalid': existingEarning }"
-            placeholder="Enter earning description"
-            @keyup.enter="save">
+          >
+            <option value="">Select earning</option>
+            <option
+              v-for="item in earningOptions"
+              :key="item"
+              :value="item"
+            >
+              {{ item }}
+            </option>
+          </select>
           <div v-if="existingEarning" class="invalid-feedback">
             Already exists
           </div>
@@ -55,6 +62,8 @@ export default {
     description: { type: String, default: '' },
     amount: { type: [Number, String] },
     existingEarnings: { type: Array, default: () => [] },
+    earningDropdown: { type: Array, default: () => [] },
+    earningsDropdown: { type: Array, default: () => [] },
   },
   data() {
     return {
@@ -63,6 +72,16 @@ export default {
     }
   },
   computed: {
+    earningOptions() {
+      const source = this.earningDropdown.length ? this.earningDropdown : this.earningsDropdown
+      if (!Array.isArray(source) || !source.length) {
+        return []
+      }
+
+      return [...new Set(source
+        .map(item => item?.description || item?.name || '')
+        .filter(Boolean))]
+    },
     existingEarning() {
       if (!this.localDescription || !this.existingEarnings || !this.existingEarnings.length) {
         return null

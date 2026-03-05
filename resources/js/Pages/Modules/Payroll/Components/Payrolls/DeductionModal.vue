@@ -23,7 +23,7 @@
               </div>
               <div class="loan-info">
                 <label :for="'loan-' + loan.id" class="loan-label">
-                  <span class="loan-id">Loan #{{ loan.id }}</span>
+                  <span class="loan-id">{{ loan.loan_no }}</span>
                   <span class="loan-balance">Balance: ₱ {{ parseFloat(loan.remaining_balance).toFixed(2) }}</span>
                 </label>
               </div>
@@ -40,16 +40,24 @@
 
         <div class="form-group" v-if="!isEdit">
           <label class="form-label">Additional Manual Deduction</label>
-          <input 
-            type="text" 
+          <select
             v-model="localDeductionLabel" 
             class="form-control" 
             :class="{ 'is-invalid': existingManualDeduction }"
-            placeholder="Enter description (e.g. SSS, PhilHealth, etc.)">
-            <div v-if="existingManualDeduction" class="invalid-feedback">
-              Already exists
-            </div>
-            <br>
+          >
+            <option value="">Select deduction</option>
+            <option
+              v-for="item in manualDeductionOptions"
+              :key="item"
+              :value="item"
+            >
+              {{ item }}
+            </option>
+          </select>
+          <div v-if="existingManualDeduction" class="invalid-feedback">
+            Already exists
+          </div>
+          <br>
           <div class="input-wrapper mb-2">
             <i class="ri-cash-line input-icon"></i>
             <input 
@@ -98,6 +106,8 @@ props: {
     amount: { type: [Number, String], default: 0 },
     deduction: { type: [Number, String], default: 0 },
     existingDeductions: { type: Array, default: () => [] },
+    deductionDropdown: { type: Array, default: () => [] },
+    deductionsDropdown: { type: Array, default: () => [] },
   },
 data() {
     return {
@@ -161,14 +171,30 @@ watch: {
       immediate: true
     }
   },
-computed: {
+  computed: {
+    manualDeductionOptions() {
+      const source = this.deductionDropdown.length ? this.deductionDropdown : this.deductionsDropdown
+      if (!Array.isArray(source) || !source.length) {
+        return []
+      }
+
+      return [...new Set(source
+        .map(item => item?.description || item?.name || '')
+        .filter(Boolean))]
+    },
+    normalizedEmployeeLoans() {
+      if (!this.employee || !Array.isArray(this.employee.loans)) {
+        return []
+      }
+      return this.employee.loans
+    },
     availableLoans() {
-      if (!this.employee || !this.employee.loans || !this.employee.loans.length) {
+      if (!this.normalizedEmployeeLoans.length) {
         return []
       }
       // Filter out loans that are already added
-      return this.employee.loans.filter(loan => {
-        const loanDescription = `Loan #${loan.id}`
+      return this.normalizedEmployeeLoans.filter(loan => {
+        const loanDescription = `${loan.loan_no}`
         const isAlreadyAdded = this.existingDeductions.some(deduction => 
           deduction.description === loanDescription
         )
@@ -182,7 +208,7 @@ computed: {
       // Check if the current label matches any existing manual deduction (not loan deductions)
       return this.existingDeductions.find(deduction => 
         deduction.description === this.localDeductionLabel && 
-        !deduction.description.startsWith('Loan #')
+        !(deduction.description || '').startsWith('LN')
       )
     },
     totalExistingDeductions() {
@@ -191,7 +217,7 @@ computed: {
       }
       return this.availableLoans.reduce((total, loan) => {
         // Only include loans that are selected
-        if (this.selectedLoans.includes(loan.id)) {
+        if (this.sameLoanIdSelected(loan.id)) {
           return total + (loan.payroll_deduction || 0)
         }
         return total
@@ -201,17 +227,18 @@ computed: {
       return this.totalExistingDeductions + (this.localDeduction || 0)
     },
     selectedLoansData() {
-      if (!this.employee || !this.employee.loans || !this.employee.loans.length) {
+      if (!this.normalizedEmployeeLoans.length) {
         return []
       }
-      return this.employee.loans
-        .filter(loan => this.selectedLoans.includes(loan.id))
+      return this.normalizedEmployeeLoans
+        .filter(loan => this.sameLoanIdSelected(loan.id))
         .map(loan => {
           const divisor = loan.divisor || 2
           const deduction = Number(loan.payroll_deduction || 0)
 
           return {
             id: loan.id,
+            loan_no: loan.loan_no,
             remaining_balance: loan.remaining_balance,
             term_months: loan.term_months,
             interest_rate: loan.interest_rate,
@@ -223,6 +250,10 @@ computed: {
     }
   },
   methods: {
+    sameLoanIdSelected(loanId) {
+      const normalizedLoanId = String(loanId)
+      return this.selectedLoans.some(selectedId => String(selectedId) === normalizedLoanId)
+    },
     close() {
       this.$emit('close')
     },

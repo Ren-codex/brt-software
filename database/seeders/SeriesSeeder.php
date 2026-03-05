@@ -58,5 +58,13 @@ class SeriesSeeder extends Seeder
             'max_digit' => 6,
             'starting_value' => 1
         ));
+
+        Series::create(array(
+            'name' => 'Loan Number',
+            'slug' => 'loan_number',
+            'prefix' => 'LN',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
     }
 }

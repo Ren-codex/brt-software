@@ -6,6 +6,8 @@ use App\Http\Resources\Libraries\PayrollResource;
 use App\Models\ListStatus;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
+use App\Models\LoanPayment;
+use App\Models\LoanLog;
 use App\Services\SeriesService;
 use DB;
 use App\Models\PayrollLog;
@@ -22,7 +24,8 @@ class PayrollClass
 
     public function lists($request)
     {
-        $payrolls = Payroll::when($request->keyword, function($query) use ($request){
+        $payrolls = Payroll::with(['status', 'template', 'creator.employee', 'approvedBy.employee', 'items.employee', 'logs.actionedBy.employee'])
+                ->when($request->keyword, function($query) use ($request){
                     $query->whereHas('items.employee', function($q) use ($request){
                         $q->where('firstname', 'like', '%'.$request->keyword.'%')
                         ->orWhere('lastname', 'like', '%'.$request->keyword.'%')
@@ -36,18 +39,27 @@ class PayrollClass
 
     public function store($request)
     {
-        // Prevent creating a payroll when there's already an ongoing (not paid)
-        // payroll for the same template and period.
-        $exists = Payroll::where('payroll_template_id', $request->payroll_template_id)
-            ->where('pay_period_start', $request->pay_period_start)
+        // Prevent creating a payroll when any of the selected employees already
+        // has an ongoing payroll for the same pay period.
+        $employeeIds = collect($request->items ?? [])
+            ->pluck('employee_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $exists = !empty($employeeIds) && Payroll::where('pay_period_start', $request->pay_period_start)
             ->where('pay_period_end', $request->pay_period_end)
             ->where('status_id', '!=', ListStatus::where('slug', 'disapproved')->first()->id)
+            ->whereHas('items', function ($query) use ($employeeIds) {
+                $query->whereIn('employee_id', $employeeIds);
+            })
             ->exists();
 
         if ($exists) {
             return [
-                'message' => 'An ongoing payroll already exists for this template and period',
-                'info' => 'Please close or mark the existing payroll as paid before creating a new one',
+                'message' => 'An ongoing payroll already exists for one or more employees in this period',
+                'info' => 'Please close or release the existing payroll before creating a new one',
                 'status' => 'error'
             ];
         }
@@ -120,9 +132,10 @@ class PayrollClass
                     'payroll_id' => $payroll->id,
                     'employee_id' => $item['employee_id'],
                     'basic_salary' => $item['basic_salary'],
-                    'overtime_hours' => $item['overtime_hours'] ?? 0,
-                    'overtime_rate' => $item['overtime_rate'] ?? 0,
-                    'deductions' => $item['deductions'] ?? 0,
+                    'earnings' => $item['earnings'] ?? [],
+                    'deductions' => $item['deductions'] ?? [],
+                    'total_earnings' => $item['total_earnings'] ?? 0,
+                    'total_deductions' => $item['total_deductions'] ?? 0,
                     'total_days' => $item['total_days'] ?? 0,
                     'net_salary' => $item['net_salary'],
                     'loans' => $item['loans'] ?? [],
@@ -181,12 +194,34 @@ class PayrollClass
                             $loan = \App\Models\Loan::findOrFail($loanData['id']);
                             if ($loan) {
                                 $deduct = floatval($loanData['payroll_deduction']);
+                                $deductionTerm = $loan->divisor == 1 ? 2 : 1;
+                                $newRemainingBalance = max(0, floatval($loan->remaining_balance) - $deduct);
+                                $periodStart = \Carbon\Carbon::parse($payroll->pay_period_start);
+                                $periodEnd = \Carbon\Carbon::parse($payroll->pay_period_end);
+                                $paidDateLabel = $periodStart->format('F j') . '-' . $periodEnd->format('j, Y');
+
+                                LoanPayment::create([
+                                    'loan_id' => $loan->id,
+                                    'amount' => $deduct,
+                                    'paid_date' => $paidDateLabel,
+                                    'paid_term' => $deductionTerm,
+                                    'remarks' => 'Auto deduction from payroll #' . $payroll->payroll_no,
+                                    'added_by_id' => auth()->id(),
+                                ]);
+
+                                LoanLog::create([
+                                    'loan_id' => $loan->id,
+                                    'action' => 'payment added',
+                                    'actioned_by_id' => auth()->id(),
+                                    'remarks' => 'Payroll deduction recorded: ' . number_format($deduct, 2) . ' (Payroll #' . $payroll->payroll_no . ')',
+                                ]);
+
                                 $loan->remaining_balance = max(0, floatval($loan->remaining_balance) - $deduct);
                                 $loan->amtpaid = floatval($loan->amtpaid) + $deduct;
-                                $loan->remaining_term_to_pay = max(0, intval($loan->remaining_term_to_pay) - ($loan->divisor == 1 ? 2 : 1));
+                                $loan->remaining_term_to_pay = max(0, intval($loan->remaining_term_to_pay) - $deductionTerm);
                                 // Optionally update status if fully paid
-                                if ($loan->remaining_balance <= 0) {
-                                    $loan->status = 'paid';
+                                if ($newRemainingBalance <= 0) {
+                                    $loan->status = 'completed';
                                 }
                                 $loan->save();
                             }
@@ -201,9 +236,19 @@ class PayrollClass
                     $status = ListStatus::where('slug', $request->status)->first();
                 }
     
-                $payroll->update([
+                $payload = [
                     'status_id' => $status->id,
-                ]);
+                ];
+
+                if ($request->status === 'approved') {
+                    $payload['approved_by_id'] = auth()->id();
+                    $payload['approved_at'] = now();
+                } elseif (in_array($request->status, ['draft', 'disapproved'])) {
+                    $payload['approved_by_id'] = null;
+                    $payload['approved_at'] = null;
+                }
+
+                $payroll->update($payload);
         
                 PayrollLog::create([
                     'payroll_id' => $payroll->id,

@@ -126,21 +126,10 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item"
-                    v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
-                    <Link href="/loans" class="nav-link menu-link"
-                        :class="{ 'active': $page.url.startsWith('/loans') }">
-                    <i class="ri-bank-card-fill"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Loans</span>
-                    <span class="menu-link-bg"></span>
-                    <span class="active-indicator"></span>
-                    </Link>
-                </li>
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
-                    <BLink class="nav-link menu-link" href="#sidebarDashboards"
-                        :class="{ 'active': $page.url.startsWith('/libraries') }" data-bs-toggle="collapse"
-                        role="button" :aria-expanded="$page.url.startsWith('/libraries')"
-                        aria-controls="sidebarDashboards">
+                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+                   <BLink class="nav-link menu-link" href="#sidebarDashboards"
+                    :class="{'active': $page.url.startsWith('/libraries') }"
+                    data-bs-toggle="collapse" role="button" :aria-expanded="$page.url.startsWith('/libraries')" aria-controls="sidebarDashboards">
                         <i class="ri-folder-2-fill"></i>
                         <span data-key="t-dashboards">Libraries</span>
                         <i class="ri-arrow-down-s-line collapse-icon"></i>

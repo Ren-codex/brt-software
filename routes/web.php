@@ -36,10 +36,12 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
         Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
         Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
+        Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class);
 
         
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
+        Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
         
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
@@ -65,10 +67,12 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::delete('/payroll-templates/{templateId}/employees/{employeeId}', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'removeEmployee']);
         Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class);
         Route::resource('/loans', App\Http\Controllers\Modules\LoanController::class);
+        Route::resource('/loan-payments', App\Http\Controllers\Modules\LoanPaymentController::class);
         Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
         Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);
+        Route::put('/loans/{id}/status', [App\Http\Controllers\Modules\LoanController::class, 'updateStatus']);
         
         // Contact Management
         Route::resource('/contacts', App\Http\Controllers\Modules\ContactController::class);
