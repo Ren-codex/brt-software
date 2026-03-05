@@ -47,37 +47,119 @@
       <!-- Main Content -->
       <div class="inventory-main">
         <!-- Tab Content -->
-        <div>
+        <div class="inventory-main-content">
           <transition name="inventory-fade" mode="out-in">
-            <div :key="activeTab" class="inventory-tab-content">
-              <div v-if="activeTab === 'sales_orders'" class="shadow-sm p-3">
-                <SalesOrders :dropdowns="dropdowns"/>
+            <div :key="currentView" class="inventory-tab-content">
+              <!-- Sales Orders -->
+              <div v-if="activeTab === 'sales_orders'" class="row">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+                 
+                    <SalesOrders :dropdowns="dropdowns" :metrics="metrics" />
+                 
+                </div>
+                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics" 
+                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
+                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    @toggle="toggleRightSidebar" />
+                </div>
               </div>
 
-              <div v-if="activeTab === 'sales_returns'" class="shadow-sm p-3">
-                <SalesReturns :dropdowns="dropdowns"/>
+              <!-- Sales Returns -->
+              <div v-if="activeTab === 'sales_returns'" class="row">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+                 
+                    <SalesReturns :dropdowns="dropdowns" :metrics="metrics" />
+                
+                </div>
+                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
+                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    @toggle="toggleRightSidebar" />
+                </div>
               </div>
 
-              <div v-if="activeTab === 'ar_invoices'" class="shadow-sm p-3">
-                <ARInvoices :dropdowns="dropdowns" :isExternal="false"/>
+              <!-- AR Invoices -->
+              <div v-if="activeTab === 'ar_invoices'" class="row">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+              
+                    <ARInvoices :dropdowns="dropdowns" :isExternal="false"/>
+                 
+                </div>
+                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
+                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    @toggle="toggleRightSidebar" />
+                </div>
               </div>
 
-              <div v-if="activeTab === 'receipts'" class="shadow-sm p-3">
-                 <Receipts :dropdowns="dropdowns"/>
+              <!-- Receipts -->
+              <div v-if="activeTab === 'receipts'" class="row">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+                
+                     <Receipts :dropdowns="dropdowns"/>
+               
+                </div>
+                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
+                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    @toggle="toggleRightSidebar" />
+                </div>
               </div>
 
-              <div v-if="activeTab === 'remittance'" class="shadow-sm p-3">
-                <Remittances :dropdowns="dropdowns" />
+              <!-- Remittances -->
+              <div v-if="activeTab === 'remittance'" class="row">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+                  
+                    <Remittances :dropdowns="dropdowns" />
+                 
+                </div>
+                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
+                    :listRemittances="listRemittances" :remittanceMetrics="remittanceMetrics"
+                    :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    @toggle="toggleRightSidebar" />
+                </div>
               </div>
 
-              <div v-if="activeTab === 'revenue-reports'" class="card shadow-sm p-3">
-                <RevenueReports :dropdowns="dropdowns" />
+              <!-- Revenue Reports -->
+              <div v-if="activeTab === 'revenue-reports'" class="row">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+                  <div class="card shadow-sm p-3">
+                    <RevenueReports :dropdowns="dropdowns" />
+                  </div>
+                </div>
+                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
+                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    @toggle="toggleRightSidebar" />
+                </div>
               </div>
             </div>
           </transition>
         </div>
       </div>
     </div>
+
+    <!-- Floating Quick Stats Toggle Button -->
+    <button class="quick-stats-floating-toggle" @click="toggleRightSidebar"
+      :title="isRightSidebarCollapsed ? 'Show Quick Stats' : 'Hide Quick Stats'">
+      <span>Quick Stats</span>
+    </button>
+
+    <!-- Toast -->
+    <div v-if="isToastVisible" class="inventory-toast">
+      <div class="inventory-toast-content">
+        <i class="ri-check-line"></i>
+        {{ toastMessage }}
+      </div>
+    </div>
+
   </div>
 
 
@@ -93,21 +175,42 @@ import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
 import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
 import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
 import RevenueReports from "@/Pages/Modules/Sales/Components/RevenueReports/Index.vue";
+import QuickStatsSidebar from "./Components/QuickStatsSidebar.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, RevenueReports },
+  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, RevenueReports, QuickStatsSidebar },
   props: ['dropdowns'],
   data() {
     return {
       isSidebarCollapsed: false,
+      isRightSidebarCollapsed: true,
       activeTab: localStorage.getItem('sales_active_tab') || 'sales_orders',
+      currentView: 'list',
       filter: {
         keyword: '',
       },
       listCustomers: [],
+      listInvoices: [],
+      listReceipts: [],
+      listRemittances: [],
       meta: null,
       links: null,
       selectedRow: null,
+      isToastVisible: false,
+      toastMessage: '',
+      metrics: {
+        total_sales_orders: 0,
+        today_orders: 0,
+        total_revenue: 0,
+        pending_orders: 0,
+        cancelled_orders: 0
+      },
+      remittanceMetrics: {
+        total_remittances: 0,
+        today_remittances: 0,
+        open_remittances: 0,
+        total_amount_remitted: 0
+      },
       tabs: [
         {
           id: 'sales_orders',
@@ -149,23 +252,60 @@ export default {
     };
   },
   watch: {
-    'activeTab'(newVal) {
+    activeTab(newVal) {
+      this.currentView = 'list';
       this.fetchSalesOrders();
     }
   },
   created() {
     this.fetchSalesOrders();
-    this.debouncedSearch = _.debounce(this.fetchSalesOrders, 500);
+    this.fetchMetrics();
+    this.fetchRemittanceMetrics();
+    
+    // Check URL params for tab
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    
+    if (tabParam && this.tabs.some(tab => tab.id === tabParam)) {
+      this.activeTab = tabParam;
+      this.changeTab(this.activeTab);
+    }
   },
   methods: {
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
     },
+    toggleRightSidebar() {
+      this.isRightSidebarCollapsed = !this.isRightSidebarCollapsed;
+    },
     changeTab(tab) {
       this.activeTab = tab;
       localStorage.setItem('sales_active_tab', tab);
+      this.currentView = 'list';
       this.selectedRow = null;
       this.filter.keyword = '';
+
+      // Update URL params
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tab);
+      window.history.pushState({}, '', url);
+    },
+    
+    updateKeyword(keyword) {
+      this.filter.keyword = keyword;
+      this.handleSearch();
+    },
+
+    handleSearch: _.debounce(function () {
+      this.fetchSalesOrders();
+    }, 500),
+
+    showToast(message) {
+      this.toastMessage = message;
+      this.isToastVisible = true;
+      setTimeout(() => {
+        this.isToastVisible = false;
+      }, 3000);
     },
     fetchSalesOrders(page_url) {
       if (this.activeTab === 'sales_orders') {
@@ -198,6 +338,32 @@ export default {
         this.meta = null;
         this.links = null;
       }
+    },
+    fetchMetrics() {
+      axios.get('/sales-orders', {
+        params: {
+          option: 'dashboard'
+        }
+      })
+        .then(response => {
+          if (response) {
+            this.metrics = response.data;
+          }
+        })
+        .catch(err => console.log(err));
+    },
+    fetchRemittanceMetrics() {
+      axios.get('/remittances', {
+        params: {
+          option: 'dashboard'
+        }
+      })
+        .then(response => {
+          if (response) {
+            this.remittanceMetrics = response.data;
+          }
+        })
+        .catch(err => console.log(err));
     },
     selectRow(index) {
       this.selectedRow = this.selectedRow === index ? null : index;
@@ -277,5 +443,72 @@ export default {
 
 .inventory-sidebar.sidebar-collapsed .inventory-sidebar-tab:hover {
   transform: none;
+}
+
+.quick-stats-floating-toggle {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  background: #c4dad2;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  color: #16423c;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 30px 4px;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.quick-stats-floating-toggle:hover {
+  background: #3d8d7a;
+  color: #ffffff;
+}
+
+.quick-stats-floating-toggle span {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.inventory-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.inventory-toast-content {
+  background: #28a745;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+}
+
+.inventory-toast-content i {
+  font-size: 18px;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 </style>

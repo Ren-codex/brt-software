@@ -1,6 +1,6 @@
 <template>
     <BRow>
-        <div class="col-md-9 mb-4">
+        <div class="col-md-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                     <div class="d-flex align-items-center justify-content-between">
@@ -142,45 +142,6 @@
                 </div>
                 <div class="card-footer bg-light border-0">
                     <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card shadow-lg border-0 bg-light" >
-                <div class="card-header border-0  " >
-                    <h4 >
-                        <i class="ri-dashboard-line "></i> Quick Stats
-                        <hr class="mb-0">
-                    </h4>
-                </div>
-     
-                <div class="card-body">
-                    <div class="metric-card mb-3 p-3 e bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-shopping-cart-line  fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Total Receipts</p>
-                                <h4 class="mb-0 ">{{ metrics.total_receipts }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-money-dollar-circle-line  fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Total Amount Collected</p>
-                                <h4 class="mb-0 ">₱{{ metrics.total_amount_collected }}</h4>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

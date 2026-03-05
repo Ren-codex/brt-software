@@ -15,7 +15,7 @@
                     <i class="ri-close-line fs-20"></i>
                 </button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body p-4" style="height: 75vh; overflow-y: auto;">
                 <!-- Invoice Summary Card -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-light">
@@ -237,8 +237,6 @@ export default {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     max-width: 700px;
     width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
     position: relative;
     transform: translateY(30px) scale(0.95);
     transition: all 0.3s ease;
