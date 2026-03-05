@@ -39,7 +39,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <!-- <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-flag-line search-icon"></i>
                                     <select v-model="filter.status" @change="fetch()" class="search-input">
@@ -49,7 +49,7 @@
                                         </option>
                                     </select>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
 
                     </div>
@@ -372,7 +372,7 @@ export default {
             filter: {
                 keyword: null,
                 location_id: null,
-                status: null
+                status: 'sales-returned'
             },
             index: null,
             selectedRow: null,
@@ -427,7 +427,7 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url) {
-            page_url = page_url || (this.isExternal ? '/sales-orders-external' : '/sales-orders');
+            page_url = page_url || ('/sales-orders');
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,

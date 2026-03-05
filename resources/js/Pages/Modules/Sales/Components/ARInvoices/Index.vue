@@ -108,7 +108,7 @@
                                         </td>
                                     </tr>
                                     <tr v-if="expandedRows.includes(index)" class="bg-light">
-                                        <td colspan="8" class="p-0">
+                                        <td colspan="12" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Invoice Details
