@@ -2,9 +2,11 @@
     <PageHeader :title="currentView === 'list' ? 'Contact Management' : 'Contact Details'" :pageTitle="currentView === 'list' ? 'List' : 'Details'" />
     <BRow>
         <div class="col-md-12">
+            <!-- Library Card Design -->
             <div class="library-card">
                 <!-- List View -->
                 <template v-if="currentView === 'list'">
+                    <!-- Header -->
                     <div class="library-card-header">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="d-flex align-items-center gap-3">
@@ -13,118 +15,135 @@
                                 </div>
                                 <div>
                                     <h4 class="header-title mb-1">Contact Messages</h4>
-                                    <p class="header-subtitle mb-0">Manage contact form submissions</p>
+                                    <p class="header-subtitle mb-0">Manage and respond to contact form submissions</p>
                                 </div>
                             </div>
-                            <div class="d-flex gap-2">
-                                <button class="create-btn" @click="fetch" :disabled="loading">
-                                    <i class="ri-refresh-line"></i>
-                                    <span>Refresh</span>
-                                </button>
-                            </div>
+                            <button class="create-btn" @click="fetch" :disabled="loading">
+                                <i class="ri-refresh-line" :class="{ 'spin': loading }"></i>
+                                <span>Refresh</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="card-body m-2 p-3">
-<!-- Search -->
+                    <div class="library-card-body">
+                        <!-- Search Section (Employee Module Design) -->
                         <div class="search-section">
                             <div class="search-wrapper">
                                 <i class="ri-search-line search-icon"></i>
-                                <input type="text" v-model="filter.keyword" @input="updateKeyword($event.target.value)"
-                                    placeholder="Search contacts..." class="search-input">
+                                <input 
+                                    type="text" 
+                                    v-model="localKeyword" 
+                                    @input="updateKeyword($event.target.value)"
+                                    placeholder="Search by name, email, or message..." 
+                                    class="search-input"
+                                >
                             </div>
                         </div>
 
-                        <!-- Table -->
-                        <div class="table-responsive table-card" style="overflow: auto;">
-                            <table class="table align-middle table-striped table-centered mb-0">
-                                <thead class="table-light thead-fixed">
-                                    <tr class="fs-11">
-                                        <th style="width: 5%;">#</th>
-                                        <th style="width: 20%;">Name</th>
-                                        <th style="width: 20%;">Email</th>
-                                        <th style="width: 15%;">Phone</th>
-                                        <th style="width: 25%;">Message</th>
-                                        <th style="width: 10%;">Date</th>
-                                        <th style="width: 5%;">Status</th>
-                                        <th style="width: 10%;">Actions</th>
+                        <!-- Stats Summary Cards -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-primary-subtle">
+                                    <i class="ri-mail-line text-primary"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Total Messages</span>
+                                    <span class="stat-value">{{ meta.total || 0 }}</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-warning-subtle">
+                                    <i class="ri-mail-unread-line text-warning"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Unread</span>
+                                    <span class="stat-value">{{ lists.filter(m => !m.is_read).length }}</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-success-subtle">
+                                    <i class="ri-check-double-line text-success"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Read</span>
+                                    <span class="stat-value">{{ lists.filter(m => m.is_read).length }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modern Table -->
+                        <div class="table-container">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Contact</th>
+                                        <th>Message</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody class="table-white fs-12">
+                                <tbody>
                                     <tr v-for="(list, index) in lists" :key="index" 
                                         :class="{
-                                            'unread-row': !list.is_read,
-                                            'animate-fade-in': true
+                                            'unread-message': !list.is_read,
+                                            'message-row': true
                                         }"
-                                        :style="{ animationDelay: `${index * 50}ms` }">
-                                        <td class="text-center">
-                                            <span class="text-muted fw-medium">{{ index + 1 }}</span>
-                                        </td>
+                                        @click="viewMessage(list)"
+                                        style="cursor: pointer;">
+                                        <td class="text-center fw-medium">{{ index + 1 }}</td>
                                         <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-xs me-2">
-                                                    <div class="avatar-title rounded-circle bg-gradient-teal text-white">
-                                                        {{ list.name.charAt(0).toUpperCase() }}
+                                            <div class="contact-info">
+                                                <div class="contact-avatar" :class="{ 'unread-avatar': !list.is_read }">
+                                                    {{ list.name.charAt(0).toUpperCase() }}
+                                                </div>
+                                                <div class="contact-details">
+                                                    <div class="contact-name">{{ list.name }}</div>
+                                                    <div class="contact-email">
+                                                        <i class="ri-mail-line"></i>
+                                                        {{ list.email }}
+                                                    </div>
+                                                    <div class="contact-phone" v-if="list.phone">
+                                                        <i class="ri-phone-line"></i>
+                                                        {{ list.phone }}
                                                     </div>
                                                 </div>
-                                                <span class="fw-medium text-dark">{{ list.name }}</span>
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="ri-mail-line text-muted me-2 fs-14"></i>
-                                                <a :href="'mailto:' + list.email" class="text-primary text-decoration-none">
-                                                    {{ list.email }}
-                                                </a>
+                                            <div class="message-preview" :title="list.message">
+                                                {{ truncateMessage(list.message) }}
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="d-flex align-items-center" v-if="list.phone">
-                                                <i class="ri-phone-line text-muted me-2 fs-14"></i>
-                                                <a :href="'tel:' + list.phone" class="text-dark">
-                                                    {{ list.phone }}
-                                                </a>
+                                            <div class="date-badge">
+                                                <div class="date-main">{{ formatDate(list.created_at) }}</div>
+                                                <div class="date-time">{{ formatTime(list.created_at) }}</div>
                                             </div>
-                                            <span v-else class="text-muted">-</span>
                                         </td>
                                         <td>
-                                            <span class="text-truncate d-inline-block message-cell" :title="list.message">
-                                                {{ list.message }}
+                                            <span class="status-badge" :class="list.is_read ? 'status-read' : 'status-unread'">
+                                                <i :class="list.is_read ? 'ri-check-line' : 'ri-mail-unread-line'"></i>
+                                                <span>{{ list.is_read ? 'Read' : 'Unread' }}</span>
                                             </span>
                                         </td>
                                         <td>
-                                            <div class="d-flex flex-column">
-                                                <span class="fw-medium">{{ formatDate(list.created_at) }}</span>
-                                                <small class="text-muted">{{ formatTime(list.created_at) }}</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span v-if="list.is_read" class="badge badge-soft-success">
-                                                <i class="ri-check-line me-1"></i>Read
-                                            </span>
-                                            <span v-else class="badge badge-soft-warning">
-                                                <i class="ri-mail-unread-line me-1"></i>Unread
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex justify-content-center gap-1">
-                                                <BButton @click="viewMessage(list)" variant="primary" size="sm" v-b-tooltip.hover title="View" class="btn-icon">
-                                                    <i class="ri-eye-line"></i>
-                                                </BButton>
-                                                <BButton @click="deleteContact(list.id)" variant="danger" size="sm" v-b-tooltip.hover title="Delete" class="btn-icon">
+                                            <div class="action-group" @click.stop>
+                                                <button class="action-btn delete-btn" @click="deleteContact(list.id)" title="Delete">
                                                     <i class="ri-delete-bin-line"></i>
-                                                </BButton>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr v-if="lists.length === 0">
-                                        <td colspan="8" class="text-center py-5">
-                                            <div class="empty-state">
-                                                <div class="empty-icon">
+                                        <td colspan="6">
+                                            <div class="empty-state-modern">
+                                                <div class="empty-icon-modern">
                                                     <i class="ri-inbox-archive-line"></i>
                                                 </div>
-                                                <h5 class="empty-title">No Messages Found</h5>
-                                                <p class="empty-description">There are no contact messages yet. Messages from the contact form will appear here.</p>
+                                                <h5>No Messages Found</h5>
+                                                <p>Messages from the contact form will appear here</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -132,108 +151,117 @@
                             </table>
                         </div>
 
-                        <!-- Pagination -->
-                        <div class="card-footer-custom">
+                        <!-- Modern Pagination -->
+                        <div class="pagination-modern">
                             <div class="pagination-info">
-                                <span class="text-muted">Showing <strong>{{ lists.length }}</strong> of <strong>{{ meta.total || 0 }}</strong> results</span>
+                                Showing <span class="fw-semibold">{{ lists.length }}</span> of 
+                                <span class="fw-semibold">{{ meta.total || 0 }}</span> messages
                             </div>
-                            <div v-if="meta.last_page > 1" class="pagination-wrapper">
-                                <BButtonGroup>
-                                    <BButton 
-                                        v-for="(link, index) in links" 
-                                        :key="index"
-                                        :variant="link.active ? 'primary' : 'outline-secondary'"
-                                        :disabled="!link.url"
-                                        @click="changePage(link.url)"
-                                        size="sm"
-                                        class="pagination-btn"
-                                    >
-                                        <span v-html="link.label"></span>
-                                    </BButton>
-                                </BButtonGroup>
+                            <div class="pagination-controls" v-if="meta.last_page > 1">
+                                <button 
+                                    class="page-btn"
+                                    :disabled="!meta.prev_page_url"
+                                    @click="changePage(meta.prev_page_url)"
+                                >
+                                    <i class="ri-arrow-left-s-line"></i>
+                                </button>
+                                <span class="page-indicator">{{ meta.current_page }} / {{ meta.last_page }}</span>
+                                <button 
+                                    class="page-btn"
+                                    :disabled="!meta.next_page_url"
+                                    @click="changePage(meta.next_page_url)"
+                                >
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </template>
 
-                <!-- Details View -->
-                <div v-if="currentView === 'details'" class="p-4">
-                    <div class="detail-card">
-                        <div class="detail-header mb-4">
-                            <button class="btn btn-light mb-3" @click="backToList">
-                                <i class="ri-arrow-left-line me-1"></i> Back to List
-                            </button>
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="detail-avatar-lg">
-                                    <div class="avatar-title-lg rounded-circle bg-gradient-teal text-white">
-                                        {{ selectedContact?.name?.charAt(0).toUpperCase() }}
-                                    </div>
+                <!-- Enhanced Details View -->
+                <div v-if="currentView === 'details'" class="modern-detail-view">
+                    <!-- Back Button -->
+                    <button class="back-button" @click="backToList">
+                        <i class="ri-arrow-left-line"></i>
+                        <span>Back to List</span>
+                    </button>
+
+                    <!-- Message Detail Card -->
+                    <div class="detail-card-modern">
+                        <div class="detail-header-modern">
+                            <div class="detail-header-left">
+                                <div class="detail-avatar-large">
+                                    {{ selectedContact?.name?.charAt(0).toUpperCase() }}
                                 </div>
-                                <div>
-                                    <h3 class="mb-1">{{ selectedContact?.name }}</h3>
-                                    <span v-if="selectedContact?.is_read" class="badge badge-soft-success">
-                                        <i class="ri-check-line me-1"></i>Read
-                                    </span>
-                                    <span v-else class="badge badge-soft-warning">
-                                        <i class="ri-mail-unread-line me-1"></i>Unread
-                                    </span>
+                                <div class="detail-title-section">
+                                    <h2>{{ selectedContact?.name }}</h2>
+                                    <div class="detail-meta">
+                                        <span class="status-badge-large" :class="selectedContact?.is_read ? 'status-read' : 'status-unread'">
+                                            <i :class="selectedContact?.is_read ? 'ri-check-line' : 'ri-mail-unread-line'"></i>
+                                            <span>{{ selectedContact?.is_read ? 'Read' : 'Unread' }}</span>
+                                        </span>
+                                        <span class="detail-date">
+                                            <i class="ri-calendar-line"></i>
+                                            {{ formatFullDate(selectedContact?.created_at) }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="detail-body">
-                            <div class="detail-item mb-3">
-                                <div class="detail-label">
-                                    <i class="ri-mail-line"></i>
-                                    <span>Email</span>
-                                </div>
-                                <div class="detail-value">
-                                    <a :href="'mailto:' + selectedContact?.email" class="text-primary">
-                                        {{ selectedContact?.email }}
-                                    </a>
-                                </div>
-                            </div>
-                            
-                            <div class="detail-item mb-3">
-                                <div class="detail-label">
-                                    <i class="ri-phone-line"></i>
-                                    <span>Phone</span>
-                                </div>
-                                <div class="detail-value">
-                                    <template v-if="selectedContact?.phone">
-                                        <a :href="'tel:' + selectedContact?.phone" class="text-dark">
-                                            {{ selectedContact?.phone }}
+                        <div class="detail-content">
+                            <!-- Contact Information Grid -->
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-icon">
+                                        <i class="ri-mail-line"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <span class="info-label">Email Address</span>
+                                        <a :href="'mailto:' + selectedContact?.email" class="info-value email-link">
+                                            {{ selectedContact?.email }}
+                                            <i class="ri-external-link-line"></i>
                                         </a>
-                                    </template>
-                                    <span v-else class="text-muted">Not provided</span>
+                                    </div>
+                                </div>
+
+                                <div class="info-card" v-if="selectedContact?.phone">
+                                    <div class="info-icon">
+                                        <i class="ri-phone-line"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <span class="info-label">Phone Number</span>
+                                        <a :href="'tel:' + selectedContact?.phone" class="info-value phone-link">
+                                            {{ selectedContact?.phone }}
+                                            <i class="ri-external-link-line"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <div class="detail-item mb-3">
-                                <div class="detail-label">
-                                    <i class="ri-calendar-line"></i>
-                                    <span>Date</span>
-                                </div>
-                                <div class="detail-value">
-                                    {{ formatFullDate(selectedContact?.created_at) }}
-                                </div>
-                            </div>
-                            
-                            <div class="detail-message mt-4 pt-3">
-                                <div class="detail-label mb-2">
+
+                            <!-- Message Section -->
+                            <div class="message-section">
+                                <div class="message-header">
                                     <i class="ri-message-2-line"></i>
-                                    <span>Message</span>
+                                    <span>Message Content</span>
                                 </div>
-                                <div class="message-content">
+                                <div class="message-body">
                                     {{ selectedContact?.message }}
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="mt-4 pt-3 border-top" v-if="!selectedContact?.is_read">
-                            <button class="btn btn-success" @click="markAsRead">
-                                <i class="ri-check-line me-1"></i> Mark as Read
-                            </button>
+                            <!-- Action Buttons -->
+                            <div class="detail-actions">
+                                <button class="action-button primary" @click="replyToContact" v-if="selectedContact?.email">
+                                    <i class="ri-mail-send-line"></i>
+                                    Reply via Email
+                                </button>
+                    
+                                <button class="action-button danger" @click="deleteContact(selectedContact?.id)">
+                                    <i class="ri-delete-bin-line"></i>
+                                    Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -246,6 +274,7 @@
 </template>
 
 <script>
+import _ from 'lodash';
 import { usePage } from '@inertiajs/vue3';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
@@ -265,6 +294,7 @@ export default {
             loading: false,
             currentView: 'list',
             selectedContact: null,
+            localKeyword: '',
         };
     },
     watch: {
@@ -279,6 +309,16 @@ export default {
         this.fetch();
     },
     methods: {
+        checkSearchStr: _.debounce(function (string) {
+            this.fetch();
+        }, 300),
+        
+        updateKeyword(value) {
+            this.localKeyword = value;
+            this.filter.keyword = value;
+            this.checkSearchStr(value);
+        },
+        
         fetch() {
             this.loading = true;
             let page_url = '/contacts';
@@ -313,14 +353,6 @@ export default {
             });
         },
         
-        updateKeyword(value) {
-            clearTimeout(this.debounce);
-            this.debounce = setTimeout(() => {
-                this.filter.keyword = value;
-                this.fetch();
-            }, 500);
-        },
-        
         changePage(url) {
             if (url) {
                 axios.get(url).then(response => {
@@ -335,11 +367,13 @@ export default {
             this.selectedContact = contact;
             this.currentView = 'details';
             
-            // Auto-mark as read when viewing
             if (!contact.is_read) {
                 axios.patch(`/contacts/${contact.id}/mark-read`)
                 .then(response => {
-                    // Event will be broadcast via Reverb
+                    const contactInList = this.lists.find(c => c.id === contact.id);
+                    if (contactInList) {
+                        contactInList.is_read = true;
+                    }
                 })
                 .catch(err => console.log(err));
             }
@@ -358,7 +392,6 @@ export default {
             .then(response => {
                 this.$toast.success('Marked as read');
                 this.selectedContact.is_read = true;
-                // Update in list too
                 const contact = this.lists.find(c => c.id === this.selectedContact.id);
                 if (contact) {
                     contact.is_read = true;
@@ -370,23 +403,38 @@ export default {
             });
         },
         
+        replyToContact() {
+            if (this.selectedContact?.email) {
+                window.location.href = `mailto:${this.selectedContact.email}?subject=Re: Contact Form Submission`;
+            }
+        },
+        
         async deleteContact(id) {
             const confirmed = await this.$refs.deleteModal.show(
                 'Delete Contact',
-                'Are you sure you want to delete this contact message?'
+                'Are you sure you want to delete this contact message? This action cannot be undone.'
             );
 
             if (confirmed) {
                 axios.delete(`/contacts/${id}`)
                 .then(response => {
                     this.$toast.success('Contact deleted successfully');
-                    this.fetch();
+                    if (this.currentView === 'details') {
+                        this.backToList();
+                    } else {
+                        this.fetch();
+                    }
                 })
                 .catch(err => {
                     console.log(err);
                     this.$toast.error('Failed to delete contact');
                 });
             }
+        },
+        
+        truncateMessage(message) {
+            if (!message) return '';
+            return message.length > 60 ? message.substring(0, 60) + '...' : message;
         },
         
         formatDate(dateStr) {
@@ -418,414 +466,690 @@ export default {
 </script>
 
 <style scoped>
-/* Card Styling */
-.library-card {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-    overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.03);
+.spin {
+    animation: spin 1s linear infinite;
 }
 
-.library-card-header {
-    padding: 24px 24px 0;
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-/* Header Icon - Teal Gradient */
-.header-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25);
-}
-
-.header-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1e293b;
-    letter-spacing: -0.3px;
-}
-
-.header-subtitle {
-    font-size: 0.875rem;
-    color: #64748b;
-}
-
-/* Create Button */
-.create-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);
-}
-
-.create-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.35);
-}
-
-.create-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Search Section */
+/* Search Section (Employee Module Design) */
 .search-section {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 20px;
-    padding: 20px;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    margin-bottom: 24px;
 }
 
 .search-wrapper {
-    flex: 1;
     position: relative;
+    width: 100%;
+    max-width: 400px;
 }
 
 .search-icon {
     position: absolute;
-    left: 14px;
+    left: 16px;
     top: 50%;
     transform: translateY(-50%);
     color: #94a3b8;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    z-index: 1;
 }
 
 .search-input {
     width: 100%;
-    padding: 12px 12px 12px 42px;
+    padding: 12px 16px 12px 48px;
+    font-size: 0.95rem;
     border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 0.9rem;
-    transition: all 0.25s ease;
+    border-radius: 12px;
+    transition: all 0.3s ease;
     background: white;
 }
 
 .search-input:focus {
     outline: none;
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+    border-color: #059669;
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
 }
 
-.filter-wrapper .form-select {
-    padding: 12px 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 0.9rem;
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
     background: white;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    min-width: 150px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
 
-.filter-wrapper .form-select:focus {
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+    border-color: #cbd5e1;
 }
 
-/* Table Styling */
-.table-card {
-    margin-top: 0;
-    border-radius: 12px;
-    overflow: hidden;
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
 }
 
-.table thead th {
-    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    font-weight: 700;
-    color: #475569;
+.bg-primary-subtle { background: rgba(5, 150, 105, 0.1); }
+.bg-warning-subtle { background: rgba(245, 158, 11, 0.1); }
+.bg-success-subtle { background: rgba(16, 185, 129, 0.1); }
+
+.text-primary { color: #059669; }
+.text-warning { color: #f59e0b; }
+.text-success { color: #10b981; }
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+}
+
+/* Modern Table */
+.table-container {
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    margin-bottom: 24px;
+    background: white;
+}
+
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.modern-table thead th {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     font-size: 0.7rem;
-    letter-spacing: 0.8px;
-    border-bottom: 2px solid #cbd5e1;
-    padding: 14px 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #475569;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
 }
 
-.table td {
-    padding: 14px 12px;
-    vertical-align: middle;
-    font-size: 0.875rem;
-    border-color: #f1f5f9;
+.modern-table tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.8rem;
+    line-height: 1.3;
 }
 
-.table tbody tr {
+.message-row {
     transition: all 0.2s ease;
 }
 
-.table tbody tr:hover {
-    background: #f8fafc !important;
+.message-row:hover {
+    background: #f8fafc;
+    box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.1);
 }
 
-/* Unread Row */
-.unread-row {
-    background: linear-gradient(135deg, #fef9c3 0%, #fef08a 0.15) !important;
+.unread-message {
+    background: linear-gradient(135deg, #fef9e7 0%, #fef3c7 100%);
+    border-left: 3px solid #f59e0b;
 }
 
-.unread-row:hover {
-    background: linear-gradient(135deg, #fef08a 0%, #fde047 0.15) !important;
+.unread-message:hover {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
 }
 
-/* Avatar */
-.avatar-xs {
-    width: 36px;
-    height: 36px;
-    flex-shrink: 0;
+/* Contact Info */
+.contact-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.avatar-title {
-    width: 100%;
-    height: 100%;
+.contact-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
 }
 
-.avatar-title-lg {
-    width: 100%;
-    height: 100%;
+.unread-avatar {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
+}
+
+.contact-details {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
+    flex-direction: column;
+    gap: 1px;
 }
 
-.avatar-lg {
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 1.5rem;
-}
-
-.detail-avatar-lg {
-    width: 80px;
-    height: 80px;
-    flex-shrink: 0;
-}
-
-.bg-gradient-teal {
-    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-}
-
-/* Badges */
-.badge {
-    padding: 6px 12px;
-    font-size: 0.7rem;
+.contact-name {
     font-weight: 600;
-    border-radius: 20px;
-    letter-spacing: 0.3px;
+    color: #1e293b;
+    font-size: 0.8rem;
 }
 
-.badge-soft-success {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+.contact-email, .contact-phone {
+    font-size: 0.7rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.contact-email i, .contact-phone i {
+    font-size: 0.7rem;
+}
+
+/* Message Preview */
+.message-preview {
+    max-width: 220px;
+    color: #475569;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Date Badge */
+.date-badge {
+    background: #f8fafc;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+}
+
+.date-main {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+.date-time {
+    font-size: 0.6rem;
+    color: #64748b;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-read {
+    background: linear-gradient(135deg, #e6f7ed 0%, #d1f2e0 100%);
     color: #166534;
     border: 1px solid #86efac;
 }
 
-.badge-soft-warning {
-    background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
-    color: #854d0e;
-    border: 1px solid #fde047;
+.status-unread {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border: 1px solid #fcd34d;
 }
 
-/* Button Icon */
-.btn-icon {
-    width: 32px;
-    height: 32px;
-    padding: 0;
+/* Action Group */
+.action-group {
+    display: flex;
+    gap: 4px;
+}
+
+.action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    cursor: pointer;
     transition: all 0.2s ease;
+    font-size: 0.9rem;
 }
 
-.btn-icon:hover {
-    transform: scale(1.1);
+.view-btn {
+    background: rgba(5, 150, 105, 0.1);
+    color: #059669;
 }
 
-/* Message Cell */
-.message-cell {
-    max-width: 220px;
-    color: #64748b;
+.view-btn:hover {
+    background: #059669;
+    color: white;
+    transform: scale(1.05);
+}
+
+.delete-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.delete-btn:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.05);
 }
 
 /* Empty State */
-.empty-state {
-    padding: 40px 20px;
+.empty-state-modern {
+    text-align: center;
+    padding: 48px 24px;
 }
 
-.empty-icon {
+.empty-icon-modern {
     width: 80px;
     height: 80px;
     margin: 0 auto 20px;
     background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    border-radius: 20px;
+    border-radius: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.empty-icon i {
     font-size: 2.5rem;
     color: #94a3b8;
 }
 
-.empty-title {
+.empty-state-modern h5 {
     font-size: 1.1rem;
     font-weight: 600;
     color: #334155;
     margin-bottom: 8px;
 }
 
-.empty-description {
+.empty-state-modern p {
     font-size: 0.875rem;
     color: #94a3b8;
-    max-width: 300px;
-    margin: 0 auto;
+    margin: 0;
 }
 
-/* Pagination */
-.card-footer-custom {
+/* Modern Pagination */
+.pagination-modern {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 4px;
-    border-top: 1px solid #f1f5f9;
-    margin-top: 8px;
+    padding: 16px 0 8px;
+    border-top: 1px solid #e2e8f0;
 }
 
 .pagination-info {
     font-size: 0.875rem;
+    color: #64748b;
 }
 
-.pagination-info strong {
-    color: #14b8a6;
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.pagination-btn {
+.page-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.pagination-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
+.page-btn:hover:not(:disabled) {
+    background: #059669;
+    color: white;
+    border-color: #059669;
+    transform: translateY(-2px);
 }
 
-/* Animation */
-.animate-fade-in {
-    animation: fadeIn 0.4s ease-out forwards;
-    opacity: 0;
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.page-indicator {
+    font-weight: 600;
+    color: #1e293b;
+    padding: 0 8px;
+}
+
+/* Modern Detail View */
+.modern-detail-view {
+    padding: 28px;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 24px;
+}
+
+.back-button:hover {
+    background: #f8fafc;
+    transform: translateX(-4px);
+    border-color: #059669;
+    color: #059669;
 }
 
 /* Detail Card */
-.detail-card {
-    padding: 20px;
+.detail-card-modern {
+    background: white;
+    border-radius: 24px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
-.detail-header h3 {
-    font-size: 1.5rem;
+.detail-header-modern {
+    padding: 28px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.detail-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.detail-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(5, 150, 105, 0.25);
+}
+
+.detail-title-section h2 {
+    font-size: 1.75rem;
     font-weight: 700;
     color: #1e293b;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
 }
 
-.detail-body {
+.detail-meta {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    gap: 16px;
 }
 
-.detail-item {
+.status-badge-large {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.detail-date {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: center;
+    gap: 6px;
+    color: #64748b;
+    font-size: 0.875rem;
 }
 
-.detail-label {
+/* Detail Content */
+.detail-content {
+    padding: 28px;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.info-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    border-color: #059669;
+    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.1);
+    transform: translateY(-2px);
+}
+
+.info-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.info-content {
+    flex: 1;
+}
+
+.info-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.info-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.email-link:hover, .phone-link:hover {
+    color: #059669;
+}
+
+.email-link i, .phone-link i {
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.email-link:hover i, .phone-link:hover i {
+    opacity: 1;
+}
+
+/* Message Section */
+.message-section {
+    background: #f8fafc;
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    margin-bottom: 28px;
+}
+
+.message-header {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    border-bottom: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 80px;
-    color: #64748b;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-.detail-label i {
-    font-size: 1rem;
-    color: #14b8a6;
-}
-
-.detail-value {
-    font-size: 0.9rem;
+    font-weight: 600;
     color: #1e293b;
-    font-weight: 500;
 }
 
-.detail-message {
-    margin-top: 8px;
-    padding-top: 16px;
-    border-top: 1px solid #e2e8f0;
+.message-header i {
+    color: #059669;
+    font-size: 1.1rem;
 }
 
-.message-content {
-    padding: 16px;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+.message-body {
+    padding: 20px;
     font-size: 0.95rem;
-    line-height: 1.7;
+    line-height: 1.8;
     color: #334155;
     white-space: pre-wrap;
     word-break: break-word;
+    min-height: 120px;
+}
+
+/* Detail Actions */
+.detail-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.action-button.primary {
+    background: #059669;
+    color: white;
+}
+
+.action-button.primary:hover {
+    background: #047857;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+}
+
+.action-button.success {
+    background: #fbbf24;
+    color: #1e293b;
+}
+
+.action-button.success:hover {
+    background: #f59e0b;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+}
+
+.action-button.danger {
+    background: #ef4444;
+    color: white;
+}
+
+.action-button.danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .search-section {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-header-left {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .detail-meta {
         flex-direction: column;
     }
     
-    .card-footer-custom {
+    .detail-actions {
         flex-direction: column;
-        gap: 12px;
     }
     
-    .pagination-wrapper {
+    .action-button {
         width: 100%;
-        overflow-x: auto;
+        justify-content: center;
     }
 }
 </style>

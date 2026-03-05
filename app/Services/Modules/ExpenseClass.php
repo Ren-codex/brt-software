@@ -10,7 +10,7 @@ class ExpenseClass
     public function lists($request)
     {
         $data = ExpenseResource::collection(
-            Expense::with(['added_by'])
+            Expense::with(['added_by', 'status_info'])
                 ->when($request->keyword, function ($query, $keyword) {
                     $keyword = strtolower($keyword);
                     $query->where(function ($q) use ($keyword) {

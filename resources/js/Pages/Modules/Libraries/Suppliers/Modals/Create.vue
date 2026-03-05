@@ -238,7 +238,7 @@ export default {
         
         submit() {
             if (this.editable) {
-                this.form.put(`/libraries/suppliers/${this.form.id}`, {
+                this.form.put(`/suppliers/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (response) => {
                         Swal.fire({
@@ -248,12 +248,12 @@ export default {
                             timer: 1500,
                             showConfirmButton: false
                         });
-                        this.$emit('add', true);
+                        this.$emit('update', true);
                         this.hide();
                     },
                 });
             } else {
-                this.form.post('/libraries/suppliers', {
+                this.form.post('/suppliers', {
                     preserveScroll: true,
                     onSuccess: (response) => {
                         Swal.fire({

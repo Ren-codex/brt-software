@@ -89,7 +89,7 @@
 
 
                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
-                    <Link href="/libraries/suppliers" class="nav-link menu-link"
+                    <Link href="/suppliers" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/libraries/suppliers') }">
                     <i class="ri-money-dollar-circle-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Suppliers</span>
@@ -187,14 +187,7 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item">
-                                <Link href="/libraries/suppliers" class="nav-link submenu-link"
-                                    :class="{ 'active': $page.url === '/libraries/suppliers' }" data-key="t-basic">
-                                <!-- <span class="submenu-dot"></span> -->
-                                <span class="submenu-text">Suppliers</span>
-                                </Link>
-                            </li>
-
+                      
 
                             <li class="nav-item submenu-item">
                                 <Link href="/libraries/positions" class="nav-link submenu-link"

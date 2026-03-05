@@ -59,8 +59,8 @@
                                     <td>{{ list.expense_date || '-' }}</td>
                                     <td>{{ list.description || '-' }}</td>
                                     <td>
-                                        <span :class="getStatusClass(list.status)">
-                                            {{ list.status || '-' }}
+                                        <span class="status-badge" :style="getStatusStyle(list.status_info)">
+                                            {{ list.status_info ? list.status_info.name : (list.status || '-') }}
                                         </span>
                                     </td>
                                     <td>
@@ -198,24 +198,36 @@ export default {
             // Implement view details if needed
         },
 
-        getStatusClass(status) {
-            switch (status) {
-                case 'paid':
-                    return 'badge bg-success';
-                case 'pending':
-                    return 'badge bg-warning';
-                case 'approved':
-                    return 'badge bg-info';
-                case 'rejected':
-                    return 'badge bg-danger';
-                default:
-                    return 'badge bg-secondary';
+        getStatusStyle(status) {
+            if (!status) {
+                return {
+                    color: '#6c757d',
+                    backgroundColor: '#e2e3e5',
+                    border: '1px solid #cccccc'
+                };
             }
+
+            return {
+                color: status.text_color || '#000000',
+                backgroundColor: status.bg_color || '#ffffff',
+                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
+                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
+            };
         }
     }
 }
 </script>
 
 <style scoped>
-/* Add any specific styles if needed */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    cursor: default;
+}
 </style>
