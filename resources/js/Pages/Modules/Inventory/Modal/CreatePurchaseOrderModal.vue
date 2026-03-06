@@ -31,10 +31,6 @@
                     <!-- Items Section -->
                     <div class="form-group">
                         <label class="form-label">Order Items</label>
-                        <button type="button" @click="addItem" class="btn-add-item">
-                            <i class="ri-add-line"></i>
-                            Add Item
-                        </button>
                     </div>
 
                     <div class="items-container" v-if="form.items.length > 0">
@@ -119,6 +115,7 @@
                             </div>
                         </div>
                     </div>
+                    
 
                     <!-- Empty State -->
                     <div class="empty-state" v-else>
@@ -128,6 +125,12 @@
                         <button type="button" @click="addItem" class="btn-add-item">
                             <i class="ri-add-line"></i>
                             Add Your First Item
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" @click="addItem" class="btn-add-item">
+                            <i class="ri-add-line"></i>
+                            Add Item
                         </button>
                     </div>
 

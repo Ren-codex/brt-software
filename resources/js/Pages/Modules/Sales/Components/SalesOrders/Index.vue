@@ -137,15 +137,18 @@
                             </thead>
                             <tbody class="fs-12">
                                 <template v-for="(list, index) in lists" :key="index">
-                                    <tr @click="toggleRowExpansion(index)" :class="{
-                                        'bg-primary bg-opacity-10 ': index === selectedRow,
-                                        'bg-danger bg-opacity-25': isDueSoon(list),
-                                        'cursor-pointer': true
-                                    }" class="transition-all" style="transition: all 0.3s ease;">
+                                    <tr @click="toggleRowExpansion(index)" 
+                                        :class="{
+                                            'expanded-row': expandedRow === index,
+                                            'bg-danger bg-opacity-25': isDueSoon(list),
+                                            'cursor-pointer': true
+                                        }" 
+                                        class="main-table-row transition-all"
+                                        style="transition: all 0.3s ease;">
                                         <td class="text-center">
-                                            <i v-if="expandedRows.includes(index)"
-                                                class="ri-arrow-down-s-line text-primary"></i>
-                                            <i v-else class="ri-arrow-right-s-line text-muted"></i>
+                                            <div class="expand-icon" :class="{ 'rotated': expandedRow === index }">
+                                                <i class="ri-arrow-right-s-line"></i>
+                                            </div>
                                             {{ index + 1 }}
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.so_number }}</td>
@@ -206,57 +209,57 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRows.includes(index)" style="background-color: #c4dad2e0;">
-                                        <td colspan="12" class="p-0">
-                                            <div class="p-4">
-                                                <h6 class="text-primary mb-3">
-                                                    <i class="ri-file-list-line me-2"></i>Order Details
-                                                </h6>
-                                                <div class="row g-3">
+                                    <!-- Expanded Details Row -->
+                                <tr v-if="expandedRow === index" class="details-row">
+                                    <td colspan="9" class="p-0">
+                                        <div class="details-container">
+                                            <div class="details-content">
+                                                <div class="row g-4">
                                                     <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm ">
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Order
-                                                                    Information</h6>
-                                                                <p class="mb-1"><strong>Order Date:</strong> {{
-                                                                    list.order_date }}</p>
-                                                                <p class="mb-1"><strong>Added By:</strong> {{
-                                                                    list.added_by?.name || '-' }}</p>
-                                                                <p class="mb-0"><strong>Transferred To:</strong> {{
-                                                                    list.transferred_to || '-' }}</p>
+                                                        <div class="info-card order-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-file-list-line"></i>
+                                                                <h6>Order Information</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Order Date:</span>
+                                                                    <span class="info-value">{{ list.order_date }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Added By:</span>
+                                                                    <span class="info-value">{{ list.added_by?.name || '-' }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Transferred To:</span>
+                                                                    <span class="info-value">{{ list.transferred_to || '-' }}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm ">
-
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Items</h6>
+                                                        <div class="info-card items-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-shopping-bag-line"></i>
+                                                                <h6>Items</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
                                                                 <div v-if="list.items && list.items.length > 0">
                                                                     <table class="table table-sm table-borderless mb-0">
                                                                         <thead>
                                                                             <tr>
-                                                                                <th class="fw-semibold">Product Name
-                                                                                </th>
-                                                                                <th class=" fw-semibold">Quantity</th>
-                                                                                <th class=" fw-semibold">
-                                                                                    Price
-                                                                                </th>
+                                                                                <th class="fw-semibold">Product Name</th>
+                                                                                <th class="fw-semibold">Quantity</th>
+                                                                                <th class="fw-semibold">Price</th>
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody>
-                                                                            <tr v-for="item in list.items"
-                                                                                :key="item.id">
-                                                                                <td>{{ getProduct(item.product_id).name
-                                                                                    || 'Unknown Product' }}</td>
+                                                                            <tr v-for="item in list.items" :key="item.id">
+                                                                                <td>{{ getProduct(item.product_id).name || 'Unknown Product' }}</td>
                                                                                 <td>
-                                                                                    <span class="badge bg-primary">{{
-                                                                                        item.quantity }} {{ item.unit
-                                                                                        }}</span>
+                                                                                    <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
                                                                                 </td>
-                                                                                <td>
-                                                                                    ₱{{ item.price }}
-                                                                                </td>
+                                                                                <td>₱{{ item.price }}</td>
                                                                             </tr>
                                                                         </tbody>
                                                                     </table>
@@ -267,8 +270,9 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        </td>
-                                    </tr>
+                                        </div>
+                                    </td>
+                                </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
                                     <td colspan="9" class="text-center py-4">
@@ -334,7 +338,7 @@ export default {
                 products: []
             },
             showStock: false,
-            expandedRows: []
+            expandedRow: null
         }
     },
     computed: {
@@ -389,6 +393,7 @@ export default {
                         this.lists = response.data.data;
                         this.meta = response.data.meta;
                         this.links = response.data.links;
+                        this.expandedRow = null; // Reset expanded row when data changes
                     }
                 })
                 .catch(err => console.log(err));
@@ -433,10 +438,11 @@ export default {
         },
 
         toggleRowExpansion(index) {
-            if (this.expandedRows.includes(index)) {
-                this.expandedRows = this.expandedRows.filter(i => i !== index);
+            // Toggle between opening and closing, only one row open at a time
+            if (this.expandedRow === index) {
+                this.expandedRow = null; // Close if clicking the same row
             } else {
-                this.expandedRows.push(index);
+                this.expandedRow = index; // Open new row, closing any previously opened one
             }
         },
 
@@ -527,5 +533,173 @@ export default {
         letter-spacing: 0.5px;
         transition: all 0.3s ease;
         cursor: default;
+    }
+
+    /* Modern Collapsible Row Styles */
+    .main-table-row {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+
+    .main-table-row:hover {
+        background-color: rgba(61, 141, 122, 0.05) !important;
+        border-left-color: #3D8D7A;
+    }
+
+    .main-table-row.expanded-row {
+        background: linear-gradient(90deg, rgba(61, 141, 122, 0.08) 0%, rgba(61, 141, 122, 0.02) 100%);
+        border-left-color: #3D8D7A;
+    }
+
+    .expand-icon {
+        display: inline-block;
+        margin-right: 8px;
+        transition: transform 0.3s ease;
+        color: #6c757d;
+    }
+
+    .expand-icon i {
+        font-size: 18px;
+        vertical-align: middle;
+    }
+
+    .expand-icon.rotated {
+        transform: rotate(90deg);
+        color: #3D8D7A;
+    }
+
+    /* Details Row Styles */
+    .details-row {
+        background-color: #f8fafd;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .details-container {
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .details-content {
+        padding: 1.5rem 2rem;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Info Card Styles */
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 0;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .info-card:hover {
+        box-shadow: 0 8px 25px rgba(61, 141, 122, 0.15);
+        transform: translateY(-2px);
+        border-color: #3D8D7A;
+    }
+
+    .info-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e9ecef;
+        background: #f9fafb;
+    }
+
+    .info-card-header i {
+        font-size: 1.25rem;
+        color: #3D8D7A;
+        background: rgba(61, 141, 122, 0.1);
+        padding: 0.5rem;
+        border-radius: 8px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .info-card-header h6 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #267A4C;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        padding: 0.5rem 1.25rem 1.25rem;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px dashed #e9ecef;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-label::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #C4DAD2;
+        border-radius: 50%;
+    }
+
+    .info-value {
+        color: #2b3459;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .details-content {
+            padding: 1rem;
+        }
+        
+        .info-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        
+        .info-value {
+            width: 100%;
+        }
     }
 </style>
