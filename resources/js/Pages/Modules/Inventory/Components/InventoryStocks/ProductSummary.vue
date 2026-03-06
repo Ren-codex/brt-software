@@ -322,12 +322,17 @@ export default {
     },
     isWithinThreeMonths(date) {
       if (!date) return false;
-      const today = new Date();
       const expirationDate = new Date(date);
       if (Number.isNaN(expirationDate.getTime())) return false;
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      expirationDate.setHours(0, 0, 0, 0);
+
       const threeMonthsLater = new Date(today);
       threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+      threeMonthsLater.setHours(23, 59, 59, 999);
 
       return expirationDate >= today && expirationDate <= threeMonthsLater;
     },
@@ -431,7 +436,7 @@ export default {
   cursor: pointer;
 }
 
-.expiring-soon-row {
+.expiring-soon-row > td {
   background-color: #fff3cd;
 }
 
