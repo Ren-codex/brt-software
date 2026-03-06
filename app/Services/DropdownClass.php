@@ -210,6 +210,7 @@ class DropdownClass
     public function sales_statuses(){
         // Get sales order related statuses
         $data = ListStatus::whereIn('slug', [
+            'open',
             'pending',
             'approved',
             'disapproved',
