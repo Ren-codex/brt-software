@@ -23,10 +23,10 @@ class RemittanceResource extends JsonResource
             'total_amount' => $this->total_amount,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'created_by' => $this->createdBy,
+            'created_by' => $this->createdBy ? $this->createdBy->employee : null,
             'status' => $this->status,
-            'approved_by' => $this->approvedBy,
-            'approved_at' => Carbon::parse($this->approved_at)->format('Y-m-d H:i:s'),
+            'approved_by' => $this->approvedBy ? $this->approvedBy->employee : null,
+            'approved_at' => $this->approved_at ? Carbon::parse($this->approved_at)->format('Y-m-d H:i:s') : null,
             'remarks' => $this->remarks,
             'receipts' => $this->receipts ? ReceiptResource::collection($this->receipts) : null,
         ];

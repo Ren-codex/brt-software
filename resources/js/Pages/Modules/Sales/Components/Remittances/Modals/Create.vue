@@ -39,10 +39,10 @@
                                     <td><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
                                     <td>{{ idx + 1 }}</td>
                                     <td>{{ order.receipt_number || '-' }}</td>
-                                    <td>{{ order.customer?.name || '-' }}</td>
+                                    <td>{{ order.ar_invoice.sales_order.customer.name || '-' }}</td>
                                     <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
-                                    <td>{{ order.payment_mode }}</td>
-                                    <td>{{ order.created_at }}</td>
+                                    <td>{{ order.ar_invoice.sales_order.payment_mode }}</td>
+                                    <td>{{ formatDate(order.created_at) }}</td>
                                 </tr>
                                 <tr v-if="orders.length === 0">
                                     <td colspan="7" class="text-center text-muted">No pending sales orders found.</td>
@@ -138,7 +138,7 @@ export default {
             const selected = this.orders.filter(o => this.selectedIds.includes(o.id));
             selected.forEach(o => {
                 const amt = parseFloat(o.amount_paid) || 0;
-                const mode = (o.payment_mode || '').toLowerCase();
+                const mode = (o.ar_invoice.sales_order.payment_mode || '').toLowerCase();
                 if (mode === 'cash') t.cash += amt;
                 else if (mode === 'credit card' || mode === 'credit_card' || mode === 'creditcard') t.credit_card += amt;
                 else if (mode === 'debit card' || mode === 'debit_card' || mode === 'debitcard') t.debit_card += amt;
@@ -165,7 +165,7 @@ export default {
         fetchPending() {
             axios.get('/receipts', {
                 params: {
-                    status_id: 1,
+                    status: "pending",
                     option: 'lists',
                     count: 100
                 }
@@ -197,6 +197,22 @@ export default {
             } else {
                 this.selectedIds = this.filteredOrders.map(o => o.id);
             }
+        },
+        formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            if (Number.isNaN(date.getTime())) return '-';
+
+            const yyyy = date.getUTCFullYear();
+            const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(date.getUTCDate()).padStart(2, '0');
+            const hours24 = date.getUTCHours();
+            const hours12 = hours24 % 12 || 12;
+            const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+            const period = hours24 >= 12 ? 'PM' : 'AM';
+
+            return `${yyyy}-${mm}-${dd} ${hours12}:${minutes}:${seconds} ${period}`;
         },
         formatAmount(v) {
             if (!v) return '₱0.00';
