@@ -93,7 +93,7 @@ class PrintClass
     }
 
     public function printReceipt($id){
-        $receipt = \App\Models\Receipt::with('status', 'customer', 'arInvoice.sales_order.items.product.brand', 'arInvoice.sales_order.items.product.unit', 'arInvoice.sales_order.customer')->findOrFail($id);
+        $receipt = \App\Models\Receipt::with('status', 'customer', 'arInvoice.sales_order.items.product.brand', 'arInvoice.sales_order.items.product.unit', 'arInvoice.sales_order.customer' , 'arInvoice.sales_order.salesRep')->findOrFail($id);
 
         $ar_invoice = $receipt->arInvoice;
         $sales_order = $ar_invoice ? $ar_invoice->sales_order : null;
@@ -106,7 +106,6 @@ class PrintClass
             'items' => $items,
         ];
 
-        dd('hey');
 
         $pdf = \PDF::loadView('prints.receipt',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($receipt->receipt_number.'.pdf');

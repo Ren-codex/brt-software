@@ -485,17 +485,17 @@ export default {
 
         onCancel(id) {
             let title = "Sales Order";
-            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            let url = '/sales-orders';
             this.$refs.cancel.show(id, title, url);
         },
 
         onApproval(id) {
             let title = "Sales Order";
-            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            let url = '/sales-orders';
             this.$refs.approval.show(id, title, url);
         },
         onPrint(id) {
-            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            let url =  '/sales-orders';
             window.open(`${url}/${id}?option=print&type=sales_order`);
         },
     
