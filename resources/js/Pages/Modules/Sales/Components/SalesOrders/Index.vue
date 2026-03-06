@@ -221,7 +221,7 @@
                                                                 <p class="mb-1"><strong>Order Date:</strong> {{
                                                                     list.order_date }}</p>
                                                                 <p class="mb-1"><strong>Added By:</strong> {{
-                                                                    list.added_by?.name || '-' }}</p>
+                                                                    list.added_by.fullname || '-' }}</p>
                                                                 <p class="mb-0"><strong>Transferred To:</strong> {{
                                                                     list.transferred_to || '-' }}</p>
                                                             </div>
