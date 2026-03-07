@@ -79,8 +79,15 @@
                             <div v-if="selectedProductStock !== null" class="stock-info">
                                 <small class="text-muted">
                                     <i class="ri-information-line"></i>
-                                    Available Stock: <strong>{{ selectedProductStock }}</strong>
+                                    Available Stock (Selected Batch): <strong>{{ selectedProductStock }}</strong>
                                 </small>
+                                <div v-if="selectedProductBatches.length > 0" class="batch-stock-list">
+                                    <small class="text-muted d-block mb-1">All Batch Stocks:</small>
+                                    <div class="batch-stock-item" v-for="batch in selectedProductBatches" :key="batch.batch_code">
+                                        <span>{{ batch.batch_code }}</span>
+                                        <strong>{{ batch.quantity }}</strong>
+                                    </div>
+                                </div>
                             </div>
                             <span class="error-message" v-if="form.errors.quantity">{{ form.errors.quantity }}</span>
                         </div>
@@ -170,7 +177,11 @@ import Amount from '@/Shared/Components/Forms/Amount.vue';
 
 export default {
     components: { InputLabel, TextInput, Multiselect, Amount },
-    props: ['dropdowns', 'items' , 'update' ],
+    props: {
+        dropdowns: { type: Object, required: true },
+        items: { type: Array, default: () => [] },
+        update: { type: Boolean, default: false },
+    },
     data() {
         return {
             currentUrl: window.location.origin,
@@ -200,13 +211,49 @@ export default {
                 { value: 'wholesale', text: 'Wholesale Price' }
             ];
         },
+        reservedStocks() {
+            const reserved = {};
+            this.items.forEach((item) => {
+                if (!item?.product_id || !item?.batch_code) return;
+                if (this.editable && this.form.id && item.id === this.form.id) return;
+                const key = `${item.product_id}::${item.batch_code}`;
+                reserved[key] = (reserved[key] || 0) + (parseFloat(item.quantity) || 0);
+            });
+            return reserved;
+        },
         selectedProductStock() {
             if (!this.form.product_id) return null;
+            if (!this.form.batch_code) return null;
+            const batch = this.selectedProductBatches.find((b) => b.batch_code === this.form.batch_code);
+            return batch ? batch.quantity : 0;
+        },
+        selectedProductBatches() {
+            if (!this.form.product_id) return [];
             const product = this.dropdowns.products.find(p => p.value === this.form.product_id);
-            return product ? product.available : null;
+            if (!product?.batch_stocks) return [];
+
+            return product.batch_stocks
+                .map((batch) => {
+                    const key = `${this.form.product_id}::${batch.batch_code}`;
+                    const reserved = this.reservedStocks[key] || 0;
+                    return {
+                        batch_code: batch.batch_code,
+                        quantity: Math.max((parseFloat(batch.quantity) || 0) - reserved, 0),
+                    };
+                })
+                .filter((batch) => batch.quantity > 0);
         },
         availableProducts() {
-            return this.dropdowns.products.filter(product => product.available > 0);
+            return this.dropdowns.products.filter((product) => {
+                if (!product?.value) return false;
+                const totalAvailable = (product.batch_stocks || []).reduce((sum, batch) => {
+                    const key = `${product.value}::${batch.batch_code}`;
+                    const reserved = this.reservedStocks[key] || 0;
+                    const remaining = Math.max((parseFloat(batch.quantity) || 0) - reserved, 0);
+                    return sum + remaining;
+                }, 0);
+                return totalAvailable > 0;
+            });
         }
     },
 
@@ -300,10 +347,9 @@ export default {
         onProductChange() {
             const product_id = this.form.product_id;
             const product = this.dropdowns.products.find(p => p.value === product_id);
-            console.log(this.dropdowns.product, 77);
-            console.log(product, 888);
             if (product) {
-                this.form.batch_code = product.batch_code || null;
+                const availableBatch = this.selectedProductBatches[0];
+                this.form.batch_code = availableBatch ? availableBatch.batch_code : null;
                 const price = this.form.price_type === 'wholesale' ? product.wholesale_price : product.retail_price;
                 this.form.price = parseFloat(price || 0).toFixed(2);
             } else {
@@ -377,8 +423,22 @@ export default {
 .stock-info strong {
     color: #17a2b8;
 }
+
+.batch-stock-list {
+    margin-top: 0.35rem;
+}
+
+.batch-stock-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.35rem;
+    border-radius: 4px;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    margin-bottom: 0.2rem;
+}
 </style>
-
-
-
 

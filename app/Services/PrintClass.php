@@ -34,7 +34,7 @@ class PrintClass
     }
 
     public function printSalesOrder($id){
-        $sales_order = SalesOrder::with('status' , 'items.product.brand' , 'items.product.unit', 'created_by' )->findOrFail($id);
+        $sales_order = SalesOrder::with('status' , 'customer', 'items.product.brand' , 'items.product.unit', 'created_by' )->findOrFail($id);
         $items = $sales_order->items;
 
         $array = [
@@ -77,7 +77,7 @@ class PrintClass
     }
 
     public function printArInvoice($id){
-        $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.created_by', 'sales_order.approved_by')->findOrFail($id);
+        $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.approved_by')->findOrFail($id);
         $sales_order = $ar_invoice->sales_order;
         $items = $sales_order->items;
 
@@ -87,7 +87,7 @@ class PrintClass
             'items' => $items,
         ];
 
-        $pdf = \PDF::loadView('prints.sales_order',$array)->setPaper('A4', 'portrait');
+        $pdf = \PDF::loadView('prints.ar_invoice',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($ar_invoice->invoice_number.'.pdf');
 
     }

@@ -1,6 +1,6 @@
 <template>
     <BRow>
-        <div class="col-lg-9 mb-4">
+        <div class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                     <div class="d-flex align-items-center justify-content-between">
@@ -57,57 +57,79 @@
 
                     </div>
 
-                    <div class="mb-2">
-                        <b-button @click="showStock = !showStock" variant="outline-primary" size="sm" class="mb-3">
-                            <i class="ri-eye-line me-1"></i> Stock Availability
-                        </b-button>
+                    <div class="stock-section mb-3">
+                        <button type="button" class="stock-toggle-btn mb-3" @click="showStock = !showStock">
+                            <span class="stock-toggle-label">
+                                <i class="ri-line-chart-line"></i>
+                                Stock Availability
+                            </span>
+                            <i class="ri-arrow-down-s-line stock-toggle-arrow" :class="{ 'is-open': showStock }"></i>
+                        </button>
                         <b-collapse v-model="showStock">
-                            <div class="card border-primary shadow-sm" style="border-radius: 10px;">
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">Total KG Left</p>
-                                                <h5 class="text-primary mb-0">{{ stock.total_kg_left || 0 }} kg</h5>
-                                            </div>
+                            <div class="stock-dashboard-card">
+                                <div class="stock-dashboard-header">
+                                    <div class="stock-header-title">
+                                        <div class="stock-header-icon">
+                                            <i class="ri-stack-line"></i>
                                         </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">5kg Sacks Left</p>
-                                                <h5 class="text-success mb-0">{{ stock.five_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">10kg Sacks Left</p>
-                                                <h5 class="text-info mb-0">{{ stock.ten_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">25kg Sacks Left</p>
-                                                <h5 class="text-warning mb-0">{{ stock.twenty_five_kg_sacks_left || 0 }}
-                                                </h5>
-                                            </div>
+                                        <div>
+                                            <h6 class="mb-1">Current Inventory Snapshot</h6>
+                                            <p class="mb-0">Live stock summary for order planning</p>
                                         </div>
                                     </div>
-                                    <div v-if="stock.products && stock.products.length > 0" class="mt-3">
-                                        <h6 class="text-muted">Product Details by Brand:</h6>
+                                    <span class="stock-header-pill">Dashboard View</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6 col-xl-3">
+                                        <div class="stock-metric-card">
+                                            <div class="stock-metric-icon total"><i class="ri-scales-3-line"></i></div>
+                                            <p class="stock-metric-label">Total KG Left</p>
+                                            <h5 class="stock-metric-value">{{ stock.total_kg_left || 0 }} kg</h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 col-xl-3">
+                                        <div class="stock-metric-card">
+                                            <div class="stock-metric-icon five"><i class="ri-archive-line"></i></div>
+                                            <p class="stock-metric-label">5kg Sacks Left</p>
+                                            <h5 class="stock-metric-value">{{ stock.five_kg_sacks_left || 0 }}</h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 col-xl-3">
+                                        <div class="stock-metric-card">
+                                            <div class="stock-metric-icon ten"><i class="ri-box-3-line"></i></div>
+                                            <p class="stock-metric-label">10kg Sacks Left</p>
+                                            <h5 class="stock-metric-value">{{ stock.ten_kg_sacks_left || 0 }}</h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 col-xl-3">
+                                        <div class="stock-metric-card">
+                                            <div class="stock-metric-icon twenty-five"><i class="ri-archive-stack-line"></i></div>
+                                            <p class="stock-metric-label">25kg Sacks Left</p>
+                                            <h5 class="stock-metric-value">{{ stock.twenty_five_kg_sacks_left || 0 }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div v-if="stock.products && stock.products.length > 0" class="stock-products mt-4">
+                                    <h6 class="stock-products-title">Product Details by Brand</h6>
+                                    <div class="row g-3">
                                         <div v-for="(brandGroup, brandIndex) in groupedProducts" :key="brandIndex"
-                                            class="mb-4">
-                                            <h6 class="text-primary mb-2">
-                                                <i class="ri-building-line me-2"></i>{{ brandGroup.brand || 'No Brand'
-                                                }}
-                                            </h6>
-                                            <div class="row">
-                                                <div v-for="product in brandGroup.products" :key="product.product_name"
-                                                    class="col-md-6 mb-2">
-                                                    <div
-                                                        class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                                        <span class="small">{{ product.product_name }}</span>
-                                                        <span class="badge bg-secondary">{{ product.total_quantity }} x
-                                                            {{ product.pack_size }} {{ product.unit }} ({{
-                                                                product.total_kg }} kg)</span>
+                                            class="col-lg-6">
+                                            <div class="stock-brand-card">
+                                                <div class="stock-brand-header">
+                                                    <h6>
+                                                        <i class="ri-building-line me-2"></i>{{ brandGroup.brand || 'No Brand' }}
+                                                    </h6>
+                                                    <span class="stock-brand-count">{{ brandGroup.products.length }} items</span>
+                                                </div>
+                                                <div class="stock-product-list">
+                                                    <div v-for="product in brandGroup.products" :key="product.product_name"
+                                                        class="stock-product-item">
+                                                        <span class="stock-product-name">{{ product.product_name }}</span>
+                                                        <span class="stock-product-meta">
+                                                            {{ product.total_quantity }} x {{ product.pack_size }} {{ product.unit }} ({{ product.total_kg }} kg)
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -137,15 +159,18 @@
                             </thead>
                             <tbody class="fs-12">
                                 <template v-for="(list, index) in lists" :key="index">
-                                    <tr @click="toggleRowExpansion(index)" :class="{
-                                        'bg-primary bg-opacity-10 ': index === selectedRow,
-                                        'bg-danger bg-opacity-25': isDueSoon(list),
-                                        'cursor-pointer': true
-                                    }" class="transition-all" style="transition: all 0.3s ease;">
+                                    <tr @click="toggleRowExpansion(index)" 
+                                        :class="{
+                                            'expanded-row': expandedRow === index,
+                                            'bg-danger bg-opacity-25': isDueSoon(list),
+                                            'cursor-pointer': true
+                                        }" 
+                                        class="main-table-row transition-all"
+                                        style="transition: all 0.3s ease;">
                                         <td class="text-center">
-                                            <i v-if="expandedRows.includes(index)"
-                                                class="ri-arrow-down-s-line text-primary"></i>
-                                            <i v-else class="ri-arrow-right-s-line text-muted"></i>
+                                            <div class="expand-icon" :class="{ 'rotated': expandedRow === index }">
+                                                <i class="ri-arrow-right-s-line"></i>
+                                            </div>
                                             {{ index + 1 }}
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.so_number }}</td>
@@ -206,13 +231,12 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRows.includes(index)" style="background-color: #c4dad2e0;">
-                                        <td colspan="12" class="p-0">
-                                            <div class="p-4">
-                                                <h6 class="text-primary mb-3">
-                                                    <i class="ri-file-list-line me-2"></i>Order Details
-                                                </h6>
-                                                <div class="row g-3">
+                                    <!-- Expanded Details Row -->
+                                <tr v-if="expandedRow === index" class="details-row">
+                                    <td colspan="9" class="p-0">
+                                        <div class="details-container">
+                                            <div class="details-content">
+                                                <div class="row g-4">
                                                     <div class="col-md-6">
                                                         <div class="card border-0 shadow-sm ">
                                                             <div class="card-body">
@@ -228,35 +252,28 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm ">
-
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Items</h6>
+                                                        <div class="info-card items-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-shopping-bag-line"></i>
+                                                                <h6>Items</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
                                                                 <div v-if="list.items && list.items.length > 0">
                                                                     <table class="table table-sm table-borderless mb-0">
                                                                         <thead>
                                                                             <tr>
-                                                                                <th class="fw-semibold">Product Name
-                                                                                </th>
-                                                                                <th class=" fw-semibold">Quantity</th>
-                                                                                <th class=" fw-semibold">
-                                                                                    Price
-                                                                                </th>
+                                                                                <th class="fw-semibold">Product Name</th>
+                                                                                <th class="fw-semibold">Quantity</th>
+                                                                                <th class="fw-semibold">Price</th>
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody>
-                                                                            <tr v-for="item in list.items"
-                                                                                :key="item.id">
-                                                                                <td>{{ getProduct(item.product_id).name
-                                                                                    || 'Unknown Product' }}</td>
+                                                                            <tr v-for="item in list.items" :key="item.id">
+                                                                                <td>{{ getProduct(item.product_id).name || 'Unknown Product' }}</td>
                                                                                 <td>
-                                                                                    <span class="badge bg-primary">{{
-                                                                                        item.quantity }} {{ item.unit
-                                                                                        }}</span>
+                                                                                    <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
                                                                                 </td>
-                                                                                <td>
-                                                                                    ₱{{ item.price }}
-                                                                                </td>
+                                                                                <td>₱{{ item.price }}</td>
                                                                             </tr>
                                                                         </tbody>
                                                                     </table>
@@ -267,8 +284,9 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        </td>
-                                    </tr>
+                                        </div>
+                                    </td>
+                                </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
                                     <td colspan="9" class="text-center py-4">
@@ -284,87 +302,6 @@
                 <div class="card-footer bg-light border-0 m-3">
                     <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
                         :links="links" :pagination="meta" />
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card shadow-lg border-0" >
-                <div class="card-header border-0  ">
-                    <h4>
-                        <i class="ri-dashboard-line "></i> Quick Stats
-                        <hr class="mb-0">
-                    </h4>
-                </div>
-
-                <div class="card-body">
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-primary text-white rounded">
-                                    <i class="ri-shopping-cart-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Total Sales Orders</p>
-                                <h4 class="mb-0">{{ metrics.total_sales_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-info text-white rounded">
-                                    <i class="ri-calendar-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Today's Orders</p>
-                                <h4 class="mb-0">{{ metrics.today_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-warning text-white rounded">
-                                    <i class="ri-time-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Pending Orders</p>
-                                <h4 class="mb-0">{{ metrics.pending_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-danger text-white rounded">
-                                    <i class="ri-close-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Cancelled Orders</p>
-                                <h4 class="mb-0">{{ metrics.cancelled_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-success text-white rounded">
-                                    <i class="ri-money-dollar-circle-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Total Revenue</p>
-                                <h4 class="mb-0">₱{{ metrics.total_revenue }}</h4>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -389,7 +326,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' , 'user', 'isExternal'],
+    props: ['dropdowns' , 'invoices' , 'user', 'isExternal', 'metrics'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -415,7 +352,7 @@ export default {
                 products: []
             },
             showStock: false,
-            expandedRows: []
+            expandedRow: null
         }
     },
     computed: {
@@ -470,6 +407,7 @@ export default {
                         this.lists = response.data.data;
                         this.meta = response.data.meta;
                         this.links = response.data.links;
+                        this.expandedRow = null; // Reset expanded row when data changes
                     }
                 })
                 .catch(err => console.log(err));
@@ -514,10 +452,11 @@ export default {
         },
 
         toggleRowExpansion(index) {
-            if (this.expandedRows.includes(index)) {
-                this.expandedRows = this.expandedRows.filter(i => i !== index);
+            // Toggle between opening and closing, only one row open at a time
+            if (this.expandedRow === index) {
+                this.expandedRow = null; // Close if clicking the same row
             } else {
-                this.expandedRows.push(index);
+                this.expandedRow = index; // Open new row, closing any previously opened one
             }
         },
 
@@ -598,6 +537,230 @@ export default {
 }
 </script>
 <style scoped>
+    .stock-toggle-btn {
+        width: 100%;
+        border: 1px solid #d5e4df;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f9fcfb 0%, #eef6f3 100%);
+        padding: 0.7rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #267A4C;
+        font-weight: 600;
+        transition: all 0.25s ease;
+    }
+
+    .stock-toggle-btn:hover {
+        border-color: #3D8D7A;
+        box-shadow: 0 6px 16px rgba(61, 141, 122, 0.12);
+    }
+
+    .stock-toggle-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stock-toggle-label i {
+        font-size: 1rem;
+    }
+
+    .stock-toggle-arrow {
+        font-size: 1.2rem;
+        transition: transform 0.25s ease;
+    }
+
+    .stock-toggle-arrow.is-open {
+        transform: rotate(180deg);
+    }
+
+    .stock-dashboard-card {
+        border: 1px solid #dce7e2;
+        border-radius: 14px;
+        background: #ffffff;
+        padding: 1rem;
+        box-shadow: 0 8px 24px rgba(61, 141, 122, 0.08);
+    }
+
+    .stock-dashboard-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #edf2f0;
+        padding-bottom: 1rem;
+    }
+
+    .stock-header-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .stock-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(61, 141, 122, 0.14);
+        color: #267A4C;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .stock-header-title h6 {
+        color: #267A4C;
+        font-weight: 700;
+    }
+
+    .stock-header-title p {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+
+    .stock-header-pill {
+        background: rgba(61, 141, 122, 0.12);
+        color: #267A4C;
+        border-radius: 20px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .stock-metric-card {
+        background: #f8fbfa;
+        border: 1px solid #e5efeb;
+        border-radius: 12px;
+        padding: 0.85rem;
+        height: 100%;
+        transition: all 0.25s ease;
+    }
+
+    .stock-metric-card:hover {
+        transform: translateY(-2px);
+        border-color: #cde0d9;
+        box-shadow: 0 8px 18px rgba(44, 122, 93, 0.12);
+    }
+
+    .stock-metric-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.55rem;
+    }
+
+    .stock-metric-icon.total {
+        background: rgba(38, 122, 76, 0.16);
+        color: #267A4C;
+    }
+
+    .stock-metric-icon.five {
+        background: rgba(25, 135, 84, 0.14);
+        color: #198754;
+    }
+
+    .stock-metric-icon.ten {
+        background: rgba(13, 110, 253, 0.14);
+        color: #0d6efd;
+    }
+
+    .stock-metric-icon.twenty-five {
+        background: rgba(255, 193, 7, 0.22);
+        color: #9a6b00;
+    }
+
+    .stock-metric-label {
+        color: #6c757d;
+        font-size: 0.78rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .stock-metric-value {
+        color: #2b3459;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+
+    .stock-products-title {
+        font-size: 0.9rem;
+        color: #267A4C;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .stock-brand-card {
+        border: 1px solid #e5efeb;
+        border-radius: 12px;
+        background: #fbfdfc;
+        padding: 0.85rem;
+        height: 100%;
+    }
+
+    .stock-brand-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .stock-brand-header h6 {
+        color: #267A4C;
+        font-weight: 600;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .stock-brand-count {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 12px;
+        background: #eaf4f0;
+        color: #267A4C;
+        font-weight: 600;
+    }
+
+    .stock-product-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+    }
+
+    .stock-product-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border: 1px solid #edf2f0;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 0.5rem 0.65rem;
+    }
+
+    .stock-product-name {
+        color: #2b3459;
+        font-size: 0.82rem;
+        font-weight: 500;
+    }
+
+    .stock-product-meta {
+        color: #5d6472;
+        background: #f4f7f6;
+        border-radius: 10px;
+        padding: 0.25rem 0.45rem;
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
     .status-badge {
         display: inline-flex;
         align-items: center;
@@ -608,5 +771,187 @@ export default {
         letter-spacing: 0.5px;
         transition: all 0.3s ease;
         cursor: default;
+    }
+
+    /* Modern Collapsible Row Styles */
+    .main-table-row {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+
+    .main-table-row:hover {
+        background-color: rgba(61, 141, 122, 0.05) !important;
+        border-left-color: #3D8D7A;
+    }
+
+    .main-table-row.expanded-row {
+        background: linear-gradient(90deg, rgba(61, 141, 122, 0.08) 0%, rgba(61, 141, 122, 0.02) 100%);
+        border-left-color: #3D8D7A;
+    }
+
+    .expand-icon {
+        display: inline-block;
+        margin-right: 8px;
+        transition: transform 0.3s ease;
+        color: #6c757d;
+    }
+
+    .expand-icon i {
+        font-size: 18px;
+        vertical-align: middle;
+    }
+
+    .expand-icon.rotated {
+        transform: rotate(90deg);
+        color: #3D8D7A;
+    }
+
+    /* Details Row Styles */
+    .details-row {
+        background-color: #f8fafd;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .details-container {
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .details-content {
+        padding: 1.5rem 2rem;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Info Card Styles */
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 0;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .info-card:hover {
+        box-shadow: 0 8px 25px rgba(61, 141, 122, 0.15);
+        transform: translateY(-2px);
+        border-color: #3D8D7A;
+    }
+
+    .info-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e9ecef;
+        background: #f9fafb;
+    }
+
+    .info-card-header i {
+        font-size: 1.25rem;
+        color: #3D8D7A;
+        background: rgba(61, 141, 122, 0.1);
+        padding: 0.5rem;
+        border-radius: 8px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .info-card-header h6 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #267A4C;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        padding: 0.5rem 1.25rem 1.25rem;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px dashed #e9ecef;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-label::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #C4DAD2;
+        border-radius: 50%;
+    }
+
+    .info-value {
+        color: #2b3459;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .stock-dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stock-product-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stock-product-meta {
+            white-space: normal;
+        }
+
+        .details-content {
+            padding: 1rem;
+        }
+        
+        .info-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        
+        .info-value {
+            width: 100%;
+        }
     }
 </style>

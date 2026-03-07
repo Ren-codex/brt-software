@@ -89,7 +89,7 @@
                                         <i class="ri-user-line input-icon"></i>
                                         <b-form-select v-model="form.driver_id" :options="dropdowns.drivers"
                                             text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.customer_id }" class="form-control">
+                                            :class="{ 'input-error': form.errors.driver_id }" class="form-control">
                                             <template #first>
                                                 <b-form-select-option :value="null" disabled>Select
                                                     Driver</b-form-select-option>
@@ -98,8 +98,8 @@
 
                                     </div>
 
-                                    <span class="error-message" v-if="form.errors.customer_id">{{
-                                        form.errors.customer_id }}</span>
+                                    <span class="error-message" v-if="form.errors.driver_id">{{
+                                        form.errors.driver_id }}</span>
 
                                 </div>
 
@@ -169,7 +169,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="fw-bold text-primary">{{ getProduct(list.product_id).name || '-' }}</div>
-                                                                                                    <small class="text-muted">Available: <span class="badge bg-light text-dark">{{ getProduct(list.product_id).available || 0 }}</span></small>
+                                                                                                    <small class="text-muted">Available: <span class="badge bg-light text-dark">{{ (getProduct(list.product_id).batch_available ?? getProduct(list.product_id).available) || 0 }}</span></small>
                                             </td>
                                             <td class="text-center">
                                                <span >
@@ -334,14 +334,167 @@
         </div>
     </div>
 
-    <Item @add="fetch()" :dropdowns="dropdowns" @items="storeItem" @update="updateItem" :formatCurrency="formatCurrency"
+    <div v-if="showPaymentPrompt" class="modal-overlay active payment-review-modal" @click.self="cancelPaymentPrompt">
+        <div class="modal-container modal-lg" @click.stop>
+            <div class="modal-header bg-primary text-white">
+                <h4 class="mb-0 text-white">
+                    <i class="ri-money-dollar-circle-line me-2"></i>
+                    Proceed Payment
+                </h4>
+                <button class="close-btn text-white" @click="cancelPaymentPrompt">
+                    <i class="ri-close-line fs-20"></i>
+                </button>
+            </div>
+            <div class="modal-body p-4" style="height: 75vh; overflow-y: auto;">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0 text-primary">
+                            <i class="ri-file-list-line me-2"></i>
+                            Invoice Summary
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Sales Order #:</strong> {{ pendingSalesOrder?.so_number || '-' }}</p>
+                                <p class="mb-1"><strong>Order Date:</strong> {{ pendingSalesOrder?.order_date || '-' }}</p>
+                                <p class="mb-1"><strong>Customer:</strong> {{ pendingSalesOrder?.customer?.name || '-' }}</p>
+                                <p class="mb-1"><strong>Location:</strong> {{ getLocationName(pendingSalesOrder?.location_id) }}</p>
+                                <p class="mb-0"><strong>Payment Mode:</strong> {{ pendingSalesOrder?.payment_mode || '-' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Sales Rep:</strong> {{ getSalesRepName(pendingSalesOrder?.sales_rep_id) }}</p>
+                                <p class="mb-1"><strong>Driver:</strong> {{ getDriverName(pendingSalesOrder?.driver_id) }}</p>
+                                <p class="mb-1"><strong>Invoice #:</strong> {{ pendingInvoice?.invoice_number || '-' }}</p>
+                                <p class="mb-1"><strong>Invoice Date:</strong> {{ pendingInvoice?.invoice_date || '-' }}</p>
+                                <p class="mb-0"><strong>Amount Due:</strong> {{ formatCurrency(pendingInvoice?.balance_due || 0) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card border-0 shadow-sm mt-3" v-if="pendingSalesOrder?.items?.length">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0 text-primary">
+                            <i class="ri-shopping-bag-line me-2"></i>
+                            Order Items
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-2">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-center">Batch</th>
+                                        <th class="text-center">Qty</th>
+                                        <th class="text-end">Price</th>
+                                        <th class="text-end">Discount</th>
+                                        <th class="text-end">Line Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in pendingSalesOrder.items" :key="idx">
+                                        <td>{{ getPromptItemName(item) }}</td>
+                                        <td class="text-center">{{ item.batch_code || '-' }}</td>
+                                        <td class="text-center">{{ item.quantity || 0 }}</td>
+                                        <td class="text-end">{{ formatCurrency(item.price || 0) }}</td>
+                                        <td class="text-end">{{ formatCurrency((item.discount_per_unit || 0) * (item.quantity || 0)) }}</td>
+                                        <td class="text-end">{{ formatCurrency(calculateItemTotal(item) - calculateDiscountedTotal(item)) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <div style="min-width: 260px;">
+                                <div class="d-flex justify-content-between">
+                                    <span>Subtotal:</span>
+                                    <strong>{{ formatCurrency(getPromptSubtotal()) }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Total Discount:</span>
+                                    <strong>{{ formatCurrency(getPromptDiscount()) }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between border-top pt-1 mt-1">
+                                    <span>Net Total:</span>
+                                    <strong>{{ formatCurrency(getPromptNetTotal()) }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted mt-3 mb-0">
+                    This order is <strong>Cash</strong>. Do you want to record payment now?
+                </p>
+                <span class="error-message" v-if="paymentPromptError">{{ paymentPromptError }}</span>
+            </div>
+            <div class="modal-footer bg-light border-0 p-4">
+                <button type="button" class="btn btn-outline-secondary me-3" @click="cancelPaymentPrompt" :disabled="processingPayment">
+                    <i class="ri-close-line me-2"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" @click="proceedPayment" :disabled="processingPayment || !pendingInvoice?.id">
+                    <i class="ri-loader-4-line spinner" v-if="processingPayment"></i>
+                    <i class="ri-check-line me-2" v-else></i>
+                    {{ processingPayment ? 'Processing...' : 'Record Payment & Continue' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showPrintPrompt" class="modal-overlay active print-review-modal" @click.self="skipReceiptPrint">
+        <div class="modal-container modal-md" @click.stop>
+            <div class="modal-header bg-primary text-white">
+                <h4 class="mb-0 text-white">
+                    <i class="ri-printer-line me-2"></i>
+                    Print Receipt
+                </h4>
+                <button class="close-btn text-white" @click="skipReceiptPrint">
+                    <i class="ri-close-line fs-20"></i>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0 text-primary">
+                            <i class="ri-file-list-line me-2"></i>
+                            Receipt Summary
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0 text-muted">Payment recorded successfully. Do you want to print the receipt now?</p>
+                        <small v-if="!pendingReceiptId" class="text-danger d-block mt-2">
+                            Receipt reference is not yet available. Please refresh and open it from Receipts list.
+                        </small>
+                        <div class="receipt-preview mt-3" v-if="pendingReceiptId">
+                            <iframe
+                                :src="`/receipts/${pendingReceiptId}?option=print&type=receipt`"
+                                class="receipt-preview-frame"
+                                title="Receipt Preview"
+                            ></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 p-4">
+                <button type="button" class="btn btn-outline-secondary me-3" @click="skipReceiptPrint">
+                    <i class="ri-close-line me-2"></i>
+                    Not Now
+                </button>
+                <button type="button" class="btn btn-primary" @click="printReceiptNow" :disabled="!pendingReceiptId">
+                    <i class="ri-printer-line me-2"></i>
+                    Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <Item @add="fetch()" :dropdowns="dropdowns" :items="form.items" @items="storeItem" @update="updateItem" :formatCurrency="formatCurrency"
         ref="item" />
     <Customer :dropdowns="dropdowns" ref="createCustomer" />
 </template>
 
 <script>
 import { useForm } from '@inertiajs/vue3';
-import axios from 'axios';
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import Multiselect from '@/Shared/Components/Forms/Multiselect.vue';
@@ -367,12 +520,28 @@ export default {
                 billing_account: null,
                 payment_mode: null,
                 items: [],
-                option: 'lists'
+                option: 'lists',
+                action: null
+            }),
+            paymentForm: useForm({
+                id: null,
+                option: 'payment',
+                action: 'payment',
+                balance_due: 0,
+                amount_paid: 0,
+                payment_date: new Date().toISOString().slice(0, 10),
             }),
             showModal: false,
             editable: false,
             saveSuccess: false,
             selectedRow: null,
+            showPaymentPrompt: false,
+            processingPayment: false,
+            paymentPromptError: null,
+            showPrintPrompt: false,
+            pendingReceiptId: null,
+            pendingInvoice: null,
+            pendingSalesOrder: null,
             payment_modes: [
                 'Cash',
                 'Credit',
@@ -509,6 +678,7 @@ export default {
         },
         submit() {
             if (this.editable) {
+                this.form.action = 'update';
                 this.form.put(`/sales-orders/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (response) => {
@@ -521,19 +691,85 @@ export default {
                     },
                 });
             } else {
+                this.form.action = null;
                 this.form.post('/sales-orders', {
                     preserveScroll: true,
                     onSuccess: (response) => {
+                        const createdOrder = response?.props?.flash?.data?.data || this.$page?.props?.flash?.data?.data;
+                        const isCash = ['cash', 'cash sales'].includes((this.form.payment_mode || '').toLowerCase());
+                        const invoice = createdOrder?.invoices?.[0] || null;
+
+                        this.form.reset();
+                        this.hide();
+
+                        if (isCash && invoice) {
+                            this.pendingSalesOrder = createdOrder;
+                            this.pendingInvoice = invoice;
+                            this.paymentPromptError = null;
+                            this.paymentForm.id = invoice.id;
+                            this.paymentForm.balance_due = invoice.balance_due || 0;
+                            this.paymentForm.amount_paid = invoice.balance_due || 0;
+                            this.paymentForm.payment_date = new Date().toISOString().slice(0, 10);
+                            this.showPaymentPrompt = true;
+                            return;
+                        }
+
                         this.saveSuccess = true;
                         setTimeout(() => {
                             this.$emit('add', true);
-                            this.form.reset();
-                            this.hide();
-                        }, 1500);
-                        this.form.reset();
+                        }, 300);
                     },
                 });
             }
+        },
+        proceedPayment() {
+            if (!this.pendingInvoice?.id) return;
+
+            this.processingPayment = true;
+            this.paymentPromptError = null;
+            this.paymentForm.id = this.pendingInvoice.id;
+            this.paymentForm.balance_due = this.pendingInvoice.balance_due || 0;
+            this.paymentForm.amount_paid = this.pendingInvoice.balance_due || 0;
+            this.paymentForm.payment_date = new Date().toISOString().slice(0, 10);
+
+            this.paymentForm.put(`/ar-invoices/${this.pendingInvoice.id}`, {
+                preserveScroll: true,
+                onSuccess: (response) => {
+                    const receiptId = response?.props?.flash?.receipt_id || this.$page?.props?.flash?.receipt_id || null;
+                    this.showPaymentPrompt = false;
+                    this.pendingReceiptId = receiptId;
+                    this.showPrintPrompt = true;
+                    this.pendingInvoice = null;
+                    this.pendingSalesOrder = null;
+                    this.paymentForm.reset();
+                    this.$emit('add', true);
+                },
+                onError: (errors) => {
+                    this.paymentPromptError = errors?.amount_paid || errors?.payment_date || 'Failed to process payment.';
+                },
+                onFinish: () => {
+                    this.processingPayment = false;
+                }
+            });
+        },
+        cancelPaymentPrompt() {
+            this.showPaymentPrompt = false;
+            this.pendingInvoice = null;
+            this.pendingSalesOrder = null;
+            this.paymentPromptError = null;
+            this.paymentForm.reset();
+            this.$emit('add', true);
+        },
+        printReceiptNow() {
+            if (this.pendingReceiptId) {
+                window.open(`/receipts/${this.pendingReceiptId}?option=print&type=receipt`, '_blank');
+            }
+            this.showPrintPrompt = false;
+            this.pendingReceiptId = null;
+        },
+        skipReceiptPrint() {
+            this.showPrintPrompt = false;
+            this.pendingReceiptId = null;
         },
         handleInput(field) {
             this.form.errors[field] = false;
@@ -565,6 +801,39 @@ export default {
         getCustomer(customer_id) {
             const customer = this.dropdowns.customers.find(u => u.value === customer_id);
             return customer;
+        },
+        getSalesRepName(employeeId) {
+            if (!employeeId) return '-';
+            const rep = this.dropdowns.sales_reps.find(u => u.value === employeeId);
+            return rep ? rep.name : '-';
+        },
+        getDriverName(employeeId) {
+            if (!employeeId) return '-';
+            const driver = this.dropdowns.drivers.find(u => u.value === employeeId);
+            return driver ? driver.name : '-';
+        },
+        getLocationName(locationId) {
+            if (!locationId) return '-';
+            const location = this.dropdowns.locations.find(u => u.value === locationId);
+            return location ? location.name : '-';
+        },
+        getPromptItemName(item) {
+            if (!item?.product_id) return '-';
+            const product = this.getProduct(item.product_id);
+            return product?.name || ('Product #' + item.product_id);
+        },
+        getPromptSubtotal() {
+            if (!this.pendingSalesOrder?.items) return 0;
+            return this.pendingSalesOrder.items.reduce((total, item) => total + this.calculateItemTotal(item), 0);
+        },
+        getPromptDiscount() {
+            if (!this.pendingSalesOrder?.items) return 0;
+            return this.pendingSalesOrder.items.reduce((total, item) => total + this.calculateDiscountedTotal(item), 0);
+        },
+        getPromptNetTotal() {
+            const backendTotal = parseFloat(this.pendingSalesOrder?.total_amount);
+            if (!isNaN(backendTotal)) return backendTotal;
+            return this.getPromptSubtotal() - this.getPromptDiscount();
         },
 
         formatCurrency(value) {
@@ -642,6 +911,86 @@ export default {
 </script>
 
 <style scoped>
+.payment-review-modal .modal-container {
+    max-width: 900px;
+    width: 95%;
+}
+
+.payment-review-modal .modal-header {
+    border-radius: 20px 20px 0 0;
+    background: #C4DAD2 !important;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.payment-review-modal .modal-header h4 {
+    color: #16423C !important;
+    font-weight: 700;
+}
+
+.payment-review-modal .close-btn {
+    background: rgba(255, 255, 255, 0.25);
+    color: #16423C !important;
+}
+
+.payment-review-modal .close-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.payment-review-modal .card {
+    border-radius: 12px;
+}
+
+.payment-review-modal .card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.print-review-modal .modal-container {
+    max-width: 700px;
+    width: 92%;
+}
+
+.print-review-modal .modal-header {
+    border-radius: 20px 20px 0 0;
+    background: #C4DAD2 !important;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.print-review-modal .modal-header h4 {
+    color: #16423C !important;
+    font-weight: 700;
+}
+
+.print-review-modal .close-btn {
+    background: rgba(255, 255, 255, 0.25);
+    color: #16423C !important;
+}
+
+.print-review-modal .close-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.print-review-modal .card {
+    border-radius: 12px;
+}
+
+.print-review-modal .card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.receipt-preview {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.receipt-preview-frame {
+    width: 100%;
+    height: 460px;
+    border: none;
+    background: #fff;
+}
+
 .modal-container {
     max-width: 100%;
     width: 100%;

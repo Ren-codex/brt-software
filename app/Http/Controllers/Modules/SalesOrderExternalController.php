@@ -61,6 +61,11 @@ class SalesOrderExternalController extends Controller
             return $this->sales_order->save($request);
         });
 
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'stock' => $result['info'] ?? 'Unable to save sales order.',
+            ]);
+        }
 
         return back()->with([
             'data' => $result['data'],
@@ -74,10 +79,11 @@ class SalesOrderExternalController extends Controller
     public function update(SalesOrderRequest $request, $id){
 
         $result = $this->handleTransaction(function () use ($request) {
-                switch($request->action){
+                $action = $request->action ?? 'update';
+                switch($action){
                     case 'update':
                         $request->merge(['is_external' => true]);
-                        return $this->sales_order->update($request->id);
+                        return $this->sales_order->update($request);
                     break;
                     case 'approve':
                         return $this->sales_order->approve($request->id);
@@ -88,9 +94,19 @@ class SalesOrderExternalController extends Controller
                     case 'adjustment':
                         return $this->sales_order->adjustment($request);
                     break;
+                    default:
+                        $request->merge(['is_external' => true]);
+                        return $this->sales_order->update($request);
+                    break;
                 }
             });
 
+
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'stock' => $result['info'] ?? 'Unable to update sales order.',
+            ]);
+        }
 
 
         return back()->with([

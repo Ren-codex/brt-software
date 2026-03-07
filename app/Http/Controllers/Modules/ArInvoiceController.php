@@ -57,9 +57,19 @@ class ArInvoiceController extends Controller
             }
         });
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => $result['data'],
+                'receipt_id' => $result['receipt_id'] ?? null,
+                'message' => $result['message'],
+                'info' => $result['info'],
+                'status' => $result['status'],
+            ]);
+        }
 
         return back()->with([
             'data' => $result['data'],
+            'receipt_id' => $result['receipt_id'] ?? null,
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],

@@ -2,12 +2,16 @@
 
 namespace App\Traits;
 
+use Illuminate\Validation\ValidationException;
+
 trait HandlesTransaction
 {
     public static function handleTransaction($callback){
         $data = '';
         $info = null;
         $status = false;
+        $errors = null;
+        $receiptId = null;
 
         try {
             $result = \DB::transaction($callback);
@@ -16,6 +20,11 @@ trait HandlesTransaction
             $info = $result['info'];
             $message = $result['message'];
             $status = $result['status'] ?? true;
+            $receiptId = $result['receipt_id'] ?? null;
+        } catch (ValidationException $e) {
+            $errors = $e->errors();
+            $info = collect($errors)->flatten()->first() ?? 'Validation failed.';
+            $message = 'Validation failed';
         } catch (QueryException $e) {
             $info = 'Transaction failed: ' . $e->getMessage();
             $message = 'Error occured';
@@ -32,6 +41,8 @@ trait HandlesTransaction
             'message' => $message,
             'info' => $info,
             'status' => $status,
+            'errors' => $errors,
+            'receipt_id' => $receiptId,
         ];
     }
 }

@@ -28,6 +28,7 @@ class HandleInertiaRequests extends Middleware
             'roles' => (\Auth::check()) ? \Auth::user()->roles()->where('user_roles.is_active', 1)->pluck('name') : '',
             'flash' => [
                 'data' => session('data'),
+                'receipt_id' => session('receipt_id'),
                 'message' => session('message'),
                 'info' => session('info'),
                 'status' => session('status'),

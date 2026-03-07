@@ -100,12 +100,12 @@
             </td>
             <td>
                 <h1 class="company-name">BOUYANT RICE TRADING</h1>
-                Sinunuc Zamboanga City<br>Philippines
+                Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
             </td>
             <td class="order-info">
-                <h2 class="order-title">Receipt</h2>
-                #{{ $receipt->receipt_number ?? '-' }}<br>
-                {{ $receiptDate }}
+                <h2 class="order-title">Sales Invoice</h2>
+                #{{ $sales_order->so_number }}<br>
+                {{ \Carbon\Carbon::parse($sales_order->so_date)->format('m/d/Y') }}
             </td>
         </tr>
     </table>
@@ -167,18 +167,14 @@
                 $lineTotal = ((float) $item->quantity * (float) $item->price) - ((float) ($item->discount_per_unit ?? 0) * (float) $item->quantity);
             @endphp
             <tr>
-                <td>{{ number_format((float) $item->quantity, 2) }}</td>
-                <td><strong>{{ optional($item->product)->pack_size }} {{ optional(optional($item->product)->unit)->name }} {{ optional(optional($item->product)->brand)->name }}</strong></td>
-                <td>{{ optional($item->product)->name ?? optional($item->product)->description ?? '-' }}</td>
-                <td>{{ optional(optional($item->product)->unit)->name ?? '-' }}</td>
-                <td class="text-right">{{ number_format((float) $item->price, 2) }}</td>
-                <td class="text-right">{{ number_format($lineTotal, 2) }}</td>
+                <td>{{ number_format($item->quantity) }}</td>
+                <td><strong>{{ $item->product->pack_size  }} {{ $item->product->unit?->name  }} {{ $item->product->brand?->name  }}</strong></td>
+                <td>{{ $item->product->description }}</td>
+                <td>Kg</td>
+                <td class="text-right">{{ number_format($item->price, 2) }}</td>
+                <td class="text-right">{{ number_format($item->quantity * $item->price, 2) }}</td>
                 <td class="text-right">0.00</td>
-                <td class="text-right">{{ number_format($lineTotal, 2) }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="8" class="text-right">No items found.</td>
+                <td class="text-right">{{ number_format($item->quantity * $item->price, 2) }}</td>
             </tr>
             @endforelse
         </tbody>
@@ -195,17 +191,20 @@
             </td>
             <td style="width: 300px;">
                 <table style="width: 100%; border-collapse: collapse;">
+                    @php
+                        $subtotal = $items->sum(function($item) { return $item->quantity * $item->price; });
+                    @endphp
                     <tr>
-                        <td style="padding: 5px 0;">Invoice Total</td>
-                        <td class="text-right">PHP {{ number_format((float) (optional($sales_order)->total_amount ?? 0), 2) }}</td>
+                        <td style="padding: 5px 0;">Total Sales Before VAT</td>
+                        <td class="text-right">PHP {{ number_format($subtotal, 2) }}</td>
                     </tr>
                     <tr>
                         <td style="padding: 5px 0;">Amount Paid</td>
                         <td class="text-right">PHP {{ number_format((float) ($receipt->amount_paid ?? 0), 2) }}</td>
                     </tr>
                     <tr class="grand-total-box">
-                        <td style="padding: 10px 5px;">Balance Due</td>
-                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format($balanceDue, 2) }}</td>
+                        <td style="padding: 10px 5px;">Total Amount Due</td>
+                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format($subtotal, 2) }}</td>
                     </tr>
                 </table>
             </td>

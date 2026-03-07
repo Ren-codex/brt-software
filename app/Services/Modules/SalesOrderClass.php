@@ -4,6 +4,7 @@ namespace App\Services\Modules;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
 
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
@@ -99,19 +100,34 @@ class SalesOrderClass
         $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Zamboanga City')->pluck('id');
         $isExternal = in_array($request->location_id, $externalLocationIds->toArray());
         $prefix = $isExternal ? 'SO-EXT' : 'SO';
-        $data = new SalesOrder();
-        $data->so_number = SalesOrder::generateSoNumber(null, $prefix);
-        $data->order_date = $request->order_date;
-        $data->customer_id = $request->customer_id;
-        $data->sales_rep_id = $request->sales_rep_id;
-        $data->driver_id = $request->driver_id;
-        $data->payment_mode = $request->payment_mode;
-        $data->due_date = strtolower($request->payment_mode) === 'credit' ? $request->due_date : null;
-        $data->location_id = $request->location_id;
-        $data->added_by_id = auth()->user()->id;
-        $data->status_id = ListStatus::getBySlug('for-payment')->id; //set to "For Payment"
+        $data = null;
+        $maxAttempts = 5;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $candidate = new SalesOrder();
+            $candidate->so_number = SalesOrder::generateSoNumber(null, $prefix);
+            $candidate->order_date = $request->order_date;
+            $candidate->customer_id = $request->customer_id;
+            $candidate->sales_rep_id = $request->sales_rep_id;
+            $candidate->driver_id = $request->driver_id;
+            $candidate->payment_mode = $request->payment_mode;
+            $candidate->due_date = strtolower($request->payment_mode) === 'credit' ? $request->due_date : null;
+            $candidate->location_id = $request->location_id;
+            $candidate->added_by_id = auth()->user()->id;
+            $candidate->status_id = ListStatus::getBySlug('for-payment')->id; // set to "For Payment"
 
-        $data->save();
+            try {
+                $candidate->save();
+                $data = $candidate;
+                break;
+            } catch (QueryException $e) {
+                // Retry only for duplicate so_number unique key collisions.
+                $isDuplicate = ((string) $e->getCode() === '23000')
+                    && str_contains(strtolower($e->getMessage()), 'sales_orders_so_number_unique');
+                if (!$isDuplicate || $attempt === $maxAttempts) {
+                    throw $e;
+                }
+            }
+        }
 
         $totalAmount = 0;
         $totalDiscount = 0;

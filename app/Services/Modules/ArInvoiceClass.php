@@ -137,6 +137,7 @@ class ArInvoiceClass
         
         return [
             'data' => new ArInvoiceResource($ar_invoice),
+            'receipt_id' => $receipt->id,
             'message' => 'Payment saved successfully!',
             'info' => "Payment successfully saved"
         ];
