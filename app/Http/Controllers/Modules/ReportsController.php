@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Modules;
 
+use App\Exports\SalesReportExport;
 use App\Http\Controllers\Controller;
 use App\Services\Modules\ReportClass;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportsController extends Controller
 {
@@ -15,14 +17,29 @@ class ReportsController extends Controller
     public function index(Request $request)
     {
         $filters = $this->resolveFilters($request);
+        $reportData = $this->reports->summary($filters);
 
         if ($request->option === 'summary') {
-            return response()->json($this->reports->summary($filters));
+            return response()->json($reportData);
+        }
+        if ($request->option === 'excel') {
+            $filename = 'sales-report-' . now()->format('Ymd_His') . '.xlsx';
+
+            return Excel::download(new SalesReportExport($filters, $reportData), $filename);
+        }
+        if ($request->option === 'pdf') {
+            $filename = 'sales-report-' . now()->format('Ymd_His') . '.pdf';
+            $pdf = \PDF::loadView('prints.sales-report', [
+                'filters' => $filters,
+                'reportData' => $reportData,
+            ])->setPaper('A4', 'portrait');
+
+            return $pdf->download($filename);
         }
 
         return inertia('Modules/Reports/Index', [
             'filters' => $filters,
-            'reportData' => $this->reports->summary($filters),
+            'reportData' => $reportData,
         ]);
     }
 

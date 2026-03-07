@@ -44,11 +44,28 @@
                       <label class="filter-label">Top Limit</label>
                       <input v-model.number="form.limit" min="1" max="50" type="number" class="filter-input" />
                     </div>
-                    <div class="col-md-2 d-flex gap-2">
+                    <div class="col-md-4 d-flex gap-2">
                       <button :disabled="loading" class="btn-apply" @click="fetchReports">
                         <i v-if="loading" class="ri-loader-4-line ri-spin me-1"></i>
                         <span>{{ loading ? 'Loading...' : 'Apply' }}</span>
                       </button>
+                      <div class="download-dropdown" ref="downloadDropdown">
+                        <button :disabled="loading || downloading" class="btn-download" @click="toggleDownloadMenu">
+                          <i class="ri-download-2-line me-1"></i>
+                          <span>{{ downloading ? 'Downloading...' : 'Download' }}</span>
+                          <i class="ri-arrow-down-s-line ms-1"></i>
+                        </button>
+                        <div v-if="showDownloadMenu && !downloading" class="download-menu">
+                          <button class="download-menu-item" @click="downloadReport('excel')">
+                            <i class="ri-file-excel-2-line me-1"></i>
+                            <span>Download Excel</span>
+                          </button>
+                          <button class="download-menu-item" @click="downloadReport('pdf')">
+                            <i class="ri-file-pdf-2-line me-1"></i>
+                            <span>Download PDF</span>
+                          </button>
+                        </div>
+                      </div>
                       <button :disabled="loading" class="btn-reset" @click="resetFilters">
                         <i class="ri-refresh-line"></i>
                       </button>
@@ -263,14 +280,20 @@ export default {
 
     return {
       loading: false,
+      downloading: false,
+      showDownloadMenu: false,
       form: { ...initialFilters },
       report: this.reportData || defaultReport,
     };
   },
   mounted() {
+    document.addEventListener('click', this.handleDocumentClick);
     if (!this.reportData) {
       this.fetchReports();
     }
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleDocumentClick);
   },
   methods: {
     fetchReports() {
@@ -306,6 +329,60 @@ export default {
         limit: 10,
       };
       this.fetchReports();
+    },
+    toggleDownloadMenu(event) {
+      event.stopPropagation();
+      if (this.loading || this.downloading) return;
+      this.showDownloadMenu = !this.showDownloadMenu;
+    },
+    handleDocumentClick(event) {
+      if (!this.showDownloadMenu) return;
+      if (!this.$refs.downloadDropdown?.contains(event.target)) {
+        this.showDownloadMenu = false;
+      }
+    },
+    downloadReport(format = 'excel') {
+      this.showDownloadMenu = false;
+      this.downloading = true;
+      const exportFormat = format === 'pdf' ? 'pdf' : 'excel';
+      const fallbackExtension = exportFormat === 'pdf' ? 'pdf' : 'xlsx';
+      const fallbackContentType = exportFormat === 'pdf'
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      axios
+        .get('/reports', {
+          params: {
+            option: exportFormat,
+            ...this.form,
+          },
+          responseType: 'blob',
+        })
+        .then((response) => {
+          const blob = new Blob([response.data], {
+            type: response.headers['content-type'] || fallbackContentType,
+          });
+          const contentDisposition = response.headers['content-disposition'] || '';
+          const filenameMatch = contentDisposition.match(/filename=\"?([^\"]+)\"?/);
+          const filename = filenameMatch
+            ? filenameMatch[1]
+            : `sales-report-${new Date().toISOString().slice(0, 10)}.${fallbackExtension}`;
+
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', filename);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(url);
+        })
+        .catch((error) => {
+          console.error('Failed to download report', error);
+        })
+        .finally(() => {
+          this.downloading = false;
+        });
     },
     formatCurrency(value) {
       const amount = Number(value || 0);
@@ -390,6 +467,67 @@ export default {
 .btn-apply:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-download {
+  min-width: 120px;
+  background: #1f7a4f;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0.6rem 0.9rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-download:hover:not(:disabled) {
+  background: #155e3b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(31, 122, 79, 0.2);
+}
+
+.btn-download:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.download-dropdown {
+  position: relative;
+}
+
+.download-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 170px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.25rem;
+  z-index: 20;
+}
+
+.download-menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #334155;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.download-menu-item:hover {
+  background: #f1f5f9;
 }
 
 .btn-reset {
