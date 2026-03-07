@@ -126,19 +126,8 @@
                 </div>
               </div>
 
-              <!-- Revenue Reports -->
-              <div v-if="activeTab === 'revenue-reports'" class="row">
-                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
-                  <div class="card shadow-sm p-3">
-                    <RevenueReports :dropdowns="dropdowns" />
-                  </div>
-                </div>
-                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
-                  <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
-                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
-                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
-                    @toggle="toggleRightSidebar" />
-                </div>
+              <div v-if="activeTab === 'sales-reports'" class="shadow-sm p-3">
+                <SalesReports />
               </div>
             </div>
           </transition>
@@ -174,11 +163,10 @@ import SalesReturns from "@/Pages/Modules/Sales/Components/SalesReturns/Index.vu
 import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
 import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
 import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
-import RevenueReports from "@/Pages/Modules/Sales/Components/RevenueReports/Index.vue";
-import QuickStatsSidebar from "./Components/QuickStatsSidebar.vue";
+import SalesReports from "@/Pages/Modules/Sales/Components/SalesReports/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, RevenueReports, QuickStatsSidebar },
+  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports },
   props: ['dropdowns'],
   data() {
     return {
@@ -243,10 +231,10 @@ export default {
           description: 'Remittance records'
         },
         {
-          id: 'revenue-reports',
-          label: 'Revenue Reports',
+          id: 'sales-reports',
+          label: 'Sales Report',
           icon: 'ri-bar-chart-line',
-          description: 'Revenue reports'
+          description: 'Sales reports'
         },
       ]
     };

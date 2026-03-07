@@ -61,10 +61,10 @@
         .footer-table { width: 100%; margin-top: 30px; }
         .grand-total-box { background-color: #D5DBDB; padding: 10px; font-weight: bold; }
 
-        /* Signature Section */
-        .signature-section { margin-top: 50px; display: flex; justify-content: space-around; }
-        .signature-box { text-align: center; width: 150px; }
-        .signature-line { border-bottom: 1px solid #333; margin-bottom: 5px; height: 30px; }
+      /* Signature Section */
+        .signature-section { width: 100%; margin-top: 40px; display: table; }
+        .signature-box { display: table-cell; text-align: center; width: 50%; }
+        .signature-line { border-bottom: 1px solid #333; margin-bottom: 5px; padding-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -152,7 +152,7 @@
             <td style="vertical-align: top;">
                 <strong>Remarks:</strong><br>
                 <br><br>
-                <strong>Prepared By:</strong> {{ $sales_order->created_by->fullname ?? '---' }}
+                <strong>Sales Rep:</strong> {{ $sales_order->salesRep->fullname ?? '---' }}
             </td>
             <td style="width: 300px;">
                 <table style="width: 100%; border-collapse: collapse;">

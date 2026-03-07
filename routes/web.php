@@ -14,6 +14,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::resource('/sales', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
+    Route::get('/reports', [App\Http\Controllers\Modules\ReportsController::class, 'index']);
     Route::post('/sales-orders/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderController::class, 'adjustment']);
     Route::resource('/sales-orders-external', App\Http\Controllers\Modules\SalesOrderExternalController::class);
     Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
@@ -50,6 +51,9 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
         Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
         Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus']);
+        Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class);
+        Route::post('/stock-returns/{id}/approve', [App\Http\Controllers\StockReturnController::class, 'approve']);
+        Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO']);
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);

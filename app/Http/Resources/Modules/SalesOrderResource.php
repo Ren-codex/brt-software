@@ -17,7 +17,7 @@ class SalesOrderResource extends JsonResource
             'status' => $this->status,
             'sub_status' => $this->sub_status,
             'total_amount' => $this->total_amount,
-            'added_by' => $this->created_by,
+            'added_by' => $this->created_by ? $this->created_by->employee : null,
             'sales_rep_id' => $this->sales_rep_id,
             'driver_id' => $this->driver_id,
             'payment_mode' => $this->payment_mode,

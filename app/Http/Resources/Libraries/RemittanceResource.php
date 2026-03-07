@@ -15,20 +15,30 @@ class RemittanceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $firstReceipt = $this->receipts()->with('arInvoice.sales_order')->first();
+        $salesPaymentMode = strtolower(trim((string) data_get($firstReceipt, 'arInvoice.sales_order.payment_mode', '')));
+        $remittanceType = $this->isCreditSalesMode($salesPaymentMode) ? 'credit' : 'cash';
+
         return [
             'id' => $this->id,
             'remittance_no' => $this->remittance_no,
             'remittance_date' => $this->remittance_date,
+            'remittance_type' => $remittanceType,
             'summary' => $this->summary,
             'total_amount' => $this->total_amount,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'created_by' => $this->createdBy,
+            'created_by' => $this->createdBy ? $this->createdBy->employee : null,
             'status' => $this->status,
-            'approved_by' => $this->approvedBy,
-            'approved_at' => Carbon::parse($this->approved_at)->format('Y-m-d H:i:s'),
+            'approved_by' => $this->approvedBy ? $this->approvedBy->employee : null,
+            'approved_at' => $this->approved_at ? Carbon::parse($this->approved_at)->format('Y-m-d H:i:s') : null,
             'remarks' => $this->remarks,
             'receipts' => $this->receipts ? ReceiptResource::collection($this->receipts) : null,
         ];
+    }
+
+    private function isCreditSalesMode(string $paymentMode): bool
+    {
+        return in_array(strtolower(trim($paymentMode)), ['credit', 'credit sales'], true);
     }
 }

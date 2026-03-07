@@ -24,7 +24,7 @@
             :key="log.id || index"
             class="loan-log-item"
           >
-            <div class="timeline-year">{{ log.created_at }}</div>
+            <div class="timeline-year">{{ formatLogDate(log.created_at) }}</div>
             <div class="timeline-marker">
               <div class="marker-dot">
                 <i :class="getActionIcon(log.action)"></i>
@@ -117,6 +117,19 @@ export default {
     }
   },
   methods: {
+    formatLogDate(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+
+      return date.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    },
     capitalizeFirstLetter(value) {
       if (!value) return '';
       const text = String(value);

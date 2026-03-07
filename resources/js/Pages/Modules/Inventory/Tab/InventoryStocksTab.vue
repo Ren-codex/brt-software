@@ -50,7 +50,7 @@
                       <tr 
                         v-for="(list,index) in availableStocks" 
                         v-bind:key="list.id" 
-                        @click="openView(list.id)" 
+                        @click="openView(list)" 
                         style="cursor: pointer;"
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
@@ -114,7 +114,7 @@
                       <tr 
                         v-for="(list,index) in consumedStocks" 
                         v-bind:key="list.id" 
-                        @click="openView(list.id)" 
+                        @click="openView(list)" 
                         style="cursor: pointer;"
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
@@ -136,7 +136,7 @@
                         </td>
                         <td>
                           <div class="action-buttons" @click.stop>
-                            <button @click.stop="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                            <button @click.stop="openView(list)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
                               <i class="ri-eye-fill"></i>
                             </button>
                           </div>
@@ -186,7 +186,7 @@ export default {
     filter: Object,
     dropdowns: Object,
   },
-  emits: ['fetch', 'update-keyword', 'toast'],
+  emits: ['fetch', 'update-keyword', 'toast', 'view-details'],
   data() {
     return {
       selectedRow: null,
@@ -212,8 +212,8 @@ export default {
       this.selectedRow = this.selectedRow === id ? null : id;
     },
     
-    openView(id) {
-      this.$inertia.visit(`/inventory-stocks/${id}`);
+    openView(stock) {
+      this.$emit('view-details', stock);
     },
     
     adjustStock(stock) {

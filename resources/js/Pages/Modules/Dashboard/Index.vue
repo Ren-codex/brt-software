@@ -17,6 +17,16 @@
 
     <!-- Sales Dashboard - Modern Design -->
     <div v-if="activeTab === 'sales'" class="dashboard-content">
+        <!-- Filter Buttons -->
+        <div class="filter-container">
+            <div class="filter-buttons">
+                <button v-for="filter in dateFilters" :key="filter.value"
+                        @click="selectedFilter = filter.value"
+                        :class="['filter-btn', { active: selectedFilter === filter.value }]">
+                    {{ filter.label }}
+                </button>
+            </div>
+        </div>
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div v-for="stat in salesStats" :key="stat.label" class="stat-card">
@@ -32,6 +42,44 @@
                         </span>
                     </div>
                 </div>
+            </div>
+        </div>
+        <!-- Top Selling Products -->
+        <div class="modern-card">
+            <div class="card-header-modern">
+                <div>
+                    <h3>Top Selling Products</h3>
+                    <p class="text-muted-600">Best performing products this month</p>
+                </div>
+            </div>
+            <div class="top-products-grid" v-if="topProducts.length > 0">
+                <div v-for="(product, index) in topProducts" :key="product.id" class="top-product-card">
+                    <div class="rank-badge" :class="getRankClass(index + 1)">{{ index + 1 }}</div>
+                    <div class="product-info">
+                        <h4 class="product-name">{{ product.name }}</h4>
+                        <span class="product-brand">{{ product.brand }}</span>
+                    </div>
+                    <div class="product-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Sold</span>
+                            <span class="stat-value">{{ formatNumber(product.quantity_sold) }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Revenue</span>
+                            <span class="stat-value">₱{{ formatNumber(product.revenue) }}</span>
+                        </div>
+                    </div>
+                    <div class="product-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" :style="{ width: product.percentage + '%', background: getProductColor(index + 1) }"></div>
+                        </div>
+                        <span class="percentage-label">{{ product.percentage }}%</span>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="empty-state">
+                <i class="bx bx-package"></i>
+                <p>No top selling product to show</p>
             </div>
         </div>
 
@@ -83,6 +131,8 @@
                 </div>
             </div>
         </div>
+
+        
 
         <!-- Transactions Table - Modern Design -->
         <div class="modern-card">
@@ -347,15 +397,32 @@ export default {
         lowStockItems: Array,
         employeeStats: Object,
         employeeCharts: Object,
-        recentTransactions: Array
+        recentTransactions: Array,
+        filter: {
+            type: String,
+            default: 'monthly'
+        }
     },
     components: {
         PageHeader,
         apexchart: VueApexCharts
     },
+    mounted() {
+        // Set filter from backend prop
+        if (this.filter) {
+            this.selectedFilter = this.filter;
+        }
+    },
     data() {
         return {
             activeTab: 'sales',
+            selectedFilter: 'monthly',
+            dateFilters: [
+                { label: 'Today', value: 'today' },
+                { label: 'Weekly', value: 'weekly' },
+                { label: 'Monthly', value: 'monthly' },
+                { label: 'Annually', value: 'annually' }
+            ],
             tabs: [
                 { label: 'Sales', value: 'sales', icon: 'bx bx-store' },
                 { label: 'Inventory', value: 'inventory', icon: 'bx bx-package' },
@@ -376,6 +443,9 @@ export default {
         };
     },
     computed: {
+        topProducts() {
+            return this.charts?.topProducts || [];
+        },
         salesStats() {
             const s = this.stats || {};
             return [
@@ -520,7 +590,18 @@ export default {
             };
         }
     },
+    watch: {
+        selectedFilter() {
+            this.loadDashboardData();
+        }
+    },
     methods: {
+        loadDashboardData() {
+            this.$inertia.get('/dashboard', { filter: this.selectedFilter }, {
+                preserveState: true,
+                replace: true
+            });
+        },
         formatNumber(val) {
             if (!val && val !== 0) return '0';
             return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -533,6 +614,16 @@ export default {
         },
         formatDay(date) {
             return new Date(date).getDate();
+        },
+        getRankClass(rank) {
+            if (rank === 1) return 'rank-gold';
+            if (rank === 2) return 'rank-silver';
+            if (rank === 3) return 'rank-bronze';
+            return 'rank-default';
+        },
+        getProductColor(rank) {
+            const colors = ['#FFD700', '#C0C0C0', '#CD7F32', '#3b82f6', '#8b5cf6'];
+            return colors[rank - 1] || '#64748b';
         },
         getStockStatus(item) {
             if (item.current_stock <= 0) return 'Out';
@@ -601,6 +692,41 @@ export default {
     background: white;
     color: #2e8b57;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Filter Container */
+.filter-container {
+    margin-bottom: 1.5rem;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 10px;
+    width: fit-content;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: #64748b;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    color: #3b82f6;
+}
+
+.filter-btn.active {
+    background: white;
+    color: #3b82f6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 /* Stats Grid */
@@ -1068,6 +1194,141 @@ export default {
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-size: 0.875rem;
+}
+
+/* Top Selling Products */
+.top-products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.top-product-card {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 1.25rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.top-product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.rank-badge {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.rank-gold { background: linear-gradient(135deg, #FFD700, #FFA500); }
+.rank-silver { background: linear-gradient(135deg, #C0C0C0, #A8A8A8); }
+.rank-bronze { background: linear-gradient(135deg, #CD7F32, #B87333); }
+.rank-default { background: #64748b; }
+
+.product-info {
+    padding-top: 0.5rem;
+}
+
+.product-info .product-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 0.25rem 0;
+}
+
+.product-info .product-brand {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.product-stats {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.product-stats .stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.product-stats .stat-label {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.product-stats .stat-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.product-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.product-progress .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0;
+}
+
+.product-progress .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.product-progress .percentage-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    min-width: 35px;
+    text-align: right;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #64748b;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+}
+
+.empty-state p {
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 /* Payment Legend */

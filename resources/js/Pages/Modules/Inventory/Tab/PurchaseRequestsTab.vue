@@ -107,7 +107,6 @@
                     v-bind:key="list.id" 
                     @click="openView(list)" 
                     style="cursor: pointer;"
-                    :style="getRowStyle(list.status)"
                   >
                     <td>{{ index + 1 }}</td>
                     <td>

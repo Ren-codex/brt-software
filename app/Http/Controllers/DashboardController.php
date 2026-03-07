@@ -24,13 +24,19 @@ class DashboardController extends Controller
     }
 
     public function index(Request $request){
-        // Sales Statistics
-        $totalSales = SalesOrder::sum('total_amount');
-        $totalReceipts = Receipt::count();
+        // Get filter from request, default to monthly
+        $filter = $request->get('filter', 'monthly');
+        
+        // Calculate date range based on filter
+        $dateRange = $this->getDateRange($filter);
+        
+        // Sales Statistics with date filter
+        $totalSales = SalesOrder::whereBetween('order_date', [$dateRange['start'], $dateRange['end']])->sum('total_amount');
+        $totalReceipts = Receipt::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
         $totalOutstanding = ArInvoice::sum('balance_due');
         $totalCustomers = SalesOrder::distinct('customer_id')->count('customer_id');
 
-        // Monthly sales data for chart (last 12 months)
+        // Monthly sales data for chart (last 12 months) - filtered by same date range
         $monthlySales = [];
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
@@ -44,8 +50,9 @@ class DashboardController extends Controller
             ];
         }
 
-        // Payment methods distribution
-        $paymentMethods = SalesOrder::selectRaw('payment_mode, SUM(total_amount) as total')
+        // Payment methods distribution with date filter
+        $paymentMethods = SalesOrder::whereBetween('order_date', [$dateRange['start'], $dateRange['end']])
+                                ->selectRaw('payment_mode, SUM(total_amount) as total')
                                 ->groupBy('payment_mode')
                                 ->get()
                                 ->map(function ($item) {
@@ -54,6 +61,38 @@ class DashboardController extends Controller
                                         'total' => (float) $item->total
                                     ];
                                 });
+
+        // Top Selling Products with date filter
+        $topProductsQuery = \DB::table('sales_order_items')
+            ->join('sales_orders', 'sales_order_items.sales_order_id', '=', 'sales_orders.id')
+            ->join('products', 'sales_order_items.product_id', '=', 'products.id')
+            ->join('list_brands', 'products.brand_id', '=', 'list_brands.id')
+            ->join('list_units', 'products.unit_id', '=', 'list_units.id')
+            ->select(
+                'products.id',
+                \DB::raw('CONCAT(products.pack_size, " ", list_units.name, " ", list_brands.name) as name'),
+                \DB::raw('list_brands.name as brand'),
+                \DB::raw('SUM(sales_order_items.quantity) as quantity_sold'),
+                \DB::raw('SUM(sales_order_items.price * sales_order_items.quantity) as revenue')
+            )
+            ->whereBetween('sales_orders.order_date', [$dateRange['start'], $dateRange['end']])
+            ->groupBy('products.id', 'products.pack_size', 'list_units.name', 'list_brands.name')
+            ->orderByDesc('quantity_sold')
+            ->limit(10)
+            ->get();
+
+        // Calculate percentage for each product
+        $maxQuantity = $topProductsQuery->max('quantity_sold');
+        $topProducts = $topProductsQuery->map(function ($item) use ($maxQuantity) {
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'brand' => $item->brand,
+                'quantity_sold' => (int) $item->quantity_sold,
+                'revenue' => (float) $item->revenue,
+                'percentage' => $maxQuantity > 0 ? round(($item->quantity_sold / $maxQuantity) * 100) : 0
+            ];
+        });
 
         // Recent Transactions
         $recentTransactions = SalesOrder::with('customer')
@@ -147,6 +186,7 @@ class DashboardController extends Controller
             'charts' => [
                 'monthlySales' => $monthlySales,
                 'paymentMethods' => $paymentMethods,
+                'topProducts' => $topProducts,
             ],
             'recentTransactions' => $recentTransactions,
             'inventoryStats' => [
@@ -160,8 +200,42 @@ class DashboardController extends Controller
                 'stockByCategory' => $stockByCategory,
                 'stockDistribution' => $stockDistribution,
             ],
-            'lowStockItems' => $lowStockItemsData
+            'lowStockItems' => $lowStockItemsData,
+            'filter' => $filter
         ]);
 
+    }
+
+    private function getDateRange($filter)
+    {
+        $now = Carbon::now();
+        
+        switch ($filter) {
+            case 'today':
+                return [
+                    'start' => $now->copy()->startOfDay(),
+                    'end' => $now->copy()->endOfDay()
+                ];
+            case 'weekly':
+                return [
+                    'start' => $now->copy()->startOfWeek(),
+                    'end' => $now->copy()->endOfWeek()
+                ];
+            case 'monthly':
+                return [
+                    'start' => $now->copy()->startOfMonth(),
+                    'end' => $now->copy()->endOfMonth()
+                ];
+            case 'annually':
+                return [
+                    'start' => $now->copy()->startOfYear(),
+                    'end' => $now->copy()->endOfYear()
+                ];
+            default:
+                return [
+                    'start' => $now->copy()->startOfMonth(),
+                    'end' => $now->copy()->endOfMonth()
+                ];
+        }
     }
 }

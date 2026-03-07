@@ -1,119 +1,124 @@
 <template>
-<BRow>
-    <div class="col-lg-12 mb-4">
-        <div class="library-card">
-            <div class="library-card-header">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="header-icon">
-                            <i class="ri-shopping-cart-line fs-24"></i>
-                        </div>
-                        <div>
-                            <h4 class="header-title mb-1">Account Receivable Invoices</h4>
-                            <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-body bg-white m-2 p-3">
-                <div class="search-section">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="search-wrapper">
-                                <i class="ri-search-line search-icon"></i>
-                                <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                    placeholder="Search purchase request..." class="search-input">
+    <BRow>
+        <div class="col-lg-12 mb-4">
+            <div class="library-card">
+                <div class="library-card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="header-icon">
+                                <i class="ri-shopping-cart-line fs-24"></i>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="search-wrapper">
-                                <i class="ri-map-pin-line search-icon"></i>
-                                <select v-model="filter.location_id" @change="fetch()" class="search-input">
-                                    <option :value="null">All Locations</option>
-                                    <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
-                                        {{ location.name }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="search-wrapper">
-                                <i class="ri-flag-line search-icon"></i>
-                                <select v-model="filter.status" @change="fetch()" class="search-input">
-                                    <option :value="null">All Status</option>
-                                    <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug">
-                                        {{ status.name }}
-                                    </option>
-                                </select>
+                            <div>
+                                <h4 class="header-title mb-1">Account Receivable Invoices</h4>
+                                <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="table-responsive table-card">
-                    <table class="table align-middle table-hover mb-0"
-                        style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                        <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                            <tr class="fs-12 fw-bold text-muted">
-                                <th style="width: 3%; border: none;">#</th>
-                                <th style="width: 12%;" class="text-center border-none">Invoice Number</th>
-                                <th style="width: 12%;" class="text-center border-none">Sales Order</th>
-                                <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                <th style="width: 12%;" class="text-center border-none">Invoice Date</th>
-                                <th style="width: 12%;" class="text-center border-none">Status</th>
-                                <th style="width: 12%;" class="text-center border-none">Balance Due</th>
-                                <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
-                                <th style="width: 6%;" class="text-center border-none">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="fs-12">
-                            <template v-for="(list, index) in lists" :key="index">
-                                <!-- Main Row -->
-                                <tr @click="toggleRowExpansion(index)" 
-                                    :class="{
+                <div class="card-body bg-white m-2 p-3">
+                    <div class="search-section">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-search-line search-icon"></i>
+                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                        placeholder="Search purchase request..." class="search-input">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-map-pin-line search-icon"></i>
+                                    <select v-model="filter.location_id" @change="fetch()" class="search-input">
+                                        <option :value="null">All Locations</option>
+                                        <option v-for="location in dropdowns.locations" :key="location.value"
+                                            :value="location.value">
+                                            {{ location.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-flag-line search-icon"></i>
+                                    <select v-model="filter.status" @change="fetch()" class="search-input">
+                                        <option :value="null">All Status</option>
+                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value"
+                                            :value="status.slug">
+                                            {{ status.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive table-card">
+                        <table class="table align-middle table-hover mb-0"
+                            style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                                <tr class="fs-12 fw-bold text-muted">
+                                    <th style="width: 3%; border: none;">#</th>
+                                    <th style="width: 12%;" class="text-center border-none">Invoice Number</th>
+                                    <th style="width: 12%;" class="text-center border-none">Sales Order</th>
+                                    <th style="width: 12%;" class="text-center border-none">Customer</th>
+                                    <th style="width: 12%;" class="text-center border-none">Invoice Date</th>
+                                    <th style="width: 12%;" class="text-center border-none">Status</th>
+                                    <th style="width: 12%;" class="text-center border-none">Balance Due</th>
+                                    <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
+                                    <th style="width: 6%;" class="text-center border-none">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fs-12">
+                                <template v-for="(list, index) in lists" :key="index">
+                                    <!-- Main Row -->
+                                    <tr @click="toggleRowExpansion(index)" :class="{
                                         'expanded-row': expandedRow === index,
                                         'cursor-pointer': true
-                                    }" 
-                                    class="main-table-row transition-all"
-                                    style="transition: all 0.3s ease;">
-                                    <td class="text-center">
-                                        <div class="expand-icon" :class="{ 'rotated': expandedRow === index }">
-                                            <i class="ri-arrow-right-s-line"></i>
-                                        </div>
-                                        {{ index + 1 }}
-                                    </td>
-                                    <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
-                                    <td class="text-center">{{ list.sales_order?.so_number || '-' }}</td>
-                                    <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
-                                    <td class="text-center">{{ list.invoice_date }}</td>
-                                    <td class="text-center">
-                                        <b-badge
-                                            :style="{ 'background-color': list.status?.bg_color, color: '#fff' }"
-                                            class="px-3 py-2 rounded-pill">
-                                            {{ list.status?.name }}
-                                        </b-badge>
-                                    </td>
-                                    <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
-                                    <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
-                                                <i class="ri-printer-line"></i>
-                                            </b-button>
-                                            <b-button v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')" @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
-                                                <i class="ri-money-dollar-circle-fill"></i>
-                                            </b-button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                
-                                <!-- Expanded Details Row -->
-                                <tr v-if="expandedRow === index" class="details-row">
-                                    <td colspan="9" class="p-0">
-                                        <div class="details-container">
-                                            <div class="details-content">
-                                                <div class="row g-4">
+                                    }" class="transition-all" style="transition: all 0.3s ease;">
+                                        <td class="text-center">
+                                            <i v-if="expandedRows.includes(index)"
+                                                class="ri-arrow-down-s-line text-primary"></i>
+                                            <i v-else class="ri-arrow-right-s-line text-muted"></i>
+                                            {{ index + 1 }}
+                                        </td>
+                                        <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
+                                        <td class="text-center">{{ list.sales_order?.so_number || '-' }}</td>
+                                        <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
+                                        <td class="text-center">{{ list.invoice_date }}</td>
+                                        <td class="text-center">
+                                            <b-badge
+                                                :style="{ 'background-color': list.status?.bg_color, color: '#fff' }"
+                                                class="px-3 py-2 rounded-pill">
+                                                {{ list.status?.name }}
+                                            </b-badge>
+                                        </td>
+                                        <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
+                                        <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-1">
+                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info"
+                                                    v-b-tooltip.hover title="Print" size="sm"
+                                                    class="btn-icon rounded-circle">
+                                                    <i class="ri-printer-line"></i>
+                                                </b-button>
+                                                <b-button
+                                                    v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
+                                                    @click.stop="onPayment(list)" variant="outline-primary"
+                                                    v-b-tooltip.hover title="Payment" size="sm"
+                                                    class="btn-icon rounded-circle">
+                                                    <i class="ri-money-dollar-circle-fill"></i>
+                                                </b-button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="expandedRows.includes(index)" class="bg-light">
+                                        <td colspan="12" class="p-0">
+                                            <div class="p-4">
+                                                <h6 class="text-primary mb-3">
+                                                    <i class="ri-file-list-line me-2"></i>Invoice Details
+                                                </h6>
+                                                <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <div class="info-card invoice-card">
                                                             <div class="info-card-header">
@@ -123,19 +128,23 @@
                                                             <div class="info-card-body">
                                                                 <div class="info-item">
                                                                     <span class="info-label">Invoice Date:</span>
-                                                                    <span class="info-value">{{ list.invoice_date }}</span>
+                                                                    <span class="info-value">{{ list.invoice_date
+                                                                        }}</span>
                                                                 </div>
                                                                 <div class="info-item">
                                                                     <span class="info-label">Amount Balance:</span>
-                                                                    <span class="info-value amount">₱{{ list.balance_due?.toFixed(2) }}</span>
+                                                                    <span class="info-value amount">₱{{
+                                                                        list.balance_due?.toFixed(2) }}</span>
                                                                 </div>
                                                                 <div class="info-item">
                                                                     <span class="info-label">Amount Paid:</span>
-                                                                    <span class="info-value amount paid">₱{{ list.amount_paid?.toFixed(2) }}</span>
+                                                                    <span class="info-value amount paid">₱{{
+                                                                        list.amount_paid?.toFixed(2) }}</span>
                                                                 </div>
                                                                 <div class="info-item highlight">
                                                                     <span class="info-label">Balance Due:</span>
-                                                                    <span class="info-value amount due">₱{{ list.balance_due?.toFixed(2) }}</span>
+                                                                    <span class="info-value amount due">₱{{
+                                                                        list.balance_due?.toFixed(2) }}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -149,15 +158,19 @@
                                                             <div class="info-card-body">
                                                                 <div class="info-item">
                                                                     <span class="info-label">Sales Order:</span>
-                                                                    <span class="info-value">{{ list.sales_order?.so_number || '-' }}</span>
+                                                                    <span class="info-value">{{
+                                                                        list.sales_order?.so_number || '-' }}</span>
                                                                 </div>
                                                                 <div class="info-item">
                                                                     <span class="info-label">Customer:</span>
-                                                                    <span class="info-value">{{ list.sales_order?.customer?.name || '-' }}</span>
+                                                                    <span class="info-value">{{
+                                                                        list.sales_order?.customer?.name || '-'
+                                                                        }}</span>
                                                                 </div>
                                                                 <div class="info-item">
                                                                     <span class="info-label">Order Date:</span>
-                                                                    <span class="info-value">{{ list.sales_order?.order_date || '-' }}</span>
+                                                                    <span class="info-value">{{
+                                                                        list.sales_order?.order_date || '-' }}</span>
                                                                 </div>
                                                                 <div v-if="list.sales_order?.status" class="info-item">
                                                                     <span class="info-label">Order Status:</span>
@@ -174,29 +187,30 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr v-if="lists.length === 0">
+                                    <td colspan="9" class="text-center py-4">
+                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
+                                        <p class="mt-2 mb-0">No invoice found</p>
+                                        <small class="text-muted">Try changing your search or filter criteria</small>
                                     </td>
                                 </tr>
-                            </template>
-                            <tr v-if="lists.length === 0">
-                                <td colspan="9" class="text-center py-4">
-                                    <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                                    <p class="mt-2 mb-0">No invoice found</p>
-                                    <small class="text-muted">Try changing your search or filter criteria</small>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light border-0 mt-3">
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
+                        :links="links" :pagination="meta" />
                 </div>
             </div>
-            <div class="card-footer bg-light border-0 mt-3">
-                <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
-            </div>
         </div>
-    </div>
-    
-</BRow>
-<Payment @approve="fetch()"  ref="payment"/>
+
+    </BRow>
+    <Payment @approve="fetch()" ref="payment" />
 </template>
 
 <script>
@@ -271,11 +285,11 @@ export default {
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
-        
+
         fetch(page_url) {
             page_url = page_url || '/ar-invoices';
-            axios.get(page_url,{
-                params : {
+            axios.get(page_url, {
+                params: {
                     option: 'lists',
                     keyword: this.filter.keyword,
                     location_id: this.filter.location_id,
@@ -294,13 +308,13 @@ export default {
                 })
                 .catch(err => console.log(err));
         },
-        
-        onPayment(data){
+
+        onPayment(data) {
             let title = "Record Payment";
             this.$refs.payment.show(data, title, '/ar-invoices');
         },
 
-        onPrint(id){
+        onPrint(id) {
             window.open(`/ar-invoices/${id}?option=print&type=ar_invoice`);
         },
 
@@ -411,6 +425,7 @@ export default {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -544,13 +559,13 @@ export default {
     .details-content {
         padding: 1rem;
     }
-    
+
     .info-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.25rem;
     }
-    
+
     .info-value {
         width: 100%;
     }

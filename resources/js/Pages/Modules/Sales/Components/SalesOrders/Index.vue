@@ -216,24 +216,16 @@
                                             <div class="details-content">
                                                 <div class="row g-4">
                                                     <div class="col-md-6">
-                                                        <div class="info-card order-card">
-                                                            <div class="info-card-header">
-                                                                <i class="ri-file-list-line"></i>
-                                                                <h6>Order Information</h6>
-                                                            </div>
-                                                            <div class="info-card-body">
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Order Date:</span>
-                                                                    <span class="info-value">{{ list.order_date }}</span>
-                                                                </div>
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Added By:</span>
-                                                                    <span class="info-value">{{ list.added_by?.name || '-' }}</span>
-                                                                </div>
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Transferred To:</span>
-                                                                    <span class="info-value">{{ list.transferred_to || '-' }}</span>
-                                                                </div>
+                                                        <div class="card border-0 shadow-sm ">
+                                                            <div class="card-body">
+                                                                <h6 class="card-title text-muted small mb-2">Order
+                                                                    Information</h6>
+                                                                <p class="mb-1"><strong>Order Date:</strong> {{
+                                                                    list.order_date }}</p>
+                                                                <p class="mb-1"><strong>Added By:</strong> {{
+                                                                    list.added_by.fullname || '-' }}</p>
+                                                                <p class="mb-0"><strong>Transferred To:</strong> {{
+                                                                    list.transferred_to || '-' }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
