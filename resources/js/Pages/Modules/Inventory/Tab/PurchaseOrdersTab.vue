@@ -112,7 +112,7 @@
                     </td>
                     <td>
                       <div class="amount-cell">
-                        <span class="amount-value">{{ list.approved_by?.name }}</span>
+                        <span class="amount-value">{{ list.approved_by?.fullname }}</span>
                       </div>
                     </td>
                     <td>

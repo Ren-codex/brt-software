@@ -5,11 +5,13 @@ namespace App\Services\Modules;
 
 use App\Models\Remittance;
 use App\Models\Receipt;
+use App\Models\ListLocation;
 use App\Http\Resources\Libraries\RemittanceResource;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Services\SeriesService;
 use Illuminate\Support\Facades\DB;
+use App\Models\ListStatus;
 
 class RemittanceClass
 {
@@ -22,10 +24,13 @@ class RemittanceClass
     }
 
     public function lists($request){
+        $mainOffice = ListLocation::where('name', 'Zamboanga City')->first();
+        $location_id = $request->location_id ?? $mainOffice->id;
+
         $data = RemittanceResource::collection(
-            Remittance::whereHas('receipts.arInvoice.sales_order', function ($q) use ($request) {
-                $q->where(function ($subQ) use ($internalLocationIds) {
-                    $subQ->whereIn('location_id', $internalLocationIds)
+            Remittance::whereHas('receipts.arInvoice.sales_order', function ($q) use ($request, $location_id) {
+                $q->where(function ($subQ) use ($location_id) {
+                    $subQ->where('location_id', $location_id)
                             ->orWhereNull('location_id');
                 });
                       
@@ -54,14 +59,14 @@ class RemittanceClass
                 'remittance_date' =>  Carbon::now(),
                 'summary' =>  $request->summary,
                 'total_amount' =>  $request->total_amount,
-                'status_id' =>  11,
+                'status_id' =>  ListStatus::getBySlug('open')->id,
                 'created_by_id' =>  Auth::user()->id,
             ]);
 
             if ($request->has('receipts') && is_array($request->receipts)) {
                 foreach ($request->receipts as $receiptId) {
                     Receipt::where('id', $receiptId)->update([
-                        'status_id' => 12,
+                        'status_id' => ListStatus::getBySlug('open')->id,
                         'remittance_id' => $data->id,
                     ]);
                 }
@@ -90,7 +95,7 @@ class RemittanceClass
 
             $receipts = Receipt::where('remittance_id', $id)->get();
             foreach ($receipts as $receipt) {
-                $receipt->status_id = 1;
+                $receipt->status_id = ListStatus::getBySlug('pending')->id;
                 $receipt->remittance_id = null;
                 $receipt->update();
             }
@@ -120,18 +125,16 @@ class RemittanceClass
             db::beginTransaction();
 
             $data = Remittance::findOrFail($id);
-            $data->status_id = ($request->status == 'Approve') ? 12 : 6;
+            $data->status_id = ($request->status == 'Approve') ? ListStatus::getBySlug('liquidated')->id : ListStatus::getBySlug('disapproved')->id;
             $data->approved_by_id = Auth::user()->id;
             $data->approved_at = Carbon::now();
             $data->remarks = $request->remarks;
             $data->save();
     
-            if($request->status == 'Approve'){
-                $receipts = Receipt::where('remittance_id', $data->id)->get();
-                foreach ($receipts as $receipt) {
-                    $receipt->status_id = 12;
-                    $receipt->update();
-                }
+            $receipts = Receipt::where('remittance_id', $data->id)->get();
+            foreach ($receipts as $receipt) {
+                $receipt->status_id = $request->status == 'Approve' ? ListStatus::getBySlug('liquidated')->id : ListStatus::getBySlug('pending')->id;
+                $receipt->update();
             }
     
             db::commit();
