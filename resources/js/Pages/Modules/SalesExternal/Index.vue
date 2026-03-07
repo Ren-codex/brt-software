@@ -69,7 +69,6 @@
               </div>
 
               <div v-if="activeTab === 'revenue-reports'" class="card shadow-sm p-3">
-                <RevenueReports :dropdowns="dropdowns" :isExternal="true" />
               </div>
             </div>
           </transition>
@@ -90,10 +89,9 @@ import SalesReturns from "@/Pages/Modules/Sales/Components/SalesReturns/Index.vu
 import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
 import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
 import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
-import RevenueReports from "@/Pages/Modules/Sales/Components/RevenueReports/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, RevenueReports },
+  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances },
   props: ['dropdowns'],
   data() {
     return {
