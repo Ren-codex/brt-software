@@ -211,6 +211,7 @@
 
     </BRow>
     <Payment @approve="fetch()" ref="payment" />
+    <ReceiptsList ref="receiptsList" />
 </template>
 
 <script>
@@ -219,6 +220,7 @@ import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Payment from '../ARInvoices/Modals/Payment.vue';
+import ReceiptsList from '../ARInvoices/Modals/ReceiptsList.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect, Payment, ReceiptsList },

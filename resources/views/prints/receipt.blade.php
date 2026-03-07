@@ -162,7 +162,8 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($items as $item)
+            @if(collect($items)->count() > 0)
+            @foreach($items as $item)
             @php
                 $lineTotal = ((float) $item->quantity * (float) $item->price) - ((float) ($item->discount_per_unit ?? 0) * (float) $item->quantity);
             @endphp
@@ -176,7 +177,12 @@
                 <td class="text-right">0.00</td>
                 <td class="text-right">{{ number_format($item->quantity * $item->price, 2) }}</td>
             </tr>
-            @endforelse
+            @endforeach
+            @else
+            <tr>
+                <td colspan="8" class="text-right">No items found.</td>
+            </tr>
+            @endif
         </tbody>
     </table>
 
