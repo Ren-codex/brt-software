@@ -232,6 +232,30 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            18 =>
+            array (
+                'id' => 19,
+                'name' => 'Replaced',
+                'slug' => 'replaced',
+                'description' => 'For Replaced status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            18 =>
+            array (
+                'id' => 19,
+                'name' => 'loss',
+                'slug' => 'loss',
+                'description' => 'For Loss status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

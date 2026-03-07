@@ -128,6 +128,19 @@
                     @view-details="openInventoryStockDetails" />
                 </div>
               </div>
+              <div class="row" v-if="activeTab === 'stockReturns' && currentView === 'list'">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+                  <StockReturnsTab :listStockReturns="listStockReturns" :meta="meta" :links="links" :filter="filter"
+                    :dropdowns="dropdowns" @fetch="fetchStockReturns" @update-keyword="updateKeyword"
+                    @toast="showToast" />
+                </div>
+                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
+                    :listPurchaseOrders="listPurchaseOrders" :listPurchaseRequests="listPurchaseRequests"
+                    :listInventoryStocks="listInventoryStocks" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    @toggle="toggleRightSidebar" />
+                </div>
+              </div>
             </div>
           </transition>
         </div>
@@ -165,6 +178,7 @@ import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
 import PurchaseRequestsTab from './Tab/PurchaseRequestsTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
+import StockReturnsTab from './Tab/StockReturnsTab.vue';
 import PurchaseOrderDetails from './Components/PurchaseOrders/View.vue';
 import InventoryStockDetails from './Components/InventoryStocks/View.vue';
 import QuickStatsSidebar from './Components/QuickStatsSidebar.vue';
@@ -181,6 +195,7 @@ export default {
     PurchaseRequestsTab,
     ProductsTab,
     InventoryStocksTab,
+    StockReturnsTab,
     PurchaseOrderDetails,
     InventoryStockDetails,
     QuickStatsSidebar,
@@ -205,6 +220,7 @@ export default {
       listPurchaseRequests: [],
       listPRDisapproved: [],
       listInventoryStocks: [],
+      listStockReturns: [],
       meta: null,
       links: null,
       isToastVisible: false,
@@ -236,6 +252,12 @@ export default {
           icon: 'ri-survey-line',
           description: 'List of products'
         },
+        {
+          id: 'stockReturns',
+          label: 'Stock Returns',
+          icon: 'ri-text-wrap',
+          description: 'List of stock returns'
+        },
       ]
     };
   },
@@ -250,17 +272,21 @@ export default {
       } else if (newVal === 'inventoryStocks') {
         this.currentView = 'list';
         this.fetchInventoryStocks();
+      } else if (newVal === 'stockReturns') {
+        this.currentView = 'list';
+        this.fetchStockReturns();
       }
     }
   },
   created() {
     this.fetchPurchaseOrders();
     this.fetchInventoryStocks();
+    this.fetchStockReturns();
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
     const stockIdParam = params.get('stock_id');
 
-    if (tabParam && ['products', 'purchaseOrders', 'inventoryStocks'].includes(tabParam)) {
+    if (tabParam && ['products', 'purchaseOrders', 'inventoryStocks', 'stockReturns'].includes(tabParam)) {
       this.activeTab = tabParam;
       this.changeTab(this.activeTab);
 
@@ -297,6 +323,8 @@ export default {
         this.fetchPurchaseOrders();
       } else if (tab === 'inventoryStocks') {
         this.fetchInventoryStocks();
+      } else if (tab === 'stockReturns') {
+        this.fetchStockReturns();
       }
     },
 
@@ -362,6 +390,27 @@ export default {
           .then((response) => {
             if (response) {
               this.listInventoryStocks = response.data.data;
+              this.meta = response.data.meta;
+              this.links = response.data.links;
+            }
+          })
+          .catch((err) => console.error(err));
+      }
+    },
+
+    fetchStockReturns(page_url) {
+      if (this.activeTab === 'stockReturns') {
+        page_url = page_url || '/stock-returns';
+        axios
+          .get(page_url, {
+            params: {
+              keyword: this.filter.keyword,
+              count: 10,
+            },
+          })
+          .then((response) => {
+            if (response) {
+              this.listStockReturns = response.data.data;
               this.meta = response.data.meta;
               this.links = response.data.links;
             }
@@ -478,6 +527,8 @@ export default {
         this.fetchPurchaseOrders();
       } else if (this.activeTab === 'inventoryStocks') {
         this.fetchInventoryStocks();
+      } else if (this.activeTab === 'stockReturns') {
+        this.fetchStockReturns();
       }
     }, 500),
 
