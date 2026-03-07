@@ -190,23 +190,30 @@
                         </div>
                         <div class="emp-incentives-stats">
                             <div class="emp-incentives-stat">
-                                <div class="emp-stat-label">Total Amount Earned This Month</div>
-                                <div class="emp-stat-value">₱1,250</div>
-                                <div class="emp-stat-change emp-positive">+5%</div>
+                                <div class="emp-stat-label">Total Points Earned</div>
+                                <div class="emp-stat-value">{{ formatIncentiveNumber((incentiveSummary.total_rice_sold_kg * incentiveSummary.total_points_earned)/25, 2)  }}</div>
+                                <div class="emp-stat-change" :class="getChangeClass(incentiveSummary.amount_change_percent)">
+                                    {{ formatChangePercent(incentiveSummary.amount_change_percent) }}
+                                </div>
                             </div>
                             <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Total Rice Sold</div>
-                                <div class="emp-stat-value">1250 kg</div>
-                                <div class="emp-stat-change emp-positive">+15%</div>
+                                <div class="emp-stat-value">{{ formatIncentiveNumber(incentiveSummary.total_rice_sold_kg, 2) }} kg</div>
+                                <div class="emp-stat-change" :class="getChangeClass(incentiveSummary.rice_change_percent)">
+                                    {{ formatChangePercent(incentiveSummary.rice_change_percent) }}
+                                </div>
                             </div>
                             <div class="emp-incentives-stat">
-                                <div class="emp-stat-label">Total Points Earned</div>
-                                <div class="emp-stat-value">50</div>
-                                <div class="emp-stat-change emp-positive">+10%</div>
+                                <div class="emp-stat-label">Total Rice Quantity</div>
+                                <div class="emp-stat-value">{{ formatIncentiveNumber(incentiveSummary.total_points_earned) }}</div>
+                                <div class="emp-stat-change" :class="getChangeClass(incentiveSummary.points_change_percent)">
+                                    {{ formatChangePercent(incentiveSummary.points_change_percent) }}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
                 <!-- Employee Loans -->
                 <div class="emp-stats-section mt-2 ">
                     <div class="emp-section-header">
@@ -406,6 +413,14 @@ export default {
                 { value: 11, label: 'November' },
                 { value: 12, label: 'December' }
             ],
+            incentiveSummary: {
+                total_amount: 0,
+                total_rice_sold_kg: 0,
+                total_points_earned: 0,
+                amount_change_percent: 0,
+                rice_change_percent: 0,
+                points_change_percent: 0
+            },
             defaultAvatar: '/images/default-avatar.png'
         };
     },
@@ -494,12 +509,20 @@ export default {
             immediate: true,
             handler() {
                 this.fetchEmployeeLoans();
+                this.fetchIncentiveSummary();
             }
+        },
+        selectedYear() {
+            this.fetchIncentiveSummary();
+        },
+        selectedMonth() {
+            this.fetchIncentiveSummary();
         }
     },
     methods: {
         fetch() {
             this.fetchEmployeeLoans();
+            this.fetchIncentiveSummary();
             this.$emit('update');
         },
         fetchEmployeeLoans() {
@@ -523,12 +546,81 @@ export default {
                 this.loans = [];
             });
         },
+        fetchIncentiveSummary() {
+            if (!this.employee?.id || !this.selectedYear || !this.selectedMonth) {
+                this.incentiveSummary = {
+                    total_amount: 0,
+                    total_rice_sold_kg: 0,
+                    total_points_earned: 0,
+                    amount_change_percent: 0,
+                    rice_change_percent: 0,
+                    points_change_percent: 0
+                };
+                return;
+            }
+
+            axios.get(`/employees/${this.employee.id}/incentives-summary`, {
+                params: {
+                    year: this.selectedYear,
+                    month: this.selectedMonth
+                }
+            })
+            .then((response) => {
+                const totals = response?.data?.totals || {};
+                const changes = response?.data?.changes || {};
+
+                this.incentiveSummary = {
+                    total_amount: this.toNumber(totals.total_amount),
+                    total_rice_sold_kg: this.toNumber(totals.total_rice_sold_kg),
+                    total_points_earned: this.toNumber(totals.total_points_earned),
+                    amount_change_percent: this.toNumber(changes.amount_change_percent),
+                    rice_change_percent: this.toNumber(changes.rice_change_percent),
+                    points_change_percent: this.toNumber(changes.points_change_percent)
+                };
+            })
+            .catch((err) => {
+                console.log(err);
+                this.incentiveSummary = {
+                    total_amount: 0,
+                    total_rice_sold_kg: 0,
+                    total_points_earned: 0,
+                    amount_change_percent: 0,
+                    rice_change_percent: 0,
+                    points_change_percent: 0
+                };
+            });
+        },
         toNumber(value, fallback = 0) {
             const parsed = Number(value);
             if (Number.isFinite(parsed)) {
                 return parsed;
             }
             return fallback;
+        },
+        formatIncentiveAmount(value) {
+            return new Intl.NumberFormat('en-PH', {
+                style: 'currency',
+                currency: 'PHP',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(this.toNumber(value));
+        },
+        formatIncentiveNumber(value, maxFractionDigits = 0) {
+            return this.toNumber(value).toLocaleString('en-US', {
+                maximumFractionDigits: maxFractionDigits,
+                minimumFractionDigits: 0
+            });
+        },
+        formatChangePercent(value) {
+            const numeric = this.toNumber(value);
+            const sign = numeric > 0 ? '+' : '';
+            return `${sign}${this.formatIncentiveNumber(numeric, 2)}%`;
+        },
+        getChangeClass(value) {
+            const numeric = this.toNumber(value);
+            if (numeric > 0) return 'emp-positive';
+            if (numeric < 0) return 'emp-negative';
+            return '';
         },
         toDateSafe(value) {
             const date = new Date(value);
@@ -687,6 +779,15 @@ export default {
     padding: 1rem 1.25rem 1.25rem;
     overflow: auto;
 }
+
+.emp-stat-change.emp-negative {
+    background: rgba(220, 53, 69, 0.15);
+    color: #842029;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.emp-stat-change.emp-negative::before {
+    content: '\2193';
+    font-weight: 800;
+}
 </style>
-
-

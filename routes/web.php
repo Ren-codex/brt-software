@@ -20,6 +20,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
     Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
+    Route::get('/employees/{id}/incentives-summary', [App\Http\Controllers\Modules\EmployeeController::class, 'incentivesSummary']);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
     Route::get('/customers/{id}/details', [App\Http\Controllers\Modules\CustomerController::class, 'details']);
     Route::get('/customers/{id}/order-summary', [App\Http\Controllers\Modules\CustomerController::class, 'orderSummary']);
