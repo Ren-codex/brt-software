@@ -95,15 +95,15 @@
                         <div class="emp-incentives-stats">
                             <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Total Orders</div>
-                                <div class="emp-stat-value">{{ purchaseOrders.length }}</div>
+                                <div class="emp-stat-value">{{ purchaseOrderSummary.total_orders }}</div>
                             </div>
                             <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Pending</div>
-                                <div class="emp-stat-value">{{ pendingCount }}</div>
+                                <div class="emp-stat-value">{{ purchaseOrderSummary.pending_orders }}</div>
                             </div>
                             <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Completed</div>
-                                <div class="emp-stat-value">{{ completedCount }}</div>
+                                <div class="emp-stat-value">{{ purchaseOrderSummary.completed_orders }}</div>
                             </div>
                         </div>
                     </div>
@@ -305,7 +305,11 @@ export default {
     name: 'SupplierDetails',
     data() {
         return {
-            purchaseOrders: [],
+            purchaseOrderSummary: {
+                total_orders: 0,
+                pending_orders: 0,
+                completed_orders: 0,
+            },
             stockReturnSummary: {
                 total_returned: 0,
                 total_replaced: 0,
@@ -321,19 +325,12 @@ export default {
     watch: {
         'supplier.id': {
             handler() {
+                this.fetchPurchaseOrderSummary();
                 this.fetchStockReturnSummary();
                 this.fetchStockReturns();
             },
             immediate: true,
         },
-    },
-    computed: {
-        pendingCount() {
-            return this.purchaseOrders.filter(po => po.status === 'pending').length;
-        },
-        completedCount() {
-            return this.purchaseOrders.filter(po => po.status === 'completed').length;
-        }
     },
     methods: {
         formatDate(dateString) {
@@ -354,6 +351,24 @@ export default {
         },
         openEdit(data) {
             this.$refs.create.edit(data);
+        },
+        fetchPurchaseOrderSummary() {
+            if (!this.supplier?.id) return;
+
+            axios.get(`/suppliers/${this.supplier.id}/purchase-order-summary`)
+                .then((response) => {
+                    this.purchaseOrderSummary = {
+                        ...this.purchaseOrderSummary,
+                        ...(response.data?.data || {}),
+                    };
+                })
+                .catch(() => {
+                    this.purchaseOrderSummary = {
+                        total_orders: 0,
+                        pending_orders: 0,
+                        completed_orders: 0,
+                    };
+                });
         },
         fetchStockReturnSummary() {
             if (!this.supplier?.id) return;

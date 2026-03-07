@@ -24,6 +24,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
      Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
     Route::patch('/suppliers/{id}/toggle-active', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleActive']);
     Route::patch('/suppliers/{id}/toggle-blacklist', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleBlacklist']);
+    Route::get('/suppliers/{id}/purchase-order-summary', [App\Http\Controllers\Libraries\SupplierController::class, 'purchaseOrderSummary']);
     Route::get('/suppliers/{id}/stock-return-summary', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturnSummary']);
     Route::get('/suppliers/{id}/stock-returns', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturns']);
     Route::resource('/receipts', App\Http\Controllers\Modules\ReceiptController::class);

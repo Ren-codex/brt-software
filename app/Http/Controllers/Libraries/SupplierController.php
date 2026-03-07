@@ -129,6 +129,29 @@ class SupplierController extends Controller
         return response()->json($stockReturns);
     }
 
+    public function purchaseOrderSummary($id)
+    {
+        ListSupplier::findOrFail($id);
+
+        $summary = DB::table('purchase_orders as po')
+            ->leftJoin('list_statuses as ls', 'ls.id', '=', 'po.status_id')
+            ->where('po.supplier_id', $id)
+            ->selectRaw('
+                COUNT(po.id) as total_orders,
+                SUM(CASE WHEN LOWER(COALESCE(ls.slug, ls.name, \'\')) = \'pending\' THEN 1 ELSE 0 END) as pending_orders,
+                SUM(CASE WHEN LOWER(COALESCE(ls.slug, ls.name, \'\')) = \'completed\' THEN 1 ELSE 0 END) as completed_orders
+            ')
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'total_orders' => (int) ($summary->total_orders ?? 0),
+                'pending_orders' => (int) ($summary->pending_orders ?? 0),
+                'completed_orders' => (int) ($summary->completed_orders ?? 0),
+            ],
+        ]);
+    }
+
   
     public function update(SupplierRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
