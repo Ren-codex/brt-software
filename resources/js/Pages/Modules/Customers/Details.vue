@@ -129,7 +129,7 @@
                 <div class="emp-incentives-section">
                     <div class="emp-incentives-card">
                         <div class="emp-incentives-header">
-                            <h3>Rice Orders Summary</h3>
+                            <h3>Purchase Summary</h3>
                             <div class="d-flex gap-2 justify-content-end">
                                 <select v-model="selectedMonth" class="emp-create-btn emp-month-filter">
                                     <option v-for="month in months" :key="month.value" :value="month.value">
@@ -145,25 +145,115 @@
                         <div class="emp-incentives-stats">
                             <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Total Orders</div>
-                                <div class="emp-stat-value">{{ customer.total_orders || 0 }}</div>
-                                <div class="emp-stat-change" :class="getTrendClass(customer.order_trend)">
-                                    <i :class="getTrendIcon(customer.order_trend)"></i>
-                                    {{ customer.order_trend || '0%' }}
+                                <div class="emp-stat-value">{{ orderSummary.total_orders || 0 }}</div>
+                                <div class="emp-stat-change" :class="getTrendClass(orderSummary.order_trend)">
+                                    <i :class="getTrendIcon(orderSummary.order_trend)"></i>
+                                    {{ orderSummary.order_trend || '0%' }}
                                 </div>
                             </div>
                             <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Total Rice Ordered</div>
-                                <div class="emp-stat-value">{{ customer.total_rice_ordered || 0 }} kg</div>
-                                <div class="emp-stat-change emp-positive">0%</div>
+                                <div class="emp-stat-value">{{ formatQuantity(orderSummary.total_rice_ordered) }} kg</div>
+                                <div class="emp-stat-change" :class="getTrendClass(orderSummary.rice_trend)">
+                                    <i :class="getTrendIcon(orderSummary.rice_trend)"></i>
+                                    {{ orderSummary.rice_trend || '0%' }}
+                                </div>
                             </div>
                             <div class="emp-incentives-stat">
                                 <div class="emp-stat-label">Total Amount</div>
-                                <div class="emp-stat-value">₱{{ customer.total_amount || 0 }}</div>
-                                <div class="emp-stat-change emp-positive">0%</div>
+                                <div class="emp-stat-value">₱{{ formatCurrency(orderSummary.total_amount) }}</div>
+                                <div class="emp-stat-change" :class="getTrendClass(orderSummary.amount_trend)">
+                                    <i :class="getTrendIcon(orderSummary.amount_trend)"></i>
+                                    {{ orderSummary.amount_trend || '0%' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="emp-info-card mt-2 purchase-history-section">
+                            <div class="records-section">
+                                <div class="section-header">
+                                    <h4>Purchase Records</h4>
+                                    <div class="d-flex gap-2">
+                                        <span class="records-count" v-if="purchaseHistory.length">
+                                            {{ purchaseHistory.length }} records
+                                        </span>
+                                    </div>
+                                </div>
+        
+                                <div class="table-wrapper">
+                                    <div class="table-responsive">
+                                        <table class="modern-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>SO #</th>
+                                                    <th>Date</th>
+                                                    <th>Status</th>
+                                                    <th>Payment</th>
+                                                    <th class="text-end">Items</th>
+                                                    <th class="text-end">KG</th>
+                                                    <th class="text-end">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="order in purchaseHistory" :key="order.id" class="table-row">
+                                                    <td>{{ order.so_number || '-' }}</td>
+                                                    <td>
+                                                        <span class="date-cell">
+                                                            <i class="ri-calendar-line"></i>
+                                                            {{ formatDate(order.order_date) }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="status-badge" :class="getStatusClass(order.status)">
+                                                            {{ order.status || '-' }}
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ order.payment_mode || '-' }}</td>
+                                                    <td class="text-end">
+                                                        <span class="amount">{{ order.total_items || 0 }}</span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="amount">{{ formatQuantity(order.total_kg) }}</span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="amount returned">&#8369;{{ formatCurrency(order.total_amount) }}</span>
+                                                    </td>
+                                                </tr>
+        
+                                                <tr v-if="!purchaseHistoryLoading && purchaseHistory.length === 0">
+                                                    <td colspan="7">
+                                                        <div class="empty-state">
+                                                            <i class="ri-inbox-line"></i>
+                                                            <p>No purchase history found</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+        
+                                                <tr v-if="purchaseHistoryLoading">
+                                                    <td colspan="7">
+                                                        <div class="loading-state">
+                                                            <i class="ri-loader-4-line ri-spin"></i>
+                                                            <p>Loading purchase history...</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="pagination-wrapper" v-if="purchaseHistoryMeta && purchaseHistoryLinks && purchaseHistory.length">
+                                    <Pagination
+                                        :lists="purchaseHistory.length"
+                                        :links="purchaseHistoryLinks"
+                                        :pagination="purchaseHistoryMeta"
+                                        @fetch="fetchPurchaseHistory"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 <!-- Payment Due Dates -->
                 <div class="emp-stats-section mt-2">
@@ -322,7 +412,10 @@
 </template>
 
 <script>
+import Pagination from '@/Shared/Components/Pagination.vue';
+
 export default {
+    components: { Pagination },
     props: ['customer', 'backToList', 'openEdit', 'selectedCustomer', 'selectedRow'],
     name: 'CustomerDetails',
     data() {
@@ -332,27 +425,150 @@ export default {
                 month: 'short',
                 day: 'numeric'
             }),
-            selectedYear: new Date().getFullYear(),
-            selectedMonth: new Date().getMonth() + 1,
-            years: Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i),
-            months: [
-                { value: 1, label: 'January' },
-                { value: 2, label: 'February' },
-                { value: 3, label: 'March' },
-                { value: 4, label: 'April' },
-                { value: 5, label: 'May' },
-                { value: 6, label: 'June' },
-                { value: 7, label: 'July' },
-                { value: 8, label: 'August' },
-                { value: 9, label: 'September' },
-                { value: 10, label: 'October' },
-                { value: 11, label: 'November' },
-                { value: 12, label: 'December' }
-            ],
+            orderSummary: {
+                total_orders: 0,
+                total_rice_ordered: 0,
+                total_amount: 0,
+                order_trend: '0%',
+                rice_trend: '0%',
+                amount_trend: '0%',
+            },
+            purchaseHistory: [],
+            purchaseHistoryLoading: false,
+            purchaseHistoryMeta: null,
+            purchaseHistoryLinks: null,
+            latestPurchaseOrder: null,
+            selectedYear: null,
+            selectedMonth: null,
             loanCollapsed: true
         }
     },
+    watch: {
+        customer: {
+            immediate: true,
+            handler() {
+                this.initializePeriodFilter();
+                this.fetchOrderSummary();
+                this.fetchPurchaseHistory();
+            }
+        },
+        years: {
+            immediate: true,
+            handler(list) {
+                if (!Array.isArray(list) || list.length === 0) return;
+                if (!list.includes(this.selectedYear)) {
+                    this.selectedYear = list[0];
+                }
+            }
+        },
+        months: {
+            immediate: true,
+            handler(list) {
+                if (!Array.isArray(list) || list.length === 0) return;
+                const monthValues = list.map(month => month.value);
+                if (!monthValues.includes(this.selectedMonth)) {
+                    this.selectedMonth = list[0].value;
+                }
+            }
+        },
+        selectedYear() {
+            this.fetchOrderSummary();
+            this.fetchPurchaseHistory();
+        },
+        selectedMonth() {
+            this.fetchOrderSummary();
+            this.fetchPurchaseHistory();
+        }
+    },
     methods: {
+        initializePeriodFilter() {
+            const now = new Date();
+            if (!this.selectedYear) {
+                this.selectedYear = now.getFullYear();
+            }
+            if (!this.selectedMonth) {
+                this.selectedMonth = now.getMonth() + 1;
+            }
+        },
+        buildDate(value) {
+            if (!value) return null;
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        },
+        fetchOrderSummary() {
+            if (!this.customer?.id || !this.selectedYear || !this.selectedMonth) return;
+
+            axios.get(`/customers/${this.customer.id}/order-summary`, {
+                params: {
+                    year: this.selectedYear,
+                    month: this.selectedMonth,
+                },
+            })
+                .then((response) => {
+                    this.orderSummary = {
+                        ...this.orderSummary,
+                        ...(response.data?.data || {}),
+                    };
+                })
+                .catch(() => {
+                    this.orderSummary = {
+                        total_orders: 0,
+                        total_rice_ordered: 0,
+                        total_amount: 0,
+                        order_trend: '0%',
+                        rice_trend: '0%',
+                        amount_trend: '0%',
+                    };
+                });
+        },
+        fetchPurchaseHistory(page_url) {
+            if (!this.customer?.id) {
+                this.purchaseHistory = [];
+                this.purchaseHistoryMeta = null;
+                this.purchaseHistoryLinks = null;
+                this.latestPurchaseOrder = null;
+                return;
+            }
+
+            page_url = page_url || `/customers/${this.customer.id}/purchase-history`;
+            this.purchaseHistoryLoading = true;
+            axios.get(page_url, {
+                params: {
+                    count: 10,
+                    year: this.selectedYear,
+                    month: this.selectedMonth,
+                },
+            })
+                .then((response) => {
+                    this.purchaseHistory = Array.isArray(response.data?.data) ? response.data.data : [];
+                    this.purchaseHistoryMeta = response.data?.meta || null;
+                    this.purchaseHistoryLinks = response.data?.links || null;
+                    if ((response.data?.meta?.current_page || 1) === 1) {
+                        this.latestPurchaseOrder = this.purchaseHistory[0]?.so_number || null;
+                    }
+                })
+                .catch(() => {
+                    this.purchaseHistory = [];
+                    this.purchaseHistoryMeta = null;
+                    this.purchaseHistoryLinks = null;
+                    this.latestPurchaseOrder = null;
+                })
+                .finally(() => {
+                    this.purchaseHistoryLoading = false;
+                });
+        },
+        formatQuantity(value) {
+            return Number(value || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        },
+        formatCurrency(value) {
+            return Number(value || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        },
         formatDate(dateString) {
             if (!dateString) return 'N/A';
             const date = new Date(dateString);
@@ -515,6 +731,13 @@ export default {
             };
             return statusClasses[status] || 'emp-pending';
         },
+        getStatusClass(status) {
+            if (!status) return '';
+            const normalized = String(status).toLowerCase().replace(/\s+/g, '-');
+            if (normalized === 'disapproved') return 'danger';
+            if (normalized === 'approved') return 'warning';
+            return normalized;
+        },
         
         showOrderHistory() {
             // Emit event or show modal for order history
@@ -538,6 +761,45 @@ export default {
         }
     },
     computed: {
+        timelineDates() {
+            const dates = [];
+            const baseFields = [this.customer?.created_at, this.customer?.last_order_date];
+
+            baseFields.forEach(value => {
+                const date = this.buildDate(value);
+                if (date) dates.push(date);
+            });
+
+            (this.customer?.due_dates || []).forEach(item => {
+                const date = this.buildDate(item?.due_date);
+                if (date) dates.push(date);
+            });
+
+            (this.customer?.recent_activities || []).forEach(item => {
+                const date = this.buildDate(item?.created_at);
+                if (date) dates.push(date);
+            });
+
+            return dates;
+        },
+        years() {
+            const currentYear = new Date().getFullYear();
+            const uniqueYears = [...new Set([
+                ...this.timelineDates.map(date => date.getFullYear()),
+                currentYear
+            ])]
+                .sort((a, b) => b - a);
+
+            return uniqueYears;
+        },
+        months() {
+            const monthValues = Array.from({ length: 12 }, (_, index) => index + 1);
+
+            return monthValues.map(value => ({
+                value,
+                label: new Date(2000, value - 1, 1).toLocaleString('en-US', { month: 'long' })
+            }));
+        },
         sampleCustomerData() {
             return {
                 id: this.customer.id || 'N/A',
@@ -586,4 +848,170 @@ export default {
     }
 }
 </script>
+<style scoped>
+.purchase-history-section .records-section {
+  padding: 1.5rem 2rem;
+}
 
+.purchase-history-section .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.purchase-history-section .section-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.purchase-history-section .records-count {
+  background: #c4dad2;
+  color: #2c6b5c;
+  padding: 0.35rem 1rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.purchase-history-section .table-wrapper {
+  background: white;
+  border-radius: 18px;
+  border: 2px solid #eef2f6;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.purchase-history-section .pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.purchase-history-section .modern-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.purchase-history-section .modern-table thead tr {
+  background: #f8faf9;
+  border-bottom: 2px solid #c4dad2;
+}
+
+.purchase-history-section .modern-table thead th {
+  padding: 1rem 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3d8d7a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.purchase-history-section .modern-table tbody td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eef2f6;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.purchase-history-section .modern-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.purchase-history-section .table-row {
+  transition: background 0.2s ease;
+}
+
+.purchase-history-section .table-row:hover {
+  background: #f8faf9;
+}
+
+.purchase-history-section .status-badge {
+  display: inline-block;
+  padding: 0.35rem 1rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.purchase-history-section .status-badge.completed,
+.purchase-history-section .status-badge.approved {
+  background: #c4dad2;
+  color: #2c6b5c;
+}
+
+.purchase-history-section .status-badge.pending,
+.purchase-history-section .status-badge.warning {
+  background: #fff3e0;
+  color: #f39c12;
+}
+
+.purchase-history-section .status-badge.rejected,
+.purchase-history-section .status-badge.cancelled,
+.purchase-history-section .status-badge.danger {
+  background: #fee9e7;
+  color: #e74c3c;
+}
+
+.purchase-history-section .amount {
+  font-weight: 600;
+}
+
+.purchase-history-section .amount.returned {
+  color: #3d8d7a;
+}
+
+.purchase-history-section .date-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.purchase-history-section .date-cell i {
+  color: #3d8d7a;
+  font-size: 1rem;
+}
+
+.purchase-history-section .empty-state,
+.purchase-history-section .loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: #adb5bd;
+}
+
+.purchase-history-section .empty-state i,
+.purchase-history-section .loading-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.purchase-history-section .empty-state i {
+  color: #c4dad2;
+}
+
+.purchase-history-section .loading-state i {
+  color: #3d8d7a;
+}
+
+.purchase-history-section .empty-state p,
+.purchase-history-section .loading-state p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .purchase-history-section .records-section {
+    padding: 1.25rem;
+  }
+
+  .purchase-history-section .modern-table thead th,
+  .purchase-history-section .modern-table tbody td {
+    padding: 0.75rem 1rem;
+  }
+}
+</style>
