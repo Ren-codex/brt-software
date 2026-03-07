@@ -164,9 +164,10 @@ import ARInvoices from "@/Pages/Modules/Sales/Components/ARInvoices/Index.vue";
 import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
 import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
 import SalesReports from "@/Pages/Modules/Sales/Components/SalesReports/Index.vue";
+import QuickStatsSidebar from "@/Pages/Modules/Sales/Components/QuickStatsSidebar.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports },
+  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar },
   props: ['dropdowns'],
   data() {
     return {

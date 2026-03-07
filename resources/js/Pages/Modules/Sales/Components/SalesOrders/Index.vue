@@ -57,57 +57,79 @@
 
                     </div>
 
-                    <div class="mb-2">
-                        <b-button @click="showStock = !showStock" variant="outline-primary" size="sm" class="mb-3">
-                            <i class="ri-eye-line me-1"></i> Stock Availability
-                        </b-button>
+                    <div class="stock-section mb-3">
+                        <button type="button" class="stock-toggle-btn mb-3" @click="showStock = !showStock">
+                            <span class="stock-toggle-label">
+                                <i class="ri-line-chart-line"></i>
+                                Stock Availability
+                            </span>
+                            <i class="ri-arrow-down-s-line stock-toggle-arrow" :class="{ 'is-open': showStock }"></i>
+                        </button>
                         <b-collapse v-model="showStock">
-                            <div class="card border-primary shadow-sm" style="border-radius: 10px;">
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">Total KG Left</p>
-                                                <h5 class="text-primary mb-0">{{ stock.total_kg_left || 0 }} kg</h5>
-                                            </div>
+                            <div class="stock-dashboard-card">
+                                <div class="stock-dashboard-header">
+                                    <div class="stock-header-title">
+                                        <div class="stock-header-icon">
+                                            <i class="ri-stack-line"></i>
                                         </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">5kg Sacks Left</p>
-                                                <h5 class="text-success mb-0">{{ stock.five_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">10kg Sacks Left</p>
-                                                <h5 class="text-info mb-0">{{ stock.ten_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">25kg Sacks Left</p>
-                                                <h5 class="text-warning mb-0">{{ stock.twenty_five_kg_sacks_left || 0 }}
-                                                </h5>
-                                            </div>
+                                        <div>
+                                            <h6 class="mb-1">Current Inventory Snapshot</h6>
+                                            <p class="mb-0">Live stock summary for order planning</p>
                                         </div>
                                     </div>
-                                    <div v-if="stock.products && stock.products.length > 0" class="mt-3">
-                                        <h6 class="text-muted">Product Details by Brand:</h6>
+                                    <span class="stock-header-pill">Dashboard View</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6 col-xl-3">
+                                        <div class="stock-metric-card">
+                                            <div class="stock-metric-icon total"><i class="ri-scales-3-line"></i></div>
+                                            <p class="stock-metric-label">Total KG Left</p>
+                                            <h5 class="stock-metric-value">{{ stock.total_kg_left || 0 }} kg</h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 col-xl-3">
+                                        <div class="stock-metric-card">
+                                            <div class="stock-metric-icon five"><i class="ri-archive-line"></i></div>
+                                            <p class="stock-metric-label">5kg Sacks Left</p>
+                                            <h5 class="stock-metric-value">{{ stock.five_kg_sacks_left || 0 }}</h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 col-xl-3">
+                                        <div class="stock-metric-card">
+                                            <div class="stock-metric-icon ten"><i class="ri-box-3-line"></i></div>
+                                            <p class="stock-metric-label">10kg Sacks Left</p>
+                                            <h5 class="stock-metric-value">{{ stock.ten_kg_sacks_left || 0 }}</h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 col-xl-3">
+                                        <div class="stock-metric-card">
+                                            <div class="stock-metric-icon twenty-five"><i class="ri-archive-stack-line"></i></div>
+                                            <p class="stock-metric-label">25kg Sacks Left</p>
+                                            <h5 class="stock-metric-value">{{ stock.twenty_five_kg_sacks_left || 0 }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div v-if="stock.products && stock.products.length > 0" class="stock-products mt-4">
+                                    <h6 class="stock-products-title">Product Details by Brand</h6>
+                                    <div class="row g-3">
                                         <div v-for="(brandGroup, brandIndex) in groupedProducts" :key="brandIndex"
-                                            class="mb-4">
-                                            <h6 class="text-primary mb-2">
-                                                <i class="ri-building-line me-2"></i>{{ brandGroup.brand || 'No Brand'
-                                                }}
-                                            </h6>
-                                            <div class="row">
-                                                <div v-for="product in brandGroup.products" :key="product.product_name"
-                                                    class="col-md-6 mb-2">
-                                                    <div
-                                                        class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                                        <span class="small">{{ product.product_name }}</span>
-                                                        <span class="badge bg-secondary">{{ product.total_quantity }} x
-                                                            {{ product.pack_size }} {{ product.unit }} ({{
-                                                                product.total_kg }} kg)</span>
+                                            class="col-lg-6">
+                                            <div class="stock-brand-card">
+                                                <div class="stock-brand-header">
+                                                    <h6>
+                                                        <i class="ri-building-line me-2"></i>{{ brandGroup.brand || 'No Brand' }}
+                                                    </h6>
+                                                    <span class="stock-brand-count">{{ brandGroup.products.length }} items</span>
+                                                </div>
+                                                <div class="stock-product-list">
+                                                    <div v-for="product in brandGroup.products" :key="product.product_name"
+                                                        class="stock-product-item">
+                                                        <span class="stock-product-name">{{ product.product_name }}</span>
+                                                        <span class="stock-product-meta">
+                                                            {{ product.total_quantity }} x {{ product.pack_size }} {{ product.unit }} ({{ product.total_kg }} kg)
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -515,6 +537,230 @@ export default {
 }
 </script>
 <style scoped>
+    .stock-toggle-btn {
+        width: 100%;
+        border: 1px solid #d5e4df;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f9fcfb 0%, #eef6f3 100%);
+        padding: 0.7rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #267A4C;
+        font-weight: 600;
+        transition: all 0.25s ease;
+    }
+
+    .stock-toggle-btn:hover {
+        border-color: #3D8D7A;
+        box-shadow: 0 6px 16px rgba(61, 141, 122, 0.12);
+    }
+
+    .stock-toggle-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stock-toggle-label i {
+        font-size: 1rem;
+    }
+
+    .stock-toggle-arrow {
+        font-size: 1.2rem;
+        transition: transform 0.25s ease;
+    }
+
+    .stock-toggle-arrow.is-open {
+        transform: rotate(180deg);
+    }
+
+    .stock-dashboard-card {
+        border: 1px solid #dce7e2;
+        border-radius: 14px;
+        background: #ffffff;
+        padding: 1rem;
+        box-shadow: 0 8px 24px rgba(61, 141, 122, 0.08);
+    }
+
+    .stock-dashboard-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #edf2f0;
+        padding-bottom: 1rem;
+    }
+
+    .stock-header-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .stock-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(61, 141, 122, 0.14);
+        color: #267A4C;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .stock-header-title h6 {
+        color: #267A4C;
+        font-weight: 700;
+    }
+
+    .stock-header-title p {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+
+    .stock-header-pill {
+        background: rgba(61, 141, 122, 0.12);
+        color: #267A4C;
+        border-radius: 20px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .stock-metric-card {
+        background: #f8fbfa;
+        border: 1px solid #e5efeb;
+        border-radius: 12px;
+        padding: 0.85rem;
+        height: 100%;
+        transition: all 0.25s ease;
+    }
+
+    .stock-metric-card:hover {
+        transform: translateY(-2px);
+        border-color: #cde0d9;
+        box-shadow: 0 8px 18px rgba(44, 122, 93, 0.12);
+    }
+
+    .stock-metric-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.55rem;
+    }
+
+    .stock-metric-icon.total {
+        background: rgba(38, 122, 76, 0.16);
+        color: #267A4C;
+    }
+
+    .stock-metric-icon.five {
+        background: rgba(25, 135, 84, 0.14);
+        color: #198754;
+    }
+
+    .stock-metric-icon.ten {
+        background: rgba(13, 110, 253, 0.14);
+        color: #0d6efd;
+    }
+
+    .stock-metric-icon.twenty-five {
+        background: rgba(255, 193, 7, 0.22);
+        color: #9a6b00;
+    }
+
+    .stock-metric-label {
+        color: #6c757d;
+        font-size: 0.78rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .stock-metric-value {
+        color: #2b3459;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+
+    .stock-products-title {
+        font-size: 0.9rem;
+        color: #267A4C;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .stock-brand-card {
+        border: 1px solid #e5efeb;
+        border-radius: 12px;
+        background: #fbfdfc;
+        padding: 0.85rem;
+        height: 100%;
+    }
+
+    .stock-brand-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .stock-brand-header h6 {
+        color: #267A4C;
+        font-weight: 600;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .stock-brand-count {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 12px;
+        background: #eaf4f0;
+        color: #267A4C;
+        font-weight: 600;
+    }
+
+    .stock-product-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+    }
+
+    .stock-product-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border: 1px solid #edf2f0;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 0.5rem 0.65rem;
+    }
+
+    .stock-product-name {
+        color: #2b3459;
+        font-size: 0.82rem;
+        font-weight: 500;
+    }
+
+    .stock-product-meta {
+        color: #5d6472;
+        background: #f4f7f6;
+        border-radius: 10px;
+        padding: 0.25rem 0.45rem;
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
     .status-badge {
         display: inline-flex;
         align-items: center;
@@ -680,6 +926,20 @@ export default {
 
     /* Responsive adjustments */
     @media (max-width: 768px) {
+        .stock-dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stock-product-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stock-product-meta {
+            white-space: normal;
+        }
+
         .details-content {
             padding: 1rem;
         }

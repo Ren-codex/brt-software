@@ -101,15 +101,14 @@ class SalesOrder extends Model
         $date = $date ?: now();
         $year = $date->format('Y');
         $month = $date->format('m');
+        $period = $year . $month;
 
-        $lastSo = self::where('so_number', 'LIKE', $prefix . '-%')
-                      ->whereYear('created_at', $year)
-                      ->whereMonth('created_at', $month)
+        $lastSo = self::where('so_number', 'LIKE', $prefix . '-' . $period . '-%')
                       ->orderBy('id', 'desc')
                       ->first();
 
         $sequence = $lastSo ? intval(substr($lastSo->so_number, -4)) + 1 : 1;
 
-        return $prefix . '-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix . '-' . $period . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }

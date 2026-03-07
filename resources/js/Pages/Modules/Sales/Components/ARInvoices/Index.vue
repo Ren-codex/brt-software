@@ -22,7 +22,7 @@
                             <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
-                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                    <input type="text" v-model="filter.keyword" @input="checkSearchStr"
                                         placeholder="Search purchase request..." class="search-input">
                                 </div>
                             </div>
@@ -77,7 +77,7 @@
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
-                                            <i v-if="expandedRows.includes(index)"
+                                            <i v-if="expandedRow === index"
                                                 class="ri-arrow-down-s-line text-primary"></i>
                                             <i v-else class="ri-arrow-right-s-line text-muted"></i>
                                             {{ index + 1 }}
@@ -112,7 +112,7 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRows.includes(index)" class="bg-light">
+                                    <tr v-if="expandedRow === index" class="bg-light">
                                         <td colspan="12" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">

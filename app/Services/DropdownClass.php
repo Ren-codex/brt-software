@@ -111,40 +111,52 @@ class DropdownClass
     }
 
     public function products(){
-        $data = Product::with(['brand', 'unit', 'receivedItems.inventoryStocks', 'receivedItems.receivedStock'])->get()->map(function ($item) {
-            $available_quantity = $item->receivedItems->sum(function ($receivedItem) {
-                return $receivedItem->inventoryStocks->sum('quantity');
-            });
+        $data = Product::with(['brand', 'unit'])->get()->map(function ($item) {
+            $batchStocks = InventoryStocks::query()
+                ->selectRaw('batch_code, SUM(quantity) as quantity')
+                ->whereHas('receivedItem', function ($query) use ($item) {
+                    $query->where('product_id', $item->id);
+                })
+                ->groupBy('batch_code')
+                ->havingRaw('SUM(quantity) > 0')
+                ->orderBy('batch_code')
+                ->get();
+
+            $available_quantity = (int) $batchStocks->sum('quantity');
+            $batch_stocks = $batchStocks->map(function ($stock) {
+                return [
+                    'batch_code' => $stock->batch_code,
+                    'quantity' => (int) $stock->quantity,
+                ];
+            })->values()->all();
+
             $batch_code = null;
-            if ($available_quantity > 0) {
-                $firstReceivedItemWithStock = $item->receivedItems->first(function ($receivedItem) {
-                    return $receivedItem->inventoryStocks->sum('quantity') > 0;
-                });
-                if ($firstReceivedItemWithStock) {
-                    $firstInventoryStock = $firstReceivedItemWithStock->inventoryStocks->first();
-                    if ($firstInventoryStock) {
-                        $batch_code = $firstInventoryStock->batch_code;
-                    }
-                }
+            $batch_available = 0;
+            $firstInventoryStock = null;
+            if ($available_quantity > 0 && count($batch_stocks) > 0) {
+                $batch_code = $batch_stocks[0]['batch_code'];
+                $batch_available = $batch_stocks[0]['quantity'];
+                $firstInventoryStock = InventoryStocks::query()
+                    ->where('batch_code', $batch_code)
+                    ->whereHas('receivedItem', function ($query) use ($item) {
+                        $query->where('product_id', $item->id);
+                    })
+                    ->where('quantity', '>', 0)
+                    ->orderBy('created_at')
+                    ->first();
             }
             $retail_price = null;
             $wholesale_price = null;
-            if ($available_quantity > 0) {
-                $firstReceivedItemWithStock = $item->receivedItems->first(function ($receivedItem) {
-                    return $receivedItem->inventoryStocks->sum('quantity') > 0;
-                });
-                if ($firstReceivedItemWithStock) {
-                    $firstInventoryStock = $firstReceivedItemWithStock->inventoryStocks->first();
-                    if ($firstInventoryStock) {
-                        $retail_price = $firstInventoryStock->retail_price;
-                        $wholesale_price = $firstInventoryStock->wholesale_price;
-                    }
-                }
+            if ($firstInventoryStock) {
+                $retail_price = $firstInventoryStock->retail_price;
+                $wholesale_price = $firstInventoryStock->wholesale_price;
             }
             return [
                 'value' => $item->id,
                 'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
                 'batch_code' => $batch_code,
+                'batch_available' => $batch_available,
+                'batch_stocks' => $batch_stocks,
                 'available_quantity' => $available_quantity,
                 'retail_price' => $retail_price,
                 'wholesale_price' => $wholesale_price,
