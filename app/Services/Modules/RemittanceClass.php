@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\SeriesService;
 use Illuminate\Support\Facades\DB;
 use App\Models\ListStatus;
+use Illuminate\Validation\ValidationException;
 
 class RemittanceClass
 {
@@ -52,7 +53,43 @@ class RemittanceClass
     public function save($request)
     {
         try{
-            db::beginTransaction();
+            DB::beginTransaction();
+
+            $remittanceType = strtolower((string) $request->input('remittance_type', 'cash'));
+            $receiptIds = collect($request->receipts ?? [])->unique()->values();
+            $pendingStatusId = ListStatus::getBySlug('pending')->id;
+
+            $receipts = Receipt::with('arInvoice.sales_order')
+                ->whereIn('id', $receiptIds)
+                ->get();
+
+            if ($receipts->count() !== $receiptIds->count()) {
+                throw ValidationException::withMessages([
+                    'receipts' => 'Some selected receipts are invalid.',
+                ]);
+            }
+
+            $hasInvalidType = $receipts->contains(function ($receipt) use ($remittanceType) {
+                $mode = strtolower(trim((string) optional(optional($receipt->arInvoice)->sales_order)->payment_mode));
+                $isCredit = $this->isCreditSalesMode($mode);
+                return $remittanceType === 'credit' ? !$isCredit : $isCredit;
+            });
+
+            if ($hasInvalidType) {
+                throw ValidationException::withMessages([
+                    'receipts' => "Selected receipts must all match {$remittanceType} sales.",
+                ]);
+            }
+
+            $hasUnavailableReceipt = $receipts->contains(function ($receipt) use ($pendingStatusId) {
+                return (int) $receipt->status_id !== (int) $pendingStatusId || !is_null($receipt->remittance_id);
+            });
+
+            if ($hasUnavailableReceipt) {
+                throw ValidationException::withMessages([
+                    'receipts' => 'One or more selected receipts are no longer pending.',
+                ]);
+            }
 
             $data = Remittance::create([
                 'remittance_no' =>  $this->series_service->get('remittance'),
@@ -63,23 +100,25 @@ class RemittanceClass
                 'created_by_id' =>  Auth::user()->id,
             ]);
 
-            if ($request->has('receipts') && is_array($request->receipts)) {
-                foreach ($request->receipts as $receiptId) {
-                    Receipt::where('id', $receiptId)->update([
-                        'status_id' => ListStatus::getBySlug('open')->id,
-                        'remittance_id' => $data->id,
-                    ]);
-                }
+            foreach ($receiptIds as $receiptId) {
+                Receipt::where('id', $receiptId)->update([
+                    'status_id' => ListStatus::getBySlug('open')->id,
+                    'remittance_id' => $data->id,
+                ]);
             }
 
-            db::commit();
+            DB::commit();
 
             return [
                 'data' => new RemittanceResource($data),
                 'message' => 'Remittance saved was successful!',
                 'info' => "You've successfully saved the remittance"
             ];
+        } catch (ValidationException $e){
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e){
+            DB::rollBack();
             return [
                 'data' => null,
                 'message' => 'Remittance save failed!',
@@ -151,4 +190,9 @@ class RemittanceClass
             ];
         }
     } 
+
+    private function isCreditSalesMode(string $paymentMode): bool
+    {
+        return in_array(strtolower(trim($paymentMode)), ['credit', 'credit sales'], true);
+    }
 }

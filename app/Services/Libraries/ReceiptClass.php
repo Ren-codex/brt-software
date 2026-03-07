@@ -6,6 +6,7 @@ namespace App\Services\Libraries;
 use App\Models\Receipt;
 use App\Models\ListStatus;
 use App\Http\Resources\Libraries\ReceiptResource;
+use Illuminate\Support\Facades\DB;
 
 
 class ReceiptClass
@@ -26,6 +27,21 @@ class ReceiptClass
                 ->when($request->status, function ($query, $status) {
                     $query->whereHas('status', function ($q) use ($status) {
                         $q->where('slug', $status);
+                    });
+                })
+                ->when($request->remittance_type, function ($query, $remittanceType) {
+                    $type = strtolower((string) $remittanceType);
+                    $query->whereHas('arInvoice.sales_order', function ($q) use ($type) {
+                        $creditSalesModes = ['credit', 'credit sales'];
+                        if ($type === 'credit') {
+                            $q->whereIn(DB::raw('LOWER(payment_mode)'), $creditSalesModes);
+                            return;
+                        }
+
+                        $q->where(function ($inner) use ($creditSalesModes) {
+                            $inner->whereNotIn(DB::raw('LOWER(payment_mode)'), $creditSalesModes)
+                                ->orWhereNull('payment_mode');
+                        });
                     });
                 })
                 ->orderBy('created_at', 'desc')

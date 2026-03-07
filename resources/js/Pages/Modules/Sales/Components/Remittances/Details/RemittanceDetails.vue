@@ -62,6 +62,7 @@
                                         <i class="ri-eye-line"></i> View Receipts
                                     </b-button>
                                 </div><br>
+                                <p class="mb-1"><strong>Sales Type:</strong> {{ formatRemittanceType(item.remittance_type) }}</p>
                                 <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.fullname || '-' }}</p>
                                 <p class="mb-1"><strong>Date Approved:</strong> {{ item.approved_at || '-' }}</p>
                                 <p class="mb-0"><strong>Remarks:</strong>
@@ -114,6 +115,9 @@ export default {
             const num = Number(val);
             if (!isFinite(num)) return val;
             return '\u20B1' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        formatRemittanceType(type) {
+            return String(type || '').toLowerCase() === 'credit' ? 'Credit Sales' : 'Cash Sales';
         },
         async openDelete(id){
             const result = await Swal.fire({
