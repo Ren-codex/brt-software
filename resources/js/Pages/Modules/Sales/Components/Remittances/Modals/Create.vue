@@ -13,6 +13,26 @@
                 </div>
 
                 <form @submit.prevent="submit">
+                    <div class="mb-3">
+                        <label class="form-label mb-2">Remittance Type</label>
+                        <div class="d-flex gap-2">
+                            <b-button
+                                size="sm"
+                                :variant="remittanceType === 'cash' ? 'primary' : 'outline-primary'"
+                                @click="setRemittanceType('cash')"
+                            >
+                                Cash Sales
+                            </b-button>
+                            <b-button
+                                size="sm"
+                                :variant="remittanceType === 'credit' ? 'primary' : 'outline-primary'"
+                                @click="setRemittanceType('credit')"
+                            >
+                                Credit Sales
+                            </b-button>
+                        </div>
+                    </div>
+
                     <div class="mb-3 d-flex align-items-center gap-2">
                         <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt"
                             class="form-control" />
@@ -39,12 +59,12 @@
                                     <td><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
                                     <td>{{ idx + 1 }}</td>
                                     <td>{{ order.receipt_number || '-' }}</td>
-                                    <td>{{ order.ar_invoice.sales_order.customer.name || '-' }}</td>
+                                    <td>{{ getCustomerName(order) }}</td>
                                     <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
-                                    <td>{{ order.ar_invoice.sales_order.payment_mode }}</td>
+                                    <td>{{ getPaymentMode(order) || '-' }}</td>
                                     <td>{{ formatDate(order.created_at) }}</td>
                                 </tr>
-                                <tr v-if="orders.length === 0">
+                                <tr v-if="filteredOrders.length === 0">
                                     <td colspan="7" class="text-center text-muted">No pending sales orders found.</td>
                                 </tr>
                             </tbody>
@@ -54,6 +74,9 @@
                         <p>
                             <span class="text-primary"><b>{{ selectedIds.length }}</b></span> Selected
                         </p>
+                    </div>
+                    <div v-if="form.errors.receipts" class="text-danger mb-2">
+                        {{ form.errors.receipts }}
                     </div>
 
                     <div>
@@ -119,10 +142,12 @@ export default {
             filteredOrders: [],
             selectedIds: [],
             keyword: '',
+            remittanceType: 'cash',
             submitting: false,
             debouncedFetch: null,
             form: useForm({
                 receipts: [],
+                remittance_type: 'cash',
                 summary: {},
                 total_amount: 0,
             }),
@@ -138,12 +163,11 @@ export default {
             const selected = this.orders.filter(o => this.selectedIds.includes(o.id));
             selected.forEach(o => {
                 const amt = parseFloat(o.amount_paid) || 0;
-                const mode = (o.ar_invoice.sales_order.payment_mode || '').toLowerCase();
+                const mode = this.normalizeSalesPaymentMode(o);
                 if (mode === 'cash') t.cash += amt;
                 else if (mode === 'credit card' || mode === 'credit_card' || mode === 'creditcard') t.credit_card += amt;
                 else if (mode === 'debit card' || mode === 'debit_card' || mode === 'debitcard') t.debit_card += amt;
                 else if (mode === 'bank transfer' || mode === 'bank_transfer' || mode === 'banktransfer') t.bank_transfer += amt;
-                else t.overall += amt; // if unknown mode, still add to overall below
                 t.overall += amt;
             });
             return t;
@@ -157,6 +181,7 @@ export default {
             this.showModal = true;
             this.selectedIds = [];
             this.keyword = '';
+            this.remittanceType = 'cash';
             this.fetchPending();
         },
         hide() {
@@ -167,7 +192,8 @@ export default {
                 params: {
                     status: "pending",
                     option: 'lists',
-                    count: 100
+                    count: 100,
+                    remittance_type: this.remittanceType,
                 }
             })
                 .then(res => {
@@ -183,12 +209,44 @@ export default {
                 .catch(err => console.error(err));
         },
         applyFilter() {
+            const byType = this.orders.filter(o => this.matchesRemittanceType(o));
+
             if (!this.keyword) {
-                this.filteredOrders = this.orders;
+                this.filteredOrders = byType;
             } else {
                 const kw = this.keyword.toLowerCase();
-                this.filteredOrders = this.orders.filter(o => ((o.receipt_number || '') + ' ' + (o.customer?.name || '') + ' ' + (o.payment_mode || '')).toLowerCase().includes(kw));
+                this.filteredOrders = byType.filter(o =>
+                    (
+                        (o.receipt_number || '') + ' ' +
+                        (this.getCustomerName(o) || '') + ' ' +
+                        (this.getPaymentMode(o) || '')
+                    ).toLowerCase().includes(kw)
+                );
             }
+        },
+        getCustomerName(order) {
+            return order?.customer?.name || order?.ar_invoice?.sales_order?.customer?.name || '-';
+        },
+        getPaymentMode(order) {
+            return order?.payment_mode || order?.ar_invoice?.sales_order?.payment_mode || '';
+        },
+        normalizeSalesPaymentMode(order) {
+            return String(this.getPaymentMode(order) || '').trim().toLowerCase();
+        },
+        isCreditSalesMode(mode) {
+            const normalized = String(mode || '').trim().toLowerCase();
+            return normalized === 'credit' || normalized === 'credit sales';
+        },
+        matchesRemittanceType(order) {
+            const mode = this.normalizeSalesPaymentMode(order);
+            const isCredit = this.isCreditSalesMode(mode);
+            return this.remittanceType === 'credit' ? isCredit : !isCredit;
+        },
+        setRemittanceType(type) {
+            if (this.remittanceType === type) return;
+            this.remittanceType = type;
+            this.selectedIds = [];
+            this.fetchPending();
         },
 
         toggleSelectAll() {
@@ -222,6 +280,7 @@ export default {
             if (this.selectedIds.length === 0) return;
             this.submitting = true;
             this.form.receipts = this.selectedIds;
+            this.form.remittance_type = this.remittanceType;
             const { overall, ...summary } = this.totals;
             this.form.summary = summary;
             this.form.total_amount = this.totals.overall;
@@ -238,6 +297,14 @@ export default {
                     }, 1500);
 
                 },
+                onError: () => {
+                    this.submitting = false;
+                },
+                onFinish: () => {
+                    if (!this.saveSuccess) {
+                        this.submitting = false;
+                    }
+                }
             });
         }
     }

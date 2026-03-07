@@ -15,10 +15,15 @@ class RemittanceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $firstReceipt = $this->receipts()->with('arInvoice.sales_order')->first();
+        $salesPaymentMode = strtolower(trim((string) data_get($firstReceipt, 'arInvoice.sales_order.payment_mode', '')));
+        $remittanceType = $this->isCreditSalesMode($salesPaymentMode) ? 'credit' : 'cash';
+
         return [
             'id' => $this->id,
             'remittance_no' => $this->remittance_no,
             'remittance_date' => $this->remittance_date,
+            'remittance_type' => $remittanceType,
             'summary' => $this->summary,
             'total_amount' => $this->total_amount,
             'created_at' => $this->created_at,
@@ -30,5 +35,10 @@ class RemittanceResource extends JsonResource
             'remarks' => $this->remarks,
             'receipts' => $this->receipts ? ReceiptResource::collection($this->receipts) : null,
         ];
+    }
+
+    private function isCreditSalesMode(string $paymentMode): bool
+    {
+        return in_array(strtolower(trim($paymentMode)), ['credit', 'credit sales'], true);
     }
 }
