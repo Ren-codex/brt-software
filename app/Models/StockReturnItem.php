@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class StockReturnItem extends Model
 {
@@ -14,8 +15,12 @@ class StockReturnItem extends Model
         'po_item_id',
         'quantity',
         'returned_quantity',
+        'replaced_quantity',
+        'loss_quantity',
         'remarks',
         'status_id',
+        'received_by_id',
+        'received_at',
     ];
 
     public function stockReturn()
@@ -31,5 +36,10 @@ class StockReturnItem extends Model
     public function status()
     {
         return $this->belongsTo(ListStatus::class, 'status_id');
+    }
+
+    public function receivedBy()
+    {
+        return $this->belongsTo(User::class, 'received_by_id');
     }
 }

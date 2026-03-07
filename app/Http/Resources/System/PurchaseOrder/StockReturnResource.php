@@ -17,6 +17,7 @@ class StockReturnResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'stock_return_no' => $this->stock_return_no,
             'po_id' => $this->po_id,
             'reason' => $this->reason,
             'status' => $this->status,

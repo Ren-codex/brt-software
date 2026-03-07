@@ -10,6 +10,7 @@ class StockReturn extends Model
     use HasFactory;
 
     protected $fillable = [
+        'stock_return_no',
         'po_id',
         'reason',
         'status_id',

@@ -39,24 +39,25 @@
               <table class="table align-middle table-centered mb-0">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th>Stock Return No</th>
                     <th>PO Number</th>
                     <th>Supplier</th>
                     <th>Items</th>
                     <th>Status</th>
                     <th>Created By</th>
                     <th>Date Created</th>
+                    <th>Received Items</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr
-                    v-for="(row, index) in listStockReturns"
+                    v-for="row in listStockReturns"
                     :key="row.id"
                     @click="openView(row)"
-                    style="cursor: pointer;"
+                    :style="[{ cursor: 'pointer' }]"
                   >
-                    <td>{{ index + 1 }}</td>
+                    <td>{{ row.stock_return_no || `SR-${row.id}` }}</td>
                     <td>{{ row.purchase_order?.po_number || 'N/A' }}</td>
                     <td>{{ row.purchase_order?.supplier?.name || 'N/A' }}</td>
                     <td>
@@ -67,12 +68,26 @@
                       </div>
                     </td>
                     <td>
-                      <span class="status-badge">
+                      <span :style="getStatusStyle(row.status)" class="status-badge">
                         {{ row.status?.name || 'Pending' }}
                       </span>
                     </td>
                     <td>{{ row.created_by?.fullname || 'N/A' }}</td>
                     <td>{{ formatDate(row.created_at) }}</td>
+                    <td>
+                      <div class="return-progress-wrap">
+                        <div class="return-progress-bar">
+                          <div
+                            class="return-progress-fill"
+                            :style="{ width: `${calculateReturnProgress(row).percent}%` }"
+                          ></div>
+                        </div>
+                        <small class="return-progress-text">
+                          {{ calculateReturnProgress(row).returned }} / {{ calculateReturnProgress(row).total }}
+                          ({{ calculateReturnProgress(row).percent }}%)
+                        </small>
+                      </div>
+                    </td>
                     <td>
                       <button class="btn btn-sm btn-outline-primary" @click.stop="openView(row)">
                         <i class="ri-eye-line"></i>
@@ -80,7 +95,7 @@
                     </td>
                   </tr>
                   <tr v-if="listStockReturns.length === 0">
-                    <td colspan="7" class="text-center py-4">
+                    <td colspan="9" class="text-center py-4">
                       <i class="ri-inbox-line text-muted" style="font-size: 2rem;"></i>
                       <p class="mt-2 mb-0">No stock returns found</p>
                     </td>
@@ -169,6 +184,18 @@ export default {
         day: '2-digit',
       });
     },
+    calculateReturnProgress(stockReturn) {
+      const items = stockReturn?.items || [];
+      const total = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      const returned = items.reduce((sum, item) => sum + Number(item.returned_quantity || 0), 0);
+
+      if (total <= 0) {
+        return { returned: 0, total: 0, percent: 0 };
+      }
+
+      const percent = Math.min(100, Math.round((returned / total) * 100));
+      return { returned, total, percent };
+    },
     async fetchReturnableOrders() {
       this.loadingOrders = true;
       try {
@@ -209,6 +236,16 @@ export default {
     openView(stockReturn) {
       this.$emit('view-details', stockReturn);
     },
+    getStatusStyle(status) {
+      if (!status) return {};
+      
+      return {
+        color: status.text_color || '#000000',
+        backgroundColor: status.bg_color || '#ffffff',
+        border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
+        boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
+      };
+    },
   },
 };
 </script>
@@ -244,5 +281,39 @@ export default {
 
 .return-stock-btn {
   white-space: nowrap;
+}
+
+.return-progress-wrap {
+  min-width: 140px;
+}
+
+.return-progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.return-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2e8b57 0%, #3dbb77 100%);
+  transition: width 0.25s ease;
+}
+
+.return-progress-text {
+  display: inline-block;
+  margin-top: 4px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+tbody tr {
+  transition: background-color 0.3s ease;
+}
+
+tbody tr:hover {
+  background-color: var(--hover-color, rgba(46, 139, 87, 0.05)) !important;
 }
 </style>

@@ -11,7 +11,7 @@
                 </div>
                 <div>
                   <h4 class="header-title mb-1">
-                    Stock Return #{{ data.id }}
+                    Stock Return #{{ data.stock_return_no || data.id }}
                   </h4>
                   <p class="header-subtitle mb-0">View stock return details</p>
                 </div>
@@ -44,7 +44,7 @@
               <!-- Status -->
               <div style="background: #f8f9fa; padding: 0.75rem 1rem; border-radius: 10px;">
                 <span style="color: #6c757d; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; display: block;">Status</span>
-                <span style="background: #c4dad2; color: #3d8d7a; padding: 0.25rem 1rem; border-radius: 20px; font-weight: 500; font-size: 0.85rem; display: inline-block;">
+                <span :style="getStatusStyle(data.status)" class="status-badge">
                   {{ data.status?.name || 'Pending' }}
                 </span>
               </div>
@@ -82,8 +82,8 @@
           title="Transaction Logs"
           subtitle="History of actions for this stock return"
           :compact="true"
-          :initial-visible="5"
-          :logs-per-page="5"
+          :initial-visible="3"
+          :logs-per-page="3"
         />
       </div>
       <div class="col-sm-12">
@@ -109,8 +109,10 @@
                       <th>Product</th>
                       <th>Returned Qty</th>
                       <th>Replaced Qty</th>
+                      <th>Loss Qty</th>
                       <th>Status</th>
                       <th>Remarks</th>
+                      <th>Received By</th>
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -119,17 +121,25 @@
                       <td>{{ index + 1 }}</td>
                       <td>{{ item.purchase_order_item?.product?.name || 'N/A' }}</td>
                       <td>{{ item.quantity || 0 }}</td>
-                      <td>{{ item.returned_quantity || 0 }}</td>
+                      <td>{{ item.replaced_quantity || 0 }}</td>
+                      <td>{{ item.loss_quantity || 0 }}</td>
                       <td>{{ item.status?.name || 'Pending' }}</td>
                       <td>{{ item.remarks || '' }}</td>
-                      <td v-if="data.status.slug == 'approved'">
-                        <button class="btn btn-sm btn-cancel" @click="$emit('view-item', item)" v-b-tooltip.hover title="View Details">
-                          <i class="ri-pencil-line"></i>
+                      <td>{{ item.received_by?.fullname || '-' }}</td>
+                      <td v-if="data.status.slug == 'approved' && Number(item.returned_quantity || 0) < Number(item.quantity || 0)">
+                        <button
+                          class="btn btn-sm btn-cancel"
+                          @click="receivedReturnItem(item)"
+                          v-b-tooltip.hover
+                          title="Receive Return Item"
+                        >
+                          <i class="ri-add-line"></i>
+                          Receive
                         </button>
                       </td>
                     </tr>
                     <tr v-if="!(data.items || []).length">
-                      <td colspan="6" class="text-center py-3">No return items found.</td>
+                      <td colspan="9" class="text-center py-3">No return items found.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -166,6 +176,69 @@
       </div>
     </div>
   </div>
+
+  <div v-if="showReceiveModal" class="modal-overlay active" @click.self="onReceiveCancel">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h2>Receive Return Item</h2>
+        <button class="close-btn" @click="onReceiveCancel">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label class="form-label">Product</label>
+          <input type="text" class="form-control" :value="selectedReturnItemName" disabled>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="replaced-qty">Replacement Quantity</label>
+          <input
+            id="replaced-qty"
+            v-model.number="receiveForm.replaced_quantity"
+            type="number"
+            min="0"
+            :max="Number(selectedReturnItem?.quantity || 0)"
+            class="form-control"
+            placeholder="Enter replacement quantity"
+          >
+          <small class="text-muted">Returned Qty: {{ Number(selectedReturnItem?.quantity || 0) }}</small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="loss-qty">Loss Quantity</label>
+          <input
+            id="loss-qty"
+            v-model.number="receiveForm.loss_quantity"
+            type="number"
+            min="0"
+            :max="Number(selectedReturnItem?.quantity || 0)"
+            class="form-control"
+            placeholder="Enter loss quantity"
+          >
+          <small class="text-muted">
+            Total processed: {{ Number(receiveForm.replaced_quantity || 0) + Number(receiveForm.loss_quantity || 0) }}
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="receive-remarks">Remarks</label>
+          <textarea
+            id="receive-remarks"
+            v-model="receiveForm.remarks"
+            class="form-control textarea-control"
+            rows="3"
+            placeholder="Enter remarks"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-cancel" @click="onReceiveCancel" :disabled="receiving">Cancel</button>
+          <button class="btn btn-save" @click="saveReceivedReturnItem" :disabled="receiving">
+            {{ receiving ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -183,6 +256,14 @@ export default {
       approving: false,
       showModal: false,
       remarks: '',
+      receiving: false,
+      showReceiveModal: false,
+      selectedReturnItem: null,
+      receiveForm: {
+        replaced_quantity: 0,
+        loss_quantity: 0,
+        remarks: '',
+      },
     };
   },
   computed: {
@@ -214,6 +295,9 @@ export default {
         actioned_by: log.actioned_by || log.user?.fullname || 'System',
       }));
     },
+    selectedReturnItemName() {
+      return this.selectedReturnItem?.purchase_order_item?.product?.name || 'N/A';
+    },
   },
   methods: {
     formatDate(dateValue) {
@@ -234,6 +318,68 @@ export default {
       this.showModal = false;
       this.remarks = '';
     },
+    isItemFinalized(item) {
+      const statusSlug = String(item?.status?.slug || '').toLowerCase();
+      return ['replaced', 'loss'].includes(statusSlug);
+    },
+    receivedReturnItem(item) {
+      if (!item?.id || this.receiving || this.isItemFinalized(item)) return;
+
+      this.selectedReturnItem = item;
+      this.receiveForm.replaced_quantity = Number(item.replaced_quantity || item.returned_quantity || 0);
+      this.receiveForm.loss_quantity = Number(item.loss_quantity || 0);
+      this.receiveForm.remarks = item.remarks || '';
+      this.showReceiveModal = true;
+    },
+    onReceiveCancel(force = false) {
+      if (this.receiving && !force) return;
+      this.showReceiveModal = false;
+      this.selectedReturnItem = null;
+      this.receiveForm = {
+        replaced_quantity: 0,
+        loss_quantity: 0,
+        remarks: '',
+      };
+    },
+    async saveReceivedReturnItem() {
+      if (!this.data?.id || !this.selectedReturnItem?.id || this.receiving) return;
+
+      const maxQty = Number(this.selectedReturnItem.quantity || 0);
+      const replacedQty = Number(this.receiveForm.replaced_quantity || 0);
+      const lossQty = Number(this.receiveForm.loss_quantity || 0);
+      const totalQty = replacedQty + lossQty;
+      if (
+        Number.isNaN(replacedQty)
+        || Number.isNaN(lossQty)
+        || replacedQty < 0
+        || lossQty < 0
+        || totalQty < 0
+        || totalQty > maxQty
+      ) {
+        this.$emit('toast', `Replacement + Loss quantity must be between 0 and ${maxQty}`);
+        return;
+      }
+
+      this.receiving = true;
+      try {
+        const response = await axios.post(
+          `/stock-returns/${this.data.id}/items/${this.selectedReturnItem.id}/receive`,
+          {
+            replaced_quantity: replacedQty,
+            loss_quantity: lossQty,
+            remarks: this.receiveForm.remarks,
+          },
+        );
+
+        this.$emit('toast', response?.data?.message || 'Return item received successfully');
+        this.onReceiveCancel(true);
+        this.$emit('refresh', this.data.id);
+      } catch (error) {
+        this.$emit('toast', error?.response?.data?.message || 'Unable to receive return item');
+      } finally {
+        this.receiving = false;
+      }
+    },
     async updateStatus(status) {
       if (!this.data?.id || this.approving || !this.isPending) return;
       if (!['approved', 'disapproved'].includes(String(status))) return;
@@ -253,6 +399,16 @@ export default {
       } finally {
         this.approving = false;
       }
+    },
+    getStatusStyle(status) {
+      if (!status) return {};
+      
+      return {
+        color: status.text_color || '#000000',
+        backgroundColor: status.bg_color || '#ffffff',
+        border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
+        boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
+      };
     },
   },
 };

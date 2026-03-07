@@ -61,4 +61,39 @@ class StockReturnController extends Controller
             'status' => $result['status'] ?? true,
         ]);
     }
+
+    public function receiveItem(Request $request, $id, $itemId)
+    {
+        // Backward compatibility:
+        // Accept old payload { actual_received_quantity, status } and convert it
+        // to the new split payload { replaced_quantity, loss_quantity }.
+        if (
+            !$request->has('replaced_quantity')
+            && !$request->has('loss_quantity')
+            && $request->has('actual_received_quantity')
+        ) {
+            $actualQty = (int) $request->input('actual_received_quantity', 0);
+            $status = strtolower((string) $request->input('status', ''));
+
+            $request->merge([
+                'replaced_quantity' => $status === 'replaced' ? $actualQty : 0,
+                'loss_quantity' => $status === 'loss' ? $actualQty : 0,
+            ]);
+        }
+
+        $request->validate([
+            'replaced_quantity' => ['required', 'integer', 'min:0'],
+            'loss_quantity' => ['required', 'integer', 'min:0'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $result = $this->stockReturn->receiveItem($request, $id, $itemId);
+
+        return response()->json([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
 }
