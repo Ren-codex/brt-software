@@ -24,7 +24,7 @@
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
                                     <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                        placeholder="Search purchase request..." class="search-input">
+                                        placeholder="Search receipt..." class="search-input">
                                 </div>
                             </div>
                             <div class="col-md-3">

@@ -119,7 +119,7 @@ export default {
             this.showModal = true;
         },
         submit(){
-            this.form.put('/users/update', {
+            this.form.put('/users/' + this.form.user_id, {
                 preserveScroll: true,
                 onSuccess: () => {
                     this.$emit('update',this.$page.props.flash.data.data);

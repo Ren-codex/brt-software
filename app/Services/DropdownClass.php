@@ -208,21 +208,8 @@ class DropdownClass
     }
 
     public function sales_statuses(){
-        // Get sales order related statuses
-        $data = ListStatus::whereIn('slug', [
-            'open',
-            'pending',
-            'approved',
-            'disapproved',
-            'cancelled',
-            'for-delivery',
-            'delivered',
-            'paid',
-            'unpaid',
-            'partially-paid',
-            'for-payment',
-            'liquidated'
-        ])->get()->map(function ($item) {
+        // Return all statuses so tab filters show the full list
+        $data = ListStatus::orderBy('name')->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->name,

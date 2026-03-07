@@ -23,7 +23,7 @@ class ArInvoiceClass
     }
     public function lists($request){
         $data = ArInvoiceResource::collection(
-            ArInvoice::with(['sales_order.customer', 'sales_order.items.product', 'sales_order.status', 'status'])
+            ArInvoice::with(['sales_order.customer', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status'])
                 ->when($request->location_id, function ($query, $locationId) {
                     $query->whereHas('sales_order', function ($q) use ($locationId) {
                         $q->where('location_id', $locationId);

@@ -37,6 +37,11 @@ class ArInvoice extends Model
         return $this->belongsTo(ListStatus::class);
     }
 
+    public function receipts()
+    {
+        return $this->hasMany(Receipt::class, 'ar_invoice_id');
+    }
+
     public static function generateInvoiceNumber($date = null)
     {
         $date = $date ?: now();
