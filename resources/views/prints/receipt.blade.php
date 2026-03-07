@@ -69,7 +69,7 @@
                 Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
             </td>
             <td class="order-info">
-                <h2 class="order-title">Sales Order</h2>
+                <h2 class="order-title">Sales Invoice</h2>
                 #{{ $sales_order->so_number }}<br>
                 {{ \Carbon\Carbon::parse($sales_order->so_date)->format('m/d/Y') }}
             </td>

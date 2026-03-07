@@ -87,7 +87,7 @@ class PrintClass
             'items' => $items,
         ];
 
-        $pdf = \PDF::loadView('prints.sales_order',$array)->setPaper('A4', 'portrait');
+        $pdf = \PDF::loadView('prints.ar_invoice',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($ar_invoice->invoice_number.'.pdf');
 
     }

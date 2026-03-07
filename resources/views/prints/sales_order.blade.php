@@ -1,178 +1,140 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Order - {{ $sales_order->so_number }}</title>
     <style>
+        @page { size: A4 portrait; margin: 10mm; }
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            font-size: 14px;
-            line-height: 1.4;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11px;
             color: #333;
+            line-height: 1.4;
         }
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+        /* Header */
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .logo-box { width: 70px; height: 70px; background-color: #C0392B; border-radius: 4px; }
+        .company-name { font-size: 20px; font-weight: bold; color: #1a1a1a; margin: 0; }
+        .order-title { font-size: 26px; font-weight: bold; text-align: right; margin: 0; }
+        .order-info { text-align: right; font-size: 13px; }
+
+        /* Address & Total Section */
+        .summary-container { width: 100%; display: table; margin-bottom: 15px; }
+        .address-block { display: table-cell; width: 33%; vertical-align: top; }
+        .total-block { 
+            display: table-cell; 
+            width: 34%; 
+            background-color: #E5E7E9; 
+            padding: 15px; 
+            text-align: right; 
+            vertical-align: middle;
+        }
+        .address-label { 
+            font-weight: bold; 
+            border-bottom: 1px solid #ccc; 
+            margin-bottom: 5px; 
+            display: inline-block; 
+            width: 90%; 
         }
 
-        .company-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
+        /* Metadata Bar */
+        .meta-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 15px; 
+            background-color: #D5DBDB; 
+            border: 1px solid #BDC3C7;
         }
+        .meta-table th { font-size: 10px; padding: 4px; text-align: center; width: 20%; }
+        .meta-table td { background-color: white; text-align: center; padding: 6px; border: 1px solid #BDC3C7; }
 
-        .document-title {
-            font-size: 18px;
-            font-weight: bold;
-        }
+        /* Items Table */
+        .items-table { width: 100%; border-collapse: collapse; }
+        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 8px; text-align: left; }
+        .items-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .text-right { text-align: right; }
 
-        .order-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
+        /* Footer */
+        .footer-table { width: 100%; margin-top: 30px; }
+        .grand-total-box { background-color: #D5DBDB; padding: 10px; font-weight: bold; }
 
-        .info-section {
-            flex: 1;
-        }
-
-        .info-section h3 {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-
-        .info-section p {
-            margin: 3px 0;
-            font-weight: bold;
-        }
-
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-        }
-
-        .items-table th,
-        .items-table td {
-            border: 1px solid #000;
-            padding: 8px;
-            text-align: left;
-        }
-
-        .items-table th {
-            background-color: #000;
-            color: white;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 12px;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .total-section {
-            float: right;
-            width: 250px;
-            margin-top: 20px;
-        }
-
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .total-label {
-            font-weight: bold;
-        }
-
-        .total-amount {
-            font-weight: bold;
-        }
-
-        .grand-total {
-            border-top: 1px solid #000;
-            padding-top: 8px;
-            font-size: 16px;
-        }
-
-        .footer {
-            margin-top: 80px;
-            text-align: center;
-            clear: both;
-        }
-
-        .signature-section {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-around;
-        }
-
-        .signature-box {
-            text-align: center;
-            width: 200px;
-            margin-top:50px;
-        }
-
-        .signature-line {
-            border-bottom: 1px solid #000;
-            margin-bottom: 3px;
-        }
+        /* Signature Section */
+        .signature-section { width: 100%; margin-top: 40px; display: table; }
+        .signature-box { display: table-cell; text-align: center; width: 50%; }
+        .signature-line { border-bottom: 1px solid #333; margin-bottom: 5px; padding-bottom: 5px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-name">BOUYANT RICE TRADING</div>
-        <div class="document-title">SALES INVOICE</div>
+
+    <table class="header-table">
+        <tr>
+            <td style="width: 80px;"><div class="logo-box"></div></td>
+            <td>
+                <h1 class="company-name">BOUYANT RICE TRADING</h1>
+                Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
+            </td>
+            <td class="order-info">
+                <h2 class="order-title">Sales Order</h2>
+                #{{ $sales_order->so_number }}<br>
+                {{ \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') }}
+            </td>
+        </tr>
+    </table>
+
+    <div class="summary-container">
+        <div class="address-block">
+            <div class="address-label">Bill To</div>
+            <strong>{{ $sales_order->customer->name ?? 'N/A' }}</strong><br>
+            {!! nl2br(e($sales_order->customer->address ?? 'N/A')) !!}
+        </div>
+        <div class="address-block">
+            <div class="address-label">Ship To</div>
+            <strong>{{ $sales_order->customer->name ?? 'N/A' }}</strong><br>
+            {!! nl2br(e($sales_order->customer->address ?? 'N/A')) !!}
+        </div>
+        <div class="total-block">
+            <div style="text-align: left; font-weight: bold; font-size: 14px;">TOTAL</div>
+            <div style="font-size: 22px; font-weight: bold;">PHP {{ number_format($sales_order->total_amount, 2) }}</div>
+        </div>
     </div>
 
-    <div class="order-info">
-        <div class="info-section">
-            <h3>Invoice Details</h3>
-            <p>Invoice Number: {{ isset($ar_invoice) ? $ar_invoice->invoice_number : $sales_order->so_number }}</p>
-            <p>Invoice Date: {{ isset($ar_invoice) ? \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('M d, Y') : \Carbon\Carbon::parse($sales_order->order_date)->format('M d, Y') }}</p>
-            @if(isset($ar_invoice))
-            <p>SO Number: {{ $sales_order->so_number }}</p>
-            @endif
-        </div>
-        <div class="info-section">
-            <h3>Customer</h3>
-            <p>Name: {{ $sales_order->customer->name ?? 'N/A' }}</p>
-            <p>Address: {{ $sales_order->customer->address ?? 'N/A'  }}</p>
-            <p>Contact Number: {{ $sales_order->customer->contact_number ?? 'N/A'  }}</p>
-            <p>Email: {{ $sales_order->customer->email ?? 'N/A'  }}</p>
-        </div>
-    </div>
+    <table class="meta-table">
+        <thead>
+            <tr>
+                <th>Supplier SO #</th>
+                <th>Payment Terms</th>
+                <th>Load Order #</th>
+                <th>Delivery Date</th>
+                <th>Delivery Location</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ '---' }}</td>
+                <td>7 Days</td>
+                <td>---</td>
+                <td>{{ isset($sales_order->expected_delivery) ? \Carbon\Carbon::parse($sales_order->expected_delivery)->format('m/d/Y') : '---' }}</td>
+                <td>---</td>
+            </tr>
+        </tbody>
+    </table>
 
     <table class="items-table">
         <thead>
             <tr>
-                <th width="5%">#</th>
-                <th width="45%">Product</th>
-                <th width="15%" class="text-center">Quantity</th>
-                <th width="17%" class="text-right">Unit Price</th>
-                <th width="18%" class="text-right">Total</th>
+                <th>#</th>
+                <th>Product</th>
+                <th class="text-right">Quantity</th>
+                <th class="text-right">Unit Price</th>
+                <th class="text-right">Total</th>
             </tr>
         </thead>
         <tbody>
             @foreach($items as $index => $item)
             <tr>
-                <td class="text-center">{{ $index + 1 }}</td>
-                <td>{{ $item->product->brand->name ?? '' }} {{ $item->product->pack_size }} {{ $item->product->unit->name }} </td>
-                <td class="text-center">{{ number_format($item->quantity) }}</td>
+                <td>{{ $index + 1 }}</td>
+                <td><strong>{{ $item->product->brand->name ?? '' }} {{ $item->product->pack_size }} {{ $item->product->unit->name ?? '' }}</strong></td>
+                <td class="text-right">{{ number_format($item->quantity) }}</td>
                 <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
                 <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>
             </tr>
@@ -180,57 +142,43 @@
         </tbody>
     </table>
 
-    <div class="total-section">
-        <div class="total-row">
-            <span class="total-label">Subtotal:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_amount + $sales_order->total_discount, 2) }}</span>
-        </div>
-
-        <div class="total-row">
-            <span class="total-label">Discount:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_discount, 2) }}</span>
-        </div>
-
-        @if(isset($ar_invoice))
-        <div class="total-row">
-            <span class="total-label">Total:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_amount, 2) }}</span>
-        </div>
-
-        <div class="total-row">
-            <span class="total-label">Amount Paid:</span>
-            <span class="total-amount">PHP {{ number_format($ar_invoice->amount_paid, 2) }}</span>
-        </div>
-
-        <div class="total-row grand-total">
-            <span class="total-label">Balance Due:</span>
-            <span class="total-amount">PHP {{ number_format($ar_invoice->balance_due, 2) }}</span>
-        </div>
-        @else
-        <div class="total-row grand-total">
-            <span class="total-label">TOTAL:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_amount, 2) }}</span>
-        </div>
-        @endif
-    </div>
-
-    <div style="clear: both;"></div>
+    <table class="footer-table">
+        <tr>
+            <td style="vertical-align: top;">
+                <strong>Remarks:</strong><br>
+                30,000 kg - p up<br><br>
+                <strong>Sales Rep:</strong> {{ $sales_order->salesRep->fullname ?? '---' }}
+            </td>
+            <td style="width: 300px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 5px 0;">Subtotal</td>
+                        <td class="text-right">PHP {{ number_format($sales_order->total_amount + $sales_order->total_discount, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0;">Discount</td>
+                        <td class="text-right">PHP {{ number_format($sales_order->total_discount, 2) }}</td>
+                    </tr>
+                    <tr class="grand-total-box">
+                        <td style="padding: 10px 5px;">TOTAL</td>
+                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format($sales_order->total_amount, 2) }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 
     <div class="signature-section">
-        <div class="signature-box mb-3">
+        <div class="signature-box">
             <div class="signature-line"></div>
             <strong>Prepared By</strong>
         </div>
-
         <div class="signature-box">
-            <div class="signature-line mb-3"></div>
+            <div class="signature-line"></div>
             <strong>Received By</strong>
         </div>
     </div>
 
-    <div class="footer">
-        <p><strong>Thank you for your business!</strong></p>
-        <p>Generated on {{ \Carbon\Carbon::now()->format('M d, Y H:i') }}</p>
-    </div>
 </body>
 </html>
+
