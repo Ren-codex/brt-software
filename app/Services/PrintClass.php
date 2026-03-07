@@ -34,7 +34,7 @@ class PrintClass
     }
 
     public function printSalesOrder($id){
-        $sales_order = SalesOrder::with('status' , 'items.product.brand' , 'items.product.unit', 'created_by' )->findOrFail($id);
+        $sales_order = SalesOrder::with('status' , 'customer', 'items.product.brand' , 'items.product.unit', 'created_by' )->findOrFail($id);
         $items = $sales_order->items;
 
         $array = [

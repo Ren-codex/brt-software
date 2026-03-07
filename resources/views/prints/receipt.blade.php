@@ -66,7 +66,7 @@
             <td style="width: 80px;"><div class="logo-box"></div></td>
             <td>
                 <h1 class="company-name">BOUYANT RICE TRADING</h1>
-                287 Mabini St. Maloloy-on, Molave ZBDS 7023<br>Philippines
+                Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
             </td>
             <td class="order-info">
                 <h2 class="order-title">Sales Order</h2>
@@ -134,10 +134,10 @@
                 <td><strong>{{ $item->product->pack_size  }} {{ $item->product->unit?->name  }} {{ $item->product->brand?->name  }}</strong></td>
                 <td>{{ $item->product->description }}</td>
                 <td>Kg</td>
-                <td class="text-right">{{ number_format($item->unit_cost, 2) }}</td>
-                <td class="text-right">{{ number_format($item->total_cost, 2) }}</td>
+                <td class="text-right">{{ number_format($item->price, 2) }}</td>
+                <td class="text-right">{{ number_format($item->quantity * $item->price, 2) }}</td>
                 <td class="text-right">0.00</td>
-                <td class="text-right">{{ number_format($item->total_cost, 2) }}</td>
+                <td class="text-right">{{ number_format($item->quantity * $item->price, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -152,9 +152,12 @@
             </td>
             <td style="width: 300px;">
                 <table style="width: 100%; border-collapse: collapse;">
+                    @php
+                        $subtotal = $items->sum(function($item) { return $item->quantity * $item->price; });
+                    @endphp
                     <tr>
                         <td style="padding: 5px 0;">Total Sales Before VAT</td>
-                        <td class="text-right">PHP {{ number_format($sales_order->total_amount, 2) }}</td>
+                        <td class="text-right">PHP {{ number_format($subtotal, 2) }}</td>
                     </tr>
                     <tr>
                         <td style="padding: 5px 0;">VAT Amount</td>
@@ -162,7 +165,7 @@
                     </tr>
                     <tr class="grand-total-box">
                         <td style="padding: 10px 5px;">Total Amount Due</td>
-                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format($sales_order->total_amount, 2) }}</td>
+                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format($subtotal, 2) }}</td>
                     </tr>
                 </table>
             </td>
