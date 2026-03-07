@@ -1,4 +1,4 @@
-a tme<template>
+<template>
     <BRow>
         <div class="col-md-9 mb-4">
             <div class="library-card">
@@ -19,10 +19,36 @@ a tme<template>
                 </div>
                 <div class="card-body m-2 p-3">
                     <div class="search-section">
-                        <div class="search-wrapper">
-                            <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                placeholder="Search purchase request..." class="search-input">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-search-line search-icon"></i>
+                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                        placeholder="Search purchase request..." class="search-input">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-map-pin-line search-icon"></i>
+                                    <select v-model="filter.location_id" @change="fetch()" class="search-input">
+                                        <option :value="null">All Locations</option>
+                                        <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
+                                            {{ location.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-flag-line search-icon"></i>
+                                    <select v-model="filter.status" @change="fetch()" class="search-input">
+                                        <option :value="null">All Status</option>
+                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug">
+                                            {{ status.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -171,7 +197,7 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 
 export default {
     components: { PageHeader, Pagination },
-    props: ['dropdowns'],
+    props: ['dropdowns', 'isExternal'],
     data(){
         return {
 
@@ -179,7 +205,9 @@ export default {
             meta: {},
             links: {},
             filter: {
-                keyword: null
+                keyword: null,
+                location_id: null,
+                status: null
             },
 
             metrics: {
@@ -209,8 +237,11 @@ export default {
             axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
+                    location_id: this.filter.location_id,
+                    status: this.filter.status,
                     count: 10,
-                    option: 'lists'
+                    option: 'lists',
+                    is_external: this.isExternal ? 1 : 0
                 }
             })
             .then(response => {
@@ -260,14 +291,6 @@ export default {
 
          getCustomer(customer_id){
             const customer = this.dropdowns.customers.find(u => u.value === customer_id);
-            return customer ? customer : [];
-        },
-         getCustomer(customer_id){
-            const customer = this.dropdowns.customers.find(u => u.value === customer_id);
-            return customer ? customer : [];
-        },
-         getCustomer(customer_id){
-            const product = this.dropdowns.customers.find(u => u.value === customer_id);
             return customer ? customer : [];
         },
     }

@@ -22,7 +22,7 @@ class SeriesSeeder extends Seeder
         Series::create(array(
             'name' => 'Batch Code',
             'slug' => 'batch_code',
-            'prefix' => 'BATCH',
+            'prefix' => 'B',
             'max_digit' => 6,
             'starting_value' => 1
         ));
@@ -55,6 +55,22 @@ class SeriesSeeder extends Seeder
             'name' => 'Payroll Number',
             'slug' => 'payroll_number',
             'prefix' => 'PAY',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
+
+        Series::create(array(
+            'name' => 'Loan Number',
+            'slug' => 'loan_number',
+            'prefix' => 'LN',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
+
+        Series::create(array(
+            'name' => 'Stock Return',
+            'slug' => 'stock_return',
+            'prefix' => 'SR',
             'max_digit' => 6,
             'starting_value' => 1
         ));

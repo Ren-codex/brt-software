@@ -17,11 +17,12 @@ class ReceiptResource extends JsonResource
             'balance_due' => $this->balance_due,
             'status_id' => $this->status_id,
             'customer_id' => $this->customer_id,
-            'customer' => $this->customer,
+            'customer' => $this->customer ? $this->customer : null,
             'ar_invoice_id' => $this->ar_invoice_id,
             'status' => $this->status,
             'created_at' => Carbon::parse($this->created_at)->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at,
+            'payment_mode' => $this->arInvoice->sales_order->payment_mode,
         ];
     }
 }

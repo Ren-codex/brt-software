@@ -22,7 +22,7 @@
                 </div>
 
 
-                <div class="card-body m-2 p-3" v-if="currentView === 'list'">
+                <div class="library-card-body" v-if="currentView === 'list'">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
@@ -31,101 +31,137 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive table-card" style="overflow: auto;">
-                        <table class="table align-middle table-striped table-centered mb-0">
-                            <thead class="table-light thead-fixed">
-                                <tr class="fs-11">
-                                    <th style="width: 3%;">#</th>
-                                    <th style="width: 12%;">Name</th>
-                                    <th style="width: 8%;">Position</th>
-                                    <th style="width: 8%;">Email</th>
-                                    <th style="width: 7%;">Contact</th>
-                                    <th style="width: 7%;">Birthdate</th>
-                                    <th style="width: 5%;">Sex</th>
-                                    <th style="width: 5%;">Religion</th>
-                                    <th style="width: 8%;">Address</th>
-                                    <th style="width: 4%;" class="text-center">Regular</th>
-                                    <th style="width: 4%;" class="text-center">Blacklisted</th>
-                                    <th style="width: 4%;">Active</th>
-                                    <th style="width: 6%;">Created</th>
-                                    <th style="width: 8%;" class="text-center">Actions</th>
-                                </tr>
-                            </thead>
-
-                            <tbody class="table-white fs-12">
-                                <tr v-for="(list,index) in lists" v-bind:key="index" @click="openView(list)" :class="{
-                                    'bg-info-subtle': index === selectedRow,
-                                    'bg-danger-subtle': list.is_active === 0 && index !== selectedRow,
-                                    'bg-warning-subtle': list.is_blacklisted === 1
-                                }">
-                                    <td class="text-center">
-                                        {{ index + 1}}
-                                    </td>
-
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-xs me-2">
-                                                <img v-if="list.avatar" :src="'/storage/' + list.avatar" alt="Avatar" class="rounded-circle avatar-xs">
-                                                <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
-                                                    <i class="ri-user-line text-muted"></i>
-                                                </div>
+                    <div class="table-section">
+                        <div class="table-responsive" style="overflow: visible; max-height: none;">
+                            <table class="table align-middle table-centered mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>
+                                            <div class="sortable-header" @click="toggleSort('fullname')">
+                                                Name
+                                                <i v-if="sortBy === 'fullname'" 
+                                                :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
+                                                </i>
                                             </div>
-                                            <span>{{ list.fullname }}</span>
-                                        </div>
-                                    </td>
-                                    <td>{{ list.position ? list.position.title : '-' }}</td>
-                                    <td>{{ list.email || '-' }}</td>
-                                    <td>{{ list.mobile || '-' }}</td>
-                                    <td>{{ list.birthdate || '-' }}</td>
-                                    <td>{{ list.sex || '-' }}</td>
-                                    <td>{{ list.religion || '-' }}</td>
-                                    <td>{{ list.address || '-' }}</td>
+                                        </th>
+                                        <th>
+                                            <div class="sortable-header" @click="toggleSort('position')">
+                                                Position
+                                                <i v-if="sortBy === 'position'" 
+                                                :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
+                                                </i>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <div class="sortable-header" @click="toggleSort('email')">
+                                                Email
+                                                <i v-if="sortBy === 'email'" 
+                                                :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
+                                                </i>
+                                            </div>
+                                        </th>
+                                        <th>Contact</th>
+                                        <th>Birthdate</th>
+                                        <th>Sex</th>
+                                        <th>Religion</th>
+                                        <th>Address</th>
+                                        <th class="text-center">Regular</th>
+                                        <th class="text-center">Blacklisted</th>
+                                        <th>Active</th>
+                                        <th>
+                                            <div class="sortable-header" @click="toggleSort('created_at')">
+                                                Created
+                                                <i v-if="sortBy === 'created_at'" 
+                                                :class="sortDirection === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'">
+                                                </i>
+                                            </div>
+                                        </th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
 
-                                    <td class="text-center">
-                                        <i v-if="list.is_regular === 1" class="ri-check-line text-success fs-16"></i>
-                                        <i v-else class="ri-close-line text-muted fs-16"></i>
-                                    </td>
+                                <tbody class="fs-12">
+                                    <tr 
+                                        v-for="(list,index) in filteredAndSortedList" 
+                                        v-bind:key="list.id" 
+                                        @click="openView(list)"
+                                        style="cursor: pointer;"
+                                        :style="getRowStyle(list)"
+                                    >
+                                        <td>{{ index + 1 }}</td>
 
-                                    <td class="text-center">
-                                        <i v-if="list.is_blacklisted === 1" class="ri-close-line text-danger fs-16"></i>
-                                        <i v-else class="ri-check-line text-success fs-16"></i>
-                                    </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-xs me-2">
+                                                    <img v-if="list.avatar" :src="getAvatarUrl(list.avatar)" alt="Avatar" class="rounded-circle avatar-xs">
+                                                    <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
+                                                        <i class="ri-user-line text-muted"></i>
+                                                    </div>
+                                                </div>
+                                                <span>{{ list.fullname }}</span>
+                                            </div>
+                                        </td>
+                                        <td>{{ list.position ? list.position.title : '-' }}</td>
+                                        <td>{{ list.email || '-' }}</td>
+                                        <td>{{ list.mobile || '-' }}</td>
+                                        <td>{{ list.birthdate || '-' }}</td>
+                                        <td>{{ list.sex || '-' }}</td>
+                                        <td>{{ list.religion || '-' }}</td>
+                                        <td>{{ list.address || '-' }}</td>
 
-                                    <td>
-                                        <b-form-checkbox
-                                            :checked="list.is_active === 1"
-                                            @change="toggleActive(list)"
-                                            switch
-                                            size="md"
-                                        />
-                                    </td>
+                                        <td class="text-center">
+                                            <i v-if="list.is_regular === 1" class="ri-check-line text-success fs-16"></i>
+                                            <i v-else class="ri-close-line text-muted fs-16"></i>
+                                        </td>
 
-                                    <td>
-                                        {{ list.created_at }}
-                                    </td>
+                                        <td class="text-center">
+                                            <i v-if="list.is_blacklisted === 1" class="ri-close-line text-danger fs-16"></i>
+                                            <i v-else class="ri-check-line text-success fs-16"></i>
+                                        </td>
 
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
-                                                <i class="ri-pencil-fill"></i>
-                                            </b-button>
-                                            <!-- <b-button @click="onDelete(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </b-button> -->
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        <td>
+                                            <b-form-checkbox
+                                                :checked="list.is_active === 1"
+                                                @change="toggleActive(list)"
+                                                switch
+                                                size="md"
+                                            />
+                                        </td>
+
+                                        <td>
+                                            {{ list.created_at }}
+                                        </td>
+
+                                        <td>
+                                            <div class="action-buttons" @click.stop>
+                                                <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
+                                                    <i class="ri-pencil-fill"></i>
+                                                </b-button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredAndSortedList.length === 0">
+                                        <td colspan="14" class="text-center py-4">
+                                            <i class="ri-user-line text-muted" style="font-size: 3rem;"></i>
+                                            <p class="mt-2 mb-0">No employees found</p>
+                                            <small class="text-muted">Try changing your search or filter criteria</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-section">
+                        <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
                     </div>
                 </div>
 
-                <div v-else>
-                    <Details @update="fetch()" :employee="selectedEmployee" :backToList="backToList" :openEdit="openEdit" :selectedEmployee="selectedEmployee" :selectedRow="selectedRow" />
-                </div>
+                
 
-                <div class="card-footer" v-if="currentView === 'list'">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
+                <div v-if="currentView === 'details'">
+                    <Details @update="fetch()" :employee="selectedEmployee"   :backToList="backToList" ref="details" />
                 </div>
             </div>
         </div>
@@ -159,12 +195,27 @@ export default {
             currentView: 'list',
             units: [],
             deleteModalTitle: 'Delete Employee',
-            deleteModalMessage: 'Are you sure you want to delete this employee? This action cannot be undone.'
+            deleteModalMessage: 'Are you sure you want to delete this employee? This action cannot be undone.',
+            localKeyword: '',
+            sortBy: 'created_at',
+            sortDirection: 'desc',
+        }
+    },
+    computed: {
+        filteredAndSortedList() {
+            return this.sortList(this.lists);
         }
     },
     watch: {
         "filter.keyword"(newVal) {
+            this.localKeyword = newVal;
             this.checkSearchStr(newVal);
+        },
+        "filter.sort_by"(newVal) {
+            this.sortBy = newVal;
+        },
+        "filter.sort_direction"(newVal) {
+            this.sortDirection = newVal;
         }
     },
     created() {
@@ -174,6 +225,68 @@ export default {
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
+        
+        updateKeyword(keyword) {
+            this.localKeyword = keyword;
+            this.filter.keyword = keyword;
+            this.checkSearchStr(keyword);
+        },
+        
+        toggleSort(field) {
+            if (this.sortBy === field) {
+                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortBy = field;
+                this.sortDirection = 'asc';
+            }
+        },
+        
+        sortList(list) {
+            return [...list].sort((a, b) => {
+                let aValue, bValue;
+                
+                switch (this.sortBy) {
+                    case 'fullname':
+                        aValue = a.fullname || '';
+                        bValue = b.fullname || '';
+                        break;
+                    case 'position':
+                        aValue = a.position ? a.position.title : '';
+                        bValue = b.position ? b.position.title : '';
+                        break;
+                    case 'email':
+                        aValue = a.email || '';
+                        bValue = b.email || '';
+                        break;
+                    case 'created_at':
+                        aValue = new Date(a.created_at || 0);
+                        bValue = new Date(b.created_at || 0);
+                        break;
+                    default:
+                        aValue = a[this.sortBy] || '';
+                        bValue = b[this.sortBy] || '';
+                }
+                
+                if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
+                if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        },
+        
+        getRowStyle(list) {
+            let hoverColor = 'rgba(46, 139, 87, 0.05)';
+            
+            if (list.is_active === 0) {
+                hoverColor = 'rgba(220, 53, 69, 0.05)';
+            } else if (list.is_blacklisted === 1) {
+                hoverColor = 'rgba(255, 193, 7, 0.1)';
+            }
+            
+            return {
+                '--hover-color': hoverColor
+            };
+        },
+        
         fetch(page_url) {
             page_url = page_url || '/employees';
             axios.get(page_url, {
@@ -196,10 +309,8 @@ export default {
             this.$refs.create.show();
         },
 
-        openEdit(data, index) {
-            this.selectedRow = index;
-            this.$refs.create.edit(data, index);
-
+        openEdit(data) {
+            this.$refs.create.edit(data);
         },
 
         toggleActive(data) {
@@ -255,9 +366,75 @@ export default {
 
         onEmployeeSaved() {
             this.fetch();
+        },
 
-            //this.$toast.success('Employee saved successfully!');
+        getAvatarUrl(avatar) {
+            if (!avatar) return null;
+            // If avatar already has full URL or starts with storage/, return as-is
+            if (avatar.startsWith('http') || avatar.startsWith('storage/')) {
+                return '/' + avatar;
+            }
+            // If avatar already has avatars/ prefix
+            if (avatar.startsWith('avatars/')) {
+                return '/storage/' + avatar;
+            }
+            // Otherwise add avatars/ prefix
+            return '/storage/avatars/' + avatar;
         }
     }
 }
 </script>
+
+<style scoped>
+/* Sortable Header */
+.sortable-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s ease;
+}
+
+.sortable-header:hover {
+    color: #2e8b57;
+}
+
+.sortable-header i {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* Table Row Hover Effects */
+tbody tr {
+    transition: background-color 0.3s ease;
+}
+
+tbody tr:hover {
+    background-color: var(--hover-color, rgba(46, 139, 87, 0.05)) !important;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+    min-width: 80px;
+}
+
+/* Pagination Section */
+.pagination-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Empty State */
+.text-center {
+    color: #6c757d;
+}
+
+.text-center i {
+    opacity: 0.5;
+}
+</style>

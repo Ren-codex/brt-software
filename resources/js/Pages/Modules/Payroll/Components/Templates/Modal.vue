@@ -2,20 +2,20 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-lg">
             <div class="modal-header">
-                <h2 v-if="isAddEmployee">Add Employee to Payroll Template</h2>
-                <h2 v-else>{{ isEditTitle ? 'Edit' : 'Create' }} Payroll Template</h2>
+                <h2 v-if="isAddEmployee">Add Employee to Payroll Group</h2>
+                <h2 v-else>{{ isEditTitle ? 'Edit' : 'Create' }} Payroll Group</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <form @submit.prevent="saveTemplate" class="payroll-template-form">
-                    <!-- Template Name -->
+                    <!-- Group Name -->
                     <div class="form-group" v-if="!isAddEmployee">
-                        <label class="form-label">Template Name</label>
+                        <label class="form-label">Group Name</label>
                         <div class="input-wrapper">
                             <i class="ri-file-text-line input-icon"></i>
-                            <input type="text" v-model="form.name" class="form-control" required placeholder="Enter template name">
+                            <input type="text" v-model="form.name" class="form-control" required placeholder="Enter group name">
                         </div>
 
                     </div>
@@ -66,7 +66,7 @@
                         <button type="submit" class="btn btn-save" :disabled="loading">
                             <i class="ri-save-line" v-if="!loading"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ loading ? 'Processing...' : (isEditTitle ? 'Update Template' : 'Create Template') }}
+                            {{ loading ? 'Processing...' : (isEditTitle ? 'Update Group' : 'Create Group') }}
                         </button>
                     </div>
                 </form>

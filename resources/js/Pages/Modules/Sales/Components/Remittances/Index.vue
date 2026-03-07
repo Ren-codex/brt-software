@@ -23,10 +23,36 @@
             
                 <div class="card-body bg-white m-2 p-3">
                     <div class="search-section">
-                        <div class="search-wrapper">
-                            <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                placeholder="Search purchase request..." class="search-input">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-search-line search-icon"></i>
+                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                        placeholder="Search purchase request..." class="search-input">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="search-wrapper">
+                                    <i class="ri-map-pin-line search-icon"></i>
+                                    <select v-model.number="filter.location_id" @change="fetch()" class="search-input">
+                                        <option :value="null">All Locations</option>
+                                        <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
+                                            {{ location.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-flag-line search-icon"></i>
+                                    <select v-model="filter.status" @change="fetch()" class="search-input">
+                                        <option :value="null">All Status</option>
+                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug">
+                                            {{ status.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div> -->
                         </div>
 
                     </div>
@@ -52,13 +78,13 @@
                                                 <td class="text-center">{{ index + 1 }}</td>
                                                 <td class="text-center">{{ item.remittance_no || '-' }}</td>
                                                 <td class="text-center">{{ item.date || item.remittance_date }}</td>
-                                                <td class="text-center">{{ item.total_amount ? '\u20B1' + Number(item.total_amount).toFixed(2) : '-' }}</td>
+                                                <td class="text-center">{{ item.total_amount ? '₱' + Number(item.total_amount).toFixed(2) : '-' }}</td>
                                                 <td class="text-center">
                                                     <span :style="{ 'background-color': item.status.name === 'disapproved' ? '#ff0000' : '#6c757d', color: '#fff' }" class="px-3 py-2 rounded-pill badge">
                                                         {{ item.status.name }}
                                                     </span>
                                                 </td>
-                                                <td class="text-center">{{ item.created_by?.username || '-' }}</td>
+                                                <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                                 <td class="text-center">
                                                     <div class="d-flex justify-content-center gap-1">
                                                         <b-button @click="toggleRowExpansion(index)" variant="outline-default" size="sm" class="btn-icon rounded-circle">
@@ -73,6 +99,10 @@
                                         </template>
                                     </tbody>
                                 </table>
+                                <div v-if="openRemittance.length === 0" class="text-center py-5">
+                                    <i class="ri-inbox-line fs-48 text-muted"></i>
+                                    <p class="text-muted mt-2">No remittance found</p>
+                                </div>
                             </b-tab>
 
                             <b-tab title="Liquidated">
@@ -83,9 +113,7 @@
                                             <th style="width: 15%;" class="text-center border-none">Remittance No.</th>
                                             <th style="width: 15%;" class="text-center border-none">Date</th>
                                             <th style="width: 15%;" class="text-center border-none">Amount</th>
-                                            <!-- <th style="width: 15%;" class="text-center border-none">Status</th> -->
                                             <th style="width: 20%;" class="text-center border-none">Collector Name</th>
-                                            <!-- <th style="width: 7%;" class="text-center border-none">Actions</th> -->
                                         </tr>
                                     </thead>
                                     <tbody class="fs-12">
@@ -94,26 +122,49 @@
                                                 <td class="text-center">{{ index + 1 }}</td>
                                                 <td class="text-center">{{ item.remittance_no || '-' }}</td>
                                                 <td class="text-center">{{ item.date || item.remittance_date }}</td>
-                                                <td class="text-center">{{ item.total_amount ? '\u20B1' + Number(item.total_amount).toFixed(2) : '-' }}</td>
-                                                <!-- <td class="text-center">
-                                                    <span :style="{ 'background-color': item.status.name === 'disapproved' ? '#ff0000' : '#6c757d', color: '#fff' }" class="px-3 py-2 rounded-pill badge">
-                                                        {{ item.status.name }}
-                                                    </span>
-                                                </td> -->
-                                                <td class="text-center">{{ item.created_by?.username || '-' }}</td>
-                                                <!-- <td class="text-center">
-                                                    <div class="d-flex justify-content-center gap-1">
-                                                        <b-button @click.stop="onDelete(item.id)" variant="outline-danger" size="sm" class="btn-icon rounded-circle">
-                                                            <i class="ri-close-line"></i>
-                                                        </b-button>
-                                                    </div>
-                                                </td> -->
+                                                <td class="text-center">{{ item.total_amount ? '₱' + Number(item.total_amount).toFixed(2) : '-' }}</td>
+                                                <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                             </tr>
 
                                             <RemittanceDetails v-if="expandedRows.includes(index)" :item="item" />
                                         </template>
                                     </tbody>
                                 </table>
+                                <div v-if="liquidatedRemittance.length === 0" class="text-center py-5">
+                                    <i class="ri-inbox-line fs-48 text-muted"></i>
+                                    <p class="text-muted mt-2">No remittance found</p>
+                                </div>
+                            </b-tab>
+
+                            <b-tab title="Disapproved">
+                                <table class="table align-middle table-hover mb-0" style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                                    <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                                        <tr class="fs-12 fw-bold text-muted">
+                                            <th style="width: 3%; border: none;">#</th>
+                                            <th style="width: 15%;" class="text-center border-none">Remittance No.</th>
+                                            <th style="width: 15%;" class="text-center border-none">Date</th>
+                                            <th style="width: 15%;" class="text-center border-none">Amount</th>
+                                            <th style="width: 20%;" class="text-center border-none">Collector Name</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="fs-12">
+                                        <template v-for="(item,index) in disapprovedRemittance" :key="index">
+                                            <tr @click="toggleRowExpansion(index)" :class="{ 'bg-primary bg-opacity-10': index === selectedRow, 'cursor-pointer': true }">
+                                                <td class="text-center">{{ index + 1 }}</td>
+                                                <td class="text-center">{{ item.remittance_no || '-' }}</td>
+                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-center">{{ item.total_amount ? Number(item.total_amount).toFixed(2) : '-' }}</td>
+                                                <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
+                                            </tr>
+
+                                            <RemittanceDetails v-if="expandedRows.includes(index)" :item="item" />
+                                        </template>
+                                    </tbody>
+                                </table>
+                                <div v-if="disapprovedRemittance.length === 0" class="text-center py-5">
+                                    <i class="ri-inbox-line fs-48 text-muted"></i>
+                                    <p class="text-muted mt-2">No remittance found</p>
+                                </div>
                             </b-tab>
                         </b-tabs>
                     </div>
@@ -200,12 +251,17 @@ import RemittanceDetails from './Details/RemittanceDetails.vue';
 
 export default {
     components: { Pagination, Create, RemittanceDetails },
+    props: ['dropdowns', 'isExternal'],
     data(){
         return {
             lists: [],
             meta: {},
             links: {},
-            filter: { keyword: '' },
+            filter: { 
+                keyword: '',
+                location_id: null,
+                status: null
+            },
             tabIndex: 0,
             selectedRow: null,
             expandedRows: [],
@@ -219,13 +275,16 @@ export default {
     },
     computed: {
         activeStatus(){
-            return this.tabIndex === 0 ? 'open' : 'liquidated';
+            return this.tabIndex === 0 ? 'open' : this.tabIndex === 1 ? 'liquidated' : 'disapproved';
         },
         openRemittance() {
-            return this.lists.filter(r => r.status.slug != 'liquidated');
+            return this.lists.filter(r => r.status.slug === 'open');
         },
         liquidatedRemittance() {
             return this.lists.filter(r => r.status.slug === 'liquidated');
+        },
+        disapprovedRemittance() {
+            return this.lists.filter(r => r.status.slug === 'disapproved');
         }
     },
     watch: {
@@ -248,8 +307,13 @@ export default {
             axios.get('/remittances',{
                 params : {
                     keyword: this.filter.keyword,
+                    location_id: this.filter.location_id === null || this.filter.location_id === ''
+                        ? null
+                        : Number(this.filter.location_id),
+                    status: this.filter.status,
                     count: 10,
-                    option: 'lists'
+                    option: 'lists',
+                    is_external: this.isExternal ? 1 : 0
                 }
             })
             .then(response => {
@@ -265,7 +329,6 @@ export default {
             this.$refs.create.show();
         },
         onDelete(id){
-            // placeholder delete
             console.log('delete', id);
         },
 

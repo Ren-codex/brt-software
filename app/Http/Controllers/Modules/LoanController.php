@@ -53,16 +53,21 @@ class LoanController extends Controller
         ]);
     }
 
-    public function update(LoanRequest $request)
+    public function update(LoanRequest $request, $id)
     {
         $result = $this->handleTransaction(function () use ($request) {
             return $this->loan->update($request);
         });
 
-        // For Inertia, return back with success message
+        $flashData = $result['data'] instanceof \Illuminate\Http\Resources\Json\JsonResource
+            ? $result['data']->response()->getData(true)
+            : $result['data'];
+
         return back()->with([
-            'success' => $result['message'],
+            'data' => $flashData,
+            'message' => $result['message'],
             'info' => $result['info'],
+            'status' => $result['status'] ?? true,
         ]);
     }
 
@@ -76,6 +81,17 @@ class LoanController extends Controller
         return response()->json([
             'message' => $result['message'],
             'status' => $result['status'],
+        ]);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $result = $this->loan->updateStatus($request, $id);
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
         ]);
     }
 }

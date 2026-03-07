@@ -47,22 +47,53 @@
         <!-- Tab Content -->
         <div>
           <transition name="inventory-fade" mode="out-in">
-            <div :key="activeTab" class="inventory-tab-content">
-              <div v-if="activeTab === 'payroll_management'" class="shadow-sm p-3">
-                <PayrollManagement :dropdowns="dropdowns" />
+            <div :key="currentView" class="inventory-tab-content">
+              <!-- Payroll Details View -->
+              <div v-if="currentView === 'payrollDetails' && selectedPayroll" class="payroll-details-container">
+                <PayrollView
+                  :payroll="selectedPayroll"
+                  :dropdowns="dropdowns"
+                  @back="backToList"
+                  @toast="showToast"
+                  @fetch="fetchPayrolls"
+                />
               </div>
-              <div v-if="activeTab === 'payroll_templates'" class="shadow-sm p-3">
+              <div v-if="currentView === 'loanDetails' && selectedLoan" class="payroll-details-container">
+                <LoanView
+                  :loan="selectedLoan"
+                  :dropdowns="dropdowns"
+                  @back="backToLoanList"
+                  @view="openLoanDetails"
+                />
+              </div>
+
+              <!-- Payroll Management List -->
+              <div v-if="activeTab === 'payroll_management' && currentView === 'list'" class="shadow-sm p-3">
+                <PayrollManagement :dropdowns="dropdowns" @view="openPayrollDetails" />
+              </div>
+              <div v-if="activeTab === 'payroll_templates' && currentView === 'list'" class="shadow-sm p-3">
                 <PayrollTemplate :dropdowns="dropdowns" />
               </div>
-              <div v-if="activeTab === 'payroll_settings'" class="shadow-sm p-3">
-                <PayrollSettings :dropdowns="dropdowns" />
+              <div v-if="activeTab === 'payroll_items' && currentView === 'list'" class="shadow-sm p-3">
+                <PayrollItems :dropdowns="dropdowns" />
               </div>
-              <div v-if="activeTab === 'sales_incentives'" class="shadow-sm p-3">
+              <div v-if="activeTab === 'sales_incentives' && currentView === 'list'" class="shadow-sm p-3">
                 <SalesIncentives :dropdowns="dropdowns" />
+              </div>
+              <div v-if="activeTab === 'loan_management' && currentView === 'list'" class="shadow-sm p-3">
+                <LoanManagement ref="loanManagement" :dropdowns="dropdowns" @view="openLoanDetails" />
               </div>
             </div>
           </transition>
         </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div v-if="isToastVisible" class="inventory-toast">
+      <div class="inventory-toast-content">
+        <i class="ri-check-line"></i>
+        {{ toastMessage }}
       </div>
     </div>
   </div>
@@ -72,17 +103,22 @@
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PayrollManagement from './Components/Payrolls/Index.vue';
+import PayrollView from './Components/Payrolls/View.vue';
 import PayrollSettings from './Components/Settings/Index.vue';
 import PayrollTemplate from './Components/Templates/Index.vue';
 import SalesIncentives from './Components/SalesIncentives/Index.vue';
+import LoanManagement from './Components/Loans/Index.vue';
+import LoanView from './Components/Loans/View.vue';
+import PayrollItems from './Components/Items/Index.vue';
 
 export default {
-  components: { PageHeader, PayrollManagement, PayrollSettings, PayrollTemplate, SalesIncentives },
+  components: { PageHeader, PayrollManagement, PayrollView, PayrollItems, PayrollTemplate, SalesIncentives, LoanManagement, LoanView },
   props: ['dropdowns'],
   data() {
     return {
       isSidebarCollapsed: false,
       activeTab: localStorage.getItem('payroll_active_tab') || 'payroll_management',
+      currentView: 'list',
       payrolls: [],
       meta: null,
       filters: {
@@ -94,6 +130,9 @@ export default {
       showCreateModal: false,
       showEditModal: false,
       selectedPayroll: null,
+      selectedLoan: null,
+      isToastVisible: false,
+      toastMessage: '',
       tabs: [
         {
           id: 'payroll_management',
@@ -103,21 +142,27 @@ export default {
         },
         {
           id: 'payroll_templates',
-          label: 'Payroll Templates',
+          label: 'Payroll Groups',
           icon: 'ri-file-list-3-line',
-          description: 'Manage payroll templates'
+          description: 'Manage payroll groups'
         },
         {
-          id: 'payroll_settings',
-          label: 'Settings',
+          id: 'payroll_items',
+          label: 'Payroll Items',
           icon: 'ri-settings-2-line',
-          description: 'Manage payroll settings'
+          description: 'Manage payroll items'
         },
         {
           id: 'sales_incentives',
           label: 'Sales Incentives',
           icon: 'ri-trophy-line',
           description: 'Manage sales incentives'
+        },
+        {
+          id: 'loan_management',
+          label: 'Loans',
+          icon: 'ri-bank-card-line',
+          description: 'Manage employee loans'
         },
       ]
     }
@@ -129,6 +174,38 @@ export default {
     changeTab(tab) {
       this.activeTab = tab;
       localStorage.setItem('payroll_active_tab', tab);
+      this.currentView = 'list';
+      this.selectedPayroll = null;
+      this.selectedLoan = null;
+      this.filters.search = '';
+    },
+    openPayrollDetails(payroll) {
+      this.selectedPayroll = payroll;
+      this.currentView = 'payrollDetails';
+    },
+    openLoanDetails(loan) {
+      this.selectedLoan = loan;
+      this.currentView = 'loanDetails';
+    },
+    backToList() {
+      this.currentView = 'list';
+      this.selectedPayroll = null;
+      this.selectedLoan = null;
+      // Optionally fetch updated data
+      // this.fetchPayrolls();
+    },
+    backToLoanList() {
+      this.currentView = 'list';
+      this.selectedLoan = null;
+      this.fetchLoans();
+      this.changeTab('loan_management');
+    },
+    showToast(message) {
+      this.toastMessage = message;
+      this.isToastVisible = true;
+      setTimeout(() => {
+        this.isToastVisible = false;
+      }, 3000);
     },
   }
 }
@@ -193,5 +270,39 @@ export default {
 
 .inventory-sidebar.sidebar-collapsed .inventory-sidebar-tab:hover {
   transform: none;
+}
+
+.inventory-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background-color: #28a745;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+.inventory-toast-content {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.payroll-details-container {
+  margin: 20px;
 }
 </style>

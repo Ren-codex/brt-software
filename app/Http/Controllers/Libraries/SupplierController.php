@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Libraries\SupplierClass;
 use App\Http\Requests\Libraries\SupplierRequest;
+use App\Models\ListSupplier;
+use App\Http\Resources\Libraries\ListSupplierResource;
 
 class SupplierController extends Controller
 {
@@ -32,6 +34,31 @@ class SupplierController extends Controller
                 ]); 
             break;
         }   
+    }
+
+    public function show($id){
+        $supplier = ListSupplier::findOrFail($id);
+        return new ListSupplierResource($supplier);
+    }
+
+    public function toggleActive(Request $request, $id){
+        $supplier = ListSupplier::findOrFail($id);
+        $supplier->update(['is_active' => $request->is_active]);
+        
+        return response()->json([
+            'message' => 'Supplier status updated successfully',
+            'data' => new ListSupplierResource($supplier)
+        ]);
+    }
+
+    public function toggleBlacklist(Request $request, $id){
+        $supplier = ListSupplier::findOrFail($id);
+        $supplier->update(['is_blacklisted' => $request->is_blacklisted]);
+        
+        return response()->json([
+            'message' => 'Supplier blacklist status updated successfully',
+            'data' => new ListSupplierResource($supplier)
+        ]);
     }
 
   

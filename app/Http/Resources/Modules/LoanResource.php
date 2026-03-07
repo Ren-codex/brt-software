@@ -14,6 +14,32 @@ class LoanResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'loan_no' => $this->loan_no,
+            'employee_id' => $this->employee_id,
+            'loan_type' => $this->loan_type,
+            'amount' => $this->amount,
+            'interest_rate' => $this->interest_rate,
+            'term_months' => $this->term_months,
+            'status' => $this->status,
+            'purpose' => $this->purpose,
+            'added_by_id' => $this->added_by_id,
+            'approved_by_id' => $this->approved_by_id,
+            'approved_at' => $this->approved_at?->format('F d, Y h:i A'),
+            'amtpaid' => $this->amtpaid,
+            'remaining_balance' => $this->remaining_balance,
+            'remaining_term_to_pay' => $this->remaining_term_to_pay,
+            'created_at' => $this->created_at->format('F d, Y'),
+            'updated_at' => $this->updated_at->format('F d, Y'),
+            'employee' => new EmployeeResource($this->employee),
+            'approved_by' => $this->approved_by?->employee?->fullname ?? $this->approved_by?->username,
+            'payments' => LoanPaymentResource::collection(
+                $this->payments()->orderBy('created_at', 'DESC')->orderBy('id', 'DESC')->get()
+            ),
+            'logs' => LoanLogResource::collection(
+                $this->logs()->with('actionedBy.employee')->orderBy('created_at', 'DESC')->get()
+            ),
+        ];
     }
 }

@@ -24,14 +24,18 @@ class DatabaseSeeder extends Seeder
         $this->call(ListUnitsTableSeeder::class);
         $this->call(ProductsTableSeeder::class);
         $this->call(ListSuppliersTableSeeder::class);
-        $this->call(PurchaseOrdersTableSeeder::class);
-        $this->call(PurchaseOrderItemsTableSeeder::class);
-        $this->call(ReceivedStocksTableSeeder::class);
-        $this->call(ReceivedItemsTableSeeder::class);
-        $this->call(InventoryStocksTableSeeder::class);
+        $this->call(ListLocationsTableSeeder::class);
+        // $this->call(PurchaseOrdersTableSeeder::class);
+        // $this->call(PurchaseOrderItemsTableSeeder::class);
+        // $this->call(ReceivedStocksTableSeeder::class);
+        // $this->call(ReceivedItemsTableSeeder::class);
+        // $this->call(InventoryStocksTableSeeder::class);
         $this->call(SeriesSeeder::class);
-        $this->call(PayrollSettingsTableSeeder::class);
+        // $this->call(PayrollSettingsTableSeeder::class);
         $this->call(EmployeesTableSeeder::class);
-        $this->call(LoanSeeder::class); 
+        // $this->call(LoanSeeder::class); 
+        $this->call(ExpenseSeeder::class);
+        $this->call(ContactsTableSeeder::class);
+        
     }
 }

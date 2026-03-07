@@ -184,6 +184,78 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            14 =>
+            array (
+                'id' => 15,
+                'name' => 'Draft',
+                'slug' => 'draft',
+                'description' => 'Draft status',
+                'text_color' => '#000000',
+                'bg_color' => '#adadad',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            15 =>
+            array (
+                'id' => 16,
+                'name' => 'For Release',
+                'slug' => 'for-release',
+                'description' => 'For Release status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#007678',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            16 =>
+            array (
+                'id' => 17,
+                'name' => 'Completed',
+                'slug' => 'completed',
+                'description' => 'Completed status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#87efed',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            17 =>
+            array (
+                'id' => 18,
+                'name' => 'Approval',
+                'slug' => 'approval',
+                'description' => 'For Approval status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            18 =>
+            array (
+                'id' => 19,
+                'name' => 'Replaced',
+                'slug' => 'replaced',
+                'description' => 'For Replaced status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            18 =>
+            array (
+                'id' => 19,
+                'name' => 'loss',
+                'slug' => 'loss',
+                'description' => 'For Loss status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

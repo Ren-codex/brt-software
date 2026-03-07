@@ -6,19 +6,47 @@ namespace App\Services\Libraries;
 use App\Models\Receipt;
 use App\Models\ListStatus;
 use App\Http\Resources\Libraries\ReceiptResource;
+use Illuminate\Support\Facades\DB;
 
 
 class ReceiptClass
 {
     public function lists($request){
-        return Receipt::with(['arInvoice.sales_order.customer', 'status'])
-            ->when($request->keyword, function($query) use ($request) {
-                $query->whereHas('arInvoice.sales_order.customer', function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->keyword . '%');
-                })->orWhere('receipt_number', 'like', '%' . $request->keyword . '%');
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate($request->count ?? 10);
+        return ReceiptResource::collection(
+            Receipt::with(['arInvoice.sales_order.customer', 'status'])
+                ->when($request->location_id, function ($query, $locationId) {
+                    $query->whereHas('arInvoice.sales_order', function ($q) use ($locationId) {
+                        $q->where('location_id', $locationId);
+                    });
+                })
+                ->when($request->keyword, function($query) use ($request) {
+                    $query->whereHas('arInvoice.sales_order.customer', function($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->keyword . '%');
+                    })->orWhere('receipt_number', 'like', '%' . $request->keyword . '%');
+                })
+                ->when($request->status, function ($query, $status) {
+                    $query->whereHas('status', function ($q) use ($status) {
+                        $q->where('slug', $status);
+                    });
+                })
+                ->when($request->remittance_type, function ($query, $remittanceType) {
+                    $type = strtolower((string) $remittanceType);
+                    $query->whereHas('arInvoice.sales_order', function ($q) use ($type) {
+                        $creditSalesModes = ['credit', 'credit sales'];
+                        if ($type === 'credit') {
+                            $q->whereIn(DB::raw('LOWER(payment_mode)'), $creditSalesModes);
+                            return;
+                        }
+
+                        $q->where(function ($inner) use ($creditSalesModes) {
+                            $inner->whereNotIn(DB::raw('LOWER(payment_mode)'), $creditSalesModes)
+                                ->orWhereNull('payment_mode');
+                        });
+                    });
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate($request->count ?? 10)
+        );
     }
 
     public function dashboard(){

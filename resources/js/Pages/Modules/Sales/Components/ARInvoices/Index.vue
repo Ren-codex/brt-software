@@ -13,10 +13,6 @@
                                 <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
                             </div>
                         </div>
-                        <!-- <button class="create-btn" @click="openCreate">
-                            <i class="ri-add-line"></i>
-                            <span>Create Invoice</span>
-                        </button> -->
                     </div>
 
                 </div>
@@ -24,10 +20,36 @@
       
                 <div class="card-body bg-white m-2 p-3">
                     <div class="search-section">
-                        <div class="search-wrapper">
-                            <i class="ri-search-line search-icon"></i>
-                            <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                placeholder="Search purchase request..." class="search-input">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-search-line search-icon"></i>
+                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                        placeholder="Search purchase request..." class="search-input">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-map-pin-line search-icon"></i>
+                                    <select v-model="filter.location_id" @change="fetch()" class="search-input">
+                                        <option :value="null">All Locations</option>
+                                        <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
+                                            {{ location.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="search-wrapper">
+                                    <i class="ri-flag-line search-icon"></i>
+                                    <select v-model="filter.status" @change="fetch()" class="search-input">
+                                        <option :value="null">All Status</option>
+                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug">
+                                            {{ status.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -79,14 +101,14 @@
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button v-if="list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0" @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')" @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr v-if="expandedRows.includes(index)" class="bg-light">
-                                        <td colspan="8" class="p-0">
+                                        <td colspan="12" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Invoice Details
@@ -122,6 +144,13 @@
                                         </td>
                                     </tr>
                                 </template>
+                                <tr v-if="lists.length === 0">
+                                    <td colspan="9" class="text-center py-4">
+                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
+                                        <p class="mt-2 mb-0">No invoice found</p>
+                                        <small class="text-muted">Try changing your search or filter criteria</small>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -221,7 +250,7 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import Payment from '../ARInvoices/Modals/Payment.vue';
 export default {
     components: { PageHeader, Pagination, Multiselect, Payment },
-    props: ['dropdowns'],
+    props: ['dropdowns', 'isExternal'],
     data() {
         return {
             currentUrl: window.location.origin,
@@ -229,7 +258,9 @@ export default {
             meta: {},
             links: {},
             filter: {
-                keyword: null
+                keyword: null,
+                location_id: null,
+                status: null
             },
             index: null,
             selectedRow: null,
@@ -289,7 +320,10 @@ export default {
                 params : {
                     option: 'lists',
                     keyword: this.filter.keyword,
-                    count: 10
+                    location_id: this.filter.location_id,
+                    status: this.filter.status,
+                    count: 10,
+                    is_external: this.isExternal ? 1 : 0
                 }
             })
                 .then(response => {
@@ -355,8 +389,6 @@ export default {
         },
 
         getStockPercentage(quantity) {
-            // Calculate percentage based on total stock - this is a simple implementation
-            // You might want to adjust this based on your business logic
             const maxStock = Math.max(...this.stock.products.map(p => p.total_quantity));
             return Math.min((quantity / maxStock) * 100, 100);
         }

@@ -5,13 +5,13 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <b-button @click.stop="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.id == 11">
+                        <b-button @click.stop="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.slug == 'open'">
                             <i class="ri-check-line"></i>
                         </b-button>
                         <b-button @click.stop="onPrint(item.id)" size="sm" class="btn-default me-1">
                             <i class="ri-printer-line"></i>
                         </b-button>
-                        <b-button @click.stop="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.id != 12">
+                        <b-button @click.stop="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.slug == 'open'">
                             <i class="ri-delete-bin-line"></i>
                         </b-button>
                     </div>
@@ -62,7 +62,8 @@
                                         <i class="ri-eye-line"></i> View Receipts
                                     </b-button>
                                 </div><br>
-                                <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.username || '-' }}</p>
+                                <p class="mb-1"><strong>Sales Type:</strong> {{ formatRemittanceType(item.remittance_type) }}</p>
+                                <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.fullname || '-' }}</p>
                                 <p class="mb-1"><strong>Date Approved:</strong> {{ item.approved_at || '-' }}</p>
                                 <p class="mb-0"><strong>Remarks:</strong>
                                     &nbsp;<b-badge variant="dark" style="font-size:12px">{{ item.remarks }}</b-badge></p><br>
@@ -114,6 +115,9 @@ export default {
             const num = Number(val);
             if (!isFinite(num)) return val;
             return '\u20B1' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        formatRemittanceType(type) {
+            return String(type || '').toLowerCase() === 'credit' ? 'Credit Sales' : 'Cash Sales';
         },
         async openDelete(id){
             const result = await Swal.fire({

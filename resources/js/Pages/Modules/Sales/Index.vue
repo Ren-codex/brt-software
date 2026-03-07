@@ -3,6 +3,8 @@
     <Head title="Sales" />
     <PageHeader title="Sales Management" pageTitle="List" />
 
+
+
     <div class="inventory-container">
       <!-- Minimal Vertical Tabs -->
       <div class="inventory-sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
@@ -57,7 +59,7 @@
               </div>
 
               <div v-if="activeTab === 'ar_invoices'" class="shadow-sm p-3">
-                <ARInvoices :dropdowns="dropdowns"/>
+                <ARInvoices :dropdowns="dropdowns" :isExternal="false"/>
               </div>
 
               <div v-if="activeTab === 'receipts'" class="shadow-sm p-3">

@@ -1,5 +1,5 @@
 <template>
-    <PageHeader :title="'Loan Management'" :pageTitle="'List'" />
+    <PageHeader :title="'Expense Management'" :pageTitle="'List'" />
     <BRow>
         <div class="col-md-12">
             <div class="library-card">
@@ -7,16 +7,16 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
-                                <i class="ri-bank-card-fill fs-24"></i>
+                                <i class="ri-money-dollar-circle-fill fs-24"></i>
                             </div>
                             <div>
-                                <h4 class="header-title mb-1">List of Loans</h4>
-                                <p class="header-subtitle mb-0">A comprehensive list of employee loans</p>
+                                <h4 class="header-title mb-1">List of Expenses</h4>
+                                <p class="header-subtitle mb-0">A comprehensive list of company expenses</p>
                             </div>
                         </div>
                         <button class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
-                            <span>Loan</span>
+                            <span>Expense</span>
                         </button>
                     </div>
                 </div>
@@ -26,7 +26,7 @@
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
                             <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
-                                placeholder="Search loans..." class="search-input">
+                                placeholder="Search expenses..." class="search-input">
                         </div>
                     </div>
 
@@ -35,12 +35,12 @@
                             <thead class="table-light thead-fixed">
                                 <tr class="fs-11">
                                     <th style="width: 3%;">#</th>
-                                    <th style="width: 15%;">Employee</th>
-                                    <th style="width: 10%;">Loan Type</th>
+                                    <th style="width: 12%;">Expense Type</th>
                                     <th style="width: 10%;">Amount</th>
-                                    <th style="width: 8%;">Interest Rate</th>
-                                    <th style="width: 8%;">Term (Months)</th>
+                                    <th style="width: 10%;">Expense Date</th>
+                                    <th style="width: 20%;">Description</th>
                                     <th style="width: 8%;">Status</th>
+                                    <th style="width: 10%;">Added By</th>
                                     <th style="width: 10%;">Created</th>
                                     <th style="width: 10%;" class="text-center">Actions</th>
                                 </tr>
@@ -48,32 +48,31 @@
 
                             <tbody class="table-white fs-12">
                                 <tr v-for="(list,index) in lists" v-bind:key="index" :class="{
-                                    'bg-info-subtle': index === selectedRow,
-                                    'bg-danger-subtle': list.status === 'overdue'
+                                    'bg-info-subtle': index === selectedRow
                                 }">
                                     <td class="text-center">
                                         {{ index + 1}}
                                     </td>
 
+                                    <td>{{ list.expense_type || '-' }}</td>
+                                    <td>{{ list.amount ? '₱' + parseFloat(list.amount).toLocaleString() : '-' }}</td>
+                                    <td>{{ list.expense_date || '-' }}</td>
+                                    <td>{{ list.description || '-' }}</td>
+                                    <td>
+                                        <span class="status-badge" :style="getStatusStyle(list.status_info)">
+                                            {{ list.status_info ? list.status_info.name : (list.status || '-') }}
+                                        </span>
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar-xs me-2">
-                                                <img v-if="list.employee && list.employee.avatar" :src="'/storage/' + list.employee.avatar" alt="Avatar" class="rounded-circle avatar-xs">
+                                                <img v-if="list.added_by && list.added_by.avatar" :src="'/storage/' + list.added_by.avatar" alt="Avatar" class="rounded-circle avatar-xs">
                                                 <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
                                                     <i class="ri-user-line text-muted"></i>
                                                 </div>
                                             </div>
-                                            <span>{{ list.employee ? list.employee.fullname : '-' }}</span>
+                                            <span>{{ list.added_by ? list.added_by.name : '-' }}</span>
                                         </div>
-                                    </td>
-                                    <td>{{ list.loan_type || '-' }}</td>
-                                    <td>{{ list.amount ? '₱' + parseFloat(list.amount).toLocaleString() : '-' }}</td>
-                                    <td>{{ list.interest_rate ? list.interest_rate + '%' : '-' }}</td>
-                                    <td>{{ list.term_months || '-' }}</td>
-                                    <td>
-                                        <span :class="getStatusClass(list.status)">
-                                            {{ list.status || '-' }}
-                                        </span>
                                     </td>
                                     <td>{{ list.created_at }}</td>
 
@@ -100,6 +99,7 @@
         </div>
     </BRow>
     <Create @add="fetch()" @update="fetch()" :dropdowns="dropdowns" ref="create" />
+    <DeleteModal ref="deleteModal" />
 </template>
 
 <script>
@@ -124,8 +124,8 @@ export default {
             },
             index: null,
             selectedRow: null,
-            deleteModalTitle: 'Delete Loan',
-            deleteModalMessage: 'Are you sure you want to delete this loan? This action cannot be undone.'
+            deleteModalTitle: 'Delete Expense',
+            deleteModalMessage: 'Are you sure you want to delete this expense? This action cannot be undone.'
         }
     },
     watch: {
@@ -141,7 +141,7 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url) {
-            page_url = page_url || '/loans';
+            page_url = page_url || '/expenses';
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -168,19 +168,19 @@ export default {
         },
 
         async onDelete(id) {
-            this.deleteModalTitle = 'Delete Loan';
-            this.deleteModalMessage = 'Are you sure you want to delete this loan? This action cannot be undone.';
+            this.deleteModalTitle = 'Delete Expense';
+            this.deleteModalMessage = 'Are you sure you want to delete this expense? This action cannot be undone.';
             const confirmed = await this.$refs.deleteModal.show();
 
             if (confirmed) {
-                axios.delete(`/loans/${id}`)
+                axios.delete(`/expenses/${id}`)
                 .then(response => {
                     this.fetch();
                     this.$toast.success(response.data.message);
                 })
                 .catch(err => {
                     console.log(err);
-                    this.$toast.error('Failed to delete loan');
+                    this.$toast.error('Failed to delete expense');
                 });
             }
         },
@@ -194,30 +194,40 @@ export default {
         },
 
         openView(data) {
-            this.selectedEmployee = data;
+            this.selectedExpense = data;
             // Implement view details if needed
         },
 
-        getStatusClass(status) {
-            switch (status) {
-                case 'active':
-                    return 'badge bg-success';
-                case 'pending':
-                    return 'badge bg-warning';
-                case 'completed':
-                    return 'badge bg-info';
-                case 'rejected':
-                    return 'badge bg-danger';
-                case 'overdue':
-                    return 'badge bg-danger';
-                default:
-                    return 'badge bg-secondary';
+        getStatusStyle(status) {
+            if (!status) {
+                return {
+                    color: '#6c757d',
+                    backgroundColor: '#e2e3e5',
+                    border: '1px solid #cccccc'
+                };
             }
+
+            return {
+                color: status.text_color || '#000000',
+                backgroundColor: status.bg_color || '#ffffff',
+                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
+                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
+            };
         }
     }
 }
 </script>
 
 <style scoped>
-/* Add any specific styles if needed */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    cursor: default;
+}
 </style>

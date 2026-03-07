@@ -15,11 +15,13 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->decimal('basic_salary', 15, 2);
-            $table->decimal('overtime_hours', 8, 2)->default(0);
-            $table->decimal('overtime_rate', 15, 2)->default(0);
-            $table->decimal('deductions', 15, 2)->default(0);
+            $table->json('deductions')->nullable();
+            $table->json('earnings')->nullable();
+            $table->decimal('total_earnings', 15, 2)->default(0);
+            $table->decimal('total_deductions', 15, 2)->default(0);
             $table->decimal('total_days', 8, 2)->default(0);
             $table->decimal('net_salary', 15, 2);
+            $table->json('loans')->nullable();
             $table->unsignedInteger('payroll_id');
             $table->foreign('payroll_id')->references('id')->on('payrolls')->onDelete('cascade');
             $table->unsignedInteger('employee_id');

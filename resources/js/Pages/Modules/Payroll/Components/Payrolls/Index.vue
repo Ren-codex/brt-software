@@ -36,9 +36,10 @@
                                     <th style="width: 3%; border: none;">#</th>
                                     <th style="width: 15%;" class="text-center border-none">Pay Period</th>
                                     <th style="width: 20%;" class="text-center border-none">Payroll No.</th>
-                                    <th style="width: 20%;" class="text-center border-none">Payroll Name</th>
+                                    <th style="width: 20%;" class="text-center border-none">Payroll Group</th>
                                     <th style="width: 10%;" class="text-center border-none">Total Net Salary</th>
                                     <th style="width: 10%;" class="text-center border-none">Payroll Clerk</th>
+                                    <th style="width: 10%;" class="text-center border-none">Approved By</th>
                                     <th style="width: 10%;" class="text-center border-none">Status</th>
                                     <th style="width: 12%;" class="text-center border-none">Actions</th>
                                 </tr>
@@ -50,16 +51,18 @@
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">{{ index + 1 }}</td>
-                                        <td class="text-center fw-semibold">{{ formatDate(payroll.pay_period_start) }} - {{ formatDate(payroll.pay_period_end) }}</td>
+                                        <td class="text-center fw-semibold">{{ payroll.payroll_period }}</td>
                                         <td class="text-center">
                                             {{ payroll.payroll_no }}
                                         </td>
                                         <td class="text-center">{{ payroll.payroll_name }}</td>
                                         <td class="text-center fw-bold">{{ formatCurrency(payroll.total_amount) }}</td>
                                         <td class="text-center">{{ payroll.created_by }}</td>
+                                        <td class="text-center">{{ payroll.approved_by }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :style="getStatusStyle(payroll.status)">
-                                                {{ payroll.status }}
+                                            <span class="status-badge" 
+                                              :style="{ color: payroll.status?.text_color, backgroundColor: payroll.status?.bg_color, padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }">
+                                                {{ payroll.status.name }}
                                             </span>
                                         </td>
                                         <td class="text-center">
@@ -67,7 +70,7 @@
                                                 <b-button @click.stop="editPayroll(payroll)" variant="outline-primary"
                                                   v-b-tooltip.hover title="Edit" size="sm"
                                                   class="btn-icon rounded-circle">
-                                                  <i class="ri-pencil-fill"></i>
+                                                  <i class="ri-eye-line"></i>
                                                 </b-button>
                                                 <b-button @click.stop="printPayroll(payroll)" variant="outline-info"
                                                     v-b-tooltip.hover title="Print" size="sm"
@@ -99,11 +102,9 @@
             </div>
         </div>
     </BRow>
-    <!-- Create/Edit Modal -->
     <PayrollModal
-      v-if="showCreateModal || showEditModal"
+      v-if="showCreateModal"
       :payroll="selectedPayroll"
-      :is-edit="showEditModal"
       :dropdowns="dropdowns"
       @close="closeModal"
       @saved="handleSaved"
@@ -130,7 +131,6 @@ export default {
       },
       localKeyword: '',
       showCreateModal: false,
-      showEditModal: false,
       selectedPayroll: null,
       selectedRow: null,
     }
@@ -168,52 +168,12 @@ export default {
       this.filter.keyword = value;
     },
     editPayroll(payroll) {
-      this.selectedPayroll = { ...payroll }
-      this.showEditModal = true
+      this.$emit('view', payroll)
     },
     printPayroll(payroll) {
       window.open(`/payrolls/${payroll.id}/print`, '_blank');
     },
-    async confirmDelete(template) {
-      const result = await Swal.fire({
-          title: 'Are you sure?',
-          text: 'You want to delete this payroll?',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#3085d6',
-          cancelButtonColor: '#d33',
-          confirmButtonText: 'Yes, delete it!'
-      });
-      if (result.isConfirmed) {
-          axios.delete(`/payrolls/${template.id}`)
-              .then(response => {
-                  if (response.data && response.data.info && response.data.message && response.data.status === false) {
-                    Swal.fire({
-                      title: response.data.message,
-                      text: response.data.info,
-                      icon: 'info',
-                      confirmButtonText: 'OK'
-                    });
-                  } else {
-                    this.fetchPayrolls();
-                    Swal.fire({
-                      title: response.data.message,
-                      text: response.data.info,
-                      icon: 'success',
-                    });
-                    this.selectedPayroll = null;
-                  }
-              })
-              .catch(error => {
-                  console.error(error);
-                  Swal.fire(
-                      'Error!',
-                      'Failed to delete payroll.',
-                      'error'
-                  );
-              });
-      }
-    },
+  
     closeModal() {
       this.showCreateModal = false
       this.showEditModal = false
@@ -235,21 +195,6 @@ export default {
         style: 'currency',
         currency: 'PHP'
       }).format(amount)
-    },
-    getStatusStyle(status) {
-      const statusMap = {
-        pending: { bg_color: '#ffc107', text_color: '#000000' },
-        approved: { bg_color: '#17a2b8', text_color: '#ffffff' },
-        paid: { bg_color: '#28a745', text_color: '#ffffff' },
-        cancelled: { bg_color: '#dc3545', text_color: '#ffffff' }
-      };
-      const statusInfo = statusMap[status] || { bg_color: '#6c757d', text_color: '#ffffff' };
-      return {
-        color: statusInfo.text_color,
-        backgroundColor: statusInfo.bg_color,
-        border: `1px solid ${statusInfo.bg_color}40`,
-        boxShadow: `0 2px 4px ${statusInfo.bg_color}20`
-      };
     },
   }
 }

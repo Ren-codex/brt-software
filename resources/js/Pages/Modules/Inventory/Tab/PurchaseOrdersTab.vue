@@ -17,6 +17,29 @@
         </div>
 
         <div class="library-card-body">
+          <div class="tabs-section">
+            <div class="tabs-wrapper">
+              <button
+                :class="['tab-btn', { active: activeTab === 'all' }]"
+                @click="setActiveTab('all')"
+              >
+                All Orders
+              </button>
+              <button
+                :class="['tab-btn', { active: activeTab === 'partial' }]"
+                @click="setActiveTab('partial')"
+              >
+                Partial
+              </button>
+              <button
+                :class="['tab-btn', { active: activeTab === 'complete' }]"
+                @click="setActiveTab('complete')"
+              >
+                Complete
+              </button>
+            </div>
+          </div>
+
           <div class="search-section">
             <div class="search-wrapper">
               <i class="ri-search-line search-icon"></i>
@@ -28,7 +51,6 @@
                 class="search-input"
               >
             </div>
-          
           </div>
 
           <div class="table-section">
@@ -73,7 +95,7 @@
                     v-bind:key="list.id" 
                     @click="openView(list)" 
                     style="cursor: pointer;"
-                    :style="getRowStyle(list.status)"
+                   
                   >
                     <td>{{ index + 1 }}</td>
                     <td>
@@ -90,7 +112,7 @@
                     </td>
                     <td>
                       <div class="amount-cell">
-                        <span class="amount-value">{{ list.approved_by?.name }}</span>
+                        <span class="amount-value">{{ list.approved_by?.fullname }}</span>
                       </div>
                     </td>
                     <td>
@@ -167,6 +189,7 @@ export default {
       selectedStatus: this.filter.status || '',
       sortBy: this.filter.sort_by || 'date',
       sortDirection: this.filter.sort_direction || 'desc',
+      activeTab: 'all',
     };
   },
   computed: {
@@ -197,6 +220,10 @@ export default {
     }
   },
   methods: {
+    setActiveTab(tab) {
+      this.activeTab = tab;
+    },
+
     openView(purchaseOrder) {
       this.$emit('view-details', purchaseOrder);
     },
@@ -319,13 +346,7 @@ export default {
       };
     },
     
-    getRowStyle(status) {
-      if (!status || !status.bg_color) return {};
-
-      return {
-        '--hover-color': status.bg_color
-      };
-    },
+   
 
     hasPendingItems(list) {
       return list.items && list.items.some(item => item.status === 'pending');
@@ -351,6 +372,38 @@ export default {
 
 
 <style scoped>
+/* Tabs Section */
+.tabs-section {
+  margin-bottom: 1rem;
+}
+
+.tabs-wrapper {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6c757d;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-btn:hover {
+  color: #2e8b57;
+}
+
+.tab-btn.active {
+  color: #2e8b57;
+  border-bottom-color: #2e8b57;
+}
+
 /* Filter Section */
 .filter-section {
   display: flex;

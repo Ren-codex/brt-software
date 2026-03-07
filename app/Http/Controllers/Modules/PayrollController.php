@@ -31,6 +31,7 @@ class PayrollController extends Controller
                         'employees' => $this->dropdown->employees(),
                         'payroll_settings' => $this->dropdown->payroll_settings(),
                         'payroll_templates' => $this->dropdown->payroll_templates(),
+                        'payroll_items' => $this->dropdown->payroll_items(),
                     ]
                 ]);
             break;
@@ -65,5 +66,16 @@ class PayrollController extends Controller
     {
         $request->merge(['type' => 'payroll']);
         return app(PrintClass::class)->print($id, $request);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $result = $this->payroll->updateStatus($request, $id);
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
     }
 }

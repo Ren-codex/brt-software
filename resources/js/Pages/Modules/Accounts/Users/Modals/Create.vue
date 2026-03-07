@@ -4,63 +4,19 @@
             <BRow>
                 <BCol lg="12">
                     <BRow class="g-3 mt-n1">
-                        <BCol lg="12">Personal Information</BCol><hr class="text-muted mt-n1 mb-4"/>
-
-                        <BCol lg="3" class="mt-n1 mb-3">
-                            <InputLabel value="Firstname" :message="form.errors.firstname"/>
-                            <TextInput v-model="form.firstname" type="text" class="form-control" placeholder="Please enter firstname" @input="handleInput('firstname')" :light="true" />
-                        </BCol>
-                        <BCol lg="3" class="mt-n1 mb-3">
-                            <InputLabel value="Middlename" :message="form.errors.middlename"/>
-                            <TextInput v-model="form.middlename" type="text" class="form-control" placeholder="Please enter middlename" @input="handleInput('middlename')" :light="true" />
-                        </BCol>
-                        <BCol lg="3" class="mt-n1 mb-3">
-                            <InputLabel value="Lastname" :message="form.errors.lastname"/>
-                            <TextInput v-model="form.lastname" type="text" class="form-control" placeholder="Please enter lastname" @input="handleInput('lastname')" :light="true" />
-                        </BCol>
-
-                        <BCol lg="3" class="mt-n1 mb-3">
-                            <InputLabel value="Suffix" :message="form.errors.suffix"/>
-                            <TextInput v-model="form.suffix" type="text" class="form-control" placeholder="Please enter suffix" @input="handleInput('suffix')" :light="true" />
-                        </BCol>
-                        
-                        <BCol lg="3" class="mt-n1 mb-3">
-                            <InputLabel value="Birthdate" :message="form.errors.birthdate"/>
-                            <TextInput v-model="form.birthdate" type="date" class="form-control" placeholder="Please enter birthdate" @input="handleInput('birthdate')" :light="true" />
-                        </BCol>
-
-                        <BCol lg="3" class="mt-n1 mb-3">
-                            <InputLabel value="Religion" :message="form.errors.religion"/>
-                            <Multiselect :options="religions" :searchable="true" label="name" v-model="form.religion" placeholder="Select Sex" @input="handleInput('sex')"/>
-                        </BCol>
-
-                        <BCol lg="3" class="mt-n1 mb-3">
-                            <InputLabel value="Sex" :message="form.errors.sex"/>
-                            <Multiselect :options="['Male', 'Female' ]" :searchable="true" label="name" v-model="form.sex" placeholder="Select Sex" @input="handleInput('sex')"/>
-                        </BCol>
-
-                        <BCol lg="3" class="mt-n1 mb-3">
-                            <InputLabel value="Mobile Number" :message="form.errors.short"/>
-                            <TextInput v-model="form.mobile" type="text" class="form-control" placeholder="Please enter mobile" @input="handleInput('short')" :light="true" />
-                        </BCol>
-
-                        <BCol lg="12">Credentials</BCol><hr class="text-muted mt-n1 mb-4"/>
-
                         <BCol lg="6" class="mt-n1 mb-3">
-                            <InputLabel value="Username" :message="form.errors.email"/>
-                            <TextInput v-model="form.username" type="username" class="form-control" placeholder="Please enter username" @input="handleInput('short')" :light="true" />
+                            <InputLabel value="Username" :message="form.errors.username"/>
+                            <TextInput v-model="form.username" type="text" class="form-control" placeholder="Please enter username" @input="handleInput('username')" :light="true" />
                         </BCol>
 
                         <BCol lg="6" class="mt-n1 mb-3">
                             <InputLabel value="Email" :message="form.errors.email"/>
-                            <TextInput v-model="form.email" type="email" class="form-control" placeholder="Please enter email" @input="handleInput('short')" :light="true" />
+                            <TextInput v-model="form.email" type="email" class="form-control" placeholder="Please enter email" @input="handleInput('email')" :light="true" />
                         </BCol>
 
-                        <BCol lg="6" class="mt-n1 mb-3">
+                        <BCol lg="6" class="mt-n1 mb-3" v-if="!editable">
                             <InputLabel value="Password" :message="form.errors.password"/>
-
-                            <div class="position-relative">
-
+                            <div class="position-relative auth-pass-inputgroup">
                                 <TextInput
                                     v-model="form.password"
                                     :type="togglePassword ? 'text' : 'password'"
@@ -70,24 +26,15 @@
                                     :class="{ 'is-invalid': passwordMismatch }"
                                     :light="true"
                                 />
-
-                                <BButton
-                                    variant="link"
-                                    class="position-absolute end-0 top-50 translate-middle-y text-decoration-none text-muted px-2"
-                                    type="button"
-                                    @click="togglePassword = !togglePassword"
-                                >
+                                <BButton variant="link" class="position-absolute end-0 top-50 text-decoration-none text-muted" type="button" @click="togglePassword = !togglePassword" style="transform: translateY(-50%);">
                                     <i :class="togglePassword ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i>
                                 </BButton>
-
                             </div>
                         </BCol>
 
-                        <BCol lg="6" class="mt-n1 mb-3">
+                        <BCol lg="6" class="mt-n1 mb-3" v-if="!editable">
                             <InputLabel value="Confirm Password" />
-
-                            <div class="position-relative">
-
+                            <div class="position-relative auth-pass-inputgroup">
                                 <TextInput
                                     v-model="form.confirm_password"
                                     :type="toggleConfirm ? 'text' : 'password'"
@@ -97,16 +44,9 @@
                                     :class="{ 'is-invalid': passwordMismatch }"
                                     :light="true"
                                 />
-
-                                <BButton
-                                    variant="link"
-                                    class="position-absolute end-0 top-50 translate-middle-y text-decoration-none text-muted px-2"
-                                    type="button"
-                                    @click="toggleConfirm = !toggleConfirm"
-                                >
+                                <BButton variant="link" class="position-absolute end-0 top-50 text-decoration-none text-muted" type="button" @click="toggleConfirm = !toggleConfirm" style="transform: translateY(-50%);">
                                     <i :class="toggleConfirm ? 'ri-eye-off-fill' : 'ri-eye-fill'" class="align-middle"></i>
                                 </BButton>
-
                             </div>
 
                             <!-- Password mismatch warning -->
@@ -115,11 +55,10 @@
                             </small>
                         </BCol>
 
-                        <BCol lg="12" class="mt-n1 mb-3">
+                        <BCol :lg="editable ? 6 : 12" class="mt-n1 mb-3" v-if="!editable">
                             <InputLabel value="Roles" :message="form.errors.role_ids"/>
-                            <Multiselect :options="dropdowns.roles" :searchable="true" label="name" v-model="form.role_ids" placeholder="Select Roles" @input="handleInput('roles')" mode="tags"/>
+                            <Multiselect :options="dropdowns.roles" :searchable="true" label="name" v-model="form.role_ids" placeholder="Select Roles" @input="handleInput('role_ids')" mode="tags"/>
                         </BCol>
-
 
                         </BRow>
                 </BCol>
@@ -151,17 +90,9 @@ export default {
             currentUrl: window.location.origin,
             form: useForm({
                 id: null,
-                firstname: null,
-                middlename: null,
-                lastname: null,
-                suffix: null,
-                birthdate: null,
-                sex: null,
-                religion: null,
-                mobile: null,
-                address: null,
                 email: null,
                 password: null,
+                confirm_password: null,
                 username: null,
                 role_ids: null,
                 option: 'users'
@@ -170,55 +101,29 @@ export default {
             toggleConfirm: false,
             passwordMismatch: false,
             showModal: false,
-            editable: false,
-            religions: [
-                'Roman Catholic',
-                'Iglesia ni Cristo',
-                'Evangelical (Born Again)',
-                'Aglipayan / Philippine Independent Church',
-                'Seventh-day Adventist',
-                'Jehovah’s Witnesses',
-                'Bible Baptist',
-                'UCCP (United Church of Christ in the Philippines)',
-                'Pentecostal',
-                'Lutheran',
-                'Methodist',
-                'Anglican / Episcopal',
-                'Jesus Is Lord (JIL)',
-                'Victory Christian Fellowship',
-                'El Shaddai',
-                'Islam',
-                'Buddhism',
-                'Hinduism',
-                'Taoism',
-                'Confucianism',
-                'Indigenous / Anito / Animism',
-                'Baháʼí Faith',
-                'Judaism',
-                'Sikhism',
-                'Non-religious / Atheist / Agnostic'
-            ]
+            editable: false
         }
     },
     methods: { 
-        show(){
+        show(data = null){
             this.form.reset();
-            this.editable = false;
+            if (data) {
+                this.form.id = data.id;
+                this.form.username = data.username;
+                this.form.email = data.email;
+                this.form.role_ids = data.roles ? data.roles.map(r => r.role.id) : [];
+                this.editable = true;
+            } else {
+                this.editable = false;
+            }
             this.showModal = true;
         },
         edit(data){
             this.form.id = data.id;
-            this.form.firstname = data.firstname;
-            this.form.middlename = data.middlename;
-            this.form.lastname = data.lastname;
-            this.form.suffix = data.suffix;
-            this.form.sex = data.sex;
-            this.form.religion = data.religion;
-            this.form.mobile = data.mobile;
-            this.form.birthdate = data.birthdate;
             this.form.username = data.username;
             this.form.email = data.email;
-            this.form.role_ids = data.role_ids;
+            this.form.password = data.password;
+            this.form.role_ids = data.roles ? data.roles.map(r => r.role.id) : [];
             this.editable = true;
             this.showModal = true;
         },
@@ -230,8 +135,9 @@ export default {
         },
 
         submit(){
+    
             if(this.editable){
-                this.form.put('/users/update',{
+                this.form.put('/users/' + this.form.id,{
                     preserveScroll: true,
                     onSuccess: (response) => {
                         this.$emit('add', true);
@@ -260,4 +166,182 @@ export default {
         }
     }
 }
-</script>
+</script><style scoped>
+.modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-bottom: none;
+    border-radius: 16px 16px 0 0;
+    padding: 1.5rem 2rem;
+}
+
+.modal-header .modal-title {
+    font-weight: 600;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.modal-header .modal-title::before {
+    content: '���';
+    margin-right: 0.5rem;
+    font-size: 1.8rem;
+}
+
+.btn-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 2rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.multiselect {
+    --ms-border-color: #e9ecef;
+    --ms-border-radius: 8px;
+    --ms-py: 0.75rem;
+    --ms-font-size: 0.95rem;
+}
+
+.multiselect:focus {
+    --ms-border-color: #667eea;
+    --ms-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.position-relative {
+    position: relative;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-light {
+    background: #6c757d;
+    color: white;
+    border: none;
+}
+
+.btn-light:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1.5rem 2rem;
+    background: #f8f9fa;
+    border-radius: 0 0 16px 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 1rem;
+    }
+
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>

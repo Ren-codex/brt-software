@@ -15,9 +15,14 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::resource('/sales', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::post('/sales-orders/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderController::class, 'adjustment']);
+    Route::resource('/sales-orders-external', App\Http\Controllers\Modules\SalesOrderExternalController::class);
+    Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
     Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
+     Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
+    Route::patch('/suppliers/{id}/toggle-active', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleActive']);
+    Route::patch('/suppliers/{id}/toggle-blacklist', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleBlacklist']);
     Route::resource('/receipts', App\Http\Controllers\Modules\ReceiptController::class);
 
     // Make revenue reports available to all authenticated users (not just administrators)
@@ -25,7 +30,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
 
     Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
-        Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
+        // Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
         Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
         Route::resource('/libraries/brands', App\Http\Controllers\Libraries\BrandController::class);
         Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
@@ -33,15 +38,21 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
         Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
         Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
+        Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
+        Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class);
 
         
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
+        Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
         
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
         Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
         Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus']);
+        Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class);
+        Route::post('/stock-returns/{id}/approve', [App\Http\Controllers\StockReturnController::class, 'approve']);
+        Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO']);
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);
@@ -62,9 +73,20 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::delete('/payroll-templates/{templateId}/employees/{employeeId}', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'removeEmployee']);
         Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class);
         Route::resource('/loans', App\Http\Controllers\Modules\LoanController::class);
+        Route::resource('/loan-payments', App\Http\Controllers\Modules\LoanPaymentController::class);
+        Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
+        Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);
+        Route::put('/loans/{id}/status', [App\Http\Controllers\Modules\LoanController::class, 'updateStatus']);
+        
+        // Contact Management
+        Route::resource('/contacts', App\Http\Controllers\Modules\ContactController::class);
+        Route::patch('/contacts/{id}/mark-read', [App\Http\Controllers\Modules\ContactController::class, 'markAsRead']);
     });
 });
+
+// Public route for submitting contact form from landing page
+Route::post('/api/contacts', [App\Http\Controllers\Modules\ContactController::class, 'store']);
 
 require __DIR__.'/auth.php';

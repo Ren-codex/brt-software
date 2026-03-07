@@ -3,14 +3,25 @@
 namespace App\Services\Modules;
 
 use App\Models\Loan;
+use App\Models\LoanLog;
+use App\Services\SeriesService;
 use App\Http\Resources\Modules\LoanResource;
+use Illuminate\Support\Facades\DB;
 
 class LoanClass
 {
+    protected $series_service;
+
+    public function __construct(
+        SeriesService $series_service,
+    ) {
+        $this->series_service = $series_service;
+    }
+
     public function lists($request)
     {
         $data = LoanResource::collection(
-            Loan::with(['employee'])
+            Loan::with(['employee', 'approved_by.employee'])
                 ->when($request->keyword, function ($query, $keyword) {
                     $keyword = strtolower($keyword);
                     $query->where(function ($q) use ($keyword) {
@@ -32,54 +43,116 @@ class LoanClass
 
     public function save($request, $userId = null)
     {
-        $data = Loan::create([
-            'employee_id' => $request->employee_id,
-            'loan_type' => $request->loan_type,
-            'amount' => $request->amount,
-            'interest_rate' => $request->interest_rate,
-            'term_months' => $request->term_months,
-            'status' => $request->status,
-            'purpose' => $request->purpose,
-            'added_by_id' => $userId ?: auth()->id(),
-        ]);
+        try {
+            db::beginTransaction();
 
-        return [
-            'data' => new LoanResource($data),
-            'message' => 'Loan saved successfully!',
-            'info' => "You've successfully saved the loan"
-        ];
+            $principal = (float) $request->amount;
+            $interestRate = (float) $request->interest_rate;
+            $totalWithInterest = $principal + ($principal * ($interestRate / 100));
+
+            $data = Loan::create([
+                'loan_no' => $this->series_service->get('loan_number'),
+                'employee_id' => $request->employee_id,
+                'loan_type' => $request->loan_type,
+                'amount' => $request->amount,
+                'interest_rate' => $request->interest_rate,
+                'term_months' => $request->term_months,
+                'status' => $request->status,
+                'purpose' => $request->purpose,
+                'added_by_id' => $userId ?: auth()->id(),
+                'remaining_balance' => $totalWithInterest,
+                'remaining_term_to_pay' => $request->term_months * 2,
+            ]);
+    
+            $this->log($data->id, 'created', 'Loan created');
+    
+            db::commit();
+            return [
+                'data' => new LoanResource($data),
+                'message' => 'Loan saved successfully!',
+                'info' => "You've successfully saved the loan"
+            ];
+
+        } catch (\Exception $e) {
+            db::rollback();
+            throw $e;
+        }
     }
 
     public function update($request)
     {
-        $data = Loan::findOrFail($request->id);
+        try {
+            db::beginTransaction();
+            
+            $data = Loan::findOrFail($request->id);
+    
+            $data->update([
+                'employee_id' => $request->employee_id,
+                'loan_type' => $request->loan_type,
+                'amount' => $request->amount,
+                'interest_rate' => $request->interest_rate,
+                'term_months' => $request->term_months,
+                'status' => $request->status,
+                'purpose' => $request->purpose,
+            ]);
+    
+            $this->log($data->id, 'updated', 'Loan details updated');
 
-        $data->update([
-            'employee_id' => $request->employee_id,
-            'loan_type' => $request->loan_type,
-            'amount' => $request->amount,
-            'interest_rate' => $request->interest_rate,
-            'term_months' => $request->term_months,
-            'status' => $request->status,
-            'purpose' => $request->purpose,
-        ]);
-
-        return [
-            'data' => new LoanResource($data),
-            'message' => 'Loan updated successfully!',
-            'info' => "You've successfully updated the loan"
-        ];
+            db::commit();
+    
+            return [
+                'data' => new LoanResource($data),
+                'message' => 'Loan updated successfully!',
+                'info' => "You've successfully updated the loan"
+            ];
+        } catch (\Exception $e) {
+            db::rollback();
+            throw $e;
+        }
     }
 
     public function delete($id)
     {
         $data = Loan::findOrFail($id);
+        $this->log($data->id, 'deleted', 'Loan deleted');
         $data->delete();
 
         return [
             'data' => null,
             'message' => 'Loan deleted successfully!',
             'info' => "You've successfully deleted the loan"
+        ];
+    }
+
+    protected function log($loanId, $action, $remarks = null): void
+    {
+        LoanLog::create([
+            'loan_id' => $loanId,
+            'action' => $action,
+            'actioned_by_id' => auth()->id(),
+            'remarks' => $remarks,
+        ]);
+    }
+
+    public function updateStatus($request, $id)
+    {
+        $loan = Loan::findOrFail($id);
+        $oldStatus = $loan->status;
+        $newStatus = $request->status;
+
+        $isApproved = $newStatus === 'approved';
+
+        $loan->update([
+            'status' => $isApproved ? 'approved' : 'rejected',
+            'approved_by_id' => $isApproved ? auth()->id() : null,
+            'approved_at' => $isApproved ? now() : null,
+        ]);
+        $this->log($loan->id, $newStatus, $request->remarks);
+
+        return [
+            'data' => new LoanResource($loan),
+            'message' => "Loan status updated to '{$newStatus}' successfully!",
+            'info' => "You've successfully updated the loan status from '{$oldStatus}' to '{$newStatus}'"
         ];
     }
 }
