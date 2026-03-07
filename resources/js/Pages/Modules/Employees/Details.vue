@@ -378,6 +378,8 @@ export default {
     data() {
         return {
             loanCollapsed: false,
+            showLoanHistoryModal: false,
+            loans: [],
             selectedYear: new Date().getFullYear(), // Current year
             selectedMonth: new Date().getMonth() + 1, // Current month (1-12)
             years: Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i), // Last 10 years
@@ -394,7 +396,16 @@ export default {
                 { value: 10, label: 'October' },
                 { value: 11, label: 'November' },
                 { value: 12, label: 'December' }
-            ]
+            ],
+            incentiveSummary: {
+                total_amount: 0,
+                total_rice_sold_kg: 0,
+                total_points_earned: 0,
+                amount_change_percent: 0,
+                rice_change_percent: 0,
+                points_change_percent: 0
+            },
+            defaultAvatar: '/images/default-avatar.png'
         };
     },
     computed: {
@@ -709,6 +720,32 @@ export default {
         },
         toggleLoanCollapse() {
             this.loanCollapsed = !this.loanCollapsed;
+        },
+        getLoanRemaining(loan) {
+            const remainingBalance = this.toNumber(loan?.remaining_balance, null);
+            if (remainingBalance !== null) {
+                return Math.max(remainingBalance, 0);
+            }
+            return Math.max(this.toNumber(loan?.amount) - this.toNumber(loan?.amtpaid), 0);
+        },
+        getLoanStatusBadgeClass(status) {
+            const normalized = String(status || '').toLowerCase();
+            if (normalized === 'approved' || normalized === 'active' || normalized === 'completed') {
+                return 'bg-success';
+            }
+            if (normalized === 'pending') {
+                return 'bg-warning';
+            }
+            if (normalized === 'rejected' || normalized === 'overdue') {
+                return 'bg-danger';
+            }
+            return 'bg-secondary';
+        },
+        openLoanHistoryModal() {
+            this.showLoanHistoryModal = true;
+        },
+        closeLoanHistoryModal() {
+            this.showLoanHistoryModal = false;
         },
         openEdit(data) {
             this.$refs.create.edit(data);

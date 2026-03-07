@@ -9,6 +9,7 @@ use App\Services\Libraries\SupplierClass;
 use App\Http\Requests\Libraries\SupplierRequest;
 use App\Models\ListSupplier;
 use App\Http\Resources\Libraries\ListSupplierResource;
+use Illuminate\Support\Facades\DB;
 
 class SupplierController extends Controller
 {
@@ -58,6 +59,96 @@ class SupplierController extends Controller
         return response()->json([
             'message' => 'Supplier blacklist status updated successfully',
             'data' => new ListSupplierResource($supplier)
+        ]);
+    }
+
+    public function stockReturnSummary($id)
+    {
+        ListSupplier::findOrFail($id);
+
+        $summary = DB::table('stock_return_items as sri')
+            ->join('stock_returns as sr', 'sr.id', '=', 'sri.stock_return_id')
+            ->join('purchase_orders as po', 'po.id', '=', 'sr.po_id')
+            ->where('po.supplier_id', $id)
+            ->selectRaw('
+                COALESCE(SUM(sri.quantity), 0) as total_returned,
+                COALESCE(SUM(sri.replaced_quantity), 0) as total_replaced,
+                COALESCE(SUM(sri.loss_quantity), 0) as total_loss,
+                COUNT(DISTINCT sr.id) as total_stock_returns
+            ')
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'total_returned' => (int) ($summary->total_returned ?? 0),
+                'total_replaced' => (int) ($summary->total_replaced ?? 0),
+                'total_loss' => (int) ($summary->total_loss ?? 0),
+                'total_stock_returns' => (int) ($summary->total_stock_returns ?? 0),
+            ],
+        ]);
+    }
+
+    public function stockReturns(Request $request, $id)
+    {
+        ListSupplier::findOrFail($id);
+        $count = (int) $request->input('count', 10);
+        $count = max(1, min($count, 50));
+
+        $stockReturns = DB::table('stock_returns as sr')
+            ->join('purchase_orders as po', 'po.id', '=', 'sr.po_id')
+            ->leftJoin('stock_return_items as sri', 'sri.stock_return_id', '=', 'sr.id')
+            ->leftJoin('list_statuses as ls', 'ls.id', '=', 'sr.status_id')
+            ->where('po.supplier_id', $id)
+            ->groupBy('sr.id', 'sr.stock_return_no', 'po.po_number', 'ls.name', 'sr.created_at')
+            ->orderByDesc('sr.id')
+            ->selectRaw('
+                sr.id,
+                sr.stock_return_no,
+                po.po_number,
+                COALESCE(ls.name, "-") as status_name,
+                sr.created_at,
+                COALESCE(SUM(sri.quantity), 0) as total_returned,
+                COALESCE(SUM(sri.replaced_quantity), 0) as total_replaced,
+                COALESCE(SUM(sri.loss_quantity), 0) as total_loss
+            ')
+            ->paginate($count)
+            ->appends(['count' => $count])
+            ->through(function ($row) {
+                return [
+                    'id' => (int) $row->id,
+                    'stock_return_no' => $row->stock_return_no,
+                    'po_number' => $row->po_number,
+                    'status_name' => $row->status_name,
+                    'created_at' => $row->created_at,
+                    'total_returned' => (int) $row->total_returned,
+                    'total_replaced' => (int) $row->total_replaced,
+                    'total_loss' => (int) $row->total_loss,
+                ];
+            });
+
+        return response()->json($stockReturns);
+    }
+
+    public function purchaseOrderSummary($id)
+    {
+        ListSupplier::findOrFail($id);
+
+        $summary = DB::table('purchase_orders as po')
+            ->leftJoin('list_statuses as ls', 'ls.id', '=', 'po.status_id')
+            ->where('po.supplier_id', $id)
+            ->selectRaw('
+                COUNT(po.id) as total_orders,
+                SUM(CASE WHEN LOWER(COALESCE(ls.slug, ls.name, \'\')) = \'pending\' THEN 1 ELSE 0 END) as pending_orders,
+                SUM(CASE WHEN LOWER(COALESCE(ls.slug, ls.name, \'\')) = \'completed\' THEN 1 ELSE 0 END) as completed_orders
+            ')
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'total_orders' => (int) ($summary->total_orders ?? 0),
+                'pending_orders' => (int) ($summary->pending_orders ?? 0),
+                'completed_orders' => (int) ($summary->completed_orders ?? 0),
+            ],
         ]);
     }
 

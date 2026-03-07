@@ -29,6 +29,13 @@ class UserRequest extends FormRequest
                 'id' => 'required|exists:users,id',
             ];
         }
+        else if($this->option === 'role' || $this->option === 'set_role_active') {
+            return [
+                'user_id' => 'required|exists:users,id',
+                'role_id' => 'required|exists:list_roles,id',
+                'type' => 'required|string|in:add,remove,set_role_active',
+            ];
+        }
 
         $userParam = $this->route('user');
         $userId = null;

@@ -256,6 +256,18 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            19 =>
+            array (
+                'id' => 20,
+                'name' => 'Sales Return Approval',
+                'slug' => 'sales-return-approval',
+                'description' => 'For Loss status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

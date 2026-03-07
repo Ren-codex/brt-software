@@ -13,7 +13,24 @@
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .logo-box { width: 70px; height: 70px; background-color: #C0392B; border-radius: 4px; }
+        .logo-box {
+            width: 70px;
+            height: 70px;
+            border-radius: 4px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .logo-img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+        .logo-fallback {
+            width: 70px;
+            height: 70px;
+            background-color: #C0392B;
+            border-radius: 4px;
+        }
         .company-name { font-size: 20px; font-weight: bold; color: #1a1a1a; margin: 0; }
         .order-title { font-size: 26px; font-weight: bold; text-align: right; margin: 0; }
         .order-info { text-align: right; font-size: 13px; }
@@ -65,10 +82,21 @@
     </style>
 </head>
 <body>
+    @php
+        $logoPath = public_path('images/brt-logo.png');
+    @endphp
 
     <table class="header-table">
         <tr>
-            <td style="width: 80px;"><div class="logo-box"></div></td>
+            <td style="width: 80px;">
+                <div class="logo-box">
+                    @if(file_exists($logoPath))
+                        <img src="{{ $logoPath }}" alt="System Logo" class="logo-img">
+                    @else
+                        <div class="logo-fallback"></div>
+                    @endif
+                </div>
+            </td>
             <td>
                 <h1 class="company-name">BOUYANT RICE TRADING</h1>
                 Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
@@ -181,4 +209,3 @@
 
 </body>
 </html>
-

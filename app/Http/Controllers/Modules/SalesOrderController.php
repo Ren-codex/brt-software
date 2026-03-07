@@ -85,7 +85,7 @@ class SalesOrderController extends Controller
                         return $this->sales_order->update($request);
                     break;
                     case 'approve':
-                        return $this->sales_order->approve($request->id);
+                        return $this->sales_order->approve($request->id, $request->item_ids ?? []);
                     break;
                     case 'cancel':
                         return $this->sales_order->cancel($request->id);

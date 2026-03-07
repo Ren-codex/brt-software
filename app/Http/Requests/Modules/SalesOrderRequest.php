@@ -14,10 +14,24 @@ class SalesOrderRequest extends FormRequest
 
     public function rules(): array
     {
-        if($this->input('action') == 'adjustment'){
+        $action = $this->input('action');
+
+        if($action == 'adjustment'){
             return [
                 'type' => 'required|string',
                 'reason' => 'required|string',
+            ];
+        }
+        else if($action == 'approve'){
+            return [
+                'id' => 'required|exists:sales_orders,id',
+                'item_ids' => 'nullable|array',
+                'item_ids.*' => 'integer|exists:sales_order_items,id',
+            ];
+        }
+        else if($action == 'cancel'){
+            return [
+                'id' => 'required|exists:sales_orders,id',
             ];
         }
         else{

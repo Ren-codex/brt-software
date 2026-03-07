@@ -22,6 +22,9 @@ class LoanClass
     {
         $data = LoanResource::collection(
             Loan::with(['employee', 'approved_by.employee'])
+                ->when($request->employee_id, function ($query, $employeeId) {
+                    $query->where('employee_id', $employeeId);
+                })
                 ->when($request->keyword, function ($query, $keyword) {
                     $keyword = strtolower($keyword);
                     $query->where(function ($q) use ($keyword) {

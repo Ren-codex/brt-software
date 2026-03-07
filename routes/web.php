@@ -20,10 +20,17 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
     Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
+    Route::get('/employees/{id}/incentives-summary', [App\Http\Controllers\Modules\EmployeeController::class, 'incentivesSummary']);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
+    Route::get('/customers/{id}/details', [App\Http\Controllers\Modules\CustomerController::class, 'details']);
+    Route::get('/customers/{id}/order-summary', [App\Http\Controllers\Modules\CustomerController::class, 'orderSummary']);
+    Route::get('/customers/{id}/purchase-history', [App\Http\Controllers\Modules\CustomerController::class, 'purchaseHistory']);
      Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
     Route::patch('/suppliers/{id}/toggle-active', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleActive']);
     Route::patch('/suppliers/{id}/toggle-blacklist', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleBlacklist']);
+    Route::get('/suppliers/{id}/purchase-order-summary', [App\Http\Controllers\Libraries\SupplierController::class, 'purchaseOrderSummary']);
+    Route::get('/suppliers/{id}/stock-return-summary', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturnSummary']);
+    Route::get('/suppliers/{id}/stock-returns', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturns']);
     Route::resource('/receipts', App\Http\Controllers\Modules\ReceiptController::class);
 
     // Make revenue reports available to all authenticated users (not just administrators)
