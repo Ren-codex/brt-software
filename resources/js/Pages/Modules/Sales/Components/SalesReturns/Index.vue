@@ -25,7 +25,7 @@
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
                                     <input type="text"  v-model="filter.keyword" 
-                                        placeholder="Search sales order..." class="search-input">
+                                        placeholder="Search sales return..." class="search-input">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -172,9 +172,14 @@
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info"
-                                                    v-b-tooltip.hover title="Print Invoice" size="sm"
+                                                    v-b-tooltip.hover title="Print" size="sm"
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
+                                                </b-button>
+                                                 <b-button @click.stop="onApprove(list)" variant="outline-info" v-if="list.status.slug == 'sales-order-approval'"
+                                                    v-b-tooltip.hover title="Approve" size="sm"
+                                                    class="btn-icon rounded-circle">
+                                                    <i class="ri-check-line"></i>
                                                 </b-button>
                                             </div>
                                         </td>
@@ -344,7 +349,7 @@
     </BRow>
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
-     <Approval @approve="fetch()" ref="approval"/>
+<Approval @approve="fetch()" ref="approval" :products="dropdowns.products"/>
     <Adjustment @update="fetch()"  ref="adjustment"/>
 
     
@@ -362,7 +367,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' , 'user', 'isExternal'],
+    props: ['dropdowns' , 'invoices' , 'user'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -372,7 +377,7 @@ export default {
             filter: {
                 keyword: null,
                 location_id: null,
-                status: 'sales-returned'
+                status: ['sales-returned', 'sales-return-approval']
             },
             index: null,
             selectedRow: null,
@@ -450,8 +455,13 @@ export default {
 
 
         onPrint(id) {
-            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            let url = '/sales-orders';
             window.open(`${url}/${id}?option=print&type=sales_order`);
+        },
+
+        onApprove(data) {
+            console.log(data);
+            this.$refs.approval.show(data.id, data.so_number, '/sales-orders', data.items);
         },
     
 

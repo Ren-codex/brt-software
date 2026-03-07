@@ -60,7 +60,6 @@ class SalesOrderController extends Controller
             return $this->sales_order->save($request);
         });
 
-
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
@@ -79,7 +78,7 @@ class SalesOrderController extends Controller
                         return $this->sales_order->update($request->id);
                     break;
                     case 'approve':
-                        return $this->sales_order->approve($request->id);
+                        return $this->sales_order->approve($request->id, $request->item_ids ?? []);
                     break;
                     case 'cancel':
                         return $this->sales_order->cancel($request->id);

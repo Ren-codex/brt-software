@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 use App\Models\SalesOrder;
+use App\Models\SalesOrderItem;
 use App\Models\ArInvoice;
+use App\Models\Receipt;
 use App\Models\InventoryStocks;
 use App\Models\ReceivedItem;
 use App\Models\Product;
@@ -46,8 +48,11 @@ class SalesOrderClass
                       });
             })
             ->when($request->status, function ($query, $status) {
-                $query->whereHas('status', function($q) use ($status){
-                    $q->where('slug', $status);
+                $statuses = is_array($status) ? $status : [$status];
+                $statuses = array_values(array_filter($statuses));
+
+                $query->whereHas('status', function($q) use ($statuses){
+                    $q->whereIn('slug', $statuses);
                 });
             })
             ->when($request->sub_status, function ($query, $sub_status) {
@@ -169,10 +174,10 @@ class SalesOrderClass
 
         $data = SalesOrder::findOrFail($request->id);
 
-        // Restore old stock
-        foreach($data->items as $item){
-            $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number, $item->batch_code);
-        }
+        // // Restore old stock
+        // foreach($data->items as $item){
+        //     $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number, $item->batch_code);
+        // }
 
         $data->update([
             'customer_id' => $request->customer_id,
@@ -248,20 +253,118 @@ class SalesOrderClass
         ];
     }
 
-    public function approve($id){
+    public function approve($id, $itemIds = []){
         $data = SalesOrder::findOrFail($id);
 
-        $data->update([
-            'status_id' => ListStatus::getBySlug('approved')->id, //set to approved
-            'approved_by_id' => auth()->user()->id,
-            'approved_at' => now(),
-        ]);
+        // Check if this is a sales return (status is 'sales-return-approval')
+        $currentStatus = $data->status ? $data->status->slug : '';
+        
+        if ($currentStatus === 'sales-return-approval') {
+            // Determine which items to process
+            $itemsToProcess = $data->items;
+            $itemsNotReturned = collect();
+            
+            if (!empty($itemIds)) {
+                // Filter to only the selected items (items being returned)
+                $itemsToProcess = $data->items->whereIn('id', $itemIds);
+                // Items NOT selected for return should be treated as loss/damaged (keep deducted from inventory)
+                $itemsNotReturned = $data->items->whereNotIn('id', $itemIds);
+            }
+            
+            // Process each item being returned - restore inventory for returned items
+            foreach ($itemsToProcess as $item) {
+                $this->inventoryService->addStock(
+                    $item->product_id, 
+                    $item->quantity, 
+                    'Sales Return Approved - SO#' . $data->so_number, 
+                    $item->batch_code
+                );
+            }
 
-        return [
-            'data' => SalesOrder::find($id),
-            'message' => 'Sales Order approved successfully!',
-            'info' => "You've successfully approved the Sales Order"
-        ];
+            // Items not returned remain as loss/damaged (inventory stays deducted)
+            // This is intentional - only approved/selected items get restored
+
+            // If all items are being returned, void the entire sales order
+            // Otherwise, update the sales order with partial return handling
+            $allItemIds = $data->items->pluck('id')->toArray();
+            $isFullReturn = empty($itemIds) || count($itemIds) === count($allItemIds);
+            
+            if ($isFullReturn) {
+                // Update sales order status to 'sales-returned' (loss/damaged)
+                $data->update([
+                    'status_id' => ListStatus::getBySlug('sales-returned')->id,
+                    'approved_by_id' => auth()->user()->id,
+                    'approved_at' => now(),
+                ]);
+
+                // Find and void related receipts (for full return)
+                $arInvoices = ArInvoice::where('sales_order_id', $id)->get();
+                
+                foreach ($arInvoices as $invoice) {
+                    // Find receipts related to this AR invoice
+                    $receipts = Receipt::where('ar_invoice_id', $invoice->id)->get();
+                    
+                    foreach ($receipts as $receipt) {
+                        // Update receipt status to cancelled (void)
+                        $receipt->update([
+                            'status_id' => ListStatus::getBySlug('cancelled')->id,
+                        ]);
+                    }
+                    
+                    // Also void the AR invoice
+                    $invoice->update([
+                        'status_id' => ListStatus::getBySlug('cancelled')->id,
+                    ]);
+                }
+
+                return [
+                    'data' => SalesOrder::find($id),
+                    'message' => 'Sales Order return approved successfully!',
+                    'info' => "You've successfully approved the full Sales Order return. The related receipts have been voided."
+                ];
+            } else {
+                // Partial return - keep the sales order but mark as partially returned
+                $data->update([
+                    'status_id' => ListStatus::getBySlug('sales-returned')->id,
+                    'approved_by_id' => auth()->user()->id,
+                    'approved_at' => now(),
+                ]);
+
+                // For partial returns, we adjust the AR invoice balance
+                $arInvoice = $data->arInvoices()->first();
+                if ($arInvoice) {
+                    // Calculate the amount to deduct from the balance (only for returned items)
+                    $returnAmount = $itemsToProcess->sum(function($item) {
+                        return $item->quantity * $item->price;
+                    });
+                    
+                    // Update the invoice balance
+                    $newBalanceDue = max(0, $arInvoice->balance_due - $returnAmount);
+                    $arInvoice->update([
+                        'balance_due' => $newBalanceDue,
+                    ]);
+                }
+
+                return [
+                    'data' => SalesOrder::find($id),
+                    'message' => 'Partial Sales Order return approved successfully!',
+                    'info' => "You've successfully approved the partial Sales Order return. The inventory has been restored for returned items and the invoice has been adjusted."
+                ];
+            }
+        } else {
+            // Regular approval for non-return sales orders
+            $data->update([
+                'status_id' => ListStatus::getBySlug('approved')->id,
+                'approved_by_id' => auth()->user()->id,
+                'approved_at' => now(),
+            ]);
+
+            return [
+                'data' => SalesOrder::find($id),
+                'message' => 'Sales Order approved successfully!',
+                'info' => "You've successfully approved the Sales Order"
+            ];
+        }
     }
 
     public function cancel($id){
@@ -351,10 +454,21 @@ class SalesOrderClass
   
 
         // Set sub-status based on type
+        $status = null;
         if ($request->type == 'Sales Return') {
-            $status = ListStatus::getBySlug('sales-returned');
+            $status = ListStatus::getBySlug('sales-return-approval');
         } elseif ($request->type == 'Sales Allowance') {
             $status = ListStatus::getBySlug('allowance-applied');
+        }
+
+        // If status is not found, return an error
+        if (!$status) {
+            return [
+                'data' => $sales_order,
+                'message' => 'Invalid adjustment type!',
+                'info' => 'Please specify a valid adjustment type (Sales Return or Sales Allowance)',
+                'status' => 'error',
+            ];
         }
 
         $sales_order->update([ 'status_id' => $status->id]);

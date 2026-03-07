@@ -25,7 +25,7 @@
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
                                     <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                        placeholder="Search purchase request..." class="search-input">
+                                        placeholder="Search AR invoice..." class="search-input">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -101,7 +101,10 @@
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                <b-button v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')" @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
+                                                <b-button @click.stop="onViewReceipts(list)" variant="outline-secondary" v-b-tooltip.hover title="View Receipts" size="sm" class="btn-icon rounded-circle">
+                                                    <i class="ri-file-list-3-line"></i>
+                                                </b-button>
+                                                <b-button v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned' && list.sales_order?.status?.slug != 'sales-return-approval') " @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
@@ -241,6 +244,7 @@
         </div>
     </BRow>
     <Payment @approve="fetch()"  ref="payment"/>
+    <ReceiptsList ref="receiptsList" />
 </template>
 <script>
 import _ from 'lodash';
@@ -248,8 +252,9 @@ import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Payment from '../ARInvoices/Modals/Payment.vue';
+import ReceiptsList from '../ARInvoices/Modals/ReceiptsList.vue';
 export default {
-    components: { PageHeader, Pagination, Multiselect, Payment },
+    components: { PageHeader, Pagination, Multiselect, Payment, ReceiptsList },
     props: ['dropdowns', 'isExternal'],
     data() {
         return {
@@ -338,6 +343,9 @@ export default {
         onPayment(data){
             let title = "Record Payment";
             this.$refs.payment.show(data, title, '/ar-invoices');
+        },
+        onViewReceipts(invoice){
+            this.$refs.receiptsList.show(invoice);
         },
 
         onPrint(id){
