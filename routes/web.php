@@ -21,6 +21,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
     Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
+    Route::get('/customers/{id}/details', [App\Http\Controllers\Modules\CustomerController::class, 'details']);
     Route::get('/customers/{id}/order-summary', [App\Http\Controllers\Modules\CustomerController::class, 'orderSummary']);
     Route::get('/customers/{id}/purchase-history', [App\Http\Controllers\Modules\CustomerController::class, 'purchaseHistory']);
      Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class);

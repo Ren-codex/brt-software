@@ -89,6 +89,13 @@ class CustomerController extends Controller
         );
     }
 
+    public function details($id)
+    {
+        return response()->json([
+            'data' => $this->customer->details($id),
+        ]);
+    }
+
    public function destroy($id){
         $result = $this->handleTransaction(function () use ($id) {
             return $this->customer->delete($id);

@@ -195,7 +195,15 @@
                                             </thead>
                                             <tbody>
                                                 <tr v-for="order in purchaseHistory" :key="order.id" class="table-row">
-                                                    <td>{{ order.so_number || '-' }}</td>
+                                                    <td>{{ order.so_number || '-' }}
+                                                        <small
+                                                            v-if="String(order.payment_mode || '').toLowerCase() === 'credit' && order.due_date"
+                                                            class="status-badge"
+                                                            style="font-size:10px; background-color: red; color:white"
+                                                        >
+                                                            Due on {{ formatDate(order.due_date) }}
+                                                        </small>
+                                                    </td>
                                                     <td>
                                                         <span class="date-cell">
                                                             <i class="ri-calendar-line"></i>
@@ -207,7 +215,7 @@
                                                             {{ order.status || '-' }}
                                                         </span>
                                                     </td>
-                                                    <td>{{ order.payment_mode || '-' }}</td>
+                                                    <td><div>{{ order.payment_mode || '-' }}</div></td>
                                                     <td class="text-end">
                                                         <span class="amount">{{ order.total_items || 0 }}</span>
                                                     </td>
@@ -302,8 +310,8 @@
                                     <span class="emp-detail-title">Payment Terms</span>
                                 </div>
                                 <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value">12 Months</div>
-                                    <div class="emp-detail-sub-value">4 Remaining</div>
+                                    <div class="emp-detail-main-value">{{ paymentTermsLabel }}</div>
+                                    <div class="emp-detail-sub-value">{{ unpaidDueCount }} Remaining</div>
                                 </div>
                             </div>
 
@@ -313,8 +321,8 @@
                                     <span class="emp-detail-title">Unpaid Months</span>
                                 </div>
                                 <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value emp-text-danger">4</div>
-                                    <div class="emp-detail-sub-value">₱1,600 Due</div>
+                                    <div class="emp-detail-main-value emp-text-danger">{{ unpaidDueCount }}</div>
+                                    <div class="emp-detail-sub-value">₱{{ formatCurrency(unpaidDueAmount) }} Due</div>
                                 </div>
                             </div>
 
@@ -324,8 +332,8 @@
                                     <span class="emp-detail-title">Paid Months</span>
                                 </div>
                                 <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value emp-text-success">8</div>
-                                    <div class="emp-detail-sub-value">₱3,200 Paid</div>
+                                    <div class="emp-detail-main-value emp-text-success">{{ paidDueCount }}</div>
+                                    <div class="emp-detail-sub-value">₱{{ formatCurrency(customer.paid_amount || 0) }} Paid</div>
                                 </div>
                             </div>
 
@@ -335,21 +343,21 @@
                                     <span class="emp-detail-title">Next Due</span>
                                 </div>
                                 <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value">Feb 15</div>
-                                    <div class="emp-detail-sub-value">Next Month</div>
+                                    <div class="emp-detail-main-value">{{ nextDueLabel }}</div>
+                                    <div class="emp-detail-sub-value">{{ nextDueRelative }}</div>
                                 </div>
                             </div>
                         </div>
 
                         <div v-show="!loanCollapsed" class="emp-loan-details-grid">
-                            <div class="emp-detail-card" v-for="due in customer.due_dates || []" :key="due.id">
+                            <div class="emp-detail-card" v-for="due in sortedDueDates" :key="due.id">
                                 <div class="emp-detail-header">
                                     <i class="ri-calendar-check-line"></i>
                                     <div class="emp-detail-title">Due {{ formatRelativeDate(due.due_date) }}</div>
                                 </div>
                                 <div class="emp-detail-content">
                                     <div class="emp-detail-main-value" :class="getDueAmountClass(due)">
-                                        ₱{{ due.amount }}
+                                        ₱{{ formatCurrency(due.amount) }}
                                     </div>
                                     <div class="emp-detail-sub-value">{{ formatDate(due.due_date) }}</div>
                                     <div class="emp-detail-sub-value">Order: {{ due.order_id }}</div>
@@ -372,36 +380,43 @@
                                     <span class="emp-footer-value">{{ getRemainingDays(customer) }}</span>
                                 </div>
                             </div>
-                            <button class="emp-btn-view-details" @click="processPayment">
+                            <!-- <button class="emp-btn-view-details" @click="processPayment">
                                 <i class="ri-money-dollar-circle-line"></i>
                                 Process Payment
-                            </button>
+                            </button> -->
                         </div>
                     </div>
                 </div>
 
-                <!-- Recent Activities -->
+                <!-- Recent Receipts -->
                 <div class="emp-info-card mt-4">
                     <div class="emp-info-card-header">
-                        <i class="ri-history-line"></i>
-                        <h3>Recent Activities</h3>
+                        <i class="ri-receipt-line"></i>
+                        <h3>Recent Receipts</h3>
                     </div>
                     <div class="emp-info-card-body">
                         <div class="emp-activities-grid">
-                            <div class="emp-activity-card" v-for="activity in customer.recent_activities || []" :key="activity.id">
-                                <div class="emp-activity-icon" :class="getActivityIconClass(activity.type)">
-                                    <i :class="getActivityIcon(activity.type)"></i>
+                            <div class="emp-activity-card" v-for="receipt in customer.recent_receipts || []" :key="receipt.id">
+                                <div class="emp-activity-icon bg-success">
+                                    <i class="ri-receipt-line"></i>
                                 </div>
                                 <div class="emp-activity-content">
-                                    <div class="emp-activity-title">{{ activity.title }}</div>
-                                    <div class="emp-activity-time">{{ formatDateTime(activity.created_at) }}</div>
-                                    <div class="emp-activity-status" :class="getActivityStatusClass(activity.status)">
-                                        {{ activity.status }}
+                                    <div class="emp-activity-title">
+                                        {{ receipt.receipt_number || ('Receipt #' + receipt.id) }}
+                                        <small v-if="receipt.so_number">({{ receipt.so_number }})</small>
+                                    </div>
+                                    <div class="emp-activity-time">{{ formatDate(receipt.receipt_date) }}</div>
+                                    <div class="emp-activity-status" :class="getReceiptStatusClass(receipt.status)">
+                                        {{ receipt.status || 'Pending' }}
                                     </div>
                                 </div>
-                                <div class="emp-activity-amount" v-if="activity.amount">
-                                    ₱{{ activity.amount }}
+                                <div class="emp-activity-amount">
+                                    &#8369;{{ formatCurrency(receipt.amount_paid) }}
                                 </div>
+                            </div>
+                            <div v-if="(customer.recent_receipts || []).length === 0" class="empty-state text-center">
+                                <i class="ri-inbox-line"></i>
+                                <p class="mb-0">No recent receipts found</p>
                             </div>
                         </div>
                     </div>
@@ -481,6 +496,20 @@ export default {
         }
     },
     methods: {
+        isDueMarkedPaid(due) {
+            if (!due) return false;
+            const status = String(due.status || '').toLowerCase();
+
+            return Boolean(
+                due.paid_at ||
+                due.is_paid === true ||
+                due.is_paid === 1 ||
+                due.paid === true ||
+                due.paid === 1 ||
+                status === 'paid' ||
+                status === 'completed'
+            );
+        },
         initializePeriodFilter() {
             const now = new Date();
             if (!this.selectedYear) {
@@ -700,36 +729,17 @@ export default {
             return diffDays > 0 ? `${diffDays} days` : 'Overdue';
         },
         
-        getActivityIconClass(type) {
-            const iconClasses = {
-                'order': 'bg-primary',
-                'payment': 'bg-success',
-                'credit': 'bg-warning',
-                'delivery': 'bg-info',
-                'return': 'bg-danger'
-            };
-            return iconClasses[type] || 'bg-secondary';
-        },
-        
-        getActivityIcon(type) {
-            const icons = {
-                'order': 'ri-shopping-cart-line',
-                'payment': 'ri-money-dollar-circle-line',
-                'credit': 'ri-bank-card-line',
-                'delivery': 'ri-truck-line',
-                'return': 'ri-arrow-go-back-line'
-            };
-            return icons[type] || 'ri-notification-line';
-        },
-        
-        getActivityStatusClass(status) {
+        getReceiptStatusClass(status) {
+            const normalized = String(status || '').toLowerCase();
             const statusClasses = {
+                'paid': 'emp-completed',
+                'liquidated': 'emp-completed',
                 'completed': 'emp-completed',
                 'pending': 'emp-pending',
                 'in-progress': 'emp-in-progress',
                 'cancelled': 'emp-cancelled'
             };
-            return statusClasses[status] || 'emp-pending';
+            return statusClasses[normalized] || 'emp-pending';
         },
         getStatusClass(status) {
             if (!status) return '';
@@ -761,6 +771,77 @@ export default {
         }
     },
     computed: {
+        sortedDueDates() {
+            return [...(this.customer?.due_dates || [])]
+                .filter(due => due?.due_date)
+                .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+        },
+        hasExplicitDuePaymentStatus() {
+            return this.sortedDueDates.some(due =>
+                due?.paid_at ||
+                due?.is_paid === true ||
+                due?.is_paid === 1 ||
+                due?.paid === true ||
+                due?.paid === 1 ||
+                ['paid', 'completed'].includes(String(due?.status || '').toLowerCase())
+            );
+        },
+        totalDueDatesAmount() {
+            return this.sortedDueDates.reduce((sum, due) => sum + (Number(due?.amount) || 0), 0);
+        },
+        unpaidDueDates() {
+            return this.sortedDueDates.filter(due => !this.isDueMarkedPaid(due));
+        },
+        paymentTermsLabel() {
+            if (this.customer?.payment_terms) return this.customer.payment_terms;
+            const terms = this.sortedDueDates.length;
+            return terms > 0 ? `${terms} Months` : 'N/A';
+        },
+        unpaidDueCount() {
+            const totalTerms = this.sortedDueDates.length;
+            if (!totalTerms) return 0;
+
+            if (this.hasExplicitDuePaymentStatus) {
+                return this.unpaidDueDates.length;
+            }
+
+            const remainingAmount = Number(this.customer?.total_due) || 0;
+            if (remainingAmount > 0 && this.totalDueDatesAmount > 0) {
+                return Math.min(
+                    totalTerms,
+                    Math.max(0, Math.round((remainingAmount / this.totalDueDatesAmount) * totalTerms))
+                );
+            }
+
+            return totalTerms;
+        },
+        unpaidDueAmount() {
+            const remainingAmount = Number(this.customer?.total_due) || 0;
+            if (remainingAmount > 0) return remainingAmount;
+
+            if (this.hasExplicitDuePaymentStatus) {
+                return this.unpaidDueDates.reduce((sum, due) => sum + (Number(due?.amount) || 0), 0);
+            }
+
+            return this.totalDueDatesAmount;
+        },
+        paidDueCount() {
+            return Math.max(this.sortedDueDates.length - this.unpaidDueCount, 0);
+        },
+        nextDueItem() {
+            const source = this.hasExplicitDuePaymentStatus ? this.unpaidDueDates : this.sortedDueDates;
+            if (!source.length) return null;
+
+            const now = new Date();
+            const upcoming = source.filter(due => new Date(due.due_date) >= now);
+            return upcoming.length ? upcoming[0] : source[0];
+        },
+        nextDueLabel() {
+            return this.nextDueItem ? this.formatDate(this.nextDueItem.due_date) : 'No pending dues';
+        },
+        nextDueRelative() {
+            return this.nextDueItem ? this.formatRelativeDate(this.nextDueItem.due_date) : 'N/A';
+        },
         timelineDates() {
             const dates = [];
             const baseFields = [this.customer?.created_at, this.customer?.last_order_date];
@@ -775,8 +856,8 @@ export default {
                 if (date) dates.push(date);
             });
 
-            (this.customer?.recent_activities || []).forEach(item => {
-                const date = this.buildDate(item?.created_at);
+            (this.customer?.recent_receipts || []).forEach(item => {
+                const date = this.buildDate(item?.receipt_date);
                 if (date) dates.push(date);
             });
 
@@ -837,11 +918,10 @@ export default {
                 total_due: this.customer.total_due || 10000,
                 paid_amount: this.customer.paid_amount || 65000,
                 overdue_amount: this.customer.overdue_amount || 0,
-                recent_activities: this.customer.recent_activities || [
-                    { id: 1, type: 'order', title: 'Placed new order', created_at: '2024-01-10T14:30:00Z', status: 'completed', amount: 5000 },
-                    { id: 2, type: 'payment', title: 'Payment received', created_at: '2024-01-08T09:15:00Z', status: 'completed', amount: 3000 },
-                    { id: 3, type: 'delivery', title: 'Order delivered', created_at: '2024-01-05T16:45:00Z', status: 'completed' },
-                    { id: 4, type: 'credit', title: 'Credit limit updated', created_at: '2024-01-03T11:20:00Z', status: 'completed' }
+                recent_receipts: this.customer.recent_receipts || [
+                    { id: 1, receipt_number: 'RCP-202601-0001', receipt_date: '2026-01-10', status: 'Paid', amount_paid: 5000, so_number: 'SO-0001' },
+                    { id: 2, receipt_number: 'RCP-202601-0002', receipt_date: '2026-01-08', status: 'Pending', amount_paid: 3000, so_number: 'SO-0002' },
+                    { id: 3, receipt_number: 'RCP-202601-0003', receipt_date: '2026-01-05', status: 'Liquidated', amount_paid: 2000, so_number: 'SO-0003' }
                 ]
             };
         }
@@ -1015,3 +1095,4 @@ export default {
   }
 }
 </style>
+
