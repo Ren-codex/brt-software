@@ -14,6 +14,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::resource('/sales', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
+    Route::get('/reports', [App\Http\Controllers\Modules\ReportsController::class, 'index']);
     Route::post('/sales-orders/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderController::class, 'adjustment']);
     Route::resource('/sales-orders-external', App\Http\Controllers\Modules\SalesOrderExternalController::class);
     Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
