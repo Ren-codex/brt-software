@@ -21,6 +21,18 @@ class ArInvoiceResource extends JsonResource
             'created_by' => $this->created_by,
             'sales_order' => $this->sales_order,
             'status' => $this->status,
+            'receipts' => $this->whenLoaded('receipts', function () {
+                return $this->receipts->map(function ($receipt) {
+                    return [
+                        'id' => $receipt->id,
+                        'receipt_number' => $receipt->receipt_number,
+                        'receipt_date' => $receipt->receipt_date,
+                        'amount_paid' => (float) $receipt->amount_paid,
+                        'balance_due' => (float) ($receipt->balance_due ?? 0),
+                        'status' => $receipt->status,
+                    ];
+                })->values();
+            }, []),
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at?->format('F d, Y'),
         ];

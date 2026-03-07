@@ -94,10 +94,12 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-xs me-2">
-                                                    <img v-if="list.avatar" :src="getAvatarUrl(list.avatar)" alt="Avatar" class="rounded-circle avatar-xs">
-                                                    <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
-                                                        <i class="ri-user-line text-muted"></i>
-                                                    </div>
+                                                    <img
+                                                        :src="getAvatarSrc(list)"
+                                                        @error="handleAvatarError"
+                                                        alt="Avatar"
+                                                        class="rounded-circle avatar-xs"
+                                                    >
                                                 </div>
                                                 <span>{{ list.fullname }}</span>
                                             </div>
@@ -199,6 +201,7 @@ export default {
             localKeyword: '',
             sortBy: 'created_at',
             sortDirection: 'desc',
+            defaultAvatar: '/images/default-avatar.png'
         }
     },
     computed: {
@@ -368,18 +371,18 @@ export default {
             this.fetch();
         },
 
-        getAvatarUrl(avatar) {
-            if (!avatar) return null;
-            // If avatar already has full URL or starts with storage/, return as-is
-            if (avatar.startsWith('http') || avatar.startsWith('storage/')) {
-                return '/' + avatar;
+        getAvatarSrc(employee) {
+            if (!employee?.avatar) {
+                return this.defaultAvatar;
             }
-            // If avatar already has avatars/ prefix
-            if (avatar.startsWith('avatars/')) {
-                return '/storage/' + avatar;
+            return `/storage/${employee.avatar}`;
+        },
+
+        handleAvatarError(event) {
+            if (event?.target) {
+                event.target.onerror = null;
+                event.target.src = this.defaultAvatar;
             }
-            // Otherwise add avatars/ prefix
-            return '/storage/avatars/' + avatar;
         }
     }
 }

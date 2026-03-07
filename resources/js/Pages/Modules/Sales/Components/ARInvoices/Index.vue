@@ -22,8 +22,8 @@
                             <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
-                                    <input type="text" v-model="filter.keyword" @input="checkSearchStr"
-                                        placeholder="Search purchase request..." class="search-input">
+                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                        placeholder="Search AR invoice..." class="search-input">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -221,7 +221,7 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import Payment from '../ARInvoices/Modals/Payment.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, Payment },
+    components: { PageHeader, Pagination, Multiselect, Payment, ReceiptsList },
     props: ['dropdowns', 'isExternal'],
     data() {
         return {
@@ -312,6 +312,9 @@ export default {
         onPayment(data) {
             let title = "Record Payment";
             this.$refs.payment.show(data, title, '/ar-invoices');
+        },
+        onViewReceipts(invoice){
+            this.$refs.receiptsList.show(invoice);
         },
 
         onPrint(id) {

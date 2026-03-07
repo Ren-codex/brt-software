@@ -46,6 +46,7 @@ class SalesOrderExternalController extends Controller
                         'sales_reps' => $this->dropdown->sales_reps(),
                         'drivers' => $this->dropdown->drivers(),
                         'locations' => $this->dropdown->locations(),
+                        'sales_statuses' => $this->dropdown->sales_statuses(),
                     ],
                     'isExternal' => true,
 

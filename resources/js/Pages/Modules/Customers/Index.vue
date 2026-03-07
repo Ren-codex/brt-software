@@ -298,6 +298,18 @@ export default {
         openView(data) {
             this.selectedCustomer = data;
             this.currentView = 'details';
+
+            axios.get(`/customers/${data.id}/details`)
+                .then((response) => {
+                    this.selectedCustomer = {
+                        ...data,
+                        ...(response.data?.data || {}),
+                    };
+                })
+                .catch((error) => {
+                    console.log(error);
+                    this.$toast.error('Failed to load customer credits and details');
+                });
         },
 
         backToList() {

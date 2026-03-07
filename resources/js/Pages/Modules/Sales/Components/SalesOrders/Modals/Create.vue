@@ -623,6 +623,7 @@ export default {
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
+            this.form.location_id = this.getDefaultLocationId();
             // Set default due date to 3 days ahead
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 3);
@@ -637,6 +638,13 @@ export default {
                 }
             }
 
+        },
+        getDefaultLocationId() {
+            if (!Array.isArray(this.dropdowns?.locations)) return null;
+            const zamboanga = this.dropdowns.locations.find(location =>
+                (location?.name || '').toLowerCase().trim() === 'zamboanga city'
+            );
+            return zamboanga ? zamboanga.value : null;
         },
         edit(data, index) {
             this.form.id = data.id;

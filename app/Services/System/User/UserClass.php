@@ -191,19 +191,25 @@ class UserClass
                 ->where('user_id', $role_request->user_id)
                 ->firstOrFail();
             $data->is_active = 1;
+            $data->removed_by_id = null;
+            $data->removed_at = null;
             $data->update();
             $id = $data->id;
             $message = 'User role set to active was successful!';
         }
         else{
-            $data = new UserRole;
-            $data->role_id = $role_request->role_id;
-            $data->user_id = $role_request->user_id;
+            $data = UserRole::firstOrNew([
+                'role_id' => $role_request->role_id,
+                'user_id' => $role_request->user_id,
+            ]);
+
             $data->added_by_id = \Auth::user()->id;
             $data->is_active = 1;
+            $data->removed_by_id = null;
+            $data->removed_at = null;
             $data->save();
             $id = $data->id;
-            $message = 'User role add was successful!';
+            $message = 'User role added successful!';
         }
 
         $data = UserRole::findOrFail($id);
