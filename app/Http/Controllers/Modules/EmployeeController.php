@@ -29,7 +29,8 @@ class EmployeeController extends Controller
             default:
                 return inertia('Modules/Employees/Index', [
                     'dropdowns' => [
-                        'positions' => $this->dropdown->positions()
+                        'positions' => $this->dropdown->positions(),
+                        'roles' => $this->dropdown->roles(),
                     ]
                 ]);
             break;
@@ -43,7 +44,6 @@ class EmployeeController extends Controller
         });
 
         return back()->with([
-            'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
@@ -56,7 +56,6 @@ class EmployeeController extends Controller
         });
 
         return back()->with([
-            'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
@@ -69,7 +68,6 @@ class EmployeeController extends Controller
         });
 
         return back()->with([
-            'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
