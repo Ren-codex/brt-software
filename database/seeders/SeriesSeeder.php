@@ -66,5 +66,13 @@ class SeriesSeeder extends Seeder
             'max_digit' => 6,
             'starting_value' => 1
         ));
+
+        Series::create(array(
+            'name' => 'Stock Return',
+            'slug' => 'stock_return',
+            'prefix' => 'SR',
+            'max_digit' => 6,
+            'starting_value' => 1
+        ));
     }
 }

@@ -133,44 +133,7 @@
         </div>
       </div>
       <div class="col-sm-4">
-        <div class="library-card">
-          <div class="library-card-header">
-            <div class="d-flex align-items-center gap-3">
-              <div class="header-icon">
-                <i class="ri-history-line"></i>
-              </div>
-              <div>
-                <h4 class="header-title mb-1">Transaction Logs</h4>
-                <p class="header-subtitle mb-0">Activity history and remarks</p>
-              </div>
-            </div>
-          </div>
-          <div class="library-card-body">
-            <div class="table-section" v-if="purchaseOrder.logs && purchaseOrder.logs.length">
-              <div class="table-responsive">
-                <table class="table align-middle table-centered mb-0">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>User</th>
-                      <th>Action</th>
-                      <th>Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(log, index) in purchaseOrder.logs" :key="log.id">
-                      <td>{{ formatDate(log.created_at) }}</td>
-                      <td>{{ log.user?.name || 'N/A' }}</td>
-                      <td>{{ log.action }}</td>
-                      <td>{{ log.remarks }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <p v-else>No transaction logs available.</p>
-          </div>
-        </div>
+        <TransactionLogs :logs="purchaseOrder.logs" :compact="true" :initial-visible="5" :logs-per-page="5" />
       </div>
     </div>
   </div>
@@ -211,8 +174,11 @@
 </template>
 
 <script>
+import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
+
 export default {
   name: "PurchaseOrderDetails",
+  components: { TransactionLogs },
   props: {
     purchaseOrder: Object,
     dropdowns: Object,
