@@ -32,6 +32,11 @@ class StockReturn extends Model
         return $this->hasMany(StockReturnItem::class, 'stock_return_id');
     }
 
+    public function logs()
+    {
+        return $this->hasMany(StockReturnLog::class, 'stock_return_id');
+    }
+
     public function status()
     {
         return $this->belongsTo(ListStatus::class, 'status_id');

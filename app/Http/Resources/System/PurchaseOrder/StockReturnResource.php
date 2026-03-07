@@ -26,6 +26,23 @@ class StockReturnResource extends JsonResource
             'items' => $this->items
                 ? StockReturnItemResource::collection($this->items)
                 : null,
+            'stock_return_logs' => $this->logs
+                ? $this->logs
+                    ->sortByDesc('created_at')
+                    ->values()
+                    ->map(function ($log) {
+                        return [
+                            'id' => $log->id,
+                            'action' => $log->action,
+                            'remarks' => $log->remarks,
+                            'user' => $log->user
+                                ? new ViewResource($log->user)
+                                : null,
+                            'created_at' => $log->created_at,
+                            'updated_at' => $log->updated_at,
+                        ];
+                    })
+                : [],
             'created_by' => $this->createdBy
                 ? new ViewResource($this->createdBy)
                 : null,

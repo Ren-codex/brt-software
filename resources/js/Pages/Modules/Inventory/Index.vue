@@ -64,6 +64,17 @@
                   @toast="showToast" @fetch="fetchInventoryStocks" />
               </div>
 
+              <!-- Stock Return Details View -->
+              <div v-else-if="currentView === 'stockReturnDetails' && selectedStockReturn"
+                class="stock-return-details-container">
+                <StockReturnDetails
+                  :stock-return="selectedStockReturn"
+                  @back="backToStockReturnsList"
+                  @toast="showToast"
+                  @refresh="fetchStockReturnDetails"
+                />
+              </div>
+
               <!-- Purchase Orders List -->
               <div class="row" v-if="activeTab === 'purchaseOrders' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
@@ -132,7 +143,7 @@
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <StockReturnsTab :listStockReturns="listStockReturns" :meta="meta" :links="links" :filter="filter"
                     :dropdowns="dropdowns" @fetch="fetchStockReturns" @update-keyword="updateKeyword"
-                    @toast="showToast" />
+                    @toast="showToast" @view-details="openStockReturnDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
@@ -181,6 +192,7 @@ import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import StockReturnsTab from './Tab/StockReturnsTab.vue';
 import PurchaseOrderDetails from './Components/PurchaseOrders/View.vue';
 import InventoryStockDetails from './Components/InventoryStocks/View.vue';
+import StockReturnDetails from './Components/StockReturns/View.vue';
 import QuickStatsSidebar from './Components/QuickStatsSidebar.vue';
 import CreatePurchaseOrderModal from './Modal/CreatePurchaseOrderModal.vue';
 import CreateReceivedStockModal from './Modal/CreateReceivedStockModal.vue';
@@ -198,6 +210,7 @@ export default {
     StockReturnsTab,
     PurchaseOrderDetails,
     InventoryStockDetails,
+    StockReturnDetails,
     QuickStatsSidebar,
     CreatePurchaseOrderModal,
     CreateReceivedStockModal,
@@ -227,6 +240,7 @@ export default {
       toastMessage: '',
       selectedPurchaseOrder: null,
       selectedInventoryStock: null, // Add this
+      selectedStockReturn: null,
       tabs: [
         {
           id: 'purchaseRequests',
@@ -285,6 +299,7 @@ export default {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
     const stockIdParam = params.get('stock_id');
+    const returnIdParam = params.get('return_id');
 
     if (tabParam && ['products', 'purchaseOrders', 'inventoryStocks', 'stockReturns'].includes(tabParam)) {
       this.activeTab = tabParam;
@@ -293,6 +308,10 @@ export default {
       // If there's a stock_id in URL and we're on inventoryStocks tab, load that stock
       if (tabParam === 'inventoryStocks' && stockIdParam) {
         this.fetchInventoryStockDetails(stockIdParam);
+      }
+
+      if (tabParam === 'stockReturns' && returnIdParam) {
+        this.fetchStockReturnDetails(returnIdParam);
       }
     }
   },
@@ -309,12 +328,14 @@ export default {
       this.currentView = 'list';
       this.selectedPurchaseOrder = null;
       this.selectedInventoryStock = null; // Clear stock selection
+      this.selectedStockReturn = null;
       this.filter.keyword = '';
 
       const url = new URL(window.location);
       url.searchParams.set('tab', tab);
       url.searchParams.delete('po_id');
       url.searchParams.delete('stock_id');
+      url.searchParams.delete('return_id');
       window.history.pushState({}, '', url);
 
       if (tab === 'products') {
@@ -439,6 +460,16 @@ export default {
       window.history.pushState({}, '', url);
     },
 
+    openStockReturnDetails(stockReturn) {
+      this.selectedStockReturn = stockReturn;
+      this.currentView = 'stockReturnDetails';
+
+      const url = new URL(window.location);
+      url.searchParams.set('tab', 'stockReturns');
+      url.searchParams.set('return_id', stockReturn.id);
+      window.history.pushState({}, '', url);
+    },
+
     backToList() {
       this.currentView = 'list';
       this.selectedPurchaseOrder = null;
@@ -458,6 +489,17 @@ export default {
       const url = new URL(window.location);
       url.searchParams.set('tab', 'inventoryStocks');
       url.searchParams.delete('stock_id');
+      window.history.pushState({}, '', url);
+    },
+
+    backToStockReturnsList() {
+      this.currentView = 'list';
+      this.selectedStockReturn = null;
+      this.fetchStockReturns();
+
+      const url = new URL(window.location);
+      url.searchParams.set('tab', 'stockReturns');
+      url.searchParams.delete('return_id');
       window.history.pushState({}, '', url);
     },
 
@@ -483,6 +525,19 @@ export default {
         .catch((err) => {
           console.error(err);
           this.showToast('Failed to load inventory stock details');
+        });
+    },
+
+    fetchStockReturnDetails(id) {
+      axios
+        .get(`/stock-returns/${id}`)
+        .then((response) => {
+          this.selectedStockReturn = response.data.data;
+          this.currentView = 'stockReturnDetails';
+        })
+        .catch((err) => {
+          console.error(err);
+          this.showToast('Failed to load stock return details');
         });
     },
 

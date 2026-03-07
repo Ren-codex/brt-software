@@ -51,6 +51,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
         Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus']);
         Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class);
+        Route::post('/stock-returns/{id}/approve', [App\Http\Controllers\StockReturnController::class, 'approve']);
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO']);
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);

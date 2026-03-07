@@ -27,7 +27,7 @@ class StockReturnController extends Controller
             'items.*.po_item_id' => ['required', 'integer', 'exists:purchase_order_items,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.remarks' => ['nullable', 'string', 'max:1000'],
-            'items.*.status_id' => ['required', 'integer', 'exists:list_statuses,id'],
+            'items.*.status_id' => ['nullable', 'integer', 'exists:list_statuses,id'],
         ]);
 
         $result = $this->stockReturn->store($request);
@@ -43,5 +43,22 @@ class StockReturnController extends Controller
     public function show($id)
     {
         return $this->stockReturn->view($id);
+    }
+
+    public function approve(Request $request, $id)
+    {
+        $request->validate([
+            'status' => ['required', 'in:approved,disapproved'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $result = $this->stockReturn->approve($request, $id);
+
+        return response()->json([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
     }
 }

@@ -46,10 +46,16 @@
                     <th>Status</th>
                     <th>Created By</th>
                     <th>Date Created</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(row, index) in listStockReturns" :key="row.id">
+                  <tr
+                    v-for="(row, index) in listStockReturns"
+                    :key="row.id"
+                    @click="openView(row)"
+                    style="cursor: pointer;"
+                  >
                     <td>{{ index + 1 }}</td>
                     <td>{{ row.purchase_order?.po_number || 'N/A' }}</td>
                     <td>{{ row.purchase_order?.supplier?.name || 'N/A' }}</td>
@@ -67,6 +73,11 @@
                     </td>
                     <td>{{ row.created_by?.fullname || 'N/A' }}</td>
                     <td>{{ formatDate(row.created_at) }}</td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary" @click.stop="openView(row)">
+                        <i class="ri-eye-line"></i>
+                      </button>
+                    </td>
                   </tr>
                   <tr v-if="listStockReturns.length === 0">
                     <td colspan="7" class="text-center py-4">
@@ -131,7 +142,7 @@ export default {
       default: () => ({}),
     },
   },
-  emits: ['fetch', 'update-keyword', 'toast'],
+  emits: ['fetch', 'update-keyword', 'toast', 'view-details'],
   data() {
     return {
       localKeyword: this.filter.keyword || '',
@@ -194,6 +205,9 @@ export default {
       this.$emit('toast', 'Purchase order return processed successfully');
       this.$emit('fetch');
       this.returnableOrders = [];
+    },
+    openView(stockReturn) {
+      this.$emit('view-details', stockReturn);
     },
   },
 };

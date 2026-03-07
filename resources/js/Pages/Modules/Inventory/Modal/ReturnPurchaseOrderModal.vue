@@ -42,7 +42,7 @@
                     <th>Product</th>
                     <th class="text-center">Received</th>
                     <th style="width:18%">For Return</th>
-                    <th>Status</th>
+                    <!-- <th>Status</th> -->
                     <th>Remarks</th>
                   </tr>
                 </thead>
@@ -86,7 +86,7 @@
                       </div>
                       <small class="error-message" v-if="errors[item.id]?.quantity">{{ errors[item.id].quantity }}</small>
                     </td>
-                    <td>
+                    <!-- <td>
                       <select
                         class="form-control form-control-sm"
                         v-model="rowForm[item.id].status_id"
@@ -102,7 +102,7 @@
                         </option>
                       </select>
                       <small class="error-message" v-if="errors[item.id]?.status_id">{{ errors[item.id].status_id }}</small>
-                    </td>
+                    </td> -->
                     <td>
                       <input
                         type="text"
@@ -173,7 +173,7 @@ export default {
     },
     statusOptions() {
       const statuses = this.dropdowns?.statuses || [];
-      const allowedStatuses = new Set(['replaced', 'loss']);
+      const allowedStatuses = new Set(['pending', 'replaced', 'loss']);
 
       return statuses.filter((status) => {
         const slug = String(status?.slug || '').trim().toLowerCase();
@@ -246,10 +246,6 @@ export default {
           rowErrors.quantity = `For Return cannot exceed ${maxQty}.`;
         }
 
-        if (!row.status_id) {
-          rowErrors.status_id = 'Status is required.';
-        }
-
         if (Object.keys(rowErrors).length > 0) {
           this.errors[item.id] = rowErrors;
         }
@@ -261,7 +257,11 @@ export default {
       return item?.product?.name || item?.product?.brand?.name || 'N/A';
     },
     getDefaultStatusId() {
-      const pending = this.statusOptions.find((status) => status.slug === 'pending' || status.name === 'Pending');
+      const pending = this.statusOptions.find((status) => {
+        const slug = String(status?.slug || '').trim().toLowerCase();
+        const name = String(status?.name || status?.label || '').trim().toLowerCase();
+        return slug === 'pending' || name === 'pending';
+      });
       return pending?.value || pending?.id || '';
     },
     getStatusValue(status) {
