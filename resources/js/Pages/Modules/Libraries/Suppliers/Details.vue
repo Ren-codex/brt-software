@@ -1,298 +1,270 @@
 <template>
-    <div class="emp-profile-container">
-        <div>
-            <div class="d-flex gap-2 justify-content-end">
-                <button class="emp-create-btn" @click="backToList">
+    <div class="employee-details-page">
+        <div class="details-topbar">
+            <div class="details-title-block">
+                <h1>Supplier Profile</h1>
+                <p>View supplier records, purchase activity, and stock-return performance.</p>
+            </div>
+            <div class="details-actions">
+                <button class="details-btn details-btn-outline" @click="backToList">
                     <i class="ri-arrow-left-line"></i>
-                    Back to List
+                    <span>Back to List</span>
                 </button>
-                <button @click="openEdit(supplier)" variant="info" v-b-tooltip.hover title="Edit"
-                    class="emp-create-btn">
+                <button @click="openEdit(supplierData)" variant="info" v-b-tooltip.hover title="Edit"
+                    class="details-btn details-btn-primary">
                     <i class="ri-pencil-fill"></i>
-                    Edit
+                    <span>Edit Supplier</span>
                 </button>
             </div>
         </div>
 
-        <div class="row mt-4">
+        <div class="details-grid">
             <!-- Left Column - Basic Information -->
-            <div class="col-md-4">
+            <aside class="details-sidebar">
                 <!-- Contact Information Card -->
-                <div class="emp-info-card">
-                    <div class="emp-info-card-header">
-                        <i class="ri-user-line"></i>
-                        <h3>Supplier Information</h3>
+                <div class="profile-card">
+                    <div class="profile-avatar-wrap">
+                        <div class="profile-avatar">
+                            <div class="profile-avatar-placeholder">
+                                <i class="ri-store-line"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div class="emp-info-card-body">
-                    <div class="emp-profile-title">
-                        <h1>{{ supplier.name || 'Supplier Name' }}</h1>
-                        <div class="emp-profile-badges">
-                            <span class="emp-badge"
-                                :class="supplier.is_active === 1 ? 'emp-badge-success' : 'emp-badge-danger'">
-                                {{ supplier.is_active === 1 ? 'Active' : 'Inactive' }}
+
+                    <div class="profile-heading">
+                        <h2>{{ supplierData.name || 'Supplier Name' }}</h2>
+                        <div class="profile-badges">
+                            <span class="profile-badge" :class="supplierData.is_active === 1 ? 'profile-badge-success' : 'profile-badge-danger'">
+                                {{ supplierData.is_active === 1 ? 'Active' : 'Inactive' }}
                             </span>
-                            <span v-if="supplier.is_blacklisted === 1" class="emp-badge emp-badge-dark">
+                            <span v-if="supplierData.is_blacklisted === 1" class="profile-badge profile-badge-dark">
                                 Blacklisted
                             </span>
                         </div>
                     </div>
-                    </div>
-                    <div class="emp-info-card-body">
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Email</div>
-                            <div class="emp-info-value">
+
+                    <div class="profile-info-list">
+                        <div class="profile-info-item">
+                            <div class="profile-label">Supplier ID</div>
+                            <div class="profile-value profile-highlight">{{ supplierData.id || 'N/A' }}</div>
+                        </div>
+                        <div class="profile-info-item">
+                            <div class="profile-label">Email</div>
+                            <div class="profile-value">
                                 <i class="ri-mail-line"></i>
-                                {{ supplier.email || 'No email' }}
+                                {{ supplierData.email || 'No email' }}
                             </div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Contact Person</div>
-                            <div class="emp-info-value">
+                        <div class="profile-info-item">
+                            <div class="profile-label">Contact Person</div>
+                            <div class="profile-value">
                                 <i class="ri-user-line"></i>
-                                {{ supplier.contact_person || '-' }}
+                                {{ supplierData.contact_person || '-' }}
                             </div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Contact Number</div>
-                            <div class="emp-info-value">
+                        <div class="profile-info-item">
+                            <div class="profile-label">Contact Number</div>
+                            <div class="profile-value">
                                 <i class="ri-phone-line"></i>
-                                {{ supplier.contact_number || 'No contact number' }}
+                                {{ supplierData.contact_number || 'No contact number' }}
                             </div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Address</div>
-                            <div class="emp-info-value">
+                        <div class="profile-info-item">
+                            <div class="profile-label">Address</div>
+                            <div class="profile-value">
                                 <i class="ri-map-pin-line"></i>
-                                {{ supplier.address || 'No address' }}
+                                {{ supplierData.address || 'No address' }}
                             </div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">TIN</div>
-                            <div class="emp-info-value">
+                        <div class="profile-info-item">
+                            <div class="profile-label">TIN</div>
+                            <div class="profile-value">
                                 <i class="ri-file-list-3-line"></i>
-                                {{ supplier.tin || '-' }}
+                                {{ supplierData.tin || '-' }}
                             </div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Created At</div>
-                            <div class="emp-info-value">{{ formatDate(supplier.created_at) }}</div>
+                        <div class="profile-info-item">
+                            <div class="profile-label">Created At</div>
+                            <div class="profile-value">{{ formatDate(supplierData.created_at) }}</div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </aside>
 
             <!-- Right Column - Statistics & Records -->
-            <div class="col-md-8">
+            <section class="details-main">
                 <!-- Purchase Orders Section -->
-                <div class="emp-incentives-section">
-                    <div class="emp-incentives-card">
-                        <div class="emp-incentives-header">
-                            <h3>
-                                <i class="ri-shopping-cart-line"></i>
-                                Purchase Orders
-                            </h3>
+                <div class="details-card">
+                    <div class="details-card-header details-card-header-between">
+                        <h3>
+                            <i class="ri-shopping-cart-line"></i>
+                            Purchase Orders
+                        </h3>
+                    </div>
+                    <div class="details-stat-grid">
+                        <div class="details-stat">
+                            <div class="details-stat-label">Total Orders</div>
+                            <div class="details-stat-value">{{ purchaseOrderSummary.total_orders }}</div>
                         </div>
-                        <div class="emp-incentives-stats">
-                            <div class="emp-incentives-stat">
-                                <div class="emp-stat-label">Total Orders</div>
-                                <div class="emp-stat-value">{{ purchaseOrderSummary.total_orders }}</div>
-                            </div>
-                            <div class="emp-incentives-stat">
-                                <div class="emp-stat-label">Pending</div>
-                                <div class="emp-stat-value">{{ purchaseOrderSummary.pending_orders }}</div>
-                            </div>
-                            <div class="emp-incentives-stat">
-                                <div class="emp-stat-label">Completed</div>
-                                <div class="emp-stat-value">{{ purchaseOrderSummary.completed_orders }}</div>
-                            </div>
+                        <div class="details-stat">
+                            <div class="details-stat-label">Pending</div>
+                            <div class="details-stat-value">{{ purchaseOrderSummary.pending_orders }}</div>
+                        </div>
+                        <div class="details-stat">
+                            <div class="details-stat-label">Completed</div>
+                            <div class="details-stat-value">{{ purchaseOrderSummary.completed_orders }}</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="emp-incentives-section mt-2">
-                    <div class="stock-return-card">
-                        <div class="emp-incentives-header">
-                            <h3>
-                                <i class="ri-shopping-cart-line"></i>
-                                Stock Return Summary
-                            </h3>
-                        </div>
+                <!-- Stock Return Summary -->
+                <div class="details-card">
+                    <div class="details-card-header details-card-header-between">
+                        <h3>
+                            <i class="ri-arrow-left-circle-line"></i>
+                            Stock Return Summary
+                        </h3>
+                    </div>
 
-                        <!-- Stats Cards -->
-                        <div class="stats-grid">
-                            <div class="stat-card returned">
-                            <div class="stat-icon">
-                                <i class="ri-arrow-left-circle-line"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-label">Returned</span>
-                                <span class="stat-value">{{ stockReturnSummary.total_returned }}</span>
-                            </div>
-                            </div>
-                            
-                            <div class="stat-card replaced">
-                            <div class="stat-icon">
-                                <i class="ri-refresh-line"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-label">Replaced</span>
-                                <span class="stat-value">{{ stockReturnSummary.total_replaced }}</span>
-                            </div>
-                            </div>
-                            
-                            <div class="stat-card loss">
-                            <div class="stat-icon">
-                                <i class="ri-delete-back-line"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-label">Loss</span>
-                                <span class="stat-value">{{ stockReturnSummary.total_loss }}</span>
-                            </div>
-                            </div>
+                    <!-- Stats Cards -->
+                    <div class="details-stat-grid">
+                        <div class="details-stat">
+                            <div class="details-stat-label">Returned</div>
+                            <div class="details-stat-value details-danger">{{ stockReturnSummary.total_returned }}</div>
                         </div>
+                        <div class="details-stat">
+                            <div class="details-stat-label">Replaced</div>
+                            <div class="details-stat-value details-success">{{ stockReturnSummary.total_replaced }}</div>
+                        </div>
+                        <div class="details-stat">
+                            <div class="details-stat-label">Loss</div>
+                            <div class="details-stat-value">{{ stockReturnSummary.total_loss }}</div>
+                        </div>
+                    </div>
 
-                        <!-- Records Section -->
-                        <div class="records-section">
-                            <div class="section-header">
+                    <!-- Records Section -->
+                    <div class="records-section">
+                        <div class="section-header">
                             <h4>Stock Return Records</h4>
                             <span class="records-count" v-if="stockReturns.length">
                                 {{ stockReturns.length }} records
                             </span>
-                            </div>
+                        </div>
 
-                            <div class="table-wrapper">
+                        <div class="table-wrapper">
                             <div class="table-responsive">
                                 <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                    <th>Stock Return #</th>
-                                    <th style="width: 15%">PO #</th>
-                                    <th class="text-end">Returned</th>
-                                    <th class="text-end">Replaced</th>
-                                    <th class="text-end">Loss</th>
-                                    <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="item in stockReturns" :key="item.id" class="table-row">
-                                    <td>
-                                        {{ item.stock_return_no || `SR-${item.id}` }}
-                                    </td>
-                                    <td>
-                                        <span class="po-number">{{ item.po_number || '-' }}</span>
-                                        <span class="status-badge" :class="getStatusClass(item.status_name)">
-                                        {{ item.status_name || '-' }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <span class="amount returned">{{ item.total_returned }}</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <span class="amount replaced">{{ item.total_replaced }}</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <span class="amount loss">{{ item.total_loss }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="date-cell">
-                                        <i class="ri-calendar-line"></i>
-                                        {{ formatDate(item.created_at) }}
-                                        </span>
-                                    </td>
-                                    </tr>
-                                    
-                                    <!-- Empty State -->
-                                    <tr v-if="!stockReturnsLoading && stockReturns.length === 0">
-                                    <td colspan="7">
-                                        <div class="empty-state">
-                                        <i class="ri-inbox-line"></i>
-                                        <p>No stock return records found</p>
-                                        </div>
-                                    </td>
-                                    </tr>
-                                    
-                                    <!-- Loading State -->
-                                    <tr v-if="stockReturnsLoading">
-                                    <td colspan="7">
-                                        <div class="loading-state">
-                                        <i class="ri-loader-4-line ri-spin"></i>
-                                        <p>Loading stock return records...</p>
-                                        </div>
-                                    </td>
-                                    </tr>
-                                </tbody>
+                                    <thead>
+                                        <tr>
+                                            <th>Stock Return #</th>
+                                            <th>PO #</th>
+                                            <th class="text-end">Returned</th>
+                                            <th class="text-end">Replaced</th>
+                                            <th class="text-end">Loss</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="item in stockReturns" :key="item.id" class="table-row">
+                                            <td>
+                                                {{ item.stock_return_no || `SR-${item.id}` }}
+                                            </td>
+                                            <td>
+                                                <span class="po-number">{{ item.po_number || '-' }}</span>
+                                                <span class="status-badge" :class="getStatusClass(item.status_name)">
+                                                    {{ item.status_name || '-' }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="amount returned">{{ item.total_returned }}</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="amount replaced">{{ item.total_replaced }}</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="amount loss">{{ item.total_loss }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="date-cell">
+                                                    <i class="ri-calendar-line"></i>
+                                                    {{ formatDate(item.created_at) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Empty State -->
+                                        <tr v-if="!stockReturnsLoading && stockReturns.length === 0">
+                                            <td colspan="6">
+                                                <div class="empty-state">
+                                                    <i class="ri-inbox-line"></i>
+                                                    <p>No stock return records found</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Loading State -->
+                                        <tr v-if="stockReturnsLoading">
+                                            <td colspan="6">
+                                                <div class="loading-state">
+                                                    <i class="ri-loader-4-line ri-spin"></i>
+                                                    <p>Loading stock return records...</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
-                            </div>
+                        </div>
 
-                            <!-- Pagination -->
-                            <div class="pagination-wrapper" v-if="stockReturnsMeta && stockReturnsLinks && stockReturns.length">
+                        <!-- Pagination -->
+                        <div class="pagination-wrapper" v-if="stockReturnsMeta && stockReturnsLinks && stockReturns.length">
                             <Pagination
                                 :lists="stockReturns.length"
                                 :links="stockReturnsLinks"
                                 :pagination="stockReturnsMeta"
                                 @fetch="fetchStockReturns"
                             />
-                            </div>
                         </div>
-                        </div>
+                    </div>
                 </div>
 
 
                 <!-- Recent Activity Section -->
-                <div class="emp-stats-section mt-2">
-                    <div class="emp-section-header">
-                        <h2 class="emp-section-title">Recent Activity</h2>
+                <div class="details-card">
+                    <div class="details-card-header">
+                        <h3>
+                            <i class="ri-history-line"></i>
+                            Recent Activity
+                        </h3>
                     </div>
 
-                    <div class="emp-loan-summary-card">
-                        <div class="emp-loan-main-header">
-                            <div class="emp-loan-icon">
-                                <i class="ri-history-line"></i>
-                            </div>
-                            <div class="emp-loan-title-section">
-                                <h3 class="emp-loan-title">Supplier History</h3>
-                                <div class="emp-loan-period">Record Timeline</div>
-                            </div>
+                    <div class="loan-overview">
+                        <div class="loan-balance">
+                            <div class="loan-balance-title">Supplier ID</div>
+                            <div class="loan-balance-value">{{ supplierData.id || 'N/A' }}</div>
                         </div>
 
-                        <div class="emp-loan-main-stats">
-                            <div class="emp-primary-stat">
-                                <div class="emp-stat-number">{{ supplier.id || 'N/A' }}</div>
-                                <div class="emp-stat-label">Supplier ID</div>
+                        <div class="loan-progress">
+                            <div class="loan-progress-head">
+                                <span>Status</span>
+                                <span :class="supplierData.is_active === 1 ? 'details-success' : 'details-danger'">
+                                    {{ supplierData.is_active === 1 ? 'Active' : 'Inactive' }}
+                                </span>
                             </div>
-
-                            <div class="emp-progress-section">
-                                <div class="emp-progress-header">
-                                    <span>Status</span>
-                                    <span class="emp-progress-percentage" :class="supplier.is_active === 1 ? 'text-success' : 'text-danger'">
-                                        {{ supplier.is_active === 1 ? 'Active' : 'Inactive' }}
-                                    </span>
-                                </div>
-                                <div class="emp-progress-bar">
-                                    <div class="emp-progress-fill" :style="{ width: supplier.is_active === 1 ? '100%' : '0%' }"></div>
-                                </div>
+                            <div class="loan-progress-bar">
+                                <div class="loan-progress-fill" :style="{ width: supplierData.is_active === 1 ? '100%' : '0%' }"></div>
                             </div>
-                        </div>
-
-                        <div class="emp-loan-footer">
-                            <div class="emp-footer-details">
-                                <div class="emp-footer-detail">
-                                    <span class="emp-footer-label">Last Updated</span>
-                                    <span class="emp-footer-value">{{ formatDate(supplier.updated_at) }}</span>
-                                </div>
-                                <div class="emp-footer-detail">
-                                    <span class="emp-footer-label">Created</span>
-                                    <span class="emp-footer-value">{{ formatDate(supplier.created_at) }}</span>
-                                </div>
+                            <div class="loan-progress-meta">
+                                <span>Created: <strong>{{ formatDate(supplierData.created_at) }}</strong></span>
+                                <span>Updated: <strong>{{ formatDate(supplierData.updated_at) }}</strong></span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
-    <Create @add="fetch()" @update="fetch()" :dropdowns="dropdowns" ref="create" />
+    <Create @add="fetchData" @update="fetchData" :dropdowns="dropdowns" ref="create" />
 </template>
 
 <script>
@@ -305,6 +277,7 @@ export default {
     name: 'SupplierDetails',
     data() {
         return {
+            supplierDetails: {},
             purchaseOrderSummary: {
                 total_orders: 0,
                 pending_orders: 0,
@@ -325,14 +298,42 @@ export default {
     watch: {
         'supplier.id': {
             handler() {
-                this.fetchPurchaseOrderSummary();
-                this.fetchStockReturnSummary();
-                this.fetchStockReturns();
+                this.fetchData();
             },
             immediate: true,
         },
     },
+    computed: {
+        supplierData() {
+            return this.supplierDetails?.id ? this.supplierDetails : (this.supplier || {});
+        },
+    },
     methods: {
+        getSupplierId() {
+            return this.supplier?.id || null;
+        },
+        fetchData() {
+            this.fetchSupplierDetails();
+            this.fetchPurchaseOrderSummary();
+            this.fetchStockReturnSummary();
+            this.fetchStockReturns();
+        },
+        fetchSupplierDetails() {
+            const id = this.getSupplierId();
+            if (!id) {
+                this.supplierDetails = {};
+                return;
+            }
+
+            axios.get(`/suppliers/${id}`)
+                .then((response) => {
+                    const payload = response.data?.data ?? response.data;
+                    this.supplierDetails = payload || {};
+                })
+                .catch(() => {
+                    this.supplierDetails = {};
+                });
+        },
         formatDate(dateString) {
             if (!dateString) return 'N/A';
             const date = new Date(dateString);
@@ -353,9 +354,10 @@ export default {
             this.$refs.create.edit(data);
         },
         fetchPurchaseOrderSummary() {
-            if (!this.supplier?.id) return;
+            const id = this.getSupplierId();
+            if (!id) return;
 
-            axios.get(`/suppliers/${this.supplier.id}/purchase-order-summary`)
+            axios.get(`/suppliers/${id}/purchase-order-summary`)
                 .then((response) => {
                     this.purchaseOrderSummary = {
                         ...this.purchaseOrderSummary,
@@ -371,9 +373,10 @@ export default {
                 });
         },
         fetchStockReturnSummary() {
-            if (!this.supplier?.id) return;
+            const id = this.getSupplierId();
+            if (!id) return;
 
-            axios.get(`/suppliers/${this.supplier.id}/stock-return-summary`)
+            axios.get(`/suppliers/${id}/stock-return-summary`)
                 .then((response) => {
                     this.stockReturnSummary = {
                         ...this.stockReturnSummary,
@@ -390,14 +393,15 @@ export default {
                 });
         },
         fetchStockReturns(page_url) {
-            if (!this.supplier?.id) {
+            const id = this.getSupplierId();
+            if (!id) {
                 this.stockReturns = [];
                 this.stockReturnsMeta = null;
                 this.stockReturnsLinks = null;
                 return;
             }
 
-            page_url = page_url || `/suppliers/${this.supplier.id}/stock-returns`;
+            page_url = page_url || `/suppliers/${id}/stock-returns`;
             this.stockReturnsLoading = true;
             axios.get(page_url, {
                 params: {
@@ -424,309 +428,561 @@ export default {
 </script>
 
 <style scoped>
-.text-success {
-    color: #28a745 !important;
+.employee-details-page {
+    zoom: 1.1;
+    --ink-900: #102723;
+    --ink-700: #35524d;
+    --ink-500: #5c7974;
+    --line-200: #d2e4df;
+    --mint-700: #1a7e67;
+    --mint-500: #2fa485;
+    --surface: #ffffff;
+    --surface-soft: #f7fcfa;
+    --danger-600: #c44f47;
+    --warn-600: #9a6b19;
+    --ok-600: #157856;
+    padding: 20px;
+    max-width: 1360px;
+    margin: 0 auto;
 }
 
-.text-danger {
-    color: #dc3545 !important;
-}
-.stock-return-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+.details-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
 }
 
-/* Header */
-.stock-return-header {
-  background: #c4dad2;
-  border-bottom: 3px solid #c4dad2;
+.details-title-block h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--ink-900);
 }
 
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 1.5rem 2rem;
-  background: #f8faf9;
-  border-bottom: 2px solid #eef2f6;
+.details-title-block p {
+    margin: 6px 0 0;
+    color: var(--ink-500);
+    font-size: 0.88rem;
 }
 
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
-  background: white;
-  border-radius: 18px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-  transition: all 0.3s ease;
+.details-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(61, 141, 122, 0.12);
+.details-btn {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.stat-card.returned .stat-icon {
-  background: #c4dad2;
-  color: #3d8d7a;
+.details-btn-primary {
+    color: #fff;
+    background: linear-gradient(125deg, var(--mint-500) 0%, var(--mint-700) 100%);
+    box-shadow: 0 10px 20px rgba(28, 120, 99, 0.28);
 }
 
-.stat-card.replaced .stat-icon {
-  background: #fff3e0;
-  color: #f39c12;
+.details-btn-primary:hover {
+    transform: translateY(-1px);
 }
 
-.stat-card.loss .stat-icon {
-  background: #fee9e7;
-  color: #e74c3c;
+.details-btn-outline {
+    color: var(--ink-700);
+    background: #fff;
+    border-color: #ceded9;
 }
 
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
+.details-btn-outline:hover {
+    background: #f8fdfb;
 }
 
-.stat-content {
-  flex: 1;
+.details-btn-sm {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.78rem;
 }
 
-.stat-label {
-  display: block;
-  color: #6c757d;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin-bottom: 0.25rem;
+.details-grid {
+    display: grid;
+    grid-template-columns: minmax(310px, 390px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
 }
 
-.stat-value {
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2c3e50;
-  line-height: 1.2;
+.details-sidebar {
+    position: sticky;
+    top: 12px;
 }
 
-/* Records Section */
+.profile-card {
+    border: 1px solid var(--line-200);
+    border-radius: 22px;
+    padding: 20px;
+    background: linear-gradient(160deg, #f9fffd 0%, #eff9f6 100%);
+    box-shadow: 0 12px 32px rgba(28, 64, 56, 0.08);
+}
+
+.profile-avatar-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid #fff;
+    box-shadow: 0 10px 28px rgba(14, 47, 41, 0.2);
+}
+
+.profile-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: white;
+    font-size: 36px;
+    background: linear-gradient(145deg, #2d947c 0%, #1d6454 100%);
+}
+
+.profile-heading {
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+.profile-heading h2 {
+    margin: 0;
+    font-size: 1.22rem;
+    color: var(--ink-900);
+}
+
+.profile-badges {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+}
+
+.profile-badge {
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.profile-badge-primary {
+    background: #d9f0e8;
+    color: #1b6f5a;
+}
+
+.profile-badge-neutral {
+    background: #edf0f4;
+    color: #4f6072;
+}
+
+.profile-badge-success,
+.emp-status-success {
+    background: #dcf6eb;
+    color: #157856;
+}
+
+.profile-badge-danger,
+.emp-status-danger {
+    background: #ffe4e0;
+    color: #b04740;
+}
+
+.profile-badge-dark {
+    background: #2e3a39;
+    color: #fff;
+}
+
+.profile-info-list {
+    border-top: 1px solid #d8e9e4;
+    padding-top: 12px;
+}
+
+.profile-info-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+}
+
+.profile-label {
+    color: var(--ink-500);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.profile-value {
+    color: var(--ink-900);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: right;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.profile-highlight {
+    color: #176954;
+}
+
+.details-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.details-card {
+    border: 1px solid #dbe9e5;
+    border-radius: 20px;
+    padding: 18px;
+    background: var(--surface);
+    box-shadow: 0 8px 28px rgba(22, 58, 50, 0.06);
+}
+
+.details-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: var(--ink-900);
+}
+
+.details-card-header h3 {
+    margin: 0;
+    font-size: 1.04rem;
+}
+
+.details-card-header-between {
+    justify-content: space-between;
+}
+
+.details-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.details-stat {
+    border: 1px solid #e2eeeb;
+    border-radius: 15px;
+    padding: 13px;
+    background: var(--surface-soft);
+}
+
+.details-stat-label {
+    color: var(--ink-500);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.details-stat-value {
+    margin-top: 8px;
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: var(--ink-900);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.details-success {
+    color: #1b8c64;
+}
+
+.details-danger {
+    color: var(--danger-600);
+}
+
+/* Table Styles */
 .records-section {
-  padding: 1.5rem 2rem;
+    margin-top: 16px;
 }
 
 .section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
 .section-header h4 {
-  margin: 0;
-  color: #2c3e50;
-  font-weight: 600;
-  font-size: 1.1rem;
+    margin: 0;
+    color: var(--ink-900);
+    font-weight: 700;
+    font-size: 0.95rem;
 }
 
 .records-count {
-  background: #c4dad2;
-  color: #2c6b5c;
-  padding: 0.35rem 1rem;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  font-weight: 500;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ink-700);
+    background: #edf7f4;
+    border: 1px solid #d6e8e2;
+    border-radius: 999px;
+    padding: 4px 9px;
 }
 
-/* Table Wrapper */
 .table-wrapper {
-  background: white;
-  border-radius: 18px;
-  border: 2px solid #eef2f6;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #deebe7;
+    overflow: hidden;
+    margin-bottom: 1rem;
 }
 
-/* Modern Table */
+.table-responsive {
+    overflow-x: auto;
+}
+
 .modern-table {
-  width: 100%;
-  border-collapse: collapse;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 .modern-table thead tr {
-  background: #f8faf9;
-  border-bottom: 2px solid #c4dad2;
+    background: #f6fcfa;
+    border-bottom: 1px solid #e6f0ed;
 }
 
 .modern-table thead th {
-  padding: 1rem 1.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #3d8d7a;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
+    padding: 9px 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink-700);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
 }
 
 .modern-table tbody td {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #eef2f6;
-  color: #2c3e50;
-  font-size: 0.95rem;
+    padding: 9px 10px;
+    border-bottom: 1px solid #e6f0ed;
+    color: var(--ink-900);
+    font-size: 0.8rem;
 }
 
 .modern-table tbody tr:last-child td {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 .table-row {
-  transition: background 0.2s ease;
+    transition: background 0.2s ease;
 }
 
 .table-row:hover {
-  background: #f8faf9;
-}
-
-/* Table Elements */
-.return-number {
-  font-weight: 600;
-  color: #3d8d7a;
-  background: #c4dad2;
-  padding: 0.35rem 1rem;
-  border-radius: 50px;
-  font-size: 0.9rem;
-  display: inline-block;
-}
-
-.po-number {
-  font-weight: 500;
-  color: #2c3e50;
+    background: #f9fdfb;
 }
 
 .status-badge {
-  display: inline-block;
-  padding: 0.35rem 1rem;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  font-weight: 500;
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: capitalize;
 }
 
 .status-badge.completed,
 .status-badge.approved {
-  background: #c4dad2;
-  color: #2c6b5c;
+    background: #dcf6eb;
+    color: #157856;
 }
 
-.status-badge.pending {
-  background: #fff3e0;
-  color: #f39c12;
-}
-
+.status-badge.pending,
 .status-badge.warning {
-  background: #fff3e0;
-  color: #f39c12;
+    background: #fff1d8;
+    color: #9a6b19;
 }
 
 .status-badge.rejected,
 .status-badge.cancelled,
-.status-badge.danger {
-  background: #fee9e7;
-  color: #e74c3c;
+.status-badge.danger,
+.status-badge.disapproved {
+    background: #ffe4e0;
+    color: #b04740;
 }
 
 .amount {
-  font-weight: 600;
+    font-weight: 700;
 }
 
 .amount.returned {
-  color: #3d8d7a;
+    color: var(--danger-600);
 }
 
 .amount.replaced {
-  color: #f39c12;
+    color: #1b8c64;
 }
 
 .amount.loss {
-  color: #e74c3c;
+    color: var(--warn-600);
+}
+
+.po-number {
+    display: block;
+    font-weight: 600;
 }
 
 .date-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #6c757d;
-  font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--ink-700);
+    font-size: 0.76rem;
 }
 
 .date-cell i {
-  color: #3d8d7a;
-  font-size: 1rem;
+    color: #1f826b;
 }
 
-/* Empty & Loading States */
 .empty-state,
 .loading-state {
-  text-align: center;
-  padding: 3rem;
-  color: #adb5bd;
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--ink-500);
 }
 
 .empty-state i,
 .loading-state i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  display: block;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
 }
 
-.empty-state i {
-  color: #c4dad2;
-}
-
-.loading-state i {
-  color: #3d8d7a;
-}
-
-.empty-state p,
-.loading-state p {
-  margin: 0;
-  font-size: 1rem;
-}
-
-/* Pagination Wrapper */
 .pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Loan Overview Styles */
+.loan-overview {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 14px;
+}
+
+.loan-balance {
+    border: 1px solid #d7e7e2;
+    border-radius: 14px;
+    padding: 12px;
+    background: linear-gradient(135deg, #ecfaf5 0%, #e3f5ef 100%);
+}
+
+.loan-balance-title {
+    font-size: 0.78rem;
+    color: var(--ink-500);
+    font-weight: 700;
+}
+
+.loan-balance-value {
+    margin-top: 8px;
+    font-size: 1.6rem;
+    color: #1c755d;
+    font-weight: 800;
+}
+
+.loan-progress {
+    border: 1px solid #e0ece8;
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.loan-progress-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--ink-700);
+    font-weight: 700;
+}
+
+.loan-progress-bar {
+    margin-top: 9px;
+    height: 10px;
+    border-radius: 10px;
+    background: #e3eeeb;
+    overflow: hidden;
+}
+
+.loan-progress-fill {
+    height: 100%;
+    background: linear-gradient(120deg, #30a789 0%, #1a7c64 100%);
+}
+
+.loan-progress-meta {
+    margin-top: 9px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--ink-700);
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .stock-return-header {
-    padding: 1.25rem;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-    padding: 1.25rem;
-  }
-  
-  .records-section {
-    padding: 1.25rem;
-  }
-  
-  .modern-table thead th,
-  .modern-table tbody td {
-    padding: 0.75rem 1rem;
-  }
-  
-  .return-number {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.85rem;
-  }
+@media (max-width: 1140px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .details-sidebar {
+        position: static;
+    }
+
+    .details-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .loan-overview {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .employee-details-page {
+        padding: 12px;
+    }
+
+    .details-topbar {
+        flex-direction: column;
+    }
+
+    .details-actions {
+        width: 100%;
+    }
+
+    .details-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .details-card-header-between {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 9px;
+    }
+
+    .details-stat-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

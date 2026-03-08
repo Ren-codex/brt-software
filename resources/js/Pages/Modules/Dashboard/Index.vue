@@ -15,378 +15,62 @@
         </div>
     </div>
 
-    <!-- Sales Dashboard - Modern Design -->
-    <div v-if="activeTab === 'sales'" class="dashboard-content">
-        <!-- Filter Buttons -->
-        <div class="filter-container">
-            <div class="filter-buttons">
-                <button v-for="filter in dateFilters" :key="filter.value"
-                        @click="selectedFilter = filter.value"
-                        :class="['filter-btn', { active: selectedFilter === filter.value }]">
-                    {{ filter.label }}
-                </button>
-            </div>
+    <div class="filter-container">
+        <div class="filter-buttons">
+            <button
+                v-for="filter in dateFilters"
+                :key="filter.value"
+                @click="selectedFilter = filter.value"
+                :class="['filter-btn', { active: selectedFilter === filter.value }]"
+            >
+                {{ filter.label }}
+            </button>
         </div>
-        <!-- Stats Grid -->
-        <div class="stats-grid">
-            <div v-for="stat in salesStats" :key="stat.label" class="stat-card">
-                <div class="stat-icon" :style="{ background: stat.iconBg }">
-                    <i :class="stat.icon" :style="{ color: stat.iconColor }"></i>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-label">{{ stat.label }}</span>
-                    <div class="stat-value-wrapper">
-                        <span class="stat-value">{{ stat.showCurrency ? '₱' : '' }}{{ formatNumber(stat.value) }}</span>
-                        <span class="stat-trend" :class="stat.trendClass">
-                            <i :class="stat.trendIcon"></i> {{ stat.trend }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Top Selling Products -->
-        <div class="modern-card">
-            <div class="card-header-modern">
-                <div>
-                    <h3>Top Selling Products</h3>
-                    <p class="text-muted-600">Best performing products this month</p>
-                </div>
-            </div>
-            <div class="top-products-grid" v-if="topProducts.length > 0">
-                <div v-for="(product, index) in topProducts" :key="product.id" class="top-product-card">
-                    <div class="rank-badge" :class="getRankClass(index + 1)">{{ index + 1 }}</div>
-                    <div class="product-info">
-                        <h4 class="product-name">{{ product.name }}</h4>
-                        <span class="product-brand">{{ product.brand }}</span>
-                    </div>
-                    <div class="product-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">Sold</span>
-                            <span class="stat-value">{{ formatNumber(product.quantity_sold) }}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Revenue</span>
-                            <span class="stat-value">₱{{ formatNumber(product.revenue) }}</span>
-                        </div>
-                    </div>
-                    <div class="product-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" :style="{ width: product.percentage + '%', background: getProductColor(index + 1) }"></div>
-                        </div>
-                        <span class="percentage-label">{{ product.percentage }}%</span>
-                    </div>
-                </div>
-            </div>
-            <div v-else class="empty-state">
-                <i class="bx bx-package"></i>
-                <p>No top selling product to show</p>
-            </div>
-        </div>
-
-        <!-- Charts Row - Modern Cards -->
-        <div class="charts-row">
-            <div class="chart-card large">
-                <div class="card-header-modern">
-                    <div>
-                        <h3>Revenue Overview</h3>
-                        <p class="text-muted-600">Monthly sales performance</p>
-                    </div>
-                    <!-- <div class="chart-actions">
-                        <select class="chart-select">
-                            <option>Last 6 months</option>
-                            <option>Last year</option>
-                        </select>
-                    </div> -->
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="salesChart.series.length" 
-                        type="area" height="320"
-                        :options="salesChart.options" 
-                        :series="salesChart.series">
-                    </apexchart>
-                </div>
-            </div>
-
-            <div class="chart-card">
-                <div class="card-header-modern">
-                    <h3>Payment Methods</h3>
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="paymentChart.series.length" 
-                        type="donut" height="280"
-                        :options="paymentChart.options" 
-                        :series="paymentChart.series">
-                    </apexchart>
-                    
-                    <!-- Payment Legend -->
-                    <div class="payment-legend">
-                        <div v-for="(item, i) in paymentBreakdown" :key="i" class="legend-item">
-                            <span class="color-dot" :style="{ background: item.color }"></span>
-                            <span class="flex-grow-1">{{ item.method }}</span>
-                            <span class="fw-semibold">₱{{ formatNumber(item.amount) }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        
-
-        <!-- Transactions Table - Modern Design -->
-        <div class="modern-card">
-            <div class="card-header-modern">
-                <div>
-                    <h3>Recent Transactions</h3>
-                    <p class="text-muted-600">Latest sales activities</p>
-                </div>
-                <!-- <button class="btn-outline-modern">
-                    View All <i class="bx bx-right-arrow-alt ms-2"></i>
-                </button> -->
-            </div>
-            <div class="table-container">
-                <table class="modern-table">
-                    <thead>
-                        <tr>
-                            <th>Receipt #</th>
-                            <th>Customer</th>
-                            <th>Date</th>
-                            <th>Items</th>
-                            <th>Amount</th>
-                            <th>Payment</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="t in recentTransactions" :key="t.id">
-                            <td><span class="receipt-num">#{{ t.receipt_number }}</span></td>
-                            <td>{{ t.customer_name }}</td>
-                            <td>{{ t.date }}</td>
-                            <td>{{ t.items_count || 3 }} items</td>
-                            <td class="fw-semibold">₱{{ formatNumber(t.amount) }}</td>
-                            <td><span class="payment-badge">{{ t.payment_method }}</span></td>
-                            <td><span class="status-badge completed">Completed</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div v-if="selectedFilter === 'today'" class="selected-date-input">
+            <input
+                v-model="selectedDateValue"
+                type="date"
+                class="date-input"
+            >
         </div>
     </div>
+
+    <!-- Sales Dashboard - Modern Design -->
+    <SalesDashboard
+        v-if="activeTab === 'sales'"
+        :sales-stats="salesStats"
+        :top-products="topProducts"
+        :sales-chart="salesChart"
+        :payment-chart="paymentChart"
+        :payment-breakdown="paymentBreakdown"
+        :recent-transactions="recentTransactions"
+    />
 
     <!-- Inventory Dashboard - Modern Design -->
-    <div v-else-if="activeTab === 'inventory'" class="dashboard-content">
-        <!-- Stock Health Overview -->
-        <div class="health-cards">
-            <div v-for="stat in inventoryStats" :key="stat.label" class="health-card" :class="stat.cardClass">
-                <div class="health-icon" :style="{ background: stat.iconBg }">
-                    <i :class="stat.icon"></i>
-                </div>
-                <div class="health-info">
-                    <span class="health-label">{{ stat.label }}</span>
-                    <div class="health-value-wrapper">
-                        <span class="health-value">{{ stat.value }}</span>
-                        <span class="health-unit">{{ stat.unit }}</span>
-                    </div>
-                    <span class="health-trend" :class="stat.trendClass">
-                        <i :class="stat.trendIcon"></i> {{ stat.trend }} from last month
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Inventory Charts -->
-        <div class="charts-row">
-            <div class="chart-card large">
-                <div class="card-header-modern">
-                    <h3>Stock Distribution by Category</h3>
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="stockChart.series.length" 
-                        type="bar" height="300"
-                        :options="stockChart.options" 
-                        :series="stockChart.series">
-                    </apexchart>
-                </div>
-            </div>
-
-            <div class="chart-card">
-                <div class="card-header-modern">
-                    <h3>Stock Health</h3>
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="healthChart.series.length" 
-                        type="radialBar" height="280"
-                        :options="healthChart.options" 
-                        :series="healthChart.series">
-                    </apexchart>
-                    
-                    <!-- Stock Health Legend -->
-                    <div class="health-legend">
-                        <div class="legend-item" v-for="(item, i) in healthData" :key="i">
-                            <span class="color-dot" :style="{ background: item.color }"></span>
-                            <span>{{ item.label }}</span>
-                            <span class="ms-auto fw-semibold">{{ item.value }}%</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Low Stock Alert - Modern Grid -->
-        <div class="modern-card">
-            <div class="card-header-modern">
-                <div class="d-flex align-items-center gap-3">
-                    <h3>Low Stock Alert</h3>
-                    <span class="alert-badge">{{ lowStockItems.length }} items need attention</span>
-                </div>
-                <div class="d-flex gap-2">
-                    <input type="text" class="search-input" placeholder="Search products...">
-                    <button class="btn-outline-modern">Filter</button>
-                </div>
-            </div>
-            <div class="alert-grid">
-                <div v-for="item in lowStockItems" :key="item.id" class="alert-item-card" 
-                     :class="getAlertClass(item)">
-                    <div class="alert-item-header">
-                        <span class="product-code">{{ item.code }}</span>
-                        <span class="stock-badge" :class="getStockBadge(item)">{{ getStockStatus(item) }}</span>
-                    </div>
-                    <h4 class="product-name">{{ item.name }}</h4>
-                    <div class="product-category">{{ item.category }}</div>
-                    <div class="stock-levels">
-                        <div class="stock-info">
-                            <span class="label">Current</span>
-                            <span class="value current">{{ item.current_stock }}</span>
-                        </div>
-                        <div class="stock-info">
-                            <span class="label">Minimum</span>
-                            <span class="value min">{{ item.minimum_stock }}</span>
-                        </div>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" :style="{ width: getStockPercentage(item) + '%' }"></div>
-                    </div>
-                    <button class="reorder-btn">
-                        <i class="bx bx-cart me-2"></i>Reorder Now
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <InventoryDashboard
+        v-else-if="activeTab === 'inventory'"
+        :inventory-stats="inventoryStats"
+        :stock-chart="stockChart"
+        :health-chart="healthChart"
+        :health-data="healthData"
+        :low-stock-items="lowStockItems"
+    />
 
     <!-- Employee Dashboard - Modern Design -->
-    <div v-else-if="activeTab === 'employee'" class="dashboard-content">
-        <!-- Team Stats -->
-        <div class="team-stats">
-            <div v-for="stat in employeeStats" :key="stat.label" class="team-stat-card">
-                <div class="stat-main">
-                    <span class="stat-main-label">{{ stat.label }}</span>
-                    <span class="stat-main-value">{{ stat.value }}</span>
-                </div>
-                <div class="stat-footer">
-                    <span :class="stat.trendClass">
-                        <i :class="stat.trendIcon"></i> {{ stat.trend }}
-                    </span>
-                    <span class="text-muted-600">vs last month</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Employee Charts -->
-        <div class="charts-row">
-            <div class="chart-card">
-                <div class="card-header-modern">
-                    <h3>Department Distribution</h3>
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="deptChart.series.length" 
-                        type="bar" height="280"
-                        :options="deptChart.options" 
-                        :series="deptChart.series">
-                    </apexchart>
-                </div>
-            </div>
-            <div class="chart-card">
-                <div class="card-header-modern">
-                    <h3>Attendance Overview</h3>
-                </div>
-                <div class="chart-body">
-                    <div class="attendance-stats">
-                        <div class="attendance-circle">
-                            <div class="circle-item present">
-                                <span class="number">{{ attendanceStats.present }}</span>
-                                <span class="label">Present</span>
-                            </div>
-                            <div class="circle-item late">
-                                <span class="number">{{ attendanceStats.late }}</span>
-                                <span class="label">Late</span>
-                            </div>
-                            <div class="circle-item absent">
-                                <span class="number">{{ attendanceStats.absent }}</span>
-                                <span class="label">Absent</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Attendance & Leave - Modern Split View -->
-        <div class="split-view">
-            <div class="modern-card">
-                <div class="card-header-modern">
-                    <h3>Today's Attendance</h3>
-                    <span class="badge-new">{{ recentAttendance.length }} records</span>
-                </div>
-                <div class="attendance-list">
-                    <div v-for="a in recentAttendance" :key="a.id" class="attendance-item">
-                        <div class="employee-avatar">
-                            {{ getInitials(a.employee_name) }}
-                        </div>
-                        <div class="employee-info">
-                            <h4>{{ a.employee_name }}</h4>
-                            <span>{{ a.department }}</span>
-                        </div>
-                        <div class="attendance-time">{{ a.time_in }}</div>
-                        <span class="status-pill" :class="a.status === 'On Time' ? 'ontime' : 'late'">
-                            {{ a.status }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modern-card">
-                <div class="card-header-modern">
-                    <h3>Upcoming Leaves</h3>
-                    <span class="badge-new">{{ upcomingLeaves.length }} pending</span>
-                </div>
-                <div class="leaves-list">
-                    <div v-for="l in upcomingLeaves" :key="l.id" class="leave-item">
-                        <div class="leave-date">
-                            <span class="month">{{ formatMonth(l.start_date) }}</span>
-                            <span class="day">{{ formatDay(l.start_date) }}</span>
-                        </div>
-                        <div class="leave-info">
-                            <h4>{{ l.employee_name }}</h4>
-                            <span>{{ l.leave_type }}</span>
-                        </div>
-                        <span class="status-pill" :class="l.status.toLowerCase()">
-                            {{ l.status }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <EmployeeDashboard
+        v-else-if="activeTab === 'employee'"
+        :employee-stats="employeeStats"
+        :dept-chart="deptChart"
+        :attendance-stats="attendanceStats"
+        :recent-attendance="recentAttendance"
+        :upcoming-leaves="upcomingLeaves"
+    />
 </template>
 
 <script>
-import PageHeader from '@/Shared/Components/PageHeader.vue';
-import VueApexCharts from 'vue3-apexcharts';
+import SalesDashboard from '@/Pages/Modules/Dashboard/Partials/SalesDashboard.vue';
+import InventoryDashboard from '@/Pages/Modules/Dashboard/Partials/InventoryDashboard.vue';
+import EmployeeDashboard from '@/Pages/Modules/Dashboard/Partials/EmployeeDashboard.vue';
 
 export default {
     props: {
@@ -401,24 +85,34 @@ export default {
         filter: {
             type: String,
             default: 'monthly'
+        },
+        selectedDate: {
+            type: String,
+            default: ''
         }
     },
     components: {
-        PageHeader,
-        apexchart: VueApexCharts
+        SalesDashboard,
+        InventoryDashboard,
+        EmployeeDashboard
     },
     mounted() {
         // Set filter from backend prop
         if (this.filter) {
             this.selectedFilter = this.filter;
         }
+        if (this.selectedDate) {
+            this.selectedDateValue = this.selectedDate;
+        }
     },
     data() {
+        const today = new Date().toISOString().slice(0, 10);
         return {
             activeTab: 'sales',
             selectedFilter: 'monthly',
+            selectedDateValue: today,
             dateFilters: [
-                { label: 'Today', value: 'today' },
+                { label: 'Date', value: 'today' },
                 { label: 'Weekly', value: 'weekly' },
                 { label: 'Monthly', value: 'monthly' },
                 { label: 'Annually', value: 'annually' }
@@ -508,10 +202,6 @@ export default {
                 { method: 'Card', total: 38000 },
                 { method: 'Bank Transfer', total: 22000 }
             ];
-            this.paymentBreakdown = data.map((d, i) => ({
-                ...d,
-                color: ['#3b82f6', '#10b981', '#f97316'][i]
-            }));
             return {
                 series: data.map(d => d.total),
                 options: {
@@ -523,6 +213,18 @@ export default {
                     dataLabels: { enabled: false }
                 }
             };
+        },
+        paymentBreakdown() {
+            const data = this.charts?.paymentMethods || [
+                { method: 'Cash', total: 45000 },
+                { method: 'Card', total: 38000 },
+                { method: 'Bank Transfer', total: 22000 }
+            ];
+            return data.map((d, i) => ({
+                method: d.method,
+                amount: d.total,
+                color: ['#3b82f6', '#10b981', '#f97316'][i]
+            }));
         },
         stockChart() {
             const data = this.inventoryCharts?.stockByCategory || [
@@ -593,57 +295,22 @@ export default {
     watch: {
         selectedFilter() {
             this.loadDashboardData();
+        },
+        selectedDateValue() {
+            if (this.selectedFilter === 'today') {
+                this.loadDashboardData();
+            }
         }
     },
     methods: {
         loadDashboardData() {
-            this.$inertia.get('/dashboard', { filter: this.selectedFilter }, {
+            this.$inertia.get('/', {
+                filter: this.selectedFilter,
+                selected_date: this.selectedDateValue
+            }, {
                 preserveState: true,
                 replace: true
             });
-        },
-        formatNumber(val) {
-            if (!val && val !== 0) return '0';
-            return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        },
-        getInitials(name) {
-            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-        },
-        formatMonth(date) {
-            return new Date(date).toLocaleString('default', { month: 'short' });
-        },
-        formatDay(date) {
-            return new Date(date).getDate();
-        },
-        getRankClass(rank) {
-            if (rank === 1) return 'rank-gold';
-            if (rank === 2) return 'rank-silver';
-            if (rank === 3) return 'rank-bronze';
-            return 'rank-default';
-        },
-        getProductColor(rank) {
-            const colors = ['#FFD700', '#C0C0C0', '#CD7F32', '#3b82f6', '#8b5cf6'];
-            return colors[rank - 1] || '#64748b';
-        },
-        getStockStatus(item) {
-            if (item.current_stock <= 0) return 'Out';
-            if (item.current_stock <= item.minimum_stock * 0.5) return 'Critical';
-            if (item.current_stock <= item.minimum_stock) return 'Low';
-            return 'Good';
-        },
-        getStockBadge(item) {
-            if (item.current_stock <= 0) return 'badge-out';
-            if (item.current_stock <= item.minimum_stock * 0.5) return 'badge-critical';
-            if (item.current_stock <= item.minimum_stock) return 'badge-low';
-            return 'badge-good';
-        },
-        getAlertClass(item) {
-            if (item.current_stock <= 0) return 'alert-out';
-            if (item.current_stock <= item.minimum_stock * 0.5) return 'alert-critical';
-            return 'alert-low';
-        },
-        getStockPercentage(item) {
-            return Math.min((item.current_stock / item.minimum_stock) * 100, 100);
         }
     }
 };
@@ -697,6 +364,10 @@ export default {
 /* Filter Container */
 .filter-container {
     margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .filter-buttons {
@@ -727,6 +398,19 @@ export default {
     background: white;
     color: #3b82f6;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.selected-date-input {
+    display: flex;
+    align-items: center;
+}
+
+.date-input {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    color: #1e293b;
+    background: #fff;
 }
 
 /* Stats Grid */

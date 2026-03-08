@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Services\Employee;
+namespace App\Services\Profile;
 
 use Illuminate\Support\Carbon;
+use Jenssegers\Agent\Agent;
 use App\Models\AuthenticationLog;
 use Spatie\Activitylog\Models\Activity;
 use App\Http\Resources\ActivityResource;

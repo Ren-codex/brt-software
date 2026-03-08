@@ -846,6 +846,7 @@ export default {
 
 <style scoped>
 .employee-details-page {
+    zoom: 1.1;
     --ink-900: #102723;
     --ink-700: #35524d;
     --ink-500: #5c7974;

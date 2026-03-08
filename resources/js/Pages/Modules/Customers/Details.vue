@@ -1,427 +1,411 @@
 <template>
-    <div class="emp-profile-container">
-        <div>
-            <div class="d-flex gap-2 justify-content-end">
-                <button class="emp-create-btn" @click="backToList">
+    <div class="employee-details-page">
+        <div class="details-topbar">
+            <div class="details-title-block">
+                <h1>Customer Profile</h1>
+                <p>View purchase behavior, credit status, and payment timeline.</p>
+            </div>
+            <div class="details-actions">
+                <button class="details-btn details-btn-outline" @click="backToList">
                     <i class="ri-arrow-left-line"></i>
-                    Back to List
+                    <span>Back to List</span>
                 </button>
                 <button @click="openEdit(selectedCustomer, selectedRow)" variant="info" v-b-tooltip.hover title="Edit"
-                    class="emp-create-btn">
+                    class="details-btn details-btn-primary">
                     <i class="ri-pencil-fill"></i>
-                    Edit
+                    <span>Edit Customer</span>
                 </button>
             </div>
         </div>
-        
-        <!-- Main Profile Header -->
-        <div class="row mt-4">
-            <!-- Left Column - Basic Information -->
-            <div class="col-md-4">
+
+        <div class="details-grid">
+            <aside class="details-sidebar">
                 <!-- Contact Information Card -->
-                <div class="emp-info-card">
-                    <div class="emp-info-card-header">
-                        <i class="ri-user-line"></i>
-                        <h3>Customer Information</h3>
-                    </div>
-                    <div class="emp-info-card-body">
-                        <div class="emp-profile-title mb-4">
-                            <h1>{{ customer.name || 'Customer Name' }}</h1>
-                            <div class="emp-profile-badges">
-                                <span class="emp-badge" :class="customer.is_regular ? 'emp-badge-primary' : 'emp-badge-secondary'">
-                                    {{ customer.is_regular === 1 ? 'Regular' : 'Irregular' }}
-                                </span>
-                                <span class="emp-badge" :class="customer.is_active === 1 ? 'emp-badge-success' : 'emp-badge-danger'">
-                                    {{ customer.is_active === 1 ? 'Active' : 'Inactive' }}
-                                </span>
-                                <span v-if="customer.is_blacklisted === 1" class="emp-badge emp-badge-dark">
-                                    Blacklisted
-                                </span>
+                <div class="profile-card">
+                    <div class="profile-avatar-wrap">
+                        <div class="profile-avatar">
+                            <div class="profile-avatar-placeholder">
+                                <i class="ri-user-line"></i>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Customer ID</div>
-                            <div class="emp-info-value emp-highlight">{{ customer.id || 'N/A' }}</div>
+                    <div class="profile-heading">
+                        <h2>{{ customer.name || 'Customer Name' }}</h2>
+                        <div class="profile-badges">
+                            <span class="profile-badge" :class="customer.is_regular ? 'profile-badge-primary' : 'profile-badge-neutral'">
+                                {{ customer.is_regular === 1 ? 'Regular' : 'Irregular' }}
+                            </span>
+                            <span class="profile-badge" :class="customer.is_active === 1 ? 'profile-badge-success' : 'profile-badge-danger'">
+                                {{ customer.is_active === 1 ? 'Active' : 'Inactive' }}
+                            </span>
+                            <span v-if="customer.is_blacklisted === 1" class="profile-badge profile-badge-dark">
+                                Blacklisted
+                            </span>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Email</div>
-                            <div class="emp-info-value">
+                    </div>
+
+                    <div class="profile-info-list">
+                        <div class="profile-info-item">
+                            <div class="profile-label">Customer ID</div>
+                            <div class="profile-value profile-highlight">{{ customer.id || 'N/A' }}</div>
+                        </div>
+                        <div class="profile-info-item">
+                            <div class="profile-label">Email</div>
+                            <div class="profile-value">
                                 <i class="ri-mail-line"></i>
                                 {{ customer.email || 'No email' }}
                             </div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Contact Number</div>
-                            <div class="emp-info-value">
+                        <div class="profile-info-item">
+                            <div class="profile-label">Contact Number</div>
+                            <div class="profile-value">
                                 <i class="ri-phone-line"></i>
                                 {{ customer.contact_number || 'No contact number' }}
                             </div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Address</div>
-                            <div class="emp-info-value">
+                        <div class="profile-info-item">
+                            <div class="profile-label">Address</div>
+                            <div class="profile-value">
                                 <i class="ri-map-pin-line"></i>
                                 {{ customer.address || 'No address' }}
                             </div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">TIN</div>
-                            <div class="emp-info-value">{{ customer.tin || '-' }}</div>
+                        <div class="profile-info-item">
+                            <div class="profile-label">TIN</div>
+                            <div class="profile-value">{{ customer.tin || '-' }}</div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Status</div>
-                            <div class="emp-info-value">{{ customer.status ? customer.status.title : '-' }}</div>
+                        <div class="profile-info-item">
+                            <div class="profile-label">Status</div>
+                            <div class="profile-value">{{ customer.status ? customer.status.title : '-' }}</div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Member Since</div>
-                            <div class="emp-info-value">{{ formatDate(customer.created_at) }}</div>
+                        <div class="profile-info-item">
+                            <div class="profile-label">Member Since</div>
+                            <div class="profile-value">{{ formatDate(customer.created_at) }}</div>
                         </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Last Order</div>
-                            <div class="emp-info-value">{{ customer.last_order_date ? formatDate(customer.last_order_date) : 'No orders yet' }}</div>
+                        <div class="profile-info-item">
+                            <div class="profile-label">Last Order</div>
+                            <div class="profile-value">{{ customer.last_order_date ? formatDate(customer.last_order_date) : 'No orders yet' }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Credit Summary Card -->
+                    <div class="profile-subcard">
+                        <div class="profile-subcard-header">
+                            <i class="ri-bank-card-line"></i>
+                            <h3>Credit Summary</h3>
+                        </div>
+                        <div class="profile-subcard-body">
+                            <div class="profile-info-item">
+                                <div class="profile-label">Credit Limit</div>
+                                <div class="profile-value profile-highlight">₱{{ formatCurrencyNumeric(customer.credit_limit || 0) }}</div>
+                            </div>
+                            <div class="profile-info-item">
+                                <div class="profile-label">Credit Used</div>
+                                <div class="profile-value" :class="getCreditUsedClass(customer)">
+                                    ₱{{ formatCurrencyNumeric(customer.credit_used || 0) }}
+                                </div>
+                            </div>
+                            <div class="profile-info-item">
+                                <div class="profile-label">Available Credit</div>
+                                <div class="profile-value profile-highlight">
+                                    ₱{{ formatCurrencyNumeric((customer.credit_limit || 0) - (customer.credit_used || 0)) }}
+                                </div>
+                            </div>
+                            <div class="profile-info-item">
+                                <div class="profile-label">Credit Score</div>
+                                <div class="profile-value">
+                                    <span class="status-chip" :class="getCreditScoreClass(customer.credit_score)">
+                                        {{ customer.credit_score || 'N/A' }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="profile-info-item">
+                                <div class="profile-label">Payment Terms</div>
+                                <div class="profile-value">{{ customer.payment_terms || '30 days' }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </aside>
 
-                <!-- Credit Summary Card -->
-                <div class="emp-info-card mt-4">
-                    <div class="emp-info-card-header">
-                        <i class="ri-bank-card-line"></i>
-                        <h3>Credit Summary</h3>
-                    </div>
-                    <div class="emp-info-card-body">
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Credit Limit</div>
-                            <div class="emp-info-value emp-highlight">₱{{ customer.credit_limit || 0 }}</div>
-                        </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Credit Used</div>
-                            <div class="emp-info-value" :class="getCreditUsedClass(customer)">
-                                ₱{{ customer.credit_used || 0 }}
-                            </div>
-                        </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Available Credit</div>
-                            <div class="emp-info-value emp-highlight">
-                                ₱{{ (customer.credit_limit || 0) - (customer.credit_used || 0) }}
-                            </div>
-                        </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Credit Score</div>
-                            <div class="emp-info-value">
-                                <span class="emp-status-indicator" :class="getCreditScoreClass(customer.credit_score)">
-                                    {{ customer.credit_score || 'N/A' }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="emp-info-row">
-                            <div class="emp-info-label">Payment Terms</div>
-                            <div class="emp-info-value">{{ customer.payment_terms || '30 days' }}</div>
+            <section class="details-main">
+                <!-- Purchase Summary -->
+                <div class="details-card">
+                    <div class="details-card-header details-card-header-between">
+                        <h3>
+                            <i class="ri-shopping-bag-line"></i>
+                            Purchase Summary
+                        </h3>
+                        <div class="details-filters">
+                            <select v-model="selectedMonth" class="details-select">
+                                <option v-for="month in months" :key="month.value" :value="month.value">
+                                    {{ month.label }}
+                                </option>
+                            </select>
+                            <select v-model="selectedYear" class="details-select">
+                                <option v-for="year in years" :key="year" :value="year">
+                                    {{ year }}
+                                </option>
+                            </select>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Right Column - Rice Orders & Payments -->
-            <div class="col-md-8">
-                <!-- Rice Orders Summary -->
-                <div class="emp-incentives-section">
-                    <div class="emp-incentives-card">
-                        <div class="emp-incentives-header">
-                            <h3>Purchase Summary</h3>
-                            <div class="d-flex gap-2 justify-content-end">
-                                <select v-model="selectedMonth" class="emp-create-btn emp-month-filter">
-                                    <option v-for="month in months" :key="month.value" :value="month.value">
-                                        {{ month.label }}
-                                    </option>
-                                </select><select v-model="selectedYear" class="emp-create-btn emp-month-filter">
-                                    <option v-for="year in years" :key="year" :value="year">
-                                        {{ year }}
-                                    </option>
-                                </select>
+                    <div class="details-stat-grid">
+                        <div class="details-stat">
+                            <div class="details-stat-label">Total Orders</div>
+                            <div class="details-stat-value">{{ orderSummary.total_orders || 0 }}</div>
+                            <div class="details-stat-trend" :class="getTrendClass(orderSummary.order_trend)">
+                                <i :class="getTrendIcon(orderSummary.order_trend)"></i>
+                                {{ orderSummary.order_trend || '0%' }}
                             </div>
                         </div>
-                        <div class="emp-incentives-stats">
-                            <div class="emp-incentives-stat">
-                                <div class="emp-stat-label">Total Orders</div>
-                                <div class="emp-stat-value">{{ orderSummary.total_orders || 0 }}</div>
-                                <div class="emp-stat-change" :class="getTrendClass(orderSummary.order_trend)">
-                                    <i :class="getTrendIcon(orderSummary.order_trend)"></i>
-                                    {{ orderSummary.order_trend || '0%' }}
-                                </div>
-                            </div>
-                            <div class="emp-incentives-stat">
-                                <div class="emp-stat-label">Total Rice Ordered</div>
-                                <div class="emp-stat-value">{{ formatQuantity(orderSummary.total_rice_ordered) }} kg</div>
-                                <div class="emp-stat-change" :class="getTrendClass(orderSummary.rice_trend)">
-                                    <i :class="getTrendIcon(orderSummary.rice_trend)"></i>
-                                    {{ orderSummary.rice_trend || '0%' }}
-                                </div>
-                            </div>
-                            <div class="emp-incentives-stat">
-                                <div class="emp-stat-label">Total Amount</div>
-                                <div class="emp-stat-value">₱{{ formatCurrency(orderSummary.total_amount) }}</div>
-                                <div class="emp-stat-change" :class="getTrendClass(orderSummary.amount_trend)">
-                                    <i :class="getTrendIcon(orderSummary.amount_trend)"></i>
-                                    {{ orderSummary.amount_trend || '0%' }}
-                                </div>
+                        <div class="details-stat">
+                            <div class="details-stat-label">Total Rice Ordered</div>
+                            <div class="details-stat-value">{{ formatQuantity(orderSummary.total_rice_ordered) }} kg</div>
+                            <div class="details-stat-trend" :class="getTrendClass(orderSummary.rice_trend)">
+                                <i :class="getTrendIcon(orderSummary.rice_trend)"></i>
+                                {{ orderSummary.rice_trend || '0%' }}
                             </div>
                         </div>
-                        <div class="emp-info-card mt-2 purchase-history-section">
-                            <div class="records-section">
-                                <div class="section-header">
-                                    <h4>Purchase Records</h4>
-                                    <div class="d-flex gap-2">
-                                        <span class="records-count" v-if="purchaseHistory.length">
-                                            {{ purchaseHistory.length }} records
-                                        </span>
-                                    </div>
-                                </div>
-        
-                                <div class="table-wrapper">
-                                    <div class="table-responsive">
-                                        <table class="modern-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>SO #</th>
-                                                    <th>Date</th>
-                                                    <th>Status</th>
-                                                    <th>Payment</th>
-                                                    <th class="text-end">Items</th>
-                                                    <th class="text-end">KG</th>
-                                                    <th class="text-end">Amount</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="order in purchaseHistory" :key="order.id" class="table-row">
-                                                    <td>{{ order.so_number || '-' }}
-                                                        <small
-                                                            v-if="String(order.payment_mode || '').toLowerCase() === 'credit' && order.due_date"
-                                                            class="status-badge"
-                                                            style="font-size:10px; background-color: red; color:white"
-                                                        >
-                                                            Due on {{ formatDate(order.due_date) }}
-                                                        </small>
-                                                    </td>
-                                                    <td>
-                                                        <span class="date-cell">
-                                                            <i class="ri-calendar-line"></i>
-                                                            {{ formatDate(order.order_date) }}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="status-badge" :class="getStatusClass(order.status)">
-                                                            {{ order.status || '-' }}
-                                                        </span>
-                                                    </td>
-                                                    <td><div>{{ order.payment_mode || '-' }}</div></td>
-                                                    <td class="text-end">
-                                                        <span class="amount">{{ order.total_items || 0 }}</span>
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <span class="amount">{{ formatQuantity(order.total_kg) }}</span>
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <span class="amount returned">&#8369;{{ formatCurrency(order.total_amount) }}</span>
-                                                    </td>
-                                                </tr>
-        
-                                                <tr v-if="!purchaseHistoryLoading && purchaseHistory.length === 0">
-                                                    <td colspan="7">
-                                                        <div class="empty-state">
-                                                            <i class="ri-inbox-line"></i>
-                                                            <p>No purchase history found</p>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-        
-                                                <tr v-if="purchaseHistoryLoading">
-                                                    <td colspan="7">
-                                                        <div class="loading-state">
-                                                            <i class="ri-loader-4-line ri-spin"></i>
-                                                            <p>Loading purchase history...</p>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="pagination-wrapper" v-if="purchaseHistoryMeta && purchaseHistoryLinks && purchaseHistory.length">
-                                    <Pagination
-                                        :lists="purchaseHistory.length"
-                                        :links="purchaseHistoryLinks"
-                                        :pagination="purchaseHistoryMeta"
-                                        @fetch="fetchPurchaseHistory"
-                                    />
-                                </div>
+                        <div class="details-stat">
+                            <div class="details-stat-label">Total Amount</div>
+                            <div class="details-stat-value">₱{{ formatCurrencyNumeric(orderSummary.total_amount) }}</div>
+                            <div class="details-stat-trend" :class="getTrendClass(orderSummary.amount_trend)">
+                                <i :class="getTrendIcon(orderSummary.amount_trend)"></i>
+                                {{ orderSummary.amount_trend || '0%' }}
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Purchase Records -->
+                <div class="details-card">
+                    <div class="details-card-header details-card-header-between">
+                        <h3>
+                            <i class="ri-file-list-3-line"></i>
+                            Purchase Records
+                        </h3>
+                        <span v-if="purchaseHistory.length" class="records-count">
+                            {{ purchaseHistory.length }} records
+                        </span>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>SO #</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Payment</th>
+                                        <th class="text-end">Items</th>
+                                        <th class="text-end">KG</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="order in purchaseHistory" :key="order.id" class="table-row">
+                                        <td>
+                                            {{ order.so_number || '-' }}
+                                            <small
+                                                v-if="String(order.payment_mode || '').toLowerCase() === 'credit' && order.due_date"
+                                                class="status-badge"
+                                                style="font-size: 10px; background-color: red; color: white;"
+                                            >
+                                                Due on {{ formatDate(order.due_date) }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="date-cell">
+                                                <i class="ri-calendar-line"></i>
+                                                {{ formatDate(order.order_date) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge" :class="getStatusClass(order.status)">
+                                                {{ order.status || '-' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div>{{ order.payment_mode || '-' }}</div>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="amount">{{ order.total_items || 0 }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="amount">{{ formatQuantity(order.total_kg) }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="amount returned">&#8369;{{ formatCurrencyNumeric(order.total_amount) }}</span>
+                                        </td>
+                                    </tr>
+
+                                    <tr v-if="!purchaseHistoryLoading && purchaseHistory.length === 0">
+                                        <td colspan="7">
+                                            <div class="empty-state">
+                                                <i class="ri-inbox-line"></i>
+                                                <p>No purchase history found</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr v-if="purchaseHistoryLoading">
+                                        <td colspan="7">
+                                            <div class="loading-state">
+                                                <i class="ri-loader-4-line ri-spin"></i>
+                                                <p>Loading purchase history...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-wrapper" v-if="purchaseHistoryMeta && purchaseHistoryLinks && purchaseHistory.length">
+                        <Pagination
+                            :lists="purchaseHistory.length"
+                            :links="purchaseHistoryLinks"
+                            :pagination="purchaseHistoryMeta"
+                            @fetch="fetchPurchaseHistory"
+                        />
+                    </div>
+                </div>
 
                 <!-- Payment Due Dates -->
-                <div class="emp-stats-section mt-2">
-                    <div class="emp-section-header">
-                        <h2 class="emp-section-title">Payment Due Dates</h2>
+                <div class="details-card">
+                    <div class="details-card-header details-card-header-between">
+                        <h3>
+                            <i class="ri-calendar-event-line"></i>
+                            Payment Due Dates
+                        </h3>
+                        <button @click="toggleLoanCollapse" class="details-btn details-btn-outline details-btn-sm">
+                            <i :class="loanCollapsed ? 'ri-arrow-down-s-line' : 'ri-arrow-up-s-line'"></i>
+                            <span>{{ loanCollapsed ? 'Expand' : 'Collapse' }}</span>
+                        </button>
                     </div>
 
-                    <div class="emp-loan-summary-card">
-                        <div class="emp-loan-main-header">
-                            <div class="emp-loan-icon">
+                    <div class="loan-overview">
+                        <div class="loan-balance">
+                            <div class="loan-balance-title">Total Due</div>
+                            <div class="loan-balance-value">₱{{ formatCurrencyNumeric(customer.total_due || 0) }}</div>
+                        </div>
+
+                        <div class="loan-progress">
+                            <div class="loan-progress-head">
+                                <span>Payment Progress</span>
+                                <span>{{ getPaymentProgress(customer) }}% Complete</span>
+                            </div>
+                            <div class="loan-progress-bar">
+                                <div class="loan-progress-fill" :style="{ width: getPaymentProgress(customer) + '%' }"></div>
+                            </div>
+                            <div class="loan-progress-meta">
+                                <span>Paid: <strong>₱{{ formatCurrencyNumeric(customer.paid_amount || 0) }}</strong></span>
+                                <span>Remaining: <strong>₱{{ formatCurrencyNumeric(customer.total_due || 0) }}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-show="!loanCollapsed" class="loan-details-grid">
+                        <div class="loan-detail-card">
+                            <div class="loan-detail-label">
+                                <i class="ri-calendar-todo-line"></i>
+                                Payment Terms
+                            </div>
+                            <div class="loan-detail-value">{{ paymentTermsLabel }}</div>
+                            <div class="loan-detail-sub">{{ unpaidDueCount }} Remaining</div>
+                        </div>
+                        <div class="loan-detail-card">
+                            <div class="loan-detail-label">
+                                <i class="ri-time-line"></i>
+                                Unpaid Months
+                            </div>
+                            <div class="loan-detail-value details-danger">{{ unpaidDueCount }}</div>
+                            <div class="loan-detail-sub">₱{{ formatCurrencyNumeric(unpaidDueAmount) }} Due</div>
+                        </div>
+                        <div class="loan-detail-card">
+                            <div class="loan-detail-label">
+                                <i class="ri-checkbox-circle-line"></i>
+                                Paid Months
+                            </div>
+                            <div class="loan-detail-value details-success">{{ paidDueCount }}</div>
+                            <div class="loan-detail-sub">₱{{ formatCurrencyNumeric(customer.paid_amount || 0) }} Paid</div>
+                        </div>
+                        <div class="loan-detail-card">
+                            <div class="loan-detail-label">
                                 <i class="ri-calendar-event-line"></i>
+                                Next Due
                             </div>
-                            <div class="emp-loan-title-section">
-                                <h3 class="emp-loan-title">Outstanding Payments</h3>
-                                <div class="emp-loan-period">As of {{ currentDate }}</div>
-                            </div>
-                            <button @click="toggleLoanCollapse" class="emp-create-btn">
-                                <i :class="loanCollapsed ? 'ri-arrow-down-s-line' : 'ri-arrow-up-s-line'"></i>
-                            </button>
+                            <div class="loan-detail-value">{{ nextDueLabel }}</div>
+                            <div class="loan-detail-sub">{{ nextDueRelative }}</div>
                         </div>
+                    </div>
 
-                        <div class="emp-loan-main-stats">
-                            <div class="emp-primary-stat">
-                                <div class="emp-stat-number">₱{{ customer.total_due || 0 }}</div>
-                                <div class="emp-stat-label">Total Due</div>
+                    <div v-show="!loanCollapsed" class="loan-details-grid">
+                        <div class="loan-detail-card" v-for="due in sortedDueDates" :key="due.id">
+                            <div class="loan-detail-label">
+                                <i class="ri-calendar-check-line"></i>
+                                Due {{ formatRelativeDate(due.due_date) }}
                             </div>
-
-                            <div class="emp-progress-section">
-                                <div class="emp-progress-header">
-                                    <span>Payment Progress</span>
-                                    <span class="emp-progress-percentage">{{ getPaymentProgress(customer) }}%</span>
-                                </div>
-                                <div class="emp-progress-bar">
-                                    <div class="emp-progress-fill" :style="{ width: getPaymentProgress(customer) + '%' }"></div>
-                                </div>
-                                <div class="emp-progress-details">
-                                    <span class="emp-progress-detail">Paid: <strong>₱{{ customer.paid_amount || 0 }}</strong></span>
-                                    <span class="emp-progress-detail">Pending: <strong>₱{{ customer.total_due || 0 }}</strong></span>
-                                </div>
+                            <div class="loan-detail-value" :class="getDueAmountClass(due)">
+                                ₱{{ formatCurrencyNumeric(due.amount) }}
                             </div>
+                            <div class="loan-detail-sub">{{ formatDate(due.due_date) }}</div>
+                            <div class="loan-detail-sub">Order: {{ due.order_id }}</div>
                         </div>
-                        <div v-show="!loanCollapsed" class="emp-loan-details-grid">
-                            <div class="emp-detail-card">
-                                <div class="emp-detail-header">
-                                    <i class="ri-calendar-todo-line"></i>
-                                    <span class="emp-detail-title">Payment Terms</span>
-                                </div>
-                                <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value">{{ paymentTermsLabel }}</div>
-                                    <div class="emp-detail-sub-value">{{ unpaidDueCount }} Remaining</div>
-                                </div>
-                            </div>
+                    </div>
 
-                            <div class="emp-detail-card">
-                                <div class="emp-detail-header">
-                                    <i class="ri-time-line"></i>
-                                    <span class="emp-detail-title">Unpaid Months</span>
-                                </div>
-                                <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value emp-text-danger">{{ unpaidDueCount }}</div>
-                                    <div class="emp-detail-sub-value">₱{{ formatCurrency(unpaidDueAmount) }} Due</div>
-                                </div>
-                            </div>
-
-                            <div class="emp-detail-card">
-                                <div class="emp-detail-header">
-                                    <i class="ri-checkbox-circle-line"></i>
-                                    <span class="emp-detail-title">Paid Months</span>
-                                </div>
-                                <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value emp-text-success">{{ paidDueCount }}</div>
-                                    <div class="emp-detail-sub-value">₱{{ formatCurrency(customer.paid_amount || 0) }} Paid</div>
-                                </div>
-                            </div>
-
-                            <div class="emp-detail-card">
-                                <div class="emp-detail-header">
-                                    <i class="ri-calendar-event-line"></i>
-                                    <span class="emp-detail-title">Next Due</span>
-                                </div>
-                                <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value">{{ nextDueLabel }}</div>
-                                    <div class="emp-detail-sub-value">{{ nextDueRelative }}</div>
-                                </div>
-                            </div>
+                    <div class="loan-footer">
+                        <div class="loan-footer-item">
+                            <span>Total Paid Amount</span>
+                            <strong>₱{{ formatCurrencyNumeric(customer.paid_amount || 0) }}</strong>
                         </div>
-
-                        <div v-show="!loanCollapsed" class="emp-loan-details-grid">
-                            <div class="emp-detail-card" v-for="due in sortedDueDates" :key="due.id">
-                                <div class="emp-detail-header">
-                                    <i class="ri-calendar-check-line"></i>
-                                    <div class="emp-detail-title">Due {{ formatRelativeDate(due.due_date) }}</div>
-                                </div>
-                                <div class="emp-detail-content">
-                                    <div class="emp-detail-main-value" :class="getDueAmountClass(due)">
-                                        ₱{{ formatCurrency(due.amount) }}
-                                    </div>
-                                    <div class="emp-detail-sub-value">{{ formatDate(due.due_date) }}</div>
-                                    <div class="emp-detail-sub-value">Order: {{ due.order_id }}</div>
-                                </div>
-                            </div>
+                        <div class="loan-footer-item">
+                            <span>Remaining Amount</span>
+                            <strong>₱{{ formatCurrencyNumeric(customer.total_due || 0) }}</strong>
                         </div>
-
-                        <div class="emp-loan-footer">
-                            <div class="emp-footer-details">
-                                <div class="emp-footer-detail">
-                                    <span class="emp-footer-label">Total Paid Amount</span>
-                                    <span class="emp-footer-value">₱{{ customer.paid_amount || 0 }}</span>
-                                </div>
-                                <div class="emp-footer-detail">
-                                    <span class="emp-footer-label">Remaining Amount</span>
-                                    <span class="emp-footer-value">₱{{ customer.total_due || 0 }}</span>
-                                </div>
-                                <div class="emp-footer-detail">
-                                    <span class="emp-footer-label">Remaining Days</span>
-                                    <span class="emp-footer-value">{{ getRemainingDays(customer) }}</span>
-                                </div>
-                            </div>
-                            <!-- <button class="emp-btn-view-details" @click="processPayment">
-                                <i class="ri-money-dollar-circle-line"></i>
-                                Process Payment
-                            </button> -->
+                        <div class="loan-footer-item">
+                            <span>Remaining Days</span>
+                            <strong>{{ getRemainingDays(customer) }}</strong>
                         </div>
                     </div>
                 </div>
 
                 <!-- Recent Receipts -->
-                <div class="emp-info-card mt-4">
-                    <div class="emp-info-card-header">
-                        <i class="ri-receipt-line"></i>
-                        <h3>Recent Receipts</h3>
+                <div class="details-card">
+                    <div class="details-card-header">
+                        <h3>
+                            <i class="ri-receipt-line"></i>
+                            Recent Receipts
+                        </h3>
                     </div>
-                    <div class="emp-info-card-body">
-                        <div class="emp-activities-grid">
-                            <div class="emp-activity-card" v-for="receipt in customer.recent_receipts || []" :key="receipt.id">
-                                <div class="emp-activity-icon bg-success">
-                                    <i class="ri-receipt-line"></i>
+                    <div class="receipts-grid">
+                        <div class="receipt-card" v-for="receipt in customer.recent_receipts || []" :key="receipt.id">
+                            <div class="receipt-icon bg-success">
+                                <i class="ri-receipt-line"></i>
+                            </div>
+                            <div class="receipt-content">
+                                <div class="receipt-title">
+                                    {{ receipt.receipt_number || ('Receipt #' + receipt.id) }}
+                                    <small v-if="receipt.so_number">({{ receipt.so_number }})</small>
                                 </div>
-                                <div class="emp-activity-content">
-                                    <div class="emp-activity-title">
-                                        {{ receipt.receipt_number || ('Receipt #' + receipt.id) }}
-                                        <small v-if="receipt.so_number">({{ receipt.so_number }})</small>
-                                    </div>
-                                    <div class="emp-activity-time">{{ formatDate(receipt.receipt_date) }}</div>
-                                    <div class="emp-activity-status" :class="getReceiptStatusClass(receipt.status)">
-                                        {{ receipt.status || 'Pending' }}
-                                    </div>
-                                </div>
-                                <div class="emp-activity-amount">
-                                    &#8369;{{ formatCurrency(receipt.amount_paid) }}
+                                <div class="receipt-time">{{ formatDate(receipt.receipt_date) }}</div>
+                                <div class="receipt-status" :class="getReceiptStatusClass(receipt.status)">
+                                    {{ receipt.status || 'Pending' }}
                                 </div>
                             </div>
-                            <div v-if="(customer.recent_receipts || []).length === 0" class="empty-state text-center">
-                                <i class="ri-inbox-line"></i>
-                                <p class="mb-0">No recent receipts found</p>
+                            <div class="receipt-amount">
+                                &#8369;{{ formatCurrencyNumeric(receipt.amount_paid) }}
                             </div>
+                        </div>
+                        <div v-if="(customer.recent_receipts || []).length === 0" class="empty-state text-center">
+                            <i class="ri-inbox-line"></i>
+                            <p class="mb-0">No recent receipts found</p>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 </template>
@@ -592,6 +576,12 @@ export default {
                 maximumFractionDigits: 2
             });
         },
+        formatCurrencyNumeric(value) {
+            return Number(value || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        },
         formatCurrency(value) {
             return Number(value || 0).toLocaleString('en-US', {
                 minimumFractionDigits: 2,
@@ -640,7 +630,7 @@ export default {
             const creditUsed = customer.credit_used || 0;
             const percentage = creditLimit > 0 ? (creditUsed / creditLimit) * 100 : 0;
             
-            if (percentage >= 90) return 'emp-text-danger';
+            if (percentage >= 90) return 'details-danger';
             if (percentage >= 75) return 'emp-text-warning';
             return '';
         },
@@ -655,7 +645,7 @@ export default {
         getTrendClass(trend) {
             if (!trend) return '';
             const trendValue = parseFloat(trend) || 0;
-            return trendValue > 0 ? 'emp-positive' : trendValue < 0 ? 'emp-negative' : '';
+            return trendValue > 0 ? 'details-stat-trend-up' : trendValue < 0 ? 'details-danger' : '';
         },
         
         getTrendIcon(trend) {
@@ -673,9 +663,9 @@ export default {
         
         getDueStatusClass(status) {
             if (!status) return '';
-            if (status.includes('Overdue')) return 'emp-negative';
+            if (status.includes('Overdue')) return 'details-danger';
             if (status.includes('Due Soon')) return 'emp-warning';
-            return 'emp-positive';
+            return 'details-stat-trend-up';
         },
         
         getPaymentProgress(customer) {
@@ -690,7 +680,7 @@ export default {
             const diffTime = dueDate - today;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
-            if (diffDays < 0) return 'emp-text-danger';
+            if (diffDays < 0) return 'details-danger';
             if (diffDays <= 3) return 'emp-text-warning';
             return '';
         },
@@ -732,14 +722,14 @@ export default {
         getReceiptStatusClass(status) {
             const normalized = String(status || '').toLowerCase();
             const statusClasses = {
-                'paid': 'emp-completed',
-                'liquidated': 'emp-completed',
-                'completed': 'emp-completed',
-                'pending': 'emp-pending',
-                'in-progress': 'emp-in-progress',
-                'cancelled': 'emp-cancelled'
+                'paid': 'emp-status-success',
+                'liquidated': 'emp-status-success',
+                'completed': 'emp-status-success',
+                'pending': 'emp-status-warning',
+                'in-progress': 'emp-status-warning',
+                'cancelled': 'emp-status-danger'
             };
-            return statusClasses[normalized] || 'emp-pending';
+            return statusClasses[normalized] || 'emp-status-warning';
         },
         getStatusClass(status) {
             if (!status) return '';
@@ -750,22 +740,17 @@ export default {
         },
         
         showOrderHistory() {
-            // Emit event or show modal for order history
             this.$emit('showOrderHistory', this.customer);
         },
         
         showPaymentSchedule() {
-            // Emit event or show modal for payment schedule
             this.$emit('showPaymentSchedule', this.customer);
         },
         
         processPayment() {
-            // Emit event or show modal for payment processing
             this.$emit('processPayment', this.customer);
         },
         
-
-
         toggleLoanCollapse() {
             this.loanCollapsed = !this.loanCollapsed;
         }
@@ -928,171 +913,7 @@ export default {
     }
 }
 </script>
-<style scoped>
-.purchase-history-section .records-section {
-  padding: 1.5rem 2rem;
-}
 
-.purchase-history-section .section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
+<style scoped src="@/Shared/Styles/employee-details-layout.css"></style>
 
-.purchase-history-section .section-header h4 {
-  margin: 0;
-  color: #2c3e50;
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
-.purchase-history-section .records-count {
-  background: #c4dad2;
-  color: #2c6b5c;
-  padding: 0.35rem 1rem;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.purchase-history-section .table-wrapper {
-  background: white;
-  border-radius: 18px;
-  border: 2px solid #eef2f6;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-}
-
-.purchase-history-section .pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.purchase-history-section .modern-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.purchase-history-section .modern-table thead tr {
-  background: #f8faf9;
-  border-bottom: 2px solid #c4dad2;
-}
-
-.purchase-history-section .modern-table thead th {
-  padding: 1rem 1.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #3d8d7a;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.purchase-history-section .modern-table tbody td {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #eef2f6;
-  color: #2c3e50;
-  font-size: 0.95rem;
-}
-
-.purchase-history-section .modern-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.purchase-history-section .table-row {
-  transition: background 0.2s ease;
-}
-
-.purchase-history-section .table-row:hover {
-  background: #f8faf9;
-}
-
-.purchase-history-section .status-badge {
-  display: inline-block;
-  padding: 0.35rem 1rem;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.purchase-history-section .status-badge.completed,
-.purchase-history-section .status-badge.approved {
-  background: #c4dad2;
-  color: #2c6b5c;
-}
-
-.purchase-history-section .status-badge.pending,
-.purchase-history-section .status-badge.warning {
-  background: #fff3e0;
-  color: #f39c12;
-}
-
-.purchase-history-section .status-badge.rejected,
-.purchase-history-section .status-badge.cancelled,
-.purchase-history-section .status-badge.danger {
-  background: #fee9e7;
-  color: #e74c3c;
-}
-
-.purchase-history-section .amount {
-  font-weight: 600;
-}
-
-.purchase-history-section .amount.returned {
-  color: #3d8d7a;
-}
-
-.purchase-history-section .date-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.purchase-history-section .date-cell i {
-  color: #3d8d7a;
-  font-size: 1rem;
-}
-
-.purchase-history-section .empty-state,
-.purchase-history-section .loading-state {
-  text-align: center;
-  padding: 3rem;
-  color: #adb5bd;
-}
-
-.purchase-history-section .empty-state i,
-.purchase-history-section .loading-state i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  display: block;
-}
-
-.purchase-history-section .empty-state i {
-  color: #c4dad2;
-}
-
-.purchase-history-section .loading-state i {
-  color: #3d8d7a;
-}
-
-.purchase-history-section .empty-state p,
-.purchase-history-section .loading-state p {
-  margin: 0;
-  font-size: 1rem;
-}
-
-@media (max-width: 768px) {
-  .purchase-history-section .records-section {
-    padding: 1.25rem;
-  }
-
-  .purchase-history-section .modern-table thead th,
-  .purchase-history-section .modern-table tbody td {
-    padding: 0.75rem 1rem;
-  }
-}
-</style>
 
