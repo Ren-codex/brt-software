@@ -108,6 +108,7 @@ export default {
         },
 
         submit() {
+            this.form.action = 'adjustment';
             let url = this.isExternal ? `/sales-orders-external/${this.form.id}` : `/sales-orders/${this.form.id}`;
              this.form.put(url, {
                 onSuccess: () => {
@@ -136,5 +137,4 @@ export default {
     }
 }
 </script>
-
 

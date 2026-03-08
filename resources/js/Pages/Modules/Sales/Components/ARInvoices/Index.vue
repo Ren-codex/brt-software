@@ -66,7 +66,7 @@
                                     <th style="width: 12%;" class="text-center border-none">Status</th>
                                     <th style="width: 12%;" class="text-center border-none">Balance Due</th>
                                     <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
-                                    <th style="width: 6%;" class="text-center border-none">Actions</th>
+                                    <th style="width: 12%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
@@ -96,7 +96,17 @@
                                         <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
                                         <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-1">
+                                            <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                                <b-button
+                                                    @click.stop="onViewReceipts(list)"
+                                                    variant="outline-success"
+                                                    v-b-tooltip.hover
+                                                    title="View Receipts"
+                                                    size="sm"
+                                                    class="btn-icon rounded-circle"
+                                                >
+                                                    <i class="ri-file-3-line"></i>
+                                                </b-button>
                                                 <b-button @click.stop="onPrint(list.id)" variant="outline-info"
                                                     v-b-tooltip.hover title="Print" size="sm"
                                                     class="btn-icon rounded-circle">

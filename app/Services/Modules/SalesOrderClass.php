@@ -3,6 +3,7 @@
 namespace App\Services\Modules;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\QueryException;
 
@@ -468,12 +469,18 @@ class SalesOrderClass
     public function adjustment($request){
         $sales_order = SalesOrder::findOrFail($request->id);
   
+        // Normalize values like "Sales Return", "sales-return", "sales_return"
+        $normalizedType = Str::of((string) $request->type)
+            ->lower()
+            ->replace(['_', '-'], ' ')
+            ->squish()
+            ->value();
 
         // Set sub-status based on type
         $status = null;
-        if ($request->type == 'Sales Return') {
+        if ($normalizedType === 'sales return') {
             $status = ListStatus::getBySlug('sales-return-approval');
-        } elseif ($request->type == 'Sales Allowance') {
+        } elseif ($normalizedType === 'sales allowance') {
             $status = ListStatus::getBySlug('allowance-applied');
         }
 

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>Receipt - {{ $receipt->receipt_number ?? 'N/A' }}</title>
     <style>
         @page { size: A4 portrait; margin: 10mm; }
         body {
@@ -79,11 +80,13 @@
 <body>
     @php
         $customer = $receipt->customer ?? optional($sales_order)->customer;
+        $receiptNumber = $receipt->receipt_number ?? '---';
         $receiptDate = $receipt->receipt_date ? \Carbon\Carbon::parse($receipt->receipt_date)->format('m/d/Y') : '-';
         $invoiceDate = optional($ar_invoice)->invoice_date ? \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('m/d/Y') : '-';
         $orderDate = optional($sales_order)->order_date ? \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') : '-';
         $dueDate = optional($sales_order)->due_date ? \Carbon\Carbon::parse($sales_order->due_date)->format('m/d/Y') : '-';
         $balanceDue = (float) (optional($ar_invoice)->balance_due ?? ($receipt->balance_due ?? 0));
+        $itemsCollection = collect($items ?? []);
         $logoPath = public_path('images/brt-logo.png');
     @endphp
 
@@ -103,9 +106,9 @@
                 Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
             </td>
             <td class="order-info">
-                <h2 class="order-title">Sales Invoice</h2>
-                #{{ $sales_order->so_number }}<br>
-                {{ \Carbon\Carbon::parse($sales_order->so_date)->format('m/d/Y') }}
+                <h2 class="order-title">Receipt</h2>
+                #{{ $receiptNumber }}<br>
+                {{ $receiptDate }}
             </td>
         </tr>
     </table>
@@ -162,20 +165,20 @@
             </tr>
         </thead>
         <tbody>
-            @if(collect($items)->count() > 0)
-            @foreach($items as $item)
+            @if($itemsCollection->count() > 0)
+            @foreach($itemsCollection as $item)
             @php
                 $lineTotal = ((float) $item->quantity * (float) $item->price) - ((float) ($item->discount_per_unit ?? 0) * (float) $item->quantity);
             @endphp
             <tr>
                 <td>{{ number_format($item->quantity) }}</td>
-                <td><strong>{{ $item->product->pack_size  }} {{ $item->product->unit?->name  }} {{ $item->product->brand?->name  }}</strong></td>
-                <td>{{ $item->product->description }}</td>
-                <td>Kg</td>
+                <td><strong>{{ trim((optional($item->product)->pack_size ?? '') . ' ' . (optional(optional($item->product)->unit)->name ?? '') . ' ' . (optional(optional($item->product)->brand)->name ?? '')) ?: '-' }}</strong></td>
+                <td>{{ optional($item->product)->description ?? '-' }}</td>
+                <td>{{ optional(optional($item->product)->unit)->name ?? '-' }}</td>
                 <td class="text-right">{{ number_format($item->price, 2) }}</td>
-                <td class="text-right">{{ number_format($item->quantity * $item->price, 2) }}</td>
+                <td class="text-right">{{ number_format($lineTotal, 2) }}</td>
                 <td class="text-right">0.00</td>
-                <td class="text-right">{{ number_format($item->quantity * $item->price, 2) }}</td>
+                <td class="text-right">{{ number_format($lineTotal, 2) }}</td>
             </tr>
             @endforeach
             @else
@@ -198,7 +201,9 @@
             <td style="width: 300px;">
                 <table style="width: 100%; border-collapse: collapse;">
                     @php
-                        $subtotal = $items->sum(function($item) { return $item->quantity * $item->price; });
+                        $subtotal = $itemsCollection->sum(function($item) {
+                            return ((float) $item->quantity * (float) $item->price) - ((float) ($item->discount_per_unit ?? 0) * (float) $item->quantity);
+                        });
                     @endphp
                     <tr>
                         <td style="padding: 5px 0;">Total Sales Before VAT</td>
@@ -210,7 +215,7 @@
                     </tr>
                     <tr class="grand-total-box">
                         <td style="padding: 10px 5px;">Total Amount Due</td>
-                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format($subtotal, 2) }}</td>
+                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format($balanceDue, 2) }}</td>
                     </tr>
                 </table>
             </td>
