@@ -129,7 +129,7 @@
               </div>
 
               <div v-if="activeTab === 'sales-reports'" class="shadow-sm p-3">
-                <SalesReports />
+                <SalesReports :locations="dropdowns.locations || []" />
               </div>
             </div>
           </transition>

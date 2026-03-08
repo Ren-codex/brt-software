@@ -22,33 +22,38 @@
                   <div class="row g-3 align-items-end">
                     <div class="col-md-2">
                       <label class="filter-label">From</label>
-                      <input v-model="form.from" type="date" class="filter-input" />
+                      <input v-model="form.from" type="date" class="filter-input" @change="fetchReports" />
                     </div>
                     <div class="col-md-2">
                       <label class="filter-label">To</label>
-                      <input v-model="form.to" type="date" class="filter-input" />
+                      <input v-model="form.to" type="date" class="filter-input" @change="fetchReports" />
                     </div>
                     <!-- <div class="col-md-2">
                       <label class="filter-label">Day</label>
                       <input v-model="form.day" type="date" class="filter-input" />
                     </div> -->
+                    <div class="col-md-3">
+                      <label class="filter-label">Location</label>
+                      <select v-model="form.location_id" class="filter-select" @change="fetchReports">
+                        <option :value="null">All Locations</option>
+                        <option v-for="location in locations" :key="location.value" :value="location.value">
+                          {{ location.name }}
+                        </option>
+                      </select>
+                    </div>
                     <div class="col-md-2">
                       <label class="filter-label">Payment Type</label>
-                      <select v-model="form.payment_mode" class="filter-select">
+                      <select v-model="form.payment_mode" class="filter-select" @change="fetchReports">
                         <option value="all">All</option>
                         <option value="cash">Cash Sales</option>
                         <option value="credit">Credit Sales</option>
                       </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                       <label class="filter-label">Top Limit</label>
-                      <input v-model.number="form.limit" min="1" max="50" type="number" class="filter-input" />
+                      <input v-model.number="form.limit" min="1" max="50" type="number" class="filter-input" @input="debouncedFetchReports" />
                     </div>
-                    <div class="col-md-4 d-flex gap-2">
-                      <button :disabled="loading" class="btn-apply" @click="fetchReports">
-                        <i v-if="loading" class="ri-loader-4-line ri-spin me-1"></i>
-                        <span>{{ loading ? 'Loading...' : 'Apply' }}</span>
-                      </button>
+                    <div class="col-md-2 d-flex gap-2">
                       <div class="download-dropdown" ref="downloadDropdown">
                         <button :disabled="loading || downloading" class="btn-download" @click="toggleDownloadMenu">
                           <i class="ri-download-2-line me-1"></i>
@@ -237,11 +242,16 @@
 </template>
 
 <script>
+import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 
 export default {
   components: { PageHeader },
   props: {
+    locations: {
+      type: Array,
+      default: () => [],
+    },
     filters: {
       type: Object,
       default: () => null,
@@ -274,6 +284,7 @@ export default {
       from: monthStartText,
       to: today,
       day: today,
+      location_id: null,
       payment_mode: 'all',
       limit: 10,
     };
@@ -286,6 +297,9 @@ export default {
       report: this.reportData || defaultReport,
     };
   },
+  created() {
+    this.debouncedFetchReports = _.debounce(this.fetchReports, 300);
+  },
   mounted() {
     document.addEventListener('click', this.handleDocumentClick);
     if (!this.reportData) {
@@ -294,6 +308,7 @@ export default {
   },
   beforeUnmount() {
     document.removeEventListener('click', this.handleDocumentClick);
+    this.debouncedFetchReports?.cancel?.();
   },
   methods: {
     fetchReports() {
@@ -302,7 +317,7 @@ export default {
         .get('/reports', {
           params: {
             option: 'summary',
-            ...this.form,
+            ...this.normalizedForm(),
           },
         })
         .then((response) => {
@@ -325,6 +340,7 @@ export default {
         from: this.filters?.from || monthStartText,
         to: this.filters?.to || today,
         day: this.filters?.day || today,
+        location_id: this.filters?.location_id ?? null,
         payment_mode: 'all',
         limit: 10,
       };
@@ -354,7 +370,7 @@ export default {
         .get('/reports', {
           params: {
             option: exportFormat,
-            ...this.form,
+            ...this.normalizedForm(),
           },
           responseType: 'blob',
         })
@@ -387,6 +403,12 @@ export default {
     formatCurrency(value) {
       const amount = Number(value || 0);
       return `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    },
+    normalizedForm() {
+      return {
+        ...this.form,
+        location_id: this.form.location_id === null || this.form.location_id === '' ? null : Number(this.form.location_id),
+      };
     },
     formatDate(date) {
       if (!date) return 'N/A';
@@ -606,7 +628,6 @@ export default {
 
 .summary-item.total {
   margin-top: 1rem;
-  font-size: 1.1rem;
 }
 
 .summary-divider {
@@ -626,6 +647,7 @@ export default {
 
 .text-primary {
   color: #3d8d7a;
+  font-size: 1.1rem;
 }
 
 /* Table Cards */
