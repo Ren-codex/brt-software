@@ -230,9 +230,9 @@ export default {
             <Link class="dropdown-item" href="/profile"><i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
             <span class="align-middle"> Profile</span>
             </Link>
-              <Link class="dropdown-item" href="/DTR"><i class="ri-calendar-todo-fill text-muted fs-16 align-middle me-1"></i>
+              <!-- <Link class="dropdown-item" href="/DTR"><i class="ri-calendar-todo-fill text-muted fs-16 align-middle me-1"></i>
             <span class="align-middle"> DTR</span>
-            </Link>
+            </Link> -->
             <div class="dropdown-divider"></div>
             <Link class="dropdown-item" href="/confirm-password"><i class="mdi mdi-lock text-muted fs-16 align-middle me-1"></i>
             <span class="align-middle"> Lock screen</span>

@@ -26,9 +26,10 @@ class DashboardController extends Controller
     public function index(Request $request){
         // Get filter from request, default to monthly
         $filter = $request->get('filter', 'monthly');
+        $selectedDate = $request->get('selected_date');
         
         // Calculate date range based on filter
-        $dateRange = $this->getDateRange($filter);
+        $dateRange = $this->getDateRange($filter, $selectedDate);
         
         // Sales Statistics with date filter
         $totalSales = SalesOrder::whereBetween('order_date', [$dateRange['start'], $dateRange['end']])->sum('total_amount');
@@ -96,6 +97,7 @@ class DashboardController extends Controller
 
         // Recent Transactions
         $recentTransactions = SalesOrder::with('customer')
+                                ->whereBetween('order_date', [$dateRange['start'], $dateRange['end']])
                                 ->orderBy('order_date', 'desc')
                                 ->orderBy('id', 'desc')
                                 ->limit(5)
@@ -111,11 +113,12 @@ class DashboardController extends Controller
                                     ];
                                 });
 
-        // Inventory Statistics
-        $totalProducts = Product::count();
-        $totalInventoryValue = InventoryStocks::sum(\DB::raw('retail_price * quantity'));
-        $lowStockItems = InventoryStocks::whereColumn('quantity', '<=', \DB::raw('10'))->count(); // Using 10 as default minimum
-        $outOfStock = InventoryStocks::where('quantity', '<=', 0)->count();
+        // Inventory Statistics (filtered by selected date range)
+        $inventoryStocksInRange = InventoryStocks::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        $totalProducts = Product::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
+        $totalInventoryValue = (clone $inventoryStocksInRange)->sum(\DB::raw('retail_price * quantity'));
+        $lowStockItems = (clone $inventoryStocksInRange)->where('quantity', '<=', 10)->count();
+        $outOfStock = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
 
         // Stock by Category for bar chart
         $stockByCategory = \DB::table('inventory_stocks')
@@ -123,6 +126,7 @@ class DashboardController extends Controller
             ->join('products', 'received_items.product_id', '=', 'products.id')
             ->join('list_brands', 'products.brand_id', '=', 'list_brands.id')
             ->select('list_brands.name as category', \DB::raw('SUM(inventory_stocks.quantity) as quantity'))
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
             ->groupBy('list_brands.name')
             ->get()
             ->map(function ($item) {
@@ -133,9 +137,9 @@ class DashboardController extends Controller
             });
 
         // Stock Distribution for donut chart
-        $inStockCount = InventoryStocks::where('quantity', '>', 10)->count();
-        $lowStockCount = InventoryStocks::whereColumn('quantity', '<=', \DB::raw('10'))->where('quantity', '>', 0)->count();
-        $outOfStockCount = InventoryStocks::where('quantity', '<=', 0)->count();
+        $inStockCount = (clone $inventoryStocksInRange)->where('quantity', '>', 10)->count();
+        $lowStockCount = (clone $inventoryStocksInRange)->where('quantity', '<=', 10)->where('quantity', '>', 0)->count();
+        $outOfStockCount = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
         
         $stockDistribution = [
             ['status' => 'In Stock', 'percentage' => $inStockCount],
@@ -145,8 +149,10 @@ class DashboardController extends Controller
 
         // Pending Purchase Orders
         $pendingPOs = PurchaseOrder::whereHas('status', function($q) {
-            $q->where('name', 'Pending');
-        })->count();
+                $q->where('name', 'Pending');
+            })
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->count();
 
         // Low Stock Items for table
         $lowStockItemsData = \DB::table('inventory_stocks')
@@ -160,6 +166,7 @@ class DashboardController extends Controller
                 'inventory_stocks.quantity as current_stock',
                 \DB::raw('10 as minimum_stock')
             )
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
             ->where('inventory_stocks.quantity', '<=', 10)
             ->where('inventory_stocks.quantity', '>', 0)
             ->limit(10)
@@ -201,40 +208,47 @@ class DashboardController extends Controller
                 'stockDistribution' => $stockDistribution,
             ],
             'lowStockItems' => $lowStockItemsData,
-            'filter' => $filter
+            'filter' => $filter,
+            'selectedDate' => optional($dateRange['selectedDate'])->toDateString()
         ]);
 
     }
 
-    private function getDateRange($filter)
+    private function getDateRange($filter, $selectedDate = null)
     {
         $now = Carbon::now();
+        $resolvedDate = $selectedDate ? Carbon::parse($selectedDate) : $now->copy();
         
         switch ($filter) {
             case 'today':
                 return [
-                    'start' => $now->copy()->startOfDay(),
-                    'end' => $now->copy()->endOfDay()
+                    'start' => $resolvedDate->copy()->startOfDay(),
+                    'end' => $resolvedDate->copy()->endOfDay(),
+                    'selectedDate' => $resolvedDate->copy()
                 ];
             case 'weekly':
                 return [
                     'start' => $now->copy()->startOfWeek(),
-                    'end' => $now->copy()->endOfWeek()
+                    'end' => $now->copy()->endOfWeek(),
+                    'selectedDate' => $resolvedDate->copy()
                 ];
             case 'monthly':
                 return [
                     'start' => $now->copy()->startOfMonth(),
-                    'end' => $now->copy()->endOfMonth()
+                    'end' => $now->copy()->endOfMonth(),
+                    'selectedDate' => $resolvedDate->copy()
                 ];
             case 'annually':
                 return [
                     'start' => $now->copy()->startOfYear(),
-                    'end' => $now->copy()->endOfYear()
+                    'end' => $now->copy()->endOfYear(),
+                    'selectedDate' => $resolvedDate->copy()
                 ];
             default:
                 return [
                     'start' => $now->copy()->startOfMonth(),
-                    'end' => $now->copy()->endOfMonth()
+                    'end' => $now->copy()->endOfMonth(),
+                    'selectedDate' => $resolvedDate->copy()
                 ];
         }
     }

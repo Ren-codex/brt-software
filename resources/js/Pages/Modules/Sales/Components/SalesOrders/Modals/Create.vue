@@ -1,4 +1,4 @@
- <template>
+<template>
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-fullscreen " @click.stop>
             <div class="modal-header ">
@@ -12,125 +12,130 @@
                 <form @submit.prevent="submit">
                     <BRow>
                         <div class="col-md-9">
-                            <div class="form-row">
-                                <div class="form-group form-group-half">
-                                    <label for="order_date" class="form-label">Order Date<span
-                                            class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="ri-calendar-line input-icon"></i>
-                                        <text-input type="date" id="name" v-model="form.order_date" class="form-control"
-                                            :class="{ 'input-error': form.errors.order_date }"
-                                            @input="handleInput('order_date')" />
+                            <div class="card border-0 shadow-sm mb-3">
+
+                                <div class="card-body">
+                                    <div class="form-row">
+                                        <div class="form-group form-group-half">
+                                            <label for="order_date" class="form-label">Order Date<span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-wrapper">
+                                                <i class="ri-calendar-line input-icon"></i>
+                                                <text-input type="date" id="name" v-model="form.order_date"
+                                                    class="form-control"
+                                                    :class="{ 'input-error': form.errors.order_date }"
+                                                    @input="handleInput('order_date')" />
+                                            </div>
+                                            <span class="error-message" v-if="form.errors.order_date">{{
+                                                form.errors.order_date
+                                                }}</span>
+                                        </div>
+
+                                        <div class="form-group form-group-half">
+                                            <label for="customer_id" class="form-label">Customer<span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-wrapper">
+                                                <i class="ri-user-line input-icon"></i>
+                                                <b-form-select v-model="form.customer_id" :options="dropdowns.customers"
+                                                    text-field="name" value-field="value"
+                                                    :class="{ 'input-error': form.errors.customer_id }"
+                                                    class="form-control">
+                                                    <template #first>
+                                                        <b-form-select-option :value="null" disabled>Select
+                                                            Customer</b-form-select-option>
+                                                    </template>
+                                                </b-form-select>
+
+                                            </div>
+
+                                            <span class="error-message" v-if="form.errors.customer_id">{{
+                                                form.errors.customer_id }}</span>
+
+                                        </div>
+
+
+
+                                        <div class="form-group">
+                                            <div class="input-wrapper ">
+                                                <label for="customer_id" class="form-label text-center">New</label>
+                                                <button @click="addCustomer()" type="button"
+                                                    class="btn btn-cancel form-control">
+                                                    <i class="ri-add-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <span class="error-message" v-if="form.errors.order_date">{{ form.errors.order_date
-                                        }}</span>
-                                </div>
 
-                                <div class="form-group form-group-half">
-                                    <label for="customer_id" class="form-label">Customer<span
-                                            class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="form.customer_id" :options="dropdowns.customers"
-                                            text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.customer_id }" class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select
-                                                    Customer</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
+                                    <div class="form-row assign-row">
+                                        <div class="form-group form-group-third">
+                                            <label for="customer_id" class="form-label">Assigned To(Sales Rep)<span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-wrapper">
+                                                <i class="ri-user-line input-icon"></i>
+                                                <b-form-select v-model="form.sales_rep_id" :options="salesRepOptions"
+                                                    text-field="name" value-field="value"
+                                                    :class="{ 'input-error': form.errors.sales_rep_id }"
+                                                    class="form-control">
+                                                    <template #first>
+                                                        <b-form-select-option :value="null" disabled>Select
+                                                            Sales Rep</b-form-select-option>
+                                                    </template>
+                                                </b-form-select>
 
-                                    </div>
+                                            </div>
 
-                                    <span class="error-message" v-if="form.errors.customer_id">{{
-                                        form.errors.customer_id }}</span>
+                                            <span class="error-message" v-if="form.errors.sales_rep_id">{{
+                                                form.errors.sales_rep_id }}</span>
 
-                                </div>
+                                        </div>
 
+                                        <div class="form-group form-group-third">
+                                            <label for="customer_id" class="form-label">Assigned To(Driver)<span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-wrapper">
+                                                <i class="ri-user-line input-icon"></i>
+                                                <b-form-select v-model="form.driver_id" :options="dropdowns.drivers"
+                                                    text-field="name" value-field="value"
+                                                    :class="{ 'input-error': form.errors.driver_id }"
+                                                    class="form-control">
+                                                    <template #first>
+                                                        <b-form-select-option :value="null" disabled>Select
+                                                            Driver</b-form-select-option>
+                                                    </template>
+                                                </b-form-select>
 
+                                            </div>
 
-                                <div class="form-group">
-                                    <div class="input-wrapper ">
-                                        <label for="customer_id" class="form-label text-center">New</label>
-                                        <button @click="addCustomer()" type="button"
-                                            class="btn btn-cancel form-control">
-                                            <i class="ri-add-line"></i>
-                                        </button>
+                                            <span class="error-message" v-if="form.errors.driver_id">{{
+                                                form.errors.driver_id }}</span>
+
+                                        </div>
+                                        <div class="form-group form-group-third">
+                                            <label for="location_id" class="form-label">Location<span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-wrapper">
+                                                <i class="ri-map-pin-line input-icon"></i>
+                                                <b-form-select v-model="form.location_id" :options="dropdowns.locations"
+                                                    text-field="name" value-field="value"
+                                                    :class="{ 'input-error': form.errors.location_id }"
+                                                    class="form-control">
+                                                    <template #first>
+                                                        <b-form-select-option :value="0">Select
+                                                            Location</b-form-select-option>
+                                                    </template>
+                                                </b-form-select>
+
+                                            </div>
+
+                                            <span class="error-message" v-if="form.errors.location_id">{{
+                                                form.errors.location_id }}</span>
+
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                             <div class="form-row">
-                                <div class="form-group form-group-half">
-                                    <label for="customer_id" class="form-label">Assigned To(Sales Rep)<span
-                                        class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="form.sales_rep_id" :options="dropdowns.sales_reps"
-                                            text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.sales_rep_id }" class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select
-                                                    Sales Rep</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
-
-                                    </div>
-
-                                    <span class="error-message" v-if="form.errors.sales_rep_id">{{
-                                        form.errors.sales_rep_id }}</span>
-
-                                </div>
-
-                                <div class="form-group form-group-half">
-                                    <label for="customer_id" class="form-label">Assigned To(Driver)<span
-                                        class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="form.driver_id" :options="dropdowns.drivers"
-                                            text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.driver_id }" class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select
-                                                    Driver</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
-
-                                    </div>
-
-                                    <span class="error-message" v-if="form.errors.driver_id">{{
-                                        form.errors.driver_id }}</span>
-
-                                </div>
-
-                             </div>
-
-                             <div class="form-row">
-                                <div class="form-group form-group-half">
-                                    <label for="location_id" class="form-label">Location<span
-                                        class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="ri-map-pin-line input-icon"></i>
-                                        <b-form-select v-model="form.location_id" :options="dropdowns.locations"
-                                            text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.location_id }" class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select
-                                                    Location</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
-
-                                    </div>
-
-                                    <span class="error-message" v-if="form.errors.location_id">{{
-                                        form.errors.location_id }}</span>
-
-                                </div>
-
-                             </div>
                             <div class="mb-2">
-                                <b-button :disabled="!form.customer_id || !form.order_date" @click="addItem()"
-                                    size="sm" variant="primary">
+                                <b-button :disabled="!canAddItem" @click="addItem()" size="sm" variant="primary">
                                     <i class="ri-add-line" v-if="!form.processing"></i>
                                     Add Item
                                 </b-button>
@@ -142,164 +147,190 @@
                                         <thead class="table-light thead-fixed pretty-header">
                                             <tr class="fs-11">
                                                 <th style="width: 3%;">#</th>
-                                                <th style="width: 15%; text-align: center;change the calculation not per percentage but per unit">Product</th>
+                                                <th
+                                                    style="width: 15%; text-align: center;change the calculation not per percentage but per unit">
+                                                    Product</th>
                                                 <th style="width: 10%; text-align: center;">Batch Code</th>
                                                 <th style="width: 1%;" class="text-center">Quantity</th>
                                                 <th style="width: 12%;" class="text-center">Type/Price</th>
                                                 <th style="width: 15%;" class="text-center">Total Cost</th>
-                                              <th style="width: 10%;" class="text-center">Discount</th>
-                                              <th style="width: 15%;" class="text-center">Total Discount </th>
-                                              <th style="width: 10%;" class="text-center">Actions</th>
-                                          </tr>
-                                      </thead>
+                                                <th style="width: 10%;" class="text-center">Discount</th>
+                                                <th style="width: 15%;" class="text-center">Total Discount </th>
+                                                <th style="width: 10%;" class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
 
-                                      <tbody class="table-white fs-12">
-                                          <tr v-if="form.items.length === 0">
-                                              <td colspan="11" class="text-center text-muted py-4">
-                                                  <i class="ri-shopping-cart-line fs-1 text-muted mb-2"></i>
-                                                  <div>No items added yet.</div>
-                                                  <small>Click "Add Item" to start adding products to the order.</small>
-                                              </td>
-                                          </tr>
-                                          <tr v-for="(list,index) in form.items" v-bind:key="index" @click="selectRow(index)" :class="{
-                                              'bg-info-subtle': index === selectedRow
-                                          }">
-                                            <td >
-                                                {{ index + 1}}
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="fw-bold text-primary">{{ getProduct(list.product_id).name || '-' }}</div>
-                                                                                                    <small class="text-muted">Available: <span class="badge bg-light text-dark">{{ (getProduct(list.product_id).batch_available ?? getProduct(list.product_id).available) || 0 }}</span></small>
-                                            </td>
-                                            <td class="text-center">
-                                               <span >
-                                                    {{ getProduct(list.product_id).batch_code || '-' }}
-                                               </span>
-                                            </td>
-                                    
-                                      
-                                            <td class="text-center">
-                                                <span class="fw-bold">{{ list.quantity }}</span>
-                                            </td>
-                                      
-                                            <td class="text-center">
-                                                <div class="d-flex flex-column align-items-center">
-                                                    <span :class="list.price_type === 'retail' ? 'badge bg-success mb-1' : 'badge bg-warning mb-1'">
-                                                        {{ list.price_type === 'retail' ? 'Retail' : 'Wholesale' }}
+                                        <tbody class="table-white fs-12">
+                                            <tr v-if="form.items.length === 0">
+                                                <td colspan="11" class="text-center text-muted py-4">
+                                                    <i class="ri-shopping-cart-line fs-1 text-muted mb-2"></i>
+                                                    <div>No items added yet.</div>
+                                                    <small>Click "Add Item" to start adding products to the
+                                                        order.</small>
+                                                </td>
+                                            </tr>
+                                            <tr v-for="(list, index) in form.items" v-bind:key="index"
+                                                @click="selectRow(index)" :class="{
+                                                    'bg-info-subtle': index === selectedRow
+                                                }">
+                                                <td>
+                                                    {{ index + 1 }}
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="fw-bold text-primary">{{
+                                                        getProduct(list.product_id).name || '-' }}</div>
+                                                    <small class="text-muted">Available: <span
+                                                            class="badge bg-light text-dark">{{
+                                                                (getProduct(list.product_id).batch_available ??
+                                                            getProduct(list.product_id).available)
+                                                            || 0 }}</span></small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span>
+                                                        {{ getProduct(list.product_id).batch_code || '-' }}
                                                     </span>
-                                                    <small class="text-muted">{{ formatCurrency(list.price) }}</small>
-                                                </div>
-                                            </td>
-                                            <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}</td>
-                                            <td class="text-center">
-                                               {{ formatCurrency(list.discount_per_unit) }}
-                                            </td>
-                                            <td class="text-center">{{ formatCurrency(calculateDiscountedTotal(list)) }}</td>
-                                              <td class="text-center">
-                                                  <div class="d-flex justify-content-center gap-1">
-                                                      <b-button @click="editItem(list, index)" variant="primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
-                                                          <i class="ri-edit-line"></i>
-                                                      </b-button>
-                                                      <b-button @click="removeItem(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
-                                                          <i class="ri-delete-bin-line"></i>
-                                                      </b-button>
-                                                  </div>
-                                              </td>
-                                          </tr>
-                                      </tbody>
-                                      <tfoot class="table-light">
-                                          <tr>
-                                              <td colspan="6" class="text-end fw-bold">Total:</td>
-                                              <td class="text-center fw-bold">{{ formatCurrency(form.items.reduce((total, item) => total + calculateItemTotal(item), 0)) }}</td>
-                                              <td class="text-center fw-bold">{{ formatCurrency(form.items.reduce((total, item) => total + calculateDiscountedTotal(item), 0)) }}</td>
-                                              <td colspan="2"></td>
-                                          </tr>
-                                      </tfoot>
-                                  </table>
+                                                </td>
+
+
+                                                <td class="text-center">
+                                                    <span class="fw-bold">{{ list.quantity }}</span>
+                                                </td>
+
+                                                <td class="text-center">
+                                                    <div class="d-flex flex-column align-items-center">
+                                                        <span
+                                                            :class="list.price_type === 'retail' ? 'badge bg-success mb-1' : 'badge bg-warning mb-1'">
+                                                            {{ list.price_type === 'retail' ? 'Retail' : 'Wholesale' }}
+                                                        </span>
+                                                        <small class="text-muted">{{ formatCurrency(list.price)
+                                                            }}</small>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}
+                                                </td>
+                                                <td class="text-center">
+                                                    {{ formatCurrency(list.discount_per_unit) }}
+                                                </td>
+                                                <td class="text-center">{{
+                                                    formatCurrency(calculateDiscountedTotal(list)) }}</td>
+                                                <td class="text-center">
+                                                    <div class="d-flex justify-content-center gap-1">
+                                                        <b-button @click="editItem(list, index)" variant="primary"
+                                                            v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
+                                                            <i class="ri-edit-line"></i>
+                                                        </b-button>
+                                                        <b-button @click="removeItem(list.id)" variant="danger"
+                                                            v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
+                                                            <i class="ri-delete-bin-line"></i>
+                                                        </b-button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot class="table-light">
+                                            <tr>
+                                                <td colspan="6" class="text-end fw-bold">Total:</td>
+                                                <td class="text-center fw-bold">{{
+                                                    formatCurrency(form.items.reduce((total, item) => total +
+                                                    calculateItemTotal(item), 0)) }}</td>
+                                                <td class="text-center fw-bold">{{
+                                                    formatCurrency(form.items.reduce((total, item) => total +
+                                                    calculateDiscountedTotal(item), 0)) }}</td>
+                                                <td colspan="2"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
                             </div>
-                    </div>
-                    <div class="col-md-3">
-                        <b-card class="bg-light p-1 rounded">
-                            <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Customer Information</h5>
-                            <div v-if="form.customer_id" class="mt-1">
-                                <ul class="list-unstyled">
-                                    <li><strong>Name:</strong> {{ getCustomer(form.customer_id)?.name || '-' }}</li>
-                                    <li><strong>Address:</strong> {{ getCustomer(form.customer_id)?.address || '-' }}</li>
-                                    <li><strong>Contact:</strong> {{ getCustomer(form.customer_id)?.contact_number || '-' }}</li>
-                                    <li><strong>Email:</strong> {{ getCustomer(form.customer_id)?.email || '-' }}</li>
-                                </ul>
-                            </div>
-                            <div v-else class="mt-3 text-muted">
-                                <p class="text-center">Select a customer to view information</p>
-                            </div>
-                        </b-card>
+                        </div>
+                        <div class="col-md-3">
+                            <b-card class="bg-light p-1 rounded">
+                                <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Customer Information
+                                </h5>
+                                <div v-if="form.customer_id" class="mt-1">
+                                    <ul class="list-unstyled">
+                                        <li><strong>Name:</strong> {{ getCustomer(form.customer_id)?.name || '-' }}</li>
+                                        <li><strong>Address:</strong> {{ getCustomer(form.customer_id)?.address || '-'
+                                            }}</li>
+                                        <li><strong>Contact:</strong> {{ getCustomer(form.customer_id)?.contact_number
+                                            || '-' }}</li>
+                                        <li><strong>Email:</strong> {{ getCustomer(form.customer_id)?.email || '-' }}
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div v-else class="mt-3 text-muted">
+                                    <p class="text-center">Select a customer to view information</p>
+                                </div>
+                            </b-card>
 
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0 text-primary">
-                                    <i class="ri-bank-card-line me-2"></i>
-                                    Select Payment Mode
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="payment-mode-grid">
-                                    <div
-                                        v-for="mode in payment_modes"
-                                        :key="mode"
-                                        :class="{ 'selected-payment-mode': form.payment_mode === mode }"
-                                        class="payment-mode-card"
-                                        @click="selectPaymentMode(mode)"
-                                    >
-                                        <i :class="getPaymentModeIcon(mode)" class="payment-icon"></i>
-                                        <span class="payment-label">{{ mode }}</span>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-primary">
+                                        <i class="ri-bank-card-line me-2"></i>
+                                        Select Payment Mode
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="payment-mode-grid">
+                                        <div v-for="mode in payment_modes" :key="mode"
+                                            :class="{ 'selected-payment-mode': form.payment_mode === mode }"
+                                            class="payment-mode-card" @click="selectPaymentMode(mode)">
+                                            <i :class="getPaymentModeIcon(mode)" class="payment-icon"></i>
+                                            <span class="payment-label">{{ mode }}</span>
+                                        </div>
                                     </div>
+                                    <span class="error-message" v-if="form.errors.payment_mode">{{
+                                        form.errors.payment_mode }}</span>
+
+
                                 </div>
-                                <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
-
-                  
                             </div>
-                        </div>
 
-                        <div v-if="form.payment_mode === 'Credit'" class="card border-0 shadow-sm">
-                            <div class="card-header bg-light">
+                            <div v-if="form.payment_mode === 'Credit'" class="card border-0 shadow-sm">
+                                <div class="card-header bg-light">
 
-                                 <label for="due_date" class="form-label">Due Date<span
-                                        class="text-danger">*</span></label>
-                                <div class="input-wrapper">
-                                    <i class="ri-calendar-line input-icon"></i>
-                                    <text-input type="date" id="due_date" v-model="form.due_date" class="form-control"
-                                        :class="{ 'input-error': form.errors.due_date }"
-                                        @input="handleInput('due_date')" />
+                                    <label for="due_date" class="form-label">Due Date<span
+                                            class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-calendar-line input-icon"></i>
+                                        <text-input type="date" id="due_date" v-model="form.due_date"
+                                            class="form-control" :class="{ 'input-error': form.errors.due_date }"
+                                            @input="handleInput('due_date')" />
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date
+                                        }}</span>
                                 </div>
-                                <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date
-                                    }}</span>
-                            </div>
-                            <div class="card-body">
+                                <div class="card-body">
 
-                                <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date }}</span>
+                                    <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date
+                                        }}</span>
+                                </div>
                             </div>
-                        </div>
-                   
-                         <b-card class=" bg-light mt-4 p-3 rounded">
-                                <div class="form-group form-group-half mt-0" >
+
+                            <b-card class=" bg-light mt-4 p-3 rounded">
+                                <div class="form-group form-group-half mt-0">
                                     <label class="form-label text-primary">Order Summary</label>
                                     <div class="input-wrapper">
                                         <div class="d-flex justify-content-between">
                                             <span>Subtotal:</span>
                                             <span>{{formatCurrency(form.items.reduce((total, item) => total +
                                                 calculateItemTotal(item), 0))
-                                                }}</span>
+                                            }}</span>
                                         </div>
                                         <div class="d-flex justify-content-between">
                                             <span>Item Discounts:</span>
-                                            <span>{{ formatCurrency(form.items.reduce((total, item) => total + calculateDiscountedTotal(item), 0)) }}</span>
+                                            <span>{{formatCurrency(form.items.reduce((total, item) => total +
+                                                calculateDiscountedTotal(item),
+                                                0)) }}</span>
                                         </div>
 
                                         <hr />
                                         <div class="d-flex justify-content-between fw-bold">
                                             <span>Calculated Total:</span>
-                                            <span>{{ formatCurrency(form.items.reduce((total, item) => total + calculateItemTotal(item), 0) - form.items.reduce((total, item) => total + calculateDiscountedTotal(item), 0)) }}</span>
+                                            <span>{{formatCurrency(form.items.reduce((total, item) => total +
+                                                calculateItemTotal(item), 0) -
+                                                form.items.reduce((total, item) => total +
+                                                calculateDiscountedTotal(item), 0)) }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -356,18 +387,33 @@
                     <div class="card-body">
                         <div class="row g-2">
                             <div class="col-md-6">
-                                <p class="mb-1"><strong>Sales Order #:</strong> {{ pendingSalesOrder?.so_number || '-' }}</p>
-                                <p class="mb-1"><strong>Order Date:</strong> {{ pendingSalesOrder?.order_date || '-' }}</p>
-                                <p class="mb-1"><strong>Customer:</strong> {{ pendingSalesOrder?.customer?.name || '-' }}</p>
-                                <p class="mb-1"><strong>Location:</strong> {{ getLocationName(pendingSalesOrder?.location_id) }}</p>
-                                <p class="mb-0"><strong>Payment Mode:</strong> {{ pendingSalesOrder?.payment_mode || '-' }}</p>
+                                <p class="mb-1"><strong>Sales Order #:</strong> {{ pendingSalesOrder?.so_number || '-'
+                                    }}
+                                </p>
+                                <p class="mb-1"><strong>Order Date:</strong> {{ pendingSalesOrder?.order_date || '-' }}
+                                </p>
+                                <p class="mb-1"><strong>Customer:</strong> {{ pendingSalesOrder?.customer?.name || '-'
+                                    }}
+                                </p>
+                                <p class="mb-1"><strong>Location:</strong> {{
+                                    getLocationName(pendingSalesOrder?.location_id) }}</p>
+                                <p class="mb-0"><strong>Payment Mode:</strong> {{ pendingSalesOrder?.payment_mode || '-'
+                                    }}
+                                </p>
                             </div>
                             <div class="col-md-6">
-                                <p class="mb-1"><strong>Sales Rep:</strong> {{ getSalesRepName(pendingSalesOrder?.sales_rep_id) }}</p>
-                                <p class="mb-1"><strong>Driver:</strong> {{ getDriverName(pendingSalesOrder?.driver_id) }}</p>
-                                <p class="mb-1"><strong>Invoice #:</strong> {{ pendingInvoice?.invoice_number || '-' }}</p>
-                                <p class="mb-1"><strong>Invoice Date:</strong> {{ pendingInvoice?.invoice_date || '-' }}</p>
-                                <p class="mb-0"><strong>Amount Due:</strong> {{ formatCurrency(pendingInvoice?.balance_due || 0) }}</p>
+                                <p class="mb-1"><strong>Sales Rep:</strong> {{
+                                    getSalesRepName(pendingSalesOrder?.sales_rep_id) }}</p>
+                                <p class="mb-1"><strong>Driver:</strong> {{ getDriverName(pendingSalesOrder?.driver_id)
+                                    }}
+                                </p>
+                                <p class="mb-1"><strong>Invoice #:</strong> {{ pendingInvoice?.invoice_number || '-' }}
+                                </p>
+                                <p class="mb-1"><strong>Invoice Date:</strong> {{ pendingInvoice?.invoice_date || '-' }}
+                                </p>
+                                <p class="mb-0"><strong>Amount Due:</strong> {{
+                                    formatCurrency(pendingInvoice?.balance_due
+                                    || 0) }}</p>
                             </div>
                         </div>
                     </div>
@@ -398,8 +444,10 @@
                                         <td class="text-center">{{ item.batch_code || '-' }}</td>
                                         <td class="text-center">{{ item.quantity || 0 }}</td>
                                         <td class="text-end">{{ formatCurrency(item.price || 0) }}</td>
-                                        <td class="text-end">{{ formatCurrency((item.discount_per_unit || 0) * (item.quantity || 0)) }}</td>
-                                        <td class="text-end">{{ formatCurrency(calculateItemTotal(item) - calculateDiscountedTotal(item)) }}</td>
+                                        <td class="text-end">{{ formatCurrency((item.discount_per_unit || 0) *
+                                            (item.quantity || 0)) }}</td>
+                                        <td class="text-end">{{ formatCurrency(calculateItemTotal(item) -
+                                            calculateDiscountedTotal(item)) }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -428,11 +476,13 @@
                 <span class="error-message" v-if="paymentPromptError">{{ paymentPromptError }}</span>
             </div>
             <div class="modal-footer bg-light border-0 p-4">
-                <button type="button" class="btn btn-outline-secondary me-3" @click="cancelPaymentPrompt" :disabled="processingPayment">
+                <button type="button" class="btn btn-outline-secondary me-3" @click="cancelPaymentPrompt"
+                    :disabled="processingPayment">
                     <i class="ri-close-line me-2"></i>
                     Cancel
                 </button>
-                <button type="button" class="btn btn-primary" @click="proceedPayment" :disabled="processingPayment || !pendingInvoice?.id">
+                <button type="button" class="btn btn-primary" @click="proceedPayment"
+                    :disabled="processingPayment || !pendingInvoice?.id">
                     <i class="ri-loader-4-line spinner" v-if="processingPayment"></i>
                     <i class="ri-check-line me-2" v-else></i>
                     {{ processingPayment ? 'Processing...' : 'Record Payment & Continue' }}
@@ -461,16 +511,14 @@
                         </h6>
                     </div>
                     <div class="card-body">
-                        <p class="mb-0 text-muted">Payment recorded successfully. Do you want to print the receipt now?</p>
+                        <p class="mb-0 text-muted">Payment recorded successfully. Do you want to print the receipt now?
+                        </p>
                         <small v-if="!pendingReceiptId" class="text-danger d-block mt-2">
                             Receipt reference is not yet available. Please refresh and open it from Receipts list.
                         </small>
                         <div class="receipt-preview mt-3" v-if="pendingReceiptId">
-                            <iframe
-                                :src="`/receipts/${pendingReceiptId}?option=print&type=receipt`"
-                                class="receipt-preview-frame"
-                                title="Receipt Preview"
-                            ></iframe>
+                            <iframe :src="`/receipts/${pendingReceiptId}?option=print&type=receipt`"
+                                class="receipt-preview-frame" title="Receipt Preview"></iframe>
                         </div>
                     </div>
                 </div>
@@ -488,8 +536,8 @@
         </div>
     </div>
 
-    <Item @add="fetch()" :dropdowns="dropdowns" :items="form.items" @items="storeItem" @update="updateItem" :formatCurrency="formatCurrency"
-        ref="item" />
+    <Item @add="fetch()" :dropdowns="dropdowns" :items="form.items" @items="storeItem" @update="updateItem"
+        :formatCurrency="formatCurrency" ref="item" />
     <Customer :dropdowns="dropdowns" ref="createCustomer" />
 </template>
 
@@ -515,7 +563,7 @@ export default {
                 customer_id: null,
                 sales_rep_id: null,
                 driver_id: null,
-                location_id: null,
+                location_id: 0,
                 status_id: null,
                 billing_account: null,
                 payment_mode: null,
@@ -551,6 +599,37 @@ export default {
         }
     },
     computed: {
+        currentUserData() {
+            return this.user?.data || this.$page?.props?.user?.data || null;
+        },
+        currentEmployeeId() {
+            const id = this.currentUserData?.employee_id;
+            return id === null || id === undefined ? null : Number(id);
+        },
+        salesRepOptions() {
+            const options = Array.isArray(this.dropdowns?.sales_reps) ? [...this.dropdowns.sales_reps] : [];
+            if (!this.currentEmployeeId) {
+                return options;
+            }
+
+            const exists = options.some((rep) => Number(rep?.value) === this.currentEmployeeId);
+            if (!exists) {
+                options.unshift({
+                    value: this.currentEmployeeId,
+                    name: this.currentUserData?.name || 'Current Employee',
+                });
+            }
+
+            return options;
+        },
+        canAddItem() {
+            const hasCustomer = !!this.form.customer_id;
+            const hasOrderDate = !!this.form.order_date;
+            const locationId = Number(this.form.location_id);
+            const hasValidLocation = Number.isFinite(locationId) && locationId > 0;
+
+            return hasCustomer && hasOrderDate && hasValidLocation;
+        },
         availableProducts() {
             return this.dropdowns.products.filter(product => product.available > 0);
         },
@@ -591,6 +670,9 @@ export default {
         },
 
         addItem() {
+            if (!this.canAddItem) {
+                return;
+            }
             this.$refs.item.show();
         },
 
@@ -623,19 +705,14 @@ export default {
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
-            this.form.location_id = this.getDefaultLocationId();
+            this.form.location_id = 0;
             // Set default due date to 3 days ahead
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 3);
             this.form.due_date = dueDate.toISOString().slice(0, 10);
-            // Set default sales rep to current user if they are a sales rep
-            const userEmployeeId = this.$page.props.user.data.id;
-
-            if (userEmployeeId) {
-                const isSalesRep = this.dropdowns.sales_reps.some(rep => rep.value === userEmployeeId);
-                if (isSalesRep) {
-                    this.form.sales_rep_id = this.$page.props.user.data.id;
-                }
+            // Default sales rep should be the logged-in employee (not user id).
+            if (this.currentEmployeeId) {
+                this.form.sales_rep_id = this.currentEmployeeId;
             }
 
         },
@@ -1182,5 +1259,22 @@ export default {
 .pretty-table input[type="number"]:focus {
     border-color: #667eea;
     box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.modal-body-lg>form .assign-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.modal-body-lg>form .assign-row .form-group-third {
+    flex: 1 1 calc(33.333% - 0.4rem);
+    min-width: 180px;
+}
+
+@media (max-width: 992px) {
+    .modal-body-lg>form .assign-row .form-group-third {
+        flex: 1 1 100%;
+    }
 }
 </style>

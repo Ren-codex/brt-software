@@ -58,7 +58,9 @@
                  
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <StockSidebar ref="stockSidebar" @toggle="onStockToggle" />
                   <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics" 
+                    v-show="!isStockOpen"
                     :listInvoices="listInvoices" :listReceipts="listReceipts" 
                     :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
@@ -165,14 +167,16 @@ import Receipts from "@/Pages/Modules/Sales/Components/Receipts/Index.vue";
 import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue";
 import SalesReports from "@/Pages/Modules/Sales/Components/SalesReports/Index.vue";
 import QuickStatsSidebar from "@/Pages/Modules/Sales/Components/QuickStatsSidebar.vue";
+import StockSidebar from "@/Pages/Modules/Sales/Components/StockSidebar.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar },
+  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar, StockSidebar },
   props: ['dropdowns'],
   data() {
     return {
       isSidebarCollapsed: false,
       isRightSidebarCollapsed: true,
+      isStockOpen: false,
       activeTab: localStorage.getItem('sales_active_tab') || 'sales_orders',
       currentView: 'list',
       filter: {
@@ -265,10 +269,20 @@ export default {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
     },
     toggleRightSidebar() {
+      const willShowQuickStats = this.isRightSidebarCollapsed;
+      if (willShowQuickStats) {
+        this.$refs.stockSidebar?.closePanel?.();
+        this.isStockOpen = false;
+      }
       this.isRightSidebarCollapsed = !this.isRightSidebarCollapsed;
+    },
+    onStockToggle(isOpen) {
+      this.isStockOpen = isOpen;
     },
     changeTab(tab) {
       this.activeTab = tab;
+      this.isStockOpen = false;
+      this.$refs.stockSidebar?.closePanel?.();
       localStorage.setItem('sales_active_tab', tab);
       this.currentView = 'list';
       this.selectedRow = null;

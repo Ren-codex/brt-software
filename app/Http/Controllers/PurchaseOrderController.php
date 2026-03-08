@@ -45,35 +45,36 @@ class PurchaseOrderController extends Controller
         });
         
         return back()->with([
-            'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'] ?? true,
         ]);
     }
 
-    public function update(PurchaseOrderRequest $request)
+    public function update(PurchaseOrderRequest $request, $id)
     {
+        $request->merge(['id' => $id]);
+
         $result = $this->handleTransaction(function () use ($request) {
             return $this->purchaseOrder->update($request);
         });
 
         return back()->with([
-            'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'] ?? true,
         ]);
     }
 
-    public function updateStatus(Request $request)
+    public function updateStatus(Request $request, $id)
     {
+        $request->merge(['id' => $id]);
+
         $result = $this->handleTransaction(function () use ($request) {
             return $this->purchaseOrder->updateStatus($request);
         });
 
         return back()->with([
-            'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'] ?? true,
