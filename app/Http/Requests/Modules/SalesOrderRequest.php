@@ -20,6 +20,8 @@ class SalesOrderRequest extends FormRequest
             return [
                 'type' => 'required|string',
                 'reason' => 'required|string',
+                'item_ids' => 'nullable|array',
+                'item_ids.*' => 'integer|exists:sales_order_items,id',
             ];
         }
         else if($action == 'approve'){

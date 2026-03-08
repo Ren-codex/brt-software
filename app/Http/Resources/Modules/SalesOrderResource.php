@@ -4,6 +4,7 @@ namespace App\Http\Resources\Modules;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 
 class SalesOrderResource extends JsonResource
 {
@@ -25,6 +26,12 @@ class SalesOrderResource extends JsonResource
             'transferred_to' => $this->transferred_to,
             'transferred_at' => $this->transferred_at,
             'items' => $this->items,
+            'return_item_ids' => DB::table('sales_return_items')
+                ->join('sales_order_items', 'sales_order_items.id', '=', 'sales_return_items.sales_order_item_id')
+                ->where('sales_order_items.sales_order_id', $this->id)
+                ->pluck('sales_return_items.sales_order_item_id')
+                ->map(fn ($id) => (int) $id)
+                ->values(),
             'invoices' => $this->arInvoices,
             'created_at' => $this->created_at->format('M d, Y'),
             'updated_at' => $this->updated_at?->format('M d, Y'),

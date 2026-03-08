@@ -372,7 +372,7 @@ export default {
 
         onApprove(data) {
             const route = this.isExternal ? '/sales-orders-external' : '/sales-orders';
-            this.$refs.approval.show(data.id, data.so_number, route, data.items || []);
+            this.$refs.approval.show(data.id, data.so_number, route, data.items || [], data.return_item_ids || []);
         },
     
 

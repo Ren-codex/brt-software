@@ -141,4 +141,61 @@ class InventoryService
             // In a real scenario, you might need to create a new stock entry
         }
     }
+
+    /**
+     * Record and apply a loss/damage stock deduction.
+     *
+     * @param int $productId
+     * @param int $quantity
+     * @param string $reason
+     * @param string|null $batchCode
+     * @param string $type
+     * @throws \Exception
+     */
+    public function recordLossOrDamage($productId, $quantity, $reason, $batchCode = null, $type = 'loss')
+    {
+        $remainingQuantity = (int) $quantity;
+
+        $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
+            $query->where('product_id', $productId);
+        });
+
+        if ($batchCode) {
+            $query->where('batch_code', $batchCode);
+        }
+
+        $inventoryStocks = $query->orderBy('created_at')->get();
+
+        foreach ($inventoryStocks as $stock) {
+            if ($remainingQuantity <= 0) {
+                break;
+            }
+
+            if ((int) $stock->quantity <= 0) {
+                continue;
+            }
+
+            $deductAmount = min((int) $stock->quantity, $remainingQuantity);
+            $previousQuantity = (int) $stock->quantity;
+            $newQuantity = $previousQuantity - $deductAmount;
+
+            $stock->update(['quantity' => $newQuantity]);
+
+            InventoryAdjustment::create([
+                'inventory_stocks_id' => $stock->id,
+                'new_quantity' => $newQuantity,
+                'previous_quantity' => $previousQuantity,
+                'reason' => $reason,
+                'adjustment_date' => now()->toDateString(),
+                'adjusted_by_id' => auth()->id(),
+                'type' => $type, // e.g. "loss" or "damage"
+            ]);
+
+            $remainingQuantity -= $deductAmount;
+        }
+
+        if ($remainingQuantity > 0) {
+            throw new \Exception('Insufficient stock to classify requested quantity as loss/damaged.');
+        }
+    }
 }
