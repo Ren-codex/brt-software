@@ -85,6 +85,7 @@
                                                 title="Approve"
                                                 size="sm"
                                                 class="btn-icon"
+                                                v-if="isTopManagement"
                                                 :disabled="list.status === 'approved'"
                                             >
                                                 <i class="ri-check-double-line"></i>
@@ -124,6 +125,12 @@ import Create from './Modals/Create.vue';
 export default {
     components: { PageHeader, Pagination, Multiselect, Create, DeleteModal },
     props: ['dropdowns'],
+    computed: {
+        isTopManagement() {
+            const roles = this.$page?.props?.roles || [];
+            return Array.isArray(roles) && roles.includes('Top Management');
+        }
+    },
     data() {
         return {
             currentUrl: window.location.origin,
