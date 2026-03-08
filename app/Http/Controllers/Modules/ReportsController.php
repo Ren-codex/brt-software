@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Modules;
 
 use App\Exports\SalesReportExport;
 use App\Http\Controllers\Controller;
+use App\Models\ListLocation;
 use App\Services\Modules\ReportClass;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -40,6 +41,15 @@ class ReportsController extends Controller
         return inertia('Modules/Reports/Index', [
             'filters' => $filters,
             'reportData' => $reportData,
+            'locations' => ListLocation::query()
+                ->where('is_active', 1)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (ListLocation $location) => [
+                    'value' => $location->id,
+                    'name' => $location->name,
+                ])
+                ->values(),
         ]);
     }
 
@@ -50,12 +60,14 @@ class ReportsController extends Controller
         $day = $request->input('day', now()->toDateString());
         $limit = (int) $request->input('limit', 10);
         $paymentMode = strtolower((string) $request->input('payment_mode', 'all'));
+        $locationId = $request->filled('location_id') ? (int) $request->input('location_id') : null;
 
         return [
             'from' => $from,
             'to' => $to,
             'day' => $day,
             'limit' => max(1, min($limit, 50)),
+            'location_id' => $locationId > 0 ? $locationId : null,
             'payment_mode' => in_array($paymentMode, ['all', 'cash', 'credit'], true) ? $paymentMode : 'all',
         ];
     }

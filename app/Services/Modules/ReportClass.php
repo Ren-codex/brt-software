@@ -123,6 +123,10 @@ class ReportClass
             $query->whereBetween('so.order_date', [$filters['from'], $filters['to']]);
         }
 
+        if (!empty($filters['location_id'])) {
+            $query->where('so.location_id', $filters['location_id']);
+        }
+
         $this->applyPaymentModeFilter($query, $filters['payment_mode']);
 
         return $query;
