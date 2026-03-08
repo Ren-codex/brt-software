@@ -237,10 +237,21 @@ export default {
       if (!this.selectedMonths.length) {
         return '';
       }
-      return this.scheduleRows
-        .filter(row => this.selectedMonths.includes(row.index))
-        .map(row => row.label)
-        .join(' | ');
+
+      const selectedRows = this.scheduleRows.filter(row => this.selectedMonths.includes(row.index));
+      if (!selectedRows.length) {
+        return '';
+      }
+
+      if (selectedRows.length === 1) {
+        return selectedRows[0].label;
+      }
+
+      const first = selectedRows[0];
+      const last = selectedRows[selectedRows.length - 1];
+
+      // Keep a compact label to avoid hitting backend/string length limits.
+      return `${first.label} | ${last.label} (${selectedRows.length} terms)`;
     },
     isAllSelected() {
       return this.scheduleRows.length > 0 && 

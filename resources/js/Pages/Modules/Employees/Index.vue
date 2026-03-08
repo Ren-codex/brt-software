@@ -163,7 +163,7 @@
                 
 
                 <div v-if="currentView === 'details'">
-                    <Details @update="fetch()" :employee="selectedEmployee"   :backToList="backToList" ref="details" />
+                    <Details @update="fetch()" :employee="selectedEmployee" :dropdowns="dropdowns" :backToList="backToList" ref="details" />
                 </div>
             </div>
         </div>
@@ -304,6 +304,14 @@ export default {
                         this.lists = response.data.data;
                         this.meta = response.data.meta;
                         this.links = response.data.links;
+
+                        // Keep details view in sync after edit/save.
+                        if (this.currentView === 'details' && this.selectedEmployee?.id) {
+                            const updatedEmployee = this.lists.find(item => item.id === this.selectedEmployee.id);
+                            if (updatedEmployee) {
+                                this.selectedEmployee = updatedEmployee;
+                            }
+                        }
                     }
                 })
                 .catch(err => console.log(err));
