@@ -36,6 +36,12 @@
                 Approved
               </button>
               <button
+                :class="['tab-btn', { active: activeTab === 'completed' }]"
+                @click="setActiveTab('completed')"
+              >
+                Completed
+              </button>
+              <button
                 :class="['tab-btn', { active: activeTab === 'disapproved' }]"
                 @click="setActiveTab('disapproved')"
               >
@@ -209,7 +215,9 @@ export default {
       if (this.activeTab === 'pending') {
         filtered = this.listPurchaseRequests;
       } else if (this.activeTab === 'approved') {
-        filtered = this.listPurchaseOrders;
+        filtered = this.listPurchaseOrders.filter(order => order.status?.name === 'Approved');
+      } else if (this.activeTab === 'completed') {
+        filtered = this.listPurchaseOrders.filter(order => order.status?.name === 'Completed');
       } else if (this.activeTab === 'disapproved') {
         filtered = this.listPRDisapproved;
       }
@@ -365,6 +373,8 @@ export default {
           return 'No pending purchase request found';
         case 'approved':
           return 'No approved purchase request found';
+        case 'completed':
+          return 'No completed purchase request found';
         case 'disapproved':
           return 'No disapproved purchase request found';
         default:

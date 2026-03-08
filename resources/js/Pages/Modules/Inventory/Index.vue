@@ -52,7 +52,7 @@
               <div v-if="currentView === 'purchaseOrderDetails' && selectedPurchaseOrder"
                 class="purchase-order-details-container">
                 <!-- Your purchase order details component here -->
-                <PurchaseOrderDetails :purchase-order="selectedPurchaseOrder" :dropdowns="dropdowns" @back="backToList"
+                <PurchaseOrderDetails :purchase-order="selectedPurchaseOrder" :dropdowns="dropdowns" :active-tab="activeTab" @back="backToList"
                   @toast="showToast" @fetch="fetchPurchaseOrders" />
               </div>
 

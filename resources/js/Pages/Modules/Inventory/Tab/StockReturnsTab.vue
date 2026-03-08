@@ -33,6 +33,41 @@
               >
             </div>
           </div>
+          
+          <div class="tabs-section">
+            <div class="tabs-wrapper">
+              <button
+                :class="['tab-btn', { active: activeTab === 'all' }]"
+                @click="setActiveTab('all')"
+              >
+                All
+              </button>
+              <button
+                :class="['tab-btn', { active: activeTab === 'pending' }]"
+                @click="setActiveTab('pending')"
+              >
+                Pending
+              </button>
+              <button
+                :class="['tab-btn', { active: activeTab === 'approved' }]"
+                @click="setActiveTab('approved')"
+              >
+                Approved
+              </button>
+              <button
+                :class="['tab-btn', { active: activeTab === 'disapproved' }]"
+                @click="setActiveTab('disapproved')"
+              >
+                Disapproved
+              </button>
+              <button
+                :class="['tab-btn', { active: activeTab === 'completed' }]"
+                @click="setActiveTab('completed')"
+              >
+                Completed
+              </button>
+            </div>
+          </div>
 
           <div class="table-section">
             <div class="table-responsive" style="overflow: visible; max-height: none;">
@@ -52,7 +87,7 @@
                 </thead>
                 <tbody>
                   <tr
-                    v-for="row in listStockReturns"
+                    v-for="row in filteredStockReturns"
                     :key="row.id"
                     @click="openView(row)"
                     :style="[{ cursor: 'pointer' }]"
@@ -94,7 +129,7 @@
                       </button>
                     </td>
                   </tr>
-                  <tr v-if="listStockReturns.length === 0">
+                  <tr v-if="filteredStockReturns.length === 0">
                     <td colspan="9" class="text-center py-4">
                       <i class="ri-inbox-line text-muted" style="font-size: 2rem;"></i>
                       <p class="mt-2 mb-0">No stock returns found</p>
@@ -161,9 +196,21 @@ export default {
   data() {
     return {
       localKeyword: this.filter.keyword || '',
+      activeTab: 'all',
       loadingOrders: false,
       returnableOrders: [],
     };
+  },
+  computed: {
+    filteredStockReturns() {
+      const targetStatus = this.activeTab;
+      if (!targetStatus || targetStatus === 'all') return this.listStockReturns;
+
+      return this.listStockReturns.filter((row) => {
+        const statusName = String(row?.status?.name || '').trim().toLowerCase();
+        return statusName === targetStatus;
+      });
+    },
   },
   watch: {
     'filter.keyword'(newVal) {
@@ -171,6 +218,9 @@ export default {
     },
   },
   methods: {
+    setActiveTab(tab) {
+      this.activeTab = tab;
+    },
     updateKeyword(keyword) {
       this.$emit('update-keyword', keyword);
     },
@@ -307,6 +357,38 @@ export default {
   color: #475569;
   font-size: 11px;
   font-weight: 500;
+}
+
+/* Tabs Section */
+.tabs-section {
+  margin-bottom: 1rem;
+}
+
+.tabs-wrapper {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6c757d;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-btn:hover {
+  color: #2e8b57;
+}
+
+.tab-btn.active {
+  color: #2e8b57;
+  border-bottom-color: #2e8b57;
 }
 
 tbody tr {

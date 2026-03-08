@@ -25,4 +25,9 @@ class PurchaseOrderItem extends Model
     {
         return $this->belongsTo('App\Models\Product', 'product_id');
     }
+
+    public function receivedItems()
+    {
+        return $this->hasMany(ReceivedItem::class, 'po_item_id');
+    }
 }
