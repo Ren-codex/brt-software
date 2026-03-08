@@ -6,7 +6,7 @@
         @click.self="hide"
     >
         <div class="modal-container modal-xl pretty-return-modal" @click.stop>
-            <div class="modal-header pretty-header">
+            <div class="modal-header bg-primary text-white">
                 <div>
                     <h2 class="mb-1">Approve Sales Return</h2>
                     <p class="mb-0 header-subtitle">Review items before confirming this return request.</p>
@@ -215,14 +215,13 @@ export default {
     overflow: hidden;
 }
 
-.pretty-header {
-    background: linear-gradient(135deg, #f7faf9 0%, #eef6f3 100%);
-    border-bottom: 1px solid #dde9e3;
+.header-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
 }
 
-.header-subtitle {
-    color: #5f7169;
-    font-size: 13px;
+.close-btn {
+    color: #fff;
 }
 
 .summary-grid {

@@ -77,4 +77,22 @@ class ExpenseClass
             'info' => "You've successfully deleted the expense"
         ];
     }
+
+    public function approve($id)
+    {
+        $data = Expense::findOrFail($id);
+
+        if ($data->status !== 'approved') {
+            $data->update([
+                'status' => 'approved',
+            ]);
+        }
+
+        return [
+            'data' => new ExpenseResource($data->fresh(['added_by', 'status_info'])),
+            'message' => 'Expense approved successfully!',
+            'info' => "You've successfully approved the expense",
+            'status' => 'success',
+        ];
+    }
 }

@@ -76,4 +76,17 @@ class ExpenseController extends Controller
             'status' => $result['status'],
         ]);
     }
+
+    public function approve($id)
+    {
+        $result = $this->handleTransaction(function () use ($id) {
+            return $this->expense->approve($id);
+        });
+
+        return response()->json([
+            'message' => $result['message'],
+            'status' => $result['status'] ?? 'success',
+            'data' => $result['data'] ?? null,
+        ]);
+    }
 }

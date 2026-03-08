@@ -30,7 +30,7 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive table-card" style="overflow: auto;">
+                <div class="table-responsive table-card" style="overflow: auto;">
                         <table class="table align-middle table-striped table-centered mb-0">
                             <thead class="table-light thead-fixed">
                                 <tr class="fs-11">
@@ -78,6 +78,17 @@
 
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
+                                            <b-button
+                                                @click="approveExpense(list)"
+                                                variant="success"
+                                                v-b-tooltip.hover
+                                                title="Approve"
+                                                size="sm"
+                                                class="btn-icon"
+                                                :disabled="list.status === 'approved'"
+                                            >
+                                                <i class="ri-check-double-line"></i>
+                                            </b-button>
                                             <b-button @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                 <i class="ri-pencil-fill"></i>
                                             </b-button>
@@ -183,6 +194,19 @@ export default {
                     this.$toast.error('Failed to delete expense');
                 });
             }
+        },
+        approveExpense(expense) {
+            if (!expense?.id || expense.status === 'approved') return;
+
+            axios.patch(`/expenses/${expense.id}/approve`)
+                .then((response) => {
+                    this.fetch();
+                    this.$toast.success(response.data?.message || 'Expense approved successfully');
+                })
+                .catch((err) => {
+                    console.log(err);
+                    this.$toast.error('Failed to approve expense');
+                });
         },
 
         selectRow(index) {
