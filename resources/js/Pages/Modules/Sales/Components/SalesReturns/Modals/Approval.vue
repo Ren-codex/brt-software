@@ -151,7 +151,7 @@ export default {
         }
     },
     methods: {
-        show(id, so_number, route, items = []){
+        show(id, so_number, route, items = [], preselectedItemIds = []){
             this.form.reset();
             this.form.clearErrors();
             this.showModal = true;
@@ -159,7 +159,9 @@ export default {
             this.so_number = so_number;
             this.route = route;
             this.items = items;
-            this.selectedItems = items.map(item => item.id);
+            this.selectedItems = preselectedItemIds.length > 0
+                ? preselectedItemIds
+                : items.map(item => item.id);
             this.text_confirm = '';
         },
 

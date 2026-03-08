@@ -298,8 +298,24 @@ class SalesOrderClass
                 );
             }
 
-            // Items not returned remain as loss/damaged (inventory stays deducted)
-            // This is intentional - only approved/selected items get restored
+            // Items not selected for return are recorded as loss/damaged in inventory history.
+            // We add back first then deduct as "loss" so inventory audit shows the loss event.
+            foreach ($itemsNotReturned as $item) {
+                $this->inventoryService->addStock(
+                    $item->product_id,
+                    $item->quantity,
+                    'Sales Return Intake (Loss/Damaged) - SO#' . $data->so_number,
+                    $item->batch_code
+                );
+
+                $this->inventoryService->recordLossOrDamage(
+                    $item->product_id,
+                    $item->quantity,
+                    'Sales Return Loss/Damaged - SO#' . $data->so_number,
+                    $item->batch_code,
+                    'loss'
+                );
+            }
 
             // If all items are being returned, void the entire sales order
             // Otherwise, update the sales order with partial return handling
@@ -495,6 +511,37 @@ class SalesOrderClass
         }
 
         $sales_order->update([ 'status_id' => $status->id]);
+
+        // Persist item-level selection for sales return requests.
+        // This will be used to preselect items during approval.
+        if ($normalizedType === 'sales return') {
+            $selectedItemIds = collect($request->item_ids ?? [])
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->values();
+
+            $orderItemIds = $sales_order->items()->pluck('id');
+
+            DB::table('sales_return_items')
+                ->whereIn('sales_order_item_id', $orderItemIds)
+                ->delete();
+
+            if ($selectedItemIds->isNotEmpty()) {
+                $rows = $selectedItemIds
+                    ->intersect($orderItemIds)
+                    ->map(fn ($itemId) => [
+                        'sales_order_item_id' => $itemId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ])
+                    ->values()
+                    ->all();
+
+                if (!empty($rows)) {
+                    DB::table('sales_return_items')->insert($rows);
+                }
+            }
+        }
 
 
         return [

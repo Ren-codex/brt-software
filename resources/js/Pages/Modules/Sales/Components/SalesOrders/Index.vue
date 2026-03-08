@@ -208,7 +208,7 @@
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <b-button v-if="list.status?.slug == 'for-payment'"
-                                                    @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary"
+                                                    @click.stop="onSalesAdjustment(list)" variant="outline-secondary"
                                                     v-b-tooltip.hover title="Sales Adjustment" size="sm"
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-refund-line"></i>
@@ -309,7 +309,7 @@
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
      <Approval @approve="fetch()" ref="approval"/>
-    <Adjustment @update="fetch()"  ref="adjustment"/>
+    <Adjustment @update="fetch()" :dropdowns="dropdowns" ref="adjustment"/>
 
     
 </template>
@@ -438,9 +438,8 @@ export default {
         },
     
 
-        onSalesAdjustment(id) {
-            let title = "Sales Order";
-            this.$refs.adjustment.show(id, this.isExternal);
+        onSalesAdjustment(data) {
+            this.$refs.adjustment.show(data?.id, this.isExternal, data?.items || []);
         },
 
         selectRow(index) {
