@@ -177,7 +177,7 @@
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
-                                                 <b-button @click.stop="onApprove(list)" variant="outline-info" v-if="list.status.slug == 'sales-order-approval'"
+                                                 <b-button @click.stop="onApprove(list)" variant="outline-success" v-if="list.status?.slug == 'sales-return-approval'"
                                                     v-b-tooltip.hover title="Approve" size="sm"
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-check-line"></i>
@@ -343,7 +343,7 @@ export default {
             this.fetch();
         }, 300),
         fetch(page_url) {
-            page_url = page_url || ('/sales-orders');
+            page_url = page_url || (this.isExternal ? '/sales-orders-external' : '/sales-orders');
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -366,13 +366,13 @@ export default {
 
 
         onPrint(id) {
-            let url = '/sales-orders';
+            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
             window.open(`${url}/${id}?option=print&type=sales_order`);
         },
 
         onApprove(data) {
-            console.log(data);
-            this.$refs.approval.show(data.id, data.so_number, '/sales-orders', data.items);
+            const route = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            this.$refs.approval.show(data.id, data.so_number, route, data.items || []);
         },
     
 
@@ -399,7 +399,7 @@ export default {
         },
 
         fetchMetrics() {
-            axios.get('/sales-orders', {
+            axios.get(this.isExternal ? '/sales-orders-external' : '/sales-orders', {
                 params: {
                     option: 'dashboard'
                 }
@@ -422,7 +422,7 @@ export default {
             };
         },
         fetchStock() {
-            axios.get('/sales-orders', {
+            axios.get(this.isExternal ? '/sales-orders-external' : '/sales-orders', {
                 params: {
                     option: 'stock'
                 }

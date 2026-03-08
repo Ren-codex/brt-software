@@ -78,23 +78,28 @@ class SalesOrderExternalController extends Controller
 
     public function update(SalesOrderRequest $request, $id){
 
-        $result = $this->handleTransaction(function () use ($request) {
+        $result = $this->handleTransaction(function () use ($request, $id) {
                 $action = $request->action ?? 'update';
                 switch($action){
                     case 'update':
+                        $request->merge(['id' => $id]);
                         $request->merge(['is_external' => true]);
                         return $this->sales_order->update($request);
                     break;
                     case 'approve':
-                        return $this->sales_order->approve($request->id);
+                        $request->merge(['id' => $id]);
+                        return $this->sales_order->approve($request->id, $request->item_ids ?? []);
                     break;
                     case 'cancel':
+                        $request->merge(['id' => $id]);
                         return $this->sales_order->cancel($request->id);
                     break;
                     case 'adjustment':
+                        $request->merge(['id' => $id]);
                         return $this->sales_order->adjustment($request);
                     break;
                     default:
+                        $request->merge(['id' => $id]);
                         $request->merge(['is_external' => true]);
                         return $this->sales_order->update($request);
                     break;
