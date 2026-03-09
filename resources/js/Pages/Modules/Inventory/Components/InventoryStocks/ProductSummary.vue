@@ -50,8 +50,21 @@
                         <small class="text-muted">
                           {{ stocksCountByProductId(product.id) }} stock records
                         </small>
+                        <small v-if="isLowStock(product.id)" class="low-stock-text d-block">
+                          <i class="ri-alarm-warning-line"></i>
+                          Low stock
+                        </small>
                       </div>
-                      <span class="qty-badge">
+                      <span
+                        :class="[
+                          'qty-badge',
+                          {
+                            'qty-badge-active': selectedProductId === product.id,
+                            'qty-badge-low': isLowStock(product.id),
+                          },
+                        ]"
+                      >
+                        <span class="qty-label">Available</span>
                         <span class="qty-value">{{ totalQuantityByProductId(product.id) }}</span>
                       </span>
                     </div>
@@ -186,9 +199,7 @@ export default {
     },
     filteredProducts() {
       const keyword = this.productKeyword.trim().toLowerCase();
-      if (!keyword) return this.activeProducts;
-
-      return this.activeProducts.filter((product) => {
+      const filtered = this.activeProducts.filter((product) => {
         const haystack = [
           product.name,
           product.brand?.name,
@@ -201,6 +212,12 @@ export default {
 
         return haystack.includes(keyword);
       });
+
+      if (!keyword) {
+        return [...this.activeProducts].sort((a, b) => Number(this.isLowStock(a.id)) - Number(this.isLowStock(b.id)));
+      }
+
+      return filtered.sort((a, b) => Number(this.isLowStock(a.id)) - Number(this.isLowStock(b.id)));
     },
     selectedProduct() {
       return this.products.find((product) => product.id === this.selectedProductId) || null;
@@ -441,14 +458,18 @@ export default {
 }
 
 .qty-badge {
-  min-width: 36px;
-  padding: 2px 8px;
-  border: 1px solid #dee2e6;
-  border-radius: 999px;
-  background: #f8f9fa;
-  color: #6c757d;
+  min-width: 84px;
+  padding: 6px 10px;
+  border: 1px solid #bfe7cf;
+  border-radius: 10px;
+  background: #e8f7ef;
+  color: #146c43;
   text-align: center;
   line-height: 1.1;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .qty-label {
@@ -460,22 +481,26 @@ export default {
 }
 
 .qty-value {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .qty-badge-active {
-  min-width: 72px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 10px;
-  background: #e8f7ef;
-  color: #146c43;
+  border-color: #0f5132;
+  box-shadow: 0 0 0 2px rgba(20, 108, 67, 0.12);
 }
 
-.qty-badge-active .qty-value {
-  font-size: 18px;
-  font-weight: 800;
+.qty-badge-low {
+  border-color: #f3c2c7;
+  background: #fdecef;
+  color: #9f1239;
+}
+
+.low-stock-text {
+  color: #b42318;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
 }
 
 .status-badge {

@@ -195,6 +195,15 @@ export default {
   computed: {
     filteredAndSortedList() {
       let filtered = this.listPurchaseOrders;
+
+      if (this.activeTab === 'partial') {
+        filtered = filtered.filter(order => {
+          const progress = this.getProgressPercentage(order);
+          return progress > 0 && progress < 100;
+        });
+      } else if (this.activeTab === 'complete') {
+        filtered = filtered.filter(order => this.getProgressPercentage(order) >= 100);
+      }
       
       if (this.selectedStatus) {
         filtered = filtered.filter(order => 

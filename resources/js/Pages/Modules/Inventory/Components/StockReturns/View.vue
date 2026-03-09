@@ -123,19 +123,24 @@
                       <td>{{ item.quantity || 0 }}</td>
                       <td>{{ item.replaced_quantity || 0 }}</td>
                       <td>{{ item.loss_quantity || 0 }}</td>
-                      <td>{{ item.status?.name || 'Pending' }}</td>
+                      <td>
+                        <span :style="getStatusStyle(item.status)" class="status-badge">
+                          {{ item.status?.name || 'Pending' }}
+                        </span>
+                      </td>
                       <td>{{ item.remarks || '' }}</td>
                       <td>{{ item.received_by?.fullname || '-' }}</td>
                       <td v-if="data.status.slug == 'approved' && Number(item.returned_quantity || 0) < Number(item.quantity || 0)">
-                        <button
-                          class="btn btn-sm btn-cancel"
-                          @click="receivedReturnItem(item)"
-                          v-b-tooltip.hover
-                          title="Receive Return Item"
-                        >
-                          <i class="ri-add-line"></i>
-                          Receive
-                        </button>
+                        <div class="action-buttons">
+                          <button
+                            class="action-btn action-btn-receive"
+                            @click="receivedReturnItem(item)"
+                            v-b-tooltip.hover
+                            title="Receive Return Item"
+                          >
+                            Receive Stock
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     <tr v-if="!(data.items || []).length">
@@ -177,76 +182,24 @@
     </div>
   </div>
 
-  <div v-if="showReceiveModal" class="modal-overlay active" @click.self="onReceiveCancel">
-    <div class="modal-container modal-lg">
-      <div class="modal-header">
-        <h2>Receive Return Item</h2>
-        <button class="close-btn" @click="onReceiveCancel">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group mb-3">
-          <label class="form-label">Product</label>
-          <input type="text" class="form-control" :value="selectedReturnItemName" disabled>
-        </div>
-
-        <div class="form-group mb-3">
-          <label class="form-label" for="replaced-qty">Replacement Quantity</label>
-          <input
-            id="replaced-qty"
-            v-model.number="receiveForm.replaced_quantity"
-            type="number"
-            min="0"
-            :max="Number(selectedReturnItem?.quantity || 0)"
-            class="form-control"
-            placeholder="Enter replacement quantity"
-          >
-          <small class="text-muted">Returned Qty: {{ Number(selectedReturnItem?.quantity || 0) }}</small>
-        </div>
-
-        <div class="form-group mb-3">
-          <label class="form-label" for="loss-qty">Loss Quantity</label>
-          <input
-            id="loss-qty"
-            v-model.number="receiveForm.loss_quantity"
-            type="number"
-            min="0"
-            :max="Number(selectedReturnItem?.quantity || 0)"
-            class="form-control"
-            placeholder="Enter loss quantity"
-          >
-          <small class="text-muted">
-            Total processed: {{ Number(receiveForm.replaced_quantity || 0) + Number(receiveForm.loss_quantity || 0) }}
-          </small>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="receive-remarks">Remarks</label>
-          <textarea
-            id="receive-remarks"
-            v-model="receiveForm.remarks"
-            class="form-control textarea-control"
-            rows="3"
-            placeholder="Enter remarks"
-          ></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn btn-cancel" @click="onReceiveCancel" :disabled="receiving">Cancel</button>
-          <button class="btn btn-save" @click="saveReceivedReturnItem" :disabled="receiving">
-            {{ receiving ? 'Saving...' : 'Save' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <ReceiveReturnItemModal
+    :show="showReceiveModal"
+    :selected-return-item="selectedReturnItem"
+    :receive-form="receiveForm"
+    :receiving="receiving"
+    @close="onReceiveCancel"
+    @save="saveReceivedReturnItem"
+    @update-receive-form="updateReceiveForm"
+  />
 </template>
 
 <script>
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
+import ReceiveReturnItemModal from '../../Modal/ReceiveReturnItemModal.vue';
 
 export default {
   name: 'StockReturnDetails',
-  components: { TransactionLogs },
+  components: { TransactionLogs, ReceiveReturnItemModal },
   emits: ['back', 'toast', 'refresh'],
   props: {
     stockReturn: Object,
@@ -261,7 +214,6 @@ export default {
       selectedReturnItem: null,
       receiveForm: {
         replaced_quantity: 0,
-        loss_quantity: 0,
         remarks: '',
       },
     };
@@ -295,9 +247,6 @@ export default {
         actioned_by: log.actioned_by || log.user?.fullname || 'System',
       }));
     },
-    selectedReturnItemName() {
-      return this.selectedReturnItem?.purchase_order_item?.product?.name || 'N/A';
-    },
   },
   methods: {
     formatDate(dateValue) {
@@ -327,7 +276,6 @@ export default {
 
       this.selectedReturnItem = item;
       this.receiveForm.replaced_quantity = Number(item.replaced_quantity || item.returned_quantity || 0);
-      this.receiveForm.loss_quantity = Number(item.loss_quantity || 0);
       this.receiveForm.remarks = item.remarks || '';
       this.showReceiveModal = true;
     },
@@ -337,8 +285,13 @@ export default {
       this.selectedReturnItem = null;
       this.receiveForm = {
         replaced_quantity: 0,
-        loss_quantity: 0,
         remarks: '',
+      };
+    },
+    updateReceiveForm(patch) {
+      this.receiveForm = {
+        ...this.receiveForm,
+        ...patch,
       };
     },
     async saveReceivedReturnItem() {
@@ -346,17 +299,14 @@ export default {
 
       const maxQty = Number(this.selectedReturnItem.quantity || 0);
       const replacedQty = Number(this.receiveForm.replaced_quantity || 0);
-      const lossQty = Number(this.receiveForm.loss_quantity || 0);
-      const totalQty = replacedQty + lossQty;
+      const totalQty = replacedQty;
       if (
         Number.isNaN(replacedQty)
-        || Number.isNaN(lossQty)
         || replacedQty < 0
-        || lossQty < 0
         || totalQty < 0
         || totalQty > maxQty
       ) {
-        this.$emit('toast', `Replacement + Loss quantity must be between 0 and ${maxQty}`);
+        this.$emit('toast', `Replacement quantity must be between 0 and ${maxQty}`);
         return;
       }
 
@@ -366,7 +316,7 @@ export default {
           `/stock-returns/${this.data.id}/items/${this.selectedReturnItem.id}/receive`,
           {
             replaced_quantity: replacedQty,
-            loss_quantity: lossQty,
+            loss_quantity: 0,
             remarks: this.receiveForm.remarks,
           },
         );
@@ -433,12 +383,44 @@ export default {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  background: #e8f5e8;
-  color: #1f7a1f;
+  border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  min-width: 120px;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn-receive {
+  background-color: #2e7d32;
+  color: #e8f5e8;
+  width: 80%;
+}
+
+.action-btn-receive:hover {
+  background-color: #c8e6c9;
+  transform: translateY(-2px);
 }
 
 .quick-summary-grid {
@@ -483,19 +465,18 @@ export default {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
 }
 
 .modal-header {
-  padding: 1rem 1.25rem;
+  padding: 0.875rem 1.25rem;
   border-bottom: 1px solid #e9ecef;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
+.modal-header .header-title {
+  color: #1e293b;
 }
 
 .close-btn {
@@ -508,6 +489,16 @@ export default {
 
 .modal-body {
   padding: 1.25rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  flex-shrink: 0;
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid #e9ecef;
+  background: #fff;
 }
 
 .textarea-control {
