@@ -268,6 +268,18 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            20 =>
+            array (
+                'id' => 21,
+                'name' => 'Released',
+                'slug' => 'released',
+                'description' => 'Released status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#0d6efd',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
 
         

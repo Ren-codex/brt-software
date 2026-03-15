@@ -9,7 +9,7 @@
                     <span class="stat-label">{{ stat.label }}</span>
                     <div class="stat-value-wrapper">
                         <span class="stat-value">{{ stat.showCurrency ? '&#8369;' : '' }}{{ formatNumber(stat.value) }}</span>
-                        <span class="stat-trend" :class="stat.trendClass">
+                        <span v-if="stat.trend" class="stat-trend" :class="stat.trendClass">
                             <i :class="stat.trendIcon"></i> {{ stat.trend }}
                         </span>
                     </div>
@@ -123,10 +123,10 @@
                             <td><span class="receipt-num">#{{ t.receipt_number }}</span></td>
                             <td>{{ t.customer_name }}</td>
                             <td>{{ t.date }}</td>
-                            <td>{{ t.items_count || 3 }} items</td>
+                            <td>{{ t.items_count || 0 }} items</td>
                             <td class="fw-semibold">&#8369;{{ formatNumber(t.amount) }}</td>
                             <td><span class="payment-badge">{{ t.payment_method }}</span></td>
-                            <td><span class="status-badge completed">Completed</span></td>
+                            <td><span class="status-badge completed">{{ t.status || 'Completed' }}</span></td>
                         </tr>
                     </tbody>
                 </table>
