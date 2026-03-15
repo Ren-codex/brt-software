@@ -11,6 +11,12 @@
     "file": "assets/marker-icon-hN30_KVU.png",
     "src": "node_modules/leaflet/dist/images/marker-icon.png"
   },
+  "node_modules/vue3-apexcharts/dist/apexcharts.ssr.esm-fe46cd2d.js": {
+    "file": "assets/apexcharts.ssr.esm-fe46cd2d-9CakV-nF.js",
+    "name": "apexcharts.ssr.esm-fe46cd2d",
+    "src": "node_modules/vue3-apexcharts/dist/apexcharts.ssr.esm-fe46cd2d.js",
+    "isDynamicEntry": true
+  },
   "public/fonts/boxicons.eot": {
     "file": "assets/boxicons-CSrLvhY_.eot",
     "src": "public/fonts/boxicons.eot"
@@ -200,12 +206,16 @@
     "src": "public/images/sidebar/img-4.jpg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-QQ3UNtGt.js",
+    "file": "assets/app-C5Nn6C6B.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
+    "dynamicImports": [
+      "node_modules/vue3-apexcharts/dist/apexcharts.ssr.esm-fe46cd2d.js",
+      "node_modules/vue3-apexcharts/dist/apexcharts.ssr.esm-fe46cd2d.js"
+    ],
     "css": [
-      "assets/app-BMZ6ESlp.css"
+      "assets/app-7iiPduzR.css"
     ],
     "assets": [
       "assets/logo-sm-C9p9en_o.png",
