@@ -81,7 +81,7 @@
                                             <input type="number" v-model="item.quantity" class="form-control"
                                                 :class="{ 'input-error': form.errors[`items.${index}.quantity`] }"
                                                 @input="calculateTotal(item); handleInput(`items.${index}.quantity`)"
-                                                step="1" min="0" required @change="validateQuantity(item)">
+                                                step="1" min="0" :max="MAX_QUANTITY" required @change="validateQuantity(item)">
                                             <button type="button" class="qty-btn"
                                                 @click="adjustQuantity(item, 'increase')">
                                                 <i class="ri-add-line"></i>
@@ -94,7 +94,7 @@
                                         <input type="number" v-model="item.unit_cost" class="form-control"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
                                             @input="calculateTotal(item); handleInput(`items.${index}.unit_cost`)"
-                                            step="1" min="0" required>
+                                            step="0.01" min="0" :max="MAX_UNIT_COST" required>
                                         <!-- <Amount @amount="amount(index, $event)"
                                             ref="amountComponent"
                                             :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
@@ -154,6 +154,10 @@
                             </div>
                         </div>
                     </div>
+                    <div class="error-banner" v-if="submitError">
+                        <i class="ri-error-warning-line"></i>
+                        <span>{{ submitError }}</span>
+                    </div>
                       <div class="success-alert" v-if="saveSuccess">
                     <i class="ri-checkbox-circle-fill"></i>
                     <span>Purchase order has been {{ editable ? 'updated' : 'created' }} successfully.</span>
@@ -189,6 +193,9 @@ export default {
     emits: ['add'],
     data() {
         return {
+            MAX_ITEM_TOTAL: 9999999999999.99,
+            MAX_UNIT_COST: 99999999.99,
+            MAX_QUANTITY: 2147483647,
             form: useForm({
                 id: null,
                 supplier_id: null,
@@ -198,6 +205,7 @@ export default {
             showModal: false,
             editable: false,
             saveSuccess: false,
+            submitError: '',
         };
     },
     computed: {
@@ -216,6 +224,7 @@ export default {
         show() {
             this.form.reset();
             this.form.clearErrors();
+            this.submitError = '';
 
             this.form.items = [
                 {
@@ -235,6 +244,7 @@ export default {
             this.form.clearErrors();
             this.form.id = data.id;
             this.form.supplier_id = data.supplier ? data.supplier.id : null;
+            this.submitError = '';
             this.form.items = data.items ? data.items.map(item => ({
                 product_id: item.product.id,
                 quantity: item.quantity,
@@ -250,39 +260,91 @@ export default {
 
         submit() {
             this.form.total_amount = this.totalAmount;
+            this.submitError = '';
+
+            if (!this.form.supplier_id) {
+                this.submitError = 'Please select a supplier.';
+                return;
+            }
 
             const formattedItems = this.form.items.map(item => ({
                 product_id: item.product_id,
                 quantity: parseInt(item.quantity) || 0,
-                unit_cost: parseInt(item.unit_cost) || 0,
-                total_cost: parseFloat(item.total_cost) || 0,
+                unit_cost: parseFloat(item.unit_cost) || 0,
+                total_cost: this.roundTo2((parseInt(item.quantity) || 0) * (parseFloat(item.unit_cost) || 0)),
             }));
+
+            const hasInvalidItem = formattedItems.some((item) => {
+                return !item.product_id
+                    || item.quantity <= 0
+                    || item.quantity > this.MAX_QUANTITY
+                    || item.unit_cost < 0
+                    || item.unit_cost > this.MAX_UNIT_COST
+                    || item.total_cost > this.MAX_ITEM_TOTAL;
+            });
+
+            if (hasInvalidItem) {
+                this.submitError = `Each item must have a product, quantity 1-${this.MAX_QUANTITY}, unit cost 0-${this.MAX_UNIT_COST.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and total not above ${this.MAX_ITEM_TOTAL.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`;
+                return;
+            }
 
             this.form.items = formattedItems;
 
             if (this.editable) {
                 this.form.put(`/purchase-orders/${this.form.id}`, {
                     preserveScroll: true,
-                    onSuccess: (response) => {
+                    onSuccess: () => {
+                        const flashStatus = this.$page?.props?.flash?.status;
+                        const flashMessage = this.$page?.props?.flash?.message;
+                        const flashInfo = this.$page?.props?.flash?.info;
+
+                        if (flashStatus === false) {
+                            this.saveSuccess = false;
+                            this.submitError = flashInfo || flashMessage || 'Purchase request was not saved. Please try again.';
+                            return;
+                        }
+
                         this.saveSuccess = true;
+                        this.submitError = '';
                         setTimeout(() => {
                             this.$emit('add', true);
                             this.form.reset();
                             this.hide();
                         }, 1500);
                     },
+                    onError: () => {
+                        this.saveSuccess = false;
+                        const firstError = Object.values(this.form.errors || {}).flat()[0];
+                        this.submitError = firstError || 'Failed to update purchase request. Please check the form and try again.';
+                    }
                 });
             } else {
                 this.form.post('/purchase-orders', {
                     preserveScroll: true,
-                    onSuccess: (response) => {
+                    onSuccess: () => {
+                        const flashStatus = this.$page?.props?.flash?.status;
+                        const flashMessage = this.$page?.props?.flash?.message;
+                        const flashInfo = this.$page?.props?.flash?.info;
+
+                        if (flashStatus === false) {
+                            this.saveSuccess = false;
+                            this.submitError = flashInfo || flashMessage || 'Purchase request was not saved. Please try again.';
+                            return;
+                        }
+
                         this.saveSuccess = true;
+                        this.submitError = '';
                         setTimeout(() => {
                             this.$emit('add', true);
                             this.form.reset();
                             this.hide();
                         }, 1500);
                     },
+                    onError: () => {
+                        this.saveSuccess = false;
+                        const firstError = Object.values(this.form.errors || {}).flat()[0];
+                        this.submitError = firstError || 'Failed to create purchase request. Please check the form and try again.';
+                    }
                 });
             }
         },
@@ -296,6 +358,7 @@ export default {
             this.form.clearErrors();
             this.editable = false;
             this.saveSuccess = false;
+            this.submitError = '';
             this.showModal = false;
         },
 
@@ -335,9 +398,9 @@ export default {
         },
 
         calculateTotal(item) {
-            const quantity = parseFloat(item.quantity) || 0;
+            const quantity = parseInt(item.quantity) || 0;
             const unitCost = parseFloat(item.unit_cost) || 0;
-            item.total_cost = quantity * unitCost;
+            item.total_cost = this.roundTo2(quantity * unitCost);
         },
 
         adjustQuantity(item, action) {
@@ -357,6 +420,10 @@ export default {
                 item.quantity = 0;
                 this.calculateTotal(item);
             }
+            if ((parseInt(item.quantity) || 0) > this.MAX_QUANTITY) {
+                item.quantity = this.MAX_QUANTITY;
+                this.calculateTotal(item);
+            }
         },
 
         // FIXED: Update unit cost method
@@ -372,6 +439,9 @@ export default {
             console.log(value);
 
             return parseFloat(cleaned);
+        },
+        roundTo2(value) {
+            return Math.round(((Number(value) || 0) + Number.EPSILON) * 100) / 100;
         },
 
         // FIXED: Format currency method
@@ -553,6 +623,20 @@ export default {
     margin-top: 0.375rem;
     font-size: 0.8125rem;
     color: #e74c3c;
+}
+
+.error-banner {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+    padding: 0.625rem 0.875rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
 }
 
 /* Success Alert */

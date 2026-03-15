@@ -22,13 +22,23 @@ class PurchaseOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'total_amount' => 'required|numeric|min:0',
+            'total_amount' => 'required|numeric|min:0|max:9999999999999.99',
             'supplier_id' => 'required|exists:list_suppliers,id',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.unit_cost' => 'required|numeric|min:0',
-            'items.*.total_cost' => 'required|numeric|min:0',
+            'items.*.quantity' => 'required|integer|min:1|max:2147483647',
+            'items.*.unit_cost' => 'required|numeric|min:0|max:99999999.99',
+            'items.*.total_cost' => 'required|numeric|min:0|max:9999999999999.99',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'items.*.quantity.max' => 'Quantity is too large.',
+            'items.*.unit_cost.max' => 'Unit cost must not exceed 99,999,999.99.',
+            'items.*.total_cost.max' => 'Total cost per item must not exceed 9,999,999,999,999.99.',
+            'total_amount.max' => 'Total amount is too large.',
         ];
     }
 }

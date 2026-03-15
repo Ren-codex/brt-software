@@ -78,7 +78,13 @@
                       <div class="input-wrapper">
                         <span class="currency-symbol">₱</span>
                         <input type="number" v-model="item.retail_price" class="form-control modern-input with-currency"
-                          :min="0" step="0.01" :disabled="item.status !== 'pending'" placeholder="0.00" />
+                          :class="{ 'error': shouldShowRetailPriceError(item) }"
+                          @input="markFieldTouched(item, 'retail_price')" @blur="markFieldTouched(item, 'retail_price')"
+                          :min="item.unit_cost || 0" step="0.01" :disabled="item.status !== 'pending'"
+                          placeholder="0.00" />
+                        <div v-if="shouldShowRetailPriceError(item)" class="field-error">
+                          {{ getRetailPriceError(item) }}
+                        </div>
                       </div>
                     </td>
 
@@ -87,8 +93,13 @@
                       <div class="input-wrapper">
                         <span class="currency-symbol">₱</span>
                         <input type="number" v-model="item.wholesale_price"
-                          class="form-control modern-input with-currency" :min="0" step="0.01"
+                          :class="{ 'error': shouldShowWholesalePriceError(item) }"
+                          @input="markFieldTouched(item, 'wholesale_price')" @blur="markFieldTouched(item, 'wholesale_price')"
+                          class="form-control modern-input with-currency" :min="item.retail_price || 0" step="0.01"
                           :disabled="item.status !== 'pending'" placeholder="0.00" />
+                        <div v-if="shouldShowWholesalePriceError(item)" class="field-error">
+                          {{ getWholesalePriceError(item) }}
+                        </div>
                       </div>
                     </td>
 
@@ -155,9 +166,60 @@ export default {
       },
       errorMessage: '',
       purchaseOrder: [],
+      submitAttempted: false,
     };
   },
   methods: {
+    toNumber(value) {
+      if (value === null || value === undefined || value === '') return null;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    },
+    getProductName(item) {
+      return item?.product?.name || item?.product_name || 'N/A';
+    },
+    markFieldTouched(item, field) {
+      if (!item._touched) item._touched = {};
+      item._touched[field] = true;
+    },
+    shouldShowRetailPriceError(item) {
+      const touched = !!item?._touched?.retail_price;
+      return !!this.getRetailPriceError(item) && (touched || this.submitAttempted);
+    },
+    shouldShowWholesalePriceError(item) {
+      const touched = !!item?._touched?.wholesale_price;
+      return !!this.getWholesalePriceError(item) && (touched || this.submitAttempted);
+    },
+    getRetailPriceError(item) {
+      if (item.status !== 'pending') return '';
+
+      const toReceive = this.toNumber(item.to_received_quantity) ?? 0;
+      const retailPrice = this.toNumber(item.retail_price);
+      const unitCost = this.toNumber(item.unit_cost) ?? 0;
+
+      if (toReceive > 0 && retailPrice === null) return 'Required when To Receive > 0';
+      if (retailPrice !== null && retailPrice < 0) return 'Must be 0 or greater';
+      if (toReceive > 0 && retailPrice !== null && retailPrice < unitCost) {
+        return `Must be at least ${this.formatCurrency(unitCost)}`;
+      }
+
+      return '';
+    },
+    getWholesalePriceError(item) {
+      if (item.status !== 'pending') return '';
+
+      const toReceive = this.toNumber(item.to_received_quantity) ?? 0;
+      const wholesalePrice = this.toNumber(item.wholesale_price);
+      const retailPrice = this.toNumber(item.retail_price);
+
+      if (toReceive > 0 && wholesalePrice === null) return 'Required when To Receive > 0';
+      if (wholesalePrice !== null && wholesalePrice < 0) return 'Must be 0 or greater';
+      if (toReceive > 0 && retailPrice !== null && wholesalePrice !== null && wholesalePrice < retailPrice) {
+        return `Must be at least ${this.formatCurrency(retailPrice)}`;
+      }
+
+      return '';
+    },
     async show(data) {
       this.purchaseOrder = data;
       this.form.po_id = this.purchaseOrder.id;
@@ -174,6 +236,10 @@ export default {
           wholesale_price: 0,
           expiration_date: null,
           has_expiry: false,
+          _touched: {
+            retail_price: false,
+            wholesale_price: false,
+          },
         }));
 
 
@@ -186,13 +252,58 @@ export default {
         items: [],
       };
       this.errorMessage = '';
+      this.submitAttempted = false;
     },
     async handleSubmit() {
+      this.submitAttempted = true;
       // Validate to_received_quantity does not exceed quantity - received_quantity
       for (const item of this.form.items) {
         const maxAllowed = item.quantity - item.received_quantity;
-        if (item.to_received_quantity > maxAllowed) {
-          this.errorMessage = `To receive quantity for ${item.product ? item.product.brand.name : 'N/A'}, must not exceed ${maxAllowed}.`;
+        const toReceive = this.toNumber(item.to_received_quantity) ?? 0;
+        const unitCost = this.toNumber(item.unit_cost) ?? 0;
+        const retailPrice = this.toNumber(item.retail_price);
+        const wholesalePrice = this.toNumber(item.wholesale_price);
+        const productName = this.getProductName(item);
+
+        if (toReceive > maxAllowed) {
+          this.errorMessage = `To receive quantity for ${productName} must not exceed ${maxAllowed}.`;
+          return; // Prevent submission
+        }
+
+        if (toReceive < 0) {
+          this.errorMessage = `To receive quantity for ${productName} must be 0 or greater.`;
+          return; // Prevent submission
+        }
+
+        if (toReceive > 0) {
+          if (retailPrice === null) {
+            this.errorMessage = `Retail price is required for ${productName} when "To Receive" has a value.`;
+            return;
+          }
+
+          if (wholesalePrice === null) {
+            this.errorMessage = `Wholesale price is required for ${productName} when "To Receive" has a value.`;
+            return;
+          }
+
+          if (retailPrice < unitCost) {
+            this.errorMessage = `Retail price for ${productName} must not be less than unit cost (${this.formatCurrency(unitCost)}).`;
+            return;
+          }
+
+          if (wholesalePrice < retailPrice) {
+            this.errorMessage = `Wholesale price for ${productName} must not be less than retail price (${this.formatCurrency(retailPrice)}).`;
+            return;
+          }
+        }
+
+        if (retailPrice !== null && retailPrice < 0) {
+          this.errorMessage = `Retail price for ${productName} must be 0 or greater.`;
+          return;
+        }
+
+        if (wholesalePrice !== null && wholesalePrice < 0) {
+          this.errorMessage = `Wholesale price for ${productName} must be 0 or greater.`;
           return; // Prevent submission
         }
       }
@@ -437,6 +548,13 @@ export default {
   font-size: 0.6rem;
   color: #ef4444;
   white-space: nowrap;
+}
+
+.field-error {
+  margin-top: 0.25rem;
+  font-size: 0.65rem;
+  color: #ef4444;
+  line-height: 1.2;
 }
 
 /* Expiry Cell */

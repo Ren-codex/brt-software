@@ -131,6 +131,55 @@
             </div>
           </div>
         </div>
+
+        <div class="row" v-if="activeTab === 'purchaseOrders'">
+          <div class="col-lg-12 mb-4">
+            <div class="library-card">
+              <div class="library-card-header">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="header-icon">
+                    <i class="ri-barcode-box-line"></i>
+                  </div>
+                  <div>
+                    <h4 class="header-title mb-1">Batches</h4>
+                    <p class="header-subtitle mb-0">Batch records for this purchase order</p>
+                  </div>
+                </div>
+              </div>
+              <div class="library-card-body">
+                <div class="table-section">
+                  <div class="table-responsive">
+                    <table class="table align-middle table-centered mb-0">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Batch Code</th>
+                          <th>Date Received</th>
+                          <th>Product</th>
+                          <th>Received Qty</th>
+                          <th>Current Qty</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(batch, index) in batchRows" :key="`${batch.batch_code}-${batch.product_id}-${index}`">
+                          <td>{{ index + 1 }}</td>
+                          <td><strong>{{ batch.batch_code }}</strong></td>
+                          <td>{{ formatDate(batch.received_date) || 'N/A' }}</td>
+                          <td>{{ batch.product_name || 'N/A' }}</td>
+                          <td>{{ Math.floor(batch.received_quantity || 0) }}</td>
+                          <td>{{ Math.floor(batch.quantity || 0) }}</td>
+                        </tr>
+                        <tr v-if="batchRows.length === 0">
+                          <td colspan="6" class="text-center py-3 text-muted">No batches yet</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="col-sm-4">
         <TransactionLogs :logs="purchaseOrder.logs" :compact="true" :initial-visible="5" :logs-per-page="5" />
@@ -182,6 +231,10 @@ export default {
   props: {
     purchaseOrder: Object,
     dropdowns: Object,
+    activeTab: {
+      type: String,
+      default: '',
+    },
   },
   emits: ['back', 'toast', 'fetch'],
   data() {
@@ -197,6 +250,17 @@ export default {
       const roles = this.$page.props.roles;
       const userRoles = roles ? Object.values(roles) : [];
       return userRoles.some(role => ['Inventory Manager', 'Top Management', 'Administrator'].includes(role));
+    },
+    batchRows() {
+      if (!this.purchaseOrder?.items?.length) return [];
+
+      return this.purchaseOrder.items.flatMap((item) => {
+        return (item.batches || []).map((batch) => ({
+          ...batch,
+          product_id: item.product?.id || item.product_id || null,
+          product_name: item.product?.brand?.name || item.product?.name || 'N/A',
+        }));
+      });
     }
   },
   methods: {

@@ -24,13 +24,28 @@ class PurchaseOrderClass
 
     public function list($request)
     {
-        $data = PurchaseOrder::paginate($request->count ?? 10);
+        $data = PurchaseOrder::with([
+            'status',
+            'supplier',
+            'approved_by',
+            'items.product',
+            'items.receivedItems.inventoryStocks',
+            'items.receivedItems.receivedStock',
+        ])->paginate($request->count ?? 10);
         return PurchaseOrderResource::collection($data);
     }
 
     public function view($id)
     {
-        $data = PurchaseOrder::findOrFail($id);
+        $data = PurchaseOrder::with([
+            'status',
+            'supplier',
+            'approved_by',
+            'items.product',
+            'items.receivedItems.inventoryStocks',
+            'items.receivedItems.receivedStock',
+            'logs',
+        ])->findOrFail($id);
         return new PurchaseOrderResource($data);
     }
 
