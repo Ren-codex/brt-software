@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\InventoryStocks;
 use App\Models\PurchaseOrder;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 
 class DashboardController extends Controller
@@ -31,53 +32,102 @@ class DashboardController extends Controller
         // Calculate date range based on filter
         $dateRange = $this->getDateRange($filter, $selectedDate);
         
-        // Sales Statistics with date filter
-        $totalSales = SalesOrder::whereBetween('order_date', [$dateRange['start'], $dateRange['end']])->sum('total_amount');
-        $totalReceipts = Receipt::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
-        $totalOutstanding = ArInvoice::sum('balance_due');
-        $totalCustomers = SalesOrder::distinct('customer_id')->count('customer_id');
+        // Sales dashboard uses liquidated remittances with realized margin-based revenue.
+        $successfulSalesOrders = DB::table('sales_orders as so')
+            ->join('ar_invoices as ai', 'so.id', '=', 'ai.sales_order_id')
+            ->join('receipts as r', 'ai.id', '=', 'r.ar_invoice_id')
+            ->join('remittances as rem', 'r.remittance_id', '=', 'rem.id')
+            ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+            ->where('rem_status.slug', 'liquidated')
+            ->whereBetween('rem.remittance_date', [$dateRange['start'], $dateRange['end']])
+            ->distinct()
+            ->select('so.id');
 
-        // Monthly sales data for chart (last 12 months) - filtered by same date range
+        $revenueBaseQuery = DB::table('sales_order_items as soi')
+            ->join('sales_orders as so', 'soi.sales_order_id', '=', 'so.id')
+            ->join('products as p', 'soi.product_id', '=', 'p.id')
+            ->join('list_brands as lb', 'p.brand_id', '=', 'lb.id')
+            ->join('list_units as lu', 'p.unit_id', '=', 'lu.id')
+            ->join('inventory_stocks as inv', 'soi.batch_code', '=', 'inv.batch_code')
+            ->join('received_items as ri', function ($join) {
+                $join->on('inv.received_item_id', '=', 'ri.id')
+                    ->on('soi.product_id', '=', 'ri.product_id');
+            })
+            ->whereIn('so.id', $successfulSalesOrders);
+
+        $totalSales = (float) (clone $revenueBaseQuery)
+            ->selectRaw('COALESCE(SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity), 0) as total_revenue')
+            ->value('total_revenue');
+
+        $totalReceipts = Receipt::query()
+            ->join('remittances as rem', 'receipts.remittance_id', '=', 'rem.id')
+            ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+            ->where('rem_status.slug', 'liquidated')
+            ->whereBetween('rem.remittance_date', [$dateRange['start'], $dateRange['end']])
+            ->distinct('receipts.id')
+            ->count('receipts.id');
+
+        $totalOutstanding = ArInvoice::sum('balance_due');
+        $totalCustomers = Receipt::query()
+            ->join('remittances as rem', 'receipts.remittance_id', '=', 'rem.id')
+            ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+            ->where('rem_status.slug', 'liquidated')
+            ->whereBetween('rem.remittance_date', [$dateRange['start'], $dateRange['end']])
+            ->whereNotNull('receipts.customer_id')
+            ->distinct('receipts.customer_id')
+            ->count('receipts.customer_id');
+        $avgOrderValue = $totalReceipts > 0 ? round($totalSales / $totalReceipts, 2) : 0;
+
+        // Monthly realized revenue for the last 12 months from liquidated remittances.
         $monthlySales = [];
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $month = $date->format('M Y');
-            $sales = SalesOrder::whereYear('order_date', $date->year)
-                              ->whereMonth('order_date', $date->month)
-                              ->sum('total_amount');
+            $monthlySuccessfulSalesOrders = DB::table('sales_orders as so')
+                ->join('ar_invoices as ai', 'so.id', '=', 'ai.sales_order_id')
+                ->join('receipts as r', 'ai.id', '=', 'r.ar_invoice_id')
+                ->join('remittances as rem', 'r.remittance_id', '=', 'rem.id')
+                ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+                ->where('rem_status.slug', 'liquidated')
+                ->whereYear('rem.remittance_date', $date->year)
+                ->whereMonth('rem.remittance_date', $date->month)
+                ->distinct()
+                ->select('so.id');
+
+            $sales = (float) (clone $revenueBaseQuery)
+                ->whereIn('so.id', $monthlySuccessfulSalesOrders)
+                ->selectRaw('COALESCE(SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity), 0) as total_revenue')
+                ->value('total_revenue');
             $monthlySales[] = [
                 'month' => $month,
                 'sales' => (float) $sales
             ];
         }
 
-        // Payment methods distribution with date filter
-        $paymentMethods = SalesOrder::whereBetween('order_date', [$dateRange['start'], $dateRange['end']])
-                                ->selectRaw('payment_mode, SUM(total_amount) as total')
-                                ->groupBy('payment_mode')
-                                ->get()
-                                ->map(function ($item) {
-                                    return [
-                                        'method' => $item->payment_mode ?: 'Cash',
-                                        'total' => (float) $item->total
-                                    ];
-                                });
+        $paymentMethods = Receipt::query()
+            ->join('remittances as rem', 'receipts.remittance_id', '=', 'rem.id')
+            ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+            ->where('rem_status.slug', 'liquidated')
+            ->whereBetween('rem.remittance_date', [$dateRange['start'], $dateRange['end']])
+            ->selectRaw('COALESCE(receipts.payment_mode, "Cash") as method, SUM(receipts.amount_paid) as total')
+            ->groupBy('method')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'method' => $item->method ?: 'Cash',
+                    'total' => (float) $item->total
+                ];
+            });
 
-        // Top Selling Products with date filter
-        $topProductsQuery = \DB::table('sales_order_items')
-            ->join('sales_orders', 'sales_order_items.sales_order_id', '=', 'sales_orders.id')
-            ->join('products', 'sales_order_items.product_id', '=', 'products.id')
-            ->join('list_brands', 'products.brand_id', '=', 'list_brands.id')
-            ->join('list_units', 'products.unit_id', '=', 'list_units.id')
+        $topProductsQuery = (clone $revenueBaseQuery)
             ->select(
-                'products.id',
-                \DB::raw('CONCAT(products.pack_size, " ", list_units.name, " ", list_brands.name) as name'),
-                \DB::raw('list_brands.name as brand'),
-                \DB::raw('SUM(sales_order_items.quantity) as quantity_sold'),
-                \DB::raw('SUM(sales_order_items.price * sales_order_items.quantity) as revenue')
+                'p.id',
+                DB::raw('CONCAT(p.pack_size, " ", lu.name, " ", lb.name) as name'),
+                DB::raw('lb.name as brand'),
+                DB::raw('SUM(soi.quantity) as quantity_sold'),
+                DB::raw('SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity) as revenue')
             )
-            ->whereBetween('sales_orders.order_date', [$dateRange['start'], $dateRange['end']])
-            ->groupBy('products.id', 'products.pack_size', 'list_units.name', 'list_brands.name')
+            ->groupBy('p.id', 'p.pack_size', 'lu.name', 'lb.name')
             ->orderByDesc('quantity_sold')
             ->limit(10)
             ->get();
@@ -95,23 +145,32 @@ class DashboardController extends Controller
             ];
         });
 
-        // Recent Transactions
-        $recentTransactions = SalesOrder::with('customer')
-                                ->whereBetween('order_date', [$dateRange['start'], $dateRange['end']])
-                                ->orderBy('order_date', 'desc')
-                                ->orderBy('id', 'desc')
-                                ->limit(5)
-                                ->get()
-                                ->map(function ($item) {
-                                    return [
-                                        'id' => $item->id,
-                                        'receipt_number' => 'SO-' . str_pad($item->id, 5, '0', STR_PAD_LEFT),
-                                        'customer_name' => $item->customer->name ?? 'Walk-in Customer',
-                                        'date' => $item->order_date,
-                                        'amount' => (float) $item->total_amount,
-                                        'payment_method' => $item->payment_mode ?: 'Cash',
-                                    ];
-                                });
+        $recentTransactions = Receipt::with(['customer', 'status', 'remittance.status', 'arInvoice.sales_order.items'])
+            ->whereHas('remittance.status', function ($query) {
+                $query->where('slug', 'liquidated');
+            })
+            ->whereHas('remittance', function ($query) use ($dateRange) {
+                $query->whereBetween('remittance_date', [$dateRange['start'], $dateRange['end']]);
+            })
+            ->orderByDesc('receipt_date')
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                $salesOrder = optional($item->arInvoice)->sales_order;
+                $receiptDate = $item->receipt_date ? Carbon::parse($item->receipt_date)->format('Y-m-d') : optional($item->created_at)->format('Y-m-d');
+
+                return [
+                    'id' => $item->id,
+                    'receipt_number' => $item->receipt_number ?: ('RCP-' . str_pad($item->id, 5, '0', STR_PAD_LEFT)),
+                    'customer_name' => $item->customer->name ?? 'Walk-in Customer',
+                    'date' => $receiptDate,
+                    'items_count' => $salesOrder ? $salesOrder->items->count() : 0,
+                    'amount' => (float) $item->amount_paid,
+                    'payment_method' => $item->payment_mode ?: 'Cash',
+                    'status' => optional($item->status)->name ?: 'Liquidated',
+                ];
+            });
 
         // Inventory Statistics (filtered by selected date range)
         $inventoryStocksInRange = InventoryStocks::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
@@ -189,6 +248,7 @@ class DashboardController extends Controller
                 'totalReceipts' => $totalReceipts,
                 'totalOutstanding' => $totalOutstanding,
                 'totalCustomers' => $totalCustomers,
+                'avgOrderValue' => $avgOrderValue,
             ],
             'charts' => [
                 'monthlySales' => $monthlySales,

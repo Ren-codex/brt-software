@@ -68,6 +68,42 @@ class SalesReportExport implements WithMultipleSheets
             ];
         }
 
+        $productSalesRows = [
+            ['Product', 'Total Orders', 'Total Quantity', 'Total Sales'],
+        ];
+        foreach (($this->reportData['product_sales_report'] ?? []) as $item) {
+            $productSalesRows[] = [
+                (string) data_get($item, 'product_name', ''),
+                (int) data_get($item, 'total_orders', 0),
+                (float) data_get($item, 'total_quantity', 0),
+                (float) data_get($item, 'total_sales', 0),
+            ];
+        }
+
+        $customerSalesRows = [
+            ['Customer', 'Total Orders', 'Average Order', 'Total Sales'],
+        ];
+        foreach (($this->reportData['customer_sales_report'] ?? []) as $item) {
+            $customerSalesRows[] = [
+                (string) data_get($item, 'customer_name', 'Walk-in Customer'),
+                (int) data_get($item, 'total_orders', 0),
+                (float) data_get($item, 'average_order_value', 0),
+                (float) data_get($item, 'total_sales', 0),
+            ];
+        }
+
+        $salesRepRows = [
+            ['Sales Rep', 'Total Orders', 'Average Order', 'Total Sales'],
+        ];
+        foreach (($this->reportData['sales_rep_report'] ?? []) as $item) {
+            $salesRepRows[] = [
+                (string) data_get($item, 'sales_rep_name', 'Unassigned'),
+                (int) data_get($item, 'total_orders', 0),
+                (float) data_get($item, 'average_order_value', 0),
+                (float) data_get($item, 'total_sales', 0),
+            ];
+        }
+
         $dailySalesRows = [
             ['SO #', 'Date', 'Customer', 'Sold Products', 'Payment', 'Amount'],
         ];
@@ -87,6 +123,9 @@ class SalesReportExport implements WithMultipleSheets
             new SalesReportSheet('Payment Summary', $paymentSummaryRows),
             new SalesReportSheet('Top Customers', $topCustomersRows),
             new SalesReportSheet('Top Products', $topProductsRows),
+            new SalesReportSheet('Product Sales', $productSalesRows),
+            new SalesReportSheet('Customer Sales', $customerSalesRows),
+            new SalesReportSheet('Sales Rep Sales', $salesRepRows),
             new SalesReportSheet('Daily Sales Orders', $dailySalesRows),
         ];
     }

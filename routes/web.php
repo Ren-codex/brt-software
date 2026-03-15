@@ -36,6 +36,11 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     // Make revenue reports available to all authenticated users (not just administrators)
     Route::get('/api/revenue-reports', [App\Http\Controllers\Modules\RevenueReportController::class, 'index']);
 
+    Route::middleware(['role:Administrator,Top Management'])->group(function () {
+        Route::patch('/expenses/{id}/approve', [App\Http\Controllers\Modules\ExpenseController::class, 'approve']);
+        Route::patch('/expenses/{id}/release', [App\Http\Controllers\Modules\ExpenseController::class, 'release']);
+    });
+
     Route::middleware(['role:Administrator'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
         // Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
@@ -83,7 +88,6 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/loans', App\Http\Controllers\Modules\LoanController::class);
         Route::resource('/loan-payments', App\Http\Controllers\Modules\LoanPaymentController::class);
         Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
-        Route::patch('/expenses/{id}/approve', [App\Http\Controllers\Modules\ExpenseController::class, 'approve']);
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
         Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);

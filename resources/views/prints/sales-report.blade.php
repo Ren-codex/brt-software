@@ -81,6 +81,9 @@
         $summary = $reportData['payment_summary'] ?? [];
         $topCustomers = $reportData['top_customers'] ?? [];
         $topProducts = $reportData['top_products'] ?? [];
+        $productSalesReport = $reportData['product_sales_report'] ?? [];
+        $customerSalesReport = $reportData['customer_sales_report'] ?? [];
+        $salesRepReport = $reportData['sales_rep_report'] ?? [];
         $dailySales = $reportData['daily_sales_orders'] ?? [];
     @endphp
 
@@ -175,6 +178,83 @@
                         @empty
                             <tr>
                                 <td colspan="3">No product data found.</td>
+                            </tr>
+                        @endforelse
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Product Sales Report</div>
+        <table>
+            <tr>
+                <th>Product</th>
+                <th class="text-right">Orders</th>
+                <th class="text-right">Quantity</th>
+                <th class="text-right">Sales</th>
+            </tr>
+            @forelse ($productSalesReport as $item)
+                <tr>
+                    <td>{{ data_get($item, 'product_name', '-') }}</td>
+                    <td class="text-right">{{ (int) data_get($item, 'total_orders', 0) }}</td>
+                    <td class="text-right">{{ (float) data_get($item, 'total_quantity', 0) }}</td>
+                    <td class="text-right">{{ number_format((float) data_get($item, 'total_sales', 0), 2) }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="4">No product sales data found.</td>
+                </tr>
+            @endforelse
+        </table>
+    </div>
+
+    <div class="section">
+        <table class="grid">
+            <tr>
+                <td>
+                    <div class="section-title">Customer Sales Report</div>
+                    <table>
+                        <tr>
+                            <th>Customer</th>
+                            <th class="text-right">Orders</th>
+                            <th class="text-right">Average Order</th>
+                            <th class="text-right">Sales</th>
+                        </tr>
+                        @forelse ($customerSalesReport as $item)
+                            <tr>
+                                <td>{{ data_get($item, 'customer_name', 'Walk-in Customer') }}</td>
+                                <td class="text-right">{{ (int) data_get($item, 'total_orders', 0) }}</td>
+                                <td class="text-right">{{ number_format((float) data_get($item, 'average_order_value', 0), 2) }}</td>
+                                <td class="text-right">{{ number_format((float) data_get($item, 'total_sales', 0), 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4">No customer sales data found.</td>
+                            </tr>
+                        @endforelse
+                    </table>
+                </td>
+                <td>
+                    <div class="section-title">Sales Rep Report</div>
+                    <table>
+                        <tr>
+                            <th>Sales Rep</th>
+                            <th class="text-right">Orders</th>
+                            <th class="text-right">Average Order</th>
+                            <th class="text-right">Sales</th>
+                        </tr>
+                        @forelse ($salesRepReport as $item)
+                            <tr>
+                                <td>{{ data_get($item, 'sales_rep_name', 'Unassigned') }}</td>
+                                <td class="text-right">{{ (int) data_get($item, 'total_orders', 0) }}</td>
+                                <td class="text-right">{{ number_format((float) data_get($item, 'average_order_value', 0), 2) }}</td>
+                                <td class="text-right">{{ number_format((float) data_get($item, 'total_sales', 0), 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4">No sales rep data found.</td>
                             </tr>
                         @endforelse
                     </table>

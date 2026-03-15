@@ -12,6 +12,9 @@ class ReportClass
         return [
             'top_customers' => $this->topCustomers($filters),
             'top_products' => $this->topProducts($filters),
+            'product_sales_report' => $this->productSalesReport($filters),
+            'customer_sales_report' => $this->customerSalesReport($filters),
+            'sales_rep_report' => $this->salesRepReport($filters),
             'daily_sales_orders' => $this->dailySalesOrders($filters),
             'payment_summary' => $this->paymentSummary($filters),
         ];
@@ -87,6 +90,60 @@ class ReportClass
             )
             ->orderByDesc('so.order_date')
             ->orderByDesc('so.id')
+            ->limit($filters['limit'])
+            ->get();
+    }
+
+    private function productSalesReport(array $filters)
+    {
+        return $this->baseSalesOrderQuery($filters)
+            ->join('sales_order_items as soi', 'so.id', '=', 'soi.sales_order_id')
+            ->join('products as p', 'soi.product_id', '=', 'p.id')
+            ->join('list_brands as lb', 'p.brand_id', '=', 'lb.id')
+            ->join('list_units as lu', 'p.unit_id', '=', 'lu.id')
+            ->select(
+                'p.id as product_id',
+                DB::raw("CONCAT(lb.name, ' ', p.pack_size, ' ', lu.name) as product_name"),
+                DB::raw('COUNT(DISTINCT so.id) as total_orders'),
+                DB::raw('SUM(soi.quantity) as total_quantity'),
+                DB::raw('SUM((soi.price - COALESCE(soi.discount_per_unit, 0)) * soi.quantity) as total_sales')
+            )
+            ->groupBy('p.id', 'lb.name', 'p.pack_size', 'lu.name')
+            ->orderByDesc('total_sales')
+            ->limit($filters['limit'])
+            ->get();
+    }
+
+    private function customerSalesReport(array $filters)
+    {
+        return $this->baseSalesOrderQuery($filters)
+            ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
+            ->select(
+                'so.customer_id',
+                DB::raw("COALESCE(c.name, 'Walk-in Customer') as customer_name"),
+                DB::raw('COUNT(so.id) as total_orders'),
+                DB::raw('SUM(so.total_amount) as total_sales'),
+                DB::raw('AVG(so.total_amount) as average_order_value')
+            )
+            ->groupBy('so.customer_id', 'c.name')
+            ->orderByDesc('total_sales')
+            ->limit($filters['limit'])
+            ->get();
+    }
+
+    private function salesRepReport(array $filters)
+    {
+        return $this->baseSalesOrderQuery($filters)
+            ->leftJoin('employees as e', 'so.sales_rep_id', '=', 'e.id')
+            ->select(
+                'so.sales_rep_id',
+                DB::raw("COALESCE(CONCAT(e.firstname, ' ', e.lastname), 'Unassigned') as sales_rep_name"),
+                DB::raw('COUNT(so.id) as total_orders'),
+                DB::raw('SUM(so.total_amount) as total_sales'),
+                DB::raw('AVG(so.total_amount) as average_order_value')
+            )
+            ->groupBy('so.sales_rep_id', 'e.firstname', 'e.lastname')
+            ->orderByDesc('total_sales')
             ->limit($filters['limit'])
             ->get();
     }
