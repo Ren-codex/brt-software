@@ -45,7 +45,7 @@ class EmployeeClass
     }
 
     public function save($request, $userId = null){
-        $avatarPath = null;
+        $avatarPath = 'noavatar.jpg';
         if ($request->hasFile('avatar')) {
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
@@ -72,7 +72,7 @@ class EmployeeClass
             'mobile' => $request->mobile,
             'birthdate' => $request->birthdate,
             'sex' => $request->sex,
-            'religion' => $request->religion,
+            'religion' => $request->religion ?? '',
             'address' => $request->address,
             'position_id' => $request->position_id,
             'avatar' => $avatarPath,
@@ -93,7 +93,7 @@ class EmployeeClass
     public function update($request){
         $data = Employee::findOrFail($request->id);
 
-        $avatarPath = $data->avatar;
+        $avatarPath = $data->avatar ?: 'noavatar.jpg';
         if ($request->hasFile('avatar')) {
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
@@ -136,7 +136,7 @@ class EmployeeClass
             'mobile' => $request->mobile,
             'birthdate' => $request->birthdate,
             'sex' => $request->sex,
-            'religion' => $request->religion,
+            'religion' => $request->religion ?? '',
             'address' => $request->address,
             'position_id' => $request->position_id,
             'avatar' => $avatarPath,
