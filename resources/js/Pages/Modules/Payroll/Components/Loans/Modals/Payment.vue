@@ -1,15 +1,10 @@
 <template>
   <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
     <div class="modal-container modal-lg" @click.stop>
-      <!-- Modal Header with Theme Color -->
       <div class="modal-header">
         <div class="header-content">
-          <div class="header-icon">
-            <i class="ri-bank-card-line"></i>
-          </div>
           <div>
             <h2 class="header-title">Record Loan Payment</h2>
-              <p class="header-subtitle">Process 15-day installment payment</p>
           </div>
         </div>
         <button class="close-btn" @click="hide">
@@ -18,134 +13,68 @@
       </div>
 
       <div class="modal-body">
-        <!-- Schedule Selection Section -->
-        <div class="schedule-section">
-          <div class="section-header">
-            <div class="section-title">
-              <i class="ri-calendar-check-line"></i>
-              <h3>Select Payment Terms</h3>
+        <div class="payment-form-card">
+          <div class="form-group">
+            <div class="field-header">
+              <label class="form-label" for="payment-amount">
+                <i class="ri-wallet-3-line"></i>
+                Amount
+              </label>
+              <label class="full-payment-toggle">
+                <input
+                  v-model="form.isFullPayment"
+                  type="checkbox"
+                  @change="toggleFullPayment"
+                >
+                <span>Full Amount?</span>
+              </label>
             </div>
-            <div class="selection-actions" v-if="scheduleRows.length">
-              <button 
-                type="button" 
-                class="btn-select-all" 
-                @click="selectAllMonths"
-                :disabled="selectedMonths.length === scheduleRows.length"
+            <div class="input-group" :class="{ 'input-group-error': errors.amount }">
+              <span class="currency-symbol">PHP</span>
+              <input
+                id="payment-amount"
+                v-model="form.amount"
+                type="number"
+                min="0"
+                :max="remainingBalance"
+                step="0.01"
+                class="form-control amount-input"
+                :class="{ 'input-error': errors.amount }"
+                placeholder="Enter payment amount"
+                @input="enforceAmountLimit"
               >
-                <i class="ri-checkbox-multiple-line"></i>
-                Select All
-              </button>
-              <button 
-                type="button" 
-                class="btn-clear-all" 
-                @click="clearSelection"
-                :disabled="!selectedMonths.length"
-              >
-                <i class="ri-close-circle-line"></i>
-                Clear
-              </button>
             </div>
+            <p class="field-hint">
+              Enter any amount up to {{ numberFormat(remainingBalance) }}.
+            </p>
+            <transition name="slide-fade">
+              <div v-if="errors.amount" class="error-message">
+                <i class="ri-error-warning-line"></i>
+                <span>{{ errors.amount[0] }}</span>
+              </div>
+            </transition>
           </div>
-
-          <div class="table-container" :class="{ 'has-selection': selectedMonths.length }">
-            <div class="table-responsive">
-              <table class="schedule-table">
-                <thead>
-                  <tr>
-                    <th width="60" class="text-center">
-                      <div class="checkbox-header">
-                        <input
-                          type="checkbox"
-                          class="checkbox-input"
-                          :checked="isAllSelected"
-                          :indeterminate="isIndeterminate"
-                          @change="toggleSelectAll"
-                          :disabled="!scheduleRows.length"
-                        >
-                      </div>
-                    </th>
-                    <th style="width: 5%;">#</th>
-                    <th style="width: 50%;">Payment Term</th>
-                    <th class="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="!scheduleRows.length" class="empty-row">
-                    <td colspan="3">
-                      <div class="empty-state">
-                        <i class="ri-calendar-todo-line"></i>
-                        <p>No remaining terms available</p>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr 
-                    v-for="row in scheduleRows" 
-                    :key="row.index"
-                    class="schedule-row"
-                    :class="{ 'selected': isSelected(row.index), 'disabled': isTermDisabled(row.index) }"
-                    @click="toggleRow(row.index)"
-                  >
-                    <td class="text-center" @click.stop>
-                      <div class="checkbox-cell">
-                        <input
-                          type="checkbox"
-                          class="checkbox-input"
-                          :value="row.index"
-                          v-model="selectedMonths"
-                          :disabled="isTermDisabled(row.index)"
-                          @change="handleRowChange"
-                        >
-                      </div>
-                    </td>
-                    <td>{{ row.index }}</td>
-                    <td>
-                      <div class="month-info">
-                        <span class="month-name">{{ row.label }}</span>
-                        <!-- <span class="month-badge">Term {{ row.index }}</span> -->
-                      </div>
-                    </td>
-                    <td class="text-right">
-                      <span class="month-amount">{{ numberFormat(termAmount) }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Error Message -->
-          <transition name="slide-fade">
-            <div v-if="errors.amount" class="error-message">
-              <i class="ri-error-warning-line"></i>
-              <span>{{ errors.amount[0] }}</span>
-            </div>
-          </transition>
         </div>
 
-        <!-- Total Amount Card -->
-        <div class="total-card">
+        <!-- <div class="total-card">
           <div class="total-label">
             <i class="ri-calculator-line"></i>
             <span>Total Payment Amount</span>
           </div>
           <div class="total-amount-wrapper">
             <span class="total-amount">{{ numberFormat(totalAmount) }}</span>
-            <span class="total-months" v-if="selectedMonths.length">
-              ({{ selectedMonths.length }} term{{ selectedMonths.length > 1 ? 's' : '' }})
-            </span>
           </div>
-        </div>
+        </div> -->
 
-        <!-- Form Actions -->
         <div class="form-actions">
           <button type="button" class="btn btn-cancel" @click="hide" :disabled="isSaving">
             <i class="ri-close-line"></i>
             Cancel
           </button>
-          <button type="button" @click="submit"  class="btn btn-save" :disabled="isSaving || !selectedMonths.length">
-              <i class="ri-save-line" v-if="!isSaving"></i>
-              <i class="ri-loader-4-line spinner" v-else></i>
-              {{ isSaving ? 'Saving...' : 'Save Payment' }}
+          <button type="button" @click="submit" class="btn btn-save" :disabled="isSaving || totalAmount <= 0">
+            <i class="ri-save-line" v-if="!isSaving"></i>
+            <i class="ri-loader-4-line spinner" v-else></i>
+            {{ isSaving ? 'Saving...' : 'Save Payment' }}
           </button>
         </div>
       </div>
@@ -167,15 +96,15 @@ export default {
       type: Number,
       default: 0,
     },
-    remainingTerms: {
+    termUnits: {
+      type: Number,
+      default: 1,
+    },
+    remainingBalance: {
       type: Number,
       default: 0,
     },
-    startDate: {
-      type: String,
-      default: '',
-    },
-    startTermOffset: {
+    remainingTermUnits: {
       type: Number,
       default: 0,
     },
@@ -185,81 +114,22 @@ export default {
     return {
       showModal: false,
       isSaving: false,
-      selectedMonths: [],
       errors: {},
       form: {
         loan_id: '',
+        amount: 0,
+        remarks: '',
+        isFullPayment: false,
+        paid_term: 1,
       },
     };
   },
   computed: {
-    scheduleRows() {
-      const rows = [];
-      const terms = Math.max(0, this.toNumber(this.remainingTerms, 0));
-      const start = this.startDate ? new Date(this.startDate) : new Date();
-      const offset = Math.max(0, this.toNumber(this.startTermOffset, 0));
-
-      if (Number.isNaN(start.getTime())) {
-        start.setTime(Date.now());
-      }
-
-      const startHalf = start.getDate() <= 15 ? 0 : 1;
-      const startMonthIndex = (start.getFullYear() * 12) + start.getMonth();
-      const startTermIndex = (startMonthIndex * 2) + startHalf + offset;
-
-      for (let i = 0; i < terms; i += 1) {
-        const currentTermIndex = startTermIndex + i;
-        const monthIndex = Math.floor(currentTermIndex / 2);
-        const half = currentTermIndex % 2;
-        const year = Math.floor(monthIndex / 12);
-        const month = monthIndex % 12;
-        const d = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0).getDate();
-        const startDay = half === 0 ? 1 : 16;
-        const endDay = half === 0 ? 15 : lastDay;
-
-        rows.push({
-          index: i + 1,
-          label: `${d.toLocaleDateString('en-PH', { month: 'long' })} ${startDay}-${endDay}, ${year}`,
-        });
-      }
-
-      return rows;
+    suggestedAmount() {
+      return this.toNumber(this.termAmount, 0);
     },
     totalAmount() {
-      const count = this.selectedMonths.length;
-      if (!count) {
-        return 0;
-      }
-      return Number((this.termAmount * count).toFixed(2));
-    },
-    paidTermLabel() {
-      if (!this.selectedMonths.length) {
-        return '';
-      }
-
-      const selectedRows = this.scheduleRows.filter(row => this.selectedMonths.includes(row.index));
-      if (!selectedRows.length) {
-        return '';
-      }
-
-      if (selectedRows.length === 1) {
-        return selectedRows[0].label;
-      }
-
-      const first = selectedRows[0];
-      const last = selectedRows[selectedRows.length - 1];
-
-      // Keep a compact label to avoid hitting backend/string length limits.
-      return `${first.label} | ${last.label} (${selectedRows.length} terms)`;
-    },
-    isAllSelected() {
-      return this.scheduleRows.length > 0 && 
-             this.selectedMonths.length === this.scheduleRows.length;
-    },
-    isIndeterminate() {
-      return this.selectedMonths.length > 0 && 
-             this.selectedMonths.length < this.scheduleRows.length;
+      return this.toNumber(this.form.amount, 0);
     },
   },
   methods: {
@@ -272,9 +142,12 @@ export default {
     },
     reset() {
       this.errors = {};
-      this.selectedMonths = [];
       this.form = {
         loan_id: this.loanId,
+        amount: this.suggestedAmount > 0 ? this.suggestedAmount.toFixed(2) : 0,
+        remarks: '',
+        isFullPayment: false,
+        paid_term: Math.max(1, this.toNumber(this.termUnits, 1)),
       };
     },
     show() {
@@ -285,114 +158,76 @@ export default {
       this.showModal = false;
       this.reset();
     },
-    isSelected(index) {
-      return this.selectedMonths.includes(index);
-    },
-    /**
-     * Check if a term can be selected based on sequential selection rule.
-     * A term can only be selected if all previous terms are already selected.
-     */
-    canSelect(index) {
-      // If already selected, it can be deselected
-      if (this.isSelected(index)) {
-        return true;
-      }
-      // Check if all previous terms are selected
-      for (let i = 1; i < index; i += 1) {
-        if (!this.isSelected(i)) {
-          return false;
-        }
-      }
-      return true;
-    },
-    isTermDisabled(index) {
-      return !this.canSelect(index);
-    },
-    /**
-     * Get the message for why a term cannot be selected
-     */
-    getSelectionErrorMessage(index) {
-      // Find the first unselected previous term
-      for (let i = 1; i < index; i += 1) {
-        if (!this.isSelected(i)) {
-          const row = this.scheduleRows.find(r => r.index === i);
-          return row ? `Please select "${row.label}" first` : `Please select term ${i} first`;
-        }
-      }
-      return '';
-    },
-    toggleRow(index) {
-      // Check if selection is allowed based on sequential rule
-      if (!this.canSelect(index)) {
-        const errorMsg = this.getSelectionErrorMessage(index);
-        Swal.fire({
-          icon: 'warning',
-          title: 'Sequential Selection Required',
-          text: errorMsg || `Please select all previous terms before selecting term ${index}.`,
-          confirmButtonColor: '#3D8D7A'
-        });
-        return;
+    toggleFullPayment() {
+      if (this.form.isFullPayment) {
+        const maxAmount = this.toNumber(this.remainingBalance, 0);
+        this.form.amount = maxAmount > 0 ? maxAmount.toFixed(2) : 0;
+        this.form.paid_term = Math.max(1, this.toNumber(this.remainingTermUnits, 1));
+      } else {
+        this.form.amount = this.suggestedAmount > 0 ? this.suggestedAmount.toFixed(2) : 0;
+        this.form.paid_term = Math.max(1, this.toNumber(this.termUnits, 1));
       }
 
-      const idx = this.selectedMonths.indexOf(index);
-      if (idx === -1) {
-        this.selectedMonths.push(index);
-      } else {
-        this.selectedMonths.splice(idx, 1);
-      }
-      this.handleRowChange();
-    },
-    toggleSelectAll(event) {
-      if (event.target.checked) {
-        this.selectAllMonths();
-      } else {
-        this.clearSelection();
-      }
-    },
-    selectAllMonths() {
-      this.selectedMonths = this.scheduleRows.map(row => row.index);
-    },
-    clearSelection() {
-      this.selectedMonths = [];
-    },
-    handleRowChange() {
-      // Clear amount error when user selects months
       if (this.errors.amount) {
-        this.$delete(this.errors, 'amount');
+        delete this.errors.amount;
+      }
+    },
+    enforceAmountLimit() {
+      const amount = this.toNumber(this.form.amount, 0);
+      const maxAmount = this.toNumber(this.remainingBalance, 0);
+
+      if (amount > maxAmount) {
+        this.form.amount = maxAmount > 0 ? maxAmount.toFixed(2) : 0;
+      }
+
+      this.form.isFullPayment = amount > 0 && amount === maxAmount;
+      this.form.paid_term = this.form.isFullPayment
+        ? Math.max(1, this.toNumber(this.remainingTermUnits, 1))
+        : Math.max(1, this.toNumber(this.termUnits, 1));
+
+      if (this.errors.amount) {
+        delete this.errors.amount;
       }
     },
     async submit() {
       this.errors = {};
 
-      const amount = this.toNumber(this.totalAmount, 0);
+      const amount = this.toNumber(this.form.amount, 0);
       if (amount <= 0) {
-        this.errors.amount = ['Please select at least one term to pay.'];
+        this.errors.amount = ['Please enter a valid payment amount.'];
         return;
       }
-      
+
+      if (amount > this.toNumber(this.remainingBalance, 0)) {
+        this.errors.amount = ['Payment amount cannot exceed the remaining balance.'];
+        return;
+      }
+
       this.isSaving = true;
 
       try {
         const response = await axios.post('/loan-payments', {
           loan_id: this.loanId,
           amount,
-          paid_date: this.paidTermLabel,
-          paid_term: this.selectedMonths.length,
+          paid_term: this.toNumber(this.form.paid_term, 1),
+          remarks: this.form.remarks || null,
+          type: 'advance',
         });
 
-        // Show success message
         Swal.fire({
           icon: 'success',
           title: 'Success!',
           text: response?.data?.message || 'Loan payment saved successfully!',
           showConfirmButton: false,
-          timer: 1500
+          timer: 1500,
         });
 
         this.$emit('saved', {
           payment: response?.data?.data || {},
           amount,
-          paidTerms: this.selectedMonths.length,
+          paidTerms: this.toNumber(response?.data?.data?.paid_term, this.form.paid_term),
+          paid_date: response?.data?.data?.paid_date || null,
+          remarks: this.form.remarks,
           message: response?.data?.message || 'Loan payment saved successfully!',
         });
 
@@ -405,7 +240,7 @@ export default {
             icon: 'error',
             title: 'Error!',
             text: 'Failed to save loan payment.',
-            confirmButtonColor: '#3D8D7A'
+            confirmButtonColor: '#3D8D7A',
           });
         }
       } finally {
@@ -416,7 +251,7 @@ export default {
       return new Intl.NumberFormat('en-PH', {
         style: 'currency',
         currency: 'PHP',
-        minimumFractionDigits: 2
+        minimumFractionDigits: 2,
       }).format(this.toNumber(value, 0));
     },
   },
@@ -481,58 +316,12 @@ export default {
   overflow-y: auto;
 }
 
-/* Loan Summary Card */
-.loan-summary-card {
+.payment-form-card {
   background: var(--gray-50);
-  border-radius: 20px;
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 28px;
   border: 1px solid var(--gray-200);
-}
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.summary-label {
-  font-size: 13px;
-  color: var(--gray-500);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.summary-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--gray-800);
-}
-
-.summary-value.highlight {
-  color: var(--theme-primary);
-  font-size: 28px;
-}
-
-.summary-divider {
-  width: 2px;
-  height: 40px;
-  background: linear-gradient(to bottom, transparent, var(--gray-300), transparent);
-}
-
-/* Schedule Section */
-.schedule-section {
+  border-radius: 20px;
+  padding: 24px;
   margin-bottom: 24px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
 }
 
 .section-title {
@@ -540,6 +329,7 @@ export default {
   align-items: center;
   gap: 8px;
   color: var(--gray-800);
+  margin-bottom: 20px;
 }
 
 .section-title i {
@@ -553,260 +343,167 @@ export default {
   margin: 0;
 }
 
-.selection-actions {
-  display: flex;
-  gap: 8px;
+.payment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
-.btn-select-all,
-.btn-clear-all {
-  padding: 8px 14px;
-  border: none;
-  border-radius: 10px;
+.summary-card {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.summary-label {
+  display: block;
   font-size: 13px;
-  font-weight: 500;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+
+.summary-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.field-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
-.btn-select-all {
-  background: var(--theme-primary-very-soft);
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.form-label i {
   color: var(--theme-primary);
 }
 
-.btn-select-all:hover:not(:disabled) {
-  background: var(--theme-primary-soft);
-  transform: translateY(-1px);
+.full-payment-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.btn-clear-all {
-  background: var(--gray-100);
-  color: var(--gray-600);
+.full-payment-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--theme-primary);
+  cursor: pointer;
 }
 
-.btn-clear-all:hover:not(:disabled) {
-  background: var(--gray-200);
-  transform: translateY(-1px);
-}
-
-.btn-select-all:disabled,
-.btn-clear-all:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Table Styles */
-.table-container {
-  border: 2px solid var(--gray-200);
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border: 2px solid var(--gray-300);
   border-radius: 16px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  transition: all 0.2s ease;
 }
 
-.table-container.has-selection {
+.input-group:focus-within {
   border-color: var(--theme-primary);
-  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.1);
+  box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.14);
 }
 
-.schedule-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.schedule-table th {
-  background: var(--gray-50);
-  padding: 16px 12px;
+.currency-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  padding: 0 16px;
+  border-right: 1px solid var(--gray-200);
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   font-size: 13px;
-  font-weight: 600;
-  color: var(--gray-600);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 2px solid var(--gray-200);
-}
-
-.schedule-table td {
-  padding: 16px 12px;
-  border-bottom: 1px solid var(--gray-100);
-}
-
-.checkbox-header {
-  display: flex;
-  justify-content: center;
-}
-
-.checkbox-input {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--gray-300);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  accent-color: var(--theme-primary);
-}
-
-.checkbox-input:hover {
-  border-color: var(--theme-primary);
-}
-
-.checkbox-cell {
-  display: flex;
-  justify-content: center;
-}
-
-.schedule-row {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.schedule-row:hover {
-  background: var(--gray-50);
-}
-
-.schedule-row.selected {
-  background: var(--theme-primary-very-soft);
-}
-
-.schedule-row.selected:hover {
-  background: var(--theme-primary-soft);
-}
-
-.schedule-row.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.schedule-row.disabled:hover {
-  background: transparent;
-}
-
-.month-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.month-name {
-  font-weight: 500;
-  color: var(--gray-800);
-}
-
-.month-badge {
-  padding: 4px 8px;
-  background: var(--gray-200);
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--gray-600);
-}
-
-.month-amount {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--theme-primary);
+}
+
+.form-control {
+  width: 100%;
+  border: none;
+  padding: 14px 16px;
   font-size: 15px;
-}
-
-.text-right {
-  text-align: right;
-}
-
-/* Empty State */
-.empty-row td {
-  padding: 40px 0;
-}
-
-.empty-state {
-  text-align: center;
-  color: var(--gray-400);
-}
-
-.empty-state i {
-  font-size: 48px;
-  margin-bottom: 12px;
-  opacity: 0.5;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 15px;
-}
-
-/* Selection Summary */
-.selection-summary {
-  padding: 16px;
-  background: var(--gray-50);
-  border-top: 2px solid var(--gray-200);
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.summary-badge {
-  padding: 8px 16px;
-  background: var(--theme-primary);
-  border-radius: 40px;
-  color: var(--white);
-  font-size: 14px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.selected-months-preview {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.preview-label {
-  color: var(--gray-500);
-  font-weight: 500;
-}
-
-.preview-text {
   color: var(--gray-800);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  background: #fff;
+  transition: all 0.2s ease;
 }
 
-/* Error Message */
+.form-control:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.input-group.input-group-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.amount-input {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.amount-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.textarea-control {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.field-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
 .error-message {
   margin-top: 12px;
   padding: 12px 16px;
-  background: #FEF2F2;
+  background: #fef2f2;
   border-radius: 12px;
-  border-left: 4px solid #EF4444;
+  border-left: 4px solid #ef4444;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #B91C1C;
+  color: #b91c1c;
   font-size: 14px;
-  animation: slideDown 0.3s ease;
 }
 
 .error-message i {
   font-size: 18px;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Total Card */
 .total-card {
   background: var(--gray-800);
   border-radius: 20px;
@@ -815,7 +512,6 @@ export default {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 28px;
-  margin-top: -10px;
 }
 
 .total-label {
@@ -843,17 +539,44 @@ export default {
   letter-spacing: 1px;
 }
 
-.total-months {
-  display: block;
-  font-size: 13px;
-  color: var(--gray-400);
-  margin-top: 4px;
-}
-
-/* Form Actions */
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  position: sticky;
+  bottom: -28px;
+  margin: 0 -28px -28px;
+  padding: 16px 28px 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #ffffff 18px);
+  border-top: 1px solid var(--gray-200);
+  z-index: 5;
+  backdrop-filter: blur(6px);
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+@media (max-width: 768px) {
+  .payment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    margin: 0 -28px -28px;
+  }
 }
 </style>

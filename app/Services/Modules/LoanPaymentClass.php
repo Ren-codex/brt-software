@@ -6,6 +6,7 @@ use App\Http\Resources\Modules\LoanPaymentResource;
 use App\Models\Loan;
 use App\Models\LoanLog;
 use App\Models\LoanPayment;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -41,9 +42,10 @@ class LoanPaymentClass
             $loan = Loan::findOrFail($request->loan_id);
             $amount = (float) $request->amount;
             $remainingBalance = (float) $loan->remaining_balance;
-            // Each selected schedule row from the modal already represents one term unit
-            // (half-month for semi-monthly loans). Do not multiply again.
-            $paidTermUnits = max(1, (int) $request->input('paid_term', 1));
+            $remainingTermToPay = (float) $loan->remaining_term_to_pay;
+            $paymentType = strtolower((string) $request->input('type', ''));
+            $paidTermUnits = max(1, (float) $request->input('paid_term', 1));
+            $paidDate = $request->paid_date;
 
             if ($amount > $remainingBalance) {
                 throw ValidationException::withMessages([
@@ -51,10 +53,22 @@ class LoanPaymentClass
                 ]);
             }
 
+            if ($paymentType === 'advance') {
+                if ($remainingTermToPay <= 0 || $remainingBalance <= 0) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'Unable to compute covered terms for this payment.',
+                    ]);
+                }
+
+                $termAmount = $remainingBalance / $remainingTermToPay;
+                $paidTermUnits = min($remainingTermToPay, round($amount / $termAmount, 2));
+                $paidDate = $this->buildAdvanceCoveredPeriodLabel($loan, $paidTermUnits);
+            }
+
             $payment = LoanPayment::create([
                 'loan_id' => $loan->id,
                 'amount' => $amount,
-                'paid_date' => $request->paid_date,
+                'paid_date' => $paidDate,
                 'paid_term' => $paidTermUnits,
                 'remarks' => $request->remarks,
                 'added_by_id' => auth()->id(),
@@ -62,7 +76,7 @@ class LoanPaymentClass
 
             $newAmtPaid = (float) $loan->amtpaid + $amount;
             $newRemainingBalance = max(0, $remainingBalance - $amount);
-            $newRemainingTerm = max(0, ((int) $loan->remaining_term_to_pay) - $paidTermUnits);
+            $newRemainingTerm = max(0, $remainingTermToPay - $paidTermUnits);
 
             $loan->update([
                 'amtpaid' => $newAmtPaid,
@@ -179,5 +193,149 @@ class LoanPaymentClass
             'actioned_by_id' => auth()->id(),
             'remarks' => $remarks,
         ]);
+    }
+
+    protected function buildAdvanceCoveredPeriodLabel(Loan $loan, float $paidTermUnits): string
+    {
+        $loanStartDate = $loan->approved_at
+            ? Carbon::parse($loan->approved_at)
+            : Carbon::parse($loan->created_at);
+        $nextCoveredTerm = $this->getNextCoveredTermStart($loan, $loanStartDate);
+        $coveredTerms = max(1, (int) ceil($paidTermUnits));
+        $endCoveredTerm = $this->getTermByOffset($nextCoveredTerm, $coveredTerms - 1);
+
+        return $this->formatCoveredTermRange($nextCoveredTerm, $endCoveredTerm);
+    }
+
+    protected function determineTermUnitFactor(Loan $loan): int
+    {
+        return (float) $loan->remaining_term_to_pay > (float) $loan->term_months ? 2 : 1;
+    }
+
+    protected function getNextCoveredTermStart(Loan $loan, Carbon $loanStartDate): array
+    {
+        $totalTermUnits = max(0, (float) $loan->term_months * 2);
+        $alreadyPaidUnits = max(0, $totalTermUnits - (float) $loan->remaining_term_to_pay);
+        $startTerm = $this->getBaseTermFromDate($loanStartDate);
+        $nextTerm = $this->getTermByOffset($startTerm, (int) floor($alreadyPaidUnits));
+
+        $latestCoveredTerm = $this->getLatestCoveredTerm($loan);
+        if ($latestCoveredTerm && $this->compareTerms($latestCoveredTerm, $nextTerm) >= 0) {
+            return $this->getTermByOffset($latestCoveredTerm, 1);
+        }
+
+        return $nextTerm;
+    }
+
+    protected function getLatestCoveredTerm(Loan $loan): ?array
+    {
+        $payments = $loan->relationLoaded('payments')
+            ? $loan->payments
+            : $loan->payments()->orderBy('created_at')->get();
+
+        $latestCoveredTerm = null;
+
+        foreach ($payments as $payment) {
+            $coveredTerm = $this->extractCoveredTermFromPayment($payment);
+
+            if (!$coveredTerm) {
+                continue;
+            }
+
+            if (!$latestCoveredTerm || $this->compareTerms($coveredTerm, $latestCoveredTerm) > 0) {
+                $latestCoveredTerm = $coveredTerm;
+            }
+        }
+
+        return $latestCoveredTerm;
+    }
+
+    protected function extractCoveredTermFromPayment(LoanPayment $payment): ?array
+    {
+        $paidDate = trim((string) $payment->paid_date);
+
+        if ($paidDate !== '') {
+            if (preg_match('/^[A-Za-z]+\s+(1-15|16-\d{1,2}),\s+\d{4}$/', $paidDate) === 1) {
+                return $this->parseSemiMonthlyTermLabel($paidDate);
+            }
+
+            if (preg_match('/to\s+[A-Za-z]+\s+(1-15|16-\d{1,2}),\s+\d{4}$/', $paidDate) === 1) {
+                preg_match('/to\s+([A-Za-z]+\s+(?:1-15|16-\d{1,2}),\s+\d{4})$/', $paidDate, $matches);
+                return $this->parseSemiMonthlyTermLabel($matches[1]);
+            }
+
+            try {
+                return $this->getBaseTermFromDate(Carbon::parse($paidDate));
+            } catch (\Throwable $e) {
+                // Fall through to created_at when the label is not directly parseable.
+            }
+        }
+
+        return $payment->created_at
+            ? $this->getBaseTermFromDate(Carbon::parse($payment->created_at))
+            : null;
+    }
+
+    protected function parseSemiMonthlyTermLabel(string $label): ?array
+    {
+        if (preg_match('/^([A-Za-z]+)\s+(1-15|16-\d{1,2}),\s+(\d{4})$/', $label, $matches) !== 1) {
+            return null;
+        }
+
+        $monthDate = Carbon::createFromFormat('F Y', $matches[1] . ' ' . $matches[3])->startOfMonth();
+
+        return [
+            'date' => $monthDate,
+            'half' => str_starts_with($matches[2], '1-15') ? 1 : 2,
+        ];
+    }
+
+    protected function getBaseTermFromDate(Carbon $date): array
+    {
+        return [
+            'date' => $date->copy()->startOfMonth(),
+            'half' => $date->day <= 15 ? 1 : 2,
+        ];
+    }
+
+    protected function getTermByOffset(array $term, int $offset): array
+    {
+        $sequence = (($term['date']->year * 12) + ($term['date']->month - 1)) * 2 + ($term['half'] - 1) + $offset;
+        $monthSequence = (int) floor($sequence / 2);
+        $half = ($sequence % 2) + 1;
+        $year = (int) floor($monthSequence / 12);
+        $month = ($monthSequence % 12) + 1;
+
+        return [
+            'date' => Carbon::create($year, $month, 1)->startOfMonth(),
+            'half' => $half,
+        ];
+    }
+
+    protected function compareTerms(array $left, array $right): int
+    {
+        $leftSequence = (($left['date']->year * 12) + $left['date']->month) * 2 + $left['half'];
+        $rightSequence = (($right['date']->year * 12) + $right['date']->month) * 2 + $right['half'];
+
+        return $leftSequence <=> $rightSequence;
+    }
+
+    protected function formatCoveredTermRange(array $startTerm, array $endTerm): string
+    {
+        if ($this->compareTerms($startTerm, $endTerm) === 0) {
+            return $this->formatSingleTermLabel($startTerm);
+        }
+
+        return $this->formatSingleTermLabel($startTerm) . ' to ' . $this->formatSingleTermLabel($endTerm);
+    }
+
+    protected function formatSingleTermLabel(array $term): string
+    {
+        $date = $term['date']->copy()->startOfMonth();
+        $range = $term['half'] === 1
+            ? '1-15'
+            : '16-' . $date->copy()->endOfMonth()->day;
+
+        return $date->format('F') . ' ' . $range . ', ' . $date->format('Y');
     }
 }
