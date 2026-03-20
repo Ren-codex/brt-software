@@ -16,27 +16,6 @@
         <!-- Filters -->
         <div class="filters-section">
           <div class="filters-grid">
-            <div class="filter-item report-filter-wide">
-              <label>Report View</label>
-              <div class="download-dropdown" ref="reportDropdown">
-                <button class="filter-input report-select-button" type="button" @click.stop="toggleReportMenu">
-                  <span>{{ activeReportTab.label }}</span>
-                  <i class="ri-arrow-down-s-line"></i>
-                </button>
-                <div v-if="showReportMenu" class="download-menu report-menu">
-                  <button
-                    v-for="tab in reportTabs"
-                    :key="tab.key"
-                    class="download-menu-item"
-                    :class="{ 'active-report-option': activeReport === tab.key }"
-                    @click="selectReport(tab.key)"
-                  >
-                    <i :class="tab.icon"></i>
-                    {{ tab.label }}
-                  </button>
-                </div>
-              </div>
-            </div>
             <div class="filter-item">
               <label>From</label>
               <input v-model="form.from" type="date" class="filter-input" @change="fetchReports" />
@@ -642,7 +621,6 @@ export default {
       loading: false,
       downloading: false,
       showDownloadMenu: false,
-      showReportMenu: false,
       activeReport: 'sales-summary',
       reportTabs: [
         { key: 'sales-summary', label: 'Sales Summary', icon: 'ri-line-chart-line' },
@@ -665,9 +643,6 @@ export default {
     };
   },
   computed: {
-    activeReportTab() {
-      return this.reportTabs.find(tab => tab.key === this.activeReport) || this.reportTabs[0];
-    },
     paymentTypeRows() {
       return [
         { key: 'cash', label: 'Cash', ...(this.report?.payment_summary?.cash || { total_orders: 0, total_sales: 0 }) },
@@ -708,21 +683,14 @@ export default {
       };
       this.fetchReports();
     },
-    toggleReportMenu() {
-      this.showReportMenu = !this.showReportMenu;
-    },
     selectReport(reportKey) {
       this.activeReport = reportKey;
-      this.showReportMenu = false;
     },
     toggleDownloadMenu(e) {
       e.stopPropagation();
       if (!this.loading && !this.downloading) this.showDownloadMenu = !this.showDownloadMenu;
     },
     handleDocumentClick(e) {
-      if (this.showReportMenu && !this.$refs.reportDropdown?.contains(e.target)) {
-        this.showReportMenu = false;
-      }
       if (this.showDownloadMenu && !this.$refs.downloadDropdown?.contains(e.target)) {
         this.showDownloadMenu = false;
       }
@@ -730,8 +698,10 @@ export default {
     downloadReport(format) {
       this.showDownloadMenu = false;
       this.downloading = true;
+      const reportKey = this.activeReport;
+      const reportLabel = this.reportTabs.find(tab => tab.key === reportKey)?.label || 'sales-report';
       axios.get('/reports', { 
-        params: { option: format === 'pdf' ? 'pdf' : 'excel', ...this.normalizedForm() },
+        params: { option: format === 'pdf' ? 'pdf' : 'excel', report_type: reportKey, ...this.normalizedForm() },
         responseType: 'blob' 
       })
       .then(response => {
@@ -739,7 +709,8 @@ export default {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `sales-report-${new Date().toISOString().slice(0, 10)}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+        const safeLabel = reportLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        link.download = `${safeLabel || 'sales-report'}-${new Date().toISOString().slice(0, 10)}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
         link.click();
         window.URL.revokeObjectURL(url);
       })
@@ -824,10 +795,6 @@ export default {
   align-items: end;
 }
 
-.report-filter-wide {
-  min-width: 220px;
-}
-
 .filter-item {
   display: flex;
   flex-direction: column;
@@ -861,22 +828,6 @@ export default {
 .filter-actions {
   display: flex;
   gap: 0.5rem;
-}
-
-.report-select-button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-}
-
-.report-menu {
-  min-width: 220px;
-}
-
-.active-report-option {
-  background: #ecfdf5;
-  color: #047857;
 }
 
 .report-tabs {

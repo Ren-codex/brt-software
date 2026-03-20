@@ -660,7 +660,9 @@ export default {
                 this.form.post('/sales-orders', {
                     preserveScroll: true,
                     onSuccess: (response) => {
-                        const createdOrder = response?.props?.flash?.data?.data || this.$page?.props?.flash?.data?.data;
+                        const selectedOrderDate = this.form.order_date;
+                        const flashData = response?.props?.flash?.data ?? this.$page?.props?.flash?.data ?? null;
+                        const createdOrder = flashData?.data || flashData;
                         const isCash = ['cash', 'cash sales'].includes((this.form.payment_mode || '').toLowerCase());
                         const invoice = createdOrder?.invoices?.[0] || null;
 
@@ -674,7 +676,7 @@ export default {
                             this.paymentForm.id = invoice.id;
                             this.paymentForm.balance_due = invoice.balance_due || 0;
                             this.paymentForm.amount_paid = invoice.balance_due || 0;
-                            this.paymentForm.payment_date = new Date().toISOString().slice(0, 10);
+                            this.paymentForm.payment_date = selectedOrderDate || new Date().toISOString().slice(0, 10);
                             this.showPaymentPrompt = true;
                             return;
                         }
@@ -695,7 +697,6 @@ export default {
             this.paymentForm.id = this.pendingInvoice.id;
             this.paymentForm.balance_due = this.pendingInvoice.balance_due || 0;
             this.paymentForm.amount_paid = this.pendingInvoice.balance_due || 0;
-            this.paymentForm.payment_date = new Date().toISOString().slice(0, 10);
 
             this.paymentForm.put(`/ar-invoices/${this.pendingInvoice.id}`, {
                 preserveScroll: true,
