@@ -63,6 +63,7 @@
                                     <th style="width: 12%;" class="text-center border-none">OR Number</th>
                                     <th style="width: 12%;" class="text-center border-none">Customer</th>
                                     <th style="width: 12%;" class="text-center border-none">Payment Date</th>
+                                    <th style="width: 10%;" class="text-center border-none">Type</th>
                                     <th style="width: 12%;" class="text-center border-none">Amount Balance</th>
                                     <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
                                     <th style="width: 12%;" class="text-center border-none">Payment Mode</th>
@@ -72,7 +73,7 @@
                             </thead>
                             <tbody class="fs-12">
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9" class="text-center text-muted py-4">
+                                    <td colspan="10" class="text-center text-muted py-4">
                                         <i class="ri-shopping-cart-line fs-1 text-muted mb-2"></i>
                                         <div>No receipts found.</div>
                                         <small>Receipts will appear here once they are created.</small>
@@ -88,6 +89,11 @@
                                         <td class="text-center fw-semibold">{{ list.receipt_number }}</td>
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.receipt_date }}</td>
+                                        <td class="text-center">
+                                            <span class="badge" :class="getReceiptTypeClass(list.receipt_type)">
+                                                {{ getReceiptTypeLabel(list.receipt_type) }}
+                                            </span>
+                                        </td>
                                         <td class="text-center">{{ list.balance_due }}</td>
                                         <td class="text-center">₱{{ list.amount_paid }}</td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
@@ -106,7 +112,7 @@
                                         </td>
                                     </tr>
                                     <tr v-if="expandedRows.includes(index)" class="bg-light">
-                                        <td colspan="8" class="p-0">
+                                        <td colspan="10" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Order Details
@@ -117,6 +123,8 @@
                                                             <div class="card-body">
                                                 <h6 class="card-title text-muted small mb-2">Receipt Information</h6>
                                                                 <p class="mb-1"><strong>Receipt Date:</strong> {{ list.receipt_date }}</p>
+                                                                <p class="mb-1"><strong>Receipt Type:</strong> {{ getReceiptTypeLabel(list.receipt_type) }}</p>
+                                                                <p v-if="list.source_receipt?.receipt_number" class="mb-1"><strong>Source Receipt:</strong> {{ list.source_receipt.receipt_number }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -248,6 +256,16 @@ export default {
 
         onPrint(id) {
             window.open(`/receipts/${id}?option=print&type=receipt`);
+        },
+        getReceiptTypeLabel(type) {
+            if (type === 'updated') return 'Updated Receipt';
+            if (type === 'refund') return 'Refund';
+            return 'Payment';
+        },
+        getReceiptTypeClass(type) {
+            if (type === 'updated') return 'bg-info text-dark';
+            if (type === 'refund') return 'bg-warning text-dark';
+            return 'bg-primary';
         },
 
          getCustomer(customer_id){

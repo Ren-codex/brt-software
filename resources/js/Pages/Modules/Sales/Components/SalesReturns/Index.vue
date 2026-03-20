@@ -13,7 +13,10 @@
                                 <p class="header-subtitle mb-0">A comprehensive list of Returned Sales Orders</p>
                             </div>
                         </div>
-
+                        <button class="create-btn" @click="openCreate">
+                            <i class="ri-add-line"></i>
+                            <span>Sales Return</span>
+                        </button>
                     </div>
 
                 </div>
@@ -172,7 +175,7 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info"
+                                                <b-button @click.stop="onPrint(list)" variant="outline-info"
                                                     v-b-tooltip.hover title="Print" size="sm"
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-printer-line"></i>
@@ -258,7 +261,7 @@
             </div>
         </div>
     </BRow>
-    <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
+    <CreateFromReceipt @add="fetch()" :dropdowns="dropdowns" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
 <Approval @approve="fetch()" ref="approval" :products="dropdowns.products"/>
     <Adjustment @update="fetch()"  ref="adjustment"/>
@@ -271,13 +274,13 @@ import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Cancel from './Modals/Cancel.vue';
-import Create from './Modals/Create.vue';
+import CreateFromReceipt from './Modals/CreateFromReceipt.vue';
 import Adjustment from './Modals/Adjustment.vue';
 import Approval from './Modals/Approval.vue';
 
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
+    components: { PageHeader, Pagination, Multiselect , CreateFromReceipt, Cancel, Adjustment, Approval },
     props: ['dropdowns' , 'invoices' , 'user', 'isExternal', 'metrics'],
     data(){
         return {
@@ -362,17 +365,25 @@ export default {
                 })
                 .catch(err => console.log(err));
         },
+        openCreate() {
+            this.$refs.create.show();
+        },
 
 
 
-        onPrint(id) {
+        onPrint(list) {
+            if (list?.refund_receipt_id) {
+                window.open(`/receipts/${list.refund_receipt_id}?option=print&type=receipt`);
+                return;
+            }
+
             let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
-            window.open(`${url}/${id}?option=print&type=sales_order`);
+            window.open(`${url}/${list.id}?option=print&type=sales_order`);
         },
 
         onApprove(data) {
             const route = this.isExternal ? '/sales-orders-external' : '/sales-orders';
-            this.$refs.approval.show(data.id, data.so_number, route, data.items || [], data.return_item_ids || []);
+            this.$refs.approval.show(data.id, data.so_number, route, data.items || [], data.return_item_ids || [], data.return_items || {}, data.return_conditions || {});
         },
     
 
@@ -462,6 +473,8 @@ export default {
 
         isDueSoon(list) {
             if (!list.due_date) return false;
+            const balanceDue = list.invoices && list.invoices.length > 0 ? Number(list.invoices[0].balance_due || 0) : Number(list.total_amount || 0);
+            if (balanceDue <= 0) return false;
             const dueDate = new Date(list.due_date);
             const today = new Date();
             const diffTime = dueDate - today;

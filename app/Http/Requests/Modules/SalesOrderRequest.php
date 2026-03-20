@@ -22,6 +22,11 @@ class SalesOrderRequest extends FormRequest
                 'reason' => 'required|string',
                 'item_ids' => 'nullable|array',
                 'item_ids.*' => 'integer|exists:sales_order_items,id',
+                'receipt_id' => 'nullable|integer|exists:receipts,id',
+                'return_quantities' => 'nullable|array',
+                'return_quantities.*' => 'nullable|integer|min:0',
+                'return_conditions' => 'nullable|array',
+                'return_conditions.*' => 'nullable|string|in:restockable,damaged',
             ];
         }
         else if($action == 'approve'){

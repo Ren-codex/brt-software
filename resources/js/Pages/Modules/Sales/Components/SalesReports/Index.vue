@@ -16,6 +16,27 @@
         <!-- Filters -->
         <div class="filters-section">
           <div class="filters-grid">
+            <div class="filter-item report-filter-wide">
+              <label>Report View</label>
+              <div class="download-dropdown" ref="reportDropdown">
+                <button class="filter-input report-select-button" type="button" @click.stop="toggleReportMenu">
+                  <span>{{ activeReportTab.label }}</span>
+                  <i class="ri-arrow-down-s-line"></i>
+                </button>
+                <div v-if="showReportMenu" class="download-menu report-menu">
+                  <button
+                    v-for="tab in reportTabs"
+                    :key="tab.key"
+                    class="download-menu-item"
+                    :class="{ 'active-report-option': activeReport === tab.key }"
+                    @click="selectReport(tab.key)"
+                  >
+                    <i :class="tab.icon"></i>
+                    {{ tab.label }}
+                  </button>
+                </div>
+              </div>
+            </div>
             <div class="filter-item">
               <label>From</label>
               <input v-model="form.from" type="date" class="filter-input" @change="fetchReports" />
@@ -66,6 +87,19 @@
               </button>
             </div>
           </div>
+          <div class="report-tabs">
+            <button
+              v-for="tab in reportTabs"
+              :key="tab.key"
+              type="button"
+              class="report-tab"
+              :class="{ active: activeReport === tab.key }"
+              @click="selectReport(tab.key)"
+            >
+              <i :class="tab.icon"></i>
+              <span>{{ tab.label }}</span>
+            </button>
+          </div>
         </div>
 
         <!-- Loading State -->
@@ -76,6 +110,7 @@
 
         <!-- Report Content -->
         <div v-else class="report-content">
+          <div v-if="activeReport === 'sales-summary'">
           <!-- Summary Cards -->
           <div class="summary-cards">
             <div class="summary-card">
@@ -305,6 +340,271 @@
               </tbody>
             </table>
           </div>
+          </div>
+
+          <div v-else-if="activeReport === 'sales-by-item'" class="tables-grid">
+            <div class="data-table">
+              <div class="table-title">
+                <i class="ri-product-hunt-line"></i>
+                <h3>Top Products</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Sales</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in report?.top_products || []" :key="`item-top-${index}`">
+                    <td>{{ item.product_name }}</td>
+                    <td class="text-right">{{ item.total_quantity }}</td>
+                    <td class="text-right amount">{{ formatCurrency(item.total_sales) }}</td>
+                  </tr>
+                  <tr v-if="!report?.top_products?.length">
+                    <td colspan="3" class="empty-message">No item data found</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="data-table">
+              <div class="table-title">
+                <i class="ri-box-3-line"></i>
+                <h3>Sales by Item</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th class="text-right">Orders</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Sales</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in report?.product_sales_report || []" :key="`item-report-${index}`">
+                    <td>{{ item.product_name }}</td>
+                    <td class="text-right">{{ item.total_orders }}</td>
+                    <td class="text-right">{{ item.total_quantity }}</td>
+                    <td class="text-right amount">{{ formatCurrency(item.total_sales) }}</td>
+                  </tr>
+                  <tr v-if="!report?.product_sales_report?.length">
+                    <td colspan="4" class="empty-message">No product sales found</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div v-else-if="activeReport === 'sales-by-employee'" class="data-table">
+            <div class="table-title">
+              <i class="ri-team-line"></i>
+              <h3>Sales by Employee</h3>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Sales Rep</th>
+                  <th class="text-right">Orders</th>
+                  <th class="text-right">Avg Order</th>
+                  <th class="text-right">Sales</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, index) in report?.sales_rep_report || []" :key="`employee-report-${index}`">
+                  <td>{{ item.sales_rep_name }}</td>
+                  <td class="text-right">{{ item.total_orders }}</td>
+                  <td class="text-right">{{ formatCurrency(item.average_order_value) }}</td>
+                  <td class="text-right amount">{{ formatCurrency(item.total_sales) }}</td>
+                </tr>
+                <tr v-if="!report?.sales_rep_report?.length">
+                  <td colspan="4" class="empty-message">No employee sales found</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-else-if="activeReport === 'sales-by-payment-type'">
+            <div class="summary-cards">
+              <div class="summary-card">
+                <div class="summary-icon cash">
+                  <i class="ri-money-dollar-circle-line"></i>
+                </div>
+                <div class="summary-details">
+                  <span class="summary-label">Cash Sales</span>
+                  <span class="summary-value">{{ formatCurrency(report?.payment_summary?.cash?.total_sales || 0) }}</span>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon credit">
+                  <i class="ri-bank-card-line"></i>
+                </div>
+                <div class="summary-details">
+                  <span class="summary-label">Credit Sales</span>
+                  <span class="summary-value">{{ formatCurrency(report?.payment_summary?.credit?.total_sales || 0) }}</span>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon other">
+                  <i class="ri-exchange-line"></i>
+                </div>
+                <div class="summary-details">
+                  <span class="summary-label">Other Sales</span>
+                  <span class="summary-value">{{ formatCurrency(report?.payment_summary?.other?.total_sales || 0) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="data-table">
+              <div class="table-title">
+                <i class="ri-wallet-3-line"></i>
+                <h3>Sales by Payment Type</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Payment Type</th>
+                    <th class="text-right">Orders</th>
+                    <th class="text-right">Sales</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in paymentTypeRows" :key="item.key">
+                    <td>{{ item.label }}</td>
+                    <td class="text-right">{{ item.total_orders }}</td>
+                    <td class="text-right amount">{{ formatCurrency(item.total_sales) }}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"><strong>{{ report?.payment_summary?.grand_total_orders || 0 }}</strong></td>
+                    <td class="text-right amount"><strong>{{ formatCurrency(report?.payment_summary?.grand_total_sales || 0) }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div v-else-if="activeReport === 'receipt'" class="data-table">
+            <div class="table-title">
+              <i class="ri-receipt-line"></i>
+              <h3>Receipt Report</h3>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Receipt #</th>
+                  <th>Date</th>
+                  <th>SO #</th>
+                  <th>Customer</th>
+                  <th>Payment</th>
+                  <th class="text-right">Amount Paid</th>
+                  <th class="text-right">Balance Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in report?.receipt_report || []" :key="item.id">
+                  <td><span class="so-number">{{ item.receipt_number || '-' }}</span></td>
+                  <td>{{ formatDate(item.receipt_date) }}</td>
+                  <td>{{ item.so_number || '-' }}</td>
+                  <td>{{ item.customer_name }}</td>
+                  <td>
+                    <span class="payment-badge" :class="normalizePaymentMode(item.payment_mode)">
+                      {{ item.payment_mode || 'Cash' }}
+                    </span>
+                  </td>
+                  <td class="text-right amount">{{ formatCurrency(item.amount_paid) }}</td>
+                  <td class="text-right">{{ formatCurrency(item.balance_due) }}</td>
+                </tr>
+                <tr v-if="!report?.receipt_report?.length">
+                  <td colspan="7" class="empty-message">No receipts found for this filter</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-else-if="activeReport === 'discount'">
+            <div class="summary-cards">
+              <div class="summary-card">
+                <div class="summary-icon credit">
+                  <i class="ri-price-tag-3-line"></i>
+                </div>
+                <div class="summary-details">
+                  <span class="summary-label">Discounted Orders</span>
+                  <span class="summary-value">{{ report?.discount_summary?.discounted_orders || 0 }}</span>
+                </div>
+              </div>
+              <div class="summary-card total">
+                <div class="summary-icon">
+                  <i class="ri-coupon-3-line"></i>
+                </div>
+                <div class="summary-details">
+                  <span class="summary-label">Total Discount</span>
+                  <span class="summary-value">{{ formatCurrency(report?.discount_summary?.total_discount || 0) }}</span>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon other">
+                  <i class="ri-scales-3-line"></i>
+                </div>
+                <div class="summary-details">
+                  <span class="summary-label">Average Discount</span>
+                  <span class="summary-value">{{ formatCurrency(report?.discount_summary?.average_discount || 0) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="data-table">
+              <div class="table-title">
+                <i class="ri-price-tag-3-line"></i>
+                <h3>Discounted Sales Orders</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>SO #</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th class="text-right">Discount</th>
+                    <th class="text-right">Net Sales</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in report?.discount_summary?.orders || []" :key="item.id">
+                    <td><span class="so-number">{{ item.so_number }}</span></td>
+                    <td>{{ formatDate(item.order_date) }}</td>
+                    <td>{{ item.customer_name }}</td>
+                    <td class="text-right amount">{{ formatCurrency(item.total_discount) }}</td>
+                    <td class="text-right">{{ formatCurrency(item.total_amount) }}</td>
+                  </tr>
+                  <tr v-if="!report?.discount_summary?.orders?.length">
+                    <td colspan="5" class="empty-message">No discounted sales found</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div v-else-if="activeReport === 'taxes'">
+            <div class="summary-cards">
+              <div class="summary-card total">
+                <div class="summary-icon">
+                  <i class="ri-government-line"></i>
+                </div>
+                <div class="summary-details">
+                  <span class="summary-label">Total Taxes</span>
+                  <span class="summary-value">{{ formatCurrency(report?.tax_summary?.total_tax || 0) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="empty-panel">
+              <i class="ri-information-line"></i>
+              <h3>Taxes report unavailable</h3>
+              <p>{{ report?.tax_summary?.message || 'Tax reporting is not configured yet.' }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -313,6 +613,19 @@
 
 <script>
 import _ from 'lodash';
+
+const createDefaultReport = () => ({
+  top_customers: [],
+  top_products: [],
+  product_sales_report: [],
+  customer_sales_report: [],
+  sales_rep_report: [],
+  daily_sales_orders: [],
+  receipt_report: [],
+  discount_summary: { discounted_orders: 0, total_discount: 0, average_discount: 0, orders: [] },
+  tax_summary: { enabled: false, total_tax: 0, message: 'Tax reporting is not yet configured in sales orders.' },
+  payment_summary: { cash: null, credit: null, other: null, grand_total_sales: 0, grand_total_orders: 0 },
+});
 
 export default {
   props: {
@@ -329,6 +642,17 @@ export default {
       loading: false,
       downloading: false,
       showDownloadMenu: false,
+      showReportMenu: false,
+      activeReport: 'sales-summary',
+      reportTabs: [
+        { key: 'sales-summary', label: 'Sales Summary', icon: 'ri-line-chart-line' },
+        { key: 'sales-by-item', label: 'Sales by Item', icon: 'ri-box-3-line' },
+        { key: 'sales-by-employee', label: 'Sales by Employee', icon: 'ri-team-line' },
+        { key: 'sales-by-payment-type', label: 'Sales by Payment Type', icon: 'ri-wallet-3-line' },
+        { key: 'receipt', label: 'Receipt', icon: 'ri-receipt-line' },
+        { key: 'discount', label: 'Discount', icon: 'ri-price-tag-3-line' },
+        { key: 'taxes', label: 'Taxes', icon: 'ri-government-line' },
+      ],
       form: this.filters || {
         from: monthStart.toISOString().split('T')[0],
         to: today,
@@ -337,16 +661,20 @@ export default {
         payment_mode: 'all',
         limit: 10,
       },
-      report: this.reportData || {
-        top_customers: [],
-        top_products: [],
-        product_sales_report: [],
-        customer_sales_report: [],
-        sales_rep_report: [],
-        daily_sales_orders: [],
-        payment_summary: { cash: null, credit: null, other: null, grand_total_sales: 0 },
-      },
+      report: { ...createDefaultReport(), ...(this.reportData || {}) },
     };
+  },
+  computed: {
+    activeReportTab() {
+      return this.reportTabs.find(tab => tab.key === this.activeReport) || this.reportTabs[0];
+    },
+    paymentTypeRows() {
+      return [
+        { key: 'cash', label: 'Cash', ...(this.report?.payment_summary?.cash || { total_orders: 0, total_sales: 0 }) },
+        { key: 'credit', label: 'Credit', ...(this.report?.payment_summary?.credit || { total_orders: 0, total_sales: 0 }) },
+        { key: 'other', label: 'Other', ...(this.report?.payment_summary?.other || { total_orders: 0, total_sales: 0 }) },
+      ];
+    },
   },
   created() {
     this.debouncedFetchReports = _.debounce(this.fetchReports, 300);
@@ -362,7 +690,7 @@ export default {
     fetchReports() {
       this.loading = true;
       axios.get('/reports', { params: { option: 'summary', ...this.normalizedForm() } })
-        .then(res => this.report = res.data)
+        .then(res => this.report = { ...createDefaultReport(), ...res.data })
         .catch(err => console.error('Failed to fetch reports', err))
         .finally(() => this.loading = false);
     },
@@ -380,11 +708,21 @@ export default {
       };
       this.fetchReports();
     },
+    toggleReportMenu() {
+      this.showReportMenu = !this.showReportMenu;
+    },
+    selectReport(reportKey) {
+      this.activeReport = reportKey;
+      this.showReportMenu = false;
+    },
     toggleDownloadMenu(e) {
       e.stopPropagation();
       if (!this.loading && !this.downloading) this.showDownloadMenu = !this.showDownloadMenu;
     },
     handleDocumentClick(e) {
+      if (this.showReportMenu && !this.$refs.reportDropdown?.contains(e.target)) {
+        this.showReportMenu = false;
+      }
       if (this.showDownloadMenu && !this.$refs.downloadDropdown?.contains(e.target)) {
         this.showDownloadMenu = false;
       }
@@ -409,10 +747,16 @@ export default {
       .finally(() => this.downloading = false);
     },
     formatCurrency(val) {
-      return `₱${Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `PHP ${Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     },
     normalizedForm() {
       return { ...this.form, location_id: this.form.location_id || null };
+    },
+    normalizePaymentMode(mode) {
+      const value = String(mode || 'cash').toLowerCase();
+      if (['cash', 'cash sales'].includes(value)) return 'cash';
+      if (['credit', 'credit sales'].includes(value)) return 'credit';
+      return 'other';
     },
     formatDate(date) {
       return date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
@@ -480,6 +824,10 @@ export default {
   align-items: end;
 }
 
+.report-filter-wide {
+  min-width: 220px;
+}
+
 .filter-item {
   display: flex;
   flex-direction: column;
@@ -513,6 +861,50 @@ export default {
 .filter-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.report-select-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.report-menu {
+  min-width: 220px;
+}
+
+.active-report-option {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.report-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.report-tab {
+  border: 1px solid #dbe4ee;
+  background: #f8fafc;
+  color: #475569;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all 0.15s ease;
+}
+
+.report-tab.active,
+.report-tab:hover {
+  background: #059669;
+  color: white;
+  border-color: #059669;
 }
 
 /* Buttons */
@@ -678,6 +1070,11 @@ export default {
   color: #2563eb;
 }
 
+.summary-card.total .summary-icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
 .summary-details {
   flex: 1;
 }
@@ -814,10 +1211,34 @@ tr:last-child td {
   color: #d97706;
 }
 
+.payment-badge.other {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
 .empty-message {
   text-align: center;
   color: #94a3b8;
   padding: 2rem !important;
+}
+
+.empty-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-panel i {
+  font-size: 2rem;
+  color: #059669;
+}
+
+.empty-panel h3 {
+  margin: 0.75rem 0 0.5rem;
+  color: #1e293b;
 }
 
 /* Responsive */
@@ -838,5 +1259,11 @@ tr:last-child td {
   .filter-actions {
     grid-column: span 1;
   }
+
+  .report-tab {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
+

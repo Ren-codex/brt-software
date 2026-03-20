@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Receipt - {{ $receipt->receipt_number ?? 'N/A' }}</title>
+    <title>
+        {{ ($receipt->receipt_type ?? 'payment') === 'updated' ? 'Updated Receipt' : (($receipt->receipt_type ?? 'payment') === 'refund' ? 'Refund Receipt' : 'Receipt') }} - {{ $receipt->receipt_number ?? 'N/A' }}
+    </title>
     <style>
         @page { size: A4 portrait; margin: 10mm; }
         body {
@@ -81,11 +83,15 @@
     @php
         $customer = $receipt->customer ?? optional($sales_order)->customer;
         $receiptNumber = $receipt->receipt_number ?? '---';
+        $receiptType = $receipt->receipt_type ?? 'payment';
+        $isRefundReceipt = $receiptType === 'refund';
+        $isUpdatedReceipt = $receiptType === 'updated';
         $receiptDate = $receipt->receipt_date ? \Carbon\Carbon::parse($receipt->receipt_date)->format('m/d/Y') : '-';
         $invoiceDate = optional($ar_invoice)->invoice_date ? \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('m/d/Y') : '-';
         $orderDate = optional($sales_order)->order_date ? \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') : '-';
         $dueDate = optional($sales_order)->due_date ? \Carbon\Carbon::parse($sales_order->due_date)->format('m/d/Y') : '-';
         $balanceDue = (float) (optional($ar_invoice)->balance_due ?? ($receipt->balance_due ?? 0));
+        $displayAmount = (float) ($display_amount ?? $receipt->amount_paid ?? 0);
         $itemsCollection = collect($items ?? []);
         $logoPath = public_path('images/brt-logo.png');
     @endphp
@@ -106,7 +112,7 @@
                 Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
             </td>
             <td class="order-info">
-                <h2 class="order-title">Receipt</h2>
+                <h2 class="order-title">{{ $isUpdatedReceipt ? 'Updated Receipt' : ($isRefundReceipt ? 'Refund Receipt' : 'Receipt') }}</h2>
                 #{{ $receiptNumber }}<br>
                 {{ $receiptDate }}
             </td>
@@ -125,8 +131,10 @@
             {!! nl2br(e(optional($customer)->address ?? '-')) !!}
         </div>
         <div class="total-block">
-            <div style="text-align: left; font-weight: bold; font-size: 14px;">TOTAL PAID</div>
-            <div style="font-size: 22px; font-weight: bold;">PHP {{ number_format((float) ($receipt->amount_paid ?? 0), 2) }}</div>
+            <div style="text-align: left; font-weight: bold; font-size: 14px;">
+                {{ $isUpdatedReceipt ? 'UPDATED AMOUNT PAID' : ($isRefundReceipt ? 'TOTAL REFUNDED' : 'TOTAL PAID') }}
+            </div>
+            <div style="font-size: 22px; font-weight: bold;">PHP {{ number_format($displayAmount, 2) }}</div>
         </div>
     </div>
 
@@ -143,7 +151,11 @@
         <tbody>
             <tr>
                 <td>{{ optional($ar_invoice)->invoice_number ?? '---' }}</td>
-                <td>{{ $receipt->payment_mode ?? optional($sales_order)->payment_mode ?? '---' }}</td>
+                <td>
+                    {{ $isUpdatedReceipt
+                        ? ($receipt->payment_mode ?? optional($voided_receipt)->payment_mode ?? 'Updated Receipt')
+                        : ($isRefundReceipt ? ($receipt->payment_mode ?? 'Refund') : (optional($sales_order)->payment_mode ?? $receipt->payment_mode ?? '---')) }}
+                </td>
                 <td>{{ optional($sales_order)->so_number ?? '---' }}</td>
                 <td>{{ $invoiceDate }}</td>
                 <td>{{ $dueDate }}</td>
@@ -193,9 +205,18 @@
         <tr>
             <td style="vertical-align: top;">
                 <strong>Remarks:</strong><br>
-                Receipt Date: {{ $receiptDate }}<br>
+                {{ $isUpdatedReceipt ? 'Updated Receipt Date' : ($isRefundReceipt ? 'Refund Receipt Date' : 'Receipt Date') }}: {{ $receiptDate }}<br>
                 AR Invoice Date: {{ $invoiceDate }}<br>
                 Sales Order Date: {{ $orderDate }}<br><br>
+                @if(($isUpdatedReceipt || $isRefundReceipt) && $voided_receipt)
+                <strong>Voided Receipt:</strong> {{ $voided_receipt->receipt_number }}<br>
+                @endif
+                @if($isUpdatedReceipt && $receipt->sourceReceipt)
+                <strong>Connected Refund Receipt:</strong> {{ $receipt->sourceReceipt->receipt_number }}<br>
+                <strong>Refund Deducted:</strong> PHP {{ number_format((float) (($receipt->sourceReceipt->amount_paid ?? 0)), 2) }}<br><br>
+                @elseif($isRefundReceipt)
+                <strong>Refund Amount:</strong> PHP {{ number_format((float) ($receipt->amount_paid ?? 0), 2) }}<br><br>
+                @endif
                 <strong>Sales Rep:</strong> {{ optional($sales_order)->salesRep->fullname ?? '---' }}
             </td>
             <td style="width: 300px;">
@@ -210,12 +231,16 @@
                         <td class="text-right">PHP {{ number_format($subtotal, 2) }}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px 0;">Amount Paid</td>
-                        <td class="text-right">PHP {{ number_format((float) ($receipt->amount_paid ?? 0), 2) }}</td>
+                        <td style="padding: 5px 0;">
+                            {{ $isUpdatedReceipt ? 'Updated Amount Paid' : ($isRefundReceipt ? 'Amount Refunded' : 'Amount Paid') }}
+                        </td>
+                        <td class="text-right">PHP {{ number_format($displayAmount, 2) }}</td>
                     </tr>
                     <tr class="grand-total-box">
-                        <td style="padding: 10px 5px;">Total Amount Due</td>
-                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format($balanceDue, 2) }}</td>
+                        <td style="padding: 10px 5px;">
+                            {{ $isUpdatedReceipt ? 'Updated Amount Paid' : ($isRefundReceipt ? 'Total Refund Amount' : 'Total Amount Due') }}
+                        </td>
+                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format(($isUpdatedReceipt || $isRefundReceipt) ? $displayAmount : $balanceDue, 2) }}</td>
                     </tr>
                 </table>
             </td>

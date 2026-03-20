@@ -95,7 +95,8 @@
                         <input type="number" v-model="item.wholesale_price"
                           :class="{ 'error': shouldShowWholesalePriceError(item) }"
                           @input="markFieldTouched(item, 'wholesale_price')" @blur="markFieldTouched(item, 'wholesale_price')"
-                          class="form-control modern-input with-currency" :min="item.retail_price || 0" step="0.01"
+                          class="form-control modern-input with-currency" :min="item.unit_cost || 0"
+                          :max="item.retail_price || undefined" step="0.01"
                           :disabled="item.status !== 'pending'" placeholder="0.00" />
                         <div v-if="shouldShowWholesalePriceError(item)" class="field-error">
                           {{ getWholesalePriceError(item) }}
@@ -210,12 +211,16 @@ export default {
 
       const toReceive = this.toNumber(item.to_received_quantity) ?? 0;
       const wholesalePrice = this.toNumber(item.wholesale_price);
+      const unitCost = this.toNumber(item.unit_cost) ?? 0;
       const retailPrice = this.toNumber(item.retail_price);
 
       if (toReceive > 0 && wholesalePrice === null) return 'Required when To Receive > 0';
       if (wholesalePrice !== null && wholesalePrice < 0) return 'Must be 0 or greater';
-      if (toReceive > 0 && retailPrice !== null && wholesalePrice !== null && wholesalePrice < retailPrice) {
-        return `Must be at least ${this.formatCurrency(retailPrice)}`;
+      if (toReceive > 0 && wholesalePrice !== null && wholesalePrice < unitCost) {
+        return `Must be at least ${this.formatCurrency(unitCost)}`;
+      }
+      if (toReceive > 0 && retailPrice !== null && wholesalePrice !== null && wholesalePrice > retailPrice) {
+        return `Must be at most ${this.formatCurrency(retailPrice)}`;
       }
 
       return '';
@@ -291,8 +296,13 @@ export default {
             return;
           }
 
-          if (wholesalePrice < retailPrice) {
-            this.errorMessage = `Wholesale price for ${productName} must not be less than retail price (${this.formatCurrency(retailPrice)}).`;
+          if (wholesalePrice < unitCost) {
+            this.errorMessage = `Wholesale price for ${productName} must be at least unit cost (${this.formatCurrency(unitCost)}).`;
+            return;
+          }
+
+          if (wholesalePrice > retailPrice) {
+            this.errorMessage = `Wholesale price for ${productName} must be at most retail price (${this.formatCurrency(retailPrice)}).`;
             return;
           }
         }

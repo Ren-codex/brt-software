@@ -71,15 +71,19 @@
                             </thead>
                             <tbody class="fs-12">
                                 <template v-for="(list, index) in lists" :key="index">
-                                    <!-- Main Row -->
                                     <tr @click="toggleRowExpansion(index)" :class="{
                                         'expanded-row': expandedRow === index,
-                                        'cursor-pointer': true
+                                        'overdue-row': isOverdue(list),
+                                        'due-soon-row': isDueSoon(list),
+                                        'main-table-row': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
-                                            <i v-if="expandedRow === index"
-                                                class="ri-arrow-down-s-line text-primary"></i>
-                                            <i v-else class="ri-arrow-right-s-line text-muted"></i>
+                                            <button type="button" class="collapse-btn"
+                                                @click.stop="toggleRowExpansion(index)">
+                                                <div class="expand-icon" :class="{ rotated: expandedRow === index }">
+                                                    <i class="ri-arrow-right-s-line"></i>
+                                                </div>
+                                            </button>
                                             {{ index + 1 }}
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
@@ -87,44 +91,79 @@
                                         <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.invoice_date }}</td>
                                         <td class="text-center">
-                                            <b-badge
-                                                :style="{ 'background-color': list.status?.bg_color, color: '#fff' }"
-                                                class="px-3 py-2 rounded-pill">
-                                                {{ list.status?.name }}
-                                            </b-badge>
+                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                                {{ list.status?.name || '-' }}
+                                            </span>
+                                            <span v-if="isOverdue(list)" class="overdue-badge ms-1">
+                                                Past Due
+                                            </span>
+                                            <span v-if="isDueSoon(list)" class="due-soon-badge ms-1">
+                                                Due Soon
+                                            </span>
                                         </td>
                                         <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
                                         <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                            <div class="action-buttons-row">
                                                 <b-button
                                                     @click.stop="onViewReceipts(list)"
-                                                    variant="outline-success"
+                                                    variant="success"
                                                     v-b-tooltip.hover
                                                     title="View Receipts"
                                                     size="sm"
-                                                    class="btn-icon rounded-circle"
+                                                    class="btn-icon"
                                                 >
                                                     <i class="ri-file-3-line"></i>
                                                 </b-button>
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info"
+                                                <b-button @click.stop="onPrint(list.id)" variant="info"
                                                     v-b-tooltip.hover title="Print" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                    class="btn-icon">
                                                     <i class="ri-printer-line"></i>
                                                 </b-button>
                                                 <b-button
                                                     v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
-                                                    @click.stop="onPayment(list)" variant="outline-primary"
+                                                    @click.stop="onPayment(list)" variant="primary"
                                                     v-b-tooltip.hover title="Payment" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                    class="btn-icon">
                                                     <i class="ri-money-dollar-circle-fill"></i>
                                                 </b-button>
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRow === index" class="bg-light">
-                                        <td colspan="12" class="p-0">
-                                            <div class="p-4">
+                                    <tr v-if="expandedRow === index" class="details-row">
+                                        <td colspan="12">
+                                            <div class="details-container">
+                                                <div class="details-content">
+                                                    <div class="collapse-actions">
+                                                        <b-button
+                                                            @click.stop="onViewReceipts(list)"
+                                                            variant="success"
+                                                            size="sm"
+                                                            class="system-action-btn system-action-success"
+                                                        >
+                                                            <i class="ri-file-3-line me-1"></i>
+                                                            View Receipts
+                                                        </b-button>
+                                                        <b-button
+                                                            @click.stop="onPrint(list.id)"
+                                                            variant="info"
+                                                            size="sm"
+                                                            class="system-action-btn system-action-info"
+                                                        >
+                                                            <i class="ri-printer-line me-1"></i>
+                                                            Print Invoice
+                                                        </b-button>
+                                                        <b-button
+                                                            v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
+                                                            @click.stop="onPayment(list)"
+                                                            variant="primary"
+                                                            size="sm"
+                                                            class="system-action-btn system-action-primary"
+                                                        >
+                                                            <i class="ri-money-dollar-circle-fill me-1"></i>
+                                                            Record Payment
+                                                        </b-button>
+                                                    </div>
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Invoice Details
                                                 </h6>
@@ -185,11 +224,10 @@
                                                                 <div v-if="list.sales_order?.status" class="info-item">
                                                                     <span class="info-label">Order Status:</span>
                                                                     <span class="info-value">
-                                                                        <b-badge
-                                                                            :style="{ 'background-color': list.sales_order.status?.bg_color, color: '#fff' }"
-                                                                            class="px-2 py-1 rounded-pill">
+                                                                        <span class="status-badge"
+                                                                            :style="getStatusStyle(list.sales_order.status)">
                                                                             {{ list.sales_order.status?.name }}
-                                                                        </b-badge>
+                                                                        </span>
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -197,7 +235,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-
+                                            </div>
                                         </td>
                                     </tr>
                                 </template>
@@ -381,17 +419,84 @@ export default {
         getStockPercentage(quantity) {
             const maxStock = Math.max(...this.stock.products.map(p => p.total_quantity));
             return Math.min((quantity / maxStock) * 100, 100);
+        },
+
+        isDueSoon(list) {
+            const dueDateValue = list?.sales_order?.due_date;
+            if (!dueDateValue || Number(list?.balance_due || 0) <= 0) return false;
+
+            const dueDate = new Date(dueDateValue);
+            if (Number.isNaN(dueDate.getTime())) return false;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            dueDate.setHours(0, 0, 0, 0);
+
+            const diffTime = dueDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays <= 2 && diffDays >= 0;
+        },
+
+        isOverdue(list) {
+            const dueDateValue = list?.sales_order?.due_date;
+            if (!dueDateValue || Number(list?.balance_due || 0) <= 0) return false;
+
+            const dueDate = new Date(dueDateValue);
+            if (Number.isNaN(dueDate.getTime())) return false;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            dueDate.setHours(0, 0, 0, 0);
+
+            return dueDate.getTime() < today.getTime();
+        },
+
+        getStatusStyle(status) {
+            if (!status) {
+                return {
+                    color: '#6c757d',
+                    backgroundColor: '#e2e3e5',
+                    border: '1px solid #cccccc'
+                };
+            }
+
+            return {
+                color: status.text_color || '#000000',
+                backgroundColor: status.bg_color || '#ffffff',
+                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
+                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
+            };
         }
     }
 }
 </script>
 
 <style scoped>
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
 /* Modern Collapsible Row Styles */
 .main-table-row {
     cursor: pointer;
     transition: all 0.2s ease;
     border-left: 3px solid transparent;
+}
+
+.main-table-row td {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    vertical-align: middle;
 }
 
 .main-table-row:hover {
@@ -404,15 +509,51 @@ export default {
     border-left-color: #3D8D7A;
 }
 
+.main-table-row.overdue-row {
+    background: rgba(239, 68, 68, 0.14);
+    border-left-color: #dc2626;
+}
+
+.main-table-row.overdue-row:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-left-color: #b91c1c;
+}
+
+.main-table-row.due-soon-row {
+    background: rgba(244, 114, 182, 0.12);
+    border-left-color: #ec4899;
+}
+
+.main-table-row.due-soon-row:hover {
+    background: rgba(244, 114, 182, 0.18) !important;
+    border-left-color: #db2777;
+}
+
+.collapse-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #2e8b57;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.collapse-btn:hover {
+    background: rgba(61, 141, 122, 0.08);
+}
+
 .expand-icon {
     display: inline-block;
-    margin-right: 8px;
     transition: transform 0.3s ease;
     color: #6c757d;
 }
 
 .expand-icon i {
-    font-size: 18px;
+    font-size: 15px;
     vertical-align: middle;
 }
 
@@ -425,6 +566,11 @@ export default {
 .details-row {
     background-color: #f8fafd;
     border-bottom: 2px solid #e9ecef;
+}
+
+.details-row td {
+    padding: 0 !important;
+    border-top: none !important;
 }
 
 .details-container {
@@ -569,6 +715,111 @@ export default {
     letter-spacing: 0.3px;
 }
 
+.btn-icon {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 0;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-icon i {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.btn-icon:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(15, 23, 42, 0.12);
+}
+
+.action-buttons-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.collapse-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+
+.system-action-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.system-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+.system-action-success {
+    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    color: #ffffff;
+}
+
+.system-action-primary {
+    background: linear-gradient(135deg, #3d8d7a 0%, #267a4c 100%);
+    color: #ffffff;
+}
+
+.system-action-info {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+    color: #ffffff;
+}
+
+.due-soon-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9d174d;
+    background: rgba(244, 114, 182, 0.16);
+    border: 1px solid rgba(236, 72, 153, 0.28);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.overdue-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #991b1b;
+    background: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(220, 38, 38, 0.28);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .details-content {
@@ -582,6 +833,14 @@ export default {
     }
 
     .info-value {
+        width: 100%;
+    }
+
+    .collapse-actions {
+        justify-content: stretch;
+    }
+
+    .system-action-btn {
         width: 100%;
     }
 }

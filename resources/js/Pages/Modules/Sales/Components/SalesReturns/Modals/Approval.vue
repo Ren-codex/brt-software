@@ -34,7 +34,7 @@
 
                 <div class="notice-box">
                     <i class="ri-information-line"></i>
-                    <span>Selected items will be restored to stock. Unselected items remain treated as loss or damage.</span>
+                    <span>Each approved item follows its saved condition: restockable items return to inventory, while damaged items stay out of sellable stock.</span>
                 </div>
 
                 <div class="table-wrap mt-3">
@@ -56,7 +56,9 @@
                                         >
                                     </th>
                                     <th>Product</th>
-                                    <th>Quantity</th>
+                                    <th>Sold Qty</th>
+                                    <th>Return Qty</th>
+                                    <th>Condition</th>
                                     <th>Unit</th>
                                     <th>Price</th>
                                     <th>Total</th>
@@ -73,14 +75,16 @@
                                     </td>
                                     <td>{{ getProductName(item.product_id) }}</td>
                                     <td>{{ item.quantity }}</td>
+                                    <td>{{ getReturnQuantity(item.id, item.quantity) }}</td>
+                                    <td>{{ formatCondition(getReturnCondition(item.id)) }}</td>
                                     <td>{{ item.unit }}</td>
                                     <td>{{ formatCurrency(item.price) }}</td>
-                                    <td class="fw-semibold">{{ formatCurrency(item.quantity * item.price) }}</td>
+                                    <td class="fw-semibold">{{ formatCurrency(getReturnQuantity(item.id, item.quantity) * item.price) }}</td>
                                 </tr>
                             </tbody>
                             <tfoot v-if="items.length > 0">
                                 <tr>
-                                    <td colspan="5" class="text-end fw-bold">Selected Total:</td>
+                                    <td colspan="7" class="text-end fw-bold">Selected Total:</td>
                                     <td class="fw-bold text-success">{{ formatCurrency(selectedTotal) }}</td>
                                 </tr>
                             </tfoot>
@@ -132,6 +136,8 @@ export default {
             showModal: false,
             items: [],
             selectedItems: [],
+            returnItems: {},
+            returnConditions: {},
         }
     },
     computed: {
@@ -141,7 +147,7 @@ export default {
         selectedTotal() {
             return this.items
                 .filter(item => this.selectedItems.includes(item.id))
-                .reduce((sum, item) => sum + (item.quantity * item.price), 0);
+                .reduce((sum, item) => sum + (this.getReturnQuantity(item.id, item.quantity) * item.price), 0);
         },
         confirmTextValid() {
             return (this.text_confirm || '').trim().toUpperCase() === 'CONFIRM';
@@ -151,7 +157,7 @@ export default {
         }
     },
     methods: {
-        show(id, so_number, route, items = [], preselectedItemIds = []){
+        show(id, so_number, route, items = [], preselectedItemIds = [], returnItems = {}, returnConditions = {}){
             this.form.reset();
             this.form.clearErrors();
             this.showModal = true;
@@ -159,6 +165,8 @@ export default {
             this.so_number = so_number;
             this.route = route;
             this.items = items;
+            this.returnItems = returnItems || {};
+            this.returnConditions = returnConditions || {};
             this.selectedItems = preselectedItemIds.length > 0
                 ? preselectedItemIds
                 : items.map(item => item.id);
@@ -171,10 +179,14 @@ export default {
             this.form.item_ids = this.selectedItems;
             this.form.put(`${this.route}/${this.form.id}`,{
                 preserveScroll: true,
-                onSuccess: () => {
+                onSuccess: (response) => {
+                    const receiptId = response?.props?.flash?.receipt_id || this.$page?.props?.flash?.receipt_id || null;
                     this.$emit('approve', true);
                     this.form.reset();
                     this.hide();
+                    if (receiptId) {
+                        window.open(`/receipts/${receiptId}?option=print&type=receipt`, '_blank');
+                    }
                 },
             });
 
@@ -185,6 +197,8 @@ export default {
             this.showModal = false;
             this.items = [];
             this.selectedItems = [];
+            this.returnItems = {};
+            this.returnConditions = {};
             this.text_confirm = '';
         },
         toggleAll(){
@@ -197,6 +211,19 @@ export default {
         getProductName(productId) {
             const product = this.products ? this.products.find(p => p.value === productId) : null;
             return product ? product.name : 'Unknown Product';
+        },
+        getReturnQuantity(itemId, fallbackQuantity = 0) {
+            return Number(this.returnItems?.[itemId] ?? fallbackQuantity);
+        },
+        getReturnCondition(itemId) {
+            return this.returnConditions?.[itemId] || 'restockable';
+        },
+        formatCondition(condition) {
+            const labels = {
+                restockable: 'Restockable',
+                damaged: 'Damaged',
+            };
+            return labels[condition] || condition;
         },
         formatCurrency(value) {
             const amount = Number(value || 0);

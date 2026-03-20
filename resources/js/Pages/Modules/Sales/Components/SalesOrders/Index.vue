@@ -398,6 +398,8 @@ export default {
 
         isDueSoon(list) {
             if (!list.due_date) return false;
+            const balanceDue = list.invoices && list.invoices.length > 0 ? Number(list.invoices[0].balance_due || 0) : Number(list.total_amount || 0);
+            if (balanceDue <= 0) return false;
             const dueDate = new Date(list.due_date);
             const today = new Date();
             const diffTime = dueDate - today;
