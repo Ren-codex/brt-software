@@ -27,7 +27,9 @@ class EmployeeRequest extends FormRequest
             'middlename' => 'nullable|string|max:255',
             'lastname' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:10',
-            'email' => 'required|email|max:255|unique:employees,email,' . $employeeId,
+            'email' => $this->filled('username')
+                ? 'required|email|max:255|unique:employees,email,' . $employeeId
+                : 'nullable|email|max:255|unique:employees,email,' . $employeeId,
             'username' => [
                 'nullable',
                 'string',
@@ -48,9 +50,7 @@ class EmployeeRequest extends FormRequest
             'religion' => 'nullable|string|max:100',
             'address' => 'required|string|max:500',
             'position_id' => 'required|exists:list_positions,id',
-            'avatar' => $this->isMethod('post')
-                ? 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
-                : 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_regular' => 'required|boolean',
             'is_active' => 'required|boolean',
             'is_blacklisted' => 'nullable|boolean',
@@ -62,7 +62,6 @@ class EmployeeRequest extends FormRequest
             'firstname.required' => 'First name is required',
             'lastname.required' => 'Last name is required',
             'email.email' => 'Please provide a valid email address',
-            'avatar.required' => 'Avatar is required',
             'email.unique' => 'This email is already taken',
             'mobile.regex' => 'Mobile number must be in the format 09XXXXXXXXX',
             'mobile.unique' => 'This mobile number is already taken',

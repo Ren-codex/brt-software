@@ -23,11 +23,12 @@
                 <div class="profile-card">
                     <div class="profile-avatar-wrap">
                         <div class="profile-avatar">
-                            <img v-if="employee.avatar" :src="'/storage/' + employee.avatar" alt="Profile"
-                                class="profile-avatar-image">
-                            <div v-else class="profile-avatar-placeholder">
-                                <i class="ri-user-line"></i>
-                            </div>
+                            <img
+                                :src="employeeAvatarSrc"
+                                alt="Profile"
+                                class="profile-avatar-image"
+                                @error="onAvatarError"
+                            >
                         </div>
                     
                     </div>
@@ -409,6 +410,13 @@ export default {
         };
     },
     computed: {
+        employeeAvatarSrc() {
+            if (!this.employee?.avatar || this.employee.avatar === 'noavatar.jpg') {
+                return this.defaultAvatar;
+            }
+
+            return `/storage/${this.employee.avatar}`;
+        },
         employeeLoans() {
             if (!Array.isArray(this.employee?.loans)) {
                 return [];
@@ -815,6 +823,11 @@ export default {
                 .split('')
                 .reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
             return palette[seed % palette.length];
+        },
+        onAvatarError(event) {
+            if (event?.target && event.target.src !== `${window.location.origin}${this.defaultAvatar}`) {
+                event.target.src = this.defaultAvatar;
+            }
         },
         getAccountRoles(user) {
             if (!user) return '-';

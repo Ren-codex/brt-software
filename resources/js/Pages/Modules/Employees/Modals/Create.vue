@@ -23,7 +23,7 @@
                     <!-- Profile Picture - Simple -->
                     <div class="profile-section" :class="{ 'has-error': form.errors.avatar }">
                         <div class="profile-section-header">
-                            <label>Profile Photo <span class="required">*</span></label>
+                            <label>Profile Photo</label>
                             <span class="error-text" v-if="form.errors.avatar">{{ form.errors.avatar }}</span>
                         </div>
                         <div class="profile-picture" :class="{ 'error-border': form.errors.avatar }">
@@ -155,7 +155,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Email Address</label>
+                                <label>Email Address <span v-if="needsAccount" class="required">*</span></label>
                                 <input
                                     type="email"
                                     v-model="form.email"
@@ -338,11 +338,28 @@
                         </div>
                     </div>
 
+                    <transition name="fade">
+                        <div class="submit-message submit-message-error" v-if="submitError">
+                            <div class="submit-message-icon">
+                                <i class="ri-error-warning-line"></i>
+                            </div>
+                            <div class="submit-message-body">
+                                <strong>Unable to save employee</strong>
+                                <span>{{ submitError }}</span>
+                            </div>
+                        </div>
+                    </transition>
+
                     <!-- Simple Success Message -->
                     <transition name="fade">
                         <div class="success-message" v-if="saveSuccess">
-                            <i class="ri-checkbox-circle-line"></i>
-                            <span>Employee saved successfully!</span>
+                            <div class="success-message-icon">
+                                <i class="ri-checkbox-circle-line"></i>
+                            </div>
+                            <div class="success-message-body">
+                                <strong>Employee saved</strong>
+                                <span>{{ successMessage }}</span>
+                            </div>
                         </div>
                     </transition>
 
@@ -399,6 +416,8 @@ export default {
             showModal: false,
             editable: false,
             saveSuccess: false,
+            successMessage: 'Employee saved successfully!',
+            submitError: '',
             previewImage: null,
             passwordMismatch: false,
             needsAccount: false,
@@ -450,6 +469,8 @@ export default {
             this.previewImage = null;
             this.editable = false;
             this.saveSuccess = false;
+            this.successMessage = 'Employee saved successfully!';
+            this.submitError = '';
             this.needsAccount = false;
             this.roleDropdownOpen = false;
             this.showModal = true;
@@ -490,9 +511,14 @@ export default {
             
             this.editable = true;
             this.saveSuccess = false;
+            this.successMessage = 'Employee updated successfully!';
+            this.submitError = '';
             this.showModal = true;
         },
         submit() {
+            this.saveSuccess = false;
+            this.submitError = '';
+
             if (!this.needsAccount) {
                 this.form.username = null;
                 this.form.password = null;
@@ -505,29 +531,52 @@ export default {
             if (this.editable) {
                 this.form.put(`/employees/${this.form.id}`, {
                     preserveScroll: true,
-                    onSuccess: () => {
+                    onSuccess: (page) => {
+                        const flash = page?.props?.flash || {};
+                        if (flash.status === false) {
+                            this.submitError = flash.info || flash.message || 'Failed to update employee. Please review the form and try again.';
+                            return;
+                        }
+
+                        this.successMessage = flash.message || 'Employee updated successfully!';
                         this.saveSuccess = true;
                         setTimeout(() => {
                             this.$emit('update', true);
                             this.hide();
                         }, 1500);
                     },
+                    onError: (errors) => {
+                        this.submitError = this.formatSubmitError(errors, 'Please check the highlighted fields and try again.');
+                    },
                 });
             } else {
                 this.form.post('/employees', {
                     preserveScroll: true,
-                    onSuccess: () => {
+                    onSuccess: (page) => {
+                        const flash = page?.props?.flash || {};
+                        if (flash.status === false) {
+                            this.submitError = flash.info || flash.message || 'Failed to save employee. Please review the form and try again.';
+                            return;
+                        }
+
+                        this.successMessage = flash.message || 'Employee saved successfully!';
                         this.saveSuccess = true;
                         setTimeout(() => {
                             this.$emit('add', true);
                             this.hide();
                         }, 1500);
                     },
+                    onError: (errors) => {
+                        this.submitError = this.formatSubmitError(errors, 'Please check the highlighted fields and try again.');
+                    },
                 });
             }
         },
         handleInput(field) {
             this.form.errors[field] = false;
+            if (this.submitError) {
+                this.submitError = null;
+            }
         },
         toggleRoleSelection(roleId, checked) {
             const normalizedRoleId = Number(roleId);
@@ -559,6 +608,17 @@ export default {
                 .filter((id) => id !== normalizedRoleId && !Number.isNaN(id));
             this.handleInput('role_ids');
         },
+        formatSubmitError(errors, fallbackMessage) {
+            const messages = Object.values(errors || {})
+                .flat()
+                .filter(Boolean);
+
+            if (!messages.length) {
+                return fallbackMessage;
+            }
+
+            return messages.join(' | ');
+        },
         handleAvatarChange(event) {
             const file = event.target.files[0];
             if (file) {
@@ -583,6 +643,8 @@ export default {
             this.previewImage = null;
             this.editable = false;
             this.saveSuccess = false;
+            this.successMessage = 'Employee saved successfully!';
+            this.submitError = '';
             this.passwordMismatch = false;
             this.needsAccount = true;
             this.roleDropdownOpen = false;
@@ -1084,21 +1146,100 @@ input:checked + .toggle-slider:before {
 }
 
 .success-message {
-    grid-column: 1 / -1;
+    grid-column: 2;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
-    padding: 13px 16px;
-    border-radius: 12px;
-    border: 1px solid #aee5d1;
-    background: linear-gradient(120deg, #dbf9ed 0%, #ebfdf6 100%);
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid #9fdcc4;
+    background: linear-gradient(120deg, #dbf9ed 0%, #effdf7 100%);
     color: #1f6b4f;
+    box-shadow: 0 8px 20px rgba(31, 107, 79, 0.08);
+}
+
+.success-message-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 10px;
+    background: rgba(31, 107, 79, 0.12);
+    display: grid;
+    place-items: center;
+    font-size: 1rem;
+    color: #1f6b4f;
+}
+
+.success-message-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.45;
+}
+
+.success-message-body strong {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #16533b;
+}
+
+.success-message-body span {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #1f6b4f;
+}
+
+.submit-message {
+    grid-column: 2;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 14px;
     font-size: 0.84rem;
     font-weight: 600;
 }
 
+.submit-message-error {
+    border: 1px solid #efb8b0;
+    background: linear-gradient(120deg, #fff1ee 0%, #fff9f8 100%);
+    color: #982f26;
+    box-shadow: 0 8px 20px rgba(163, 63, 53, 0.08);
+}
+
+.submit-message-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 10px;
+    background: rgba(214, 91, 78, 0.12);
+    display: grid;
+    place-items: center;
+    font-size: 1rem;
+}
+
+.submit-message-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.45;
+}
+
+.submit-message-body strong {
+    font-size: 0.85rem;
+    color: #7f2119;
+}
+
+.submit-message-body span {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #a33f35;
+    white-space: normal;
+    word-break: break-word;
+}
+
 .form-actions {
-    grid-column: 1 / -1;
+    grid-column: 2;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -1188,6 +1329,12 @@ input:checked + .toggle-slider:before {
     }
 
     .form-section {
+        grid-column: 1;
+    }
+
+    .submit-message,
+    .success-message,
+    .form-actions {
         grid-column: 1;
     }
 }
