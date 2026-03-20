@@ -272,6 +272,18 @@ class ListStatusesTableSeeder extends Seeder
             20 =>
             array (
                 'id' => 21,
+                'name' => 'Received Status',
+                'slug' => 'receive',
+                'description' => 'Received status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            21 =>
+            array (
+                'id' => 22,
                 'name' => 'Released',
                 'slug' => 'released',
                 'description' => 'Released status',
@@ -281,7 +293,5 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
         ));
-
-        
     }
 }

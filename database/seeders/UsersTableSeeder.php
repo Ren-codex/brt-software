@@ -23,7 +23,7 @@ class UsersTableSeeder extends Seeder
             array (
                 'id' => 1,
                 'username' => 'rbt0213',
-                'email' => 'ren.zeon0213@gmail.com',
+                'email' => 'bouyant@gmail.com',
                 'password' => Hash::make('b0uy4nt-4dm1n'),
                 'is_active' => 1,
                 'is_new' => 0,
