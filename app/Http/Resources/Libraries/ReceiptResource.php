@@ -14,6 +14,9 @@ class ReceiptResource extends JsonResource
         $salesOrder = optional($this->arInvoice)->sales_order;
         $receiptDate = $this->receipt_date ? Carbon::parse($this->receipt_date) : null;
         $daysSinceReceipt = $receiptDate ? $receiptDate->startOfDay()->diffInDays(now()->startOfDay(), false) : null;
+        $isUnremittedPastDay = $receiptDate
+            ? $receiptDate->copy()->startOfDay()->lt(now()->startOfDay()) && empty($this->remittance_id)
+            : false;
         $salesOrderStatus = optional($salesOrder->status)->slug;
         $receiptStatus = optional($this->status)->slug;
         $isWithinReturnWindow = $daysSinceReceipt !== null && $daysSinceReceipt >= 0 && $daysSinceReceipt <= self::RETURN_WINDOW_DAYS;
@@ -50,6 +53,8 @@ class ReceiptResource extends JsonResource
             'customer' => $this->customer ? $this->customer : null,
             'ar_invoice_id' => $this->ar_invoice_id,
             'status' => $this->status,
+            'remittance_id' => $this->remittance_id,
+            'is_unremitted_past_day' => $isUnremittedPastDay,
             'created_at' => Carbon::parse($this->created_at)->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at,
             'payment_mode' => $this->payment_mode ?? optional($salesOrder)->payment_mode,

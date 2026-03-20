@@ -176,10 +176,6 @@ class SalesOrderClass
             'total_discount' => $totalDiscount,
         ]);
 
-        // Reload the data with relationships
-        $data = SalesOrder::with(['items', 'customer', 'status', 'created_by'])->find($data->id);
- 
-     
         // Create AR Invoice
         $invoice = new ArInvoice();
         $invoice->sales_order_id = $data->id;
@@ -190,6 +186,9 @@ class SalesOrderClass
         $invoice->total_discount = $data->total_discount;
         $invoice->status_id = ListStatus::getBySlug('unpaid')->id; // Unpaid
         $invoice->save();
+
+        // Reload the data with relationships, including the newly created invoice
+        $data = SalesOrder::with(['items', 'customer', 'status', 'created_by', 'arInvoices'])->find($data->id);
         
     
         return [

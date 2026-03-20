@@ -60,6 +60,7 @@ class ReportsController extends Controller
         $day = $request->input('day', now()->toDateString());
         $limit = (int) $request->input('limit', 10);
         $paymentMode = strtolower((string) $request->input('payment_mode', 'all'));
+        $reportType = strtolower((string) $request->input('report_type', 'sales-summary'));
         $locationId = $request->filled('location_id') ? (int) $request->input('location_id') : null;
 
         return [
@@ -69,6 +70,15 @@ class ReportsController extends Controller
             'limit' => max(1, min($limit, 50)),
             'location_id' => $locationId > 0 ? $locationId : null,
             'payment_mode' => in_array($paymentMode, ['all', 'cash', 'credit'], true) ? $paymentMode : 'all',
+            'report_type' => in_array($reportType, [
+                'sales-summary',
+                'sales-by-item',
+                'sales-by-employee',
+                'sales-by-payment-type',
+                'receipt',
+                'discount',
+                'taxes',
+            ], true) ? $reportType : 'sales-summary',
         ];
     }
 }

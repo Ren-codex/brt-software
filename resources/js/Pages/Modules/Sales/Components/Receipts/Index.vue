@@ -80,7 +80,12 @@
                                     </td>
                                 </tr>
                                 <template v-for="(list,index) in lists" :key="index">
-                                    <tr @click="toggleRowExpansion(index)" class="cursor-pointer transition-all" style="transition: all 0.3s ease;">
+                                    <tr @click="toggleRowExpansion(index)"
+                                        :class="{
+                                            'main-table-row': true,
+                                            'unremitted-row': list.is_unremitted_past_day
+                                        }"
+                                        class="cursor-pointer transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
                                             <i v-if="expandedRows.includes(index)" class="ri-arrow-down-s-line text-primary"></i>
                                             <i v-else class="ri-arrow-right-s-line text-muted"></i>
@@ -101,6 +106,9 @@
                                             <span
                                                 :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
                                                 {{ list.status?.name || 'Unknown' }}
+                                            </span>
+                                            <span v-if="list.is_unremitted_past_day" class="unremitted-badge ms-1">
+                                                Unremitted
                                             </span>
                                         </td>
                                         <td class="text-center">
@@ -149,7 +157,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-light border-0">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length" :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
@@ -275,3 +283,33 @@ export default {
     }
 }
 </script>
+<style scoped>
+.main-table-row {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.main-table-row.unremitted-row {
+    background: rgba(239, 68, 68, 0.12);
+    border-left-color: #dc2626;
+}
+
+.main-table-row.unremitted-row:hover {
+    background: rgba(239, 68, 68, 0.18) !important;
+    border-left-color: #b91c1c;
+}
+
+.unremitted-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #991b1b;
+    background: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(220, 38, 38, 0.28);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+</style>
