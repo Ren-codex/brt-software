@@ -71,7 +71,7 @@
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.quantity }"
                                     placeholder="Enter Quantity"
-                                    :max="selectedProductStock"
+                                    :max="editable ? selectedProductStock : totalAllocatableStock"
                                     @input="validateQuantity"
                                 />
 
@@ -81,6 +81,18 @@
                                     <i class="ri-information-line"></i>
                                     Available Stock (Selected Batch): <strong>{{ selectedProductStock }}</strong>
                                 </small>
+                                <small class="text-muted d-block">
+                                    <i class="ri-stack-line"></i>
+                                    Total Available From This Batch Onward: <strong>{{ totalAllocatableStock }}</strong>
+                                </small>
+                                <small
+                                    v-if="shouldSplitIntoMultipleItems"
+                                    class="text-muted d-block"
+                                >
+                                    <i class="ri-git-merge-line"></i>
+                                    This quantity will be split into multiple items by batch.
+                                </small>
+                             
                                 <div v-if="selectedProductBatches.length > 0" class="batch-stock-list">
                                     <small class="text-muted d-block mb-1">All Batch Stocks:</small>
                                     <div class="batch-stock-item" v-for="batch in selectedProductBatches" :key="batch.batch_code">
@@ -93,7 +105,7 @@
                         </div>
                          <div class="form-group form-group-half">
                             <label for="price" class="form-label">Price</label>
-                            <div class="input-wrapper">
+                            <div v-if="!shouldSplitIntoMultipleItems" class="input-wrapper">
                                 <i class="ri-cash-line input-icon"></i>
                                 <input
                                     type="text"
@@ -103,6 +115,24 @@
                                     readonly
                                 />
                             </div>
+                            <div v-else class="split-preview-list">
+                                <div
+                                    v-for="allocation in batchAllocationsPreview"
+                                    :key="`${allocation.batch_code}-price`"
+                                    class="split-preview-item"
+                                >
+                                    <div class="split-preview-header">
+                                        <span>{{ allocation.batch_code }}</span>
+                                        <strong>Qty: {{ allocation.quantity }}</strong>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        :value="formatCurrency(allocation.price)"
+                                        class="form-control"
+                                        readonly
+                                    />
+                                </div>
+                            </div>
                             <span class="error-message" v-if="form.errors.price">{{ form.errors.price }}</span>
                         </div>
                     </div>
@@ -111,23 +141,7 @@
                   
 
                     <div class="form-row">
-                        <div class="form-group form-group-half">
-                            <label for="batch_code" class="form-label">Batch Code</label>
-                            <div class="input-wrapper">
-                                <i class="ri-barcode-line input-icon"></i>
-                                <TextInput
-                                    type="text"
-                                    id="batch_code"
-                                    v-model="form.batch_code"
-                                    class="form-control"
-                                    :class="{ 'input-error': form.errors.batch_code }"
-                                    placeholder="Batch Code"
-                                    readonly
-                                    @input="handleInput('batch_code')"
-                                />
-                            </div>
-                            <span class="error-message" v-if="form.errors.batch_code">{{ form.errors.batch_code }}</span>
-                        </div>
+        
 
                         <div class="form-group form-group-half">
                             <label for="discount_per_unit" class="form-label">Discount per Unit (Amount)</label>
@@ -227,6 +241,10 @@ export default {
             const batch = this.selectedProductBatches.find((b) => b.batch_code === this.form.batch_code);
             return batch ? batch.quantity : 0;
         },
+        selectedBatchDetails() {
+            if (!this.form.batch_code) return null;
+            return this.selectedProductBatches.find((batch) => batch.batch_code === this.form.batch_code) || null;
+        },
         selectedProductBatches() {
             if (!this.form.product_id) return [];
             const product = this.dropdowns.products.find(p => p.value === this.form.product_id);
@@ -239,9 +257,46 @@ export default {
                     return {
                         batch_code: batch.batch_code,
                         quantity: Math.max((parseFloat(batch.quantity) || 0) - reserved, 0),
+                        unit_cost: parseFloat(batch.unit_cost) || 0,
+                        retail_price: parseFloat(batch.retail_price) || 0,
+                        wholesale_price: parseFloat(batch.wholesale_price) || 0,
                     };
                 })
                 .filter((batch) => batch.quantity > 0);
+        },
+        allocatableBatches() {
+            if (!this.form.batch_code) return this.selectedProductBatches;
+            const startIndex = this.selectedProductBatches.findIndex((batch) => batch.batch_code === this.form.batch_code);
+            if (startIndex === -1) return [];
+            return this.selectedProductBatches.slice(startIndex);
+        },
+        totalAllocatableStock() {
+            return this.allocatableBatches.reduce((sum, batch) => sum + (parseFloat(batch.quantity) || 0), 0);
+        },
+        shouldSplitIntoMultipleItems() {
+            const quantity = parseFloat(this.form.quantity) || 0;
+            return !this.editable && quantity > 0 && quantity > (parseFloat(this.selectedProductStock) || 0);
+        },
+        batchAllocationsPreview() {
+            let remainingQuantity = parseFloat(this.form.quantity) || 0;
+            const allocations = [];
+
+            this.allocatableBatches.forEach((batch) => {
+                if (remainingQuantity <= 0) return;
+
+                const batchQuantity = Math.min(remainingQuantity, parseFloat(batch.quantity) || 0);
+                if (batchQuantity <= 0) return;
+
+                allocations.push({
+                    batch_code: batch.batch_code,
+                    quantity: batchQuantity,
+                    price: Number(this.getBatchPrice(batch) || 0),
+                });
+
+                remainingQuantity -= batchQuantity;
+            });
+
+            return allocations;
         },
         availableProducts() {
             return this.dropdowns.products.filter((product) => {
@@ -277,10 +332,12 @@ export default {
             this.form.quantity = data.quantity;
             this.form.product_id = data.product_id;
             this.form.price_type = data.price_type || 'retail';
-            this.onProductChange(); // Recalculate price and batch_code based on current inventory
+            this.editable = true;
+            this.onProductChange();
+            this.form.batch_code = data.batch_code || this.form.batch_code;
+            this.form.price = parseFloat(this.getBatchPrice(this.selectedBatchDetails) || data.price || 0).toFixed(2);
             this.form.discount_per_unit = data.discount_per_unit || 0;
             this.form.total_amount = data.total_amount;
-            this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
             this.validateQuantity(); // Validate quantity against current stock
@@ -288,12 +345,12 @@ export default {
 
         submit() {
             // Re-validate discount before submitting
+            this.validateQuantity();
             this.validateDiscount();
 
-            // // Check for any validation errors before submitting
-            // if (Object.keys(this.form.errors).length > 0) {
-            //     return; // Prevent submission if there are errors
-            // }
+            if (this.form.errors.quantity || this.form.errors.discount_per_unit) {
+                return;
+            }
 
             const itemData = {
                 id: this.form.id,
@@ -307,13 +364,11 @@ export default {
                 total_amount: this.form.amount || 0,
             };
 
-            console.log('Submitting item:', itemData); // Debug log
-
             if (this.editable) {
                 this.$emit('update', itemData );
             } else {
-                itemData.id = Date.now();
-                this.$emit('items', itemData);
+                const splitItems = this.allocateItemQuantities(itemData);
+                this.$emit('items', splitItems);
             }
 
             this.showModal = false;
@@ -350,7 +405,7 @@ export default {
             if (product) {
                 const availableBatch = this.selectedProductBatches[0];
                 this.form.batch_code = availableBatch ? availableBatch.batch_code : null;
-                const price = this.form.price_type === 'wholesale' ? product.wholesale_price : product.retail_price;
+                const price = this.getBatchPrice(availableBatch);
                 this.form.price = parseFloat(price || 0).toFixed(2);
             } else {
                 this.form.batch_code = null;
@@ -359,8 +414,8 @@ export default {
         },
 
         onPriceTypeChange() {
-            if (this.form.product_id) {
-                this.onProductChange();
+            if (this.form.product_id && this.selectedBatchDetails) {
+                this.form.price = parseFloat(this.getBatchPrice(this.selectedBatchDetails) || 0).toFixed(2);
             } else {
                 this.form.price = '0.00';
             }
@@ -368,13 +423,33 @@ export default {
 
         validateQuantity() {
             this.handleInput('quantity');
-            if (this.selectedProductStock !== null && this.form.quantity > this.selectedProductStock) {
-                this.form.errors.quantity = `Quantity cannot exceed available stock (${this.selectedProductStock})`;
-                this.form.quantity = this.selectedProductStock;
+            const quantity = parseFloat(this.form.quantity) || 0;
+
+            if (quantity <= 0) {
+                this.form.errors.quantity = null;
+            } else if (this.editable && this.selectedProductStock !== null && quantity > this.selectedProductStock) {
+                this.form.errors.quantity = `Quantity cannot exceed available stock for batch ${this.form.batch_code} (${this.selectedProductStock})`;
+            } else if (!this.editable && this.totalAllocatableStock > 0 && quantity > this.totalAllocatableStock) {
+                this.form.errors.quantity = `Quantity cannot exceed total available stock from batch ${this.form.batch_code} onward (${this.totalAllocatableStock})`;
             } else {
                 this.form.errors.quantity = null;
             }
             this.validateDiscount();
+        },
+
+        allocateItemQuantities(baseItem) {
+            return this.batchAllocationsPreview.map((allocation, index) => ({
+                    ...baseItem,
+                    id: Date.now() + index,
+                    quantity: allocation.quantity,
+                    batch_code: allocation.batch_code,
+                    price: Number(allocation.price || 0).toFixed(2),
+                }));
+        },
+
+        getBatchPrice(batch) {
+            if (!batch) return 0;
+            return this.form.price_type === 'wholesale' ? batch.wholesale_price : batch.retail_price;
         },
 
         validateDiscount() {
@@ -440,5 +515,27 @@ export default {
     border: 1px solid #e9ecef;
     margin-bottom: 0.2rem;
 }
-</style>
 
+.split-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.split-preview-item {
+    padding: 0.5rem;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    background: #f8f9fa;
+}
+
+.split-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.8rem;
+    color: #495057;
+}
+</style>

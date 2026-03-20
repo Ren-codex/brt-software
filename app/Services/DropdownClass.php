@@ -113,22 +113,31 @@ class DropdownClass
     public function products(){
         $data = Product::with(['brand', 'unit'])->get()->map(function ($item) {
             $batchStocks = InventoryStocks::query()
-                ->selectRaw('batch_code, SUM(quantity) as quantity')
+                ->with('receivedItem')
                 ->whereHas('receivedItem', function ($query) use ($item) {
                     $query->where('product_id', $item->id);
                 })
-                ->groupBy('batch_code')
-                ->havingRaw('SUM(quantity) > 0')
-                ->orderBy('batch_code')
+                ->where('quantity', '>', 0)
+                ->orderBy('created_at')
                 ->get();
 
-            $available_quantity = (int) $batchStocks->sum('quantity');
-            $batch_stocks = $batchStocks->map(function ($stock) {
+            $batchStocksByCode = $batchStocks->groupBy('batch_code');
+
+            $available_quantity = (int) $batchStocksByCode->sum(function ($stocks) {
+                return $stocks->sum('quantity');
+            });
+
+            $batch_stocks = $batchStocksByCode->map(function ($stocks, $batchCode) {
+                $firstStock = $stocks->sortBy('created_at')->first();
+
                 return [
-                    'batch_code' => $stock->batch_code,
-                    'quantity' => (int) $stock->quantity,
+                    'batch_code' => $batchCode,
+                    'quantity' => (int) $stocks->sum('quantity'),
+                    'unit_cost' => $firstStock?->receivedItem?->unit_cost,
+                    'retail_price' => $firstStock?->retail_price,
+                    'wholesale_price' => $firstStock?->wholesale_price,
                 ];
-            })->values()->all();
+            })->values()->sortBy('batch_code')->values()->all();
 
             $batch_code = null;
             $batch_available = 0;

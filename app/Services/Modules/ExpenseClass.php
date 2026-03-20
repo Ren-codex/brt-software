@@ -95,4 +95,22 @@ class ExpenseClass
             'status' => 'success',
         ];
     }
+
+    public function release($id)
+    {
+        $data = Expense::findOrFail($id);
+
+        if ($data->status === 'approved') {
+            $data->update([
+                'status' => 'released',
+            ]);
+        }
+
+        return [
+            'data' => new ExpenseResource($data->fresh(['added_by', 'status_info'])),
+            'message' => 'Expense released successfully!',
+            'info' => "You've successfully released the expense",
+            'status' => 'success',
+        ];
+    }
 }

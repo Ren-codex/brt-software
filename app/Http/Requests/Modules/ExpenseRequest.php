@@ -26,7 +26,7 @@ class ExpenseRequest extends FormRequest
             'amount' => 'required|numeric|min:0',
             'expense_date' => 'required|date',
             'description' => 'nullable|string|max:1000',
-            'status' => 'nullable|in:pending,approved,rejected,paid',
+            'status' => 'nullable|in:pending,approved,rejected,released',
         ];
     }
 }

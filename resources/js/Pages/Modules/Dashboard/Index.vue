@@ -84,7 +84,7 @@ export default {
         recentTransactions: Array,
         filter: {
             type: String,
-            default: 'monthly'
+            default: 'today'
         },
         selectedDate: {
             type: String,
@@ -109,7 +109,7 @@ export default {
         const today = new Date().toISOString().slice(0, 10);
         return {
             activeTab: 'sales',
-            selectedFilter: 'monthly',
+            selectedFilter: 'today',
             selectedDateValue: today,
             dateFilters: [
                 { label: 'Date', value: 'today' },
@@ -143,10 +143,10 @@ export default {
         salesStats() {
             const s = this.stats || {};
             return [
-                { label: 'Total Revenue', value: s.totalSales || 0, icon: 'bx bx-dollar', iconBg: '#E6F9ED', iconColor: '#10b981', trend: '+12.5%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', showCurrency: true },
-                { label: 'Total Orders', value: s.totalReceipts || 0, icon: 'bx bx-receipt', iconBg: '#E5F0FF', iconColor: '#3b82f6', trend: '+8.2%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', showCurrency: false },
-                { label: 'Outstanding', value: s.totalOutstanding || 0, icon: 'bx bx-credit-card', iconBg: '#FFF0E5', iconColor: '#f97316', trend: '-2.1%', trendClass: 'trend-down', trendIcon: 'bx bx-down-arrow-alt', showCurrency: true },
-                { label: 'Avg Order', value: s.avgOrderValue || 0, icon: 'bx bx-calculator', iconBg: '#F3E8FF', iconColor: '#8b5cf6', trend: '+5.8%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', showCurrency: false }
+                { label: 'Total Revenue', value: s.totalSales || 0, icon: 'bx bx-dollar', iconBg: '#E6F9ED', iconColor: '#10b981', trend: null, trendClass: '', trendIcon: '', showCurrency: true },
+                { label: 'Total Receipts', value: s.totalReceipts || 0, icon: 'bx bx-receipt', iconBg: '#E5F0FF', iconColor: '#3b82f6', trend: null, trendClass: '', trendIcon: '', showCurrency: false },
+                { label: 'Outstanding', value: s.totalOutstanding || 0, icon: 'bx bx-credit-card', iconBg: '#FFF0E5', iconColor: '#f97316', trend: null, trendClass: '', trendIcon: '', showCurrency: true },
+                { label: 'Avg Revenue', value: s.avgOrderValue || 0, icon: 'bx bx-calculator', iconBg: '#F3E8FF', iconColor: '#8b5cf6', trend: null, trendClass: '', trendIcon: '', showCurrency: true }
             ];
         },
         inventoryStats() {
@@ -175,14 +175,7 @@ export default {
             };
         },
         salesChart() {
-            const data = this.charts?.monthlySales || [
-                { month: 'Jan', sales: 45000 },
-                { month: 'Feb', sales: 52000 },
-                { month: 'Mar', sales: 48000 },
-                { month: 'Apr', sales: 60000 },
-                { month: 'May', sales: 55000 },
-                { month: 'Jun', sales: 68000 }
-            ];
+            const data = this.charts?.monthlySales || [];
             return {
                 series: [{ name: 'Revenue', data: data.map(d => d.sales) }],
                 options: {
@@ -191,17 +184,13 @@ export default {
                     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.2 } },
                     stroke: { curve: 'smooth', width: 3 },
                     xaxis: { categories: data.map(d => d.month), labels: { style: { colors: '#64748b' } } },
-                    yaxis: { labels: { formatter: (v) => '₱' + v.toLocaleString() } },
+                    yaxis: { labels: { formatter: (v) => 'P' + v.toLocaleString() } },
                     grid: { borderColor: '#e2e8f0', strokeDashArray: 5 }
                 }
             };
         },
         paymentChart() {
-            const data = this.charts?.paymentMethods || [
-                { method: 'Cash', total: 45000 },
-                { method: 'Card', total: 38000 },
-                { method: 'Bank Transfer', total: 22000 }
-            ];
+            const data = this.charts?.paymentMethods || [];
             return {
                 series: data.map(d => d.total),
                 options: {
@@ -215,11 +204,7 @@ export default {
             };
         },
         paymentBreakdown() {
-            const data = this.charts?.paymentMethods || [
-                { method: 'Cash', total: 45000 },
-                { method: 'Card', total: 38000 },
-                { method: 'Bank Transfer', total: 22000 }
-            ];
+            const data = this.charts?.paymentMethods || [];
             return data.map((d, i) => ({
                 method: d.method,
                 amount: d.total,
