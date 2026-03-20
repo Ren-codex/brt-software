@@ -17,6 +17,9 @@ class ReportClass
             'sales_rep_report' => $this->salesRepReport($filters),
             'daily_sales_orders' => $this->dailySalesOrders($filters),
             'payment_summary' => $this->paymentSummary($filters),
+            'receipt_report' => $this->receiptReport($filters),
+            'discount_summary' => $this->discountSummary($filters),
+            'tax_summary' => $this->taxSummary(),
         ];
     }
 
@@ -167,6 +170,83 @@ class ReportClass
             'other' => $rows->get('other'),
             'grand_total_sales' => $rows->sum(fn ($row) => (float) $row->total_sales),
             'grand_total_orders' => $rows->sum(fn ($row) => (int) $row->total_orders),
+        ];
+    }
+
+    private function receiptReport(array $filters)
+    {
+        $query = DB::table('receipts as r')
+            ->join('ar_invoices as ai', 'r.ar_invoice_id', '=', 'ai.id')
+            ->join('sales_orders as so', 'ai.sales_order_id', '=', 'so.id')
+            ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
+            ->leftJoin('customers as c', 'r.customer_id', '=', 'c.id')
+            ->when(!empty($filters['from']) && !empty($filters['to']), function ($query) use ($filters) {
+                $query->whereBetween('so.order_date', [$filters['from'], $filters['to']]);
+            })
+            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+                $query->where('so.location_id', $filters['location_id']);
+            })
+            ->where('ls.slug', '!=', 'cancelled');
+
+        $this->applyPaymentModeFilter($query, $filters['payment_mode']);
+
+        return $query
+            ->select(
+                'r.id',
+                'r.receipt_number',
+                'r.receipt_date',
+                'r.amount_paid',
+                'r.balance_due',
+                'so.so_number',
+                DB::raw("COALESCE(c.name, 'Walk-in Customer') as customer_name"),
+                'so.payment_mode'
+            )
+            ->orderByDesc('r.receipt_date')
+            ->orderByDesc('r.id')
+            ->limit($filters['limit'])
+            ->get();
+    }
+
+    private function discountSummary(array $filters): array
+    {
+        $baseQuery = $this->baseSalesOrderQuery($filters);
+
+        $totals = (clone $baseQuery)
+            ->selectRaw('COUNT(CASE WHEN COALESCE(so.total_discount, 0) > 0 THEN 1 END) as discounted_orders')
+            ->selectRaw('COALESCE(SUM(so.total_discount), 0) as total_discount')
+            ->selectRaw('COALESCE(AVG(CASE WHEN COALESCE(so.total_discount, 0) > 0 THEN so.total_discount END), 0) as average_discount')
+            ->first();
+
+        $orders = $baseQuery
+            ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
+            ->select(
+                'so.id',
+                'so.so_number',
+                'so.order_date',
+                DB::raw("COALESCE(c.name, 'Walk-in Customer') as customer_name"),
+                'so.total_amount',
+                'so.total_discount'
+            )
+            ->where('so.total_discount', '>', 0)
+            ->orderByDesc('so.total_discount')
+            ->orderByDesc('so.order_date')
+            ->limit($filters['limit'])
+            ->get();
+
+        return [
+            'discounted_orders' => (int) data_get($totals, 'discounted_orders', 0),
+            'total_discount' => (float) data_get($totals, 'total_discount', 0),
+            'average_discount' => (float) data_get($totals, 'average_discount', 0),
+            'orders' => $orders,
+        ];
+    }
+
+    private function taxSummary(): array
+    {
+        return [
+            'enabled' => false,
+            'total_tax' => 0,
+            'message' => 'Tax reporting is not yet configured in sales orders.',
         ];
     }
 

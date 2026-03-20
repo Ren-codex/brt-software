@@ -13,7 +13,11 @@ class ReceiptClass
 {
     public function lists($request){
         return ReceiptResource::collection(
-            Receipt::with(['arInvoice.sales_order.customer', 'status'])
+            Receipt::with(['arInvoice.sales_order.customer', 'arInvoice.sales_order.items.product', 'status', 'sourceReceipt'])
+                ->where(function ($query) {
+                    $query->whereNull('receipt_type')
+                        ->orWhere('receipt_type', '!=', 'refund');
+                })
                 ->when($request->location_id, function ($query, $locationId) {
                     $query->whereHas('arInvoice.sales_order', function ($q) use ($locationId) {
                         $q->where('location_id', $locationId);
@@ -51,8 +55,14 @@ class ReceiptClass
 
     public function dashboard(){
         return [
-            'total_receipts' => Receipt::count(),
-            'total_amount_collected' => Receipt::sum('amount_paid'),
+            'total_receipts' => Receipt::where(function ($query) {
+                $query->whereNull('receipt_type')
+                    ->orWhere('receipt_type', '!=', 'refund');
+            })->count(),
+            'total_amount_collected' => Receipt::where(function ($query) {
+                $query->whereNull('receipt_type')
+                    ->orWhereNotIn('receipt_type', ['refund', 'updated']);
+            })->sum('amount_paid'),
         ];
     }
 
@@ -61,6 +71,7 @@ class ReceiptClass
             'ar_invoice_id' => $request->ar_invoice_id,
             'status_id' => $request->status_id,
             'receipt_number' => $this->generateReceiptNumber(),
+            'receipt_type' => 'payment',
             'receipt_date' => $request->receipt_date,
             'amount_paid' => $request->amount_paid,
             'payment_mode' => $request->payment_mode,

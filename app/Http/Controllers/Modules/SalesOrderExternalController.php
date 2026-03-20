@@ -72,6 +72,7 @@ class SalesOrderExternalController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'receipt_id' => $result['receipt_id'] ?? null,
         ]);
     }
 

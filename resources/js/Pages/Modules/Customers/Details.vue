@@ -42,6 +42,9 @@
                             <span v-if="customer.is_blacklisted === 1" class="profile-badge profile-badge-dark">
                                 Blacklisted
                             </span>
+                            <span v-if="customer.has_late_payment_history" class="profile-badge profile-badge-danger">
+                                Late Payment History
+                            </span>
                         </div>
                     </div>
 
@@ -123,6 +126,18 @@
                             <div class="profile-info-item">
                                 <div class="profile-label">Payment Terms</div>
                                 <div class="profile-value">{{ customer.payment_terms || '30 days' }}</div>
+                            </div>
+                            <div class="profile-info-item">
+                                <div class="profile-label">Late Payments</div>
+                                <div class="profile-value" :class="customer.has_late_payment_history ? 'details-danger' : ''">
+                                    {{ customer.late_payment_count || 0 }}
+                                </div>
+                            </div>
+                            <div class="profile-info-item" v-if="customer.has_late_payment_history">
+                                <div class="profile-label">Last Late Payment</div>
+                                <div class="profile-value details-danger">
+                                    {{ formatDate(customer.last_late_payment_date) }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -884,6 +899,9 @@ export default {
                 credit_used: this.customer.credit_used || 15000,
                 credit_score: this.customer.credit_score || 85,
                 payment_terms: this.customer.payment_terms || '30 days',
+                has_late_payment_history: this.customer.has_late_payment_history || false,
+                late_payment_count: this.customer.late_payment_count || 0,
+                last_late_payment_date: this.customer.last_late_payment_date || null,
                 total_orders: this.customer.total_orders || 25,
                 order_trend: this.customer.order_trend || '+15%',
                 total_rice_ordered: this.customer.total_rice_ordered || 500,

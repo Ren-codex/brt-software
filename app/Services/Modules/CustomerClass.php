@@ -235,6 +235,38 @@ class CustomerClass
             })
             ->values();
 
+        $latePaymentOrders = (clone $salesOrdersQuery)
+            ->whereNotNull('due_date')
+            ->with(['arInvoices.receipts:id,ar_invoice_id,receipt_date'])
+            ->get()
+            ->map(function ($order) {
+                $dueDate = $order->due_date ? Carbon::parse($order->due_date)->startOfDay() : null;
+                $latestReceiptDate = $order->arInvoices
+                    ->flatMap(function ($invoice) {
+                        return $invoice->receipts;
+                    })
+                    ->pluck('receipt_date')
+                    ->filter()
+                    ->map(function ($date) {
+                        return Carbon::parse($date)->startOfDay();
+                    })
+                    ->sort()
+                    ->last();
+
+                if (!$dueDate || !$latestReceiptDate || !$latestReceiptDate->gt($dueDate)) {
+                    return null;
+                }
+
+                return [
+                    'order_id' => $order->so_number,
+                    'due_date' => $dueDate->format('Y-m-d'),
+                    'paid_at' => $latestReceiptDate->format('Y-m-d'),
+                    'days_late' => $dueDate->diffInDays($latestReceiptDate),
+                ];
+            })
+            ->filter()
+            ->values();
+
         $base = (new CustomerResource($customer))->resolve();
 
         return array_merge($base, [
@@ -248,6 +280,9 @@ class CustomerClass
             'payment_terms' => $customer->payment_terms ?? null,
             'due_dates' => $dueDates,
             'recent_receipts' => $recentReceipts,
+            'has_late_payment_history' => $latePaymentOrders->isNotEmpty(),
+            'late_payment_count' => $latePaymentOrders->count(),
+            'last_late_payment_date' => data_get($latePaymentOrders->sortBy('paid_at')->last(), 'paid_at'),
         ]);
     }
 

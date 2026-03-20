@@ -2,6 +2,7 @@
 
 namespace App\Services\Modules;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -22,6 +23,8 @@ use App\Services\Modules\InventoryService;
 
 class SalesOrderClass
 {
+    private const RETURN_WINDOW_DAYS = 7;
+
     protected $inventoryService;
 
     public function __construct(InventoryService $inventoryService)
@@ -30,6 +33,11 @@ class SalesOrderClass
     }
 
     public function lists($request){
+        $returnStatuses = ['sales-returned', 'sales-return-approval'];
+        $requestedStatuses = is_array($request->status) ? $request->status : [$request->status];
+        $requestedStatuses = array_values(array_filter($requestedStatuses));
+        $includesReturnStatuses = count(array_intersect($requestedStatuses, $returnStatuses)) > 0;
+
         $query = SalesOrder::with([
             'items', 
             'arInvoices',
@@ -55,6 +63,11 @@ class SalesOrderClass
 
                 $query->whereHas('status', function($q) use ($statuses){
                     $q->whereIn('slug', $statuses);
+                });
+            })
+            ->when(!$includesReturnStatuses, function ($query) use ($returnStatuses) {
+                $query->whereDoesntHave('status', function ($q) use ($returnStatuses) {
+                    $q->whereIn('slug', $returnStatuses);
                 });
             })
             ->when($request->sub_status, function ($query, $sub_status) {
@@ -277,6 +290,19 @@ class SalesOrderClass
         $currentStatus = $data->status ? $data->status->slug : '';
         
         if ($currentStatus === 'sales-return-approval') {
+            $returnRequests = DB::table('sales_return_items')
+                ->join('sales_order_items', 'sales_order_items.id', '=', 'sales_return_items.sales_order_item_id')
+                ->where('sales_order_items.sales_order_id', $id)
+                ->get([
+                    'sales_return_items.sales_order_item_id',
+                    'sales_return_items.source_receipt_id',
+                    'sales_return_items.return_quantity',
+                    'sales_return_items.return_condition',
+                ])
+                ->keyBy('sales_order_item_id');
+            $sourceReceiptId = (int) optional($returnRequests->first())->source_receipt_id;
+            $sourceReceipt = $sourceReceiptId ? Receipt::find($sourceReceiptId) : null;
+
             // Determine which items to process
             $itemsToProcess = $data->items;
             $itemsNotReturned = collect();
@@ -284,34 +310,72 @@ class SalesOrderClass
             if (!empty($itemIds)) {
                 // Filter to only the selected items (items being returned)
                 $itemsToProcess = $data->items->whereIn('id', $itemIds);
-                // Items NOT selected for return should be treated as loss/damaged (keep deducted from inventory)
-                $itemsNotReturned = $data->items->whereNotIn('id', $itemIds);
+                // Only requested-but-unapproved items are treated as loss/damaged.
+                $requestedItemIds = $returnRequests->keys()->map(fn ($id) => (int) $id);
+                $itemsNotReturned = $data->items
+                    ->whereIn('id', $requestedItemIds)
+                    ->whereNotIn('id', $itemIds);
             }
             
             // Process each item being returned - restore inventory for returned items
             foreach ($itemsToProcess as $item) {
+                $returnRequest = $returnRequests->get($item->id);
+                $returnQuantity = (int) ($returnRequest->return_quantity ?? $item->quantity);
+                $returnCondition = (string) ($returnRequest->return_condition ?? 'restockable');
+                if ($returnQuantity <= 0) {
+                    continue;
+                }
+
+                $effectiveQuantity = min($returnQuantity, (int) $item->quantity);
+
+                if ($returnCondition === 'restockable') {
+                    $this->inventoryService->addStock(
+                        $item->product_id,
+                        $effectiveQuantity,
+                        'Sales Return Approved - Restockable - SO#' . $data->so_number,
+                        $item->batch_code
+                    );
+                    continue;
+                }
+
                 $this->inventoryService->addStock(
-                    $item->product_id, 
-                    $item->quantity, 
-                    'Sales Return Approved - SO#' . $data->so_number, 
+                    $item->product_id,
+                    $effectiveQuantity,
+                    'Sales Return Intake (' . strtoupper(str_replace('_', ' ', $returnCondition)) . ') - SO#' . $data->so_number,
                     $item->batch_code
+                );
+
+                $lossType = $returnCondition === 'damaged' ? 'damage' : 'loss';
+                $this->inventoryService->recordLossOrDamage(
+                    $item->product_id,
+                    $effectiveQuantity,
+                    'Sales Return ' . strtoupper(str_replace('_', ' ', $returnCondition)) . ' - SO#' . $data->so_number,
+                    $item->batch_code,
+                    $lossType
                 );
             }
 
             // Items not selected for return are recorded as loss/damaged in inventory history.
             // We add back first then deduct as "loss" so inventory audit shows the loss event.
             foreach ($itemsNotReturned as $item) {
+                $returnRequest = $returnRequests->get($item->id);
+                $returnQuantity = (int) ($returnRequest->return_quantity ?? $item->quantity);
+                if ($returnQuantity <= 0) {
+                    continue;
+                }
+
+                $effectiveQuantity = min($returnQuantity, (int) $item->quantity);
                 $this->inventoryService->addStock(
                     $item->product_id,
-                    $item->quantity,
-                    'Sales Return Intake (Loss/Damaged) - SO#' . $data->so_number,
+                    $effectiveQuantity,
+                    'Sales Return Intake (Unapproved) - SO#' . $data->so_number,
                     $item->batch_code
                 );
 
                 $this->inventoryService->recordLossOrDamage(
                     $item->product_id,
-                    $item->quantity,
-                    'Sales Return Loss/Damaged - SO#' . $data->so_number,
+                    $effectiveQuantity,
+                    'Sales Return Unapproved - SO#' . $data->so_number,
                     $item->batch_code,
                     'loss'
                 );
@@ -319,8 +383,16 @@ class SalesOrderClass
 
             // If all items are being returned, void the entire sales order
             // Otherwise, update the sales order with partial return handling
-            $allItemIds = $data->items->pluck('id')->toArray();
-            $isFullReturn = empty($itemIds) || count($itemIds) === count($allItemIds);
+            $allItemsFullyReturned = $data->items->every(function ($item) use ($itemIds, $returnRequests) {
+                $requestedQuantity = (int) optional($returnRequests->get($item->id))->return_quantity;
+                return in_array($item->id, $itemIds) && $requestedQuantity >= (int) $item->quantity;
+            });
+            $isFullReturn = !empty($itemIds) && $allItemsFullyReturned;
+            $refundAmount = $itemsToProcess->sum(function($item) use ($returnRequests) {
+                $returnQuantity = (int) optional($returnRequests->get($item->id))->return_quantity ?: (int) $item->quantity;
+                return min($returnQuantity, (int) $item->quantity) * $item->price;
+            });
+            $updatedReceipt = null;
             
             if ($isFullReturn) {
                 // Update sales order status to 'sales-returned' (loss/damaged)
@@ -350,10 +422,18 @@ class SalesOrderClass
                     ]);
                 }
 
+                DB::table('sales_return_items')
+                    ->whereIn('sales_order_item_id', $data->items->whereNotIn('id', $itemIds)->pluck('id'))
+                    ->delete();
+
+                $refundReceipt = $this->createRefundReceipt($data, $sourceReceipt, $refundAmount);
+                $updatedReceipt = $this->createUpdatedReceipt($data, $refundReceipt);
+
                 return [
                     'data' => SalesOrder::find($id),
                     'message' => 'Sales Order return approved successfully!',
-                    'info' => "You've successfully approved the full Sales Order return. The related receipts have been voided."
+                    'info' => "You've successfully approved the full Sales Order return. The related receipts have been voided.",
+                    'receipt_id' => $updatedReceipt?->id,
                 ];
             } else {
                 // Partial return - keep the sales order but mark as partially returned
@@ -366,22 +446,31 @@ class SalesOrderClass
                 // For partial returns, we adjust the AR invoice balance
                 $arInvoice = $data->arInvoices()->first();
                 if ($arInvoice) {
-                    // Calculate the amount to deduct from the balance (only for returned items)
-                    $returnAmount = $itemsToProcess->sum(function($item) {
-                        return $item->quantity * $item->price;
-                    });
-                    
                     // Update the invoice balance
-                    $newBalanceDue = max(0, $arInvoice->balance_due - $returnAmount);
+                    $newBalanceDue = max(0, $arInvoice->balance_due - $refundAmount);
                     $arInvoice->update([
                         'balance_due' => $newBalanceDue,
                     ]);
                 }
 
+                if ($sourceReceipt) {
+                    $sourceReceipt->update([
+                        'status_id' => ListStatus::getBySlug('cancelled')->id,
+                    ]);
+                }
+
+                DB::table('sales_return_items')
+                    ->whereIn('sales_order_item_id', $itemsNotReturned->pluck('id'))
+                    ->delete();
+
+                $refundReceipt = $this->createRefundReceipt($data, $sourceReceipt, $refundAmount);
+                $updatedReceipt = $this->createUpdatedReceipt($data, $refundReceipt);
+
                 return [
                     'data' => SalesOrder::find($id),
                     'message' => 'Partial Sales Order return approved successfully!',
-                    'info' => "You've successfully approved the partial Sales Order return. The inventory has been restored for returned items and the invoice has been adjusted."
+                    'info' => "You've successfully approved the partial Sales Order return. The inventory has been restored for returned items and the invoice has been adjusted.",
+                    'receipt_id' => $updatedReceipt?->id,
                 ];
             }
         } else {
@@ -510,17 +599,23 @@ class SalesOrderClass
             ];
         }
 
-        $sales_order->update([ 'status_id' => $status->id]);
-
         // Persist item-level selection for sales return requests.
         // This will be used to preselect items during approval.
         if ($normalizedType === 'sales return') {
+            $this->validateSalesReturnEligibility($sales_order, $request->receipt_id);
+
             $selectedItemIds = collect($request->item_ids ?? [])
                 ->map(fn ($id) => (int) $id)
                 ->filter()
                 ->values();
+            $returnQuantities = collect($request->return_quantities ?? [])
+                ->mapWithKeys(fn ($qty, $itemId) => [(int) $itemId => (int) $qty]);
+            $returnConditions = collect($request->return_conditions ?? [])
+                ->mapWithKeys(fn ($condition, $itemId) => [(int) $itemId => (string) $condition]);
+            $sourceReceiptId = $request->receipt_id ? (int) $request->receipt_id : null;
 
             $orderItemIds = $sales_order->items()->pluck('id');
+            $orderItems = $sales_order->items()->get()->keyBy('id');
 
             DB::table('sales_return_items')
                 ->whereIn('sales_order_item_id', $orderItemIds)
@@ -529,11 +624,36 @@ class SalesOrderClass
             if ($selectedItemIds->isNotEmpty()) {
                 $rows = $selectedItemIds
                     ->intersect($orderItemIds)
-                    ->map(fn ($itemId) => [
-                        'sales_order_item_id' => $itemId,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ])
+                    ->map(function ($itemId) use ($orderItems, $returnQuantities, $returnConditions, $sourceReceiptId) {
+                        $orderItem = $orderItems->get($itemId);
+                        if (!$orderItem) {
+                            return null;
+                        }
+
+                        $requestedQuantity = (int) ($returnQuantities->get($itemId) ?? $orderItem->quantity);
+                        if ($requestedQuantity < 1 || $requestedQuantity > (int) $orderItem->quantity) {
+                            throw ValidationException::withMessages([
+                                'return_quantities' => "Return quantity for item #{$itemId} must be between 1 and {$orderItem->quantity}.",
+                            ]);
+                        }
+
+                        $returnCondition = $returnConditions->get($itemId, 'restockable');
+                        if (!in_array($returnCondition, ['restockable', 'damaged'], true)) {
+                            throw ValidationException::withMessages([
+                                'return_conditions' => "Return condition for item #{$itemId} is invalid.",
+                            ]);
+                        }
+
+                        return [
+                            'sales_order_item_id' => $itemId,
+                            'source_receipt_id' => $sourceReceiptId,
+                            'return_quantity' => $requestedQuantity,
+                            'return_condition' => $returnCondition,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    })
+                    ->filter()
                     ->values()
                     ->all();
 
@@ -543,11 +663,124 @@ class SalesOrderClass
             }
         }
 
+        $sales_order->update([ 'status_id' => $status->id]);
+
 
         return [
             'data' => $sales_order,
             'message' => 'Sales adjustment applied successfully!',
             'info' => "You've successfully applied the sales adjustment"
         ];
+    }
+
+    private function validateSalesReturnEligibility(SalesOrder $salesOrder, $receiptId = null): void
+    {
+        $receipt = null;
+
+        if ($receiptId) {
+            $receipt = Receipt::with('status', 'arInvoice.sales_order')->find($receiptId);
+
+            if (!$receipt) {
+                throw ValidationException::withMessages([
+                    'receipt_id' => 'Selected receipt does not exist.',
+                ]);
+            }
+
+            $receiptSalesOrderId = optional(optional($receipt->arInvoice)->sales_order)->id;
+            if ((int) $receiptSalesOrderId !== (int) $salesOrder->id) {
+                throw ValidationException::withMessages([
+                    'receipt_id' => 'Selected receipt does not belong to this sales order.',
+                ]);
+            }
+        } else {
+            $receipt = Receipt::with('status', 'arInvoice.sales_order')
+                ->whereHas('arInvoice', function ($query) use ($salesOrder) {
+                    $query->where('sales_order_id', $salesOrder->id);
+                })
+                ->orderByDesc('receipt_date')
+                ->first();
+        }
+
+        if (!$receipt || !$receipt->receipt_date) {
+            throw ValidationException::withMessages([
+                'receipt_id' => 'A valid receipt with a receipt date is required for sales returns.',
+            ]);
+        }
+
+        $salesOrderStatus = optional($salesOrder->status)->slug;
+        if (in_array($salesOrderStatus, ['sales-returned', 'sales-return-approval', 'cancelled'], true)) {
+            throw ValidationException::withMessages([
+                'receipt_id' => 'This sales order is not eligible for return.',
+            ]);
+        }
+
+        if (optional($receipt->status)->slug === 'cancelled') {
+            throw ValidationException::withMessages([
+                'receipt_id' => 'Cancelled receipts are not eligible for return.',
+            ]);
+        }
+
+        $daysSinceReceipt = Carbon::parse($receipt->receipt_date)
+            ->startOfDay()
+            ->diffInDays(now()->startOfDay(), false);
+
+        if ($daysSinceReceipt < 0 || $daysSinceReceipt > self::RETURN_WINDOW_DAYS) {
+            throw ValidationException::withMessages([
+                'receipt_id' => 'This receipt is outside the allowed 7-day return window.',
+            ]);
+        }
+    }
+
+    private function createRefundReceipt(SalesOrder $salesOrder, ?Receipt $sourceReceipt, float $refundAmount): ?Receipt
+    {
+        if ($refundAmount <= 0) {
+            return null;
+        }
+
+        $invoice = $salesOrder->arInvoices()->first();
+        if (!$invoice) {
+            return null;
+        }
+
+        return Receipt::create([
+            'ar_invoice_id' => $invoice->id,
+            'customer_id' => $salesOrder->customer_id,
+            'status_id' => ListStatus::getBySlug('paid')->id,
+            'receipt_number' => Receipt::generateReceiptNumber(),
+            'receipt_type' => 'refund',
+            'source_receipt_id' => $sourceReceipt?->id,
+            'receipt_date' => now()->toDateString(),
+            'amount_paid' => $refundAmount,
+            'balance_due' => $invoice->balance_due ?? 0,
+            'payment_mode' => 'Refund',
+        ]);
+    }
+
+    private function createUpdatedReceipt(SalesOrder $salesOrder, ?Receipt $refundReceipt): ?Receipt
+    {
+        if (!$refundReceipt) {
+            return null;
+        }
+
+        $invoice = $salesOrder->arInvoices()->first();
+        if (!$invoice) {
+            return null;
+        }
+
+        $originalReceipt = $refundReceipt->sourceReceipt;
+        $adjustedAmountPaid = max(0, (float) (($originalReceipt->amount_paid ?? 0) - ($refundReceipt->amount_paid ?? 0)));
+
+        return Receipt::create([
+            'ar_invoice_id' => $invoice->id,
+            'customer_id' => $salesOrder->customer_id,
+            'status_id' => ListStatus::getBySlug('paid')->id,
+            'receipt_number' => Receipt::generateReceiptNumber(),
+            'receipt_type' => 'updated',
+            'source_receipt_id' => $refundReceipt->id,
+            'receipt_date' => now()->toDateString(),
+            'amount_paid' => $adjustedAmountPaid,
+            'balance_due' => $invoice->balance_due ?? 0,
+            'payment_mode' => $originalReceipt?->payment_mode ?? $salesOrder->payment_mode ?? 'Updated Receipt',
+        ]);
     }
 }
