@@ -52,10 +52,13 @@
             <tr
               v-for="(loan, index) in loans"
               :key="index"
+              @click="viewLoan(loan)"
+              class="loan-row"
               :class="{
                 'bg-info-subtle': index === selectedRow,
                 'bg-danger-subtle': loan.status === 'overdue'
               }"
+              style="cursor: pointer;"
             >
               <td class="text-center">
                 {{ index + 1 }}
@@ -214,7 +217,7 @@ export default {
     getStatusClass(status) {
       switch (status) {
         case 'active':
-          return 'badge bg-success';
+          return 'badge bg-primary';
         case 'pending':
           return 'badge bg-warning';
         case 'completed':
@@ -229,3 +232,18 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.loan-row {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.loan-row:hover {
+  background-color: #eef6ff;
+}
+
+.loan-row.bg-info-subtle:hover,
+.loan-row.bg-danger-subtle:hover {
+  filter: brightness(0.98);
+}
+</style>

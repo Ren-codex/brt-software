@@ -46,7 +46,7 @@
                             </thead>
                             <tbody class="fs-12">
                                 <template v-for="(payroll, index) in payrolls" :key="payroll.id">
-                                    <tr @click="toggleRowExpansion(index)" :class="{
+                                    <tr @click="editPayroll(payroll)" :class="{
                                         'bg-primary bg-opacity-10 ': index === selectedRow,
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">

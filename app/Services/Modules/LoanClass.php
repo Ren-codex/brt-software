@@ -88,6 +88,9 @@ class LoanClass
             db::beginTransaction();
             
             $data = Loan::findOrFail($request->id);
+            $principal = (float) $request->amount;
+            $interestRate = (float) $request->interest_rate;
+            $totalWithInterest = $principal + ($principal * ($interestRate / 100));
     
             $data->update([
                 'employee_id' => $request->employee_id,
@@ -97,6 +100,8 @@ class LoanClass
                 'term_months' => $request->term_months,
                 'status' => $request->status,
                 'purpose' => $request->purpose,
+                'remaining_balance' => $totalWithInterest,
+                'remaining_term_to_pay' => $request->term_months * 2,
             ]);
     
             $this->log($data->id, 'updated', 'Loan details updated');
@@ -143,14 +148,20 @@ class LoanClass
         $oldStatus = $loan->status;
         $newStatus = $request->status;
 
-        $isApproved = $newStatus === 'approved';
+        $payload = [
+            'status' => $newStatus === 'disapproved' ? 'rejected' : $newStatus,
+        ];
 
-        $loan->update([
-            'status' => $isApproved ? 'approved' : 'rejected',
-            'approved_by_id' => $isApproved ? auth()->id() : null,
-            'approved_at' => $isApproved ? now() : null,
-        ]);
-        $this->log($loan->id, $newStatus, $request->remarks);
+        if ($newStatus === 'approved') {
+            $payload['approved_by_id'] = auth()->id();
+            $payload['approved_at'] = now();
+        } elseif (in_array($newStatus, ['disapproved', 'rejected'], true)) {
+            $payload['approved_by_id'] = null;
+            $payload['approved_at'] = null;
+        }
+
+        $loan->update($payload);
+        $this->log($loan->id, $newStatus == 'active' ? 'released' : $newStatus, $request->remarks);
 
         return [
             'data' => new LoanResource($loan),

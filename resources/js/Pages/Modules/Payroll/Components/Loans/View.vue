@@ -28,6 +28,11 @@
                     <i class="ri-delete-bin-line"></i>
                   </button>
                 </template>
+                <button v-if="canApprove && loan.status === 'approved'" class="create-btn"
+                        @click="releaseLoan">
+                  <i class="ri-wallet-3-line"></i>
+                  <span>Release Loan</span>
+                </button>
                 <button @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back">
                   <i class="ri-arrow-left-line"></i>
                 </button>
@@ -76,7 +81,7 @@
                 </div>
                   <div class="emp-detail-content">
                     <div class="emp-detail-main-value">{{ loanTermMonths > 0 ? `${loanTermMonths} Months` : '-' }}</div>
-                    <div class="emp-detail-sub-value">{{ remainingTermMonths }} Remaining Term</div>
+                    <div class="emp-detail-sub-value">{{ remainingTermMonths }} Remaining Term (15th)</div>
                   </div>
               </div>
 
@@ -124,7 +129,7 @@
               </div>
               <div style="margin-left: -15px" class="d-flex align-items-center gap-2">
                 <h4 class="header-title mb-1">Payments</h4>
-                <button v-if="loan.status == 'approved'" type="button" @click="addPayment" class="create-btn" style="right: 25px; position: absolute">
+                <button v-if="['active'].includes(loan.status)" type="button" @click="addPayment" class="create-btn" style="right: 25px; position: absolute">
                   Pay Now
                 </button>
               </div>
@@ -136,9 +141,9 @@
                 <thead class="table-light thead-fixed">
                   <tr class="fs-11">
                     <th style="width: 5%;">#</th>
-                    <th style="width: 30%;">Payment Date</th>
-                    <th style="width: 15%;">Amount</th>
                     <th style="width: 30%;">Date Paid</th>
+                    <th style="width: 15%;">Amount</th>
+                    <th style="width: 30%;">Term Paid</th>
                   </tr>
                 </thead>
                 <tbody class="table-white fs-12">
@@ -239,9 +244,9 @@
     ref="paymentModal"
     :loan-id="loan.id"
     :term-amount="suggestedPaymentAmount"
-    :remaining-terms="remainingTermsToPay"
-    :start-date="loan.approved_at"
-    :start-term-offset="paidTermsCount"
+    :term-units="suggestedPaymentTermUnits"
+    :remaining-balance="remainingBalanceValue"
+    :remaining-term-units="remainingTermUnits"
     @saved="onPaymentSaved"
   />
 </template>
@@ -310,35 +315,57 @@ export default {
     totalAmountWithInterest() {
       return this.totalAmountValue + (this.totalAmountValue * (this.interestRateValue / 100));
     },
-    remainingTermMonths() {
+    termUnitFactor() {
+      return 1;
+    },
+    totalTermUnits() {
+      return this.loanTermMonths * this.termUnitFactor;
+    },
+    remainingTermUnits() {
       const remaining = this.toNumber(this.loan?.remaining_term_to_pay, null);
       if (remaining !== null) {
         return remaining;
       }
 
-      return Math.max(this.loanTermMonths - this.paidMonths, 0);
+      return Math.max(this.totalTermUnits - this.paidTermUnits, 0);
     },
-    paidMonths() {
-      if (this.loanTermMonths > 0) {
-        return Math.max(this.loanTermMonths - this.remainingTermMonths, 0);
+    remainingTermMonths() {
+      return Math.max(Math.round(this.remainingTermUnits), 0);
+    },
+    paidTermUnits() {
+      const remainingUnits = this.toNumber(this.loan?.remaining_term_to_pay, null);
+      if (remainingUnits !== null) {
+        return Math.max(this.totalTermUnits - remainingUnits, 0);
       }
 
-      return Array.isArray(this.loan?.payments) ? this.loan.payments.length : 0;
+      return Array.isArray(this.loan?.payments)
+        ? this.loan.payments.reduce((sum, payment) => sum + this.toNumber(payment?.paid_term, 1), 0)
+        : 0;
+    },
+    paidMonths() {
+      return Math.max(Math.round(this.paidTermUnits), 0);
     },
     unpaidMonths() {
       return this.remainingTermMonths;
     },
     suggestedPaymentAmount() {
-      const divisor = this.remainingTermMonths;
+      const divisor = this.unpaidMonths;
       if (divisor <= 0) {
         return this.remainingBalanceValue;
       }
 
       return this.remainingBalanceValue / divisor;
     },
+    suggestedPaymentTermUnits() {
+      if (this.remainingTermUnits <= 0) {
+        return 0;
+      }
+
+      return Math.min(this.termUnitFactor, this.remainingTermUnits);
+    },
 
     remainingTermsToPay() {
-      return Math.max(0, Math.ceil(this.remainingTermMonths));
+      return Math.max(0, Math.ceil(this.remainingTermUnits));
     },
     paidTermsCount() {
       const totalHalfTerms = Math.max(0, this.loanTermMonths * 2);
@@ -354,11 +381,11 @@ export default {
       return this.paymentHistory.slice(0, 1);
     },
     monthlyPaymentDisplay() {
-      if (this.loanTermMonths <= 0) {
-        return '-';
+      if (this.unpaidMonths <= 0) {
+        return this.formatCurrency(this.remainingBalanceValue);
       }
 
-      return this.formatCurrency(this.totalAmountWithInterest / this.loanTermMonths);
+      return this.formatCurrency(this.remainingBalanceValue / this.unpaidMonths);
     },
     loanPeriodLabel() {
       return new Date().toLocaleDateString('en-PH', {
@@ -481,9 +508,58 @@ export default {
     refresh(data) {
       this.$emit('view', data);
     },
+    getUpdatedLoanFromFlash(response) {
+      return response?.props?.flash?.data?.data
+        || response?.props?.flash?.data
+        || this.$page?.props?.flash?.data?.data
+        || this.$page?.props?.flash?.data
+        || null;
+    },
 
     approveLoan() {
       this.showModal = true;
+    },
+    releaseLoan() {
+      Swal.fire({
+        title: 'Release Loan',
+        text: 'Are you sure you want to release this loan to the employee?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Release',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#d33',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.$inertia.put(`/loans/${this.loan.id}/status`, {
+            status: 'active',
+            id: this.loan.id,
+            remarks: 'Loan released to employee'
+          }, {
+            onSuccess: (response) => {
+              const updatedLoan = this.getUpdatedLoanFromFlash(response);
+              if (updatedLoan) {
+                this.refresh(updatedLoan);
+              } else {
+                this.loan.status = 'active';
+              }
+
+              Swal.fire(
+                'Released!',
+                'Loan has been released to the employee successfully!',
+                'success'
+              );
+            },
+            onError: () => {
+              Swal.fire(
+                'Error',
+                'Failed to release loan!',
+                'error'
+              );
+            }
+          });
+        }
+      });
     },
     addPayment() {
       this.$refs.paymentModal.show();
@@ -525,7 +601,14 @@ export default {
         id: this.loan.id,
         remarks: this.remarks
       }, {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          const updatedLoan = this.getUpdatedLoanFromFlash(response);
+          if (updatedLoan) {
+            this.refresh(updatedLoan);
+          } else {
+            this.loan.status = status === 'disapproved' ? 'rejected' : status;
+          }
+
           Swal.fire(
               'Success',
               'Loan updated successfully!',
@@ -533,7 +616,6 @@ export default {
           );
           this.showModal = false;
           this.remarks = '';
-          this.$emit('back');
         },
         onError: () => {
           Swal.fire(

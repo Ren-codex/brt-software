@@ -167,6 +167,8 @@
     :show="showIndividualModal"
     :employee="currentIndividualEmployee"
     :dropdowns="dropdowns"
+    :pay-period-start="form.pay_period_start"
+    :pay-period-end="form.pay_period_end"
     @close="() => showIndividualModal = false"
     @save="onSaveIndividualPayroll"
   />
@@ -494,7 +496,8 @@ export default {
       if (!loans || !loans.length) return 0;
       const divisor = this.getPayrollPeriodDivisor();
       
-      const approvedLoans = loans.filter(loan => loan.status === 'approved');
+      const approvedLoans = loans.filter(loan => loan.status === 'active');
+      
       const total = approvedLoans.reduce((total, loan) => {
         // const interest = (loan.remaining_balance * (loan.interest_rate / 100)) / divisor;
         // const deduction = (loan.remaining_balance / loan.remaining_term_to_pay) + interest;

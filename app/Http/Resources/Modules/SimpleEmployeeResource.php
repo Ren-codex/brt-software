@@ -15,7 +15,7 @@ class SimpleEmployeeResource extends JsonResource
             'is_active' => $this->is_active,
             'position' => $this->position,
             'basic_salary' => $this->position->rate_per_day ?? null,
-            'loans' => LoanResource::collection($this->loans->where('status', 'approved')),
+            'loans' => LoanResource::collection($this->loans->where('status', 'active')),
         ];
     }
 }

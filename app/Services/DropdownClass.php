@@ -187,12 +187,20 @@ class DropdownClass
     }
 
     public function employees(){
-        $data = Employee::with('position')->get()->map(function ($item) {
+        $data = Employee::with(['position', 'loans'])->get()->map(function ($item) {
+            $totalUnpaidLoan = $item->loans
+                ->where('status', 'active')
+                ->sum(function ($loan) {
+                    return (float) $loan->remaining_balance;
+                });
+
             return [
                 'value' => $item->id,
                 'name' => $item->lastname . ', ' . $item->firstname . ' ' . ($item->middlename ? strtoupper($item->middlename[0]) . '.' : ''),
                 'position_name' => $item->position ? $item->position->title : null,
                 'basic_salary' => $item->position ? $item->position->rate_per_day : null,
+                'total_loan_count' => $item->loans->where('status', 'active')->count(),
+                'total_unpaid_loan' => $totalUnpaidLoan,
             ];
         });
         return  $data;

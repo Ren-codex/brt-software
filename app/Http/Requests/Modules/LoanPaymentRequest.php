@@ -45,7 +45,7 @@ class LoanPaymentRequest extends FormRequest
                     }
                 },
             ],
-            'paid_date' => 'required|string|max:255',
+            'paid_date' => 'nullable|string|max:255',
             'paid_term' => 'nullable|integer|min:1',
         ];
     }
