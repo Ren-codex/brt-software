@@ -184,6 +184,8 @@
       :amount="editingDeduction ? editingDeduction.amount : 0"
       :existingDeductions="form.deductions"
       :deductionDropdown="dropdowns.payroll_items ? dropdowns.payroll_items.filter(item => item.type === 'deduction') : []"
+      :pay-period-start="payPeriodStart"
+      :pay-period-end="payPeriodEnd"
       @close="showDeductionModal = false"
       @save="handleDeductionSave"
     />
@@ -203,6 +205,8 @@ export default {
     show: Boolean,
     employee: Object,
     dropdowns: Object,
+    payPeriodStart: String,
+    payPeriodEnd: String,
   },
   data() {
     return {

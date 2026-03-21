@@ -198,7 +198,9 @@ class PayrollClass
                                 $newRemainingBalance = max(0, floatval($loan->remaining_balance) - $deduct);
                                 $periodStart = \Carbon\Carbon::parse($payroll->pay_period_start);
                                 $periodEnd = \Carbon\Carbon::parse($payroll->pay_period_end);
-                                $paidDateLabel = $periodStart->format('F j') . '-' . $periodEnd->format('j, Y');
+                                $paidDateLabel = $periodStart->isSameMonth($periodEnd) && $periodStart->isSameYear($periodEnd)
+                                    ? $periodStart->format('F j') . '-' . $periodEnd->format('j, Y')
+                                    : $periodStart->format('F j') . '-' . $periodEnd->format('F j, Y');
 
                                 LoanPayment::create([
                                     'loan_id' => $loan->id,
