@@ -56,15 +56,63 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <tr v-for="(incentive, index) in incentives" :key="incentive.id" class="transition-all" style="transition: all 0.3s ease;">
-                                    <td class="text-center">{{ index + 1 }}</td>
-                                    <td class="text-center fw-semibold">{{ incentive.employee?.fullname }}</td>
-                                    <td class="text-center">{{ incentive.total_sold_quantity || 0 }}</td>
-                                    <td class="text-center">{{ incentive.total_product_total_kg || 0 }}</td>
-                                    <td class="text-center">{{ incentive.total_amount }}</td>
-                                </tr>
+                                <template v-for="(incentive, index) in incentives" :key="incentive.employee_id">
+                                    <tr class="transition-all incentive-row"
+                                        style="transition: all 0.3s ease;"
+                                        @click="toggleExpanded(incentive.employee_id)">
+                                        <td class="text-center">
+                                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                                <span>{{ index + 1 }}</span>
+                                                <i class="ri-arrow-down-s-line expand-icon"
+                                                    :class="{ open: expandedEmployeeId === incentive.employee_id }"></i>
+                                            </div>
+                                        </td>
+                                        <td class="text-center fw-semibold">{{ incentive.employee?.fullname }}</td>
+                                        <td class="text-center">{{ incentive.total_sold_quantity || 0 }}</td>
+                                        <td class="text-center">{{ incentive.total_product_total_kg || 0 }}</td>
+                                        <td class="text-center">{{ incentive.total_amount }}</td>
+                                    </tr>
+                                    <tr v-if="expandedEmployeeId === incentive.employee_id" class="details-row">
+                                        <td colspan="5" class="p-0">
+                                            <div class="details-panel p-3">
+                                                <div class="details-title mb-2">
+                                                    Sales incentive details for {{ incentive.employee?.fullname }}
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm align-middle mb-0 details-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>SO #</th>
+                                                                <th>Order Date</th>
+                                                                <th>Sold Quantity</th>
+                                                                <th>Total KG</th>
+                                                                <th>Points</th>
+                                                                <th>Created</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr v-for="detail in incentive.details || []" :key="detail.id">
+                                                                <td>{{ detail.sales_order?.so_number || `SO #${detail.sales_order_id}` }}</td>
+                                                                <td>{{ formatDate(detail.sales_order?.order_date) }}</td>
+                                                                <td>{{ detail.sold_quantity || 0 }}</td>
+                                                                <td>{{ detail.product_total_kg || 0 }}</td>
+                                                                <td>{{ detail.amount || 0 }}</td>
+                                                                <td>{{ formatDateTime(detail.created_at) }}</td>
+                                                            </tr>
+                                                            <tr v-if="!(incentive.details || []).length">
+                                                                <td colspan="7" class="text-center text-muted py-3">
+                                                                    No sales incentive details found.
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
                                 <tr v-if="incentives.length === 0">
-                                    <td colspan="8" class="text-center text-muted py-3">No incentives found</td>
+                                    <td colspan="5" class="text-center text-muted py-3">No incentives found</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -166,6 +214,7 @@ export default {
         created_date_to: null
       },
       localKeyword: '',
+      expandedEmployeeId: null,
       showModal: false,
       selectedIncentive: null,
       form: {
@@ -239,6 +288,12 @@ export default {
         const response = await axios.get('/sales-incentives', { params })
         if (response.data) {
           this.incentives = response.data.data || [];
+          if (this.expandedEmployeeId) {
+            const hasExpandedRow = this.incentives.some((item) => item.employee_id === this.expandedEmployeeId);
+            if (!hasExpandedRow) {
+              this.expandedEmployeeId = null;
+            }
+          }
           this.meta = {
             current_page: response.data.current_page || 1,
             last_page: response.data.last_page || 1,
@@ -264,9 +319,10 @@ export default {
       }
     },
     closeModal() {
-      this.showModal = false;
-      this.selectedIncentive = null;
-      this.form = {
+        this.showModal = false;
+        this.expandedEmployeeId = null;
+        this.selectedIncentive = null;
+        this.form = {
         employee_id: '',
         sold_quantity: 0,
         product_total_kg: 0,
@@ -279,6 +335,27 @@ export default {
         style: 'currency',
         currency: 'USD'
       }).format(amount);
+    },
+    toggleExpanded(employeeId) {
+      this.expandedEmployeeId = this.expandedEmployeeId === employeeId ? null : employeeId;
+    },
+    formatDate(value) {
+      if (!value) return '-';
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }).format(new Date(value));
+    },
+    formatDateTime(value) {
+      if (!value) return '-';
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      }).format(new Date(value));
     },
     getStatusStyle(status) {
       const statusMap = {
@@ -310,5 +387,37 @@ export default {
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
   cursor: default;
+}
+
+.incentive-row {
+  cursor: pointer;
+}
+
+.expand-icon {
+  transition: transform 0.2s ease;
+}
+
+.expand-icon.open {
+  transform: rotate(180deg);
+}
+
+.details-row td {
+  background: #f8f9fa;
+}
+
+.details-panel {
+  border-top: 1px solid #e9ecef;
+}
+
+.details-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.details-table thead th {
+  font-size: 11px;
+  color: #6c757d;
+  background: #ffffff;
 }
 </style>
