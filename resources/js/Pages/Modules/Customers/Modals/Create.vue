@@ -194,6 +194,7 @@ export default {
             this.form.address = data.address;
             this.form.contact_number = data.contact_number;
             this.form.email = data.email;
+            this.form.is_regular = data.is_regular;
             this.form.is_active = data.is_active;
             this.form.is_blacklisted = data.is_blacklisted;
             this.editable = true;
@@ -207,7 +208,7 @@ export default {
                     onSuccess: (response) => {
                         this.saveSuccess = true;
                         setTimeout(() => {
-                            this.$emit('add', true);
+                            this.$emit('update', { id: this.form.id });
                             this.form.reset();
                             this.hide();
                         }, 1500);
