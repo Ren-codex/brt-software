@@ -144,9 +144,15 @@ export default {
         preserveScroll: true,
         onSuccess: (response) => {
           this.saveSuccess = true;
+          const payload = {
+            inventory_stocks_id: this.form.inventory_stocks_id,
+            retail_price: parseFloat(this.form.retail_price) || 0,
+            wholesale_price: parseFloat(this.form.wholesale_price) || 0,
+            reason: this.form.reason || '',
+          };
           this.form.reset();
           setTimeout(() => {
-            this.$emit('saved', true);
+            this.$emit('saved', payload);
             this.hide();
           }, 1000);
         },
