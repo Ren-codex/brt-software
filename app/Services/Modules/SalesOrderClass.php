@@ -18,6 +18,7 @@ use App\Models\Product;
 use App\Models\ListStatus;
 use App\Models\InventoryAdjustment;
 use App\Http\Resources\Modules\SalesOrderResource;
+use App\Services\Accounting\JournalEntryService;
 use App\Services\Modules\InventoryService;
 
 
@@ -26,10 +27,12 @@ class SalesOrderClass
     private const RETURN_WINDOW_DAYS = 7;
 
     protected $inventoryService;
+    protected $journalEntryService;
 
-    public function __construct(InventoryService $inventoryService)
+    public function __construct(InventoryService $inventoryService, JournalEntryService $journalEntryService)
     {
         $this->inventoryService = $inventoryService;
+        $this->journalEntryService = $journalEntryService;
     }
 
     public function lists($request){
@@ -176,6 +179,8 @@ class SalesOrderClass
             'total_discount' => $totalDiscount,
         ]);
 
+        $isCreditSale = in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+
         // Create AR Invoice
         $invoice = new ArInvoice();
         $invoice->sales_order_id = $data->id;
@@ -184,8 +189,11 @@ class SalesOrderClass
         $invoice->amount_paid = 0;
         $invoice->balance_due = $data->total_amount;
         $invoice->total_discount = $data->total_discount;
-        $invoice->status_id = ListStatus::getBySlug('unpaid')->id; // Unpaid
+        $invoice->status_id = ListStatus::getBySlug('unpaid')->id;
+        $invoice->due_date = $isCreditSale ? $data->due_date : null;
         $invoice->save();
+
+        $this->journalEntryService->recordSaleEntries($data->load('items'));
 
         // Reload the data with relationships, including the newly created invoice
         $data = SalesOrder::with(['items', 'customer', 'status', 'created_by', 'arInvoices'])->find($data->id);
@@ -194,7 +202,8 @@ class SalesOrderClass
         return [
             'data' => new SalesOrderResource($data),
             'message' => 'Sales Order saved successfully!',
-            'info' => "You've successfully saved the Sales Order"
+            'info' => "You've successfully saved the Sales Order",
+            'receipt_id' => null,
         ];
     }
 
@@ -202,6 +211,9 @@ class SalesOrderClass
     public function update($request){
 
         $data = SalesOrder::findOrFail($request->id);
+        $data->load(['items', 'arInvoices']);
+
+        $this->journalEntryService->reverseEntriesForSource($data, 'Sales order updated. Previous accounting entry reversed.', $request->order_date);
 
         // // Restore old stock
         // foreach($data->items as $item){
@@ -265,7 +277,8 @@ class SalesOrderClass
         $invoice = $data->arInvoices()->first();
         if ($invoice) {
             $invoice->update([
-                'balance_due' => $totalAmount,
+                'balance_due' => in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true) ? $totalAmount : 0,
+                'amount_paid' => in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true) ? $invoice->amount_paid : $totalAmount,
                 'total_discount' => $totalDiscount,
             ]);
         }
@@ -273,6 +286,8 @@ class SalesOrderClass
 
 
         // Reload the data with relationships
+        $this->journalEntryService->recordSaleEntries($data->fresh(['items']));
+
         $data = SalesOrder::with(['items', 'customer', 'status', 'updated_by', 'arInvoices'])->find($data->id);
 
         return [
@@ -410,6 +425,7 @@ class SalesOrderClass
                     
                     foreach ($receipts as $receipt) {
                         // Update receipt status to cancelled (void)
+                        $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt voided because of full sales return.', now()->toDateString());
                         $receipt->update([
                             'status_id' => ListStatus::getBySlug('cancelled')->id,
                         ]);
@@ -427,6 +443,14 @@ class SalesOrderClass
 
                 $refundReceipt = $this->createRefundReceipt($data, $sourceReceipt, $refundAmount);
                 $updatedReceipt = $this->createUpdatedReceipt($data, $refundReceipt);
+
+                $this->journalEntryService->recordSalesReturnEntries($data, $itemsToProcess, $returnRequests, $sourceReceipt);
+                if ($refundReceipt) {
+                    $this->journalEntryService->recordRefundReceiptEntry($refundReceipt);
+                }
+                if ($updatedReceipt) {
+                    $this->journalEntryService->recordReceiptEntry($updatedReceipt);
+                }
 
                 return [
                     'data' => SalesOrder::find($id),
@@ -453,6 +477,7 @@ class SalesOrderClass
                 }
 
                 if ($sourceReceipt) {
+                    $this->journalEntryService->reverseEntriesForSource($sourceReceipt, 'Receipt voided because of partial sales return.', now()->toDateString());
                     $sourceReceipt->update([
                         'status_id' => ListStatus::getBySlug('cancelled')->id,
                     ]);
@@ -464,6 +489,14 @@ class SalesOrderClass
 
                 $refundReceipt = $this->createRefundReceipt($data, $sourceReceipt, $refundAmount);
                 $updatedReceipt = $this->createUpdatedReceipt($data, $refundReceipt);
+
+                $this->journalEntryService->recordSalesReturnEntries($data, $itemsToProcess, $returnRequests, $sourceReceipt);
+                if ($refundReceipt) {
+                    $this->journalEntryService->recordRefundReceiptEntry($refundReceipt);
+                }
+                if ($updatedReceipt) {
+                    $this->journalEntryService->recordReceiptEntry($updatedReceipt);
+                }
 
                 return [
                     'data' => SalesOrder::find($id),
@@ -490,10 +523,19 @@ class SalesOrderClass
 
     public function cancel($id){
         $data = SalesOrder::findOrFail($id);
+        $data->load(['items', 'arInvoices']);
 
         // Restore stock
         foreach($data->items as $item){
             $this->inventoryService->addStock($item->product_id, $item->quantity, 'Cancel SO - Restore Stock - SO#' . $data->so_number, $item->batch_code);
+        }
+
+        $this->journalEntryService->recordSalesOrderCancellationEntries($data);
+
+        foreach ($data->arInvoices as $invoice) {
+            foreach (Receipt::where('ar_invoice_id', $invoice->id)->get() as $receipt) {
+                $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt reversed because related sales order was cancelled.', now()->toDateString());
+            }
         }
 
         $data->update([

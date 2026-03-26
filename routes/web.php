@@ -87,6 +87,15 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class);
         Route::resource('/loans', App\Http\Controllers\Modules\LoanController::class);
         Route::resource('/loan-payments', App\Http\Controllers\Modules\LoanPaymentController::class);
+        Route::get('/accounting', [App\Http\Controllers\Modules\AccountingController::class, 'index']);
+        Route::get('/accounting/general-ledger', [App\Http\Controllers\Modules\AccountingController::class, 'generalLedger']);
+        Route::get('/accounting/trial-balance', [App\Http\Controllers\Modules\AccountingController::class, 'trialBalance']);
+        Route::get('/accounting/profit-loss', [App\Http\Controllers\Modules\AccountingController::class, 'profitLoss']);
+        Route::get('/accounting/balance-sheet', [App\Http\Controllers\Modules\AccountingController::class, 'balanceSheet']);
+        Route::get('/accounting/accounts-receivable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsReceivable']);
+        Route::get('/accounting/accounts-payable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsPayable']);
+        Route::get('/accounting/chart-of-accounts', [App\Http\Controllers\Modules\AccountingController::class, 'chartOfAccounts']);
+        Route::get('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'journalEntries']);
         Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
