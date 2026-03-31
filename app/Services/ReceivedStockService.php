@@ -11,17 +11,21 @@ use App\Models\ListStatus;
 use App\Models\PurchaseOrderLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Services\Accounting\JournalEntryService;
 use App\Services\SeriesService;
 use Carbon\Carbon;
 
 class ReceivedStockService
 {
     protected $series_service;
+    protected $journalEntryService;
 
     public function __construct(
         SeriesService $series_service,
+        JournalEntryService $journalEntryService,
     ) { 
         $this->series_service = $series_service;
+        $this->journalEntryService = $journalEntryService;
     }
 
     public function getAll()
@@ -99,20 +103,28 @@ class ReceivedStockService
                 }
             }
 
-            return $receivedStock->load(['purchaseOrder', 'supplier', 'items']);
+            $receivedStock = $receivedStock->load(['purchaseOrder', 'supplier', 'items']);
+            $this->journalEntryService->recordReceivedStockEntry($receivedStock);
+
+            return $receivedStock;
         });
     }
 
     public function update($id, array $data)
     {
         $receivedStock = ReceivedStock::findOrFail($id);
+        $this->journalEntryService->reverseEntriesForSource($receivedStock, 'Received stock updated. Previous purchase receipt entry reversed.', $data['received_date'] ?? now()->toDateString());
         $receivedStock->update($data);
-        return $receivedStock->load(['purchaseOrder', 'supplier', 'items']);
+        $receivedStock = $receivedStock->load(['purchaseOrder', 'supplier', 'items']);
+        $this->journalEntryService->recordReceivedStockEntry($receivedStock);
+
+        return $receivedStock;
     }
 
     public function delete($id)
     {
         $receivedStock = ReceivedStock::findOrFail($id);
+        $this->journalEntryService->reverseEntriesForSource($receivedStock, 'Received stock deleted. Purchase receipt entry reversed.', now()->toDateString());
         $receivedStock->delete();
     }
 

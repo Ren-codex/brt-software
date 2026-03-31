@@ -4,9 +4,14 @@ namespace App\Services\Modules;
 
 use App\Models\Expense;
 use App\Http\Resources\Modules\ExpenseResource;
+use App\Services\Accounting\JournalEntryService;
 
 class ExpenseClass
 {
+    public function __construct(protected JournalEntryService $journalEntryService)
+    {
+    }
+
     public function lists($request)
     {
         $data = ExpenseResource::collection(
@@ -50,6 +55,11 @@ class ExpenseClass
     public function update($request)
     {
         $data = Expense::findOrFail($request->id);
+        $wasReleased = $data->status === 'released';
+
+        if ($wasReleased) {
+            $this->journalEntryService->reverseEntriesForSource($data, 'Expense updated. Previous expense release entry reversed.', $request->expense_date);
+        }
 
         $data->update([
             'expense_type' => $request->expense_type,
@@ -58,6 +68,10 @@ class ExpenseClass
             'description' => $request->description,
             'status' => $request->status,
         ]);
+
+        if ($data->status === 'released') {
+            $this->journalEntryService->recordExpenseReleaseEntry($data->fresh());
+        }
 
         return [
             'data' => new ExpenseResource($data),
@@ -69,6 +83,11 @@ class ExpenseClass
     public function delete($id)
     {
         $data = Expense::findOrFail($id);
+
+        if ($data->status === 'released') {
+            $this->journalEntryService->reverseEntriesForSource($data, 'Released expense deleted. Original expense entry reversed.', now()->toDateString());
+        }
+
         $data->delete();
 
         return [
@@ -104,6 +123,8 @@ class ExpenseClass
             $data->update([
                 'status' => 'released',
             ]);
+
+            $this->journalEntryService->recordExpenseReleaseEntry($data->fresh());
         }
 
         return [

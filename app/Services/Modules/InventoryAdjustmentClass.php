@@ -5,11 +5,16 @@ namespace App\Services\Modules;
 use App\Http\Resources\InventoryAdjustmentResource;
 use App\Models\InventoryAdjustment;
 use App\Models\InventoryStocks;
+use App\Services\Accounting\JournalEntryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class InventoryAdjustmentClass
 {
+    public function __construct(protected JournalEntryService $journalEntryService)
+    {
+    }
+
     public function save($request)
     {
         try {
@@ -37,6 +42,8 @@ class InventoryAdjustmentClass
                 'adjustment_date' =>  now(),
                 'adjusted_by_id' =>  Auth::id(),
             ]);
+
+            $this->journalEntryService->recordInventoryAdjustmentEntry($data->fresh(['inventoryStock.receivedItem']));
 
             DB::commit();
 

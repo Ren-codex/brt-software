@@ -108,6 +108,16 @@
                 </li>
                 
                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+                    <Link href="/accounting" class="nav-link menu-link"
+                        :class="{ 'active': $page.url.startsWith('/accounting') }">
+                    <i class="ri-bank-card-fill"></i>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Accounting</span>
+                    <span class="menu-link-bg"></span>
+                    <span class="active-indicator"></span>
+                    </Link>
+                </li>
+
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
                     <Link href="/expenses" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/expenses') }">
                     <i class="ri-money-dollar-circle-fill"></i>

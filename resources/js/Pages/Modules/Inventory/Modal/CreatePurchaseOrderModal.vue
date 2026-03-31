@@ -2,168 +2,211 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container modal-lg" @click.stop>
             <div class="modal-header">
-                <h2>{{ editable ? 'Update Purchase Request' : 'Create Purchase Request' }}</h2>
+                <div class="header-title">
+                    <i :class="editable ? 'ri-edit-box-line' : 'ri-shopping-bag-3-line'"></i>
+                    <h2>{{ editable ? 'Update Purchase Request' : 'Create Purchase Request' }}</h2>
+                </div>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
             <div class="modal-body">
-              
                 <form @submit.prevent="submit" class="purchase-order-form">
-                    <!-- Supplier Section (same as before) -->
-                    <div class="form-group">
-                        <label class="form-label">Select Supplier</label>
-                        <div class="input-wrapper">
-                            <i class="ri-store-line input-icon"></i>
-                            <select v-model="form.supplier_id" class="form-control"
-                                :class="{ 'input-error': form.errors.supplier_id }"
-                                @change="handleInput('supplier_id')">
-                                <option value="" disabled>Choose a supplier...</option>
-                                <option v-for="supplier in dropdowns.suppliers" :value="supplier.value"
-                                    :key="supplier.value">
-                                    {{ supplier.name }}
-                                </option>
-                            </select>
-                        </div>
-                        <span class="error-message" v-if="form.errors.supplier_id">{{ form.errors.supplier_id }}</span>
-                    </div>
-
-                    <!-- Items Section -->
-                    <div class="form-group">
-                        <label class="form-label">Order Items</label>
-                    </div>
-
-                    <div class="items-container" v-if="form.items.length > 0">
-                        <div v-for="(item, index) in form.items" :key="index" class="item-card">
-                            <div class="item-header">
-                                <div class="item-number">Item {{ index + 1 }}</div>
-                                <div class="item-actions">
-                                    <button type="button" class="btn-action" @click="duplicateItem(index)"
-                                        title="Duplicate">
-                                        <i class="ri-file-copy-line"></i>
-                                    </button>
-                                    <button type="button" class="btn-action btn-danger" @click="removeItem(index)"
-                                        title="Remove">
-                                        <i class="ri-delete-bin-line"></i>
-                                    </button>
+                    <div class="form-layout">
+                        <section class="form-panel form-panel-main">
+                            <div class="panel-head">
+                                <div>
+                                    <p class="panel-kicker">Supplier Setup</p>
+                                    <h3 class="panel-title">Purchase Request Details</h3>
                                 </div>
                             </div>
 
-                            <div class="item-body">
-                                <!-- Product Selection -->
-
-                                <div class="form-group">
-                                    <label>Product</label>
-                                    <select v-model="item.product_id" class="form-control"
-                                        :class="{ 'input-error': form.errors[`items.${index}.product_id`] }"
-                                        @change="handleInput(`items.${index}.product_id`)">
-                                        <option value="" disabled>Select a product...</option>
-                                        <option v-for="product in dropdowns.products" :value="product.value"
-                                            :key="product.value">
-                                            {{ product.name }}
+                            <div class="form-group">
+                                <label class="form-label">Select Supplier</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-store-line input-icon"></i>
+                                    <select v-model="form.supplier_id" class="form-control"
+                                        :class="{ 'input-error': form.errors.supplier_id }"
+                                        @change="handleInput('supplier_id')">
+                                        <option value="" disabled>Choose a supplier...</option>
+                                        <option v-for="supplier in dropdowns.suppliers" :value="supplier.value"
+                                            :key="supplier.value">
+                                            {{ supplier.name }}
                                         </option>
                                     </select>
-                                    <span class="error-message" v-if="form.errors[`items.${index}.product_id`]">
-                                        {{ form.errors[`items.${index}.product_id`] }}
-                                    </span>
                                 </div>
+                                <span class="error-message" v-if="form.errors.supplier_id">{{ form.errors.supplier_id }}</span>
+                            </div>
 
-                                <!-- Quantity, Unit Cost, Total -->
-                                <div class="item-details">
-                                    <div class="form-group">
-                                        <label>Quantity</label>
-                                        <div class="quantity-control">
-                                            <button type="button" class="qty-btn"
-                                                @click="adjustQuantity(item, 'decrease')"
-                                                :disabled="item.quantity <= 0">
-                                                <i class="ri-subtract-line"></i>
+                            <div class="section-divider">
+                                <div>
+                                    <p class="panel-kicker mb-1">Line Items</p>
+                                    <h4 class="section-title mb-0">Order Items</h4>
+                                </div>
+                                <button type="button" @click="addItem" class="btn-add-item">
+                                    <i class="ri-add-line"></i>
+                                    Add Item
+                                </button>
+                            </div>
+
+                            <div class="items-container" v-if="form.items.length > 0">
+                                <div v-for="(item, index) in form.items" :key="index" class="item-card">
+                                    <div class="item-header">
+                                        <div>
+                                            <div class="item-number">Item {{ index + 1 }}</div>
+                                            <div class="item-caption">Purchase line details</div>
+                                        </div>
+                                        <div class="item-actions">
+                                            <button type="button" class="btn-action" @click="duplicateItem(index)"
+                                                title="Duplicate">
+                                                <i class="ri-file-copy-line"></i>
                                             </button>
-                                            <input type="number" v-model="item.quantity" class="form-control"
-                                                :class="{ 'input-error': form.errors[`items.${index}.quantity`] }"
-                                                @input="calculateTotal(item); handleInput(`items.${index}.quantity`)"
-                                                step="1" min="0" :max="MAX_QUANTITY" required @change="validateQuantity(item)">
-                                            <button type="button" class="qty-btn"
-                                                @click="adjustQuantity(item, 'increase')">
-                                                <i class="ri-add-line"></i>
+                                            <button type="button" class="btn-action btn-danger" @click="removeItem(index)"
+                                                title="Remove">
+                                                <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div class="form-group">
-                                        <label>Unit Cost</label>
-                                        <input type="number" v-model="item.unit_cost" class="form-control"
-                                            :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
-                                            @input="calculateTotal(item); handleInput(`items.${index}.unit_cost`)"
-                                            step="0.01" min="0" :max="MAX_UNIT_COST" required>
-                                        <!-- <Amount @amount="amount(index, $event)"
-                                            ref="amountComponent"
-                                            :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
-                                            class="form-control"
-                                        /> -->
-                                        <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
-                                            {{ form.errors[`items.${index}.unit_cost`] }}
-                                        </span>
-                                    </div>
+                                    <div class="item-body">
+                                        <div class="form-group">
+                                            <label>Product</label>
+                                            <select v-model="item.product_id" class="form-control form-control-plain"
+                                                :class="{ 'input-error': form.errors[`items.${index}.product_id`] }"
+                                                @change="handleInput(`items.${index}.product_id`)">
+                                                <option value="" disabled>Select a product...</option>
+                                                <option v-for="product in dropdowns.products" :value="product.value"
+                                                    :key="product.value">
+                                                    {{ product.name }}
+                                                </option>
+                                            </select>
+                                            <span class="error-message" v-if="form.errors[`items.${index}.product_id`]">
+                                                {{ form.errors[`items.${index}.product_id`] }}
+                                            </span>
+                                        </div>
 
-                                    <div class="form-group">
-                                        <label>Total Cost</label>
-                                        <div class="total-display">
-                                            <span class="total-amount">{{ formatCurrency(item.total_cost) }}</span>
+                                        <div class="item-details">
+                                            <div class="form-group">
+                                                <label>Quantity</label>
+                                                <div class="quantity-control">
+                                                    <button type="button" class="qty-btn"
+                                                        @click="adjustQuantity(item, 'decrease')"
+                                                        :disabled="item.quantity <= 0">
+                                                        <i class="ri-subtract-line"></i>
+                                                    </button>
+                                                    <input type="number" v-model="item.quantity" class="form-control form-control-plain"
+                                                        :class="{ 'input-error': form.errors[`items.${index}.quantity`] }"
+                                                        @input="calculateTotal(item); handleInput(`items.${index}.quantity`)"
+                                                        step="1" min="0" :max="MAX_QUANTITY" required @change="validateQuantity(item)">
+                                                    <button type="button" class="qty-btn"
+                                                        @click="adjustQuantity(item, 'increase')">
+                                                        <i class="ri-add-line"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>Unit Cost</label>
+                                                <div class="money-input">
+                                                    <span class="money-prefix">PHP</span>
+                                                    <input type="number" v-model="item.unit_cost" class="form-control form-control-plain"
+                                                        :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
+                                                        @input="calculateTotal(item); handleInput(`items.${index}.unit_cost`)"
+                                                        step="0.01" min="0" :max="MAX_UNIT_COST" required>
+                                                </div>
+                                                <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
+                                                    {{ form.errors[`items.${index}.unit_cost`] }}
+                                                </span>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>Total Cost</label>
+                                                <div class="total-display">
+                                                    <span class="total-amount">{{ formatCurrency(item.total_cost) }}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="empty-state" v-else>
+                                <div class="empty-state-icon">
+                                    <i class="ri-shopping-cart-line"></i>
+                                </div>
+                                <h4>No Items Added Yet</h4>
+                                <p>Start this request by adding your first product line item.</p>
+                                <button type="button" @click="addItem" class="btn-add-item">
+                                    <i class="ri-add-line"></i>
+                                    Add Your First Item
+                                </button>
+                            </div>
+                        </section>
+
+                        <aside class="form-panel form-panel-side">
+                            <div class="panel-head">
+                                <div>
+                                    <p class="panel-kicker">Live Summary</p>
+                                    <h3 class="panel-title">Request Overview</h3>
+                                </div>
+                            </div>
+
+                            <div class="summary-metrics">
+                                <div class="summary-metric-card">
+                                    <span class="summary-metric-label">Line Items</span>
+                                    <strong class="summary-metric-value">{{ form.items.length }}</strong>
+                                </div>
+                                <div class="summary-metric-card">
+                                    <span class="summary-metric-label">Total Quantity</span>
+                                    <strong class="summary-metric-value">{{ totalQuantity }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="summary-section">
+                                <div class="summary-header">
+                                    <h3>Order Summary</h3>
+                                </div>
+                                <div class="summary-content">
+                                    <div class="summary-row">
+                                        <span>Number of Items</span>
+                                        <span class="summary-value">{{ form.items.length }}</span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>Total Quantity</span>
+                                        <span class="summary-value">{{ totalQuantity }}</span>
+                                    </div>
+                                    <div class="summary-row total-row">
+                                        <span>Total Amount</span>
+                                        <span class="summary-value total-amount">{{ formatCurrency(totalAmount) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="hint-card">
+                                <div class="hint-icon">
+                                    <i class="ri-information-line"></i>
+                                </div>
+                                <div>
+                                    <h4 class="hint-title">Validation Guide</h4>
+                                    <p class="hint-text mb-0">
+                                        Each item needs a product, valid quantity, and unit cost before submission.
+                                    </p>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+
+                    <div class="feedback-stack">
+                        <div class="error-banner" v-if="submitError">
+                            <i class="ri-error-warning-line"></i>
+                            <span>{{ submitError }}</span>
+                        </div>
+                        <div class="success-alert" v-if="saveSuccess">
+                            <i class="ri-checkbox-circle-fill"></i>
+                            <span>Purchase order has been {{ editable ? 'updated' : 'created' }} successfully.</span>
                         </div>
                     </div>
-                    
 
-                    <!-- Empty State -->
-                    <div class="empty-state" v-else>
-                        <i class="ri-shopping-cart-line"></i>
-                        <h4>No Items Added</h4>
-                        <p>Click "Add Item" to start adding products to your purchase order.</p>
-                        <button type="button" @click="addItem" class="btn-add-item">
-                            <i class="ri-add-line"></i>
-                            Add Your First Item
-                        </button>
-                    </div>
-                    <div class="form-group">
-                        <button type="button" @click="addItem" class="btn-add-item">
-                            <i class="ri-add-line"></i>
-                            Add Item
-                        </button>
-                    </div>
-
-                    <!-- Summary Section (same as before) -->
-                    <div class="summary-section">
-                        <div class="summary-header">
-                            <h3>Order Summary</h3>
-                        </div>
-                        <div class="summary-content">
-                            <div class="summary-row">
-                                <span>Number of Items:</span>
-                                <span class="summary-value">{{ form.items.length }}</span>
-                            </div>
-                            <div class="summary-row">
-                                <span>Total Quantity:</span>
-                                <span class="summary-value">{{ totalQuantity }}</span>
-                            </div>
-                            <div class="summary-row total-row">
-                                <span>Total Amount:</span>
-                                <span class="summary-value total-amount">{{ formatCurrency(totalAmount) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="error-banner" v-if="submitError">
-                        <i class="ri-error-warning-line"></i>
-                        <span>{{ submitError }}</span>
-                    </div>
-                      <div class="success-alert" v-if="saveSuccess">
-                    <i class="ri-checkbox-circle-fill"></i>
-                    <span>Purchase order has been {{ editable ? 'updated' : 'created' }} successfully.</span>
-                </div>
-
-                    <!-- Form Actions -->
                     <div class="form-actions">
                         <button type="button" class="btn btn-cancel" @click="hide">
                             <i class="ri-close-line"></i>
@@ -184,10 +227,8 @@
 
 <script>
 import { useForm } from '@inertiajs/vue3';
-import Amount from '@/Shared/Components/Forms/Amount.vue';
 
 export default {
-    components: { Amount },
     name: "CreatePurchaseOrderModal",
     props: ['dropdowns'],
     emits: ['add'],
@@ -230,7 +271,7 @@ export default {
                 {
                     product_id: null,
                     quantity: 0,
-                    unit_cost: 0,
+                    unit_cost: '',
                     total_cost: 0,
                 }
             ];
@@ -248,10 +289,9 @@ export default {
             this.form.items = data.items ? data.items.map(item => ({
                 product_id: item.product.id,
                 quantity: item.quantity,
-                unit_cost: item.unit_cost || 0,
+                unit_cost: item.unit_cost != null ? String(item.unit_cost) : '',
                 total_cost: item.total_cost || 0,
             })) : [];
-            console.log(this.form.items);
 
             this.editable = true;
             this.saveSuccess = false;
@@ -366,7 +406,7 @@ export default {
             this.form.items.push({
                 product_id: null,
                 quantity: 0,
-                unit_cost: 0,
+                unit_cost: '',
                 total_cost: 0,
             });
         },
@@ -378,7 +418,7 @@ export default {
                 this.form.items[0] = {
                     product_id: null,
                     quantity: 0,
-                    unit_cost: 0,
+                    unit_cost: '',
                     total_cost: 0,
                 };
             }
@@ -386,15 +426,12 @@ export default {
 
         duplicateItem(index) {
             const itemToDuplicate = { ...this.form.items[index] };
-            console.log('Duplicating item:', itemToDuplicate.unit_cost);
             this.form.items.splice(index + 1, 0, {
                 quantity: itemToDuplicate.quantity,
-                unit_cost: itemToDuplicate.unit_cost,
+                unit_cost: itemToDuplicate.unit_cost ?? '',
                 total_cost: itemToDuplicate.total_cost,
                 product_id: itemToDuplicate.product_id,
             });
-
-            console.log('New item added:', this.form.items[index + 1]);
         },
 
         calculateTotal(item) {
@@ -426,25 +463,10 @@ export default {
             }
         },
 
-        // FIXED: Update unit cost method
-        amount(index, val) {
-            this.form.items[index].unit_cost = this.cleanCurrency(val);
-            this.calculateTotal(this.form.items[index]);
-        },
-
-        cleanCurrency(value) {
-            if (!value) return 0;
-            // Remove ₱, commas, and spaces
-            const cleaned = value.toString().replace(/[^0-9.]/g, "");
-            console.log(value);
-
-            return parseFloat(cleaned);
-        },
         roundTo2(value) {
             return Math.round(((Number(value) || 0) + Number.EPSILON) * 100) / 100;
         },
 
-        // FIXED: Format currency method
         formatCurrency(amount) {
             return new Intl.NumberFormat('en-PH', {
                 style: 'currency',
@@ -458,27 +480,6 @@ export default {
 
 
 <style scoped>
-.cost-input .form-control {
-    padding-left: 1rem !important;
-}
-
-.total-display {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-weight: 600;
-    color: #059669;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.total-display .total-amount {
-    font-size: 1rem;
-}
-
-/* Modal Overlay */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -502,11 +503,10 @@ export default {
     visibility: visible;
 }
 
-/* Modal Container */
 .modal-container {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    background: #f7fbfa;
+    border-radius: 28px;
+    box-shadow: 0 28px 70px rgba(17, 24, 39, 0.25);
     width: 100%;
     max-width: 500px;
     overflow: hidden;
@@ -522,50 +522,111 @@ export default {
     transform: translateY(0) scale(1);
 }
 
-/* Modal Header */
 .modal-header {
-    background: #3a8674;
-    color: white;
-    padding: 0.875rem 1.25rem;
+    padding: 16px 22px;
+    border-bottom: 1px solid #d7e5de;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: linear-gradient(140deg, #d7ece5 0%, #c7e2d9 100%);
 }
 
-.modal-header h2 {
-    font-weight: 700;
-    font-size: 1.1rem;
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-title i {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: rgba(26, 104, 87, 0.15);
+    color: #1a6857;
+    font-size: 21px;
+}
+
+.header-title h2 {
     margin: 0;
+    font-size: 1.16rem;
+    color: #1f2937;
+    font-weight: 700;
 }
 
 .close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.75);
+    color: #4b5563;
+    font-size: 19px;
+    display: grid;
+    place-items: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 1.1rem;
+    transition: all 0.2s ease;
 }
 
 .close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: #fff;
     transform: rotate(90deg);
 }
 
-/* Modal Body */
 .modal-body {
-    padding: 1.5rem;
+    padding: 1.5rem 1.75rem 1.75rem;
     max-height: 75vh;
     overflow-y: auto;
 }
 
-/* Form Group */
+.form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 0.95fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.form-panel {
+    background: #ffffff;
+    border: 1px solid rgba(61, 141, 122, 0.12);
+    border-radius: 24px;
+    box-shadow: 0 16px 35px rgba(39, 84, 72, 0.08);
+}
+
+.form-panel-main {
+    padding: 1.35rem;
+}
+
+.form-panel-side {
+    padding: 1.25rem;
+    position: sticky;
+    top: 0;
+}
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.panel-kicker {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #648b74;
+}
+
+.panel-title {
+    margin: 0.2rem 0 0;
+    color: #20413a;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
 .form-group {
     margin-bottom: 1.25rem;
 }
@@ -578,7 +639,6 @@ export default {
     font-size: 0.9rem;
 }
 
-/* Input Wrapper */
 .input-wrapper {
     position: relative;
 }
@@ -595,18 +655,18 @@ export default {
 
 .form-control {
     width: 100%;
-    padding: 0.7rem 0.875rem 0.7rem 2.75rem;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
+    padding: 0.85rem 1rem 0.85rem 2.9rem;
+    border: 1px solid #d7e5de;
+    border-radius: 14px;
     font-size: 0.95rem;
     transition: all 0.3s ease;
-    background-color: white;
+    background-color: #fdfefe;
 }
 
 .form-control:focus {
     outline: none;
-    border-color: #2e8b57;
-    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+    border-color: #3d8d7a;
+    box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.12);
 }
 
 .form-control.input-error {
@@ -617,7 +677,30 @@ export default {
     box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
 }
 
-/* Error Message */
+.form-control-plain {
+    padding-left: 1rem;
+}
+
+.money-input {
+    position: relative;
+}
+
+.money-prefix {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #648b74;
+    z-index: 1;
+}
+
+.money-input .form-control {
+    padding-left: 3.7rem;
+}
+
 .error-message {
     display: block;
     margin-top: 0.375rem;
@@ -639,18 +722,16 @@ export default {
     font-weight: 500;
 }
 
-/* Success Alert */
 .success-alert {
-    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
     color: #155724;
     padding: 0.875rem 1.25rem;
-    border-radius: 8px;
-    margin-bottom: 1.25rem;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     gap: 0.625rem;
     animation: slideIn 0.5s ease-out;
-    border: 1px solid #c3e6cb;
+    border: 1px solid #b9e6ca;
 }
 
 .success-alert i {
@@ -669,67 +750,94 @@ export default {
     }
 }
 
-/* Items Section */
+.section-divider {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.5rem 0 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #edf3f1;
+}
+
+.section-title {
+    color: #20413a;
+    font-size: 1.02rem;
+    font-weight: 700;
+}
+
 .btn-add-item {
-    background: #3a8674;
+    background: linear-gradient(135deg, #3d8d7a 0%, #2f7464 100%);
     color: white;
     border: none;
-    padding: 0.5rem 0.875rem;
-    border-radius: 6px;
-    font-weight: 500;
+    padding: 0.7rem 1rem;
+    border-radius: 12px;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.8125rem;
+    gap: 0.45rem;
+    font-size: 0.85rem;
     transition: all 0.3s ease;
+    box-shadow: 0 10px 20px rgba(61, 141, 122, 0.18);
 }
 
 .btn-add-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
+    box-shadow: 0 14px 25px rgba(61, 141, 122, 0.24);
 }
 
-/* Item Card */
+.items-container {
+    display: grid;
+    gap: 1rem;
+}
+
 .item-card {
-    background: #f5f7f6;
-    border: 1px solid #9ad9ab;
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 12px;
-    transition: box-shadow 0.3s ease;
+    background: linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
+    border: 1px solid #d9ebe4;
+    border-radius: 20px;
+    padding: 1rem;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .item-card:hover {
-    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 14px 28px rgba(32, 65, 58, 0.08);
+    transform: translateY(-1px);
 }
 
 .item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f3f4f6;
+    margin-bottom: 1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #e7f0ed;
 }
 
 .item-number {
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.95rem;
+    font-weight: 700;
+    color: #20413a;
+    font-size: 1rem;
+}
+
+.item-caption {
+    color: #6b8d80;
+    font-size: 0.82rem;
+    margin-top: 0.2rem;
 }
 
 .item-actions {
     display: flex;
-    gap: 6px;
+    gap: 0.45rem;
 }
 
 .btn-action {
-    background: #f9fafb;
-    border: 1px solid #e9ecef;
-    border-radius: 5px;
-    padding: 6px;
-    color: #6b7280;
+    background: #ffffff;
+    border: 1px solid #dce9e4;
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    color: #5f786e;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -738,8 +846,8 @@ export default {
 }
 
 .btn-action:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: #eff7f4;
+    color: #20413a;
 }
 
 .btn-action.btn-danger:hover {
@@ -748,26 +856,25 @@ export default {
     border-color: #e74c3c;
 }
 
-/* Item Details */
 .item-details {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    margin-top: 12px;
+    gap: 1rem;
+    margin-top: 0.75rem;
 }
 
 .quantity-control {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.5rem;
 }
 
 .qty-btn {
-    background: #f9fafb;
-    border: 1px solid #e9ecef;
-    border-radius: 5px;
-    width: 32px;
-    height: 32px;
+    background: #ffffff;
+    border: 1px solid #d7e5de;
+    border-radius: 12px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -777,9 +884,9 @@ export default {
 }
 
 .qty-btn:hover:not(:disabled) {
-    background: #2e8b57;
+    background: #3d8d7a;
     color: white;
-    border-color: #2e8b57;
+    border-color: #3d8d7a;
 }
 
 .qty-btn:disabled {
@@ -787,29 +894,12 @@ export default {
     cursor: not-allowed;
 }
 
-.cost-input {
-    position: relative;
-}
-
-.cost-input .currency {
-    position: absolute;
-    left: 0.875rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #7f8c8d;
-    font-weight: 500;
-    z-index: 1;
-}
-
-.cost-input .form-control {
-    padding-left: 2.25rem;
-}
-
 .total-display {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 6px;
-    padding: 8px 12px;
+    min-height: 51px;
+    background: linear-gradient(135deg, #effbf6 0%, #e3f5ed 100%);
+    border: 1px solid #cbe9d7;
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
     font-weight: 600;
     color: #059669;
     display: flex;
@@ -817,23 +907,39 @@ export default {
     justify-content: center;
 }
 
-/* Empty State */
+.total-display .total-amount {
+    font-size: 1rem;
+}
+
 .empty-state {
     text-align: center;
-    padding: 32px 16px;
-    color: #9ca3af;
+    padding: 2rem 1.25rem;
+    color: #74867f;
+    border: 1px dashed #cfe0da;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #fbfefd 0%, #f5faf8 100%);
+}
+
+.empty-state-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 1rem;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #e4f2ed 0%, #f0f7f4 100%);
+    color: #3d8d7a;
 }
 
 .empty-state i {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
-    opacity: 0.5;
+    font-size: 2rem;
 }
 
 .empty-state h4 {
     font-size: 1.1rem;
     margin-bottom: 8px;
-    color: #6b7280;
+    color: #355f55;
 }
 
 .empty-state p {
@@ -844,20 +950,49 @@ export default {
     font-size: 0.9rem;
 }
 
-/* Summary Section */
+.summary-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.summary-metric-card {
+    padding: 0.95rem 1rem;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #f6fbf9 0%, #eef7f3 100%);
+    border: 1px solid #ddebe5;
+}
+
+.summary-metric-label {
+    display: block;
+    color: #6c877d;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.summary-metric-value {
+    display: block;
+    margin-top: 0.35rem;
+    color: #20413a;
+    font-size: 1.25rem;
+}
+
 .summary-section {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
+    background: linear-gradient(135deg, #f8fbfa 0%, #f0f7f4 100%);
+    border: 1px solid #e0ece7;
+    border-radius: 20px;
+    padding: 1.15rem;
+    margin-bottom: 1rem;
 }
 
 .summary-header h3 {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #333;
-    margin: 0 0 16px 0;
+    color: #20413a;
+    margin: 0 0 1rem 0;
 }
 
 .summary-content {
@@ -871,7 +1006,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #e4ece8;
 }
 
 .summary-row:last-child {
@@ -892,7 +1027,46 @@ export default {
     color: #059669;
 }
 
-/* Form Actions */
+.hint-card {
+    display: flex;
+    gap: 0.8rem;
+    padding: 1rem;
+    border-radius: 18px;
+    background: #f5faf8;
+    border: 1px solid #e0ece7;
+    color: #46695d;
+}
+
+.hint-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e4f1ed;
+    color: #2f7666;
+    flex-shrink: 0;
+}
+
+.hint-title {
+    margin: 0 0 0.25rem;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #20413a;
+}
+
+.hint-text {
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+.feedback-stack {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
 .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -901,11 +1075,11 @@ export default {
 }
 
 .btn {
-    padding: 0.5rem 1rem;
+    padding: 0.8rem 1.15rem;
     border: none;
-    border-radius: 6px;
+    border-radius: 14px;
     cursor: pointer;
-    font-size: 0.8125rem;
+    font-size: 0.85rem;
     font-weight: 600;
     transition: all 0.3s ease;
     display: inline-flex;
@@ -914,25 +1088,25 @@ export default {
 }
 
 .btn-cancel {
-    background-color: transparent;
-    color: #7f8c8d;
-    border: 1px solid #e9ecef;
+    background-color: #ffffff;
+    color: #60756d;
+    border: 1px solid #d7e5de;
 }
 
 .btn-cancel:hover {
-    background-color: #f8f9fa;
-    border-color: #7f8c8d;
+    background-color: #f7fbfa;
+    border-color: #b7cec4;
 }
 
 .btn-save {
-    background: #3a8674;
+    background: linear-gradient(135deg, #3d8d7a 0%, #2e6f61 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
+    box-shadow: 0 12px 24px rgba(61, 141, 122, 0.28);
 }
 
 .btn-save:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(46, 139, 87, 0.4);
+    box-shadow: 0 16px 28px rgba(61, 141, 122, 0.34);
 }
 
 .btn-save:disabled {
@@ -942,7 +1116,6 @@ export default {
     box-shadow: none;
 }
 
-/* Spinner Animation */
 .spinner {
     animation: spin 1s linear infinite;
 }
@@ -957,7 +1130,6 @@ export default {
     }
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .modal-header {
         padding: 0.75rem 1rem;
@@ -969,6 +1141,14 @@ export default {
 
     .modal-body {
         padding: 1.25rem;
+    }
+
+    .form-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .form-panel-side {
+        position: static;
     }
 
     .item-details {
@@ -1008,6 +1188,14 @@ export default {
         padding: 0.625rem 0.75rem 0.625rem 2.5rem;
     }
 
+    .form-control-plain {
+        padding-left: 0.875rem;
+    }
+
+    .money-input .form-control {
+        padding-left: 3.5rem;
+    }
+
     .btn {
         padding: 0.5rem 0.875rem;
         font-size: 0.75rem;
@@ -1019,6 +1207,10 @@ export default {
 
     .summary-section {
         padding: 16px;
+    }
+
+    .summary-metrics {
+        grid-template-columns: 1fr;
     }
 }
 </style>

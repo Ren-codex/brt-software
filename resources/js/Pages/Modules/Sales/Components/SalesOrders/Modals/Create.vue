@@ -1,340 +1,298 @@
 <template>
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
-        <div class="modal-container modal-fullscreen " @click.stop>
-            <div class="modal-header ">
-                <h2>{{ editable ? 'Update Sales Order' : 'Add Sales Order' }}</h2>
+        <div class="modal-container modal-fullscreen" @click.stop>
+            <div class="modal-header">
+                <div class="header-title">
+                    <i :class="editable ? 'ri-edit-box-line' : 'ri-shopping-cart-2-line'"></i>
+                    <h2>{{ editable ? 'Update Sales Order' : 'Add Sales Order' }}</h2>
+                </div>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
             <div class="modal-body modal-body-lg">
-
                 <form @submit.prevent="submit">
-                    <BRow>
-                        <div class="col-md-9">
-                            <div class="card border-0 shadow-sm mb-3">
-
-                                <div class="card-body">
-                                    <div class="form-row">
-                                        <div class="form-group form-group-half">
-                                            <label for="order_date" class="form-label">Order Date<span
-                                                    class="text-danger">*</span></label>
-                                            <div class="input-wrapper">
-                                                <i class="ri-calendar-line input-icon"></i>
-                                                <text-input type="date" id="name" v-model="form.order_date"
-                                                    class="form-control"
-                                                    :class="{ 'input-error': form.errors.order_date }"
-                                                    @input="handleInput('order_date')" />
-                                            </div>
-                                            <span class="error-message" v-if="form.errors.order_date">{{
-                                                form.errors.order_date
-                                                }}</span>
-                                        </div>
-
-                                        <div class="form-group form-group-half">
-                                            <label for="customer_id" class="form-label">Customer<span
-                                                    class="text-danger">*</span></label>
-                                            <div class="input-wrapper">
-                                                <i class="ri-user-line input-icon"></i>
-                                                <b-form-select v-model="form.customer_id" :options="dropdowns.customers"
-                                                    text-field="name" value-field="value"
-                                                    :class="{ 'input-error': form.errors.customer_id }"
-                                                    class="form-control">
-                                                    <template #first>
-                                                        <b-form-select-option :value="null" disabled>Select
-                                                            Customer</b-form-select-option>
-                                                    </template>
-                                                </b-form-select>
-
-                                            </div>
-
-                                            <span class="error-message" v-if="form.errors.customer_id">{{
-                                                form.errors.customer_id }}</span>
-
-                                        </div>
-
-
-
-                                        <div class="form-group">
-                                            <div class="input-wrapper ">
-                                                <label for="customer_id" class="form-label text-center">New</label>
-                                                <button @click="addCustomer()" type="button"
-                                                    class="btn btn-cancel form-control">
-                                                    <i class="ri-add-line"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row assign-row">
-                                        <div class="form-group form-group-third">
-                                            <label for="customer_id" class="form-label">Assigned To(Sales Rep)<span
-                                                    class="text-danger">*</span></label>
-                                            <div class="input-wrapper">
-                                                <i class="ri-user-line input-icon"></i>
-                                                <b-form-select v-model="form.sales_rep_id" :options="salesRepOptions"
-                                                    text-field="name" value-field="value"
-                                                    :class="{ 'input-error': form.errors.sales_rep_id }"
-                                                    class="form-control">
-                                                    <template #first>
-                                                        <b-form-select-option :value="null" disabled>Select
-                                                            Sales Rep</b-form-select-option>
-                                                    </template>
-                                                </b-form-select>
-
-                                            </div>
-
-                                            <span class="error-message" v-if="form.errors.sales_rep_id">{{
-                                                form.errors.sales_rep_id }}</span>
-
-                                        </div>
-
-                                        <div class="form-group form-group-third">
-                                            <label for="customer_id" class="form-label">Assigned To(Driver)<span
-                                                    class="text-danger">*</span></label>
-                                            <div class="input-wrapper">
-                                                <i class="ri-user-line input-icon"></i>
-                                                <b-form-select v-model="form.driver_id" :options="dropdowns.drivers"
-                                                    text-field="name" value-field="value"
-                                                    :class="{ 'input-error': form.errors.driver_id }"
-                                                    class="form-control">
-                                                    <template #first>
-                                                        <b-form-select-option :value="null" disabled>Select
-                                                            Driver</b-form-select-option>
-                                                    </template>
-                                                </b-form-select>
-
-                                            </div>
-
-                                            <span class="error-message" v-if="form.errors.driver_id">{{
-                                                form.errors.driver_id }}</span>
-
-                                        </div>
-                                        <div class="form-group form-group-third">
-                                            <label for="location_id" class="form-label">Location<span
-                                                    class="text-danger">*</span></label>
-                                            <div class="input-wrapper">
-                                                <i class="ri-map-pin-line input-icon"></i>
-                                                <b-form-select v-model="form.location_id" :options="dropdowns.locations"
-                                                    text-field="name" value-field="value"
-                                                    :class="{ 'input-error': form.errors.location_id }"
-                                                    class="form-control">
-                                                    <template #first>
-                                                        <b-form-select-option :value="0">Select
-                                                            Location</b-form-select-option>
-                                                    </template>
-                                                </b-form-select>
-
-                                            </div>
-
-                                            <span class="error-message" v-if="form.errors.location_id">{{
-                                                form.errors.location_id }}</span>
-
-                                        </div>
-                                    </div>
+                    <div class="form-layout">
+                        <section class="form-panel form-panel-main">
+                            <div class="panel-head">
+                                <div>
+                                    <p class="panel-kicker">Sales Setup</p>
+                                    <h3 class="panel-title">Sales Order Details</h3>
                                 </div>
                             </div>
-                            <div class="mb-2">
-                                <b-button :disabled="!canAddItem" @click="addItem()" size="sm" variant="primary">
-                                    <i class="ri-add-line" v-if="!form.processing"></i>
+
+                            <div class="detail-grid detail-grid-primary">
+                                <div class="form-group">
+                                    <label for="order_date" class="form-label">Order Date<span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-calendar-line input-icon"></i>
+                                        <text-input type="date" id="name" v-model="form.order_date"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors.order_date }"
+                                            @input="handleInput('order_date')" />
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.order_date">{{ form.errors.order_date }}</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customer_id" class="form-label">Customer<span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-user-line input-icon"></i>
+                                        <b-form-select v-model="form.customer_id" :options="dropdowns.customers"
+                                            text-field="name" value-field="value"
+                                            :class="{ 'input-error': form.errors.customer_id }"
+                                            class="form-control">
+                                            <template #first>
+                                                <b-form-select-option :value="null" disabled>Select Customer</b-form-select-option>
+                                            </template>
+                                        </b-form-select>
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.customer_id">{{ form.errors.customer_id }}</span>
+                                </div>
+
+                                <div class="form-group form-group-inline-action">
+                                    <label class="form-label">New Customer</label>
+                                    <button @click="addCustomer()" type="button" class="btn-outline-action">
+                                        <i class="ri-add-line"></i>
+                                        Add Customer
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="detail-grid detail-grid-secondary">
+                                <div class="form-group">
+                                    <label for="sales_rep_id" class="form-label">Assigned To (Sales Rep)<span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-user-line input-icon"></i>
+                                        <b-form-select v-model="form.sales_rep_id" :options="salesRepOptions"
+                                            text-field="name" value-field="value"
+                                            :class="{ 'input-error': form.errors.sales_rep_id }"
+                                            class="form-control">
+                                            <template #first>
+                                                <b-form-select-option :value="null" disabled>Select Sales Rep</b-form-select-option>
+                                            </template>
+                                        </b-form-select>
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.sales_rep_id">{{ form.errors.sales_rep_id }}</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="driver_id" class="form-label">Assigned To (Driver)<span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-user-line input-icon"></i>
+                                        <b-form-select v-model="form.driver_id" :options="dropdowns.drivers"
+                                            text-field="name" value-field="value"
+                                            :class="{ 'input-error': form.errors.driver_id }"
+                                            class="form-control">
+                                            <template #first>
+                                                <b-form-select-option :value="null" disabled>Select Driver</b-form-select-option>
+                                            </template>
+                                        </b-form-select>
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.driver_id">{{ form.errors.driver_id }}</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="location_id" class="form-label">Location<span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-map-pin-line input-icon"></i>
+                                        <b-form-select v-model="form.location_id" :options="dropdowns.locations"
+                                            text-field="name" value-field="value"
+                                            :class="{ 'input-error': form.errors.location_id }"
+                                            class="form-control">
+                                            <template #first>
+                                                <b-form-select-option :value="0">Select Location</b-form-select-option>
+                                            </template>
+                                        </b-form-select>
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.location_id">{{ form.errors.location_id }}</span>
+                                </div>
+                            </div>
+
+                            <div class="section-divider">
+                                <div>
+                                    <p class="panel-kicker mb-1">Sales Items</p>
+                                    <h4 class="section-title mb-0">Order Line Items</h4>
+                                </div>
+                                <button type="button" class="btn-add-item" :disabled="!canAddItem" @click="addItem()">
+                                    <i class="ri-add-line"></i>
                                     Add Item
-                                </b-button>
+                                </button>
                             </div>
-                            <div class="form-row">
-                                <div style="height: calc(100vh - 400px);  overflow: auto; width: 100%;">
 
-                                    <table class="table align-middle table-striped table-centered mb-0 pretty-table">
-                                        <thead class="table-light thead-fixed pretty-header">
-                                            <tr class="fs-11">
-                                                <th style="width: 3%;">#</th>
-                                                <th
-                                                    style="width: 15%; text-align: center;change the calculation not per percentage but per unit">
-                                                    Product</th>
-                                                <th style="width: 10%; text-align: center;">Batch Code</th>
-                                                <th style="width: 1%;" class="text-center">Quantity</th>
-                                                <th style="width: 12%;" class="text-center">Type/Price</th>
-                                                <th style="width: 15%;" class="text-center">Total Cost</th>
-                                                <th style="width: 10%;" class="text-center">Discount</th>
-                                                <th style="width: 15%;" class="text-center">Total Discount </th>
-                                                <th style="width: 10%;" class="text-center">Actions</th>
-                                            </tr>
-                                        </thead>
+                            <div class="items-table-wrap">
+                                <table class="table align-middle mb-0 pretty-table">
+                                    <thead class="pretty-header">
+                                        <tr class="fs-11">
+                                            <th style="width: 4%;">#</th>
+                                            <th style="width: 17%;">Product</th>
+                                            <th style="width: 12%;" class="text-center">Batch Code</th>
+                                            <th style="width: 8%;" class="text-center">Quantity</th>
+                                            <th style="width: 13%;" class="text-center">Type / Price</th>
+                                            <th style="width: 13%;" class="text-center">Total Cost</th>
+                                            <th style="width: 11%;" class="text-center">Discount</th>
+                                            <th style="width: 14%;" class="text-center">Total Discount</th>
+                                            <th style="width: 8%;" class="text-center">Actions</th>
+                                        </tr>
+                                    </thead>
 
-                                        <tbody class="table-white fs-12">
-                                            <tr v-if="form.items.length === 0">
-                                                <td colspan="11" class="text-center text-muted py-4">
-                                                    <i class="ri-shopping-cart-line fs-1 text-muted mb-2"></i>
-                                                    <div>No items added yet.</div>
-                                                    <small>Click "Add Item" to start adding products to the
-                                                        order.</small>
-                                                </td>
-                                            </tr>
-                                            <tr v-for="(list, index) in form.items" v-bind:key="index"
-                                                @click="selectRow(index)" :class="{
-                                                    'bg-info-subtle': index === selectedRow
-                                                }">
-                                                <td>
-                                                    {{ index + 1 }}
-                                                </td>
-                                                <td class="text-center">
-                                                    <div class="fw-bold text-primary">{{
-                                                        getProduct(list.product_id).name || '-' }}</div>
-                                                    <small class="text-muted">Available: <span
-                                                            class="badge bg-light text-dark">{{
-                                                                getRowBatchAvailable(list) }}</span></small>
-                                                </td>
-                                                <td class="text-center">
-                                                    <span>
-                                                        {{ list.batch_code || '-' }}
+                                    <tbody class="table-white fs-12">
+                                        <tr v-if="form.items.length === 0">
+                                            <td colspan="9" class="empty-table">
+                                                <div class="empty-table-inner">
+                                                    <i class="ri-shopping-cart-line"></i>
+                                                    <h4>No items added yet</h4>
+                                                    <p>Click "Add Item" to start building this sales order.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr v-for="(list, index) in form.items" :key="index"
+                                            @click="selectRow(index)"
+                                            :class="{ 'row-selected': index === selectedRow }">
+                                            <td>{{ index + 1 }}</td>
+                                            <td>
+                                                <div class="product-cell">
+                                                    <div class="product-name">{{ getProduct(list.product_id).name || '-' }}</div>
+                                                    <small class="product-availability">Available: {{ getRowBatchAvailable(list) }}</small>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">{{ list.batch_code || '-' }}</td>
+                                            <td class="text-center"><span class="metric-pill">{{ list.quantity }}</span></td>
+                                            <td class="text-center">
+                                                <div class="price-type-wrap">
+                                                    <span :class="list.price_type === 'retail' ? 'type-badge retail' : 'type-badge wholesale'">
+                                                        {{ list.price_type === 'retail' ? 'Retail' : 'Wholesale' }}
                                                     </span>
-                                                </td>
+                                                    <small class="text-muted">{{ formatCurrency(list.price) }}</small>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}</td>
+                                            <td class="text-center">{{ formatCurrency(list.discount_per_unit) }}</td>
+                                            <td class="text-center">{{ formatCurrency(calculateDiscountedTotal(list)) }}</td>
+                                            <td class="text-center">
+                                                <div class="action-buttons">
+                                                    <button type="button" class="table-action-btn" @click.stop="editItem(list, index)">
+                                                        <i class="ri-edit-line"></i>
+                                                    </button>
+                                                    <button type="button" class="table-action-btn danger" @click.stop="removeItem(list.id)">
+                                                        <i class="ri-delete-bin-line"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
 
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="5" class="text-end footer-label">Totals</td>
+                                            <td class="text-center footer-value">{{ formatCurrency(subtotal) }}</td>
+                                            <td></td>
+                                            <td class="text-center footer-value">{{ formatCurrency(totalDiscount) }}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </section>
 
-                                                <td class="text-center">
-                                                    <span class="fw-bold">{{ list.quantity }}</span>
-                                                </td>
-
-                                                <td class="text-center">
-                                                    <div class="d-flex flex-column align-items-center">
-                                                        <span
-                                                            :class="list.price_type === 'retail' ? 'badge bg-success mb-1' : 'badge bg-warning mb-1'">
-                                                            {{ list.price_type === 'retail' ? 'Retail' : 'Wholesale' }}
-                                                        </span>
-                                                        <small class="text-muted">{{ formatCurrency(list.price)
-                                                            }}</small>
-                                                    </div>
-                                                </td>
-                                                <td class="text-center">{{ formatCurrency(calculateItemTotal(list)) }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ formatCurrency(list.discount_per_unit) }}
-                                                </td>
-                                                <td class="text-center">{{
-                                                    formatCurrency(calculateDiscountedTotal(list)) }}</td>
-                                                <td class="text-center">
-                                                    <div class="d-flex justify-content-center gap-1">
-                                                        <b-button @click="editItem(list, index)" variant="primary"
-                                                            v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
-                                                            <i class="ri-edit-line"></i>
-                                                        </b-button>
-                                                        <b-button @click="removeItem(list.id)" variant="danger"
-                                                            v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
-                                                            <i class="ri-delete-bin-line"></i>
-                                                        </b-button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot class="table-light">
-                                            <tr>
-                                                <td colspan="6" class="text-end fw-bold">Total:</td>
-                                                <td class="text-center fw-bold">{{
-                                                    formatCurrency(form.items.reduce((total, item) => total +
-                                                    calculateItemTotal(item), 0)) }}</td>
-                                                <td class="text-center fw-bold">{{
-                                                    formatCurrency(form.items.reduce((total, item) => total +
-                                                    calculateDiscountedTotal(item), 0)) }}</td>
-                                                <td colspan="2"></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
+                        <aside class="form-panel form-panel-side">
+                            <div class="panel-head">
+                                <div>
+                                    <p class="panel-kicker">Live Summary</p>
+                                    <h3 class="panel-title">Order Overview</h3>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <b-card class="bg-light p-1 rounded">
-                                <h5 class="fw-bolder text-primary"> <i class="ri-user-line"></i> Customer Information
-                                </h5>
-                                <div v-if="form.customer_id" class="mt-1">
-                                    <ul class="list-unstyled">
-                                        <li><strong>Name:</strong> {{ getCustomer(form.customer_id)?.name || '-' }}</li>
-                                        <li><strong>Address:</strong> {{ getCustomer(form.customer_id)?.address || '-'
-                                            }}</li>
-                                        <li><strong>Contact:</strong> {{ getCustomer(form.customer_id)?.contact_number
-                                            || '-' }}</li>
-                                        <li><strong>Email:</strong> {{ getCustomer(form.customer_id)?.email || '-' }}
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div v-else class="mt-3 text-muted">
-                                    <p class="text-center">Select a customer to view information</p>
-                                </div>
-                            </b-card>
 
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0 text-primary">
-                                        <i class="ri-bank-card-line me-2"></i>
-                                        Select Payment Mode
-                                    </h6>
+                            <div class="summary-metrics">
+                                <div class="summary-metric-card">
+                                    <span class="summary-metric-label">Items</span>
+                                    <strong class="summary-metric-value">{{ form.items.length }}</strong>
                                 </div>
-                                <div class="card-body">
-                                    <div class="payment-mode-grid">
-                                        <div v-for="mode in payment_modes" :key="mode"
-                                            :class="{ 'selected-payment-mode': form.payment_mode === mode }"
-                                            class="payment-mode-card" @click="selectPaymentMode(mode)">
-                                            <i :class="getPaymentModeIcon(mode)" class="payment-icon"></i>
-                                            <span class="payment-label">{{ mode }}</span>
-                                        </div>
+                                <div class="summary-metric-card">
+                                    <span class="summary-metric-label">Grand Total</span>
+                                    <strong class="summary-metric-value">{{ formatCurrency(grandTotal) }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="summary-card">
+                                <div class="summary-card-header">
+                                    <h4>Customer Information</h4>
+                                </div>
+                                <div v-if="selectedCustomer" class="info-list">
+                                    <div class="info-row">
+                                        <span>Name</span>
+                                        <strong>{{ selectedCustomer.name || '-' }}</strong>
                                     </div>
-                                    <span class="error-message" v-if="form.errors.payment_mode">{{
-                                        form.errors.payment_mode }}</span>
-
-
+                                    <div class="info-row">
+                                        <span>Address</span>
+                                        <strong>{{ selectedCustomer.address || '-' }}</strong>
+                                    </div>
+                                    <div class="info-row">
+                                        <span>Contact</span>
+                                        <strong>{{ selectedCustomer.contact_number || '-' }}</strong>
+                                    </div>
+                                    <div class="info-row">
+                                        <span>Email</span>
+                                        <strong>{{ selectedCustomer.email || '-' }}</strong>
+                                    </div>
+                                </div>
+                                <div v-else class="empty-side-note">
+                                    Select a customer to view account details.
                                 </div>
                             </div>
 
-                            <div v-if="form.payment_mode === 'Credit'" class="card border-0 shadow-sm">
-                                <div class="card-header bg-light">
+                            <div class="summary-card">
+                                <div class="summary-card-header">
+                                    <h4>Payment Mode</h4>
+                                </div>
+                                <div class="payment-mode-grid">
+                                    <div v-for="mode in payment_modes" :key="mode"
+                                        :class="{ 'selected-payment-mode': form.payment_mode === mode }"
+                                        class="payment-mode-card" @click="selectPaymentMode(mode)">
+                                        <i :class="getPaymentModeIcon(mode)" class="payment-icon"></i>
+                                        <span class="payment-label">{{ mode }}</span>
+                                    </div>
+                                </div>
+                                <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
+                            </div>
 
-                                    <label for="due_date" class="form-label">Due Date<span
-                                            class="text-danger">*</span></label>
+                            <div v-if="form.payment_mode === 'Credit'" class="summary-card">
+                                <div class="summary-card-header">
+                                    <h4>Credit Schedule</h4>
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label for="due_date" class="form-label">Due Date<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-calendar-line input-icon"></i>
                                         <text-input type="date" id="due_date" v-model="form.due_date"
                                             class="form-control" :class="{ 'input-error': form.errors.due_date }"
                                             @input="handleInput('due_date')" />
                                     </div>
-                                    <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date
-                                        }}</span>
-                                </div>
-                                <div class="card-body">
-
-                                    <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date
-                                        }}</span>
+                                    <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date }}</span>
                                 </div>
                             </div>
 
-                            <b-card class=" bg-light mt-4 p-3 rounded">
-                                <div class="form-group form-group-half mt-0">
-                                    <label class="form-label text-primary">Order Summary</label>
-                                    <div class="input-wrapper">
-                                        <div class="d-flex justify-content-between">
-                                            <span>Subtotal:</span>
-                                            <span>{{formatCurrency(form.items.reduce((total, item) => total +
-                                                calculateItemTotal(item), 0))
-                                            }}</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <span>Item Discounts:</span>
-                                            <span>{{formatCurrency(form.items.reduce((total, item) => total +
-                                                calculateDiscountedTotal(item),
-                                                0)) }}</span>
-                                        </div>
-
-                                        <hr />
-                                        <div class="d-flex justify-content-between fw-bold">
-                                            <span>Calculated Total:</span>
-                                            <span>{{formatCurrency(form.items.reduce((total, item) => total +
-                                                calculateItemTotal(item), 0) -
-                                                form.items.reduce((total, item) => total +
-                                                calculateDiscountedTotal(item), 0)) }}</span>
-                                        </div>
+                            <div class="summary-section">
+                                <div class="summary-header">
+                                    <h3>Order Summary</h3>
+                                </div>
+                                <div class="summary-content">
+                                    <div class="summary-row">
+                                        <span>Subtotal</span>
+                                        <span class="summary-value">{{ formatCurrency(subtotal) }}</span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>Item Discounts</span>
+                                        <span class="summary-value">{{ formatCurrency(totalDiscount) }}</span>
+                                    </div>
+                                    <div class="summary-row total-row">
+                                        <span>Calculated Total</span>
+                                        <span class="summary-value total-amount">{{ formatCurrency(grandTotal) }}</span>
                                     </div>
                                 </div>
-                            </b-card>
-                        </div>
-                    </BRow>
+                            </div>
+                        </aside>
+                    </div>
 
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
@@ -419,23 +377,20 @@
         </div>
     </div>
 
-    <Item @add="fetch()" :dropdowns="dropdowns" :items="form.items" @items="storeItem" @update="updateItem"
+    <Item :dropdowns="dropdowns" :items="form.items" @items="storeItem" @update="updateItem"
         :formatCurrency="formatCurrency" ref="item" />
     <Customer :dropdowns="dropdowns" ref="createCustomer" />
 </template>
 
 <script>
 import { useForm } from '@inertiajs/vue3';
-import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
-import Multiselect from '@/Shared/Components/Forms/Multiselect.vue';
-import Amount from '@/Shared/Components/Forms/Amount.vue';
 import Item from '@/Pages/Modules/Sales/Components/SalesOrders/Modals/AddItem.vue';
 import Customer from '@/Pages/Modules/Customers/Modals/Create.vue'
 import PaymentPromptModal from '@/Pages/Modules/Sales/Components/SalesOrders/Modals/PaymentPromptModal.vue';
 
 export default {
-    components: { InputLabel, TextInput, Multiselect, Amount, Item, Customer, PaymentPromptModal },
+    components: { TextInput, Item, Customer, PaymentPromptModal },
     props: ['dropdowns', 'user'],
     data() {
         return {
@@ -523,6 +478,18 @@ export default {
                 { value: 'wholesale', text: 'Wholesale Price' }
             ];
         },
+        selectedCustomer() {
+            return this.getCustomer(this.form.customer_id) || null;
+        },
+        subtotal() {
+            return this.form.items.reduce((total, item) => total + this.calculateItemTotal(item), 0);
+        },
+        totalDiscount() {
+            return this.form.items.reduce((total, item) => total + this.calculateDiscountedTotal(item), 0);
+        },
+        grandTotal() {
+            return this.subtotal - this.totalDiscount;
+        },
 
     },
     methods: {
@@ -590,10 +557,13 @@ export default {
         },
 
         show() {
+            this.form.reset();
+            this.form.clearErrors();
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
             this.form.location_id = 0;
+            this.form.order_date = new Date().toISOString().slice(0, 10);
             // Set default due date to 3 days ahead
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 3);
@@ -633,13 +603,6 @@ export default {
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
-            this.$nextTick(() => {
-                this.form.items.forEach((item, itemIndex) => {
-                    if (this.$refs['discountComponent' + itemIndex]) {
-                        this.$refs['discountComponent' + itemIndex].emitValue(item.discount_per_unit || 0);
-                    }
-                });
-            });
         },
         submit() {
             if (this.editable) {
@@ -741,6 +704,7 @@ export default {
             this.form.errors[field] = false;
         },
         hide() {
+            this.form.reset();
             this.form.clearErrors();
             this.editable = false;
             this.saveSuccess = false;
@@ -854,8 +818,10 @@ export default {
 
         getPaymentModeIcon(mode) {
             const icons = {
-                'Cash Sales': 'ri-money-dollar-circle-line',
-                'Credit Sales': 'ri-bank-card-line',
+                'Cash': 'ri-money-dollar-circle-line',
+                'Credit': 'ri-bank-card-line',
+                'Debit Card': 'ri-bank-card-2-line',
+                'Bank Transfer': 'ri-exchange-funds-line',
             };
             return icons[mode] || 'ri-money-dollar-circle-line';
         },
@@ -915,62 +881,290 @@ export default {
     background: #fff;
 }
 
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    padding: 15px;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
 .modal-container {
     max-width: 100%;
     width: 100%;
     position: relative;
+    background: #f7fbfa;
+    border-radius: 28px;
+    box-shadow: 0 28px 70px rgba(17, 24, 39, 0.25);
+    overflow: hidden;
+    transform: translateY(25px) scale(0.95);
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.active .modal-container {
+    transform: translateY(0) scale(1);
+}
+
+.modal-header {
+    padding: 16px 22px;
+    border-bottom: 1px solid #d7e5de;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(140deg, #d7ece5 0%, #c7e2d9 100%);
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-title i {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: rgba(26, 104, 87, 0.15);
+    color: #1a6857;
+    font-size: 21px;
+}
+
+.header-title h2 {
+    margin: 0;
+    font-size: 1.16rem;
+    color: #1f2937;
+    font-weight: 700;
+}
+
+.close-btn {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.75);
+    color: #4b5563;
+    font-size: 19px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: #fff;
+    transform: rotate(90deg);
 }
 
 .modal-body {
-    max-height: 85vh;
+    padding: 1.5rem 1.75rem 1.75rem;
+    max-height: 88vh;
     overflow-y: auto;
-    /* Space for fixed buttons */
 }
 
-.form-actions {
-
-    background: white;
-    padding: 1rem;
-    border-top: 1px solid #ddd;
-
-}
-
-.payment-mode-buttons {
+.form-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    grid-template-columns: minmax(0, 2.1fr) minmax(300px, 0.95fr);
+    gap: 1.25rem;
+    align-items: start;
 }
 
-.payment-mode-buttons .btn {
-    min-width: 70px;
-    min-height: 70px;
-    justify-content: flex-start;
-    border: 1px solid lightgreen;
+.form-panel {
+    background: #ffffff;
+    border: 1px solid rgba(61, 141, 122, 0.12);
+    border-radius: 24px;
+    box-shadow: 0 16px 35px rgba(39, 84, 72, 0.08);
 }
 
-.selected-payment-mode {
-    border-color: #007bff;
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+.form-panel-main {
+    padding: 1.35rem;
+}
+
+.form-panel-side {
+    padding: 1.25rem;
+    position: sticky;
+    top: 0;
+}
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.panel-kicker {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #648b74;
+}
+
+.panel-title {
+    margin: 0.2rem 0 0;
+    color: #20413a;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.detail-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.detail-grid-primary {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 170px;
+}
+
+.detail-grid-secondary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    z-index: 1;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.85rem 1rem 0.85rem 2.9rem;
+    border: 1px solid #d7e5de;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background-color: #fdfefe;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3d8d7a;
+    box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.12);
+}
+
+.input-error {
+    border-color: #e74c3c !important;
+}
+
+.error-message {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    color: #e74c3c;
+}
+
+.form-group-inline-action {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.btn-outline-action {
+    min-height: 52px;
+    border: 1px solid #d7e5de;
+    border-radius: 14px;
+    background: #fff;
+    color: #355f55;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-action:hover {
+    background: #f4faf8;
+    border-color: #b7cec4;
+}
+
+.section-divider {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.5rem 0 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #edf3f1;
+}
+
+.section-title {
+    color: #20413a;
+    font-size: 1.02rem;
+    font-weight: 700;
+}
+
+.btn-add-item {
+    background: linear-gradient(135deg, #3d8d7a 0%, #2f7464 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    border: none;
+    padding: 0.7rem 1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 20px rgba(61, 141, 122, 0.18);
 }
 
-.payment-mode-buttons .btn:hover {
-    border-color: darkgreen !important;
-    border: 2px solid darkgreen;
-    background-color: transparent !important;
-    color: darkgreen;
+.btn-add-item:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 25px rgba(61, 141, 122, 0.24);
 }
 
-.btn:focus,
-.btn:active {
-    border-color: darkgreen !important;
-    border: 2px solid darkgreen;
-    background-color: transparent !important;
-    color: darkgreen;
+.btn-add-item:disabled {
+    background: #95a5a6;
+    box-shadow: none;
+    cursor: not-allowed;
 }
 
-/* Payment mode grid styles */
+.items-table-wrap {
+    border: 1px solid #d9ebe4;
+    border-radius: 20px;
+    overflow: auto;
+    background: linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
+    max-height: calc(100vh - 360px);
+}
+
 .payment-mode-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -993,16 +1187,16 @@ export default {
 }
 
 .payment-mode-card:hover {
-    border-color: #007bff;
+    border-color: #3d8d7a;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.15);
 }
 
 .payment-mode-card.selected-payment-mode {
-    border-color: #007bff;
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border-color: #3d8d7a;
+    background: linear-gradient(135deg, #3d8d7a 0%, #2e6f61 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
 }
 
 .payment-icon {
@@ -1016,17 +1210,15 @@ export default {
     text-align: center;
 }
 
-/* Pretty table styles */
 .pretty-table {
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e9ecef;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .pretty-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(140deg, #eff7f4 0%, #e6f2ed 100%);
+    color: #20413a;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -1036,30 +1228,19 @@ export default {
     border: none;
     padding: 12px 8px;
     vertical-align: middle;
-}
-
-.pretty-header th i {
-    margin-right: 5px;
-    opacity: 0.8;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(140deg, #eff7f4 0%, #e6f2ed 100%);
+    z-index: 1;
 }
 
 .pretty-table tbody tr {
     transition: all 0.3s ease;
-    border-bottom: 1px solid #f8f9fa;
+    border-bottom: 1px solid #edf3f1;
 }
 
 .pretty-table tbody tr:hover {
-    background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.pretty-table tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-
-.pretty-table tbody tr:nth-child(even):hover {
-    background: linear-gradient(135deg, #f0f2ff 0%, #e0e8ff 100%);
+    background: #f4faf8;
 }
 
 .pretty-table td {
@@ -1068,60 +1249,349 @@ export default {
     border: none;
 }
 
-.pretty-table .badge {
-    font-size: 0.75rem;
-    padding: 4px 8px;
-    border-radius: 12px;
+.row-selected {
+    background: #eef7f4;
 }
 
-.pretty-table .btn-icon {
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    padding: 0;
+.empty-table {
+    padding: 0 !important;
+}
+
+.empty-table-inner {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #74867f;
+}
+
+.empty-table-inner i {
+    font-size: 2.2rem;
+    color: #3d8d7a;
+    margin-bottom: 0.65rem;
+}
+
+.empty-table-inner h4 {
+    margin: 0 0 0.35rem;
+    color: #355f55;
+    font-size: 1rem;
+}
+
+.empty-table-inner p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.product-cell {
     display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.product-name {
+    font-weight: 700;
+    color: #20413a;
+}
+
+.product-availability {
+    color: #648b74;
+}
+
+.metric-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: #e8f4ef;
+    color: #2f7666;
+    font-weight: 700;
+}
+
+.price-type-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.type-badge.retail {
+    background: #dbf5e7;
+    color: #166534;
+}
+
+.type-badge.wholesale {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.table-action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid #d7e5de;
+    background: #fff;
+    color: #355f55;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
 }
 
-.pretty-table .btn-icon:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.table-action-btn:hover {
+    background: #eff7f4;
 }
 
-.pretty-table .text-primary {
-    color: #667eea !important;
-    font-weight: 600;
+.table-action-btn.danger:hover {
+    background: #e74c3c;
+    border-color: #e74c3c;
+    color: #fff;
 }
 
-.pretty-table input[type="number"] {
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    padding: 4px 8px;
-    text-align: center;
-    transition: border-color 0.3s ease;
+tfoot .footer-label,
+tfoot .footer-value {
+    padding: 0.9rem 0.6rem !important;
+    background: #f1f7f4;
+    font-weight: 700;
+    color: #20413a;
 }
 
-.pretty-table input[type="number"]:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+.summary-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
 }
 
-.modal-body-lg>form .assign-row {
+.summary-metric-card {
+    padding: 0.95rem 1rem;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #f6fbf9 0%, #eef7f3 100%);
+    border: 1px solid #ddebe5;
+}
+
+.summary-metric-label {
+    display: block;
+    color: #6c877d;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.summary-metric-value {
+    display: block;
+    margin-top: 0.35rem;
+    color: #20413a;
+    font-size: 1rem;
+    line-height: 1.35;
+}
+
+.summary-card,
+.summary-section {
+    background: linear-gradient(135deg, #f8fbfa 0%, #f0f7f4 100%);
+    border: 1px solid #e0ece7;
+    border-radius: 20px;
+    padding: 1.15rem;
+    margin-bottom: 1rem;
+}
+
+.summary-card-header h4,
+.summary-header h3 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #20413a;
+}
+
+.info-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.info-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem;
+    flex-direction: column;
+    gap: 0.2rem;
 }
 
-.modal-body-lg>form .assign-row .form-group-third {
-    flex: 1 1 calc(33.333% - 0.4rem);
-    min-width: 180px;
+.info-row span {
+    color: #648b74;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.info-row strong {
+    color: #20413a;
+    font-size: 0.92rem;
+}
+
+.empty-side-note {
+    color: #74867f;
+    font-size: 0.9rem;
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e4ece8;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-value {
+    font-weight: 600;
+    color: #374151;
+}
+
+.total-row .total-amount {
+    font-size: 1.2rem;
+    color: #059669;
+}
+
+.success-alert,
+.error-alert {
+    margin-top: 1rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.success-alert {
+    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
+    color: #155724;
+    border: 1px solid #b9e6ca;
+}
+
+.error-alert {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.btn {
+    padding: 0.8rem 1.15rem;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.btn-cancel {
+    background-color: #ffffff;
+    color: #60756d;
+    border: 1px solid #d7e5de;
+}
+
+.btn-cancel:hover {
+    background-color: #f7fbfa;
+    border-color: #b7cec4;
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #3d8d7a 0%, #2e6f61 100%);
+    color: white;
+    box-shadow: 0 12px 24px rgba(61, 141, 122, 0.28);
+}
+
+.btn-save:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 28px rgba(61, 141, 122, 0.34);
+}
+
+.btn-save:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @media (max-width: 992px) {
-    .modal-body-lg>form .assign-row .form-group-third {
-        flex: 1 1 100%;
+    .form-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .form-panel-side {
+        position: static;
+    }
+
+    .detail-grid-primary,
+    .detail-grid-secondary {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-body {
+        padding: 1.25rem;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .summary-metrics {
+        grid-template-columns: 1fr;
     }
 }
 </style>
