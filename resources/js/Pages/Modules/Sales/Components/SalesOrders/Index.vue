@@ -142,7 +142,7 @@
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
 
-                                                <b-button v-if="list.status?.slug !== 'cancelled' && list.status?.slug !== 'closed' && list.status?.slug !== 'paid' && list.status?.slug !== 'sales-returned' && list.status?.slug !== 'sales-return-approval'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
+                                                <b-button v-if="list.status?.slug !== 'cancelled'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
                                                     <i class="ri-close-line"></i>
                                                 </b-button>
                                             </div>

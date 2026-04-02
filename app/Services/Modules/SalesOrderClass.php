@@ -523,7 +523,16 @@ class SalesOrderClass
 
     public function cancel($id){
         $data = SalesOrder::findOrFail($id);
-        $data->load(['items', 'arInvoices']);
+        $data->load(['items', 'arInvoices.receipts', 'status']);
+        $cancelledStatusId = ListStatus::getBySlug('cancelled')->id;
+
+        if (optional($data->status)->slug === 'cancelled') {
+            return [
+                'data' => $data,
+                'message' => 'Sales Order already cancelled.',
+                'info' => 'This Sales Order has already been voided.',
+            ];
+        }
 
         // Restore stock
         foreach($data->items as $item){
@@ -533,13 +542,20 @@ class SalesOrderClass
         $this->journalEntryService->recordSalesOrderCancellationEntries($data);
 
         foreach ($data->arInvoices as $invoice) {
-            foreach (Receipt::where('ar_invoice_id', $invoice->id)->get() as $receipt) {
+            foreach ($invoice->receipts as $receipt) {
                 $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt reversed because related sales order was cancelled.', now()->toDateString());
+                $receipt->update([
+                    'status_id' => $cancelledStatusId,
+                ]);
             }
+
+            $invoice->update([
+                'status_id' => $cancelledStatusId,
+            ]);
         }
 
         $data->update([
-            'status_id' => ListStatus::getBySlug('cancelled')->id, //set to cancelled
+            'status_id' => $cancelledStatusId,
         ]);
 
         return [
