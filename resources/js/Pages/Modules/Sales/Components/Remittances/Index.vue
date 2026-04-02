@@ -15,10 +15,16 @@
                                         <p class="header-subtitle mb-0">Manage remittances</p>
                                     </div>
                                 </div>
-                                <button class="create-btn" @click="openCreate">
-                                    <i class="ri-add-line"></i>
-                                    <span>Prepare Remittance</span>
-                                </button>
+                                <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
+                                    <div class="cash-on-hand-card">
+                                        <span class="cash-on-hand-label">Total Cash on Hand</span>
+                                        <strong class="cash-on-hand-value">{{ formatCurrency(metrics.total_amount_remitted) }}</strong>
+                                    </div>
+                                    <button class="create-btn" @click="openCreate">
+                                        <i class="ri-add-line"></i>
+                                        <span>Prepare Remittance</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -318,5 +324,33 @@ export default {
     color: white;
     background-color: #0d6efd;
     border-radius: 12px;
+}
+
+.cash-on-hand-card {
+    min-width: 220px;
+    padding: 0.75rem 1rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f4fbf8 0%, #e7f6ef 100%);
+    border: 1px solid rgba(22, 66, 60, 0.12);
+    box-shadow: 0 8px 18px rgba(22, 66, 60, 0.08);
+    text-align: left;
+}
+
+.cash-on-hand-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #5f7f77;
+}
+
+.cash-on-hand-value {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #16423c;
+    line-height: 1.3;
 }
 </style>

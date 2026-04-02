@@ -2,15 +2,29 @@
     <div v-if="showModal" class="modal-overlay active" @click.self="hide">
         <div class="modal-container modal-xl" @click.stop>
             <div class="modal-header">
-                <h2>Create Sales Return From Receipt</h2>
+                <div class="modal-title-wrap">
+                    <div class="modal-title-icon">
+                        <i class="ri-arrow-go-back-line"></i>
+                    </div>
+                    <div>
+                        <span class="modal-kicker">Returns Workflow</span>
+                        <h2>Create Sales Return From Receipt</h2>
+                    </div>
+                </div>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
 
-            <div class="modal-body" style="height: 75vh; overflow-y: auto;">
+            <div class="modal-body">
                 <form @submit.prevent="submit">
                     <div class="receipt-search-card">
+                        <div class="section-heading">
+                            <div>
+                                <span class="section-kicker">Step 1</span>
+                                <h3>Find the receipt</h3>
+                            </div>
+                        </div>
                         <div class="form-row align-items-end">
                             <div class="form-group flex-grow-1">
                                 <label class="form-label">Search Receipt</label>
@@ -48,22 +62,27 @@
 
                     <div v-if="selectedReceipt" class="receipt-summary-grid">
                         <div class="summary-card">
+                            <i class="ri-file-list-3-line summary-icon"></i>
                             <span class="summary-label">Receipt No.</span>
                             <strong class="summary-value">{{ selectedReceipt.receipt_number }}</strong>
                         </div>
                         <div class="summary-card">
+                            <i class="ri-user-line summary-icon"></i>
                             <span class="summary-label">Customer</span>
                             <strong class="summary-value">{{ selectedReceipt.customer?.name || '-' }}</strong>
                         </div>
                         <div class="summary-card">
+                            <i class="ri-shopping-bag-line summary-icon"></i>
                             <span class="summary-label">Sales Order</span>
                             <strong class="summary-value">{{ selectedReceipt.sales_order?.so_number || '-' }}</strong>
                         </div>
                         <div class="summary-card">
+                            <i class="ri-money-dollar-circle-line summary-icon"></i>
                             <span class="summary-label">Amount Paid</span>
                             <strong class="summary-value">{{ formatCurrency(selectedReceipt.amount_paid) }}</strong>
                         </div>
                         <div class="summary-card">
+                            <i class="ri-time-line summary-icon"></i>
                             <span class="summary-label">Return Window</span>
                             <strong class="summary-value">
                                 {{ getReturnWindowLabel(selectedReceipt) }}
@@ -83,6 +102,12 @@
 
                     <div v-if="selectedReceipt" class="form-row">
                         <div class="form-group w-100">
+                            <div class="section-heading section-heading-inline">
+                                <div>
+                                    <span class="section-kicker">Step 2</span>
+                                    <h3>Reason for return</h3>
+                                </div>
+                            </div>
                             <label class="form-label">Reason</label>
                             <b-form-textarea
                                 v-model="form.reason"
@@ -96,16 +121,21 @@
 
                     <div v-if="selectedReceipt" class="form-row">
                         <div class="form-group w-100">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label mb-0">Items To Return</label>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="toggleAllItems">
+                            <div class="items-card-header">
+                                <div>
+                                    <span class="section-kicker">Step 3</span>
+                                    <h3>Items to return</h3>
+                                </div>
+                                <button type="button" class="table-action-btn" @click="toggleAllItems">
+                                    <i :class="allItemsSelected ? 'ri-checkbox-multiple-blank-line' : 'ri-checkbox-multiple-line'"></i>
                                     {{ allItemsSelected ? 'Clear All' : 'Select All' }}
                                 </button>
                             </div>
 
-                            <div class="table-responsive border rounded">
-                                <table class="table table-sm align-middle mb-0">
-                                    <thead class="table-light">
+                            <div class="table-shell">
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0 return-items-table">
+                                        <thead>
                                         <tr>
                                             <th style="width: 44px;">
                                                 <input type="checkbox" :checked="allItemsSelected" @change="toggleAllItems">
@@ -127,9 +157,14 @@
                                                     @change="toggleItemSelection(item)"
                                                 >
                                             </td>
-                                            <td>{{ item.product_name || getProductName(item.product_id) }}</td>
-                                            <td>{{ item.batch_code || '-' }}</td>
-                                            <td class="text-center">{{ item.quantity }}</td>
+                                            <td>
+                                                <div class="product-cell">
+                                                    <strong>{{ item.product_name || getProductName(item.product_id) }}</strong>
+                                                    <small>Product return candidate</small>
+                                                </div>
+                                            </td>
+                                            <td><span class="batch-pill">{{ item.batch_code || '-' }}</span></td>
+                                            <td class="text-center"><span class="qty-pill">{{ item.quantity }}</span></td>
                                             <td class="text-center">
                                                 <input
                                                     type="number"
@@ -159,6 +194,7 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
                             <span v-if="form.errors.item_ids" class="error-message">{{ form.errors.item_ids }}</span>
                             <span v-if="form.errors.return_quantities" class="error-message">{{ form.errors.return_quantities }}</span>
@@ -447,12 +483,188 @@ export default {
 </script>
 
 <style scoped>
-.receipt-search-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 1rem;
+    background: rgba(15, 23, 42, 0.52);
+    backdrop-filter: blur(7px);
+    z-index: 1060;
+}
+
+.modal-container {
+    width: min(100%, 1120px);
+    max-height: 90vh;
+    overflow: hidden;
+    border-radius: 28px;
+    background:
+        radial-gradient(circle at top right, rgba(61, 141, 122, 0.12), transparent 26%),
+        linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
+    box-shadow: 0 32px 80px rgba(15, 23, 42, 0.24);
+}
+
+.modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.2rem 1.35rem 1rem;
+    background: linear-gradient(135deg, #d7ece5 0%, #c7e2d9 100%);
+    border-bottom: 1px solid #d7e5de;
+}
+
+.modal-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.modal-title-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    background: rgba(26, 104, 87, 0.14);
+    color: #1a6857;
+    font-size: 1.35rem;
+}
+
+.modal-kicker,
+.section-kicker {
+    display: inline-block;
+    margin-bottom: 0.28rem;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #648b74;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.22rem;
+    font-weight: 700;
+    color: #20413a;
+}
+
+.close-btn {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #4b5563;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: #fff;
+    transform: rotate(90deg);
+}
+
+.close-btn i {
+    font-size: 1.1rem;
+}
+
+.modal-body {
+    height: 75vh;
+    overflow-y: auto;
+    padding: 1.2rem 1.35rem 1.35rem;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.95rem;
+}
+
+.section-heading-inline {
+    margin-bottom: 0.7rem;
+}
+
+.section-heading h3,
+.items-card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #20413a;
+}
+
+.receipt-search-card {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid #dceae4;
+    border-radius: 22px;
+    padding: 1rem 1rem 1.05rem;
     margin-bottom: 1rem;
+    box-shadow: 0 12px 24px rgba(31, 92, 80, 0.06);
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    top: 50%;
+    left: 0.9rem;
+    transform: translateY(-50%);
+    color: #7f8c8d;
+    font-size: 1rem;
+}
+
+.form-control,
+:deep(textarea.form-control) {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid #d7e5de;
+    border-radius: 14px;
+    background: #fff;
+    color: #1f2937;
+    padding: 0.78rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.input-wrapper .form-control {
+    padding-left: 2.75rem;
+}
+
+.form-control:focus,
+:deep(textarea.form-control:focus),
+:deep(.form-control:focus) {
+    outline: none;
+    border-color: #3d8d7a;
+    box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.12);
+}
+
+.input-error,
+:deep(.input-error) {
+    border-color: #dc3545 !important;
 }
 
 .receipt-summary-grid {
@@ -463,10 +675,12 @@ export default {
 }
 
 .summary-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 0.875rem 1rem;
+    position: relative;
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+    border: 1px solid #dceae4;
+    border-radius: 18px;
+    padding: 0.95rem 1rem;
+    box-shadow: 0 10px 22px rgba(31, 92, 80, 0.05);
 }
 
 .summary-label {
@@ -479,16 +693,238 @@ export default {
 }
 
 .summary-value {
-    color: #0f172a;
+    color: #20413a;
     font-size: 0.95rem;
+}
+
+.summary-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 0.65rem;
+    border-radius: 12px;
+    background: #eef7f4;
+    color: #2f7a68;
+    font-size: 1rem;
 }
 
 .receipt-refresh {
     flex: 0 0 auto;
 }
 
+.error-alert,
+.success-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+    padding: 0.9rem 1rem;
+    border-radius: 16px;
+}
+
+.error-alert {
+    background: linear-gradient(135deg, #fff3f2 0%, #ffe9e7 100%);
+    border: 1px solid #f3c3bd;
+    color: #a64035;
+}
+
+.success-alert {
+    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
+    border: 1px solid #b9e6ca;
+    color: #155724;
+}
+
+.error-alert i,
+.success-alert i {
+    font-size: 1.1rem;
+}
+
+.items-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+}
+
+.table-action-btn {
+    border: 1px solid #d7e5de;
+    border-radius: 12px;
+    background: #fff;
+    color: #355f55;
+    padding: 0.6rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.table-action-btn:hover {
+    background: #f4faf8;
+    border-color: #b7cec4;
+}
+
+.table-shell {
+    border: 1px solid #dceae4;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
+}
+
+.return-items-table thead th {
+    padding: 0.9rem 0.8rem;
+    border: none;
+    background: linear-gradient(180deg, #eff7f4 0%, #e6f2ed 100%);
+    color: #49655d;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.return-items-table tbody td {
+    padding: 0.85rem 0.8rem;
+    vertical-align: middle;
+    border-color: #edf3f1;
+}
+
+.product-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.product-cell strong {
+    color: #20413a;
+}
+
+.product-cell small {
+    color: #74867f;
+    font-size: 0.78rem;
+}
+
+.batch-pill,
+.qty-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.batch-pill {
+    background: #eef7f4;
+    color: #2f7666;
+}
+
+.qty-pill {
+    background: #edf4ff;
+    color: #315d9a;
+}
+
 .return-qty-input {
     min-width: 88px;
     text-align: center;
+}
+
+.error-message {
+    display: block;
+    margin-top: 0.45rem;
+    color: #dc3545;
+    font-size: 0.82rem;
+}
+
+.form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.85rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    background: linear-gradient(180deg, rgba(244, 250, 248, 0.7) 0%, #f4faf8 24px);
+    border-top: 1px solid #dceae4;
+    backdrop-filter: blur(6px);
+}
+
+.btn {
+    min-height: 46px;
+    border: none;
+    border-radius: 14px;
+    padding: 0.72rem 1.1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel {
+    background: #eef2f4;
+    color: #58646f;
+}
+
+.btn-cancel:hover {
+    background: #e2e8ec;
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #3d8d7a 0%, #2f7464 100%);
+    color: #fff;
+    box-shadow: 0 12px 24px rgba(61, 141, 122, 0.2);
+}
+
+.btn-save:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 28px rgba(61, 141, 122, 0.24);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .items-card-header,
+    .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .btn,
+    .table-action-btn {
+        width: 100%;
+    }
 }
 </style>
