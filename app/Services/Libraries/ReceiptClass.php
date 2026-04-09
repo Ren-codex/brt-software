@@ -6,11 +6,16 @@ namespace App\Services\Libraries;
 use App\Models\Receipt;
 use App\Models\ListStatus;
 use App\Http\Resources\Libraries\ReceiptResource;
+use App\Services\Accounting\JournalEntryService;
 use Illuminate\Support\Facades\DB;
 
 
 class ReceiptClass
 {
+    public function __construct(protected JournalEntryService $journalEntryService)
+    {
+    }
+
     public function lists($request){
         return ReceiptResource::collection(
             Receipt::with(['arInvoice.sales_order.customer', 'arInvoice.sales_order.items.product', 'status', 'sourceReceipt'])
@@ -67,6 +72,8 @@ class ReceiptClass
     }
 
     public function save($request){
+        $arInvoice = \App\Models\ArInvoice::with('sales_order')->findOrFail($request->ar_invoice_id);
+
         $receipt = Receipt::create([
             'ar_invoice_id' => $request->ar_invoice_id,
             'status_id' => $request->status_id,
@@ -75,11 +82,10 @@ class ReceiptClass
             'receipt_date' => $request->receipt_date,
             'amount_paid' => $request->amount_paid,
             'payment_mode' => $request->payment_mode,
-            'created_by' => auth()->id(),
+            'customer_id' => optional($arInvoice->sales_order)->customer_id,
         ]);
 
         // Update AR Invoice balance
-        $arInvoice = \App\Models\ArInvoice::find($request->ar_invoice_id);
         $arInvoice->amount_paid += $request->amount_paid;
         $arInvoice->balance_due = $arInvoice->balance_due - $request->amount_paid;
 
@@ -92,11 +98,18 @@ class ReceiptClass
 
         $arInvoice->save();
 
-        return $receipt;
+        $this->journalEntryService->recordReceiptEntry($receipt);
+
+        return [
+            'data' => $receipt,
+            'message' => 'Receipt saved successfully!',
+            'info' => "You've successfully saved the receipt",
+        ];
     }
 
     public function update($request){
         $receipt = Receipt::findOrFail($request->id);
+        $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt updated. Previous receipt entry reversed.', $request->receipt_date);
         $oldAmount = $receipt->amount_paid;
 
         $receipt->update($request->only([
@@ -119,11 +132,18 @@ class ReceiptClass
 
         $arInvoice->save();
 
-        return $receipt;
+        $this->journalEntryService->recordReceiptEntry($receipt->fresh());
+
+        return [
+            'data' => $receipt,
+            'message' => 'Receipt updated successfully!',
+            'info' => "You've successfully updated the receipt",
+        ];
     }
 
     public function delete($id){
         $receipt = Receipt::findOrFail($id);
+        $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt deleted. Original collection entry reversed.', now()->toDateString());
         $arInvoice = \App\Models\ArInvoice::find($receipt->ar_invoice_id);
 
         // Reverse the payment
@@ -140,7 +160,11 @@ class ReceiptClass
         $arInvoice->save();
         $receipt->delete();
 
-        return $receipt;
+        return [
+            'data' => null,
+            'message' => 'Receipt deleted successfully!',
+            'info' => "You've successfully deleted the receipt",
+        ];
     }
 
     public function show($id){

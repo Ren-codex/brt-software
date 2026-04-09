@@ -11,6 +11,7 @@ use App\Models\ListSalary;
 use App\Models\ListStatus;
 use App\Models\ListUnit;
 use App\Models\ListBrand;
+use App\Models\ArInvoice;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\ListSupplier;
@@ -69,12 +70,22 @@ class DropdownClass
 
     public function customers(){
         $data = Customer::get()->map(function ($item) {
+            $outstandingBalance = (float) ArInvoice::query()
+                ->whereHas('sales_order', function ($query) use ($item) {
+                    $query->where('customer_id', $item->id)
+                        ->whereDoesntHave('status', function ($statusQuery) {
+                            $statusQuery->where('slug', 'cancelled');
+                        });
+                })
+                ->sum('balance_due');
+
             return [
                 'value' => $item->id,
                 'name' => $item->name,
                 'address' => $item->address,
                 'contact_number' => $item->contact_number,
                 'email' => $item->email,
+                'outstanding_balance' => round($outstandingBalance, 2),
             ];
         });
         return  $data;
