@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('sales_order_incentives', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('sales_order_id');
+            $table->unsignedInteger('sales_order_id')->index();
             $table->foreign('sales_order_id')->references('id')->on('sales_orders')->onDelete('cascade');
-            $table->unsignedInteger('employee_id');
+            $table->unsignedInteger('employee_id')->index();
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
             $table->integer('sold_quantity');
             $table->decimal('product_total_kg', 10, 2);
-            $table->unsignedInteger('payroll_id')->nullable();
+            $table->unsignedInteger('payroll_id')->nullable()->index();
             $table->foreign('payroll_id')->references('id')->on('payrolls')->onDelete('set null');
             $table->decimal('amount', 10, 2);
             $table->string('status')->default('pending');

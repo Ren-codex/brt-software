@@ -15,9 +15,9 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->text('changed_data')->nullable();
-            $table->unsignedInteger('updated_by_id');
+            $table->unsignedInteger('updated_by_id')->index();
             $table->foreign('updated_by_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedInteger('payroll_setting_id');
+            $table->unsignedInteger('payroll_setting_id')->index();
             $table->foreign('payroll_setting_id')->references('id')->on('payroll_settings')->onDelete('cascade');
             $table->timestamps();
         });

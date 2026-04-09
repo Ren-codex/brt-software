@@ -17,10 +17,10 @@ class CreateProductsTable extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->integer('pack_size');
-            $table->unsignedInteger('unit_id');
+            $table->unsignedInteger('unit_id')->index();
             $table->foreign('unit_id')->references('id')->on('list_units')->onDelete('cascade');
             $table->boolean('is_active')->default('1');
-            $table->unsignedInteger('brand_id');
+            $table->unsignedInteger('brand_id')->index();
             $table->foreign('brand_id')->references('id')->on('list_brands')->onDelete('cascade');
             $table->timestamps();
         });

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sales_orders', function (Blueprint $table) {
-            $table->unsignedInteger('assigned_to')->nullable()->after('sub_status_id');
+            $table->unsignedInteger('assigned_to')->nullable()->after('sub_status_id')->index();
             $table->foreign('assigned_to')->references('id')->on('employees')->onDelete('set null');
         });
     }

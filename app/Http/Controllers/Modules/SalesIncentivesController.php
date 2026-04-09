@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Modules;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\SalesOrderIncentive;
 use App\Services\DropdownClass;
+
 class SalesIncentivesController extends Controller
 {
     public $dropdown;
@@ -16,6 +18,14 @@ class SalesIncentivesController extends Controller
 
     public function index(Request $request)
     {
+        $createdDateFrom = $request->created_date_from
+            ? Carbon::parse($request->created_date_from)->startOfDay()
+            : null;
+
+        $createdDateTo = $request->created_date_to
+            ? Carbon::parse($request->created_date_to)->endOfDay()
+            : null;
+
         $detailQuery = SalesOrderIncentive::query()
             ->with(['salesOrder:id,so_number,order_date'])
             ->when($request->keyword, function ($query) use ($request) {
@@ -26,11 +36,11 @@ class SalesIncentivesController extends Controller
                       ->orWhereRaw("CONCAT(firstname, ' ', lastname) LIKE ?", ['%' . $kw . '%']);
                 });
             })
-            ->when($request->created_date_from, function ($query) use ($request) {
-                $query->whereDate('created_at', '>=', $request->created_date_from);
+            ->when($createdDateFrom, function ($query) use ($createdDateFrom) {
+                $query->where('created_at', '>=', $createdDateFrom);
             })
-            ->when($request->created_date_to, function ($query) use ($request) {
-                $query->whereDate('created_at', '<=', $request->created_date_to);
+            ->when($createdDateTo, function ($query) use ($createdDateTo) {
+                $query->where('created_at', '<=', $createdDateTo);
             });
 
         // Group incentives by employee and compute totals with filters
@@ -46,11 +56,11 @@ class SalesIncentivesController extends Controller
                       ->orWhereRaw("CONCAT(firstname, ' ', lastname) LIKE ?", ['%' . $kw . '%']);
                 });
             })
-            ->when($request->created_date_from, function ($query) use ($request) {
-                $query->whereDate('created_at', '>=', $request->created_date_from);
+            ->when($createdDateFrom, function ($query) use ($createdDateFrom) {
+                $query->where('created_at', '>=', $createdDateFrom);
             })
-            ->when($request->created_date_to, function ($query) use ($request) {
-                $query->whereDate('created_at', '<=', $request->created_date_to);
+            ->when($createdDateTo, function ($query) use ($createdDateTo) {
+                $query->where('created_at', '<=', $createdDateTo);
             })
             ->groupBy('employee_id')
             ->orderByRaw('SUM(amount) DESC')

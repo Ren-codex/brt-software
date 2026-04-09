@@ -21,7 +21,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(1);
             $table->boolean('is_regular')->default(0);
             $table->boolean('is_blacklisted')->default(0);
-            $table->unsignedInteger('added_by_id');
+            $table->unsignedInteger('added_by_id')->index();
             $table->foreign('added_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });

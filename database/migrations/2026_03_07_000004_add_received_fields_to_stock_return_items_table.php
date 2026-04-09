@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stock_return_items', function (Blueprint $table) {
-            $table->unsignedInteger('received_by_id')->nullable()->after('status_id');
+            $table->unsignedInteger('received_by_id')->nullable()->after('status_id')->index();
             $table->foreign('received_by_id')->references('id')->on('users')->onDelete('set null');
             $table->timestamp('received_at')->nullable()->after('received_by_id');
         });
@@ -29,4 +29,3 @@ return new class extends Migration
         });
     }
 };
-

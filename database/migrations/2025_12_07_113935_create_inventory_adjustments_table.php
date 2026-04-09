@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('inventory_adjustments', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('inventory_stocks_id');
+            $table->unsignedInteger('inventory_stocks_id')->index();
             $table->foreign('inventory_stocks_id')->references('id')->on('inventory_stocks')->onDelete('cascade');
             $table->integer('new_quantity');
             $table->integer('previous_quantity');
             $table->string('reason', 255)->nullable();
             $table->date('adjustment_date');
-            $table->unsignedInteger('adjusted_by_id');
+            $table->unsignedInteger('adjusted_by_id')->index();
             $table->foreign('adjusted_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('type'); // 1 for addition, 2 for subtraction
             $table->timestamps();

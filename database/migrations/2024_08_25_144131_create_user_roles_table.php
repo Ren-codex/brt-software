@@ -15,13 +15,13 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->boolean('is_active')->default(1);
-            $table->unsignedInteger('user_id');
+            $table->unsignedInteger('user_id')->index();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedTinyInteger('role_id');
+            $table->unsignedTinyInteger('role_id')->index();
             $table->foreign('role_id')->references('id')->on('list_roles')->restrictOnDelete();
-            $table->unsignedInteger('added_by_id');
+            $table->unsignedInteger('added_by_id')->index();
             $table->foreign('added_by_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedInteger('removed_by_id')->nullable();
+            $table->unsignedInteger('removed_by_id')->nullable()->index();
             $table->foreign('removed_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamp('removed_at')->nullable();
             $table->timestamps();

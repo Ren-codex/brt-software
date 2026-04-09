@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('received_stocks', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('po_id');
+            $table->unsignedInteger('po_id')->index();
             $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('cascade');
-            $table->unsignedInteger('supplier_id');
+            $table->unsignedInteger('supplier_id')->index();
             $table->foreign('supplier_id')->references('id')->on('list_suppliers')->onDelete('cascade');
             $table->date('received_date');
             $table->string('received_no')->unique();

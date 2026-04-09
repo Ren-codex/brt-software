@@ -18,11 +18,11 @@ return new class extends Migration
             $table->decimal('price', 15, 2);
             $table->decimal('discount_per_unit', 15, 2);
             $table->string('price_type');
-            $table->unsignedInteger('product_id');
+            $table->unsignedInteger('product_id')->index();
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            $table->unsignedInteger('sales_order_id');
+            $table->unsignedInteger('sales_order_id')->index();
             $table->foreign('sales_order_id')->references('id')->on('sales_orders')->onDelete('cascade');
-            $table->string('batch_code');
+            $table->string('batch_code')->index();
             $table->foreign('batch_code')->references('batch_code')->on('inventory_stocks')->onDelete('cascade');
      
             $table->timestamps();

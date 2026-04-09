@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('purchase_order_items', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('po_id');
+            $table->unsignedInteger('po_id')->index();
             $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('cascade');
-            $table->unsignedInteger('product_id');
+            $table->unsignedInteger('product_id')->index();
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             $table->integer('quantity');
             $table->decimal('unit_cost', 10, 2);

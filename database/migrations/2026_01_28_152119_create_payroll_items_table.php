@@ -22,9 +22,9 @@ return new class extends Migration
             $table->decimal('total_days', 8, 2)->default(0);
             $table->decimal('net_salary', 15, 2);
             $table->json('loans')->nullable();
-            $table->unsignedInteger('payroll_id');
+            $table->unsignedInteger('payroll_id')->index();
             $table->foreign('payroll_id')->references('id')->on('payrolls')->onDelete('cascade');
-            $table->unsignedInteger('employee_id');
+            $table->unsignedInteger('employee_id')->index();
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
             $table->timestamps();
         });

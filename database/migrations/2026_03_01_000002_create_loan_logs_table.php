@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('loan_logs', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('loan_id');
+            $table->unsignedInteger('loan_id')->index();
             $table->foreign('loan_id')->references('id')->on('loans')->onDelete('cascade');
             $table->string('action');
-            $table->unsignedInteger('actioned_by_id')->nullable();
+            $table->unsignedInteger('actioned_by_id')->nullable()->index();
             $table->foreign('actioned_by_id')->references('id')->on('users')->onDelete('set null');
             $table->text('remarks')->nullable();
             $table->timestamps();

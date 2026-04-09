@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('receipts', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('ar_invoice_id');
+            $table->unsignedInteger('ar_invoice_id')->index();
             $table->foreign('ar_invoice_id')->references('id')->on('ar_invoices')->onDelete('cascade');
-            $table->unsignedInteger('customer_id');
+            $table->unsignedInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
-            $table->unsignedInteger('status_id');
+            $table->unsignedInteger('status_id')->index();
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->string('receipt_number')->unique();
-            $table->unsignedInteger('remittance_id')->nullable();
+            $table->unsignedInteger('remittance_id')->nullable()->index();
             $table->foreign('remittance_id')->references('id')->on('remittances')->onDelete('set null');
             $table->date('receipt_date');
             $table->decimal('amount_paid' , 15,2);

@@ -18,11 +18,11 @@ return new class extends Migration
             $table->date('remittance_date');
             $table->decimal('total_amount', 10, 2);
             $table->json('summary');
-            $table->unsignedInteger('status_id');
+            $table->unsignedInteger('status_id')->index();
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
-            $table->unsignedInteger('created_by_id');
+            $table->unsignedInteger('created_by_id')->index();
             $table->foreign('created_by_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedInteger('approved_by_id')->nullable();
+            $table->unsignedInteger('approved_by_id')->nullable()->index();
             $table->foreign('approved_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamp('approved_at')->nullable();
             $table->string('remarks')->nullable();

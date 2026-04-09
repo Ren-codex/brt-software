@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('purchase_orders', function (Blueprint $table) {
             $table->string('pr_number')->nullable();
-            $table->unsignedInteger('approved_by_id')->nullable();
+            $table->unsignedInteger('approved_by_id')->nullable()->index();
             $table->foreign('approved_by_id')->nullable()->references('id')->on('users')->onDelete('cascade');
             $table->date('approved_date')->nullable();
         });
