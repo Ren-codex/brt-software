@@ -41,25 +41,9 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::patch('/expenses/{id}/release', [App\Http\Controllers\Modules\ExpenseController::class, 'release']);
     });
 
-    Route::middleware(['role:Administrator'])->group(function () {
-        Route::resource('/users', App\Http\Controllers\System\UserController::class);
-        // Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
-        Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
-        Route::resource('/libraries/brands', App\Http\Controllers\Libraries\BrandController::class);
-        Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
-        Route::resource('/libraries/products', App\Http\Controllers\Libraries\ProductController::class);
-        Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
-        Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
-        Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
-        Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
-        Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class);
-
-        
-        Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
-        Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
-        Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
+    // Warehouse Manager
+    Route::middleware(['role:Warehouse Manager'])->group(function () {
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
-        
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
         Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
         Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus']);
@@ -72,13 +56,17 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class);
         Route::post('inventory-stocks/adjustment/{id}', [App\Http\Controllers\InventoryAdjustmentController::class, 'store']);
         Route::post('/inventory-stocks/{id}/update-price', [App\Http\Controllers\InventoryStockController::class, 'update']);
+    });
 
-        // Route::get('/receipts', [App\Http\Controllers\Libraries\ReceiptController::class, 'index']);
-        // Route::get('/receipts/{id}/print', [App\Http\Controllers\Libraries\ReceiptController::class, 'print']);
+    // Sales Representative
+    Route::middleware(['role:Sales Rep'])->group(function () {
         Route::resource('/remittances', App\Http\Controllers\RemittanceController::class);
         Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
         Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
-        
+    });
+
+      // HR Manager
+    Route::middleware(['role:HR Manager'])->group(function () {
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class);
         Route::get('/payroll-templates/available-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'getAvailableEmployees']);
         Route::resource('/payroll-templates', App\Http\Controllers\Modules\PayrollTemplateController::class);
@@ -87,6 +75,13 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class);
         Route::resource('/loans', App\Http\Controllers\Modules\LoanController::class);
         Route::resource('/loan-payments', App\Http\Controllers\Modules\LoanPaymentController::class);
+        Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
+        Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);
+        Route::put('/loans/{id}/status', [App\Http\Controllers\Modules\LoanController::class, 'updateStatus']);
+    });
+
+    // HR Manager
+    Route::middleware(['role:Accountant'])->group(function () {
         Route::get('/accounting', [App\Http\Controllers\Modules\AccountingController::class, 'index']);
         Route::get('/accounting/general-ledger', [App\Http\Controllers\Modules\AccountingController::class, 'generalLedger']);
         Route::get('/accounting/trial-balance', [App\Http\Controllers\Modules\AccountingController::class, 'trialBalance']);
@@ -97,11 +92,24 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::get('/accounting/chart-of-accounts', [App\Http\Controllers\Modules\AccountingController::class, 'chartOfAccounts']);
         Route::get('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'journalEntries']);
         Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
-        Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
-        Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);
-        Route::put('/loans/{id}/status', [App\Http\Controllers\Modules\LoanController::class, 'updateStatus']);
-        
+    });
+
+    // Administrator
+    Route::middleware(['role:Administrator'])->group(function () {
+        Route::resource('/users', App\Http\Controllers\System\UserController::class);
+        Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
+        Route::resource('/libraries/brands', App\Http\Controllers\Libraries\BrandController::class);
+        Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
+        Route::resource('/libraries/products', App\Http\Controllers\Libraries\ProductController::class);
+        Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
+        Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
+        Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
+        Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
+        Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class);
+        Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
+        Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
+        Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
         // Contact Management
         Route::resource('/contacts', App\Http\Controllers\Modules\ContactController::class);
         Route::patch('/contacts/{id}/mark-read', [App\Http\Controllers\Modules\ContactController::class, 'markAsRead']);
