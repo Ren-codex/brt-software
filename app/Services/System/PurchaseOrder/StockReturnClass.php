@@ -11,6 +11,7 @@ use App\Models\StockReturn;
 use App\Models\StockReturnItem;
 use App\Models\StockReturnLog;
 use App\Http\Resources\System\PurchaseOrder\StockReturnResource;
+use App\Services\Accounting\JournalEntryService;
 use App\Services\SeriesService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,11 +20,14 @@ use Illuminate\Validation\ValidationException;
 class StockReturnClass
 {
     protected $series_service;
+    protected $journalEntryService;
 
     public function __construct(
         SeriesService $series_service,
+        JournalEntryService $journalEntryService,
     ) {
         $this->series_service = $series_service;
+        $this->journalEntryService = $journalEntryService;
     }
 
     public function list($request)
@@ -388,6 +392,22 @@ class StockReturnClass
                 ]);
             }
 
+            if ($replacedQty > 0) {
+                $this->journalEntryService->recordStockReturnReplacementEntry(
+                    $stockReturn,
+                    $stockReturnItem->fresh(['purchaseOrderItem.product']),
+                    $replacedQty
+                );
+            }
+
+            if ($lossQty > 0) {
+                $this->journalEntryService->recordStockReturnLossEntry(
+                    $stockReturn,
+                    $stockReturnItem->fresh(['purchaseOrderItem.product']),
+                    $lossQty
+                );
+            }
+
             $stockReturnItem->save();
 
             $productName = $stockReturnItem->purchaseOrderItem?->product?->name ?? "Item #{$stockReturnItem->id}";
@@ -533,6 +553,9 @@ class StockReturnClass
 
             $stockReturn->status_id = $deliveredStatusId;
             $stockReturn->save();
+            $this->journalEntryService->recordStockReturnDeliveryEntry(
+                $stockReturn->fresh(['items.purchaseOrderItem.product'])
+            );
 
             return $stockReturn->fresh([
                 'purchaseOrder.status',

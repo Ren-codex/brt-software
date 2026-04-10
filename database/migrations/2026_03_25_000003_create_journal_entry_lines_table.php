@@ -11,8 +11,10 @@ return new class extends Migration
         Schema::create('journal_entry_lines', function (Blueprint $table) {
             $table->id();
             $table->foreignId('journal_entry_id')->constrained('journal_entries')->cascadeOnDelete();
-            $table->foreignId('account_id')->constrained('accounts')->cascadeOnDelete();
-            $table->string('line_type', 10);
+            $table->foreignId('account_id')->nullable()->constrained('accounts')->nullOnDelete();
+            $table->string('account')->nullable();
+            $table->string('type', 10);
+            $table->string('line_type', 10)->nullable();
             $table->decimal('amount', 15, 2);
             $table->text('description')->nullable();
             $table->unsignedInteger('line_order')->default(1);
