@@ -203,7 +203,7 @@
                         </div>
                         <div class="success-alert" v-if="saveSuccess">
                             <i class="ri-checkbox-circle-fill"></i>
-                            <span>Purchase order has been {{ editable ? 'updated' : 'created' }} successfully.</span>
+                            <span>Purchase request has been {{ editable ? 'updated' : 'created' }} successfully.</span>
                         </div>
                     </div>
 
@@ -347,7 +347,7 @@ export default {
                         this.saveSuccess = true;
                         this.submitError = '';
                         setTimeout(() => {
-                            this.$emit('add', true);
+                            this.$emit('add', { action: 'updated' });
                             this.form.reset();
                             this.hide();
                         }, 1500);
@@ -375,7 +375,7 @@ export default {
                         this.saveSuccess = true;
                         this.submitError = '';
                         setTimeout(() => {
-                            this.$emit('add', true);
+                            this.$emit('add', { action: 'created' });
                             this.form.reset();
                             this.hide();
                         }, 1500);

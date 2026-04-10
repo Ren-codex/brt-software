@@ -668,8 +668,9 @@ export default {
         });
     },
 
-    handlePurchaseOrderUpdate() {
-      this.showToast('Purchase order updated successfully');
+    handlePurchaseOrderUpdate(payload = {}) {
+      const action = payload?.action === 'updated' ? 'updated' : 'created';
+      this.showToast(`Purchase request ${action} successfully`);
       if (this.selectedPurchaseOrder) {
         // Refresh the details view if we're viewing a purchase order
         this.fetchPurchaseOrderDetails(this.selectedPurchaseOrder.id);
