@@ -23,6 +23,10 @@ class AccountingController extends Controller
 
     public function index(Request $request)
     {
+        if (!$request->option && $request->tab === 'accounts_payable') {
+            return redirect('/inventory?tab=accountsPayable');
+        }
+
         if ($request->option === 'stats') {
             [$dateFrom, $dateTo] = $this->resolveDateRange($request);
 
@@ -70,7 +74,7 @@ class AccountingController extends Controller
 
     public function accountsPayable()
     {
-        return redirect('/accounting?tab=accounts_payable');
+        return redirect('/inventory?tab=accountsPayable');
     }
 
     public function chartOfAccounts()

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ApplyReceivedStockPaymentRequest;
 use App\Models\ReceivedStock;
 use App\Http\Requests\StoreReceivedStockRequest;
 use App\Http\Resources\ReceivedStockResource;
@@ -67,6 +68,16 @@ class ReceivedStockController extends Controller
     {
         $receivedStock = $this->receivedStockService->update($id, $request->all());
         return new ReceivedStockResource($receivedStock);
+    }
+
+    public function pay(ApplyReceivedStockPaymentRequest $request, ReceivedStock $receivedStock)
+    {
+        $updatedReceivedStock = $this->receivedStockService->applyPayment($receivedStock, $request->validated());
+
+        return response()->json([
+            'message' => 'Accounts payable payment recorded successfully.',
+            'data' => new ReceivedStockResource($updatedReceivedStock),
+        ]);
     }
 
     /**

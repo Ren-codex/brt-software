@@ -203,7 +203,7 @@
                         </div>
                         <div class="success-alert" v-if="saveSuccess">
                             <i class="ri-checkbox-circle-fill"></i>
-                            <span>Purchase order has been {{ editable ? 'updated' : 'created' }} successfully.</span>
+                            <span>Purchase request has been {{ editable ? 'updated' : 'created' }} successfully.</span>
                         </div>
                     </div>
 
@@ -347,7 +347,7 @@ export default {
                         this.saveSuccess = true;
                         this.submitError = '';
                         setTimeout(() => {
-                            this.$emit('add', true);
+                            this.$emit('add', { action: 'updated' });
                             this.form.reset();
                             this.hide();
                         }, 1500);
@@ -375,7 +375,7 @@ export default {
                         this.saveSuccess = true;
                         this.submitError = '';
                         setTimeout(() => {
-                            this.$emit('add', true);
+                            this.$emit('add', { action: 'created' });
                             this.form.reset();
                             this.hide();
                         }, 1500);
@@ -515,7 +515,7 @@ export default {
 }
 
 .modal-container.modal-lg {
-    max-width: 900px;
+    max-width: 1240px;
 }
 
 .modal-overlay.active .modal-container {
@@ -582,8 +582,8 @@ export default {
 
 .form-layout {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 0.95fr);
-    gap: 1.25rem;
+    grid-template-columns: minmax(0, 2.35fr) minmax(300px, 0.85fr);
+    gap: 1.5rem;
     align-items: start;
 }
 

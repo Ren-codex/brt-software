@@ -99,13 +99,6 @@ export default {
                     href: "/accounting/accounts-receivable",
                 },
                 {
-                    id: "accounts_payable",
-                    label: "Accounts Payable",
-                    icon: "ri-wallet-3-line",
-                    description: "Supplier balances and due items",
-                    href: "/accounting/accounts-payable",
-                },
-                {
                     id: "chart_of_accounts",
                     label: "Chart Of Accounts",
                     icon: "ri-node-tree",
