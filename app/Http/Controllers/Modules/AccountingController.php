@@ -24,6 +24,22 @@ class AccountingController extends Controller
 
     public function index(Request $request)
     {
+        if ($request->option === 'journal_entries_pdf') {
+            [$dateFrom, $dateTo] = $this->resolveDateRange($request);
+            $filename = 'journal-entries-' . now()->format('Ymd_His') . '.pdf';
+            $entries = $this->buildJournalEntryReportEntries($dateFrom, $dateTo);
+
+            $pdf = \PDF::loadView('prints.accounting-journal-entries', [
+                'entries' => $entries,
+                'filters' => [
+                    'date_from' => $dateFrom,
+                    'date_to' => $dateTo,
+                ],
+            ])->setPaper('A4', 'portrait');
+
+            return $pdf->download($filename);
+        }
+
         if ($request->option === 'stats') {
             [$dateFrom, $dateTo] = $this->resolveDateRange($request);
 
@@ -433,6 +449,64 @@ class AccountingController extends Controller
                     'lines' => $canLoadLines
                         ? $entry->lines->map(fn (JournalEntryLine $line) => $this->transformJournalEntryLine($line))->values()->all()
                         : [],
+                ];
+            })
+            ->values();
+    }
+
+    private function buildJournalEntryReportEntries(?string $dateFrom = null, ?string $dateTo = null): Collection
+    {
+        if (!$this->hasCoreAccountingTables()) {
+            return collect();
+        }
+
+        $query = JournalEntry::query()
+            ->select([
+                'id',
+                'journal_number',
+                'entry_date',
+                'memo',
+            ])
+            ->with([
+                'lines' => function ($lineQuery) {
+                    $lineQuery
+                        ->select([
+                            'id',
+                            'journal_entry_id',
+                            'account_id',
+                            'account',
+                            'line_type',
+                            'amount',
+                            'description',
+                            'line_order',
+                        ])
+                        ->orderBy('line_order')
+                        ->orderBy('id');
+                },
+            ]);
+
+        $this->applyDateRange($query, 'entry_date', $dateFrom, $dateTo);
+
+        return $query
+            ->orderBy('entry_date')
+            ->orderBy('id')
+            ->get()
+            ->map(function (JournalEntry $entry) {
+                return [
+                    'journal_number' => $entry->journal_number ?: '#',
+                    'entry_date' => optional($entry->entry_date)->format('Y-m-d'),
+                    'memo' => $entry->memo ?: '',
+                    'lines' => $entry->lines
+                        ->map(function (JournalEntryLine $line) {
+                            return [
+                                'account' => trim((string) $line->getAttribute('account')) ?: 'Unmapped Account',
+                                'line_type' => $line->line_type,
+                                'amount' => (float) $line->amount,
+                                'description' => $line->description,
+                            ];
+                        })
+                        ->values()
+                        ->all(),
                 ];
             })
             ->values();

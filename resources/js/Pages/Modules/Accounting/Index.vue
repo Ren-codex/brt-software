@@ -72,10 +72,20 @@
                                     <button type="button" class="filter-btn filter-btn-primary" @click="applyDateFilter">
                                         Apply Filter
                                     </button>
+                                    <button
+                                        v-if="activeTab === 'journal_entries'"
+                                        type="button"
+                                        class="filter-btn filter-btn-export"
+                                        :disabled="isFiltering || isExportingReport || !dataReadyState"
+                                        @click="exportJournalEntriesReport"
+                                    >
+                                        <i class="ri-file-pdf-2-line"></i>
+                                        {{ isExportingReport ? "Exporting..." : "Export PDF" }}
+                                    </button>
                                 </div>
                             </div>
 
-                            <BRow class="g-4 mt-1">
+                            <!-- <BRow class="g-4 mt-1">
                                 <BCol md="6" xl="3" v-for="card in statCards" :key="card.title">
                                     <div class="stat-card">
                                         <div class="stat-icon">
@@ -89,15 +99,15 @@
                                 </BCol>
 
                                
-                            </BRow>
+                            </BRow> -->
 
                             <div v-if="dataReadyState" class="module-panel preview-panel mt-4">
-                                 <div class="panel-header">
+                                 <!-- <div class="panel-header">
                                      <div>
                                          <h4 class="panel-title">Live Data</h4>
                                          <p class="panel-subtitle mb-0">Switch tabs to preview each report here, then click rows where available to open details.</p>
                                      </div>
-                                 </div>
+                                 </div> -->
 
                                 <div v-if="activeTab === 'trial_balance'" class="table-responsive">
                                     <table class="table preview-table mb-0">
@@ -393,6 +403,7 @@ data() {
             reportDataState: this.reportData,
             dataReadyState: this.dataReady,
             isFiltering: false,
+            isExportingReport: false,
             filter: {
                 date_from: this.filters?.date_from || "",
                 date_to: this.filters?.date_to || "",
@@ -641,6 +652,35 @@ data() {
             this.filter.date_to = "";
             this.fetchFilteredData();
         },
+        async exportJournalEntriesReport() {
+            this.isExportingReport = true;
+
+            try {
+                const response = await axios.get("/accounting", {
+                    params: {
+                        option: "journal_entries_pdf",
+                        date_from: this.filter.date_from || null,
+                        date_to: this.filter.date_to || null,
+                    },
+                    responseType: "blob",
+                });
+
+                const blob = new Blob([response.data], {
+                    type: response.headers["content-type"] || "application/pdf",
+                });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `journal-entries-${new Date().toISOString().slice(0, 10)}.pdf`;
+                link.click();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error("Failed to export journal entry PDF:", error);
+                this.$toast?.error?.("Failed to export journal entry PDF.");
+            } finally {
+                this.isExportingReport = false;
+            }
+        },
         fetchFilteredData() {
             this.isFiltering = true;
             this.clearOpenDetails();
@@ -880,8 +920,17 @@ data() {
     padding: 0.65rem 1rem;
     border-radius: 14px;
     border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
     font-weight: 700;
     transition: all 0.2s ease;
+}
+
+.filter-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
 }
 
 .filter-btn-primary {
@@ -892,6 +941,18 @@ data() {
 .filter-btn-secondary {
     background: #eaf4f1;
     color: #20413a;
+}
+
+.filter-btn-export {
+    background: #ffffff;
+    color: #2b6658;
+    border: 1px solid rgba(61, 141, 122, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.filter-btn-export:hover:not(:disabled) {
+    background: #f1f8f5;
+    border-color: rgba(61, 141, 122, 0.34);
 }
 
 .header-badge {
