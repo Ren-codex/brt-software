@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('received_items', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('received_id');
+            $table->unsignedInteger('received_id')->index();
             $table->foreign('received_id')->references('id')->on('received_stocks')->onDelete('cascade');
-            $table->unsignedInteger('product_id');
+            $table->unsignedInteger('product_id')->index();
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             $table->decimal('quantity', 15, 4);
             $table->decimal('unit_cost', 15, 4);
             $table->decimal('total_cost', 15, 4);
-            $table->unsignedInteger('po_item_id');
+            $table->unsignedInteger('po_item_id')->index();
             $table->foreign('po_item_id')->references('id')->on('purchase_order_items')->onDelete('cascade');
             $table->timestamps();
         });

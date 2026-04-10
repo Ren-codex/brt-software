@@ -67,6 +67,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class);
         Route::post('/stock-returns/{id}/approve', [App\Http\Controllers\StockReturnController::class, 'approve']);
         Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);
+        Route::post('/stock-returns/{id}/log-supplier-delivery', [App\Http\Controllers\StockReturnController::class, 'logSupplierDelivery']);
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO']);
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
         Route::post('/received-stocks/{receivedStock}/pay', [App\Http\Controllers\ReceivedStockController::class, 'pay']);

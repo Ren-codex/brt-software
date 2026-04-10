@@ -17,12 +17,12 @@ return new class extends Migration
             $table->string('payroll_no')->unique();
             $table->date('pay_period_start');
             $table->date('pay_period_end');
-            $table->unsignedInteger('status_id');
+            $table->unsignedInteger('status_id')->index();
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->decimal('total_amount', 15, 2)->default(0);
-            $table->unsignedInteger('payroll_template_id')->nullable();
+            $table->unsignedInteger('payroll_template_id')->nullable()->index();
             $table->foreign('payroll_template_id')->references('id')->on('payroll_templates')->onDelete('set null');
-            $table->unsignedInteger('created_by')->nullable();
+            $table->unsignedInteger('created_by')->nullable()->index();
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
             $table->timestamps();
         });

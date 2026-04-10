@@ -17,11 +17,11 @@ return new class extends Migration
             $table->string('po_number')->nullable();
             $table->date('po_date');
             $table->decimal('total_amount', 15, 2);
-            $table->unsignedInteger('status_id');
+            $table->unsignedInteger('status_id')->index();
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
-            $table->unsignedInteger('supplier_id');
+            $table->unsignedInteger('supplier_id')->index();
             $table->foreign('supplier_id')->references('id')->on('list_suppliers')->onDelete('cascade');
-            $table->unsignedInteger('created_by_id');
+            $table->unsignedInteger('created_by_id')->index();
             $table->foreign('created_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });

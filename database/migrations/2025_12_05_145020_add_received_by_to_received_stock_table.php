@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('received_stocks', function (Blueprint $table) {
-            $table->unsignedInteger('received_by_id')->nullable();
+            $table->unsignedInteger('received_by_id')->nullable()->index();
             $table->foreign('received_by_id')->references('id')->on('users')->onDelete('cascade');
         });
     }

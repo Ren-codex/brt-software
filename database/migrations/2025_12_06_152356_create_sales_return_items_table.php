@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sales_return_items', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('sales_order_item_id');
+            $table->unsignedInteger('sales_order_item_id')->index();
             $table->foreign('sales_order_item_id')->references('id')->on('sales_order_items')->onDelete('cascade');
             $table->timestamps();
         });

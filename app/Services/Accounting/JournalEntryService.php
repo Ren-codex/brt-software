@@ -11,6 +11,8 @@ use App\Models\Receipt;
 use App\Models\ReceivedStock;
 use App\Models\ReceivedStockPayment;
 use App\Models\SalesOrder;
+use App\Models\StockReturn;
+use App\Models\StockReturnItem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -21,6 +23,8 @@ class JournalEntryService
         'reversed_at',
         'reversal_reason',
     ];
+
+    private ?array $journalEntryColumns = null;
 
     public function recordSaleEntries(SalesOrder $salesOrder): array
     {
@@ -505,31 +509,156 @@ class JournalEntryService
         );
     }
 
+    public function recordStockReturnDeliveryEntry(StockReturn $stockReturn): ?JournalEntry
+    {
+        $stockReturn->loadMissing(['items.purchaseOrderItem.product']);
+
+        $amount = round($stockReturn->items->sum(function (StockReturnItem $item) {
+            $unitCost = (float) optional($item->purchaseOrderItem)->unit_cost;
+
+            return (int) $item->quantity * $unitCost;
+        }), 2);
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $payableAccount = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
+        $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Inventory', 'asset', 'inventory');
+        $memo = 'Return damaged stocks to supplier for Stock Return #' . ($stockReturn->stock_return_no ?: $stockReturn->id) . '.';
+
+        return $this->createEntry(
+            $stockReturn,
+            now()->toDateString(),
+            'stock_return',
+            $memo,
+            [
+                [
+                    'account_id' => $payableAccount->id,
+                    'line_type' => 'debit',
+                    'amount' => $amount,
+                    'description' => 'Return damaged stocks to supplier.',
+                ],
+                [
+                    'account_id' => $inventoryAccount->id,
+                    'line_type' => 'credit',
+                    'amount' => $amount,
+                    'description' => 'Reduce inventory for goods returned to supplier.',
+                ],
+            ],
+            'Stock Return #' . ($stockReturn->stock_return_no ?: $stockReturn->id) . ' - Return damaged stocks to supplier.'
+        );
+    }
+
+    public function recordStockReturnLossEntry(StockReturn $stockReturn, StockReturnItem $item, int $lossQty): ?JournalEntry
+    {
+        $unitCost = (float) optional($item->purchaseOrderItem)->unit_cost;
+        $amount = round($lossQty * $unitCost, 2);
+
+        if ($lossQty <= 0 || $amount <= 0) {
+            return null;
+        }
+
+        $lossAccount = $this->ensureAccount('5200', 'inventory_adjustment_loss', 'Inventory Adjustment Loss', 'expense', 'inventory_variance');
+        $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Inventory', 'asset', 'inventory');
+        $memo = 'Stock adjustment - decrease due to damage/loss for Stock Return #' . ($stockReturn->stock_return_no ?: $stockReturn->id) . '.';
+
+        return $this->createEntry(
+            $stockReturn,
+            now()->toDateString(),
+            'stock_return_loss',
+            $memo,
+            [
+                [
+                    'account_id' => $lossAccount->id,
+                    'line_type' => 'debit',
+                    'amount' => $amount,
+                    'description' => 'Recognize inventory adjustment loss.',
+                ],
+                [
+                    'account_id' => $inventoryAccount->id,
+                    'line_type' => 'credit',
+                    'amount' => $amount,
+                    'description' => 'Reduce inventory due to damage/loss.',
+                ],
+            ],
+            'Stock Return #' . ($stockReturn->stock_return_no ?: $stockReturn->id) . ' - Stock adjustment decrease due to damage/loss.'
+        );
+    }
+
+    public function recordStockReturnReplacementEntry(StockReturn $stockReturn, StockReturnItem $item, int $replacedQty): ?JournalEntry
+    {
+        $unitCost = (float) optional($item->purchaseOrderItem)->unit_cost;
+        $amount = round($replacedQty * $unitCost, 2);
+
+        if ($replacedQty <= 0 || $amount <= 0) {
+            return null;
+        }
+
+        $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Inventory', 'asset', 'inventory');
+        $gainAccount = $this->ensureAccount('4200', 'inventory_adjustment_gain', 'Inventory Adjustment Gain', 'revenue', 'other_income');
+        $memo = 'Stock adjustment - increase due to count correction for Stock Return #' . ($stockReturn->stock_return_no ?: $stockReturn->id) . '.';
+
+        return $this->createEntry(
+            $stockReturn,
+            now()->toDateString(),
+            'stock_return_replacement',
+            $memo,
+            [
+                [
+                    'account_id' => $inventoryAccount->id,
+                    'line_type' => 'debit',
+                    'amount' => $amount,
+                    'description' => 'Increase inventory for replacement received.',
+                ],
+                [
+                    'account_id' => $gainAccount->id,
+                    'line_type' => 'credit',
+                    'amount' => $amount,
+                    'description' => 'Recognize inventory adjustment gain.',
+                ],
+            ],
+            'Stock Return #' . ($stockReturn->stock_return_no ?: $stockReturn->id) . ' - Stock adjustment increase due to count correction.'
+        );
+    }
+
     private function createEntry(object $source, $entryDate, string $entryType, string $memo, array $lines, ?string $fullMemo = null, ?int $reversalOfId = null): JournalEntry
     {
         $entryDate = $entryDate ?: now()->toDateString();
+        $journalNumber = JournalEntry::generateJournalNumber();
+        $userId = auth()->id();
 
         $payload = [
-            'journal_number' => JournalEntry::generateJournalNumber(),
+            'journal_number' => $journalNumber,
+            'description' => $memo,
             'entry_date' => $entryDate,
             'entry_type' => $entryType,
+            'module_type' => $this->resolveModuleType($source),
+            'ref_id' => $source->id,
             'source_type' => $source::class,
             'source_id' => $source->id,
             'memo' => $fullMemo ?: $memo,
             'status' => $reversalOfId ? 'reversal_posted' : 'posted',
-            'created_by_id' => auth()->id(),
+            'added_by_id' => $userId,
+            'created_by_id' => $userId,
             'posted_at' => now(),
+            'posted_by_id' => $userId,
         ];
+
+        if ($this->hasJournalEntryColumn('journal_entry_code')) {
+            $payload['journal_entry_code'] = $journalNumber;
+        }
 
         if ($this->hasJournalReversalColumns()) {
             $payload['reversal_of_id'] = $reversalOfId;
         }
 
-        $entry = JournalEntry::create($payload);
+        $entry = JournalEntry::create($this->filterJournalEntryPayload($payload));
 
         foreach ($lines as $index => $line) {
             $entry->lines()->create([
                 'account_id' => $line['account_id'],
+                'account' => $line['account'] ?? optional(Account::find($line['account_id']))->name,
                 'line_type' => $line['line_type'],
                 'amount' => $line['amount'],
                 'description' => $line['description'] ?? null,
@@ -597,6 +726,35 @@ class JournalEntryService
         return true;
     }
 
+    private function hasJournalEntryColumn(string $column): bool
+    {
+        if (!Schema::hasTable('journal_entries')) {
+            return false;
+        }
+
+        return in_array($column, $this->getJournalEntryColumns(), true);
+    }
+
+    private function getJournalEntryColumns(): array
+    {
+        if ($this->journalEntryColumns === null) {
+            $this->journalEntryColumns = Schema::getColumnListing('journal_entries');
+        }
+
+        return $this->journalEntryColumns;
+    }
+
+    private function filterJournalEntryPayload(array $payload): array
+    {
+        $columns = $this->getJournalEntryColumns();
+
+        return array_filter(
+            $payload,
+            fn ($value, $key) => in_array($key, $columns, true),
+            ARRAY_FILTER_USE_BOTH
+        );
+    }
+
     private function ensureAccount(string $code, string $slug, string $name, string $type, ?string $subtype = null): Account
     {
         return Account::firstOrCreate(
@@ -645,6 +803,16 @@ class JournalEntryService
             'bank transfer' => $this->ensureAccount('1010', 'cash_in_bank', 'Cash In Bank', 'asset', 'current_asset'),
             'credit card', 'debit card' => $this->ensureAccount('1020', 'card_clearing', 'Card Clearing', 'asset', 'current_asset'),
             default => $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset'),
+        };
+    }
+
+    private function resolveModuleType(object $source): string
+    {
+        return match (class_basename($source)) {
+            'ReceivedStock', 'InventoryAdjustment', 'StockReturn', 'StockReturnItem' => 'inventory',
+            'SalesOrder', 'Receipt' => 'sales',
+            'Expense' => 'expenses',
+            default => 'accounting',
         };
     }
 }

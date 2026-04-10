@@ -48,7 +48,7 @@
                   <tr>
                     <th class="text-center">Select</th>
                     <th>Product</th>
-                    <th class="text-center">Received</th>
+                    <th class="text-center">Available Stock</th>
                     <th>For Return</th>
                     <th>Remarks</th>
                   </tr>
@@ -61,7 +61,7 @@
                           type="checkbox"
                           v-model="rowForm[item.id].checked"
                           @change="validateItemQuantity(item)"
-                          :disabled="(item.received_quantity || 0) <= 0"
+                          :disabled="getReturnableQuantity(item) <= 0"
                         >
                         <span class="checkmark"></span>
                       </label>
@@ -76,11 +76,11 @@
                         :class="[
                           'quantity-badge received',
                           {
-                            'received-badge-low': Number(item.received_quantity || 0) <= 0,
+                            'received-badge-low': getReturnableQuantity(item) <= 0,
                           },
                         ]"
                       >
-                        {{ item.received_quantity || 0 }}
+                        {{ getReturnableQuantity(item) }}
                       </span>
                     </td>
                     <td class="input-cell">
@@ -97,7 +97,7 @@
                           type="number"
                           class="form-control form-control-sm quantity-input"
                           min="1"
-                          :max="item.received_quantity || 0"
+                          :max="getReturnableQuantity(item)"
                           v-model.number="rowForm[item.id].quantity"
                           @input="validateItemQuantity(item)"
                           :disabled="!rowForm[item.id].checked"
@@ -106,7 +106,7 @@
                           type="button"
                           class="qty-btn"
                           @click="incrementQty(item)"
-                          :disabled="!rowForm[item.id].checked || Number(rowForm[item.id].quantity || 0) >= Number(item.received_quantity || 0)"
+                          :disabled="!rowForm[item.id].checked || Number(rowForm[item.id].quantity || 0) >= getReturnableQuantity(item)"
                         >
                           <i class="ri-add-line"></i>
                         </button>
@@ -212,9 +212,10 @@ export default {
     initializeRowForm() {
       this.rowForm = {};
       this.selectedOrderItems.forEach((item) => {
+        const maxQty = this.getReturnableQuantity(item);
         this.rowForm[item.id] = {
           checked: false,
-          quantity: item.received_quantity > 0 ? 1 : 0,
+          quantity: maxQty > 0 ? 1 : 0,
           remarks: '',
         };
       });
@@ -237,7 +238,7 @@ export default {
       checkedItems.forEach((item) => {
         const row = this.rowForm[item.id] || {};
         const rowErrors = {};
-        const maxQty = Number(item.received_quantity || 0);
+        const maxQty = this.getReturnableQuantity(item);
         const qty = Number(row.quantity || 0);
 
         if (!qty || qty < 1) {
@@ -256,10 +257,13 @@ export default {
     getItemProductName(item) {
       return item?.product?.name || item?.product?.brand?.name || 'N/A';
     },
+    getReturnableQuantity(item) {
+      return Number(item?.available_inventory_quantity || 0);
+    },
     incrementQty(item) {
       const row = this.rowForm[item.id];
       if (!row || !row.checked) return;
-      const maxQty = Number(item.received_quantity || 0);
+      const maxQty = this.getReturnableQuantity(item);
       const current = Number(row.quantity || 0);
       row.quantity = Math.min(maxQty, Math.max(1, current + 1));
       this.validateItemQuantity(item);
@@ -274,7 +278,7 @@ export default {
     validateItemQuantity(item) {
       if (!item?.id) return;
       const row = this.rowForm[item.id] || {};
-      const maxQty = Number(item.received_quantity || 0);
+      const maxQty = this.getReturnableQuantity(item);
       const qty = Number(row.quantity || 0);
 
       if (!row.checked) {

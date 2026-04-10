@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('purchase_order_logs', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('po_id');
+            $table->unsignedInteger('po_id')->index();
             $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('cascade');
-            $table->unsignedInteger('user_id');
+            $table->unsignedInteger('user_id')->index();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('action');
             $table->text('remarks')->nullable();

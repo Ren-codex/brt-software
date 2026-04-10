@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AccountingController extends Controller
 {
@@ -23,6 +24,22 @@ class AccountingController extends Controller
 
     public function index(Request $request)
     {
+        if ($request->option === 'journal_entries_pdf') {
+            [$dateFrom, $dateTo] = $this->resolveDateRange($request);
+            $filename = 'journal-entries-' . now()->format('Ymd_His') . '.pdf';
+            $entries = $this->buildJournalEntryReportEntries($dateFrom, $dateTo);
+
+            $pdf = \PDF::loadView('prints.accounting-journal-entries', [
+                'entries' => $entries,
+                'filters' => [
+                    'date_from' => $dateFrom,
+                    'date_to' => $dateTo,
+                ],
+            ])->setPaper('A4', 'landscape');
+
+            return $pdf->download($filename);
+        }
+        
         if (!$request->option && $request->tab === 'accounts_payable') {
             return redirect('/inventory?tab=accountsPayable');
         }
@@ -60,11 +77,39 @@ class AccountingController extends Controller
 
     public function journalEntries(Request $request)
     {
-        if ($request->option === 'lists') {
-            return $this->journalEntryLists($request);
-        }
+        return inertia('Modules/Accounting/JournalEntries', [
+            'stats' => $this->buildStats(),
+            'journalFeatures' => $this->buildJournalEntryFeatures(),
+            'entryTypes' => [],
+        ]);
+    }
 
-        return redirect('/accounting?tab=journal_entries');
+    public function journalEntriesApi(Request $request)
+    {
+        $lists = $this->journalEntryLists($request);
+
+        return response()->json([
+            'data' => $lists->items(),
+            'links' => [
+                'first' => $lists->url(1),
+                'last' => $lists->url($lists->lastPage()),
+                'prev' => $lists->previousPageUrl(),
+                'next' => $lists->nextPageUrl(),
+            ],
+            'meta' => [
+                'current_page' => $lists->currentPage(),
+                'from' => $lists->firstItem(),
+                'last_page' => $lists->lastPage(),
+                'links' => [],
+                'path' => $lists->path(),
+                'per_page' => $lists->perPage(),
+                'to' => $lists->lastItem(),
+                'total' => $lists->total(),
+            ],
+            'stats' => $this->buildStats(),
+            'journalFeatures' => $this->buildJournalEntryFeatures(),
+            'entryTypes' => $this->buildJournalEntryTypes(),
+        ]);
     }
 
     public function accountsReceivable()
@@ -301,6 +346,7 @@ class AccountingController extends Controller
                 'je.entry_type',
                 'a.code as account_code',
                 'a.name as account_name',
+                'jel.account',
                 'jel.line_type',
                 'jel.amount',
                 'jel.description',
@@ -320,6 +366,7 @@ class AccountingController extends Controller
                 'entry_type' => Str::of($line->entry_type)->replace('_', ' ')->title()->value(),
                 'account_code' => $line->account_code,
                 'account_name' => $line->account_name,
+                'account' => $line->account,
                 'line_type' => Str::of($line->line_type)->title()->value(),
                 'amount' => $this->formatCurrency($line->amount),
                 'description' => $line->description,
@@ -373,6 +420,7 @@ class AccountingController extends Controller
             return collect();
         }
 
+        $canLoadLines = Schema::hasTable('journal_entry_lines');
         $query = JournalEntry::query()
             ->select([
                 'id',
@@ -383,6 +431,10 @@ class AccountingController extends Controller
                 'memo',
             ]);
 
+        if ($canLoadLines) {
+            $query->with('lines');
+        }
+
         $this->applyDateRange($query, 'entry_date', $dateFrom, $dateTo);
 
         return $query
@@ -390,15 +442,131 @@ class AccountingController extends Controller
             ->orderByDesc('id')
             ->limit(12)
             ->get()
-            ->map(fn (JournalEntry $entry) => [
-                'id' => $entry->id,
-                'journal_number' => $entry->journal_number,
-                'entry_date' => optional($entry->entry_date)->format('Y-m-d'),
-                'entry_type' => Str::of($entry->entry_type)->replace('_', ' ')->title()->value(),
-                'status' => Str::of($entry->status)->replace('_', ' ')->title()->value(),
-                'memo' => $entry->memo ?: '-',
-            ])
+            ->map(function (JournalEntry $entry) use ($canLoadLines) {
+                return [
+                    'id' => $entry->id,
+                    'journal_number' => $entry->journal_number,
+                    'entry_date' => optional($entry->entry_date)->format('Y-m-d'),
+                    'entry_type' => Str::of($entry->entry_type)->replace('_', ' ')->title()->value(),
+                    'status' => Str::of($entry->status)->replace('_', ' ')->title()->value(),
+                    'memo' => $entry->memo ?: '-',
+                    'lines' => $canLoadLines
+                        ? $entry->lines->map(fn (JournalEntryLine $line) => $this->transformJournalEntryLine($line))->values()->all()
+                        : [],
+                ];
+            })
             ->values();
+    }
+
+    private function buildJournalEntryReportEntries(?string $dateFrom = null, ?string $dateTo = null): Collection
+    {
+        if (!$this->hasCoreAccountingTables()) {
+            return collect();
+        }
+
+        $query = JournalEntry::query()
+            ->select([
+                'id',
+                'journal_number',
+                'entry_date',
+                'memo',
+            ])
+            ->with([
+                'lines' => function ($lineQuery) {
+                    $lineQuery
+                        ->select([
+                            'id',
+                            'journal_entry_id',
+                            'account_id',
+                            'account',
+                            'line_type',
+                            'amount',
+                            'description',
+                            'line_order',
+                        ])
+                        ->orderBy('line_order')
+                        ->orderBy('id');
+                },
+            ]);
+
+        $this->applyDateRange($query, 'entry_date', $dateFrom, $dateTo);
+
+        $entries = $query
+            ->orderBy('entry_date')
+            ->orderBy('id')
+            ->get();
+
+        $accountCodes = Account::query()
+            ->whereIn(
+                'id',
+                $entries
+                    ->flatMap(function (JournalEntry $entry) {
+                        return $entry->lines->pluck('account_id');
+                    })
+                    ->filter()
+                    ->unique()
+                    ->values()
+            )
+            ->pluck('code', 'id');
+
+        return $entries
+            ->map(function (JournalEntry $entry) {
+                return [
+                    'journal_number' => $entry->journal_number ?: '#',
+                    'entry_date' => optional($entry->entry_date)->format('Y-m-d'),
+                    'memo' => $entry->memo ?: '',
+                    'lines' => $entry->lines
+                        ->map(function (JournalEntryLine $line) {
+                            return [
+                                'account_id' => $line->account_id,
+                                'account' => trim((string) $line->getAttribute('account')) ?: 'Unmapped Account',
+                                'line_type' => $line->line_type,
+                                'amount' => (float) $line->amount,
+                                'description' => $line->description,
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->map(function (array $entry) use ($accountCodes) {
+                return [
+                    'journal_number' => $entry['journal_number'],
+                    'entry_date' => $entry['entry_date'],
+                    'memo' => $entry['memo'],
+                    'lines' => collect($entry['lines'])
+                        ->map(function (array $line) use ($accountCodes) {
+                            $accountId = $line['account_id'] ?? null;
+
+                            return [
+                                'account_id' => $accountId,
+                                'account_code' => $accountId ? ($accountCodes->get($accountId) ?: $accountId) : null,
+                                'account' => $line['account'],
+                                'line_type' => $line['line_type'],
+                                'amount' => $line['amount'],
+                                'description' => $line['description'],
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->values();
+    }
+
+    private function transformJournalEntryLine(JournalEntryLine $line): array
+    {
+        $lineAccount = $line->getAttribute('account');
+
+        return [
+            'id' => $line->id,
+            'account' => $lineAccount,
+            'account_name' => $lineAccount,
+            'account_code' => null,
+            'line_type' => $line->line_type,
+            'amount' => number_format((float) $line->amount, 2, '.', ','),
+            'description' => $line->description,
+        ];
     }
 
     private function buildAccountBalances(?string $dateFrom = null, ?string $dateTo = null): Collection
@@ -495,24 +663,19 @@ class AccountingController extends Controller
     private function journalEntryLists(Request $request)
     {
         if (!Schema::hasTable('journal_entries')) {
-            return response()->json([
-                'data' => [],
-                'links' => [],
-                'meta' => [
-                    'current_page' => 1,
-                    'from' => null,
-                    'last_page' => 1,
-                    'links' => [],
-                    'path' => url('/accounting/journal-entries'),
-                    'per_page' => 10,
-                    'to' => null,
-                    'total' => 0,
-                ],
-            ]);
+            return new LengthAwarePaginator(
+                items: collect(),
+                total: 0,
+                perPage: (int) ($request->count ?? 10),
+                currentPage: LengthAwarePaginator::resolveCurrentPage(),
+                options: [
+                    'path' => url('/api/accounting/journal-entries'),
+                ]
+            );
         }
 
         $hasReversalColumns = $this->hasJournalReversalColumns();
-        $withRelations = ['lines.account'];
+        $withRelations = ['lines'];
 
         if ($hasReversalColumns) {
             $withRelations[] = 'reversalOf';
@@ -562,16 +725,37 @@ class AccountingController extends Controller
                         : [],
                     'reversed_at' => $hasReversalColumns ? $entry->reversed_at?->format('Y-m-d H:i:s') : null,
                     'reversal_reason' => $hasReversalColumns ? $entry->reversal_reason : null,
-                    'lines' => $entry->lines->map(fn ($line) => [
-                        'id' => $line->id,
-                        'account_name' => optional($line->account)->name,
-                        'account_code' => optional($line->account)->code,
-                        'line_type' => $line->line_type,
-                        'amount' => number_format((float) $line->amount, 2, '.', ','),
-                        'description' => $line->description,
-                    ])->values(),
+                    'lines' => $entry->lines->map(fn (JournalEntryLine $line) => $this->transformJournalEntryLine($line))->values(),
                 ];
             });
+    }
+
+    private function buildJournalEntryFeatures(): array
+    {
+        $reversalReady = $this->hasJournalReversalColumns();
+
+        return [
+            'reversal_ready' => $reversalReady,
+            'compatibility_message' => $reversalReady
+                ? null
+                : 'The journal_entries table is missing reversal tracking columns (reversal_of_id, reversed_at, reversal_reason). Apply the latest accounting migration to enable original-to-reversal links.',
+        ];
+    }
+
+    private function buildJournalEntryTypes(): array
+    {
+        if (!Schema::hasTable('journal_entries')) {
+            return [];
+        }
+
+        return JournalEntry::query()
+            ->whereNotNull('entry_type')
+            ->where('entry_type', '!=', '')
+            ->orderBy('entry_type')
+            ->distinct()
+            ->pluck('entry_type')
+            ->values()
+            ->all();
     }
 
     private function hasCoreAccountingTables(): bool

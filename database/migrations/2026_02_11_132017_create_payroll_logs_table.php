@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('payroll_logs', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('payroll_id');
+            $table->unsignedInteger('payroll_id')->index();
             $table->foreign('payroll_id')->references('id')->on('payrolls')->onDelete('cascade');
             $table->string('action');
-            $table->unsignedInteger('actioned_by_id')->nullable();
+            $table->unsignedInteger('actioned_by_id')->nullable()->index();
             $table->foreign('actioned_by_id')->references('id')->on('users')->onDelete('set null');
             $table->text('remarks')->nullable();
             $table->timestamps();

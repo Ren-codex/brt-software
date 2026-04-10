@@ -15,10 +15,10 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
 
-            $table->unsignedInteger('stock_return_id');
+            $table->unsignedInteger('stock_return_id')->index();
             $table->foreign('stock_return_id')->references('id')->on('stock_returns')->onDelete('cascade');
 
-            $table->unsignedInteger('user_id');
+            $table->unsignedInteger('user_id')->index();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
 
             $table->string('action');

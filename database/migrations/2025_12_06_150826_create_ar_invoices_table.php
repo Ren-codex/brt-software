@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('ar_invoices', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('sales_order_id');
+            $table->unsignedInteger('sales_order_id')->index();
             $table->foreign('sales_order_id')->references('id')->on('sales_orders')->onDelete('cascade');
-            $table->unsignedInteger('status_id');
+            $table->unsignedInteger('status_id')->index();
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->string('invoice_number')->unique();
             $table->date('invoice_date');

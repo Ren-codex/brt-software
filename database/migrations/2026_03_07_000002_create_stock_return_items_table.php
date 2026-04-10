@@ -15,17 +15,17 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
 
-            $table->unsignedInteger('stock_return_id');
+            $table->unsignedInteger('stock_return_id')->index();
             $table->foreign('stock_return_id')->references('id')->on('stock_returns')->onDelete('cascade');
 
-            $table->unsignedInteger('po_item_id');
+            $table->unsignedInteger('po_item_id')->index();
             $table->foreign('po_item_id')->references('id')->on('purchase_order_items')->onDelete('cascade');
 
             $table->integer('quantity');
             $table->integer('returned_quantity')->default(0);
             $table->text('remarks')->nullable();
 
-            $table->unsignedInteger('status_id');
+            $table->unsignedInteger('status_id')->index();
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
             $table->timestamps();
         });
@@ -39,4 +39,3 @@ return new class extends Migration
         Schema::dropIfExists('stock_return_items');
     }
 };
-

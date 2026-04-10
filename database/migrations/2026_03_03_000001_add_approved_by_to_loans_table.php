@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('loans', function (Blueprint $table) {
-            $table->unsignedInteger('approved_by_id')->nullable();
+            $table->unsignedInteger('approved_by_id')->nullable()->index();
             $table->foreign('approved_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamp('approved_at')->nullable();
         });

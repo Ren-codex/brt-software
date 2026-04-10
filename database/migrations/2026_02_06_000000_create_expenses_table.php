@@ -20,7 +20,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected', 'paid'])->default('pending');
             
-            $table->unsignedInteger('added_by_id');
+            $table->unsignedInteger('added_by_id')->index();
             $table->foreign('added_by_id')->references('id')->on('users')->onDelete('cascade');
             
             $table->timestamps();

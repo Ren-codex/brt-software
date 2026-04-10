@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('void_receipts', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->unsignedInteger('receipt_id');
+            $table->unsignedInteger('receipt_id')->index();
             $table->foreign('receipt_id')->references('id')->on('receipts')->onDelete('cascade');
             $table->string('reason');
-            $table->unsignedInteger('voided_by_id');
+            $table->unsignedInteger('voided_by_id')->index();
             $table->foreign('voided_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });

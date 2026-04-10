@@ -10,12 +10,12 @@ return new class extends Migration
     {
         Schema::table('receipts', function (Blueprint $table) {
             $table->string('receipt_type')->default('payment')->after('receipt_number');
-            $table->unsignedInteger('source_receipt_id')->nullable()->after('ar_invoice_id');
+            $table->unsignedInteger('source_receipt_id')->nullable()->after('ar_invoice_id')->index();
             $table->foreign('source_receipt_id')->references('id')->on('receipts')->onDelete('set null');
         });
 
         Schema::table('sales_return_items', function (Blueprint $table) {
-            $table->unsignedInteger('source_receipt_id')->nullable()->after('sales_order_item_id');
+            $table->unsignedInteger('source_receipt_id')->nullable()->after('sales_order_item_id')->index();
             $table->foreign('source_receipt_id')->references('id')->on('receipts')->onDelete('set null');
         });
     }

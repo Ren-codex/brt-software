@@ -15,7 +15,7 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->string('name');
-            $table->unsignedInteger('created_by_id');
+            $table->unsignedInteger('created_by_id')->index();
             $table->foreign('created_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->boolean('is_active')->default(true);
             $table->timestamps();

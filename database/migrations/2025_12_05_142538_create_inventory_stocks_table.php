@@ -15,7 +15,7 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
             $table->string('batch_code')->unique();
-            $table->unsignedInteger('received_item_id');
+            $table->unsignedInteger('received_item_id')->index();
             $table->foreign('received_item_id')->references('id')->on('received_items')->onDelete('cascade');
             $table->integer('quantity');
             $table->timestamps();

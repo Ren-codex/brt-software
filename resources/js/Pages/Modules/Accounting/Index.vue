@@ -72,10 +72,20 @@
                                     <button type="button" class="filter-btn filter-btn-primary" @click="applyDateFilter">
                                         Apply Filter
                                     </button>
+                                    <button
+                                        v-if="activeTab === 'journal_entries'"
+                                        type="button"
+                                        class="filter-btn filter-btn-export"
+                                        :disabled="isFiltering || isExportingReport || !dataReadyState"
+                                        @click="exportJournalEntriesReport"
+                                    >
+                                        <i class="ri-file-pdf-2-line"></i>
+                                        {{ isExportingReport ? "Exporting..." : "Export PDF" }}
+                                    </button>
                                 </div>
                             </div>
 
-                            <BRow class="g-4 mt-1">
+                            <!-- <BRow class="g-4 mt-1">
                                 <BCol md="6" xl="3" v-for="card in statCards" :key="card.title">
                                     <div class="stat-card">
                                         <div class="stat-icon">
@@ -89,40 +99,17 @@
                                 </BCol>
 
                                
-                            </BRow>
+                            </BRow> -->
 
                             <div v-if="dataReadyState" class="module-panel preview-panel mt-4">
-                                <div class="panel-header">
-                                    <div>
-                                        <h4 class="panel-title">Live Data</h4>
-                                        <p class="panel-subtitle mb-0">Clicking a tab shows its table here immediately.</p>
-                                    </div>
-                                </div>
+                                 <!-- <div class="panel-header">
+                                     <div>
+                                         <h4 class="panel-title">Live Data</h4>
+                                         <p class="panel-subtitle mb-0">Switch tabs to preview each report here, then click rows where available to open details.</p>
+                                     </div>
+                                 </div> -->
 
-                                <div v-if="activeTab === 'general_ledger'" class="table-responsive">
-                                    <table class="table preview-table mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Code</th>
-                                                <th>Account</th>
-                                                <th>Debit</th>
-                                                <th>Credit</th>
-                                                <th>Balance</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="row in activePreviewData.account_balances || []" :key="row.id">
-                                                <td>{{ row.code }}</td>
-                                                <td>{{ row.name }}</td>
-                                                <td>{{ row.debit_total_formatted }}</td>
-                                                <td>{{ row.credit_total_formatted }}</td>
-                                                <td>{{ row.balance_formatted }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div v-else-if="activeTab === 'trial_balance'" class="table-responsive">
+                                <div v-if="activeTab === 'trial_balance'" class="table-responsive">
                                     <table class="table preview-table mb-0">
                                         <thead>
                                             <tr>
@@ -134,7 +121,13 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="row in activePreviewData.rows || []" :key="row.id">
+                                            <tr
+                                                v-for="row in activePreviewData.rows || []"
+                                                :key="row.id"
+                                                class="account-row"
+                                                :class="{ 'table-active': expandedAccountId === row.id }"
+                                                @click="showAccountDetails(row)"
+                                                style="cursor: pointer;">
                                                 <td>{{ row.name }}</td>
                                                 <td>{{ row.code }}</td>
                                                 <td>{{ row.debit_total_formatted }}</td>
@@ -145,49 +138,60 @@
                                             </tr>
                                         </tbody>
                                     </table>
-                                </div>
 
-                                <div v-else-if="activeTab === 'profit_loss'" class="report-split-grid">
-                                    <div>
-                                        <h5 class="preview-heading">Revenue Accounts</h5>
-                                        <div class="table-responsive">
-                                            <table class="table preview-table mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Code</th>
-                                                        <th>Account</th>
-                                                        <th>Balance</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr v-for="row in activePreviewData.revenue_accounts || []" :key="row.id">
-                                                        <td>{{ row.code }}</td>
-                                                        <td>{{ row.name }}</td>
-                                                        <td>{{ row.balance_formatted }}</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
+                                    <!-- Account Details Panel -->
+                                    <div v-if="selectedAccount && journalDetails" class="account-details-panel mt-4">
+                                        <div class="details-header">
+                                            <div>
+                                                <h5>Journal Activity: {{ selectedAccount.name }} ({{ selectedAccount.code }})</h5>
+                                                <p class="mb-0 text-muted">
+                                                    {{ journalDetails.debits.length }} debits • {{ journalDetails.credits.length }} credits
+                                                    • Period: {{ filter.date_from || 'All' }} to {{ filter.date_to || 'All' }}
+                                                </p>
+                                            </div>
+                                            <button @click="showAccountDetails(selectedAccount)" class="btn-close" title="Close">&times;</button>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <h5 class="preview-heading">Expense Accounts</h5>
-                                        <div class="table-responsive">
-                                            <table class="table preview-table mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Code</th>
-                                                        <th>Account</th>
-                                                        <th>Balance</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr v-for="row in activePreviewData.expense_accounts || []" :key="row.id">
-                                                        <td>{{ row.code }}</td>
-                                                        <td>{{ row.name }}</td>
-                                                        <td>{{ row.balance_formatted }}</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
+
+                                        <div class="journal-split-grid">
+                                            <!-- Debits Left -->
+                                            <div class="journal-column">
+                                                <h6><i class="ri-arrow-left-line"></i> Debits</h6>
+                                                <div class="journal-lines">
+                                                    <div v-for="line in journalDetails.debits" :key="line.id" class="journal-line debit">
+                                                        <div class="line-meta">
+                                                            <strong>{{ line.journal_number }}</strong>
+                                                            <small>{{ line.entry_date }}</small>
+                                                        </div>
+                                                        <div class="line-amount">{{ line.amount_formatted }}</div>
+                                                        <div class="line-desc">{{ line.description }}</div>
+                                                    </div>
+                                                    <div v-if="!journalDetails.debits.length" class="empty-lines">No debit entries</div>
+                                                </div>
+                                                <div class="total-line debit-total">
+                                                    <span>Total Debit:</span>
+                                                    <strong>{{ journalDetails.summary?.total_debit_formatted || '0.00' }}</strong>
+                                                </div>
+                                            </div>
+
+                                            <!-- Credits Right -->
+                                            <div class="journal-column">
+                                                <h6><i class="ri-arrow-right-line"></i> Credits</h6>
+                                                <div class="journal-lines">
+                                                    <div v-for="line in journalDetails.credits" :key="line.id" class="journal-line credit">
+                                                        <div class="line-meta">
+                                                            <strong>{{ line.journal_number }}</strong>
+                                                            <small>{{ line.entry_date }}</small>
+                                                        </div>
+                                                        <div class="line-amount">{{ line.amount_formatted }}</div>
+                                                        <div class="line-desc">{{ line.description }}</div>
+                                                    </div>
+                                                    <div v-if="!journalDetails.credits.length" class="empty-lines">No credit entries</div>
+                                                </div>
+                                                <div class="total-line credit-total">
+                                                    <span>Total Credit:</span>
+                                                    <strong>{{ journalDetails.summary?.total_credit_formatted || '0.00' }}</strong>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -237,56 +241,6 @@
                                     </div>
                                 </div>
 
-                                <div v-else-if="activeTab === 'accounts_receivable'" class="table-responsive">
-                                    <table class="table preview-table mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Journal</th>
-                                                <th>Entry Type</th>
-                                                <th>Line Type</th>
-                                                <th>Amount</th>
-                                                <th>Description</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="row in activePreviewData.rows || []" :key="row.id">
-                                                <td>{{ row.entry_date }}</td>
-                                                <td>{{ row.journal_number }}</td>
-                                                <td>{{ row.entry_type }}</td>
-                                                <td>{{ row.line_type }}</td>
-                                                <td>{{ row.amount }}</td>
-                                                <td>{{ row.description }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div v-else-if="activeTab === 'chart_of_accounts'" class="table-responsive">
-                                    <table class="table preview-table mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Code</th>
-                                                <th>Account</th>
-                                                <th>Type</th>
-                                                <th>Subtype</th>
-                                                <th>Status</th>
-                                                <th>Balance</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="row in activePreviewData.rows || []" :key="row.id">
-                                                <td>{{ row.code }}</td>
-                                                <td>{{ row.name }}</td>
-                                                <td>{{ row.type }}</td>
-                                                <td>{{ row.subtype }}</td>
-                                                <td>{{ row.status }}</td>
-                                                <td>{{ row.balance_formatted }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
                                 <div v-else-if="activeTab === 'journal_entries'" class="table-responsive">
                                     <table class="table preview-table mb-0">
                                         <thead>
@@ -294,18 +248,101 @@
                                                 <th>Date</th>
                                                 <th>Journal</th>
                                                 <th>Entry Type</th>
-                                                <th>Status</th>
-                                                <th>Memo</th>
+                                                <!-- <th>Status</th> -->
+                                                <th>Description</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="row in activePreviewData.rows || []" :key="row.id">
-                                                <td>{{ row.entry_date }}</td>
-                                                <td>{{ row.journal_number }}</td>
-                                                <td>{{ row.entry_type }}</td>
-                                                <td>{{ row.status }}</td>
-                                                <td>{{ row.memo }}</td>
-                                            </tr>
+                                            <template v-for="row in activePreviewData.rows || []" :key="row.id">
+                                                <tr
+                                                    class="journal-entry-row"
+                                                    :class="{ 'table-active': expandedJournalEntryId === row.id }"
+                                                    @click="toggleJournalEntryDetails(row)"
+                                                    style="cursor: pointer;"
+                                                >
+                                                    <td>{{ row.entry_date }}</td>
+                                                    <td>{{ row.journal_number }}</td>
+                                                    <td>{{ row.entry_type }}</td>
+                                                    <!-- <td>{{ row.status }}</td> -->
+                                                    <td>{{ row.memo }}</td>
+                                                </tr>
+                                                <tr v-if="expandedJournalEntryId === row.id" class="details-row">
+                                                    <td colspan="5">
+                                                        <div class="account-details-panel journal-entry-details-panel">
+                                                            <div class="details-header">
+                                                                <div>
+                                                                    <h5>Journal Entry: {{ row.journal_number }}</h5>
+                                                                    <p class="mb-1 text-muted">
+                                                                        {{ row.entry_date || 'No date' }} |
+                                                                        {{ row.entry_type || 'Uncategorized' }} |
+                                                                        {{ row.status || 'Unknown' }}
+                                                                    </p>
+                                                                    <p class="mb-0 text-muted">Memo: {{ row.memo || '-' }}</p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    class="btn-close"
+                                                                    title="Close"
+                                                                    @click.stop="toggleJournalEntryDetails(row)"
+                                                                >&times;</button>
+                                                            </div>
+
+                                                            <div class="journal-preview-header">
+                                                                <div>
+                                                                    <h6 class="detail-title mb-1">Journal Entry Format</h6>
+                                                                    <p class="journal-preview-meta mb-0">
+                                                                        {{ journalLines(row, 'debit').length }} debit line(s) |
+                                                                        {{ journalLines(row, 'credit').length }} credit line(s)
+                                                                    </p>
+                                                                </div>
+                                                                <span class="balance-chip" :class="{ balanced: isBalancedEntry(row), unbalanced: !isBalancedEntry(row) }">
+                                                                    {{ isBalancedEntry(row) ? 'Balanced' : 'Needs Review' }}
+                                                                </span>
+                                                            </div>
+
+                                                            <div class="journal-split-grid">
+                                                                <div class="journal-column">
+                                                                    <h6><i class="ri-arrow-left-line"></i> Debit</h6>
+                                                                    <div class="journal-lines">
+                                                                        <div v-for="line in journalLines(row, 'debit')" :key="line.id" class="journal-line debit">
+                                                                            <div class="line-meta">
+                                                                                <strong>{{ line.account || '-' }}</strong>
+                                                                                <!-- <small>{{ line.account_code || 'No code' }}</small> -->
+                                                                            </div>
+                                                                            <div class="line-amount">{{ formatJournalAmount(line.amount) }}</div>
+                                                                            <div class="line-desc">{{ line.description || row.memo || '-' }}</div>
+                                                                        </div>
+                                                                        <div v-if="!journalLines(row, 'debit').length" class="empty-lines">No debit entries</div>
+                                                                    </div>
+                                                                    <div class="total-line debit-total">
+                                                                        <span>Total Debit</span>
+                                                                        <strong>{{ formatJournalAmount(journalTotal(row, 'debit')) }}</strong>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="journal-column">
+                                                                    <h6><i class="ri-arrow-right-line"></i> Credit</h6>
+                                                                    <div class="journal-lines">
+                                                                        <div v-for="line in journalLines(row, 'credit')" :key="line.id" class="journal-line credit">
+                                                                            <div class="line-meta">
+                                                                                <strong>{{ line.account || '-' }}</strong>
+                                                                                <!-- <small>{{ line.account_code || 'No code' }}</small> -->
+                                                                            </div>
+                                                                            <div class="line-amount">{{ formatJournalAmount(line.amount) }}</div>
+                                                                            <div class="line-desc">{{ line.description || row.memo || '-' }}</div>
+                                                                        </div>
+                                                                        <div v-if="!journalLines(row, 'credit').length" class="empty-lines">No credit entries</div>
+                                                                    </div>
+                                                                    <div class="total-line credit-total">
+                                                                        <span>Total Credit</span>
+                                                                        <strong>{{ formatJournalAmount(journalTotal(row, 'credit')) }}</strong>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
                                         </tbody>
                                     </table>
                                 </div>
@@ -357,7 +394,7 @@ export default {
             }),
         },
     },
-    data() {
+data() {
         return {
             isSidebarCollapsed: false,
             activeTab: localStorage.getItem("accounting_active_tab") || "trial_balance",
@@ -366,17 +403,16 @@ export default {
             reportDataState: this.reportData,
             dataReadyState: this.dataReady,
             isFiltering: false,
+            isExportingReport: false,
             filter: {
                 date_from: this.filters?.date_from || "",
                 date_to: this.filters?.date_to || "",
             },
+            selectedAccount: null,
+            journalDetails: null,
+            expandedAccountId: null,
+            expandedJournalEntryId: null,
             tabs: [
-                {
-                    id: "general_ledger",
-                    label: "General Ledger",
-                    icon: "ri-book-open-line",
-                    description: "Ledger balances and account activity",
-                },
                 {
                     id: "trial_balance",
                     label: "Trial Balance",
@@ -384,28 +420,10 @@ export default {
                     description: "Debit and credit balance checks",
                 },
                 {
-                    id: "profit_loss",
-                    label: "Profit & Loss",
-                    icon: "ri-line-chart-line",
-                    description: "Income and expense performance",
-                },
-                {
                     id: "balance_sheet",
                     label: "Balance Sheet",
                     icon: "ri-bank-card-line",
                     description: "Assets, liabilities, and equity",
-                },
-                {
-                    id: "accounts_receivable",
-                    label: "Accounts Receivable",
-                    icon: "ri-file-list-3-line",
-                    description: "Customer balances and aging",
-                },
-                {
-                    id: "chart_of_accounts",
-                    label: "Chart Of Accounts",
-                    icon: "ri-node-tree",
-                    description: "Account structure and mappings",
                 },
                 {
                     id: "journal_entries",
@@ -415,42 +433,6 @@ export default {
                 },
             ],
             sectionContent: {
-                general_ledger: {
-                    badge: "Core Ledger",
-                    title: "General Ledger Workspace",
-                    summary: "Review account movement, posted balances, and transaction flow across every source module in one ledger-driven workspace.",
-                    note: "The general ledger should be the single source of truth after sales, purchases, expenses, payments, and inventory events are posted.",
-                    panelTitle: "General Ledger Focus",
-                    panelSubtitle: "Core capabilities commonly expected in an operational ledger screen.",
-                    cards: [
-                        {
-                            title: "Account Activity",
-                            description: "Show chronological postings per account with references back to the originating transaction.",
-                            icon: "ri-time-line",
-                        },
-                        {
-                            title: "Running Balance",
-                            description: "Track how each debit and credit changes the live balance of the selected account.",
-                            icon: "ri-bar-chart-grouped-line",
-                        },
-                        {
-                            title: "Source Traceability",
-                            description: "Link ledger lines to sales orders, receipts, expenses, stock receipts, and adjustments.",
-                            icon: "ri-links-line",
-                        },
-                        {
-                            title: "Period Review",
-                            description: "Filter by posting period, posting date, or account range for month-end review.",
-                            icon: "ri-calendar-check-line",
-                        },
-                    ],
-                    steps: [
-                        "Add account-level ledger views with running balances.",
-                        "Support date range, account code, and source document filters.",
-                        "Show drill-down from ledger line to transaction origin.",
-                        "Protect closed periods from new postings.",
-                    ],
-                },
                 trial_balance: {
                     badge: "Validation",
                     title: "Trial Balance Checkpoint",
@@ -485,42 +467,6 @@ export default {
                         "Add period selector and account grouping.",
                         "Highlight imbalanced states clearly at the top of the screen.",
                         "Support export to PDF or spreadsheet.",
-                    ],
-                },
-                profit_loss: {
-                    badge: "Reporting",
-                    title: "Profit & Loss Reporting",
-                    summary: "Turn posted revenue and expense activity into a clean operating performance view for daily and monthly decision-making.",
-                    note: "Profit and loss should summarize posted activity only, not draft or incomplete transactions.",
-                    panelTitle: "P&L Structure",
-                    panelSubtitle: "Recommended layers for a practical income statement in your system.",
-                    cards: [
-                        {
-                            title: "Revenue Sections",
-                            description: "Separate rice sales, returns, allowances, and other income for better visibility.",
-                            icon: "ri-funds-line",
-                        },
-                        {
-                            title: "Cost Of Sales",
-                            description: "Present cost of goods sold directly from inventory-out postings and stock returns.",
-                            icon: "ri-shopping-basket-line",
-                        },
-                        {
-                            title: "Operating Expenses",
-                            description: "Group utilities, transportation, supplies, maintenance, and other operating costs.",
-                            icon: "ri-wallet-line",
-                        },
-                        {
-                            title: "Net Income",
-                            description: "Summarize final profitability for the selected period with comparative trend context.",
-                            icon: "ri-arrow-up-circle-line",
-                        },
-                    ],
-                    steps: [
-                        "Map journal lines to revenue, cost, and expense categories.",
-                        "Support current month, prior month, and YTD views.",
-                        "Expose net sales after returns and allowances.",
-                        "Add printable management report formatting.",
                     ],
                 },
                 balance_sheet: {
@@ -559,81 +505,9 @@ export default {
                         "Add variance comparison against prior period.",
                     ],
                 },
-                accounts_receivable: {
-                    badge: "Collections",
-                    title: "Accounts Receivable Control",
-                    summary: "Monitor open customer balances, aging, collections, and receipt application from posted sales activity.",
-                    note: "Receivables should come from credit sales and shrink only when receipts or credit adjustments are posted.",
-                    panelTitle: "Receivable Workstreams",
-                    panelSubtitle: "Useful views for keeping customer balances accurate and collectible.",
-                    cards: [
-                        {
-                            title: "Customer Aging",
-                            description: "Break down balances into current, 30-day, 60-day, and overdue buckets.",
-                            icon: "ri-user-received-2-line",
-                        },
-                        {
-                            title: "Invoice Status",
-                            description: "Track open, partial, paid, overdue, and voided receivable items.",
-                            icon: "ri-file-warning-line",
-                        },
-                        {
-                            title: "Receipt Matching",
-                            description: "Connect receipts to invoices and keep the receivable ledger synchronized.",
-                            icon: "ri-exchange-dollar-line",
-                        },
-                        {
-                            title: "Collection Notes",
-                            description: "Surface due dates, follow-up priorities, and collection trends for operations.",
-                            icon: "ri-chat-check-line",
-                        },
-                    ],
-                    steps: [
-                        "Add customer-level receivable balances and aging buckets.",
-                        "Show invoice-to-receipt application details.",
-                        "Flag overdue balances prominently.",
-                        "Support collection and follow-up reporting.",
-                    ],
-                },
-                chart_of_accounts: {
-                    badge: "Structure",
-                    title: "Chart Of Accounts Setup",
-                    summary: "Define the account hierarchy and posting rules that every operational module will use when generating journals.",
-                    note: "The chart of accounts is the mapping backbone for automatic posting across sales, purchases, inventory, and expenses.",
-                    panelTitle: "Chart Of Accounts Foundations",
-                    panelSubtitle: "Configuration blocks needed before deeper reporting becomes reliable.",
-                    cards: [
-                        {
-                            title: "Account Codes",
-                            description: "Use clear numbering for assets, liabilities, equity, revenue, and expenses.",
-                            icon: "ri-hashtag",
-                        },
-                        {
-                            title: "Posting Rules",
-                            description: "Map each source transaction type to the correct debit and credit accounts.",
-                            icon: "ri-git-merge-line",
-                        },
-                        {
-                            title: "Grouping",
-                            description: "Tag accounts for general ledger, trial balance, P&L, and balance sheet reporting.",
-                            icon: "ri-folders-line",
-                        },
-                        {
-                            title: "Activation Control",
-                            description: "Keep old accounts inactive without losing historical reporting continuity.",
-                            icon: "ri-toggle-line",
-                        },
-                    ],
-                    steps: [
-                        "Create account master records with codes, names, and report groups.",
-                        "Support parent-child account hierarchy.",
-                        "Add account activation and posting restrictions.",
-                        "Map source modules to default posting accounts.",
-                    ],
-                },
                 journal_entries: {
                     badge: "Audit Trail",
-                    title: "Journal Entries Workspace",
+                    title: "Journal Entries",
                     summary: "Inspect the system-generated accounting entries produced by sales, receipts, expenses, stock receipts, and inventory adjustments.",
                     note: "Routine operations should generate journal entries automatically. Manual journals should be limited to adjustments and special accounting events.",
                     panelTitle: "Journal Entry Coverage",
@@ -696,7 +570,7 @@ export default {
             ];
         },
         activeSection() {
-            return this.sectionContent[this.activeTab] || this.sectionContent.general_ledger;
+            return this.sectionContent[this.activeTab] || this.sectionContent.trial_balance;
         },
         activeMetricCards() {
             return this.sectionMetricsState[this.activeTab] || this.activeSection.cards;
@@ -759,6 +633,7 @@ export default {
             this.isSidebarCollapsed = !this.isSidebarCollapsed;
         },
         changeTab(tab) {
+            this.clearOpenDetails();
             this.activeTab = tab;
             localStorage.setItem("accounting_active_tab", tab);
 
@@ -784,8 +659,38 @@ export default {
             this.filter.date_to = "";
             this.fetchFilteredData();
         },
+        async exportJournalEntriesReport() {
+            this.isExportingReport = true;
+
+            try {
+                const response = await axios.get("/accounting", {
+                    params: {
+                        option: "journal_entries_pdf",
+                        date_from: this.filter.date_from || null,
+                        date_to: this.filter.date_to || null,
+                    },
+                    responseType: "blob",
+                });
+
+                const blob = new Blob([response.data], {
+                    type: response.headers["content-type"] || "application/pdf",
+                });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `journal-entries-${new Date().toISOString().slice(0, 10)}.pdf`;
+                link.click();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error("Failed to export journal entry PDF:", error);
+                this.$toast?.error?.("Failed to export journal entry PDF.");
+            } finally {
+                this.isExportingReport = false;
+            }
+        },
         fetchFilteredData() {
             this.isFiltering = true;
+            this.clearOpenDetails();
 
             axios.get("/accounting", {
                 params: {
@@ -824,6 +729,75 @@ export default {
             });
 
             return amount < 0 ? `(${formatted})` : formatted;
+        },
+        clearOpenDetails() {
+            this.closeAccountDetails();
+            this.closeJournalEntryDetails();
+        },
+        closeAccountDetails() {
+            this.expandedAccountId = null;
+            this.selectedAccount = null;
+            this.journalDetails = null;
+        },
+        closeJournalEntryDetails() {
+            this.expandedJournalEntryId = null;
+        },
+        showAccountDetails(account) {
+            if (this.expandedAccountId === account.id) {
+                this.closeAccountDetails();
+                return;
+            }
+
+            this.closeJournalEntryDetails();
+            this.selectedAccount = account;
+            this.expandedAccountId = account.id;
+            this.fetchAccountJournalDetails(account.id);
+        },
+        toggleJournalEntryDetails(entry) {
+            if (this.expandedJournalEntryId === entry.id) {
+                this.closeJournalEntryDetails();
+                return;
+            }
+
+            this.closeAccountDetails();
+            this.expandedJournalEntryId = entry.id;
+        },
+        async fetchAccountJournalDetails(accountId) {
+            try {
+                const response = await axios.get(`/api/accounting/${accountId}/journal-details`, {
+                    params: {
+                        date_from: this.filter.date_from || null,
+                        date_to: this.filter.date_to || null,
+                    }
+                });
+                this.journalDetails = response.data;
+            } catch (error) {
+                console.error('Failed to fetch journal details:', error);
+                this.journalDetails = null;
+            }
+        },
+        journalLines(entry, type) {
+            return (entry?.lines || []).filter((line) => this.normalizeLineType(line.line_type) === type);
+        },
+        journalTotal(entry, type) {
+            return this.journalLines(entry, type).reduce((total, line) => total + this.normalizeAmount(line.amount), 0);
+        },
+        isBalancedEntry(entry) {
+            return Math.abs(this.journalTotal(entry, "debit") - this.journalTotal(entry, "credit")) < 0.005;
+        },
+        normalizeLineType(lineType) {
+            return String(lineType || "").trim().toLowerCase();
+        },
+        normalizeAmount(amount) {
+            const parsedAmount = Number(String(amount || 0).replace(/[^0-9.-]/g, ""));
+
+            return Number.isFinite(parsedAmount) ? parsedAmount : 0;
+        },
+        formatJournalAmount(amount) {
+            return `P ${this.normalizeAmount(amount).toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            })}`;
         },
     },
 };
@@ -953,8 +927,17 @@ export default {
     padding: 0.65rem 1rem;
     border-radius: 14px;
     border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
     font-weight: 700;
     transition: all 0.2s ease;
+}
+
+.filter-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
 }
 
 .filter-btn-primary {
@@ -965,6 +948,18 @@ export default {
 .filter-btn-secondary {
     background: #eaf4f1;
     color: #20413a;
+}
+
+.filter-btn-export {
+    background: #ffffff;
+    color: #2b6658;
+    border: 1px solid rgba(61, 141, 122, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.filter-btn-export:hover:not(:disabled) {
+    background: #f1f8f5;
+    border-color: rgba(61, 141, 122, 0.34);
 }
 
 .header-badge {
@@ -1143,6 +1138,199 @@ export default {
     color: #5f786e;
     text-align: center;
     margin-top: 0.75rem;
+}
+
+.account-row:hover {
+    background-color: rgba(61, 141, 122, 0.08);
+}
+
+.journal-entry-row:hover {
+    background-color: rgba(61, 141, 122, 0.08);
+}
+
+.details-row td {
+    padding: 1rem;
+    background: #fbfdfc;
+    border-top: 0;
+}
+
+.account-details-panel {
+    border: 1px solid rgba(61, 141, 122, 0.16);
+    border-radius: 18px;
+    background: #f9fcfb;
+    padding: 1.25rem;
+}
+
+.journal-entry-details-panel {
+    background: #ffffff;
+}
+
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(61, 141, 122, 0.12);
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-close:hover {
+    color: #495057;
+}
+
+.journal-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.detail-title {
+    color: #20413a;
+    font-weight: 700;
+    margin-bottom: 0.85rem;
+}
+
+.journal-preview-meta {
+    color: #648b74;
+    font-size: 0.85rem;
+}
+
+.balance-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.balance-chip.balanced {
+    background: #e7f7f2;
+    color: #277660;
+}
+
+.balance-chip.unbalanced {
+    background: #fff1f1;
+    color: #b15050;
+}
+
+.journal-split-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.journal-column h6 {
+    margin-bottom: 0.75rem;
+    color: #20413a;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.journal-lines {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid rgba(61, 141, 122, 0.12);
+    border-radius: 12px;
+    padding: 0.75rem;
+    background: #ffffff;
+}
+
+.journal-line {
+    display: grid;
+    grid-template-columns: 1fr auto 2fr;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.journal-line:last-child {
+    border-bottom: none;
+}
+
+.line-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.line-meta strong {
+    font-size: 0.9rem;
+    color: #20413a;
+}
+
+.line-meta small {
+    font-size: 0.78rem;
+    color: #6c757d;
+}
+
+.line-amount {
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-align: right;
+}
+
+.line-desc {
+    color: #495057;
+    font-size: 0.85rem;
+}
+
+.debit .line-amount,
+.debit-total strong {
+    color: #3d8d7a;
+}
+
+.credit .line-amount,
+.credit-total strong {
+    color: #d74c3c;
+}
+
+.total-line {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 2px solid rgba(61, 141, 122, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.empty-lines {
+    padding: 1.5rem;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 991.98px) {
+    .journal-preview-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .journal-split-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .checklist {

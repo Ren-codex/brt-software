@@ -11,6 +11,7 @@ use App\Models\StockReturn;
 use App\Models\StockReturnItem;
 use App\Models\StockReturnLog;
 use App\Http\Resources\System\PurchaseOrder\StockReturnResource;
+use App\Services\Accounting\JournalEntryService;
 use App\Services\SeriesService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,11 +20,14 @@ use Illuminate\Validation\ValidationException;
 class StockReturnClass
 {
     protected $series_service;
+    protected $journalEntryService;
 
     public function __construct(
         SeriesService $series_service,
+        JournalEntryService $journalEntryService,
     ) {
         $this->series_service = $series_service;
+        $this->journalEntryService = $journalEntryService;
     }
 
     public function list($request)
@@ -118,6 +122,24 @@ class StockReturnClass
                     $this->fail("Return quantity exceeds received quantity for {$productName}.");
                 }
 
+                $inventoryStocks = InventoryStocks::whereHas('receivedItem', function ($query) use ($poItem) {
+                    $query->where('po_item_id', $poItem->id);
+                })
+                    ->where('quantity', '>', 0)
+                    ->lockForUpdate()
+                    ->get();
+
+                $totalInventoryQty = (int) $inventoryStocks->sum('quantity');
+                $productName = $poItem->product?->name ?? 'selected item';
+
+                if ($totalInventoryQty <= 0) {
+                    $this->fail("{$productName} cannot be returned because inventory stock quantity is 0.");
+                }
+
+                if ($returnQty > $totalInventoryQty) {
+                    $this->fail("Return quantity exceeds available inventory stock for {$productName}.");
+                }
+
                 $totalReturnQuantity += $returnQty;
             }
 
@@ -209,53 +231,7 @@ class StockReturnClass
             $remarks = trim((string) ($request->remarks ?? ''));
 
             foreach ($stockReturn->items as $item) {
-                if ($targetStatus === 'approved') {
-                    $poItem = PurchaseOrderItem::lockForUpdate()->find($item->po_item_id);
-                    if (!$poItem) {
-                        $this->fail('One or more purchase order items are invalid.');
-                    }
-
-                    $returnQty = (int) $item->quantity;
-                    if ($returnQty < 1) {
-                        $this->fail('Invalid return quantity found.');
-                    }
-
-                    if ($returnQty > (int) $poItem->received_quantity) {
-                        $productName = $poItem->product?->name ?? 'selected item';
-                        $this->fail("Return quantity exceeds received quantity for {$productName}.");
-                    }
-
-                    $inventoryStocks = InventoryStocks::whereHas('receivedItem', function ($query) use ($poItem) {
-                        $query->where('po_item_id', $poItem->id);
-                    })
-                        ->where('quantity', '>', 0)
-                        ->orderBy('id')
-                        ->lockForUpdate()
-                        ->get();
-
-                    $totalInventoryQty = (int) $inventoryStocks->sum('quantity');
-                    if ($returnQty > $totalInventoryQty) {
-                        $productName = $poItem->product?->name ?? 'selected item';
-                        $this->fail("Return quantity exceeds available inventory stock for {$productName}.");
-                    }
-
-                    $remainingQty = $returnQty;
-                    foreach ($inventoryStocks as $inventoryStock) {
-                        if ($remainingQty <= 0) {
-                            break;
-                        }
-
-                        $deductQty = min((int) $inventoryStock->quantity, $remainingQty);
-                        if ($deductQty > 0) {
-                            $inventoryStock->decrement('quantity', $deductQty);
-                            $remainingQty -= $deductQty;
-                        }
-                    }
-
-                    $poItem->decrement('received_quantity', $returnQty);
-                }
-
-                $item->status_id = $targetStatus === 'approved' ? $pendingStatusId : $targetStatusId;
+                $item->status_id = $targetStatusId;
                 $item->save();
             }
 
@@ -277,8 +253,8 @@ class StockReturnClass
                 PurchaseOrderLog::create([
                     'po_id' => $stockReturn->po_id,
                     'user_id' => Auth::id(),
-                    'action' => 'Returned Stocks',
-                    'remarks' => "Stock return #{$stockReturn->id} approved and stocks returned.",
+                    'action' => 'Stock Return Approved',
+                    'remarks' => "Stock return #{$stockReturn->id} approved. Awaiting delivery to supplier.",
                 ]);
             }
 
@@ -310,17 +286,24 @@ class StockReturnClass
     public function receiveItem($request, $stockReturnId, $itemId)
     {
         $data = DB::transaction(function () use ($request, $stockReturnId, $itemId) {
-            $stockReturn = StockReturn::with(['status'])
+            $stockReturn = StockReturn::with(['status', 'purchaseOrder.supplier'])
                 ->lockForUpdate()
                 ->findOrFail($stockReturnId);
 
-            $approvedStatusId = $this->getStatusIdBySlug('approved');
-            if (!$approvedStatusId) {
-                $this->fail('Approved status is not configured.');
+            $deliveredStatusId = $this->getStatusIdBySlug('delivered');
+            if (!$deliveredStatusId) {
+                $this->fail('Delivered status is not configured.');
             }
 
-            if ((int) $stockReturn->status_id !== (int) $approvedStatusId) {
-                $this->fail('Only approved stock returns can receive returned items.');
+            if ((int) $stockReturn->status_id !== (int) $deliveredStatusId) {
+                $this->fail('Only delivered stock returns can receive returned items.');
+            }
+
+            $hasDeliveryLog = StockReturnLog::where('stock_return_id', $stockReturn->id)
+                ->where('action', 'Supplier Delivery Logged')
+                ->exists();
+            if (!$hasDeliveryLog) {
+                $this->fail('Supplier delivery must be logged before receiving replacement items.');
             }
 
             $stockReturnItem = StockReturnItem::with(['purchaseOrderItem.product', 'status'])
@@ -333,23 +316,40 @@ class StockReturnClass
             $lossQty = (int) $request->loss_quantity;
             $actualReceivedQty = $replacedQty + $lossQty;
             $requestedQty = (int) $stockReturnItem->quantity;
-            if ($actualReceivedQty < 0 || $actualReceivedQty > $requestedQty) {
-                $this->fail('Replacement plus loss quantity cannot be greater than the returned quantity.');
+            $currentReturnedQty = (int) $stockReturnItem->returned_quantity;
+            $currentReplacedQty = (int) $stockReturnItem->replaced_quantity;
+            $currentLossQty = (int) $stockReturnItem->loss_quantity;
+            $remainingQty = max($requestedQty - $currentReturnedQty, 0);
+
+            if ($actualReceivedQty < 1) {
+                $this->fail('Replacement plus loss quantity must be at least 1.');
+            }
+
+            if ($actualReceivedQty > $remainingQty) {
+                $this->fail("Replacement plus loss quantity cannot be greater than the remaining returned quantity of {$remainingQty}.");
             }
 
             $remarks = trim((string) ($request->remarks ?? ''));
-            $stockReturnItem->returned_quantity = $actualReceivedQty;
-            $stockReturnItem->replaced_quantity = $replacedQty;
-            $stockReturnItem->loss_quantity = $lossQty;
+            $updatedReturnedQty = $currentReturnedQty + $actualReceivedQty;
+            $updatedReplacedQty = $currentReplacedQty + $replacedQty;
+            $updatedLossQty = $currentLossQty + $lossQty;
+
+            $stockReturnItem->returned_quantity = $updatedReturnedQty;
+            $stockReturnItem->replaced_quantity = $updatedReplacedQty;
+            $stockReturnItem->loss_quantity = $updatedLossQty;
             $pendingStatusId = $this->getStatusIdBySlug('pending');
             $replacedStatusId = $this->getStatusIdBySlug('replaced');
             $lossStatusId = $this->getStatusIdBySlug('loss');
             if (!$pendingStatusId || !$replacedStatusId || !$lossStatusId) {
-                $this->fail('Receive statuses are not configured.');
+                $this->fail('Received statuses are not configured.');
             }
-            if ($actualReceivedQty === 0) {
+
+            $isFullyResolved = $updatedReturnedQty === $requestedQty
+                && ($updatedReplacedQty + $updatedLossQty) === $requestedQty;
+
+            if (!$isFullyResolved) {
                 $stockReturnItem->status_id = $pendingStatusId;
-            } elseif ($replacedQty > 0) {
+            } elseif ($updatedReplacedQty > 0) {
                 $stockReturnItem->status_id = $replacedStatusId;
             } else {
                 $stockReturnItem->status_id = $lossStatusId;
@@ -392,22 +392,40 @@ class StockReturnClass
                 ]);
             }
 
+            if ($replacedQty > 0) {
+                $this->journalEntryService->recordStockReturnReplacementEntry(
+                    $stockReturn,
+                    $stockReturnItem->fresh(['purchaseOrderItem.product']),
+                    $replacedQty
+                );
+            }
+
+            if ($lossQty > 0) {
+                $this->journalEntryService->recordStockReturnLossEntry(
+                    $stockReturn,
+                    $stockReturnItem->fresh(['purchaseOrderItem.product']),
+                    $lossQty
+                );
+            }
+
             $stockReturnItem->save();
 
             $productName = $stockReturnItem->purchaseOrderItem?->product?->name ?? "Item #{$stockReturnItem->id}";
+            $supplierName = $stockReturn->purchaseOrder?->supplier?->name ?? 'Unknown supplier';
+            $receiverName = Auth::user()?->fullname ?? Auth::user()?->username ?? 'System';
             StockReturnLog::create([
                 'stock_return_id' => $stockReturn->id,
                 'user_id' => Auth::id(),
                 'action' => 'Item Received',
-                'remarks' => "Received return item {$productName}: replaced {$replacedQty}, loss {$lossQty}, total {$actualReceivedQty}."
+                'remarks' => "Received replacement item from supplier: replaced {$replacedQty}, loss {$lossQty}, total {$actualReceivedQty}."
                     . ($remarks !== '' ? " {$remarks}" : ''),
             ]);
 
-            $hasUnprocessedItems = StockReturnItem::where('stock_return_id', $stockReturn->id)
-                ->whereNotIn('status_id', [$replacedStatusId, $lossStatusId])
+            $hasUnbalancedItems = StockReturnItem::where('stock_return_id', $stockReturn->id)
+                ->whereRaw('(COALESCE(replaced_quantity, 0) + COALESCE(loss_quantity, 0)) < quantity')
                 ->exists();
 
-            if (!$hasUnprocessedItems) {
+            if (!$hasUnbalancedItems) {
                 $completedStatusId = $this->getStatusIdBySlug('completed');
                 if (!$completedStatusId) {
                     $this->fail('Completed status is not configured.');
@@ -441,6 +459,121 @@ class StockReturnClass
             'data' => new StockReturnResource($data),
             'message' => 'Return item received successfully!',
             'info' => "You've successfully recorded the received return item.",
+            'status' => true,
+        ];
+    }
+
+    public function logSupplierDelivery($stockReturnId)
+    {
+        $data = DB::transaction(function () use ($stockReturnId) {
+            $stockReturn = StockReturn::with(['status', 'purchaseOrder.supplier', 'items.purchaseOrderItem.product'])
+                ->lockForUpdate()
+                ->findOrFail($stockReturnId);
+
+            $approvedStatusId = $this->getStatusIdBySlug('approved');
+            $deliveredStatusId = $this->getStatusIdBySlug('delivered');
+            if (!$approvedStatusId || !$deliveredStatusId) {
+                $this->fail('Approved or delivered status is not configured.');
+            }
+
+            if ((int) $stockReturn->status_id !== (int) $approvedStatusId) {
+                $this->fail('Only approved stock returns can be marked as delivered to supplier.');
+            }
+
+            $hasDeliveryLog = StockReturnLog::where('stock_return_id', $stockReturn->id)
+                ->where('action', 'Supplier Delivery Logged')
+                ->exists();
+            if ($hasDeliveryLog) {
+                $this->fail('Supplier delivery has already been logged for this stock return.');
+            }
+
+            foreach ($stockReturn->items as $item) {
+                $poItem = PurchaseOrderItem::lockForUpdate()->find($item->po_item_id);
+                if (!$poItem) {
+                    $this->fail('One or more purchase order items are invalid.');
+                }
+
+                $returnQty = (int) $item->quantity;
+                if ($returnQty < 1) {
+                    $this->fail('Invalid return quantity found.');
+                }
+
+                if ($returnQty > (int) $poItem->received_quantity) {
+                    $productName = $poItem->product?->name ?? 'selected item';
+                    $this->fail("Return quantity exceeds received quantity for {$productName}.");
+                }
+
+                $inventoryStocks = InventoryStocks::whereHas('receivedItem', function ($query) use ($poItem) {
+                    $query->where('po_item_id', $poItem->id);
+                })
+                    ->where('quantity', '>', 0)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $totalInventoryQty = (int) $inventoryStocks->sum('quantity');
+                if ($returnQty > $totalInventoryQty) {
+                    $productName = $poItem->product?->name ?? 'selected item';
+                    $this->fail("Return quantity exceeds available inventory stock for {$productName}.");
+                }
+
+                $remainingQty = $returnQty;
+                foreach ($inventoryStocks as $inventoryStock) {
+                    if ($remainingQty <= 0) {
+                        break;
+                    }
+
+                    $deductQty = min((int) $inventoryStock->quantity, $remainingQty);
+                    if ($deductQty > 0) {
+                        $inventoryStock->decrement('quantity', $deductQty);
+                        $remainingQty -= $deductQty;
+                    }
+                }
+
+                $poItem->received_quantity = max(0, (int) $poItem->received_quantity - $returnQty);
+                $poItem->status = 'pending';
+                $poItem->save();
+            }
+
+            $supplierName = $stockReturn->purchaseOrder?->supplier?->name ?? 'Unknown supplier';
+
+            StockReturnLog::create([
+                'stock_return_id' => $stockReturn->id,
+                'user_id' => Auth::id(),
+                'action' => 'Supplier Delivery Logged',
+                'remarks' => "Goods successfully returned back to supplier.",
+            ]);
+
+            PurchaseOrderLog::create([
+                'po_id' => $stockReturn->po_id,
+                'user_id' => Auth::id(),
+                'action' => 'Delivered to Supplier',
+                'remarks' => "Stock return #{$stockReturn->id} delivered to supplier {$supplierName}. Purchase order items returned to receiving.",
+            ]);
+
+            $stockReturn->status_id = $deliveredStatusId;
+            $stockReturn->save();
+            $this->journalEntryService->recordStockReturnDeliveryEntry(
+                $stockReturn->fresh(['items.purchaseOrderItem.product'])
+            );
+
+            return $stockReturn->fresh([
+                'purchaseOrder.status',
+                'purchaseOrder.supplier',
+                'items.purchaseOrderItem.product',
+                'items.status',
+                'items.receivedBy',
+                'logs.user',
+                'status',
+                'createdBy',
+                'approvedBy',
+            ]);
+        });
+
+        return [
+            'data' => new StockReturnResource($data),
+            'message' => 'Supplier delivery logged successfully!',
+            'info' => "You've successfully logged the supplier delivery.",
             'status' => true,
         ];
     }
