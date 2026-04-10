@@ -13,12 +13,11 @@ return new class extends Migration
             $table->unsignedInteger('return_quantity')->nullable()->after('sales_order_item_id');
         });
 
-        DB::statement('
-            UPDATE sales_return_items sri
-            INNER JOIN sales_order_items soi ON soi.id = sri.sales_order_item_id
-            SET sri.return_quantity = soi.quantity
-            WHERE sri.return_quantity IS NULL
-        ');
+        DB::table('sales_return_items')
+            ->whereNull('return_quantity')
+            ->update([
+                'return_quantity' => DB::raw('(SELECT quantity FROM sales_order_items WHERE sales_order_items.id = sales_return_items.sales_order_item_id)'),
+            ]);
     }
 
     public function down(): void
