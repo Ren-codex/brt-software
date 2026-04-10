@@ -16,7 +16,7 @@
         </div>
 
         <div class="inventory-sidebar-tabs">
-          <button v-for="tab in tabs" :key="tab.id" class="inventory-sidebar-tab"
+          <button v-for="tab in tabs" :key="tab.id" type="button" class="inventory-sidebar-tab"
             :class="{ 'inventory-tab-active': activeTab === tab.id }" @click="changeTab(tab.id)">
             <div class="inventory-tab-icon">
               <i :class="tab.icon"></i>
@@ -85,7 +85,8 @@
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
                     :listPurchaseOrders="listPurchaseOrders" :listPurchaseRequests="listPurchaseRequests"
-                    :listInventoryStocks="listInventoryStocks" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInventoryStocks="listInventoryStocks" :listReceivedStocks="listReceivedStocks"
+                    :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -101,7 +102,21 @@
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
                     :listPurchaseOrders="listPurchaseOrders" :listPurchaseRequests="listPurchaseRequests"
-                    :listInventoryStocks="listInventoryStocks" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInventoryStocks="listInventoryStocks" :listReceivedStocks="listReceivedStocks"
+                    :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    @toggle="toggleRightSidebar" />
+                </div>
+              </div>
+
+              <div class="row" v-if="activeTab === 'receiving' && currentView === 'list'">
+                <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
+                  <ReceivingTab :listReceivedStocks="listReceivedStocks" />
+                </div>
+                <div v-show="!isRightSidebarCollapsed" class="col-md-3">
+                  <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
+                    :listPurchaseOrders="listPurchaseOrders" :listPurchaseRequests="listPurchaseRequests"
+                    :listInventoryStocks="listInventoryStocks" :listReceivedStocks="listReceivedStocks"
+                    :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -114,7 +129,8 @@
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
                     :listPurchaseOrders="listPurchaseOrders" :listPurchaseRequests="listPurchaseRequests"
-                    :listInventoryStocks="listInventoryStocks" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInventoryStocks="listInventoryStocks" :listReceivedStocks="listReceivedStocks"
+                    :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -128,7 +144,8 @@
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
                     :listPurchaseOrders="listPurchaseOrders" :listPurchaseRequests="listPurchaseRequests"
-                    :listInventoryStocks="listInventoryStocks" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInventoryStocks="listInventoryStocks" :listReceivedStocks="listReceivedStocks"
+                    :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -137,6 +154,19 @@
                   <ProductSummary :listProducts="listProducts" :meta="meta" :links="links" :filter="filter"
                     :dropdowns="dropdowns" @fetch="fetchProducts" @update-keyword="updateKeyword" @toast="showToast"
                     @view-details="openInventoryStockDetails" />
+                </div>
+              </div>
+              <div class="row" v-if="activeTab === 'accountsPayable' && currentView === 'list'">
+                <div class="col-md-12">
+                  <AccountsPayableTab
+                    :dataReady="accountsPayableDataReady"
+                    :isLoading="isAccountsPayableLoading"
+                    :summaryCards="accountsPayableSummaryCards"
+                    :rows="accountsPayableRows"
+                    :received-stocks="listReceivedStocks"
+                    @refresh="handleAccountsPayablePaymentSuccess"
+                    @toast="showToast"
+                  />
                 </div>
               </div>
               <div class="row" v-if="activeTab === 'stockReturns' && currentView === 'list'">
@@ -148,7 +178,8 @@
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
                     :listPurchaseOrders="listPurchaseOrders" :listPurchaseRequests="listPurchaseRequests"
-                    :listInventoryStocks="listInventoryStocks" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInventoryStocks="listInventoryStocks" :listReceivedStocks="listReceivedStocks"
+                    :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -190,6 +221,8 @@ import PurchaseRequestsTab from './Tab/PurchaseRequestsTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import StockReturnsTab from './Tab/StockReturnsTab.vue';
+import AccountsPayableTab from './Tab/AccountsPayableTab.vue';
+import ReceivingTab from './Tab/ReceivingTab.vue';
 import PurchaseOrderDetails from './Components/PurchaseOrders/View.vue';
 import InventoryStockDetails from './Components/InventoryStocks/View.vue';
 import StockReturnDetails from './Components/StockReturns/View.vue';
@@ -208,6 +241,8 @@ export default {
     ProductsTab,
     InventoryStocksTab,
     StockReturnsTab,
+    AccountsPayableTab,
+    ReceivingTab,
     PurchaseOrderDetails,
     InventoryStockDetails,
     StockReturnDetails,
@@ -220,10 +255,15 @@ export default {
   props: ['dropdowns'],
   emits: ['fetch'],
   data() {
+    const storedInventoryTab = localStorage.getItem('inventory_active_tab');
+    const normalizedInventoryTab = storedInventoryTab === 'accountPayable'
+      ? 'accountsPayable'
+      : storedInventoryTab;
+
     return {
       isSidebarCollapsed: false,
       isRightSidebarCollapsed: true,
-      activeTab: localStorage.getItem('inventory_active_tab') || 'productSummary',
+      activeTab: normalizedInventoryTab || 'productSummary',
       currentView: 'list',
       filter: {
         keyword: '',
@@ -233,9 +273,14 @@ export default {
       listPurchaseRequests: [],
       listPRDisapproved: [],
       listInventoryStocks: [],
+      listReceivedStocks: [],
       listStockReturns: [],
       meta: null,
       links: null,
+      accountsPayableDataReady: false,
+      accountsPayableSummaryCards: [],
+      accountsPayableRows: [],
+      isAccountsPayableLoading: false,
       isToastVisible: false,
       toastMessage: '',
       selectedPurchaseOrder: null,
@@ -253,6 +298,18 @@ export default {
           label: 'Purchase Orders',
           icon: 'ri-box-3-line',
           description: 'List of purchase orders'
+        },
+        {
+          id: 'receiving',
+          label: 'Receiving',
+          icon: 'ri-inbox-unarchive-line',
+          description: 'List of paid purchase requests'
+        },
+        {
+          id: 'accountsPayable',
+          label: 'Accounts Payable',
+          icon: 'ri-wallet-3-line',
+          description: 'Review supplier obligations'
         },
         // {
         //   id: 'inventoryStocks',
@@ -283,6 +340,12 @@ export default {
       } else if (newVal === 'purchaseOrders' || newVal === 'purchaseRequests') {
         this.currentView = 'list';
         this.fetchPurchaseOrders();
+      } else if (newVal === 'receiving') {
+        this.currentView = 'list';
+        this.fetchReceivedStocks();
+      } else if (newVal === 'accountsPayable') {
+        this.currentView = 'list';
+        this.fetchAccountsPayableData();
       } else if (newVal === 'inventoryStocks') {
         this.currentView = 'list';
         this.fetchInventoryStocks();
@@ -300,8 +363,9 @@ export default {
     const tabParam = params.get('tab');
     const stockIdParam = params.get('stock_id');
     const returnIdParam = params.get('return_id');
+    const inventoryTabs = ['products', 'purchaseOrders', 'purchaseRequests', 'receiving', 'accountsPayable', 'inventoryStocks', 'stockReturns', 'productSummary'];
 
-    if (tabParam && ['products', 'purchaseOrders', 'inventoryStocks', 'stockReturns'].includes(tabParam)) {
+    if (tabParam && inventoryTabs.includes(tabParam)) {
       this.activeTab = tabParam;
       this.changeTab(this.activeTab);
 
@@ -313,6 +377,10 @@ export default {
       if (tabParam === 'stockReturns' && returnIdParam) {
         this.fetchStockReturnDetails(returnIdParam);
       }
+    } else if (this.activeTab === 'receiving') {
+      this.fetchReceivedStocks();
+    } else if (this.activeTab === 'accountsPayable') {
+      this.fetchAccountsPayableData();
     }
   },
   methods: {
@@ -342,6 +410,12 @@ export default {
         this.fetchProducts();
       } else if (tab === 'purchaseOrders') {
         this.fetchPurchaseOrders();
+      } else if (tab === 'purchaseRequests') {
+        this.fetchPurchaseOrders();
+      } else if (tab === 'receiving') {
+        this.fetchReceivedStocks();
+      } else if (tab === 'accountsPayable') {
+        this.fetchAccountsPayableData();
       } else if (tab === 'inventoryStocks') {
         this.fetchInventoryStocks();
       } else if (tab === 'stockReturns') {
@@ -419,6 +493,23 @@ export default {
       }
     },
 
+    async loadReceivedStocks() {
+      const response = await axios.get('/received-stocks');
+      this.listReceivedStocks = Array.isArray(response.data?.data) ? response.data.data : [];
+      return this.listReceivedStocks;
+    },
+
+    fetchReceivedStocks() {
+      if (this.activeTab !== 'receiving' || this.currentView !== 'list') {
+        return;
+      }
+
+      this.loadReceivedStocks().catch((err) => {
+        console.error(err);
+        this.showToast('Failed to load receiving records');
+      });
+    },
+
     fetchStockReturns(page_url) {
       if (this.activeTab === 'stockReturns') {
         page_url = page_url || '/stock-returns';
@@ -438,6 +529,42 @@ export default {
           })
           .catch((err) => console.error(err));
       }
+    },
+
+    async fetchAccountsPayableData() {
+      if (this.activeTab !== 'accountsPayable') {
+        return;
+      }
+
+      this.isAccountsPayableLoading = true;
+
+      const [accountingResult, receivedStocksResult] = await Promise.allSettled([
+        axios.get('/accounting', {
+          params: {
+            option: 'report_data',
+          },
+        }),
+        this.loadReceivedStocks(),
+      ]);
+
+      if (accountingResult.status === 'fulfilled') {
+        const response = accountingResult.value;
+        this.accountsPayableDataReady = !!response.data.dataReady;
+        this.accountsPayableSummaryCards = response.data.sectionMetrics?.accounts_payable || [];
+        this.accountsPayableRows = response.data.reportData?.accounts_payable?.rows || [];
+      } else {
+        console.error(accountingResult.reason);
+        this.accountsPayableDataReady = false;
+        this.accountsPayableSummaryCards = [];
+        this.accountsPayableRows = [];
+      }
+
+      if (receivedStocksResult.status === 'rejected') {
+        console.error(receivedStocksResult.reason);
+        this.showToast('Failed to load credit payable records');
+      }
+
+      this.isAccountsPayableLoading = false;
     },
 
     openPurchaseOrderDetails(purchaseOrder) {
@@ -552,9 +679,20 @@ export default {
 
     handleReceiveSuccess() {
       this.showToast('Stock received successfully');
+      this.fetchPurchaseOrders();
+      if (this.activeTab === 'accountsPayable') {
+        this.fetchAccountsPayableData();
+      }
+      if (this.activeTab === 'receiving') {
+        this.fetchReceivedStocks();
+      }
       if (this.selectedPurchaseOrder) {
         this.fetchPurchaseOrderDetails(this.selectedPurchaseOrder.id);
       }
+    },
+
+    handleAccountsPayablePaymentSuccess() {
+      this.fetchAccountsPayableData();
     },
 
     handleDeleteSuccess() {

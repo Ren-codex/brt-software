@@ -515,7 +515,7 @@ export default {
 }
 
 .modal-container.modal-lg {
-    max-width: 900px;
+    max-width: 1240px;
 }
 
 .modal-overlay.active .modal-container {
@@ -582,8 +582,8 @@ export default {
 
 .form-layout {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 0.95fr);
-    gap: 1.25rem;
+    grid-template-columns: minmax(0, 2.35fr) minmax(300px, 0.85fr);
+    gap: 1.5rem;
     align-items: start;
 }
 

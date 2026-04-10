@@ -262,31 +262,6 @@
                                     </table>
                                 </div>
 
-                                <div v-else-if="activeTab === 'accounts_payable'" class="table-responsive">
-                                    <table class="table preview-table mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Journal</th>
-                                                <th>Entry Type</th>
-                                                <th>Line Type</th>
-                                                <th>Amount</th>
-                                                <th>Description</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="row in activePreviewData.rows || []" :key="row.id">
-                                                <td>{{ row.entry_date }}</td>
-                                                <td>{{ row.journal_number }}</td>
-                                                <td>{{ row.entry_type }}</td>
-                                                <td>{{ row.line_type }}</td>
-                                                <td>{{ row.amount }}</td>
-                                                <td>{{ row.description }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
                                 <div v-else-if="activeTab === 'chart_of_accounts'" class="table-responsive">
                                     <table class="table preview-table mb-0">
                                         <thead>
@@ -425,12 +400,6 @@ export default {
                     label: "Accounts Receivable",
                     icon: "ri-file-list-3-line",
                     description: "Customer balances and aging",
-                },
-                {
-                    id: "accounts_payable",
-                    label: "Accounts Payable",
-                    icon: "ri-wallet-3-line",
-                    description: "Supplier balances and due items",
                 },
                 {
                     id: "chart_of_accounts",
@@ -626,42 +595,6 @@ export default {
                         "Support collection and follow-up reporting.",
                     ],
                 },
-                accounts_payable: {
-                    badge: "Disbursements",
-                    title: "Accounts Payable Control",
-                    summary: "Manage supplier obligations created by stock receipts, billings, and expense recognition workflows.",
-                    note: "Payables should increase when inventory or billable obligations are recognized and decrease only when payments are posted.",
-                    panelTitle: "Payable Workstreams",
-                    panelSubtitle: "Practical controls for monitoring vendor obligations and due dates.",
-                    cards: [
-                        {
-                            title: "Supplier Aging",
-                            description: "See payable balances by supplier and due-date bucket to schedule payments well.",
-                            icon: "ri-group-line",
-                        },
-                        {
-                            title: "Open Obligations",
-                            description: "List received-but-unpaid stock receipts and other outstanding supplier claims.",
-                            icon: "ri-inbox-archive-line",
-                        },
-                        {
-                            title: "Payment Planning",
-                            description: "Prepare due-date and cash-flow views before posting supplier payments.",
-                            icon: "ri-calendar-todo-line",
-                        },
-                        {
-                            title: "Vendor Traceability",
-                            description: "Link payable balances back to purchase orders, receipts, and payment records.",
-                            icon: "ri-route-line",
-                        },
-                    ],
-                    steps: [
-                        "Build supplier balance and aging summaries.",
-                        "Link payable records to received stock and expense sources.",
-                        "Track partial and full settlements cleanly.",
-                        "Add payable due-date reporting for cash planning.",
-                    ],
-                },
                 chart_of_accounts: {
                     badge: "Structure",
                     title: "Chart Of Accounts Setup",
@@ -809,9 +742,16 @@ export default {
     created() {
         const params = new URLSearchParams(window.location.search);
         const tabParam = params.get("tab");
+        const availableTabs = this.tabs.map((tab) => tab.id);
 
-        if (tabParam && this.tabs.some((tab) => tab.id === tabParam)) {
+        if (tabParam && availableTabs.includes(tabParam)) {
             this.activeTab = tabParam;
+            return;
+        }
+
+        if (!availableTabs.includes(this.activeTab)) {
+            this.activeTab = "trial_balance";
+            localStorage.setItem("accounting_active_tab", this.activeTab);
         }
     },
     methods: {
