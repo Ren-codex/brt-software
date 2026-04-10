@@ -9,6 +9,7 @@ use App\Models\InventoryStocks;
 use App\Models\JournalEntry;
 use App\Models\Receipt;
 use App\Models\ReceivedStock;
+use App\Models\ReceivedStockPayment;
 use App\Models\SalesOrder;
 use App\Models\StockReturn;
 use App\Models\StockReturnItem;
@@ -333,27 +334,107 @@ class JournalEntryService
         }
 
         $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
+        $paymentMode = trim((string) ($receivedStock->payment_mode ?? 'Credit'));
+        $isCreditPurchase = strtolower($paymentMode) === 'credit';
+        $amountPaid = $isCreditPurchase ? 0 : round((float) ($receivedStock->amount_paid ?? 0), 2);
+        $cashPaid = min($amountPaid, $amount);
+        $remainingPayable = round(max($amount - $cashPaid, 0), 2);
         $payableAccount = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
+        $cashAccount = $isCreditPurchase ? null : $this->resolveCashAccountByPaymentMode($paymentMode);
+        $entryType = ($isCreditPurchase || $remainingPayable > 0) ? 'purchase_receipt' : 'purchase_receipt_cash';
         $purchaseOrder = $receivedStock->purchaseOrder;
-        $memo = 'Received stock ' . $receivedStock->received_no . ' posted from supplier delivery.';
+        $memo = 'Received stock ' . $receivedStock->received_no . ' posted from supplier delivery via ' . $paymentMode . '.';
+        if (strtolower($paymentMode) === 'bank transfer') {
+            $bankDetails = array_filter([
+                $receivedStock->bank_name ? 'Bank: ' . $receivedStock->bank_name : null,
+                $receivedStock->reference_number ? 'Ref#: ' . $receivedStock->reference_number : null,
+            ]);
+
+            if (!empty($bankDetails)) {
+                $memo .= ' ' . implode(', ', $bankDetails) . '.';
+            }
+        }
+        $lines = [
+            [
+                'account_id' => $inventoryAccount->id,
+                'line_type' => 'debit',
+                'amount' => $amount,
+                'description' => 'Increase inventory for received goods.',
+            ],
+        ];
+
+        if ($cashPaid > 0 && $cashAccount) {
+            $lines[] = [
+                'account_id' => $cashAccount->id,
+                'line_type' => 'credit',
+                'amount' => $cashPaid,
+                'description' => 'Record immediate payment for received goods via ' . strtolower($paymentMode) . '.',
+            ];
+        }
+
+        if ($isCreditPurchase || $remainingPayable > 0) {
+            $lines[] = [
+                'account_id' => $payableAccount->id,
+                'line_type' => 'credit',
+                'amount' => $isCreditPurchase ? $amount : $remainingPayable,
+                'description' => $isCreditPurchase
+                    ? 'Recognize supplier payable for received goods.'
+                    : 'Recognize remaining supplier payable after partial payment.',
+            ];
+        }
 
         return $this->createEntry(
             $receivedStock,
             $receivedStock->received_date,
-            'purchase_receipt',
+            $entryType,
+            $memo,
+            $lines,
+            $purchaseOrder ? ('PO#' . ($purchaseOrder->po_number ?: $purchaseOrder->pr_number) . ' - ' . $memo) : $memo
+        );
+    }
+
+    public function recordReceivedStockPaymentEntry(ReceivedStock $receivedStock, ReceivedStockPayment $payment): ?JournalEntry
+    {
+        $amount = round((float) $payment->amount_paid, 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $receivedStock->loadMissing('purchaseOrder');
+
+        $payableAccount = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
+        $cashAccount = $this->resolveCashAccountByPaymentMode($payment->payment_mode);
+        $purchaseOrder = $receivedStock->purchaseOrder;
+        $memo = 'Supplier payment recorded for received stock ' . $receivedStock->received_no . ' via ' . $payment->payment_mode . '.';
+
+        if (strtolower((string) $payment->payment_mode) === 'bank transfer') {
+            $bankDetails = array_filter([
+                $payment->bank_name ? 'Bank: ' . $payment->bank_name : null,
+                $payment->reference_number ? 'Ref#: ' . $payment->reference_number : null,
+            ]);
+
+            if (!empty($bankDetails)) {
+                $memo .= ' ' . implode(', ', $bankDetails) . '.';
+            }
+        }
+
+        return $this->createEntry(
+            $payment,
+            $payment->payment_date,
+            'accounts_payable_payment',
             $memo,
             [
                 [
-                    'account_id' => $inventoryAccount->id,
+                    'account_id' => $payableAccount->id,
                     'line_type' => 'debit',
                     'amount' => $amount,
-                    'description' => 'Increase inventory for received goods.',
+                    'description' => 'Reduce supplier payable balance.',
                 ],
                 [
-                    'account_id' => $payableAccount->id,
+                    'account_id' => $cashAccount->id,
                     'line_type' => 'credit',
                     'amount' => $amount,
-                    'description' => 'Recognize supplier payable for received goods.',
+                    'description' => 'Record supplier payment via ' . strtolower((string) $payment->payment_mode) . '.',
                 ],
             ],
             $purchaseOrder ? ('PO#' . ($purchaseOrder->po_number ?: $purchaseOrder->pr_number) . ' - ' . $memo) : $memo

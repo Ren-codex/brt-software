@@ -616,9 +616,16 @@ data() {
     created() {
         const params = new URLSearchParams(window.location.search);
         const tabParam = params.get("tab");
+        const availableTabs = this.tabs.map((tab) => tab.id);
 
-        if (tabParam && this.tabs.some((tab) => tab.id === tabParam)) {
+        if (tabParam && availableTabs.includes(tabParam)) {
             this.activeTab = tabParam;
+            return;
+        }
+
+        if (!availableTabs.includes(this.activeTab)) {
+            this.activeTab = "trial_balance";
+            localStorage.setItem("accounting_active_tab", this.activeTab);
         }
     },
     methods: {

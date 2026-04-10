@@ -239,6 +239,7 @@ export default {
                 "sales_return_inventory",
                 "expense_release",
                 "purchase_receipt",
+                "purchase_receipt_cash",
                 "inventory_adjustment",
                 "reversal",
             ],

@@ -207,10 +207,14 @@
   },
   "resources/js/app.js": {
 <<<<<<< HEAD
+<<<<<<< HEAD
     "file": "assets/app-C-BgpGZ8.js",
 =======
     "file": "assets/app-Bk2Of3gy.js",
 >>>>>>> d4e9fc1809def91eba8e9943583395306f2d2ae8
+=======
+    "file": "assets/app-8odE7m-d.js",
+>>>>>>> 3c00621592e1517fcb36ffab8aa2c6a79ba58865
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -220,10 +224,14 @@
     ],
     "css": [
 <<<<<<< HEAD
+<<<<<<< HEAD
       "assets/app-1sK0Zll0.css"
 =======
       "assets/app-B9YrnoaD.css"
 >>>>>>> d4e9fc1809def91eba8e9943583395306f2d2ae8
+=======
+      "assets/app-DWKQGHU4.css"
+>>>>>>> 3c00621592e1517fcb36ffab8aa2c6a79ba58865
     ],
     "assets": [
       "assets/logo-sm-C9p9en_o.png",
