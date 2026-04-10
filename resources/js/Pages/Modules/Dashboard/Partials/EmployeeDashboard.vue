@@ -18,7 +18,7 @@
         <div class="charts-row">
             <div class="chart-card">
                 <div class="card-header-modern">
-                    <h3>Department Distribution</h3>
+                    <h3>Position Distribution</h3>
                 </div>
                 <div class="chart-body">
                     <apexchart
@@ -32,22 +32,22 @@
             </div>
             <div class="chart-card">
                 <div class="card-header-modern">
-                    <h3>Attendance Overview</h3>
+                    <h3>Workforce Snapshot</h3>
                 </div>
                 <div class="chart-body">
                     <div class="attendance-stats">
                         <div class="attendance-circle">
                             <div class="circle-item present">
-                                <span class="number">{{ attendanceStats.present }}</span>
-                                <span class="label">Present</span>
+                                <span class="number">{{ workforceSummary.active }}</span>
+                                <span class="label">Active</span>
                             </div>
                             <div class="circle-item late">
-                                <span class="number">{{ attendanceStats.late }}</span>
-                                <span class="label">Late</span>
+                                <span class="number">{{ workforceSummary.regular }}</span>
+                                <span class="label">Regular</span>
                             </div>
                             <div class="circle-item absent">
-                                <span class="number">{{ attendanceStats.absent }}</span>
-                                <span class="label">Absent</span>
+                                <span class="number">{{ workforceSummary.withAccounts }}</span>
+                                <span class="label">With Accounts</span>
                             </div>
                         </div>
                     </div>
@@ -58,21 +58,21 @@
         <div class="split-view">
             <div class="modern-card">
                 <div class="card-header-modern">
-                    <h3>Today's Attendance</h3>
-                    <span class="badge-new">{{ recentAttendance.length }} records</span>
+                    <h3>Recent Employees</h3>
+                    <span class="badge-new">{{ recentEmployees.length }} records</span>
                 </div>
                 <div class="attendance-list">
-                    <div v-for="a in recentAttendance" :key="a.id" class="attendance-item">
+                    <div v-for="employee in recentEmployees" :key="employee.id" class="attendance-item">
                         <div class="employee-avatar">
-                            {{ getInitials(a.employee_name) }}
+                            {{ getInitials(employee.employee_name) }}
                         </div>
                         <div class="employee-info">
-                            <h4>{{ a.employee_name }}</h4>
-                            <span>{{ a.department }}</span>
+                            <h4>{{ employee.employee_name }}</h4>
+                            <span>{{ employee.department }}</span>
                         </div>
-                        <div class="attendance-time">{{ a.time_in }}</div>
-                        <span class="status-pill" :class="a.status === 'On Time' ? 'ontime' : 'late'">
-                            {{ a.status }}
+                        <div class="attendance-time">{{ employee.joined_at }}</div>
+                        <span class="status-pill" :class="employee.status === 'Active' ? 'ontime' : 'late'">
+                            {{ employee.status }}
                         </span>
                     </div>
                 </div>
@@ -80,21 +80,21 @@
 
             <div class="modern-card">
                 <div class="card-header-modern">
-                    <h3>Upcoming Leaves</h3>
-                    <span class="badge-new">{{ upcomingLeaves.length }} pending</span>
+                    <h3>Payroll Groups</h3>
+                    <span class="badge-new">{{ payrollGroups.length }} groups</span>
                 </div>
                 <div class="leaves-list">
-                    <div v-for="l in upcomingLeaves" :key="l.id" class="leave-item">
+                    <div v-for="group in payrollGroups" :key="group.id" class="leave-item">
                         <div class="leave-date">
-                            <span class="month">{{ formatMonth(l.start_date) }}</span>
-                            <span class="day">{{ formatDay(l.start_date) }}</span>
+                            <span class="month">Team</span>
+                            <span class="day">{{ group.employee_count }}</span>
                         </div>
                         <div class="leave-info">
-                            <h4>{{ l.employee_name }}</h4>
-                            <span>{{ l.leave_type }}</span>
+                            <h4>{{ group.name }}</h4>
+                            <span>Created {{ group.created_at }}</span>
                         </div>
-                        <span class="status-pill" :class="l.status.toLowerCase()">
-                            {{ l.status }}
+                        <span class="status-pill" :class="group.status === 'Active' ? 'approved' : 'pending'">
+                            {{ group.status }}
                         </span>
                     </div>
                 </div>
@@ -120,15 +120,15 @@ export default {
             type: Object,
             default: () => ({ series: [], options: {} })
         },
-        attendanceStats: {
+        workforceSummary: {
             type: Object,
-            default: () => ({ present: 0, late: 0, absent: 0 })
+            default: () => ({ active: 0, regular: 0, withAccounts: 0 })
         },
-        recentAttendance: {
+        recentEmployees: {
             type: Array,
             default: () => []
         },
-        upcomingLeaves: {
+        payrollGroups: {
             type: Array,
             default: () => []
         }
@@ -136,12 +136,6 @@ export default {
     methods: {
         getInitials(name) {
             return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-        },
-        formatMonth(date) {
-            return new Date(date).toLocaleString('default', { month: 'short' });
-        },
-        formatDay(date) {
-            return new Date(date).getDate();
         }
     }
 };
