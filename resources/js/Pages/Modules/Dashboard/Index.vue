@@ -1,12 +1,20 @@
 <template>
     <Head title="Dashboard"/>
-    
-  
 
-    <!-- Modern Tab Design -->
-    <div class="tab-container">
+    <div class="dashboard-hero">
+        <div class="dashboard-hero-copy">
+            <span class="dashboard-kicker">{{ dashboardConfig.kicker }}</span>
+            <h1 class="dashboard-title">{{ dashboardConfig.title }}</h1>
+            <p class="dashboard-subtitle">{{ dashboardConfig.subtitle }}</p>
+        </div>
+        <div class="dashboard-badges">
+            <span v-for="badge in dashboardConfig.badges" :key="badge" class="dashboard-badge">{{ badge }}</span>
+        </div>
+    </div>
+
+    <div v-if="showTabs" class="tab-container">
         <div class="tab-buttons">
-            <button v-for="tab in tabs" :key="tab.value"
+            <button v-for="tab in availableTabs" :key="tab.value"
                     @click="activeTab = tab.value"
                     :class="['tab-btn', { active: activeTab === tab.value }]">
                 <i :class="tab.icon"></i>
@@ -38,7 +46,7 @@
     <!-- Sales Dashboard - Modern Design -->
     <SalesDashboard
         v-if="activeTab === 'sales'"
-        :sales-stats="salesStats"
+        :sales-stats="salesStatCards"
         :top-products="topProducts"
         :sales-chart="salesChart"
         :payment-chart="paymentChart"
@@ -49,7 +57,7 @@
     <!-- Inventory Dashboard - Modern Design -->
     <InventoryDashboard
         v-else-if="activeTab === 'inventory'"
-        :inventory-stats="inventoryStats"
+        :inventory-stats="inventoryStatCards"
         :stock-chart="stockChart"
         :health-chart="healthChart"
         :health-data="healthData"
@@ -59,11 +67,11 @@
     <!-- Employee Dashboard - Modern Design -->
     <EmployeeDashboard
         v-else-if="activeTab === 'employee'"
-        :employee-stats="employeeStats"
+        :employee-stats="teamStatCards"
         :dept-chart="deptChart"
-        :attendance-stats="attendanceStats"
-        :recent-attendance="recentAttendance"
-        :upcoming-leaves="upcomingLeaves"
+        :workforce-summary="workforceSummary"
+        :recent-employees="recentEmployees"
+        :payroll-groups="payrollGroups"
     />
 </template>
 
@@ -71,6 +79,81 @@
 import SalesDashboard from '@/Pages/Modules/Dashboard/Partials/SalesDashboard.vue';
 import InventoryDashboard from '@/Pages/Modules/Dashboard/Partials/InventoryDashboard.vue';
 import EmployeeDashboard from '@/Pages/Modules/Dashboard/Partials/EmployeeDashboard.vue';
+
+const ROLE_DASHBOARD_MAP = {
+    'Super Admin': {
+        tabs: ['sales', 'inventory', 'employee'],
+        defaultTab: 'sales',
+        kicker: 'Executive Command Center',
+        title: 'Business Performance Dashboard',
+        subtitle: 'A full cross-functional view of sales, inventory, and workforce activity.',
+        badges: ['Full access', 'Operations', 'Financial visibility']
+    },
+    'Administrator': {
+        tabs: ['sales', 'inventory', 'employee'],
+        defaultTab: 'sales',
+        kicker: 'Administrative Overview',
+        title: 'Operations Dashboard',
+        subtitle: 'Monitor the core business lines and manage daily operations from one place.',
+        badges: ['System admin', 'Cross-module access', 'Monitoring']
+    },
+    'Mini Admin': {
+        tabs: ['sales', 'inventory'],
+        defaultTab: 'sales',
+        kicker: 'Operations Overview',
+        title: 'Mini Admin Dashboard',
+        subtitle: 'Track business flow across sales and stock movement with a lighter admin view.',
+        badges: ['Operations', 'Sales', 'Inventory']
+    },
+    'Sales Rep': {
+        tabs: ['sales'],
+        defaultTab: 'sales',
+        kicker: 'Sales Workspace',
+        title: 'Sales Dashboard',
+        subtitle: 'Stay focused on revenue, collections, and recent customer transactions.',
+        badges: ['Sales', 'Collections', 'Performance']
+    },
+    'Area Business Manager': {
+        tabs: ['sales'],
+        defaultTab: 'sales',
+        kicker: 'Regional Performance',
+        title: 'Area Business Dashboard',
+        subtitle: 'Review sales output, customer activity, and revenue trends across the territory.',
+        badges: ['Area performance', 'Revenue', 'Growth']
+    },
+    'Warehouse Manager': {
+        tabs: ['inventory'],
+        defaultTab: 'inventory',
+        kicker: 'Warehouse Control',
+        title: 'Inventory Dashboard',
+        subtitle: 'Focus on stock health, low-stock alerts, and inventory value in one view.',
+        badges: ['Stock control', 'Warehouse', 'Replenishment']
+    },
+    'Logistic Coordinator': {
+        tabs: ['inventory'],
+        defaultTab: 'inventory',
+        kicker: 'Logistics Overview',
+        title: 'Logistics Dashboard',
+        subtitle: 'Monitor inventory pressure points and stock availability that affect delivery flow.',
+        badges: ['Logistics', 'Movement', 'Coordination']
+    },
+    'HR Manager': {
+        tabs: ['employee'],
+        defaultTab: 'employee',
+        kicker: 'People Operations',
+        title: 'HR Dashboard',
+        subtitle: 'Track team health, attendance, and upcoming leave activity in a focused HR view.',
+        badges: ['Employees', 'Attendance', 'Leave']
+    },
+    'Accountant': {
+        tabs: ['sales'],
+        defaultTab: 'sales',
+        kicker: 'Financial Overview',
+        title: 'Accounting Dashboard',
+        subtitle: 'Review revenue flow, receipts, and outstanding balances from an accounting lens.',
+        badges: ['Accounting', 'Receivables', 'Revenue']
+    }
+};
 
 export default {
     props: {
@@ -81,7 +164,10 @@ export default {
         lowStockItems: Array,
         employeeStats: Object,
         employeeCharts: Object,
+        workforceSummary: Object,
         recentTransactions: Array,
+        recentEmployees: Array,
+        payrollGroups: Array,
         filter: {
             type: String,
             default: 'today'
@@ -121,26 +207,49 @@ export default {
                 { label: 'Sales', value: 'sales', icon: 'bx bx-store' },
                 { label: 'Inventory', value: 'inventory', icon: 'bx bx-package' },
                 { label: 'Team', value: 'employee', icon: 'bx bx-user' }
-            ],
-            // Demo data
-            recentAttendance: [
-                { id: 1, employee_name: 'John Smith', department: 'Sales', time_in: '08:45 AM', status: 'On Time' },
-                { id: 2, employee_name: 'Maria Garcia', department: 'IT', time_in: '08:50 AM', status: 'On Time' },
-                { id: 3, employee_name: 'David Lee', department: 'Sales', time_in: '09:15 AM', status: 'Late' },
-                { id: 4, employee_name: 'Sarah Johnson', department: 'HR', time_in: '08:55 AM', status: 'On Time' }
-            ],
-            upcomingLeaves: [
-                { id: 1, employee_name: 'Emily Davis', leave_type: 'Vacation', start_date: '2024-01-20', status: 'Approved' },
-                { id: 2, employee_name: 'James Wilson', leave_type: 'Sick', start_date: '2024-01-18', status: 'Pending' },
-                { id: 3, employee_name: 'Lisa Anderson', leave_type: 'Personal', start_date: '2024-01-22', status: 'Pending' }
             ]
         };
     },
     computed: {
+        userRoles() {
+            return this.$page?.props?.roles || [];
+        },
+        primaryRole() {
+            const rolePriority = [
+                'Super Admin',
+                'Administrator',
+                'Mini Admin',
+                'Area Business Manager',
+                'Accountant',
+                'HR Manager',
+                'Warehouse Manager',
+                'Logistic Coordinator',
+                'Sales Rep'
+            ];
+
+            return rolePriority.find(role => this.userRoles.includes(role)) || this.userRoles[0] || 'User';
+        },
+        dashboardConfig() {
+            return ROLE_DASHBOARD_MAP[this.primaryRole] || {
+                tabs: ['sales'],
+                defaultTab: 'sales',
+                kicker: 'Workspace Overview',
+                title: 'Dashboard',
+                subtitle: 'A quick snapshot of the data available to your current role.',
+                badges: ['Overview']
+            };
+        },
+        availableTabs() {
+            const allowedTabs = this.dashboardConfig.tabs || ['sales'];
+            return this.tabs.filter(tab => allowedTabs.includes(tab.value));
+        },
+        showTabs() {
+            return this.availableTabs.length > 1;
+        },
         topProducts() {
             return this.charts?.topProducts || [];
         },
-        salesStats() {
+        salesStatCards() {
             const s = this.stats || {};
             return [
                 { label: 'Total Revenue', value: s.totalSales || 0, icon: 'bx bx-dollar', iconBg: '#E6F9ED', iconColor: '#10b981', trend: null, trendClass: '', trendIcon: '', showCurrency: true },
@@ -149,30 +258,23 @@ export default {
                 { label: 'Avg Revenue', value: s.avgOrderValue || 0, icon: 'bx bx-calculator', iconBg: '#F3E8FF', iconColor: '#8b5cf6', trend: null, trendClass: '', trendIcon: '', showCurrency: true }
             ];
         },
-        inventoryStats() {
+        inventoryStatCards() {
             const i = this.inventoryStats || {};
             return [
-                { label: 'Total Products', value: i.totalProducts || 0, unit: 'items', icon: 'bx bx-package', iconBg: '#E5F0FF', trend: '+5.2%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', cardClass: 'health-blue' },
-                { label: 'Low Stock', value: i.lowStockItems || 0, unit: 'items', icon: 'bx bx-error', iconBg: '#FFF0E5', trend: '+12%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', cardClass: 'health-orange' },
-                { label: 'Out of Stock', value: i.outOfStock || 0, unit: 'items', icon: 'bx bx-block', iconBg: '#FFE5E5', trend: '+3%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', cardClass: 'health-red' },
-                { label: 'Inventory Value', value: i.totalValue || 0, unit: '', icon: 'bx bx-dollar', iconBg: '#E6F9ED', trend: '+8.1%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', cardClass: 'health-green' }
+                { label: 'Total Products', value: i.totalProducts || 0, unit: 'items', icon: 'bx bx-package', iconBg: '#E5F0FF', trend: null, trendClass: '', trendIcon: '', cardClass: 'health-blue' },
+                { label: 'Low Stock', value: i.lowStockItems || 0, unit: 'items', icon: 'bx bx-error', iconBg: '#FFF0E5', trend: null, trendClass: '', trendIcon: '', cardClass: 'health-orange' },
+                { label: 'Out of Stock', value: i.outOfStock || 0, unit: 'items', icon: 'bx bx-block', iconBg: '#FFE5E5', trend: null, trendClass: '', trendIcon: '', cardClass: 'health-red' },
+                { label: 'Inventory Value', value: i.totalValue || 0, unit: '', icon: 'bx bx-dollar', iconBg: '#E6F9ED', trend: null, trendClass: '', trendIcon: '', cardClass: 'health-green' }
             ];
         },
-        employeeStats() {
+        teamStatCards() {
             const e = this.employeeStats || {};
             return [
-                { label: 'Total Team', value: e.totalEmployees || 48, trend: '+4.5%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt' },
-                { label: 'Present Today', value: e.presentToday || 38, total: e.totalEmployees || 48, trend: '+2.1%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt' },
-                { label: 'On Leave', value: e.onLeave || 5, trend: '-1.2%', trendClass: 'trend-down', trendIcon: 'bx bx-down-arrow-alt' },
-                { label: 'Departments', value: e.totalDepartments || 6, trend: '0%', trendClass: 'trend-neutral', trendIcon: 'bx bx-minus' }
+                { label: 'Total Team', value: e.totalEmployees || 0, trend: `${e.activeEmployees || 0} active`, trendClass: 'trend-up', trendIcon: 'bx bx-group' },
+                { label: 'Payroll Groups', value: e.employeesInPayrollGroups || 0, trend: 'employees assigned', trendClass: 'trend-neutral', trendIcon: 'bx bx-layer' },
+                { label: 'Active Loans', value: e.employeesWithLoans || 0, trend: 'employees with balance', trendClass: 'trend-down', trendIcon: 'bx bx-wallet' },
+                { label: 'Positions', value: e.totalPositions || 0, trend: `${e.employeesWithAccounts || 0} with accounts`, trendClass: 'trend-neutral', trendIcon: 'bx bx-briefcase' }
             ];
-        },
-        attendanceStats() {
-            return {
-                present: 38,
-                late: 4,
-                absent: 6
-            };
         },
         salesChart() {
             const data = this.charts?.monthlySales || [];
@@ -229,18 +331,24 @@ export default {
             };
         },
         healthChart() {
-            const data = this.inventoryCharts?.stockDistribution || [
-                { status: 'Healthy', percentage: 65 },
-                { status: 'Low', percentage: 20 },
-                { status: 'Critical', percentage: 10 },
-                { status: 'Out', percentage: 5 }
-            ];
+            const data = this.inventoryCharts?.stockDistribution || [];
             this.healthData = data.map((d, i) => ({
                 ...d,
+                label: d.status,
+                value: d.percentage,
                 color: ['#10b981', '#f97316', '#ef4444', '#6b7280'][i]
             }));
+
+            const total = data.reduce((sum, item) => sum + (item.percentage || 0), 0);
+            const inStock = data.find(item => item.status === 'In Stock')?.percentage || 0;
+            const lowStock = data.find(item => item.status === 'Low Stock')?.percentage || 0;
+            const outOfStock = data.find(item => item.status === 'Out of Stock')?.percentage || 0;
+            const healthScore = total > 0
+                ? Math.max(0, Math.min(100, Math.round(((inStock * 1) + (lowStock * 0.45) + (outOfStock * 0)) / total * 100)))
+                : 0;
+
             return {
-                series: [75], // Overall health score
+                series: [healthScore],
                 options: {
                     chart: { type: 'radialBar' },
                     plotOptions: {
@@ -259,13 +367,7 @@ export default {
             };
         },
         deptChart() {
-            const data = this.employeeCharts?.employeesByDepartment || [
-                { department: 'Sales', count: 15 },
-                { department: 'IT', count: 8 },
-                { department: 'HR', count: 5 },
-                { department: 'Ops', count: 12 },
-                { department: 'Finance', count: 8 }
-            ];
+            const data = this.employeeCharts?.employeesByDepartment || [];
             return {
                 series: [{ name: 'Employees', data: data.map(d => d.count) }],
                 options: {
@@ -285,6 +387,20 @@ export default {
             if (this.selectedFilter === 'today') {
                 this.loadDashboardData();
             }
+        },
+        availableTabs: {
+            immediate: true,
+            handler(tabs) {
+                if (!tabs.length) {
+                    this.activeTab = 'sales';
+                    return;
+                }
+
+                const currentTabStillAllowed = tabs.some(tab => tab.value === this.activeTab);
+                if (!currentTabStillAllowed) {
+                    this.activeTab = this.dashboardConfig.defaultTab || tabs[0].value;
+                }
+            }
         }
     },
     methods: {
@@ -303,6 +419,120 @@ export default {
 
 <style scoped>
 /* Modern Dashboard Styles */
+.dashboard-hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) auto;
+    gap: 2rem;
+    align-items: start;
+    margin-bottom: 2rem;
+    padding: 2.25rem 2.4rem;
+    overflow: hidden;
+    border-radius: 32px;
+    background:
+        radial-gradient(circle at 88% 18%, rgba(255, 215, 122, 0.22), transparent 18%),
+        radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.12), transparent 20%),
+        linear-gradient(120deg, #0c4f4d 0%, #116564 28%, #1d827d 58%, #3d9b8f 100%);
+    box-shadow:
+        0 22px 55px rgba(19, 111, 99, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.dashboard-hero::before {
+    content: '';
+    position: absolute;
+    inset: auto -6% -36% auto;
+    width: 440px;
+    height: 440px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 54%, transparent 72%);
+    pointer-events: none;
+}
+
+.dashboard-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 28%),
+        linear-gradient(90deg, rgba(6, 35, 34, 0.18), transparent 35%, transparent 70%, rgba(255, 255, 255, 0.05));
+    pointer-events: none;
+}
+
+.dashboard-hero-copy,
+.dashboard-badges {
+    position: relative;
+    z-index: 1;
+}
+
+.dashboard-hero-copy {
+    max-width: 760px;
+}
+
+.dashboard-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    color: #f6fffd;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dashboard-title {
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(2.3rem, 4vw, 3.5rem);
+    font-weight: 900;
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+    text-shadow: 0 10px 28px rgba(5, 28, 26, 0.24);
+}
+
+.dashboard-subtitle {
+    max-width: 760px;
+    margin: 1rem 0 0;
+    color: rgba(239, 252, 248, 0.92);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    text-wrap: pretty;
+}
+
+.dashboard-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-content: flex-start;
+    gap: 0.75rem;
+    max-width: 340px;
+    padding-top: 0.25rem;
+}
+
+.dashboard-badge {
+    padding: 0.72rem 1.15rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #fbfffe;
+    font-size: 0.9rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 10px 20px rgba(7, 42, 39, 0.16);
+}
+
 .dashboard-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 2rem 2rem;
@@ -1105,6 +1335,20 @@ export default {
 }
 
 @media (max-width: 768px) {
+    .dashboard-hero {
+        flex-direction: column;
+        padding: 1.25rem;
+    }
+
+    .dashboard-title {
+        font-size: 1.9rem;
+    }
+
+    .dashboard-badges {
+        justify-content: flex-start;
+        max-width: none;
+    }
+
     .stats-grid, .health-cards, .team-stats {
         grid-template-columns: 1fr;
     }
