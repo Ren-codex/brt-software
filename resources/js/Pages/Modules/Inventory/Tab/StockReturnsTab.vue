@@ -257,7 +257,7 @@ export default {
         });
         const orders = response?.data?.data || [];
         this.returnableOrders = orders.filter((order) => {
-          return (order.items || []).some((item) => Number(item.received_quantity || 0) > 0);
+          return (order.items || []).some((item) => Number(item.available_inventory_quantity || 0) > 0);
         });
       } catch (error) {
         this.$emit('toast', error?.response?.data?.message || 'Unable to load purchase orders');

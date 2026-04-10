@@ -96,4 +96,16 @@ class StockReturnController extends Controller
             'status' => $result['status'] ?? true,
         ]);
     }
+
+    public function logSupplierDelivery($id)
+    {
+        $result = $this->stockReturn->logSupplierDelivery($id);
+
+        return response()->json([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
 }

@@ -9,7 +9,7 @@
             </div>
             <div>
               <h4 class="header-title mb-1">Receive Return Item</h4>
-              <p class="header-subtitle mb-0">Process replacement quantity</p>
+              <p class="header-subtitle mb-0">Process replacement and loss quantities</p>
             </div>
           </div>
           <button class="close-btn" @click="$emit('close')">&times;</button>
@@ -29,17 +29,43 @@
             type="number"
             min="0"
             step="1"
-            :max="Number(selectedReturnItem?.quantity || 0)"
+            :max="remainingResolvableQty"
             class="form-control"
             placeholder="Enter replacement quantity"
             @input="updateField('replaced_quantity', $event.target.value)"
           >
-          <small v-if="replacementQtyError" class="error-message">{{ replacementQtyError }}</small>
-          <div class="returned-qty-highlight">
-            <span class="returned-qty-label">Remaining Returned Qty</span>
-            <span class="returned-qty-value">{{ remainingReturnedQty }}</span>
+          <small v-if="replacedQtyError" class="error-message">{{ replacedQtyError }}</small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="loss-qty">Loss Quantity</label>
+          <input
+            id="loss-qty"
+            :value="Number(receiveForm.loss_quantity || 0)"
+            type="number"
+            min="0"
+            step="1"
+            :max="remainingResolvableQty"
+            class="form-control"
+            placeholder="Enter loss quantity"
+            @input="updateField('loss_quantity', $event.target.value)"
+          >
+          <small v-if="lossQtyError" class="error-message">{{ lossQtyError }}</small>
+          <small v-if="totalQtyError" class="error-message">{{ totalQtyError }}</small>
+          <div class="resolution-summary">
+            <div class="returned-qty-highlight">
+              <span class="returned-qty-label">Already Resolved</span>
+              <span class="returned-qty-value">{{ totalResolvedQty }}</span>
+            </div>
+            <div class="returned-qty-highlight">
+              <span class="returned-qty-label">Remaining Qty</span>
+              <span class="returned-qty-value">{{ remainingResolvableQty }}</span>
+            </div>
+            <div class="returned-qty-highlight">
+              <span class="returned-qty-label">This Receive Total</span>
+              <span class="returned-qty-value">{{ receiveTotalQty }}</span>
+            </div>
           </div>
-        
         </div>
 
         <div class="form-group">
@@ -57,7 +83,7 @@
       <div class="modal-footer">
         <div class="form-actions">
           <button class="btn btn-cancel" @click="$emit('close')" :disabled="receiving">Cancel</button>
-          <button class="btn btn-save" @click="$emit('save')" :disabled="receiving || Boolean(replacementQtyError)">
+          <button class="btn btn-save" @click="$emit('save')" :disabled="receiving || hasQuantityError">
             {{ receiving ? 'Saving...' : 'Save' }}
           </button>
         </div>
@@ -82,6 +108,7 @@ export default {
       type: Object,
       default: () => ({
         replaced_quantity: 0,
+        loss_quantity: 0,
         remarks: '',
       }),
     },
@@ -98,28 +125,61 @@ export default {
     totalReturnedQty() {
       return Number(this.selectedReturnItem?.quantity || 0);
     },
-    replacementQtyValue() {
+    totalResolvedQty() {
+      return Number(this.selectedReturnItem?.returned_quantity || 0);
+    },
+    remainingResolvableQty() {
+      return Math.max(this.totalReturnedQty - this.totalResolvedQty, 0);
+    },
+    replacedQtyValue() {
       return Number(this.receiveForm?.replaced_quantity || 0);
     },
-    replacementQtyError() {
-      if (Number.isNaN(this.replacementQtyValue) || this.replacementQtyValue < 0) {
+    lossQtyValue() {
+      return Number(this.receiveForm?.loss_quantity || 0);
+    },
+    receiveTotalQty() {
+      return this.replacedQtyValue + this.lossQtyValue;
+    },
+    replacedQtyError() {
+      if (Number.isNaN(this.replacedQtyValue) || this.replacedQtyValue < 0) {
         return 'Replacement quantity must be 0 or greater.';
       }
-      if (!Number.isInteger(this.replacementQtyValue)) {
+      if (!Number.isInteger(this.replacedQtyValue)) {
         return 'Replacement quantity must be a whole number.';
       }
-      if (this.replacementQtyValue > this.totalReturnedQty) {
-        return `Replacement quantity cannot be greater than ${this.totalReturnedQty}.`;
+      if (this.replacedQtyValue > this.remainingResolvableQty) {
+        return `Replacement quantity cannot be greater than ${this.remainingResolvableQty}.`;
       }
       return '';
     },
-    remainingReturnedQty() {
-      return Math.max(this.totalReturnedQty - this.replacementQtyValue, 0);
+    lossQtyError() {
+      if (Number.isNaN(this.lossQtyValue) || this.lossQtyValue < 0) {
+        return 'Loss quantity must be 0 or greater.';
+      }
+      if (!Number.isInteger(this.lossQtyValue)) {
+        return 'Loss quantity must be a whole number.';
+      }
+      if (this.lossQtyValue > this.remainingResolvableQty) {
+        return `Loss quantity cannot be greater than ${this.remainingResolvableQty}.`;
+      }
+      return '';
+    },
+    totalQtyError() {
+      if (this.receiveTotalQty < 1) {
+        return 'Enter at least 1 total quantity to receive.';
+      }
+      if (this.receiveTotalQty > this.remainingResolvableQty) {
+        return `Replacement quantity plus loss quantity cannot be greater than ${this.remainingResolvableQty}.`;
+      }
+      return '';
+    },
+    hasQuantityError() {
+      return Boolean(this.replacedQtyError || this.lossQtyError || this.totalQtyError);
     },
   },
   methods: {
     updateField(field, value) {
-      const isNumericField = field === 'replaced_quantity';
+      const isNumericField = ['replaced_quantity', 'loss_quantity'].includes(field);
       this.$emit('update-receive-form', {
         [field]: isNumericField ? Math.max(0, Math.trunc(Number(value || 0))) : value,
       });
@@ -237,5 +297,11 @@ export default {
   font-size: 0.9rem;
   color: #065f46;
   font-weight: 800;
+}
+
+.resolution-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 </style>

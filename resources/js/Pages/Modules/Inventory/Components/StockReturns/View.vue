@@ -20,6 +20,13 @@
                 <button class="create-btn" @click="approveStockReturn()" v-if="data.status.slug == 'pending'">
                   <span>{{ approving ? 'Saving...' : 'Approve Return' }}</span>
                 </button>
+                <button
+                  class="create-btn"
+                  @click="logStockReturnDelivery()"
+                  v-if="canLogDelivery"
+                >
+                  <span>{{ receiving ? 'Saving...' : 'Supplier Received the Items' }}</span>
+                </button>
                 <button @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back">
                   <i class="ri-arrow-left-line"></i>
                 </button>
@@ -130,7 +137,7 @@
                       </td>
                       <td>{{ item.remarks || '' }}</td>
                       <td>{{ item.received_by?.fullname || '-' }}</td>
-                      <td v-if="data.status.slug == 'approved' && Number(item.returned_quantity || 0) < Number(item.quantity || 0)">
+                      <td v-if="canReceiveReturnedItem(item)">
                         <div class="action-buttons">
                           <button
                             class="action-btn action-btn-receive"
@@ -141,6 +148,9 @@
                             Receive Stock
                           </button>
                         </div>
+                      </td>
+                      <td v-else>
+                        <span class="text-muted">No action</span>
                       </td>
                     </tr>
                     <tr v-if="!(data.items || []).length">
@@ -214,6 +224,7 @@ export default {
       selectedReturnItem: null,
       receiveForm: {
         replaced_quantity: 0,
+        loss_quantity: 0,
         remarks: '',
       },
     };
@@ -247,6 +258,15 @@ export default {
         actioned_by: log.actioned_by || log.user?.fullname || 'System',
       }));
     },
+    canLogDelivery() {
+      const statusSlug = String(this.data?.status?.slug || '').toLowerCase();
+      if (statusSlug !== 'approved') return false;
+
+      return !this.hasSupplierDeliveryLog;
+    },
+    hasSupplierDeliveryLog() {
+      return this.stockReturnLogs.some((log) => String(log?.action || '').toLowerCase() === 'supplier delivery logged');
+    },
   },
   methods: {
     formatDate(dateValue) {
@@ -271,11 +291,20 @@ export default {
       const statusSlug = String(item?.status?.slug || '').toLowerCase();
       return ['replaced', 'loss'].includes(statusSlug);
     },
+    canReceiveReturnedItem(item) {
+      const statusSlug = String(this.data?.status?.slug || '').toLowerCase();
+      if (!['approved', 'delivered'].includes(statusSlug)) return false;
+      if (!this.hasSupplierDeliveryLog) return false;
+
+      return Number(item?.returned_quantity || 0) < Number(item?.quantity || 0);
+    },
     receivedReturnItem(item) {
       if (!item?.id || this.receiving || this.isItemFinalized(item)) return;
 
+      const remainingQty = Math.max(Number(item.quantity || 0) - Number(item.returned_quantity || 0), 0);
       this.selectedReturnItem = item;
-      this.receiveForm.replaced_quantity = Number(item.replaced_quantity || item.returned_quantity || 0);
+      this.receiveForm.replaced_quantity = remainingQty > 0 ? remainingQty : 0;
+      this.receiveForm.loss_quantity = 0;
       this.receiveForm.remarks = item.remarks || '';
       this.showReceiveModal = true;
     },
@@ -285,6 +314,7 @@ export default {
       this.selectedReturnItem = null;
       this.receiveForm = {
         replaced_quantity: 0,
+        loss_quantity: 0,
         remarks: '',
       };
     },
@@ -298,15 +328,20 @@ export default {
       if (!this.data?.id || !this.selectedReturnItem?.id || this.receiving) return;
 
       const maxQty = Number(this.selectedReturnItem.quantity || 0);
+      const alreadyResolvedQty = Number(this.selectedReturnItem.returned_quantity || 0);
+      const remainingQty = Math.max(maxQty - alreadyResolvedQty, 0);
       const replacedQty = Number(this.receiveForm.replaced_quantity || 0);
-      const totalQty = replacedQty;
+      const lossQty = Number(this.receiveForm.loss_quantity || 0);
+      const totalQty = replacedQty + lossQty;
       if (
         Number.isNaN(replacedQty)
+        || Number.isNaN(lossQty)
         || replacedQty < 0
-        || totalQty < 0
-        || totalQty > maxQty
+        || lossQty < 0
+        || totalQty < 1
+        || totalQty > remainingQty
       ) {
-        this.$emit('toast', `Replacement quantity must be between 0 and ${maxQty}`);
+        this.$emit('toast', `Replacement quantity plus loss quantity must be between 1 and ${remainingQty}`);
         return;
       }
 
@@ -316,7 +351,7 @@ export default {
           `/stock-returns/${this.data.id}/items/${this.selectedReturnItem.id}/receive`,
           {
             replaced_quantity: replacedQty,
-            loss_quantity: 0,
+            loss_quantity: lossQty,
             remarks: this.receiveForm.remarks,
           },
         );
@@ -326,6 +361,20 @@ export default {
         this.$emit('refresh', this.data.id);
       } catch (error) {
         this.$emit('toast', error?.response?.data?.message || 'Unable to receive return item');
+      } finally {
+        this.receiving = false;
+      }
+    },
+    async logStockReturnDelivery() {
+      if (!this.data?.id || this.receiving || this.hasSupplierDeliveryLog) return;
+
+      this.receiving = true;
+      try {
+        const response = await axios.post(`/stock-returns/${this.data.id}/log-supplier-delivery`);
+        this.$emit('toast', response?.data?.message || 'Supplier delivery logged successfully');
+        this.$emit('refresh', this.data.id);
+      } catch (error) {
+        this.$emit('toast', error?.response?.data?.message || 'Unable to log supplier delivery');
       } finally {
         this.receiving = false;
       }
