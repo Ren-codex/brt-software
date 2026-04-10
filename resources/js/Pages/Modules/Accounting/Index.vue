@@ -248,8 +248,8 @@
                                                 <th>Date</th>
                                                 <th>Journal</th>
                                                 <th>Entry Type</th>
-                                                <th>Status</th>
-                                                <th>Memo</th>
+                                                <!-- <th>Status</th> -->
+                                                <th>Description</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -263,7 +263,7 @@
                                                     <td>{{ row.entry_date }}</td>
                                                     <td>{{ row.journal_number }}</td>
                                                     <td>{{ row.entry_type }}</td>
-                                                    <td>{{ row.status }}</td>
+                                                    <!-- <td>{{ row.status }}</td> -->
                                                     <td>{{ row.memo }}</td>
                                                 </tr>
                                                 <tr v-if="expandedJournalEntryId === row.id" class="details-row">

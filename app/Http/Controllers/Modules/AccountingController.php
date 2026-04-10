@@ -35,7 +35,7 @@ class AccountingController extends Controller
                     'date_from' => $dateFrom,
                     'date_to' => $dateTo,
                 ],
-            ])->setPaper('A4', 'portrait');
+            ])->setPaper('A4', 'landscape');
 
             return $pdf->download($filename);
         }
@@ -491,10 +491,25 @@ class AccountingController extends Controller
 
         $this->applyDateRange($query, 'entry_date', $dateFrom, $dateTo);
 
-        return $query
+        $entries = $query
             ->orderBy('entry_date')
             ->orderBy('id')
-            ->get()
+            ->get();
+
+        $accountCodes = Account::query()
+            ->whereIn(
+                'id',
+                $entries
+                    ->flatMap(function (JournalEntry $entry) {
+                        return $entry->lines->pluck('account_id');
+                    })
+                    ->filter()
+                    ->unique()
+                    ->values()
+            )
+            ->pluck('code', 'id');
+
+        return $entries
             ->map(function (JournalEntry $entry) {
                 return [
                     'journal_number' => $entry->journal_number ?: '#',
@@ -503,10 +518,33 @@ class AccountingController extends Controller
                     'lines' => $entry->lines
                         ->map(function (JournalEntryLine $line) {
                             return [
+                                'account_id' => $line->account_id,
                                 'account' => trim((string) $line->getAttribute('account')) ?: 'Unmapped Account',
                                 'line_type' => $line->line_type,
                                 'amount' => (float) $line->amount,
                                 'description' => $line->description,
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->map(function (array $entry) use ($accountCodes) {
+                return [
+                    'journal_number' => $entry['journal_number'],
+                    'entry_date' => $entry['entry_date'],
+                    'memo' => $entry['memo'],
+                    'lines' => collect($entry['lines'])
+                        ->map(function (array $line) use ($accountCodes) {
+                            $accountId = $line['account_id'] ?? null;
+
+                            return [
+                                'account_id' => $accountId,
+                                'account_code' => $accountId ? ($accountCodes->get($accountId) ?: $accountId) : null,
+                                'account' => $line['account'],
+                                'line_type' => $line['line_type'],
+                                'amount' => $line['amount'],
+                                'description' => $line['description'],
                             ];
                         })
                         ->values()
