@@ -2,7 +2,7 @@
     <BContainer fluid>
         <div id="two-column-menu"></div>
         <ul class="navbar-nav h-100" id="navbar-nav">
-            <li class="nav-item" v-if=" $page.props.roles.includes('Administrator') || $page.props.roles.includes('Super Admin')">
+            <li class="nav-item" v-if="$page.props.roles.length">
                 <Link href="/" class="nav-link menu-link"
                     :class="{ 'active': $page.component.startsWith('Modules/Dashboard/') }">
                 <i class="ri-apps-line"></i>
