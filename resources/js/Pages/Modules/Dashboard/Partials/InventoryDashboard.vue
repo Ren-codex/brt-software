@@ -11,7 +11,7 @@
                         <span class="health-value">{{ stat.value }}</span>
                         <span class="health-unit">{{ stat.unit }}</span>
                     </div>
-                    <span class="health-trend" :class="stat.trendClass">
+                    <span v-if="stat.trend" class="health-trend" :class="stat.trendClass">
                         <i :class="stat.trendIcon"></i> {{ stat.trend }} from last month
                     </span>
                 </div>

@@ -36,13 +36,13 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     // Make revenue reports available to all authenticated users (not just administrators)
     Route::get('/api/revenue-reports', [App\Http\Controllers\Modules\RevenueReportController::class, 'index']);
 
-    Route::middleware(['role:Administrator,Top Management'])->group(function () {
+    Route::middleware(['role:Administrator,Top Management,Area Business Manager,Super Admin'])->group(function () {
         Route::patch('/expenses/{id}/approve', [App\Http\Controllers\Modules\ExpenseController::class, 'approve']);
         Route::patch('/expenses/{id}/release', [App\Http\Controllers\Modules\ExpenseController::class, 'release']);
     });
 
     // Warehouse Manager
-    Route::middleware(['role:Warehouse Manager'])->group(function () {
+    Route::middleware(['role:Warehouse Manager,Super Admin'])->group(function () {
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
         Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
@@ -59,14 +59,14 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     });
 
     // Sales Representative
-    Route::middleware(['role:Sales Rep'])->group(function () {
+    Route::middleware(['role:Sales Rep,Super Admin'])->group(function () {
         Route::resource('/remittances', App\Http\Controllers\RemittanceController::class);
         Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
         Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
     });
 
       // HR Manager
-    Route::middleware(['role:HR Manager'])->group(function () {
+    Route::middleware(['role:HR Manager,Super Admin'])->group(function () {
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class);
         Route::get('/payroll-templates/available-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'getAvailableEmployees']);
         Route::resource('/payroll-templates', App\Http\Controllers\Modules\PayrollTemplateController::class);
@@ -81,7 +81,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     });
 
     // HR Manager
-    Route::middleware(['role:Accountant'])->group(function () {
+    Route::middleware(['role:Accountant,Super Admin'])->group(function () {
         Route::get('/accounting', [App\Http\Controllers\Modules\AccountingController::class, 'index']);
         Route::get('/accounting/general-ledger', [App\Http\Controllers\Modules\AccountingController::class, 'generalLedger']);
         Route::get('/accounting/trial-balance', [App\Http\Controllers\Modules\AccountingController::class, 'trialBalance']);
@@ -96,7 +96,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     });
 
     // Administrator
-    Route::middleware(['role:Administrator'])->group(function () {
+    Route::middleware(['role:Administrator,Super Admin'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
         Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
         Route::resource('/libraries/brands', App\Http\Controllers\Libraries\BrandController::class);
