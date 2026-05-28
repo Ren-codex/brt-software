@@ -212,6 +212,28 @@ class ExpenseClass
         ];
     }
 
+    public function approve($id): array
+    {
+        $data = Expense::findOrFail($id);
+
+        if ($data->status !== 'recorded') {
+            return [
+                'data'    => new ExpenseResource($data->fresh(['added_by'])),
+                'message' => 'Only recorded expenses can be approved.',
+                'status'  => 'error',
+            ];
+        }
+
+        $data->update(['status' => 'approved']);
+
+        return [
+            'data'    => new ExpenseResource($data->fresh(['added_by'])),
+            'message' => 'Expense approved successfully!',
+            'info'    => "You've successfully approved the expense.",
+            'status'  => 'success',
+        ];
+    }
+
     public function release($id)
     {
         $data = Expense::findOrFail($id);
