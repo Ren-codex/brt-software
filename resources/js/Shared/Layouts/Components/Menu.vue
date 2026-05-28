@@ -191,6 +191,13 @@
                                 </Link>
                             </li>
 
+                            <li class="nav-item submenu-item">
+                                <Link href="/libraries/funds" class="nav-link submenu-link"
+                                    :class="{ 'active': $page.url === '/libraries/funds' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Petty Cash Funds</span>
+                                </Link>
+                            </li>
 
                         </ul>
                     </div>
