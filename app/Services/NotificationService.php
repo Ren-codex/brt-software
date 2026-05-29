@@ -45,8 +45,8 @@ class NotificationService
             DB::afterCommit(function () use ($fundId) {
                 $notifyFund = PettyCashFund::find($fundId);
                 if ($notifyFund) {
-                    User::whereHas('roles', fn($q) => $q->whereIn('name', ['Administrator', 'Top Management']))
-                        ->each(fn($u) => $u->notify(new LowBalanceFundNotification($notifyFund)));
+                    User::whereHas('roles', fn ($q) => $q->whereIn('name', ['Administrator', 'Top Management']))
+                        ->each(fn ($u) => $u->notify(new LowBalanceFundNotification($notifyFund)));
                 }
             });
         }
@@ -56,17 +56,17 @@ class NotificationService
     {
         DB::afterCommit(function () use ($productId, $previousTotal) {
             $product = Product::with(['brand', 'unit'])->find($productId);
-            if (!$product || $product->minimum_stock === null) {
+            if (! $product || $product->minimum_stock === null) {
                 return;
             }
 
             $newTotal = (int) InventoryStocks::whereHas(
-                'receivedItem', fn($q) => $q->where('product_id', $productId)
+                'receivedItem', fn ($q) => $q->where('product_id', $productId)
             )->sum('quantity');
 
             if ($previousTotal >= $product->minimum_stock && $newTotal < $product->minimum_stock) {
-                User::whereHas('roles', fn($q) => $q->whereIn('name', ['Administrator', 'Top Management']))
-                    ->each(fn($u) => $u->notify(new LowStockNotification($product, $newTotal)));
+                User::whereHas('roles', fn ($q) => $q->whereIn('name', ['Administrator', 'Top Management']))
+                    ->each(fn ($u) => $u->notify(new LowStockNotification($product, $newTotal)));
             }
         });
     }
@@ -78,7 +78,7 @@ class NotificationService
         }
 
         $users = User::whereHas(
-            'roles', fn($q) => $q->whereIn('name', ['Administrator', 'Top Management'])
+            'roles', fn ($q) => $q->whereIn('name', ['Administrator', 'Top Management'])
         )->get();
 
         foreach ($invoices as $invoice) {
