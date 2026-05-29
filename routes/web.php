@@ -144,6 +144,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::get('/expenses/print', [App\Http\Controllers\Modules\ExpenseController::class, 'printExpenses']);
         Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
         Route::patch('/expenses/{id}/approve', [App\Http\Controllers\Modules\ExpenseController::class, 'approve']);
+        Route::patch('/expenses/{id}/release', [App\Http\Controllers\Modules\ExpenseController::class, 'release']);
         Route::patch('/expenses/{id}/void', [App\Http\Controllers\Modules\ExpenseController::class, 'void']);
 
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);

@@ -124,6 +124,17 @@ class ExpenseController extends Controller
         ]);
     }
 
+    public function release($id)
+    {
+        $result = $this->handleTransaction(fn() => $this->expense->release($id));
+
+        return response()->json([
+            'message' => $result['message'],
+            'status'  => $result['status'] ?? 'success',
+            'data'    => $result['data'] ?? null,
+        ]);
+    }
+
     public function void($id)
     {
         $result = $this->handleTransaction(fn() => $this->expense->void($id));

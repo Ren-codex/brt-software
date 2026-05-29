@@ -116,6 +116,15 @@
                                                         >
                                                             <i class="ri-check-double-line"></i>
                                                         </button>
+                                                        <!-- Release -->
+                                                        <button
+                                                            v-if="list.status === 'approved' && canRelease"
+                                                            @click.stop="releaseExpense(list)"
+                                                            class="action-icon-btn release"
+                                                            title="Release"
+                                                        >
+                                                            <i class="ri-send-plane-line"></i>
+                                                        </button>
                                                         <!-- Void -->
                                                         <button
                                                             v-if="['recorded', 'approved', 'submitted'].includes(list.status) && canVoid"
@@ -198,7 +207,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div v-if="(list.status === 'recorded' && canApprove) || (['recorded', 'approved', 'submitted'].includes(list.status) && canVoid)" class="d-flex justify-content-end gap-2 mt-3">
+                                                    <div v-if="(list.status === 'recorded' && canApprove) || (list.status === 'approved' && canRelease) || (['recorded', 'approved', 'submitted'].includes(list.status) && canVoid)" class="d-flex justify-content-end gap-2 mt-3">
                                                         <button
                                                             v-if="list.status === 'recorded' && canApprove"
                                                             @click="approveExpense(list)"
@@ -206,6 +215,14 @@
                                                         >
                                                             <i class="ri-check-double-line me-1"></i>
                                                             Approve Expense
+                                                        </button>
+                                                        <button
+                                                            v-if="list.status === 'approved' && canRelease"
+                                                            @click="releaseExpense(list)"
+                                                            class="system-action-btn system-action-release"
+                                                        >
+                                                            <i class="ri-send-plane-line me-1"></i>
+                                                            Release Expense
                                                         </button>
                                                         <button
                                                             v-if="['recorded', 'approved', 'submitted'].includes(list.status) && canVoid"
@@ -600,6 +617,10 @@ export default {
             const roles = this.$page?.props?.roles || [];
             return ['Administrator', 'Top Management'].some(r => roles.includes(r));
         },
+        canRelease() {
+            const roles = this.$page?.props?.roles || [];
+            return roles.includes('Administrator');
+        },
     },
     data() {
         return {
@@ -681,6 +702,31 @@ export default {
                 .catch(() => {
                     this.$swal?.fire?.('Error', 'Failed to approve expense.', 'error');
                 });
+        },
+        releaseExpense(expense) {
+            this.$swal?.fire?.({
+                title: 'Release expense?',
+                text: 'This will post the expense to accounting. This cannot be undone.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, release it',
+                confirmButtonColor: '#3d8d7a',
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                axios.patch(`/expenses/${expense.id}/release`)
+                    .then(res => {
+                        if (res.data.status === 'error') {
+                            this.$swal?.fire?.('Notice', res.data.message, 'warning');
+                            return;
+                        }
+                        const idx = this.lists.findIndex(e => e.id === expense.id);
+                        if (idx !== -1) this.lists[idx].status = 'released';
+                    })
+                    .catch(err => {
+                        const msg = err.response?.data?.info || 'Failed to release expense.';
+                        this.$swal?.fire?.('Error', msg, 'error');
+                    });
+            });
         },
         voidExpense(expense) {
             this.$swal?.fire?.({
@@ -878,6 +924,8 @@ export default {
 .action-icon-btn.submit:hover { background:#fef08a; }
 .action-icon-btn.approve { background:#dcfce7;color:#15803d; }
 .action-icon-btn.approve:hover { background:#bbf7d0; }
+.action-icon-btn.release { background:#d1fae5;color:#065f46; }
+.action-icon-btn.release:hover { background:#a7f3d0; }
 .action-icon-btn.void    { background:#fee2e2;color:#dc3545;border:1px solid #fca5a5; }
 .action-icon-btn.void:hover { background:#fecaca; }
 
