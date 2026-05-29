@@ -15,6 +15,8 @@ export default {
       text: null,
       value: null,
       myVar: 1,
+      notifications: [],
+      unreadCount: 0,
     };
   },
   components: {
@@ -121,7 +123,31 @@ export default {
     },
     openInNewTab(url) {
       window.open(url, '_blank');
-    }
+    },
+    fetchNotifications() {
+        axios.get('/notifications')
+            .then(res => {
+                this.notifications = res.data.notifications;
+                this.unreadCount   = res.data.unread_count;
+            })
+            .catch(() => {});
+    },
+    markAllRead() {
+        axios.patch('/notifications/read-all')
+            .then(() => {
+                this.unreadCount = 0;
+                this.notifications = this.notifications.map(n => ({ ...n, read_at: new Date().toISOString() }));
+            })
+            .catch(() => {});
+    },
+    timeAgo(dateString) {
+        if (!dateString) return '';
+        const diff = Math.floor((Date.now() - new Date(dateString)) / 1000);
+        if (diff < 60)    return diff + 's ago';
+        if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+    },
   },
 
   mounted() {
@@ -135,6 +161,23 @@ export default {
     if (document.getElementById("topnav-hamburger-icon"))
       document.getElementById("topnav-hamburger-icon").addEventListener("click", this.toggleHamburgerMenu);
 
+    this.fetchNotifications();
+    const userId = this.$page?.props?.user?.data?.id;
+    if (userId && window.Echo) {
+        window.Echo.private('App.Models.User.' + userId)
+            .notification(notification => {
+                if (notification.type === 'low_balance') {
+                    this.unreadCount++;
+                    this.notifications.unshift({
+                        id:         notification.id || null,
+                        type:       'low_balance',
+                        data:       notification,
+                        read_at:    null,
+                        created_at: new Date().toISOString(),
+                    });
+                }
+            });
+    }
   },
 };
 </script>
@@ -212,6 +255,53 @@ export default {
             </BButton>
           </div> -->
 
+          <!-- Notification Bell -->
+          <BDropdown class="ms-1 header-item" variant="ghost-secondary"
+            toggle-class="btn-icon btn-topbar rounded-circle arrow-none position-relative"
+            menu-class="dropdown-menu-end dropdown-menu-lg p-0"
+            @show="markAllRead">
+            <template #button-content>
+              <i class="bx bxs-bell fs-22"></i>
+              <span v-if="unreadCount > 0"
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger fs-10"
+                style="padding: 2px 5px;">
+                {{ unreadCount > 9 ? '9+' : unreadCount }}
+              </span>
+            </template>
+
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+              <h6 class="mb-0">Notifications</h6>
+              <span class="badge bg-danger-subtle text-danger" v-if="unreadCount > 0">{{ unreadCount }} new</span>
+            </div>
+
+            <simplebar style="max-height: 300px;">
+              <template v-if="notifications.length">
+                <a v-for="n in notifications" :key="n.id"
+                  class="dropdown-item d-flex align-items-start gap-2 py-2 px-3"
+                  :style="n.read_at ? '' : 'background-color: #fffbea;'"
+                  href="#">
+                  <div class="flex-shrink-0 mt-1">
+                    <i class="ri-alert-line text-warning fs-18"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <p class="mb-0 fs-12 fw-semibold text-truncate" style="max-width:240px;">
+                      <strong>{{ n.data.fund_name }}</strong> balance dropped to
+                      &#8369;{{ Number(n.data.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                    </p>
+                    <p class="mb-0 fs-11 text-muted">
+                      Threshold: &#8369;{{ Number(n.data.threshold).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                      &middot; {{ timeAgo(n.created_at) }}
+                    </p>
+                  </div>
+                </a>
+              </template>
+              <div v-else class="p-3 text-center text-muted fs-12">No notifications</div>
+            </simplebar>
+
+            <div class="p-2 border-top text-center">
+              <a href="#" class="fs-12 text-muted" @click.prevent="markAllRead">Mark all as read</a>
+            </div>
+          </BDropdown>
 
           <BDropdown variant="link" class="ms-sm-3 me-3 header-item topbar-user" toggle-class="arrow-none" menu-class="dropdown-menu-end" :offset="{ alignmentAxis: -14, crossAxis: 0, mainAxis: 0 }">
             <template #button-content>
