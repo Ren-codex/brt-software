@@ -126,8 +126,8 @@
             @forelse($expenses as $index => $expense)
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>{{ \Carbon\Carbon::parse($expense->expense_date)->format('M d, Y') }}</td>
-                <td>{{ ucfirst($expense->expense_type) }}</td>
+                <td>{{ $expense->expense_date ? \Carbon\Carbon::parse($expense->expense_date)->format('M d, Y') : '—' }}</td>
+                <td>{{ $expense->expense_type ? ucfirst($expense->expense_type) : '—' }}</td>
                 <td>{{ $expense->fund?->name ?? '—' }}</td>
                 <td>{{ $expense->description ?? '—' }}</td>
                 <td class="amount-col">{{ number_format($expense->amount, 2) }}</td>
