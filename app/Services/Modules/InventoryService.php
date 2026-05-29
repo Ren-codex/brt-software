@@ -56,7 +56,7 @@ class InventoryService
      */
     public function deductStock($productId, $quantity, $reason, $batchCode = null)
     {
-        $previousTotal = (int) $this->getCurrentStock($productId, $batchCode);
+        $previousTotal = (int) $this->getCurrentStock($productId);
         $remainingQuantity = $quantity;
 
         // Get inventory stocks for the product, optionally filtered by batch_code
@@ -161,7 +161,7 @@ class InventoryService
      */
     public function recordLossOrDamage($productId, $quantity, $reason, $batchCode = null, $type = 'loss')
     {
-        $previousTotal = (int) $this->getCurrentStock($productId, $batchCode);
+        $previousTotal = (int) $this->getCurrentStock($productId);
         $remainingQuantity = (int) $quantity;
 
         $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
