@@ -38,15 +38,15 @@
                                     <label for="customer_id" class="form-label">Customer<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="customerSelection" :options="customerOptions"
-                                            text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.customer_id }"
+                                        <select
+                                            v-model="customerSelection"
                                             class="form-control"
-                                            @change="handleCustomerSelectionChange">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select Customer Type</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
+                                            :class="{ 'input-error': form.errors.customer_id }"
+                                            @change="handleCustomerSelectionChange"
+                                        >
+                                            <option :value="null" disabled>Select Customer Type</option>
+                                            <option v-for="c in customerOptions" :key="c.value" :value="c.value">{{ c.name }}</option>
+                                        </select>
                                     </div>
                                     <span class="error-message" v-if="form.errors.customer_id">{{ form.errors.customer_id }}</span>
                                 </div>
@@ -65,14 +65,14 @@
                                     <label for="sales_rep_id" class="form-label">Assigned To (Sales Rep)<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="form.sales_rep_id" :options="salesRepOptions"
-                                            text-field="name" value-field="value"
+                                        <select
+                                            v-model="form.sales_rep_id"
+                                            class="form-control"
                                             :class="{ 'input-error': form.errors.sales_rep_id }"
-                                            class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select Sales Rep</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
+                                        >
+                                            <option :value="null" disabled>Select Sales Rep</option>
+                                            <option v-for="r in salesRepOptions" :key="r.value" :value="r.value">{{ r.name }}</option>
+                                        </select>
                                     </div>
                                     <span class="error-message" v-if="form.errors.sales_rep_id">{{ form.errors.sales_rep_id }}</span>
                                 </div>
@@ -81,14 +81,14 @@
                                     <label for="driver_id" class="form-label">Assigned To (Driver)<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="form.driver_id" :options="dropdowns.drivers"
-                                            text-field="name" value-field="value"
+                                        <select
+                                            v-model="form.driver_id"
+                                            class="form-control"
                                             :class="{ 'input-error': form.errors.driver_id }"
-                                            class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select Driver</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
+                                        >
+                                            <option :value="null" disabled>Select Driver</option>
+                                            <option v-for="d in dropdowns.drivers" :key="d.value" :value="d.value">{{ d.name }}</option>
+                                        </select>
                                     </div>
                                     <span class="error-message" v-if="form.errors.driver_id">{{ form.errors.driver_id }}</span>
                                 </div>
@@ -97,14 +97,14 @@
                                     <label for="location_id" class="form-label">Location<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-map-pin-line input-icon"></i>
-                                        <b-form-select v-model="form.location_id" :options="dropdowns.locations"
-                                            text-field="name" value-field="value"
+                                        <select
+                                            v-model="form.location_id"
+                                            class="form-control"
                                             :class="{ 'input-error': form.errors.location_id }"
-                                            class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="0">Select Location</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
+                                        >
+                                            <option :value="0">Select Location</option>
+                                            <option v-for="l in dropdowns.locations" :key="l.value" :value="l.value">{{ l.name }}</option>
+                                        </select>
                                     </div>
                                     <span class="error-message" v-if="form.errors.location_id">{{ form.errors.location_id }}</span>
                                 </div>
@@ -319,21 +319,21 @@
                         <i class="ri-error-warning-line"></i>
                         <span>{{ form.errors.stock }}</span>
                     </div>
-                    <div class="form-actions d-flex justify-content-end">
-                        <button type="button" class="btn btn-cancel me-2" @click="hide">
-                            <i class="ri-close-line"></i>
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-save"
-                            :disabled="form.processing || !hasCustomerSelection || !form.order_date">
-                            <i class="ri-save-line" v-if="!form.processing"></i>
-                            <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : (editable ? 'Save Order' : 'Review Order') }}
-                        </button>
-                    </div>
                 </form>
 
-
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel me-2" @click="hide">
+                    <i class="ri-close-line"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-save"
+                    :disabled="form.processing || !hasCustomerSelection || !form.order_date"
+                    @click="submit">
+                    <i class="ri-save-line" v-if="!form.processing"></i>
+                    <i class="ri-loader-4-line spinner" v-else></i>
+                    {{ form.processing ? 'Saving...' : (editable ? 'Save Order' : 'Review Order') }}
+                </button>
             </div>
         </div>
     </div>
@@ -737,17 +737,24 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="bank_transfer_name" class="form-label">Bank Name<span class="text-danger">*</span></label>
+                        <label for="bank_transfer_account" class="form-label">Bank Account<span class="text-danger">*</span></label>
                         <div class="input-wrapper">
                             <i class="ri-bank-line input-icon"></i>
-                            <input
-                                id="bank_transfer_name"
-                                v-model.trim="bankTransferDetails.bank_name"
-                                type="text"
+                            <select
+                                id="bank_transfer_account"
+                                v-model="bankTransferDetails.bank_account_id"
                                 class="form-control"
-                                placeholder="Enter bank name"
-                            />
+                                @change="onSalesBankAccountChange"
+                            >
+                                <option value="">— Select bank account —</option>
+                                <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
+                                    {{ ba.bank_name }} — {{ ba.account_name }}
+                                </option>
+                            </select>
                         </div>
+                        <small v-if="bankAccounts.length === 0" style="font-size:0.75rem;color:#94a3b8">
+                            No bank accounts. <a href="/accounting/bank-accounts" target="_blank">Add one.</a>
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -906,8 +913,7 @@
         </div>
     </div>
 
-    <Item :dropdowns="dropdowns" :items="form.items" @items="storeItem" @update="updateItem"
-        :formatCurrency="formatCurrency" ref="item" />
+    <Item :dropdowns="dropdowns" :items="form.items" @items="storeItem" @update="updateItem" ref="item" />
     <Customer :dropdowns="dropdowns" ref="createCustomer" />
 </template>
 
@@ -920,6 +926,7 @@ import PaymentPromptModal from '@/Pages/Modules/Sales/Components/SalesOrders/Mod
 
 export default {
     components: { TextInput, Item, Customer, PaymentPromptModal },
+    emits: ['add'],
     props: ['dropdowns', 'user'],
     data() {
         return {
@@ -935,6 +942,7 @@ export default {
                 status_id: null,
                 billing_account: null,
                 payment_mode: null,
+                bank_account_id: null,
                 items: [],
                 option: 'lists',
                 action: null
@@ -966,8 +974,10 @@ export default {
             creditVerificationText: '',
             creditVerificationError: null,
             bankTransferError: null,
+            bankAccounts: [],
             selectedReviewPaymentType: null,
             bankTransferDetails: {
+                bank_account_id: '',
                 bank_name: '',
                 reference_number: '',
                 amount_paid: null,
@@ -1123,7 +1133,7 @@ export default {
         isBankTransferInvalid() {
             if (!this.showBankTransferModal) return false;
             const amountPaid = Number(this.bankTransferDetails.amount_paid);
-            return !this.bankTransferDetails.bank_name
+            return !this.bankTransferDetails.bank_account_id
                 || !this.bankTransferDetails.reference_number
                 || !Number.isFinite(amountPaid)
                 || amountPaid < this.grandTotal;
@@ -1131,8 +1141,21 @@ export default {
 
     },
     methods: {
+        async loadBankAccounts() {
+            try {
+                const res = await axios.get('/accounting/bank-accounts/list');
+                this.bankAccounts = res.data || [];
+            } catch {
+                this.bankAccounts = [];
+            }
+        },
+        onSalesBankAccountChange() {
+            const selected = this.bankAccounts.find(b => b.id === this.bankTransferDetails.bank_account_id);
+            this.bankTransferDetails.bank_name = selected ? selected.bank_name : '';
+        },
         resetBankTransferDetails() {
             this.bankTransferDetails = {
+                bank_account_id: '',
                 bank_name: '',
                 reference_number: '',
                 amount_paid: null,
@@ -1391,6 +1414,7 @@ export default {
                 if (!this.bankTransferDetails.amount_paid) {
                     this.bankTransferDetails.amount_paid = this.grandTotal;
                 }
+                this.loadBankAccounts();
                 return;
             }
 
@@ -1419,8 +1443,8 @@ export default {
             return true;
         },
         submitBankTransfer() {
-            if (!this.bankTransferDetails.bank_name || !this.bankTransferDetails.reference_number) {
-                this.bankTransferError = 'Please complete all bank transfer details.';
+            if (!this.bankTransferDetails.bank_account_id || !this.bankTransferDetails.reference_number) {
+                this.bankTransferError = 'Please select a bank account and enter a reference number.';
                 return;
             }
 
@@ -1428,6 +1452,7 @@ export default {
                 return;
             }
 
+            this.form.bank_account_id = this.bankTransferDetails.bank_account_id;
             this.bankTransferError = null;
             this.submitOrderCreation();
         },
@@ -1471,27 +1496,38 @@ export default {
                     this.pendingCashReceived = cashReceivedAmount;
                     this.pendingCashPaid = 0;
 
-                    if (isCashCharge && invoice) {
-                        this.pendingSalesOrder = createdOrder;
-                        this.pendingInvoice = invoice;
-                        this.paymentForm.id = invoice.id;
-                        this.paymentForm.balance_due = invoice.balance_due || 0;
-                        this.paymentForm.amount_paid = invoice.balance_due || 0;
-                        this.pendingCashPaid = invoice.balance_due || 0;
-                        this.paymentForm.payment_date = selectedOrderDate || new Date().toISOString().slice(0, 10);
-                        this.processCashPayment();
-                        return;
-                    }
+                    if ((isCashCharge || isCash) && invoice) {
+                        const receiptId = response?.props?.flash?.receipt_id
+                            || this.$page?.props?.flash?.receipt_id
+                            || null;
 
-                    if (isCash && invoice) {
+                        if ((invoice.balance_due ?? 0) <= 0) {
+                            // Auto-paid by backend — skip payment, go straight to success/print
+                            this.pendingReceiptId = receiptId;
+                            if (isCashCharge) {
+                                this.playSuccessBeep();
+                                this.showChargeSuccessModal = true;
+                            } else {
+                                this.showPrintPrompt = true;
+                            }
+                            this.$emit('add', true);
+                            return;
+                        }
+
+                        // Balance still outstanding — proceed with manual payment flow
                         this.pendingSalesOrder = createdOrder;
                         this.pendingInvoice = invoice;
-                        this.paymentPromptError = null;
                         this.paymentForm.id = invoice.id;
-                        this.paymentForm.balance_due = invoice.balance_due || 0;
-                        this.paymentForm.amount_paid = invoice.balance_due || 0;
+                        this.paymentForm.balance_due = invoice.balance_due;
+                        this.paymentForm.amount_paid = invoice.balance_due;
                         this.paymentForm.payment_date = selectedOrderDate || new Date().toISOString().slice(0, 10);
-                        this.showPaymentPrompt = true;
+                        if (isCashCharge) {
+                            this.pendingCashPaid = invoice.balance_due;
+                            this.processCashPayment();
+                        } else {
+                            this.paymentPromptError = null;
+                            this.showPaymentPrompt = true;
+                        }
                         return;
                     }
 
@@ -1851,6 +1887,7 @@ export default {
                 if (!this.bankTransferDetails.amount_paid) {
                     this.bankTransferDetails.amount_paid = this.grandTotal;
                 }
+                this.loadBankAccounts();
             } else {
                 this.showCashReceivedModal = false;
                 this.showBankTransferModal = false;
@@ -1890,7 +1927,7 @@ export default {
 
 .order-review-modal .modal-header {
     border-radius: 20px 20px 0 0;
-    background: #C4DAD2 !important;
+    background: #dceae5 !important;
     border-bottom: 1px solid #e9ecef;
 }
 
@@ -1910,7 +1947,7 @@ export default {
 
 .print-review-modal .modal-header {
     border-radius: 20px 20px 0 0;
-    background: #C4DAD2 !important;
+    background: #dceae5 !important;
     border-bottom: 1px solid #e9ecef;
 }
 
@@ -1950,49 +1987,24 @@ export default {
     background: #fff;
 }
 
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1050;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    padding: 15px;
-}
-
-.modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
 .modal-container {
     max-width: 100%;
     width: 100%;
-    position: relative;
-    background: #f7fbfa;
-    border-radius: 28px;
-    box-shadow: 0 28px 70px rgba(17, 24, 39, 0.25);
+    max-height: calc(100vh - 2rem);
     overflow: hidden;
-    transform: translateY(25px) scale(0.95);
-    transition: all 0.3s ease;
-}
-
-.modal-overlay.active .modal-container {
-    transform: translateY(0) scale(1);
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
-    padding: 16px 22px;
-    border-bottom: 1px solid #d7e5de;
+    padding: 1.35rem 1.5rem;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(140deg, #d7ece5 0%, #c7e2d9 100%);
+    align-items: flex-start;
+    flex-shrink: 0;
+    gap: 1rem;
+    background: linear-gradient(135deg, #3d8d7a 0%, #4f9e8c 100%);
+    border-bottom: none;
 }
 
 .header-title {
@@ -2007,41 +2019,27 @@ export default {
     border-radius: 11px;
     display: grid;
     place-items: center;
-    background: rgba(26, 104, 87, 0.15);
-    color: #1a6857;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
     font-size: 21px;
 }
 
 .header-title h2 {
     margin: 0;
     font-size: 1.16rem;
-    color: #1f2937;
+    color: #fff;
     font-weight: 700;
 }
 
-.close-btn {
-    width: 34px;
-    height: 34px;
-    border: 0;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.75);
-    color: #4b5563;
-    font-size: 19px;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-    background: #fff;
-    transform: rotate(90deg);
-}
-
 .modal-body {
-    padding: 1.5rem 1.75rem 1.75rem;
-    max-height: 75vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    padding: 1.5rem 1.75rem 1.75rem;
+}
+
+.modal-footer {
+    flex-shrink: 0;
 }
 
 .form-layout {

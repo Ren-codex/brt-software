@@ -74,3 +74,17 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.modal-container {
+    max-height: calc(100vh - 2rem);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-footer {
+    flex-shrink: 0;
+    border-top: 1px solid #e9ecef;
+}
+</style>

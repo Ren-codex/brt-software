@@ -1,7 +1,7 @@
 <template>
-  <div v-if="showModal" class="payable-modal-overlay" @click.self="hide">
-    <div class="payable-modal">
-      <div class="payable-modal-header">
+  <div v-if="showModal" class="modal-overlay" @click.self="hide">
+    <div class="modal-container modal-md">
+      <div class="modal-header">
         <div>
           <p class="modal-kicker mb-1">Accounts Payable</p>
           <h4 class="modal-title mb-0">Record Supplier Payment</h4>
@@ -11,7 +11,7 @@
         </button>
       </div>
 
-      <div class="payable-modal-body">
+      <div class="modal-body">
         <div class="summary-grid">
           <div class="summary-card">
             <span class="summary-label">Payable No.</span>
@@ -62,15 +62,22 @@
 
           <template v-if="form.payment_mode === 'Bank Transfer'">
             <div>
-              <label class="form-label" for="bank_name">Bank Name</label>
-              <input
-                id="bank_name"
-                v-model.trim="form.bank_name"
-                type="text"
+              <label class="form-label" for="bank_account_id">Bank Account</label>
+              <select
+                id="bank_account_id"
+                v-model="form.bank_account_id"
                 class="form-input"
-                placeholder="Enter bank name"
+                @change="onBankAccountChange"
               >
-              <small v-if="errors.bank_name" class="field-error">{{ errors.bank_name }}</small>
+                <option value="">— Select bank account —</option>
+                <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
+                  {{ ba.bank_name }} — {{ ba.account_name }}
+                </option>
+              </select>
+              <small v-if="bankAccounts.length === 0" class="form-help text-muted">
+                No bank accounts configured. <a href="/accounting/bank-accounts" target="_blank">Add one here.</a>
+              </small>
+              <small v-if="errors.bank_account_id" class="field-error">{{ errors.bank_account_id }}</small>
             </div>
 
             <div>
@@ -80,7 +87,7 @@
                 v-model.trim="form.reference_number"
                 type="text"
                 class="form-input"
-                placeholder="Enter reference number"
+                placeholder="Enter transfer reference number"
               >
               <small v-if="errors.reference_number" class="field-error">{{ errors.reference_number }}</small>
             </div>
@@ -88,7 +95,7 @@
         </div>
       </div>
 
-      <div class="payable-modal-footer">
+      <div class="modal-footer">
         <button type="button" class="footer-btn secondary" @click="hide" :disabled="isSubmitting">Cancel</button>
         <button type="button" class="footer-btn primary" @click="submit" :disabled="isSubmitting">
           <i v-if="isSubmitting" class="ri-loader-4-line rotating-icon me-1"></i>
@@ -108,9 +115,11 @@ export default {
       showModal: false,
       isSubmitting: false,
       record: null,
+      bankAccounts: [],
       form: {
         payment_mode: 'Cash',
         payment_amount: '',
+        bank_account_id: '',
         bank_name: '',
         reference_number: '',
       },
@@ -129,9 +138,11 @@ export default {
       this.showModal = true;
       this.errors = {};
       this.form.payment_mode = 'Cash';
-      this.form.payment_amount = this.remainingBalance > 0 ? this.remainingBalance.toFixed(2) : '';
-      this.form.bank_name = record?.bank_name || '';
-      this.form.reference_number = record?.reference_number || '';
+      this.form.payment_amount = '';
+      this.form.bank_account_id = '';
+      this.form.bank_name = '';
+      this.form.reference_number = '';
+      this.loadBankAccounts();
     },
     hide(force = false) {
       if (this.isSubmitting && !force) return;
@@ -142,18 +153,32 @@ export default {
       this.form = {
         payment_mode: 'Cash',
         payment_amount: '',
+        bank_account_id: '',
         bank_name: '',
         reference_number: '',
       };
+    },
+    async loadBankAccounts() {
+      try {
+        const res = await axios.get('/accounting/bank-accounts/list');
+        this.bankAccounts = res.data || [];
+      } catch {
+        this.bankAccounts = [];
+      }
+    },
+    onBankAccountChange() {
+      const selected = this.bankAccounts.find(b => b.id === this.form.bank_account_id);
+      this.form.bank_name = selected ? selected.bank_name : '';
     },
     selectPaymentMode(mode) {
       this.form.payment_mode = mode;
       this.errors.payment_mode = null;
 
       if (mode !== 'Bank Transfer') {
+        this.form.bank_account_id = '';
         this.form.bank_name = '';
         this.form.reference_number = '';
-        this.errors.bank_name = null;
+        this.errors.bank_account_id = null;
         this.errors.reference_number = null;
       }
     },
@@ -178,8 +203,8 @@ export default {
       }
 
       if (this.form.payment_mode === 'Bank Transfer') {
-        if (!this.form.bank_name) {
-          errors.bank_name = 'Bank name is required.';
+        if (!this.form.bank_account_id) {
+          errors.bank_account_id = 'Please select a bank account.';
         }
 
         if (!this.form.reference_number) {
@@ -201,11 +226,16 @@ export default {
         const response = await axios.post(`/received-stocks/${this.record.id}/pay`, {
           payment_mode: this.form.payment_mode,
           payment_amount: Number(this.form.payment_amount),
+          bank_account_id: this.form.payment_mode === 'Bank Transfer' ? (this.form.bank_account_id || null) : null,
           bank_name: this.form.payment_mode === 'Bank Transfer' ? this.form.bank_name : null,
           reference_number: this.form.payment_mode === 'Bank Transfer' ? this.form.reference_number : null,
         });
 
-        this.$emit('toast', response.data?.message || 'Accounts payable payment recorded successfully.');
+        const isFullySettled = Number(response.data?.data?.remaining_balance || 0) <= 0;
+        const message = isFullySettled
+          ? 'Supplier payable fully settled. Record moved to Receiving.'
+          : response.data?.message || 'Payment recorded successfully.';
+        this.$emit('toast', message);
         this.$emit('paid', response.data?.data || null);
         this.hide(true);
       } catch (error) {
@@ -226,64 +256,17 @@ export default {
 </script>
 
 <style scoped>
-.payable-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-}
-
-.payable-modal {
-  width: min(100%, 720px);
-  border-radius: 24px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
-}
-
-.payable-modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.35rem 1.5rem;
-  background: linear-gradient(135deg, #3d8d7a 0%, #4f9e8c 100%);
-  color: #fff;
-}
-
 .modal-kicker {
-  opacity: 0.85;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: #6b8c85;
 }
 
 .modal-title {
-  color: #fff;
+  color: #16322e;
   font-weight: 700;
-}
-
-.close-btn {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-}
-
-.payable-modal-body {
-  padding: 1.5rem;
 }
 
 .summary-grid {
@@ -392,13 +375,6 @@ export default {
   font-size: 0.8rem;
 }
 
-.payable-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.1rem 1.5rem 1.5rem;
-}
-
 .footer-btn {
   min-width: 132px;
   min-height: 46px;
@@ -435,10 +411,6 @@ export default {
 @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
-  }
-
-  .payable-modal-footer {
-    flex-direction: column-reverse;
   }
 
   .footer-btn {

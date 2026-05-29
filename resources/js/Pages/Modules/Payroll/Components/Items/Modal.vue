@@ -104,42 +104,11 @@ export default {
 
 <style scoped>
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 1060;
-  padding: 16px;
 }
 
 .modal-container {
-  width: 100%;
   max-width: 520px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-}
-
-.modal-header {
-  background: #3a8674;
-  color: #fff;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.close-btn {
-  border: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.2);
 }
 
 .modal-body {

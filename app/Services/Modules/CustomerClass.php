@@ -39,7 +39,8 @@ class CustomerClass
             'is_active' => $request->is_active,
             'is_regular' => $request->is_regular,
             'is_blacklisted' => $request->is_blacklisted,
-            'added_by_id' => auth()->id(),
+            'credit_limit'   => $request->credit_limit ?? 0,
+            'added_by_id'    => auth()->id(),
         ]);
 
         return [
@@ -59,6 +60,7 @@ class CustomerClass
             'is_active' => $request->is_active,
             'is_regular' => $request->is_regular,
             'is_blacklisted' => $request->is_blacklisted,
+            'credit_limit'   => $request->credit_limit ?? $data->credit_limit,
         ]);
 
         return [

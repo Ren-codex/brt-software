@@ -109,10 +109,10 @@
                                                 <label>Unit Cost</label>
                                                 <div class="money-input">
                                                     <span class="money-prefix">PHP</span>
-                                                    <input type="number" v-model="item.unit_cost" class="form-control form-control-plain"
+                                                    <input type="number" v-model="item.unit_cost" class="form-control form-control-plain no-spinner"
                                                         :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
                                                         @input="calculateTotal(item); handleInput(`items.${index}.unit_cost`)"
-                                                        step="0.01" min="0" :max="MAX_UNIT_COST" required>
+                                                        step="any" min="0" :max="MAX_UNIT_COST" required>
                                                 </div>
                                                 <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                                     {{ form.errors[`items.${index}.unit_cost`] }}
@@ -207,19 +207,20 @@
                         </div>
                     </div>
 
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-cancel" @click="hide">
-                            <i class="ri-close-line"></i>
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-save"
-                            :disabled="form.processing || form.items.length === 0">
-                            <i class="ri-save-line" v-if="!form.processing"></i>
-                            <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Processing...' : (editable ? 'Update Request' : 'Create Request') }}
-                        </button>
-                    </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" @click="hide">
+                    <i class="ri-close-line"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-save"
+                    :disabled="form.processing || form.items.length === 0"
+                    @click="submit">
+                    <i class="ri-save-line" v-if="!form.processing"></i>
+                    <i class="ri-loader-4-line spinner" v-else></i>
+                    {{ form.processing ? 'Processing...' : (editable ? 'Update Request' : 'Create Request') }}
+                </button>
             </div>
         </div>
     </div>
@@ -280,7 +281,7 @@ export default {
             this.showModal = true;
         },
 
-        edit(data, index) {
+        edit(data) {
             this.form.reset();
             this.form.clearErrors();
             this.form.id = data.id;
@@ -480,55 +481,15 @@ export default {
 
 
 <style scoped>
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1050;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    padding: 15px;
-}
-
-.modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
 .modal-container {
-    background: #f7fbfa;
-    border-radius: 28px;
-    box-shadow: 0 28px 70px rgba(17, 24, 39, 0.25);
-    width: 100%;
-    max-width: 500px;
+    max-height: calc(100vh - 2rem);
     overflow: hidden;
-    transform: translateY(25px) scale(0.95);
-    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-container.modal-lg {
     max-width: 1240px;
-}
-
-.modal-overlay.active .modal-container {
-    transform: translateY(0) scale(1);
-}
-
-.modal-header {
-    padding: 16px 22px;
-    border-bottom: 1px solid #d7e5de;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(140deg, #d7ece5 0%, #c7e2d9 100%);
 }
 
 .header-title {
@@ -540,44 +501,37 @@ export default {
 .header-title i {
     width: 38px;
     height: 38px;
-    border-radius: 11px;
+    border-radius: 10px;
     display: grid;
     place-items: center;
-    background: rgba(26, 104, 87, 0.15);
-    color: #1a6857;
-    font-size: 21px;
+    background: rgba(61, 141, 122, 0.12);
+    border: 1px solid rgba(61, 141, 122, 0.16);
+    color: #3d8d7a;
+    font-size: 18px;
+    flex-shrink: 0;
 }
 
 .header-title h2 {
     margin: 0;
-    font-size: 1.16rem;
-    color: #1f2937;
+    font-size: 1rem;
+    color: #16322e;
     font-weight: 700;
 }
 
-.close-btn {
-    width: 34px;
-    height: 34px;
-    border: 0;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.75);
-    color: #4b5563;
-    font-size: 19px;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-    background: #fff;
-    transform: rotate(90deg);
-}
-
 .modal-body {
-    padding: 1.5rem 1.75rem 1.75rem;
-    max-height: 75vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    padding: 1.5rem 1.75rem 1.75rem;
+}
+
+.modal-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
 }
 
 .form-layout {
@@ -679,6 +633,17 @@ export default {
 
 .form-control-plain {
     padding-left: 1rem;
+}
+
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.no-spinner {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 .money-input {

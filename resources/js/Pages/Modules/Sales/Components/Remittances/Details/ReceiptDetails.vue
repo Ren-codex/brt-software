@@ -61,10 +61,8 @@ export default {
 }
 </script>
 <style scoped>
-.modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);z-index:50;}
-.modal-container{background:#fff;border-radius:8px;overflow:hidden;width:100%;padding: 0px;}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee}
+.modal-overlay{z-index:50;}
+.modal-container{overflow:hidden;width:100%;padding: 0px;}
 .modal-body{padding:16px}
-.close-btn{background:transparent;border:0}
 .form-actions .btn{min-width:140px}
 </style>

@@ -15,9 +15,10 @@ class ProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pack_size' => 'required|integer|max:255',
-            'unit_id' => 'required|exists:list_units,id',
-            'brand_id' => 'required|exists:list_brands,id',
+            'pack_size'     => 'required|integer|max:255',
+            'unit_id'       => 'required|exists:list_units,id',
+            'brand_id'      => 'required|exists:list_brands,id',
+            'minimum_stock' => 'nullable|integer|min:0',
         ];
     }
 

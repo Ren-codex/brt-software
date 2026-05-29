@@ -3,10 +3,14 @@
 namespace App\Services\Accounting;
 
 use App\Models\Account;
+use App\Models\BankAccount;
+use App\Models\BankDeposit;
 use App\Models\Expense;
+use App\Models\FundTransfer;
 use App\Models\InventoryAdjustment;
 use App\Models\InventoryStocks;
 use App\Models\JournalEntry;
+use App\Models\PettyCashTransaction;
 use App\Models\Receipt;
 use App\Models\ReceivedStock;
 use App\Models\ReceivedStockPayment;
@@ -33,7 +37,7 @@ class JournalEntryService
 
         $cashOrReceivableAccount = $isCreditSale
             ? $this->ensureAccount('1100', 'accounts_receivable', 'Accounts Receivable', 'asset', 'current_asset')
-            : $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+            : $this->resolveCashAccountByPaymentMode($salesOrder->payment_mode, $salesOrder->bank_account_id ?? null);
 
         $salesAccount = $this->ensureAccount('4100', 'rice_sales', 'Rice Sales', 'revenue', 'sales');
         $cogsAccount = $this->ensureAccount('5100', 'cost_of_goods_sold', 'Cost of Goods Sold', 'expense', 'cost_of_sales');
@@ -97,7 +101,7 @@ class JournalEntryService
             return null;
         }
 
-        $cashAccount = $this->resolveCashAccountByPaymentMode($receipt->payment_mode);
+        $cashAccount = $this->resolveCashAccountByPaymentMode($receipt->payment_mode, $receipt->bank_account_id ?? null);
         $receivableAccount = $this->ensureAccount('1100', 'accounts_receivable', 'Accounts Receivable', 'asset', 'current_asset');
         $sourceSalesOrder = optional(optional($receipt->arInvoice)->sales_order);
         $memo = 'Receipt ' . $receipt->receipt_number . ' applied to invoice collection.';
@@ -119,43 +123,6 @@ class JournalEntryService
                     'line_type' => 'credit',
                     'amount' => $amount,
                     'description' => 'Reduce accounts receivable balance.',
-                ],
-            ],
-            $sourceSalesOrder ? ('SO#' . $sourceSalesOrder->so_number . ' - ' . $memo) : $memo
-        );
-    }
-
-    public function recordRefundReceiptEntry(Receipt $receipt): ?JournalEntry
-    {
-        $receipt->loadMissing(['arInvoice.sales_order']);
-
-        $amount = round((float) $receipt->amount_paid, 2);
-        if ($amount <= 0) {
-            return null;
-        }
-
-        $refundAccount = $this->ensureAccount('4110', 'sales_returns_allowances', 'Sales Returns And Allowances', 'revenue', 'contra_revenue');
-        $cashAccount = $this->resolveCashAccountByPaymentMode($receipt->payment_mode);
-        $sourceSalesOrder = optional(optional($receipt->arInvoice)->sales_order);
-        $memo = 'Refund receipt ' . $receipt->receipt_number . ' recorded for sales return.';
-
-        return $this->createEntry(
-            $receipt,
-            $receipt->receipt_date,
-            'refund_receipt',
-            $memo,
-            [
-                [
-                    'account_id' => $refundAccount->id,
-                    'line_type' => 'debit',
-                    'amount' => $amount,
-                    'description' => 'Recognize refunded sales amount.',
-                ],
-                [
-                    'account_id' => $cashAccount->id,
-                    'line_type' => 'credit',
-                    'amount' => $amount,
-                    'description' => 'Record cash refunded to customer.',
                 ],
             ],
             $sourceSalesOrder ? ('SO#' . $sourceSalesOrder->so_number . ' - ' . $memo) : $memo
@@ -217,7 +184,7 @@ class JournalEntryService
             $memo = 'Sales return approved for SO#' . $salesOrder->so_number . '. Revenue reversal entry.';
             $entries[] = $this->createEntry(
                 $salesOrder,
-                now()->toDateString(),
+                $salesOrder->approved_at?->toDateString() ?? now()->toDateString(),
                 'sales_return_revenue',
                 $memo,
                 [
@@ -259,7 +226,7 @@ class JournalEntryService
 
             $entries[] = $this->createEntry(
                 $salesOrder,
-                now()->toDateString(),
+                $salesOrder->approved_at?->toDateString() ?? now()->toDateString(),
                 'sales_return_inventory',
                 $memo,
                 [
@@ -280,11 +247,99 @@ class JournalEntryService
             );
         }
 
+        $damagedItems = $itemsToProcess->filter(function ($item) use ($returnRequests) {
+            return (string) (optional($returnRequests->get($item->id))->return_condition ?? 'restockable') === 'damaged';
+        });
+
+        $damagedCost = round($damagedItems->sum(function ($item) use ($returnRequests) {
+            $returnQuantity = (int) optional($returnRequests->get($item->id))->return_quantity ?: (int) $item->quantity;
+            $effectiveQuantity = min($returnQuantity, (int) $item->quantity);
+            $inventoryStock = InventoryStocks::with('receivedItem')
+                ->where('batch_code', $item->batch_code)
+                ->first();
+
+            return $effectiveQuantity * (float) optional($inventoryStock?->receivedItem)->unit_cost;
+        }), 2);
+
+        if ($damagedCost > 0) {
+            $lossAccount = $this->ensureAccount('5400', 'loss_on_damaged_goods', 'Loss on Damaged Goods', 'expense', 'operating_expense');
+            $cogsAccount = $this->ensureAccount('5100', 'cost_of_goods_sold', 'Cost of Goods Sold', 'expense', 'cost_of_sales');
+            $memo = 'Sales return approved for SO#' . $salesOrder->so_number . '. Damaged goods write-off entry.';
+
+            $entries[] = $this->createEntry(
+                $salesOrder,
+                $salesOrder->approved_at?->toDateString() ?? now()->toDateString(),
+                'sales_return_damage_writeoff',
+                $memo,
+                [
+                    [
+                        'account_id' => $lossAccount->id,
+                        'line_type' => 'debit',
+                        'amount' => $damagedCost,
+                        'description' => 'Recognize loss on damaged returned goods.',
+                    ],
+                    [
+                        'account_id' => $cogsAccount->id,
+                        'line_type' => 'credit',
+                        'amount' => $damagedCost,
+                        'description' => 'Reverse cost of goods sold for damaged return.',
+                    ],
+                ],
+                $memo
+            );
+        }
+
         if ($sourceReceipt && !empty($entries)) {
             $this->reverseEntriesForSource($sourceReceipt, 'Receipt voided due to sales return.', now()->toDateString());
         }
 
         return $entries;
+    }
+
+    public function recordReplenishmentEntry(\App\Models\ReplenishmentRequest $replenishment): ?JournalEntry
+    {
+        $expenses = $replenishment->expenses;
+        $total    = round((float) $replenishment->total_amount, 2);
+
+        if ($total <= 0 || $expenses->isEmpty()) {
+            return null;
+        }
+
+        // Group expenses by type and build one debit line per category
+        $lines = [];
+        foreach ($expenses->groupBy('expense_type') as $type => $group) {
+            $subtotal = round((float) $group->sum('amount'), 2);
+            if ($subtotal <= 0) continue;
+            $account = $this->resolveExpenseAccount($type);
+            $lines[] = [
+                'account_id'  => $account->id,
+                'line_type'   => 'debit',
+                'amount'      => $subtotal,
+                'description' => ucfirst($type) . ' expenses — ' . $replenishment->reference_no,
+            ];
+        }
+
+        // Credit: Cash on Hand (imprest fund replenishment reduces cash)
+        $cashAccount = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+        $lines[] = [
+            'account_id'  => $cashAccount->id,
+            'line_type'   => 'credit',
+            'amount'      => $total,
+            'description' => 'Replenishment approved — ' . $replenishment->reference_no,
+        ];
+
+        $memo = 'Petty cash replenishment approved. ' . $replenishment->reference_no
+            . ' | Fund: ' . optional($replenishment->fund)->name
+            . ' | ' . $expenses->count() . ' expense(s).';
+
+        return $this->createEntry(
+            $replenishment,
+            $replenishment->reviewed_at?->toDateString() ?? now()->toDateString(),
+            'petty_cash_replenishment',
+            $memo,
+            $lines,
+            $memo
+        );
     }
 
     public function recordExpenseReleaseEntry(Expense $expense): ?JournalEntry
@@ -336,7 +391,7 @@ class JournalEntryService
         $cashPaid = min($amountPaid, $amount);
         $remainingPayable = round(max($amount - $cashPaid, 0), 2);
         $payableAccount = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
-        $cashAccount = $isCreditPurchase ? null : $this->resolveCashAccountByPaymentMode($paymentMode);
+        $cashAccount = $isCreditPurchase ? null : $this->resolveCashAccountByPaymentMode($paymentMode, $receivedStock->bank_account_id ?? null);
         $entryType = ($isCreditPurchase || $remainingPayable > 0) ? 'purchase_receipt' : 'purchase_receipt_cash';
         $purchaseOrder = $receivedStock->purchaseOrder;
         $memo = 'Received stock ' . $receivedStock->received_no . ' posted from supplier delivery via ' . $paymentMode . '.';
@@ -399,7 +454,7 @@ class JournalEntryService
         $receivedStock->loadMissing('purchaseOrder');
 
         $payableAccount = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
-        $cashAccount = $this->resolveCashAccountByPaymentMode($payment->payment_mode);
+        $cashAccount = $this->resolveCashAccountByPaymentMode($payment->payment_mode, $payment->bank_account_id ?? null);
         $purchaseOrder = $receivedStock->purchaseOrder;
         $memo = 'Supplier payment recorded for received stock ' . $receivedStock->received_no . ' via ' . $payment->payment_mode . '.';
 
@@ -502,6 +557,178 @@ class JournalEntryService
             'Inventory adjustment posted: ' . $adjustment->type,
             $lines,
             'Inventory Adjustment #' . $adjustment->id . ' - ' . ($adjustment->reason ?: 'Inventory adjustment')
+        );
+    }
+
+    public function recordFundTransferEntry(FundTransfer $transfer): JournalEntry
+    {
+        $transfer->loadMissing(['fromBankAccount', 'toBankAccount']);
+
+        $fromAccount = $this->resolveBankAccountGl($transfer->fromBankAccount);
+        $toAccount   = $this->resolveBankAccountGl($transfer->toBankAccount);
+        $amount      = round((float) $transfer->amount, 2);
+
+        return $this->createEntry(
+            $transfer,
+            $transfer->transfer_date,
+            'fund_transfer',
+            'Fund transfer ' . $transfer->transfer_no . ' from ' . $transfer->fromBankAccount->bank_name . ' to ' . $transfer->toBankAccount->bank_name . '.',
+            [
+                ['account_id' => $toAccount->id,   'line_type' => 'debit',  'amount' => $amount, 'description' => 'Receive funds from ' . $transfer->fromBankAccount->account_name . '.'],
+                ['account_id' => $fromAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Transfer funds to ' . $transfer->toBankAccount->account_name . '.'],
+            ]
+        );
+    }
+
+    public function recordPettyCashReplenishment(PettyCashTransaction $txn): JournalEntry
+    {
+        $txn->loadMissing(['fund', 'bankAccount']);
+
+        $pettyCashAccount = $this->resolvePettyCashAccount($txn->fund);
+        $sourceAccount    = $txn->source_type === 'bank' && $txn->bankAccount
+            ? $this->resolveBankAccountGl($txn->bankAccount)
+            : $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+
+        $amount = round((float) $txn->amount, 2);
+
+        return $this->createEntry(
+            $txn,
+            $txn->transaction_date,
+            'petty_cash_replenishment',
+            'Petty cash replenishment ' . $txn->transaction_no . ' — ' . $txn->fund->name . '.',
+            [
+                ['account_id' => $pettyCashAccount->id, 'line_type' => 'debit',  'amount' => $amount, 'description' => 'Top up petty cash fund.'],
+                ['account_id' => $sourceAccount->id,    'line_type' => 'credit', 'amount' => $amount, 'description' => 'Fund source withdrawal.'],
+            ]
+        );
+    }
+
+    public function recordFundCapitalization(\App\Models\PettyCashFund $fund, float $amount): JournalEntry
+    {
+        $pettyCashAccount = $this->resolvePettyCashAccount($fund);
+        $cashAccount      = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+
+        return $this->createEntry(
+            $fund,
+            now()->toDateString(),
+            'petty_cash_capitalization',
+            'Initial capitalization of petty cash fund: ' . $fund->name . '.',
+            [
+                ['account_id' => $pettyCashAccount->id, 'line_type' => 'debit',  'amount' => $amount, 'description' => 'Establish petty cash fund: ' . $fund->name . '.'],
+                ['account_id' => $cashAccount->id,      'line_type' => 'credit', 'amount' => $amount, 'description' => 'Transfer from cash on hand to petty cash fund.'],
+            ]
+        );
+    }
+
+    public function recordBankDepositEntry(BankDeposit $deposit): JournalEntry
+    {
+        $deposit->loadMissing(['cashAccount', 'bankAccount']);
+
+        $bankGlAccount  = $this->resolveBankAccountGl($deposit->bankAccount);
+        $cashGlAccount  = $deposit->cashAccount;
+        $amount         = round((float) $deposit->amount, 2);
+
+        return $this->createEntry(
+            $deposit,
+            $deposit->deposit_date,
+            'bank_deposit',
+            'Bank deposit ' . $deposit->deposit_no . ' — cash deposited to ' . $deposit->bankAccount->bank_name . '.',
+            [
+                ['account_id' => $bankGlAccount->id,  'line_type' => 'debit',  'amount' => $amount, 'description' => 'Deposit cash to ' . $deposit->bankAccount->bank_name . ' — ' . $deposit->bankAccount->account_name . '.'],
+                ['account_id' => $cashGlAccount->id,  'line_type' => 'credit', 'amount' => $amount, 'description' => 'Reduce cash on hand account: ' . $deposit->cashAccount->name . '.'],
+            ]
+        );
+    }
+
+    public function recordPayrollEntry(\App\Models\Payroll $payroll): array
+    {
+        $payroll->loadMissing(['items']);
+
+        $grossPay      = round((float) $payroll->items->sum('total_earnings'), 2);
+        $totalDeductions = round((float) $payroll->items->sum('total_deductions'), 2);
+        $netPay        = round((float) $payroll->items->sum('net_salary'), 2);
+
+        if ($netPay <= 0) {
+            return [];
+        }
+
+        $salaryExpenseAccount   = $this->ensureAccount('5200', 'salaries_wages_expense', 'Salaries and Wages Expense', 'expense', 'operating_expense');
+        $cashAccount            = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+        $payrollDate            = $payroll->pay_period_end ?? now()->toDateString();
+        $memo                   = 'Payroll #' . $payroll->payroll_no . ' released for period ' . $payroll->pay_period_start . ' to ' . $payroll->pay_period_end . '.';
+
+        $entries = [];
+
+        if ($grossPay === $netPay || $totalDeductions <= 0) {
+            // No deductions — single entry
+            $entries[] = $this->createEntry(
+                $payroll,
+                $payrollDate,
+                'payroll_release',
+                $memo,
+                [
+                    ['account_id' => $salaryExpenseAccount->id, 'line_type' => 'debit',  'amount' => $netPay, 'description' => 'Record salary and wages expense.'],
+                    ['account_id' => $cashAccount->id,          'line_type' => 'credit', 'amount' => $netPay, 'description' => 'Reduce cash for payroll disbursement.'],
+                ]
+            );
+        } else {
+            // Gross expense debit; net cash credit; deductions payable credit
+            $deductionsPayableAccount = $this->ensureAccount('2100', 'payroll_deductions_payable', 'Payroll Deductions Payable', 'liability', 'current_liability');
+            $entries[] = $this->createEntry(
+                $payroll,
+                $payrollDate,
+                'payroll_release',
+                $memo,
+                [
+                    ['account_id' => $salaryExpenseAccount->id,   'line_type' => 'debit',  'amount' => $grossPay,        'description' => 'Record gross salary and wages expense.'],
+                    ['account_id' => $cashAccount->id,            'line_type' => 'credit', 'amount' => $netPay,          'description' => 'Reduce cash for net payroll disbursement.'],
+                    ['account_id' => $deductionsPayableAccount->id,'line_type' => 'credit', 'amount' => $totalDeductions, 'description' => 'Record payroll deductions payable (loans, withholdings).'],
+                ]
+            );
+        }
+
+        return $entries;
+    }
+
+    public function recordPettyCashDisbursement(PettyCashTransaction $txn): JournalEntry
+    {
+        $txn->loadMissing(['fund']);
+
+        $pettyCashAccount = $this->resolvePettyCashAccount($txn->fund);
+        $expenseAccount   = $this->resolveExpenseAccount($txn->category);
+        $amount           = round((float) $txn->amount, 2);
+
+        return $this->createEntry(
+            $txn,
+            $txn->transaction_date,
+            'petty_cash_disbursement',
+            'Petty cash disbursement ' . $txn->transaction_no . ($txn->description ? ' — ' . $txn->description : '') . '.',
+            [
+                ['account_id' => $expenseAccount->id,   'line_type' => 'debit',  'amount' => $amount, 'description' => 'Record petty cash expense: ' . ($txn->description ?? $txn->category ?? 'disbursement') . '.'],
+                ['account_id' => $pettyCashAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Reduce petty cash fund.'],
+            ]
+        );
+    }
+
+    private function resolveBankAccountGl(BankAccount $bankAccount): Account
+    {
+        return $this->ensureAccount(
+            $bankAccount->gl_code,
+            \Illuminate\Support\Str::slug($bankAccount->account_name),
+            $bankAccount->bank_name . ' — ' . $bankAccount->account_name,
+            'asset',
+            'current_asset'
+        );
+    }
+
+    private function resolvePettyCashAccount(\App\Models\PettyCashFund $fund): Account
+    {
+        return $this->ensureAccount(
+            $fund->gl_code,
+            'petty_cash_' . \Illuminate\Support\Str::slug($fund->name),
+            'Petty Cash — ' . $fund->name,
+            'asset',
+            'current_asset'
         );
     }
 
@@ -639,8 +866,22 @@ class JournalEntryService
         };
     }
 
-    private function resolveCashAccountByPaymentMode(?string $paymentMode): Account
+    private function resolveCashAccountByPaymentMode(?string $paymentMode, ?int $bankAccountId = null): Account
     {
+        if ($bankAccountId && strtolower((string) $paymentMode) === 'bank transfer') {
+            $bankAccount = BankAccount::find($bankAccountId);
+            if ($bankAccount) {
+                $slug = \Illuminate\Support\Str::slug($bankAccount->account_name);
+                return $this->ensureAccount(
+                    $bankAccount->gl_code,
+                    $slug,
+                    $bankAccount->bank_name . ' — ' . $bankAccount->account_name,
+                    'asset',
+                    'current_asset'
+                );
+            }
+        }
+
         return match (strtolower((string) $paymentMode)) {
             'bank transfer' => $this->ensureAccount('1010', 'cash_in_bank', 'Cash In Bank', 'asset', 'current_asset'),
             'credit card', 'debit card' => $this->ensureAccount('1020', 'card_clearing', 'Card Clearing', 'asset', 'current_asset'),

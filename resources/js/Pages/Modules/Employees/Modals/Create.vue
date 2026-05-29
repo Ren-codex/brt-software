@@ -687,38 +687,14 @@ export default {
     --mint-100: #e8f8f3;
     --danger-500: #d65b4e;
     --danger-100: #fff2f0;
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(circle at 15% 18%, rgba(45, 164, 135, 0.22), transparent 40%), rgba(10, 25, 22, 0.74);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 18px;
     z-index: 1050;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-}
-
-.modal-overlay.active {
-    opacity: 1;
 }
 
 .modal-container {
     max-width: min(1320px, 100%);
     max-height: calc(100vh - 36px);
     overflow: hidden;
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    background: linear-gradient(145deg, #f6fcfa 0%, #f9fffd 55%, #f2f8f7 100%);
-    box-shadow: 0 28px 70px rgba(3, 18, 15, 0.3);
-    transform: translateY(18px) scale(0.97);
-    transition: transform 0.25s ease;
     font-family: "Poppins", "Segoe UI", sans-serif;
-}
-
-.modal-overlay.active .modal-container {
-    transform: translateY(0) scale(1);
 }
 
 .modal-header {

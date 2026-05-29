@@ -45,12 +45,10 @@ class ReceivedStockService
             $amountPaid = $paymentMode === 'Credit'
                 ? 0
                 : round((float) ($data['amount_paid'] ?? 0), 2);
-            $bankName = $paymentMode === 'Bank Transfer'
-                ? trim((string) ($data['bank_name'] ?? ''))
-                : null;
-            $referenceNumber = $paymentMode === 'Bank Transfer'
-                ? trim((string) ($data['reference_number'] ?? ''))
-                : null;
+            $isBankTransfer  = $paymentMode === 'Bank Transfer';
+            $bankAccountId   = $isBankTransfer ? (int) ($data['bank_account_id'] ?? 0) ?: null : null;
+            $bankName        = $isBankTransfer ? trim((string) ($data['bank_name'] ?? '')) : null;
+            $referenceNumber = $isBankTransfer ? trim((string) ($data['reference_number'] ?? '')) : null;
 
             $receivedStock = ReceivedStock::create([
                 'po_id' => $data['po_id'],
@@ -59,6 +57,7 @@ class ReceivedStockService
                 'received_no' => $this->series_service->get('received_no'),
                 'payment_mode' => $paymentMode,
                 'amount_paid' => $amountPaid,
+                'bank_account_id' => $bankAccountId,
                 'bank_name' => $bankName,
                 'reference_number' => $referenceNumber,
                 'received_by_id' => Auth::id(),
@@ -69,6 +68,7 @@ class ReceivedStockService
                     'payment_date' => Carbon::now()->toDateString(),
                     'payment_mode' => $paymentMode,
                     'amount_paid' => $amountPaid,
+                    'bank_account_id' => $bankAccountId,
                     'bank_name' => $bankName,
                     'reference_number' => $referenceNumber,
                     'created_by_id' => Auth::id(),
@@ -154,8 +154,18 @@ class ReceivedStockService
 
     public function update($id, array $data)
     {
-        $receivedStock = ReceivedStock::findOrFail($id);
+        $receivedStock = ReceivedStock::with('payments')->findOrFail($id);
         $this->journalEntryService->reverseEntriesForSource($receivedStock, 'Received stock updated. Previous purchase receipt entry reversed.', $data['received_date'] ?? now()->toDateString());
+
+        foreach ($receivedStock->payments as $payment) {
+            $this->journalEntryService->reverseEntriesForSource(
+                $payment,
+                'Received stock updated. Previous payment entry reversed.',
+                $data['received_date'] ?? now()->toDateString()
+            );
+        }
+        $receivedStock->payments()->delete();
+
         if (!isset($data['payment_mode']) || !$data['payment_mode']) {
             $data['payment_mode'] = $receivedStock->payment_mode ?? 'Credit';
         }
@@ -180,6 +190,20 @@ class ReceivedStockService
             $data['reference_number'] = null;
         }
         $receivedStock->update($data);
+
+        $paymentMode = $receivedStock->payment_mode;
+        $amountPaid = round((float) ($receivedStock->amount_paid ?? 0), 2);
+        if ($paymentMode !== 'Credit' && $amountPaid > 0) {
+            $receivedStock->payments()->create([
+                'payment_date' => $receivedStock->received_date,
+                'payment_mode' => $paymentMode,
+                'amount_paid' => $amountPaid,
+                'bank_name' => $receivedStock->bank_name,
+                'reference_number' => $receivedStock->reference_number,
+                'created_by_id' => Auth::id(),
+            ]);
+        }
+
         $receivedStock = $receivedStock->load(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'payments.createdBy']);
         $this->journalEntryService->recordReceivedStockEntry($receivedStock);
 
@@ -196,21 +220,25 @@ class ReceivedStockService
             $paymentAmount = round((float) ($data['payment_amount'] ?? 0), 2);
             $newAmountPaid = min(round($currentPaid + $paymentAmount, 2), $totalAmount);
 
+            $payMode = $data['payment_mode'] ?? 'Cash';
+            $isBT    = $payMode === 'Bank Transfer';
+
             $payment = $receivedStock->payments()->create([
-                'payment_date' => Carbon::now()->toDateString(),
-                'payment_mode' => $data['payment_mode'] ?? 'Cash',
-                'amount_paid' => $paymentAmount,
-                'bank_name' => ($data['payment_mode'] ?? 'Cash') === 'Bank Transfer'
-                    ? trim((string) ($data['bank_name'] ?? ''))
-                    : null,
-                'reference_number' => ($data['payment_mode'] ?? 'Cash') === 'Bank Transfer'
-                    ? trim((string) ($data['reference_number'] ?? ''))
-                    : null,
-                'created_by_id' => Auth::id(),
+                'payment_date'   => Carbon::now()->toDateString(),
+                'payment_mode'   => $payMode,
+                'amount_paid'    => $paymentAmount,
+                'bank_account_id'=> $isBT ? ((int) ($data['bank_account_id'] ?? 0) ?: null) : null,
+                'bank_name'      => $isBT ? trim((string) ($data['bank_name'] ?? '')) : null,
+                'reference_number' => $isBT ? trim((string) ($data['reference_number'] ?? '')) : null,
+                'created_by_id'  => Auth::id(),
             ]);
 
+            $isFullySettled = $newAmountPaid >= $totalAmount;
             $receivedStock->update([
                 'amount_paid' => $newAmountPaid,
+                'payment_mode' => $isFullySettled
+                    ? ($data['payment_mode'] ?? $receivedStock->payment_mode)
+                    : $receivedStock->payment_mode,
             ]);
 
             $payment->load('createdBy');

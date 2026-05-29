@@ -1,7 +1,7 @@
 <template>
     <div>
         <template v-if="currentView === 'list'">
-            <BRow>
+            <div>
                 <div class="col-md-12 mb-4">
                     <div class="library-card">
                         <div class="library-card-header">
@@ -20,15 +20,15 @@
                                         <span class="cash-on-hand-label">Total Cash on Hand</span>
                                         <strong class="cash-on-hand-value">{{ formatCurrency(metrics.total_amount_remitted) }}</strong>
                                     </div>
-                                    <button class="create-btn" @click="openCreate">
+                                    <button class="acct-btn-primary" @click="openCreate">
                                         <i class="ri-add-line"></i>
-                                        <span>Prepare Remittance</span>
+                                        Prepare Remittance
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="card-body bg-white m-2 p-3">
+                        <div class="library-card-body">
                             <div class="search-section">
                                 <div class="row">
                                     <div class="col-md-3">
@@ -57,136 +57,161 @@
                                 </div>
                             </div>
 
-                            <div class="table-responsive table-card mt-2">
-                                <b-tabs v-model="tabIndex">
-                                    <b-tab title="Open">
-                                        <table class="table align-middle table-hover mb-0" style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                                <tr class="fs-12 fw-bold text-muted">
-                                                    <th style="width: 3%; border: none;">#</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Remittance No.</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Date</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Amount</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Status</th>
-                                                    <th style="width: 20%;" class="text-center border-none">Collector Name</th>
-                                                    <th style="width: 7%;" class="text-center border-none">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="fs-12">
-                                                <tr
-                                                    v-for="(item, index) in openRemittance"
-                                                    :key="item.id || index"
-                                                    class="cursor-pointer"
-                                                    @click="openView(item)"
-                                                >
-                                                    <td class="text-center">{{ index + 1 }}</td>
-                                                    <td class="text-center">{{ item.remittance_no || '-' }}</td>
-                                                    <td class="text-center">{{ item.date || item.remittance_date }}</td>
-                                                    <td class="text-center">{{ formatCurrency(item.total_amount) }}</td>
-                                                    <td class="text-center">
-                                                        <span :style="{ 'background-color': item.status.name === 'disapproved' ? '#ff0000' : '#6c757d', color: '#fff' }" class="px-3 py-2 rounded-pill badge">
-                                                            {{ item.status.name }}
-                                                        </span>
-                                                    </td>
-                                                    <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
-                                                    <td class="text-center">
-                                                        <b-button @click.stop="openView(item)" variant="outline-default" size="sm" class="btn-icon rounded-circle">
-                                                            <i class="ri-eye-line"></i>
-                                                        </b-button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <div v-if="openRemittance.length === 0" class="text-center py-5">
-                                            <i class="ri-inbox-line fs-48 text-muted"></i>
-                                            <p class="text-muted mt-2">No remittance found</p>
-                                        </div>
-                                    </b-tab>
+                            <div class="mt-3">
+                                <div class="cm-tab-bar">
+                                    <button :class="['cm-tab-btn', activeTab === 'open' ? 'active' : '']" @click="activeTab = 'open'">
+                                        Open
+                                        <span class="tab-count">{{ openRemittance.length }}</span>
+                                    </button>
+                                    <button :class="['cm-tab-btn', activeTab === 'liquidated' ? 'active' : '']" @click="activeTab = 'liquidated'">
+                                        Liquidated
+                                        <span class="tab-count">{{ liquidatedRemittance.length }}</span>
+                                    </button>
+                                    <button :class="['cm-tab-btn', activeTab === 'disapproved' ? 'active' : '']" @click="activeTab = 'disapproved'">
+                                        Disapproved
+                                        <span class="tab-count">{{ disapprovedRemittance.length }}</span>
+                                    </button>
+                                </div>
 
-                                    <b-tab title="Liquidated">
-                                        <table class="table align-middle table-hover mb-0" style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                                <tr class="fs-12 fw-bold text-muted">
-                                                    <th style="width: 3%; border: none;">#</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Remittance No.</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Date</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Amount</th>
-                                                    <th style="width: 20%;" class="text-center border-none">Collector Name</th>
-                                                    <th style="width: 7%;" class="text-center border-none">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="fs-12">
-                                                <tr
-                                                    v-for="(item, index) in liquidatedRemittance"
-                                                    :key="item.id || index"
-                                                    class="cursor-pointer"
-                                                    @click="openView(item)"
-                                                >
-                                                    <td class="text-center">{{ index + 1 }}</td>
-                                                    <td class="text-center">{{ item.remittance_no || '-' }}</td>
-                                                    <td class="text-center">{{ item.date || item.remittance_date }}</td>
-                                                    <td class="text-center">{{ formatCurrency(item.total_amount) }}</td>
-                                                    <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
-                                                    <td class="text-center">
-                                                        <b-button @click.stop="openView(item)" variant="outline-default" size="sm" class="btn-icon rounded-circle">
-                                                            <i class="ri-eye-line"></i>
-                                                        </b-button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <div v-if="liquidatedRemittance.length === 0" class="text-center py-5">
-                                            <i class="ri-inbox-line fs-48 text-muted"></i>
-                                            <p class="text-muted mt-2">No remittance found</p>
-                                        </div>
-                                    </b-tab>
+                                <div v-show="activeTab === 'open'" class="table-responsive">
+                                    <table class="table sales-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:3%">#</th>
+                                                <th class="text-center" style="width:15%">Remittance No.</th>
+                                                <th class="text-center" style="width:15%">Date</th>
+                                                <th class="text-end" style="width:15%">Amount</th>
+                                                <th class="text-center" style="width:15%">Status</th>
+                                                <th class="text-center" style="width:20%">Collector Name</th>
+                                                <th class="text-center" style="width:7%">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="openRemittance.length === 0">
+                                                <td colspan="7">
+                                                    <div class="sales-empty-state">
+                                                        <i class="ri-inbox-line"></i>
+                                                        <p>No open remittances found.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="(item, index) in openRemittance"
+                                                :key="item.id || index"
+                                                class="cursor-pointer"
+                                                @click="openView(item)"
+                                            >
+                                                <td>{{ index + 1 }}</td>
+                                                <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
+                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
+                                                <td class="text-center">
+                                                    <span :style="{ backgroundColor: item.status?.bg_color || '#6c757d', color: '#fff', padding: '3px 10px', borderRadius: '12px', fontSize: '11px' }">
+                                                        {{ item.status?.name }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
+                                                <td class="text-center">
+                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                        <i class="ri-eye-line"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                                    <b-tab title="Disapproved">
-                                        <table class="table align-middle table-hover mb-0" style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                                <tr class="fs-12 fw-bold text-muted">
-                                                    <th style="width: 3%; border: none;">#</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Remittance No.</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Date</th>
-                                                    <th style="width: 15%;" class="text-center border-none">Amount</th>
-                                                    <th style="width: 20%;" class="text-center border-none">Collector Name</th>
-                                                    <th style="width: 7%;" class="text-center border-none">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="fs-12">
-                                                <tr
-                                                    v-for="(item, index) in disapprovedRemittance"
-                                                    :key="item.id || index"
-                                                    class="cursor-pointer"
-                                                    @click="openView(item)"
-                                                >
-                                                    <td class="text-center">{{ index + 1 }}</td>
-                                                    <td class="text-center">{{ item.remittance_no || '-' }}</td>
-                                                    <td class="text-center">{{ item.date || item.remittance_date }}</td>
-                                                    <td class="text-center">{{ formatCurrency(item.total_amount) }}</td>
-                                                    <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
-                                                    <td class="text-center">
-                                                        <b-button @click.stop="openView(item)" variant="outline-default" size="sm" class="btn-icon rounded-circle">
-                                                            <i class="ri-eye-line"></i>
-                                                        </b-button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <div v-if="disapprovedRemittance.length === 0" class="text-center py-5">
-                                            <i class="ri-inbox-line fs-48 text-muted"></i>
-                                            <p class="text-muted mt-2">No remittance found</p>
-                                        </div>
-                                    </b-tab>
-                                </b-tabs>
+                                <div v-show="activeTab === 'liquidated'" class="table-responsive">
+                                    <table class="table sales-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:3%">#</th>
+                                                <th class="text-center" style="width:15%">Remittance No.</th>
+                                                <th class="text-center" style="width:15%">Date</th>
+                                                <th class="text-end" style="width:15%">Amount</th>
+                                                <th class="text-center" style="width:20%">Collector Name</th>
+                                                <th class="text-center" style="width:7%">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="liquidatedRemittance.length === 0">
+                                                <td colspan="6">
+                                                    <div class="sales-empty-state">
+                                                        <i class="ri-inbox-line"></i>
+                                                        <p>No liquidated remittances found.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="(item, index) in liquidatedRemittance"
+                                                :key="item.id || index"
+                                                class="cursor-pointer"
+                                                @click="openView(item)"
+                                            >
+                                                <td>{{ index + 1 }}</td>
+                                                <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
+                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
+                                                <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
+                                                <td class="text-center">
+                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                        <i class="ri-eye-line"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div v-show="activeTab === 'disapproved'" class="table-responsive">
+                                    <table class="table sales-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:3%">#</th>
+                                                <th class="text-center" style="width:15%">Remittance No.</th>
+                                                <th class="text-center" style="width:15%">Date</th>
+                                                <th class="text-end" style="width:15%">Amount</th>
+                                                <th class="text-center" style="width:20%">Collector Name</th>
+                                                <th class="text-center" style="width:7%">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="disapprovedRemittance.length === 0">
+                                                <td colspan="6">
+                                                    <div class="sales-empty-state">
+                                                        <i class="ri-inbox-line"></i>
+                                                        <p>No disapproved remittances found.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="(item, index) in disapprovedRemittance"
+                                                :key="item.id || index"
+                                                class="cursor-pointer"
+                                                @click="openView(item)"
+                                            >
+                                                <td>{{ index + 1 }}</td>
+                                                <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
+                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
+                                                <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
+                                                <td class="text-center">
+                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                        <i class="ri-eye-line"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                        <div class="card-footer bg-light border-0">
+                        <div class="px-3 pb-3">
                             <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length" :links="links" :pagination="meta" />
                         </div>
                     </div>
                 </div>
-            </BRow>
+            </div>
             <Create @add="fetch" ref="create" />
         </template>
 
@@ -219,7 +244,7 @@ export default {
                 location_id: null,
                 status: null
             },
-            tabIndex: 0,
+            activeTab: 'open',
             currentView: 'list',
             selectedRemittance: null,
             metrics: {
@@ -316,14 +341,24 @@ export default {
 </script>
 
 <style scoped>
-.badge {
-    display: inline-block;
-    padding: 4px 8px;
+.tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
     font-size: 10px;
-    font-weight: 600;
-    color: white;
-    background-color: #0d6efd;
-    border-radius: 12px;
+    font-weight: 700;
+    background: rgba(61, 141, 122, 0.15);
+    color: #3d8d7a;
+    margin-left: 5px;
+}
+
+.cm-tab-btn.active .tab-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
 }
 
 .cash-on-hand-card {

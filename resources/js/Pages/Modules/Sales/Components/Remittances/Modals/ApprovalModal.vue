@@ -24,15 +24,14 @@
                         <div class="form-group form-group-half">
                             <!-- <label for="status" class="form-label">Status</label> -->
                             <div class="input-wrapper mt-2">
-                                <b-form-radio-group
-                                    v-model="form.status"
-                                    style="font-size: 14px;"
-                                    :options="[
-                                        { text: 'Approve', value: 'Approve' },
-                                        { text: 'Disapprove', value: 'Disapprove' }
-                                    ]"
-                                    :class="{ 'input-error': form.errors.status }"
-                                ></b-form-radio-group>
+                                <div class="d-flex gap-3" style="font-size: 14px;">
+                                    <label class="d-flex align-items-center gap-1">
+                                        <input type="radio" v-model="form.status" value="Approve"> Approve
+                                    </label>
+                                    <label class="d-flex align-items-center gap-1">
+                                        <input type="radio" v-model="form.status" value="Disapprove"> Disapprove
+                                    </label>
+                                </div>
                             </div>
                             <span class="error-message" v-if="form.errors.status">{{ form.errors.status }}</span>
                         </div>
@@ -43,13 +42,14 @@
                       <div class="form-group form-group-half">
                             <label for="remarks" class="form-label">Remarks</label>
                               <div class="input-wrapper">
-                                <b-form-textarea
+                                <textarea
                                     id="textarea-remarks"
+                                    class="form-control"
                                     placeholder="Enter remarks"
                                     rows="8"
                                     v-model="form.remarks"
                                     :class="{ 'input-error': form.errors.remarks }"
-                                ></b-form-textarea>
+                                ></textarea>
                             </div>
                             <span class="error-message" v-if="form.errors.remarks">{{ form.errors.remarks }}</span>
                         </div>
@@ -118,10 +118,8 @@ export default {
 }
 </script>
 <style scoped>
-.modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);z-index:50;}
-.modal-container{background:#fff;border-radius:8px;overflow:hidden;width:100%;padding: 0px;}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee}
+.modal-overlay{z-index:50;}
+.modal-container{overflow:hidden;width:100%;padding: 0px;}
 .modal-body{padding:16px}
-.close-btn{background:transparent;border:0}
 .form-actions .btn{min-width:140px}
 </style>

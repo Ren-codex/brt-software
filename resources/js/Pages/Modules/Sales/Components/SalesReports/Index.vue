@@ -1,5 +1,5 @@
 <template>
-  <BRow>
+  <div>
     <div class="col-lg-12">
       <div class="report-container">
         <!-- Header -->
@@ -587,7 +587,7 @@
         </div>
       </div>
     </div>
-  </BRow>
+  </div>
 </template>
 
 <script>

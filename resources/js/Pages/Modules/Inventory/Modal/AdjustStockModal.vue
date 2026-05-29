@@ -69,17 +69,17 @@
               ></textarea>
             </div>
           </div>
-          <div class="form-actions">
-            <button type="button" class="btn btn-cancel" @click="hide">
-              <i class="ri-close-line"></i>
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-save">
-              <i class="ri-save-line"></i>
-              Save
-            </button>
-          </div>
         </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" @click="hide">
+          <i class="ri-close-line"></i>
+          Cancel
+        </button>
+        <button type="button" class="btn btn-save" @click="saveQuantity">
+          <i class="ri-save-line"></i>
+          Save
+        </button>
       </div>
     </div>
   </div>

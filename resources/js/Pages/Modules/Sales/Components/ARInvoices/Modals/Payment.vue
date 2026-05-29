@@ -6,16 +6,16 @@
         @click.self="hide"
     >
         <div class="modal-container modal-lg" @click.stop>
-            <div class="modal-header bg-primary text-white">
-                <h4 class="mb-0 text-white">
+            <div class="modal-header">
+                <h4 class="mb-0">
                     <i class="ri-money-dollar-circle-line me-2"></i>
                     Record Invoice Payment
                 </h4>
-                <button class="close-btn text-white" @click="hide">
-                    <i class="ri-close-line fs-20"></i>
+                <button type="button" class="close-btn" @click="hide">
+                    <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body p-4" style="height: 75vh; overflow-y: auto;">
+            <div class="modal-body p-4">
                 <!-- Invoice Summary Card -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-light">
@@ -230,73 +230,10 @@ export default {
 }
 </script>
 <style scoped>
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1050;
-    transition: opacity 0.3s ease;
-}
-
-.modal-overlay.active {
-    opacity: 1;
-}
-
-.modal-container {
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    max-width: 700px;
-    width: 90%;
-    position: relative;
-    transform: translateY(30px) scale(0.95);
-    transition: all 0.3s ease;
-}
-
-.modal-overlay.active .modal-container {
-    transform: translateY(0) scale(1);
-}
-
-.modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid #e9ecef;
-    border-radius: 20px 20px 0 0;
-    background: #C4DAD2;
-}
-
-.modal-header h4 {
-    color: #16423C;
-    font-weight: 700;
-}
-
-.close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    transition: all 0.3s ease;
-}
-
-.close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
+.modal-footer {
+    flex-shrink: 0;
+    border-top: 1px solid #e2e8f0;
+    background: #f8f9fa;
 }
 
 .payment-mode-grid {
@@ -445,10 +382,6 @@ export default {
 
 .text-white {
     color: white !important;
-}
-
-.bg-primary {
-    background-color: #3D8D7A !important;
 }
 
 .bg-light {

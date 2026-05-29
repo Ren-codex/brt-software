@@ -1,26 +1,23 @@
 <template>
-    <BRow>
-        <div class="col-lg-12 mb-4">
-            <div class="library-card">
-                <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="header-icon">
-                                <i class="ri-shopping-cart-line fs-24"></i>
-                            </div>
-                            <div>
-                                <h4 class="header-title mb-1">Sales Orders</h4>
-                                <p class="header-subtitle mb-0">A comprehensive list of Sales Orders</p>
-                            </div>
+    <div>
+        <div class="library-card">
+            <div class="library-card-header">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="header-icon">
+                            <i class="ri-shopping-cart-line"></i>
                         </div>
-                        <button class="create-btn" @click="openCreate">
-                            <i class="ri-add-line"></i>
-                            <span>Create Order</span>
-                        </button>
+                        <div>
+                            <h4 class="header-title mb-0">Sales Orders</h4>
+                            <p class="header-subtitle mb-0">Manage and track all sales orders.</p>
+                        </div>
                     </div>
-
+                    <button class="acct-btn-primary" @click="openCreate">
+                        <i class="ri-add-line me-1"></i>Create Order
+                    </button>
                 </div>
-                <div class="card-body m-2 p-3">
+            </div>
+            <div class="library-card-body">
                    
                     <div class="search-section">
                         <div class="row">
@@ -57,21 +54,19 @@
 
                     </div>
 
-                    <div class="table-responsive table-card">
-                        <table class="table align-middle table-hover mb-0"
-                            style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                <tr class="fs-12 fw-bold text-muted">
-                                    <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 10%;" class="text-center border-none">Order Number</th>
-                                    <th style="width: 10%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 10%;" class="text-center border-none">Date</th>
-                                    <th style="width: 8%;" class="text-center border-none">Status</th>
-                                     <!-- <th style="width: 8%;" class="text-center border-none">SubStatus</th> -->
-                                    <th style="width: 10%;" class="text-center border-none">Total Amount</th>
-                                    <th style="width: 10%;" class="text-center border-none">Due Date</th>
-                                    <th style="width: 8%;" class="text-center border-none">Paid %</th>
-                                    <th style="width: 6%;" class="text-center border-none">Actions</th>
+                    <div class="table-responsive">
+                        <table class="table sales-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Order Number</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Total Amount</th>
+                                    <th>Due Date</th>
+                                    <th class="text-center">Paid %</th>
+                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
@@ -106,7 +101,7 @@
                                                 {{ list.sub_status?.name  }}
                                             </span>
                                         </td> -->
-                                        <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
+                                        <td class="text-end fw-semibold">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
                                             {{ list.due_date }}
                                             <span v-if="isDueSoon(list)" class="badge bg-danger ms-1">Due Soon</span>
@@ -124,27 +119,25 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button v-if="list.status?.slug == 'for-payment'"
-                                                    @click.stop="onSalesAdjustment(list)" variant="outline-secondary"
-                                                    v-b-tooltip.hover title="Sales Adjustment" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                <button v-if="list.status?.slug == 'for-payment'"
+                                                    @click.stop="onSalesAdjustment(list)"
+                                                    class="action-btn warn" title="Sales Adjustment">
                                                     <i class="ri-refund-line"></i>
-                                                </b-button>
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info"
-                                                    v-b-tooltip.hover title="Print Invoice" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                </button>
+                                                <button @click.stop="onPrint(list.id)"
+                                                    class="action-btn info" title="Print Invoice">
                                                     <i class="ri-printer-line"></i>
-                                                </b-button>
-                                                <b-button v-if="list.status?.slug == 'for-payment'"
-                                                    @click.stop="openEdit(list, index)" variant="outline-primary"
-                                                    v-b-tooltip.hover title="Edit" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                </button>
+                                                <button v-if="list.status?.slug == 'for-payment'"
+                                                    @click.stop="openEdit(list, index)"
+                                                    class="action-btn edit" title="Edit">
                                                     <i class="ri-pencil-fill"></i>
-                                                </b-button>
-
-                                                <b-button v-if="list.status?.slug !== 'cancelled'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
+                                                </button>
+                                                <button v-if="list.status?.slug !== 'cancelled'"
+                                                    @click.stop="onCancel(list)"
+                                                    class="action-btn delete" title="Cancel Order">
                                                     <i class="ri-close-line"></i>
-                                                </b-button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -199,6 +192,49 @@
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    <div class="col-12" v-if="list.invoices && list.invoices.some(inv => inv.receipts && inv.receipts.length > 0)">
+                                                        <div class="info-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-receipt-line"></i>
+                                                                <h6>Payment History</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
+                                                                <table class="table table-sm table-borderless mb-0">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th class="fw-semibold">OR Number</th>
+                                                                            <th class="fw-semibold">Date</th>
+                                                                            <th class="fw-semibold">Amount Paid</th>
+                                                                            <th class="fw-semibold">Mode</th>
+                                                                            <th class="fw-semibold">Type</th>
+                                                                            <th class="fw-semibold">Status</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <template v-for="inv in list.invoices" :key="inv.id">
+                                                                            <tr v-for="receipt in inv.receipts" :key="receipt.id">
+                                                                                <td class="fw-semibold">{{ receipt.receipt_number }}</td>
+                                                                                <td>{{ receipt.receipt_date }}</td>
+                                                                                <td>₱{{ receipt.amount_paid }}</td>
+                                                                                <td>{{ receipt.payment_mode || '-' }}</td>
+                                                                                <td>
+                                                                                    <span class="badge" :class="getReceiptTypeBadge(receipt.receipt_type)">
+                                                                                        {{ getReceiptTypeLabel(receipt.receipt_type) }}
+                                                                                    </span>
+                                                                                </td>
+                                                                                <td>
+                                                                                    <span v-if="receipt.status" class="badge" :style="{ backgroundColor: receipt.status.bg_color, color: receipt.status.text_color }">
+                                                                                        {{ receipt.status.name }}
+                                                                                    </span>
+                                                                                </td>
+                                                                            </tr>
+                                                                        </template>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -206,23 +242,24 @@
                                 </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9" class="text-center py-4">
-                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                                        <p class="mt-2 mb-0">No sales order found</p>
-                                        <small class="text-muted">Try changing your search or filter criteria</small>
+                                    <td colspan="9">
+                                        <div class="sales-empty-state">
+                                            <i class="ri-shopping-cart-line"></i>
+                                            <p class="mb-1">No sales orders found</p>
+                                            <small>Try adjusting your search or filter.</small>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0 m-3">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
+                <div class="px-3 pb-3">
+                    <Pagination v-if="meta" @fetch="fetch" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
-        </div>
-    </BRow>
+    </div>
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
      <Approval @approve="fetch()" ref="approval"/>
@@ -243,7 +280,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' , 'user', 'isExternal', 'metrics'],
+    props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -278,6 +315,16 @@ export default {
         this.fetchMetrics();
     },
     methods: {
+        getReceiptTypeLabel(type) {
+            if (type === 'updated') return 'Updated';
+            if (type === 'refund') return 'Refund';
+            return 'Payment';
+        },
+        getReceiptTypeBadge(type) {
+            if (type === 'updated') return 'bg-info text-dark';
+            if (type === 'refund') return 'bg-warning text-dark';
+            return 'bg-primary';
+        },
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
@@ -312,10 +359,11 @@ export default {
             this.$refs.create.edit(data, index);
         },
 
-        onCancel(id) {
+        onCancel(list) {
             let title = "Sales Order";
             let url = '/sales-orders';
-            this.$refs.cancel.show(id, title, url);
+            const hasPayments = (list.invoices || []).some(inv => inv.amount_paid > 0);
+            this.$refs.cancel.show(list.id, title, url, hasPayments);
         },
 
         onApproval(id) {
