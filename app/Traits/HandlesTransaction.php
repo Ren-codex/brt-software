@@ -2,6 +2,8 @@
 
 namespace App\Traits;
 
+use Illuminate\Database\QueryException;
+use Illuminate\Database\DeadlockException;
 use Illuminate\Validation\ValidationException;
 
 trait HandlesTransaction
@@ -16,9 +18,9 @@ trait HandlesTransaction
         try {
             $result = \DB::transaction($callback);
             // $status = ($result['status'] === 'error') ? false : true;
-            $data = $result['data'];
-            $info = $result['info'];
-            $message = $result['message'];
+            $data = $result['data'] ?? null;
+            $info = $result['info'] ?? null;
+            $message = $result['message'] ?? 'Success';
             $status = $result['status'] ?? true;
             $receiptId = $result['receipt_id'] ?? null;
         } catch (ValidationException $e) {

@@ -53,7 +53,7 @@ class ExpenseClass
         $result = collect($types)->map(function ($type) use ($budgets, $month, $year) {
             $budget = $budgets->firstWhere('expense_type', $type);
             $used   = Expense::where('expense_type', $type)
-                ->where('status', 'released')
+                ->whereIn('status', ['released', 'reimbursed'])
                 ->whereMonth('expense_date', $month)
                 ->whereYear('expense_date', $year)
                 ->sum('amount');
@@ -107,7 +107,7 @@ class ExpenseClass
         $amount = (float) $request->amount;
 
         if ($request->fund_id) {
-            $fund = PettyCashFund::findOrFail($request->fund_id);
+            $fund = PettyCashFund::lockForUpdate()->findOrFail($request->fund_id);
 
             if (! $fund->is_active) {
                 throw ValidationException::withMessages([
@@ -130,9 +130,14 @@ class ExpenseClass
                 && $previousBalance >= (float) $fund->low_balance_threshold
                 && $newBalance < (float) $fund->low_balance_threshold
             ) {
-                $notifyFund = $fund->fresh();
-                User::whereHas('roles', fn($q) => $q->whereIn('name', ['Administrator', 'Top Management']))
-                    ->each(fn($u) => $u->notify(new LowBalanceFundNotification($notifyFund)));
+                $fundId = $fund->id;
+                \DB::afterCommit(function () use ($fundId) {
+                    $notifyFund = PettyCashFund::find($fundId);
+                    if ($notifyFund) {
+                        User::whereHas('roles', fn($q) => $q->whereIn('name', ['Administrator', 'Top Management']))
+                            ->each(fn($u) => $u->notify(new LowBalanceFundNotification($notifyFund)));
+                    }
+                });
             }
         }
 
@@ -169,9 +174,18 @@ class ExpenseClass
         $delta     = $newAmount - $oldAmount;
 
         if ($delta != 0 && $data->fund_id && in_array($data->status, ['recorded', 'submitted'])) {
-            $fund = PettyCashFund::find($data->fund_id);
-            if ($fund) {
+            $fund = PettyCashFund::lockForUpdate()->findOrFail($data->fund_id);
+
+            if ($delta > 0 && $fund->balance < $delta) {
+                throw ValidationException::withMessages([
+                    'amount' => "Amount increase (₱" . number_format($delta, 2) . ") exceeds available fund balance (₱" . number_format($fund->balance, 2) . ").",
+                ]);
+            }
+
+            if ($delta > 0) {
                 $fund->decrement('balance', $delta);
+            } else {
+                $fund->increment('balance', abs($delta));
             }
         }
 
@@ -208,8 +222,8 @@ class ExpenseClass
             $this->journalEntryService->reverseEntriesForSource($data, 'Released expense deleted. Original expense entry reversed.', now()->toDateString());
         }
 
-        // Restore fund balance for unposted expenses
-        if ($data->fund_id && in_array($data->status, ['recorded', 'submitted'])) {
+        // Restore fund balance for any status that had already decremented it at save time
+        if ($data->fund_id && in_array($data->status, ['recorded', 'approved', 'submitted', 'released'])) {
             PettyCashFund::where('id', $data->fund_id)->increment('balance', (float) $data->amount);
         }
 
@@ -314,7 +328,7 @@ class ExpenseClass
         }
 
         $used = Expense::where('expense_type', $expense->expense_type)
-            ->where('status', 'released')
+            ->whereIn('status', ['released', 'reimbursed'])
             ->whereMonth('expense_date', $month)
             ->whereYear('expense_date', $year)
             ->where('id', '!=', $expense->id)
