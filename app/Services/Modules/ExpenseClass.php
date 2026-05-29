@@ -5,7 +5,9 @@ namespace App\Services\Modules;
 use App\Models\Expense;
 use App\Models\ExpenseBudget;
 use App\Models\PettyCashFund;
+use App\Models\User;
 use App\Http\Resources\Modules\ExpenseResource;
+use App\Notifications\LowBalanceFundNotification;
 use App\Services\Accounting\JournalEntryService;
 use Illuminate\Validation\ValidationException;
 
@@ -119,7 +121,19 @@ class ExpenseClass
                 ]);
             }
 
+            $previousBalance = (float) $fund->balance;
             $fund->decrement('balance', $amount);
+            $newBalance = $previousBalance - $amount;
+
+            if (
+                $fund->low_balance_threshold !== null
+                && $previousBalance >= (float) $fund->low_balance_threshold
+                && $newBalance < (float) $fund->low_balance_threshold
+            ) {
+                $notifyFund = $fund->fresh();
+                User::whereHas('roles', fn($q) => $q->whereIn('name', ['Administrator', 'Top Management']))
+                    ->each(fn($u) => $u->notify(new LowBalanceFundNotification($notifyFund)));
+            }
         }
 
         $data = Expense::create([
