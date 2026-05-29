@@ -234,6 +234,32 @@ class ExpenseClass
         ];
     }
 
+    public function void($id): array
+    {
+        $data = Expense::findOrFail($id);
+
+        if (! in_array($data->status, ['recorded', 'approved', 'submitted'])) {
+            return [
+                'data'    => new ExpenseResource($data->fresh(['added_by'])),
+                'message' => 'Only recorded, approved, or submitted expenses can be voided.',
+                'status'  => 'error',
+            ];
+        }
+
+        if ($data->fund_id) {
+            PettyCashFund::where('id', $data->fund_id)->increment('balance', (float) $data->amount);
+        }
+
+        $data->update(['status' => 'voided']);
+
+        return [
+            'data'    => new ExpenseResource($data->fresh(['added_by'])),
+            'message' => 'Expense voided successfully!',
+            'info'    => "You've successfully voided the expense.",
+            'status'  => 'success',
+        ];
+    }
+
     public function release($id)
     {
         $data = Expense::findOrFail($id);

@@ -122,6 +122,17 @@ class ExpenseController extends Controller
         ]);
     }
 
+    public function void($id)
+    {
+        $result = $this->handleTransaction(fn() => $this->expense->void($id));
+
+        return response()->json([
+            'message' => $result['message'],
+            'status'  => $result['status'] ?? 'success',
+            'data'    => $result['data'] ?? null,
+        ]);
+    }
+
     public function storeBudget(Request $request)
     {
         $request->validate([
