@@ -57,9 +57,8 @@ Guard: `$fund->low_balance_threshold !== null && $previousBalance >= threshold &
 Uses `DB::afterCommit()` to fire after the enclosing transaction commits.  
 Replaces the inline dispatch block currently in `ExpenseClass::save()`.
 
-### `checkAndNotifyLowStock(int $productId): void`
-Queries total stock: `InventoryStocks::whereHas('receivedItem', fn($q) => $q->where('product_id', $productId))->sum('quantity')`  
-Loads `Product` with `minimum_stock`. Guard: `minimum_stock !== null && totalStock < minimum_stock`.  
+### `checkAndNotifyLowStock(int $productId, int $previousTotal): void`
+Caller passes `$previousTotal` (total stock before deduction). Method queries the new total inside `DB::afterCommit()` and applies a crossing guard: `$previousTotal >= minimum_stock && $newTotal < minimum_stock`. This prevents repeated notifications on every sale when stock is already below minimum.  
 Uses `DB::afterCommit()`.
 
 ### `notifyOverdueInvoices(Collection $invoices): void`
