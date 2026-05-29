@@ -10,14 +10,19 @@ class ViewResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $employee = $this->employee;
+        $displayName = $employee?->name
+            ?: $employee?->fullname
+            ?: $this->username
+            ?: $this->email;
 
         return [
-            'avatar' => ($this->employee && $this->employee->avatar && $this->employee->avatar !== 'noavatar.jpg')
-            ? asset('storage/' . $this->employee->avatar) 
-            : asset('images/avatars/avatar.jpg'), 
-            'name' => $this->employee->name,
-            'fullname' => $this->employee->fullname,
-            'mobile' => $this->employee->mobile,
+            'avatar' => ($employee && $employee->avatar && $employee->avatar !== 'noavatar.jpg')
+                ? asset('storage/' . $employee->avatar)
+                : asset('images/avatars/avatar.jpg'),
+            'name' => $displayName,
+            'fullname' => $employee?->fullname ?: $displayName,
+            'mobile' => $employee?->mobile,
             'email' => $this->email,
             'username' => $this->username,
             'roles' => RoleResource::collection($this->myroles),

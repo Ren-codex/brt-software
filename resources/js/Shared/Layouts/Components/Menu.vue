@@ -2,7 +2,7 @@
     <BContainer fluid>
         <div id="two-column-menu"></div>
         <ul class="navbar-nav h-100" id="navbar-nav">
-            <li class="nav-item">
+            <li class="nav-item" v-if="$page.props.roles.length">
                 <Link href="/" class="nav-link menu-link"
                     :class="{ 'active': $page.component.startsWith('Modules/Dashboard/') }">
                 <i class="ri-apps-line"></i>
@@ -11,8 +11,9 @@
                 <span class="active-indicator"></span>
                 </Link>
             </li>
+
             <template
-                v-if="$page.props.roles.includes('Human Resource Officer') || $page.props.roles.includes('Administrator')">
+                v-if="$page.props.roles.includes('HR Manager') || $page.props.roles.includes('Super Admin')">
                 <li class="nav-item">
                     <Link href="/employees" class="nav-link menu-link"
                         :class="{ 'active': $page.component.startsWith('Modules/Employees/') }">
@@ -25,9 +26,9 @@
 
             </template>
             <template
-                v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Inventory Manager')">
+                v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Warehouse Manager') || $page.props.roles.includes('HR Manager') || $page.props.roles.includes('Accountant') || $page.props.roles.includes('Super Admin')">
                 <li class="nav-item"
-                    v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Human Resource Officer')">
+                    v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('Human Resource Officer')">
                     <Link href="/users" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/users') }">
                     <i class="ri-team-fill"></i>
@@ -37,17 +38,8 @@
                     </Link>
                 </li>
 
-                <!-- <li class="nav-item">
-                    <Link href="/reports" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/reports') }">
-                    <i class="ri-bar-chart-2-fill"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Reports</span>
-                    <span class="menu-link-bg"></span>
-                    <span class="active-indicator"></span>
-                    </Link>
-                </li> -->
                 <li class="nav-item"
-                    v-if="$page.props.roles.includes('Inventory Manager') || $page.props.roles.includes('Administrator')">
+                    v-if="$page.props.roles.includes('Warehouse Manager')  || $page.props.roles.includes('Super Admin')">
                     <Link href="/inventory" class="nav-link menu-link"
                         :class="{ 'active': $page.component.startsWith('Modules/Inventory/Index') }">
                     <i class="ri-survey-fill"></i>
@@ -56,8 +48,9 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
+
                 <li class="nav-item"
-                    v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
+                    v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Super Admin')">
                     <Link href="/sales-orders" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/sales-orders') && !$page.url.startsWith('/sales-orders-external') }">
                     <i class="ri-shopping-cart-fill"></i>
@@ -67,17 +60,7 @@
                     </Link>
                 </li>
 
-                <!-- <li class="nav-item" v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Administrator')">
-                    <Link href="/sales-orders-external" class="nav-link menu-link"
-                    :class="{'active': $page.url.startsWith('/sales-orders-external') }">
-                    <i class="ri-shopping-cart-fill"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Sales Management External</span>
-                    <span class="menu-link-bg"></span>
-                    <span class="active-indicator"></span>
-                    </Link>
-                </li> -->
-
-                  <li class="nav-item" v-if="$page.props.roles.includes('Sales Manager') || $page.props.roles.includes('Administrator')">
+                  <li class="nav-item" v-if="$page.props.roles.includes('Mini Admin') || $page.props.roles.includes('Administrator') || $page.props.roles.includes('Super Admin')">
                     <Link href="/customers" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/customers') }">
                     <i class="ri-team-fill"></i>
@@ -87,8 +70,7 @@
                     </Link>
                 </li>
 
-
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Super Admin')">
                     <Link href="/suppliers" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/libraries/suppliers') }">
                     <i class="ri-money-dollar-circle-fill"></i>
@@ -97,7 +79,8 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+
+                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Super Admin')">
                     <Link href="/contacts" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/contacts') }">
                     <i class="ri-mail-send-line"></i>
@@ -107,7 +90,17 @@
                     </Link>
                 </li>
                 
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+                <li class="nav-item" v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('Accountant')">
+                    <Link href="/accounting" class="nav-link menu-link"
+                        :class="{ 'active': $page.url.startsWith('/accounting') }">
+                    <i class="ri-bank-card-fill"></i>
+                    <span class="fw-semibold fs-14" data-key="t-dashboards">Accounting</span>
+                    <span class="menu-link-bg"></span>
+                    <span class="active-indicator"></span>
+                    </Link>
+                </li>
+
+                <li class="nav-item" v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('Mini Admin')">
                     <Link href="/expenses" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/expenses') }">
                     <i class="ri-money-dollar-circle-fill"></i>
@@ -117,7 +110,7 @@
                     </Link>
                 </li>
                 
-                <li class="nav-item">
+                <li class="nav-item" v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('HR Manager')">
                     <Link href="/payrolls" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/payrolls') }">
                     <i class="ri-wallet-2-line"></i>
@@ -126,7 +119,8 @@
                     <span class="active-indicator"></span>
                     </Link>
                 </li>
-                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator')">
+
+                 <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Super Admin')">
                    <BLink class="nav-link menu-link" href="#sidebarDashboards"
                     :class="{'active': $page.url.startsWith('/libraries') }"
                     data-bs-toggle="collapse" role="button" :aria-expanded="$page.url.startsWith('/libraries')" aria-controls="sidebarDashboards">
@@ -136,6 +130,7 @@
                         <span class="menu-link-bg"></span>
                         <span class="active-indicator"></span>
                     </BLink>
+
                     <div class="collapse menu-dropdown" id="sidebarDashboards">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item submenu-item">
@@ -187,8 +182,7 @@
                                 </Link>
                             </li>
 
-                      
-
+                    
                             <li class="nav-item submenu-item">
                                 <Link href="/libraries/positions" class="nav-link submenu-link"
                                     :class="{ 'active': $page.url === '/libraries/positions' }" data-key="t-basic">
@@ -197,14 +191,13 @@
                                 </Link>
                             </li>
 
-                            <!-- <li class="nav-item submenu-item">
-                                <Link href="/libraries/salaries" class="nav-link submenu-link"
-                                    :class="{'active': $page.url === '/libraries/salaries' }"
-                                    data-key="t-basic">
-                                    <span class="submenu-dot"></span>
-                                    <span class="submenu-text">Salaries</span>
+                            <li class="nav-item submenu-item">
+                                <Link href="/libraries/funds" class="nav-link submenu-link"
+                                    :class="{ 'active': $page.url === '/libraries/funds' }" data-key="t-basic">
+                                <!-- <span class="submenu-dot"></span> -->
+                                <span class="submenu-text">Petty Cash Funds</span>
                                 </Link>
-                            </li> -->
+                            </li>
 
                         </ul>
                     </div>
@@ -235,7 +228,7 @@
 }
 
 .menu-title-icon {
-    color: #8b5cf6;
+    color: #2da487;
     font-size: 0.875rem;
     position: absolute;
     left: 0;
@@ -262,8 +255,8 @@
     height: 1px;
     background: linear-gradient(90deg,
             transparent 0%,
-            rgba(92, 246, 213, 0.3) 20%,
-            rgba(92, 246, 184, 0.3) 80%,
+            rgba(45, 164, 135, 0.24) 20%,
+            rgba(30, 126, 103, 0.32) 80%,
             transparent 100%);
     animation: lineExpand 1s ease-out;
 }
@@ -298,7 +291,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(92, 246, 218, 0.1), rgba(59, 246, 230, 0.05));
+    background: linear-gradient(135deg, rgba(45, 164, 135, 0.12), rgba(30, 126, 103, 0.06));
     opacity: 0;
     transition: opacity 0.4s ease;
     z-index: -1;
@@ -306,10 +299,10 @@
 
 .menu-link:hover {
     color: #3D8D7A;
-    border-color: rgba(61, 141, 122, 0.2);
+    border-color: rgba(45, 164, 135, 0.22);
     background: rgba(241, 247, 249, 0.5);
     transform: translateX(6px);
-    box-shadow: 0 4px 20px rgba(61, 141, 122, 0.15);
+    box-shadow: 0 4px 20px rgba(30, 126, 103, 0.16);
 }
 
 .menu-link:hover .menu-link-bg {
@@ -319,15 +312,14 @@
 
 .menu-link.active {
     color: #ffffff;
-    background: linear-gradient(135deg, #3D8D7A, #C4DAD2);
-    border-color: #3D8D7A;
-    box-shadow: 0 6px 24px rgba(61, 141, 122, 0.4);
+    background: linear-gradient(135deg, #1e7e67, #2da487);
+    border-color: #1e7e67;
+    box-shadow: 0 6px 24px rgba(30, 126, 103, 0.35);
     transform: translateX(8px);
 }
 
 .menu-link.active .menu-link-bg {
-
-    background: linear-gradient(135deg, #3D8D7A, #C4DAD2);
+    background: linear-gradient(135deg, #1e7e67, #2da487);
 }
 
 /* Active Indicator */
@@ -338,10 +330,10 @@
     transform: translateY(-50%) scale(0);
     width: 8px;
     height: 8px;
-    background: #10b981;
+    background: #34d399;
     border-radius: 50%;
     transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
 }
 
 .menu-link.active .active-indicator {
@@ -359,7 +351,7 @@
 
 .menu-link:hover i {
     transform: scale(1.2) rotate(5deg);
-    color: #5cf6b1;
+    color: #2da487;
 }
 
 .menu-link.active i {
@@ -377,7 +369,7 @@
 
 .menu-link[aria-expanded="true"] .collapse-icon {
     transform: rotate(180deg);
-    color: #4f46e5;
+    color: #2da487;
 }
 
 /* Submenu */
@@ -386,7 +378,7 @@
     position: relative;
     overflow: hidden;
     max-height: 0;
-    transition: max-height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: none;
 }
 
 .menu-dropdown.show {
@@ -402,16 +394,15 @@
     width: 2px;
     background: linear-gradient(to bottom,
             transparent 0%,
-            rgba(92, 246, 210, 0.4) 30%,
-            rgba(92, 246, 184, 0.4) 70%,
+            rgba(45, 164, 135, 0.26) 30%,
+            rgba(30, 126, 103, 0.28) 70%,
             transparent 100%);
 }
 
 .submenu-item {
     margin: 0.125rem 0;
-    opacity: 0;
-    transform: translateY(-10px);
-    animation: submenuSlide 0.4s ease-out var(--submenu-delay, 0s) forwards;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .submenu-link {
@@ -432,13 +423,13 @@
     top: 0;
     width: 0;
     height: 100%;
-    background: linear-gradient(90deg, rgba(92, 246, 200, 0.1), transparent);
+    background: linear-gradient(90deg, rgba(45, 164, 135, 0.12), transparent);
     transition: width 0.3s ease;
     z-index: -1;
 }
 
 .submenu-link:hover {
-    color: #46e5c3;
+    color: #1e7e67;
     transform: translateX(4px);
 }
 
@@ -447,8 +438,8 @@
 }
 
 .submenu-link.active {
-    color: #46e5c3;
-    background: rgba(92, 233, 246, 0.1);
+    color: #1e7e67;
+    background: rgba(45, 164, 135, 0.1);
     font-weight: 500;
 }
 
@@ -463,13 +454,13 @@
 }
 
 .submenu-link:hover .submenu-dot {
-    background: #5cf6e9;
+    background: #2da487;
     transform: scale(1.3);
 }
 
 .submenu-link.active .submenu-dot {
-    background: #46c8e5;
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    background: #1e7e67;
+    box-shadow: 0 0 0 3px rgba(45, 164, 135, 0.2);
     animation: dotPulse 1.5s infinite;
 }
 
@@ -546,11 +537,11 @@
 
 @keyframes pulseActive {
     0% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
     }
 
     70% {
-        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+        box-shadow: 0 0 0 6px rgba(52, 211, 153, 0);
     }
 
     100% {
@@ -562,11 +553,11 @@
 
     0%,
     100% {
-        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.2);
+        box-shadow: 0 0 0 0 rgba(45, 164, 135, 0.2);
     }
 
     50% {
-        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0);
+        box-shadow: 0 0 0 4px rgba(45, 164, 135, 0);
     }
 }
 
@@ -590,7 +581,7 @@
     left: 50%;
     width: 5px;
     height: 5px;
-    background: rgba(139, 92, 246, 0.3);
+    background: rgba(45, 164, 135, 0.22);
     opacity: 0;
     border-radius: 100%;
     transform: scale(1, 1) translate(-50%, -50%);
@@ -654,42 +645,6 @@
     --animation-delay: 0.55s;
 }
 
-.submenu-item:nth-child(1) {
-    --submenu-delay: 0.1s;
-}
-
-.submenu-item:nth-child(2) {
-    --submenu-delay: 0.15s;
-}
-
-.submenu-item:nth-child(3) {
-    --submenu-delay: 0.2s;
-}
-
-.submenu-item:nth-child(4) {
-    --submenu-delay: 0.25s;
-}
-
-.submenu-item:nth-child(5) {
-    --submenu-delay: 0.3s;
-}
-
-.submenu-item:nth-child(6) {
-    --submenu-delay: 0.35s;
-}
-
-.submenu-item:nth-child(7) {
-    --submenu-delay: 0.4s;
-}
-
-.submenu-item:nth-child(8) {
-    --submenu-delay: 0.45s;
-}
-
-.submenu-item:nth-child(9) {
-    --submenu-delay: 0.5s;
-}
-
 /* Responsive */
 @media (max-width: 991.98px) {
     #navbar-nav {
@@ -727,14 +682,14 @@ body.vertical-collapsed .menu-link .collapse-icon {
     }
 
     .menu-link:hover {
-        color: #a5b4fc;
+        color: #8ee3c7;
         background: rgba(30, 41, 59, 0.5);
-        border-color: rgba(139, 92, 246, 0.3);
+        border-color: rgba(45, 164, 135, 0.32);
     }
 
     .menu-link.active {
         color: white;
-        background: linear-gradient(135deg, #7c3aed, #5b21b6);
+        background: linear-gradient(135deg, #1e7e67, #2da487);
     }
 
     .menu-title-text {
@@ -744,8 +699,8 @@ body.vertical-collapsed .menu-link .collapse-icon {
     .menu-title-line {
         background: linear-gradient(90deg,
                 transparent 0%,
-                rgba(139, 92, 246, 0.5) 20%,
-                rgba(139, 92, 246, 0.5) 80%,
+                rgba(45, 164, 135, 0.42) 20%,
+                rgba(30, 126, 103, 0.42) 80%,
                 transparent 100%);
     }
 
@@ -754,12 +709,12 @@ body.vertical-collapsed .menu-link .collapse-icon {
     }
 
     .submenu-link:hover {
-        color: #a5b4fc;
+        color: #8ee3c7;
     }
 
     .submenu-link.active {
-        color: #a5b4fc;
-        background: rgba(139, 92, 246, 0.15);
+        color: #8ee3c7;
+        background: rgba(45, 164, 135, 0.15);
     }
 }
 </style>

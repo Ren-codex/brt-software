@@ -1,17 +1,17 @@
 <template>
-    <div v-if="showModal" class="loan-modal-overlay" @click.self="close">
-        <div class="loan-modal-card">
-            <div class="loan-modal-header">
+    <div v-show="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="close">
+        <div class="modal-container modal-lg">
+            <div class="modal-header">
                 <h3>
                     <i class="ri-bank-card-line"></i>
                     Loan Details
                 </h3>
-                <button type="button" class="loan-modal-close" @click="close">
+                <button type="button" class="close-btn" @click="close">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
 
-            <div v-if="loan" class="loan-modal-body">
+            <div v-if="loan" class="modal-body">
                 <div class="loan-history">
                     <div class="loan-history-header">
                         <h4>Payment History</h4>
@@ -196,70 +196,6 @@ export default {
 </script>
 
 <style scoped>
-.loan-modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1200;
-    background: rgba(7, 22, 19, 0.58);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-}
-
-.loan-modal-card {
-    width: min(920px, 100%);
-    max-height: calc(100vh - 32px);
-    overflow: hidden;
-    border-radius: 18px;
-    border: 1px solid #d4e4df;
-    background: #fff;
-    box-shadow: 0 20px 52px rgba(10, 35, 30, 0.25);
-    display: flex;
-    flex-direction: column;
-}
-
-.loan-modal-header {
-    padding: 14px 16px;
-    border-bottom: 1px solid #e1ece9;
-    background: #f4fbf8;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.loan-modal-header h3 {
-    margin: 0;
-    font-size: 0.98rem;
-    color: #102723;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-}
-
-.loan-modal-close {
-    border: 0;
-    background: transparent;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    color: #35524d;
-    cursor: pointer;
-}
-
-.loan-modal-close:hover {
-    background: #e9f3ef;
-}
-
-.loan-modal-body {
-    padding: 16px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
 .loan-summary-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

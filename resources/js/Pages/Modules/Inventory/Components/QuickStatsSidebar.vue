@@ -201,6 +201,53 @@
           </div>
         </div>
       </template>
+
+      <template v-else-if="activeTab === 'receiving'">
+        <div class="stat-card mb-3">
+          <div class="stat-icon stat-icon-success">
+            <i class="ri-inbox-unarchive-line"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Paid Requests</span>
+            <div class="stat-value-wrapper">
+              <span class="stat-value">{{ fullyPaidReceivedStocks.length }}</span>
+              <span class="stat-trend trend-up">
+                <i class="ri-checkbox-circle-line"></i> Settled
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card mb-3">
+          <div class="stat-icon stat-icon-warning">
+            <i class="ri-money-dollar-circle-line"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Cash Payments</span>
+            <div class="stat-value-wrapper">
+              <span class="stat-value">{{ cashReceivingCount }}</span>
+              <span class="stat-trend trend-neutral">
+                <i class="ri-coins-line"></i> Direct
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-info">
+            <i class="ri-bank-line"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Bank Transfers</span>
+            <div class="stat-value-wrapper">
+              <span class="stat-value">{{ bankTransferReceivingCount }}</span>
+              <span class="stat-trend trend-up">
+                <i class="ri-exchange-funds-line"></i> Digital
+              </span>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -229,6 +276,10 @@ export default {
       type: Array,
       default: () => []
     },
+    listReceivedStocks: {
+      type: Array,
+      default: () => []
+    },
     isRightSidebarCollapsed: {
       type: Boolean,
       default: false
@@ -244,6 +295,15 @@ export default {
     },
     totalInventoryStocks() {
       return this.listInventoryStocks.length;
+    },
+    fullyPaidReceivedStocks() {
+      return this.listReceivedStocks.filter(stock => stock?.is_fully_paid === true);
+    },
+    cashReceivingCount() {
+      return this.fullyPaidReceivedStocks.filter(stock => stock?.payment_mode === 'Cash').length;
+    },
+    bankTransferReceivingCount() {
+      return this.fullyPaidReceivedStocks.filter(stock => stock?.payment_mode === 'Bank Transfer').length;
     },
     pendingRequests() {
       return this.listPurchaseRequests.length;

@@ -1,5 +1,5 @@
 <template>
-    <BRow>
+    <div>
         <div class="col-md-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
@@ -17,13 +17,13 @@
                     </div>
 
                 </div>
-                <div class="card-body m-2 p-3">
+                <div class="library-card-body">
                     <div class="search-section">
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
-                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                    <input type="text" v-model="filter.keyword"
                                         placeholder="Search receipt..." class="search-input">
                                 </div>
                             </div>
@@ -56,27 +56,29 @@
 
 
                     <div class="table-responsive table-card">
-                        <table class="table align-middle table-hover mb-0" style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                <tr class="fs-12 fw-bold text-muted">
-                                    <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 12%;" class="text-center border-none">OR Number</th>
-                                    <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment Date</th>
-                                    <th style="width: 10%;" class="text-center border-none">Type</th>
-                                    <th style="width: 12%;" class="text-center border-none">Amount Balance</th>
-                                    <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment Mode</th>
-                                    <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 6%;" class="text-center border-none">Actions</th>
+                        <table class="table sales-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:3%">#</th>
+                                    <th class="text-center" style="width:12%">OR Number</th>
+                                    <th class="text-center" style="width:12%">Customer</th>
+                                    <th class="text-center" style="width:12%">Payment Date</th>
+                                    <th class="text-center" style="width:10%">Type</th>
+                                    <th class="text-center" style="width:12%">Amount Balance</th>
+                                    <th class="text-end" style="width:12%">Amount Paid</th>
+                                    <th class="text-center" style="width:12%">Payment Mode</th>
+                                    <th class="text-center" style="width:12%">Status</th>
+                                    <th class="text-center" style="width:6%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="10" class="text-center text-muted py-4">
-                                        <i class="ri-shopping-cart-line fs-1 text-muted mb-2"></i>
-                                        <div>No receipts found.</div>
-                                        <small>Receipts will appear here once they are created.</small>
+                                    <td colspan="10">
+                                        <div class="sales-empty-state">
+                                            <i class="ri-shopping-cart-line"></i>
+                                            <p>No receipts found.</p>
+                                            <small>Receipts will appear here once they are created.</small>
+                                        </div>
                                     </td>
                                 </tr>
                                 <template v-for="(list,index) in lists" :key="index">
@@ -113,9 +115,9 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
+                                                <button @click.stop="onPrint(list.id)" class="action-btn info" title="Print">
                                                     <i class="ri-printer-line"></i>
-                                                </b-button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -156,12 +158,12 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0">
+                <div class="px-3 pb-3">
                     <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length" :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
-    </BRow>
+    </div>
 
     
 </template>
@@ -232,14 +234,6 @@ export default {
         },
 
 
-        selectRow(index) {
-            if (this.selectedRow === index) {
-                this.selectedRow = null;
-            } else {
-                this.selectedRow = index;
-            }
-        },
-
         toggleRowExpansion(index) {
             if (this.expandedRows.includes(index)) {
                 this.expandedRows = this.expandedRows.filter(i => i !== index);
@@ -276,10 +270,6 @@ export default {
             return 'bg-primary';
         },
 
-         getCustomer(customer_id){
-            const customer = this.dropdowns.customers.find(u => u.value === customer_id);
-            return customer ? customer : [];
-        },
     }
 }
 </script>

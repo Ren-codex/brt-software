@@ -8,7 +8,7 @@
             <i class="ri-arrow-down-s-line stock-toggle-arrow" :class="{ 'is-open': showStock }"></i>
         </button>
 
-        <b-collapse v-model="showStock" class="stock-floating-panel">
+        <div v-show="showStock" class="stock-floating-panel">
             <div class="stock-dashboard-card quick-stats-sidebar">
                 <div class="card-header-modern">
                     <h4 class="mb-0"><i class="ri-stack-line me-2"></i> Current Inventory Snapshot</h4>
@@ -62,7 +62,7 @@
                     </div>
                 </div>
             </div>
-        </b-collapse>
+        </div>
     </div>
 </template>
 

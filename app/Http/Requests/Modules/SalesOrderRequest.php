@@ -44,7 +44,7 @@ class SalesOrderRequest extends FormRequest
         else{
              $rules = [
                 'order_date' => 'required|date',
-                'customer_id' => 'required|exists:customers,id',
+                'customer_id' => 'nullable|exists:customers,id',
                 'sales_rep_id' => 'nullable|exists:employees,id',
                 'driver_id' => 'nullable|exists:employees,id',
                 'payment_mode' => 'required|string',
@@ -73,7 +73,6 @@ class SalesOrderRequest extends FormRequest
     {
         return [
             'order_date.required' => 'This field is required',
-            'customer_id.required' => 'This field is required',
             'type' => 'This field is required',
             'reason' => 'This field is required',
         ];

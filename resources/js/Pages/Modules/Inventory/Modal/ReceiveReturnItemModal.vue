@@ -130,28 +130,13 @@ export default {
 
 <style scoped>
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 1050;
 }
 
 .modal-container {
-  background: #ffffff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   max-height: 85vh;
-}
-
-.modal-header {
-  padding: 0.875rem 1.25rem;
-  border-bottom: 1px solid #e9ecef;
 }
 
 .modal-body {
@@ -165,13 +150,9 @@ export default {
   flex-shrink: 0;
   padding: 0.875rem 1.25rem;
   border-top: 1px solid #e9ecef;
-  background: #fff;
 }
 
 .close-btn {
-  border: none;
-  background: transparent;
-  color: #6c757d;
   font-size: 1.3rem;
   line-height: 1;
 }

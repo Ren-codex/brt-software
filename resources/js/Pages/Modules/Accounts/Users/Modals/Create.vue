@@ -240,76 +240,14 @@ export default {
     }
 }
 </script><style scoped>
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.55);
-    backdrop-filter: blur(6px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    z-index: 1055;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-}
-
-.modal-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.modal-container {
-    background: #ffffff;
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
-    transform: translateY(12px) scale(0.98);
-    transition: transform 0.25s ease;
-}
-
-.modal-overlay.active .modal-container {
-    transform: translateY(0) scale(1);
-}
-
 .modal-lg {
     width: min(100%, 920px);
     max-height: calc(100vh - 3rem);
     overflow-y: auto;
 }
 
-.modal-header {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
-    color: white;
-    padding: 1.5rem 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
 .modal-header h2 {
-    font-weight: 600;
-    font-size: 1.5rem;
-    margin: 0;
-}
-
-.close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
+    font-size: 1.1rem;
 }
 
 .modal-body {
@@ -494,10 +432,6 @@ export default {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .modal-header {
-        padding: 1rem 1.5rem;
-    }
-
     .modal-body {
         padding: 1.5rem;
     }

@@ -27,10 +27,10 @@ class ProductClass
     public function save($request)
     {
         $data = Product::create([
-            'pack_size' => $request->pack_size,
-            'unit_id' => $request->unit_id,
-            'brand_id' => $request->brand_id,
-            // 'price' => $request->price,
+            'pack_size'     => $request->pack_size,
+            'unit_id'       => $request->unit_id,
+            'brand_id'      => $request->brand_id,
+            'minimum_stock' => $request->minimum_stock ?? 0,
         ]);
 
         return [
@@ -44,10 +44,10 @@ class ProductClass
     {
         $data = Product::findOrFail($request->id);
         $data->update([
-            'pack_size' => $request->pack_size,
-            'unit_id' => $request->unit_id,
-            'brand_id' => $request->brand_id,
-            // 'price' => $request->price,
+            'pack_size'     => $request->pack_size,
+            'unit_id'       => $request->unit_id,
+            'brand_id'      => $request->brand_id,
+            'minimum_stock' => $request->minimum_stock ?? $data->minimum_stock,
         ]);
 
         return [

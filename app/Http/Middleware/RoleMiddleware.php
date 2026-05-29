@@ -11,7 +11,15 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next,...$roles): Response
     {
-        if (!Auth::check() || !Auth::user()->roles()->whereIn('name', $roles)->exists()) {
+        if (!Auth::check()) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (Auth::user()->roles()->where('name', 'Super Admin')->exists()) {
+            return $next($request);
+        }
+
+        if (!Auth::user()->roles()->whereIn('name', $roles)->exists()) {
             abort(403, 'Unauthorized');
         }
 

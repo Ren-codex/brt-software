@@ -54,15 +54,15 @@
               <div v-if="activeTab === 'sales_orders'" class="row">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                  
-                    <SalesOrders :dropdowns="dropdowns" :metrics="metrics" />
+                    <SalesOrders :dropdowns="dropdowns" />
                  
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <StockSidebar ref="stockSidebar" @toggle="onStockToggle" />
                   <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics" 
                     v-show="!isStockOpen"
-                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
-                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts"
+                    :listRemittances="listRemittances" :arMetrics="arMetrics" :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -71,13 +71,13 @@
               <div v-if="activeTab === 'sales_returns'" class="row">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                  
-                    <SalesReturns :dropdowns="dropdowns" :metrics="metrics" />
+                    <SalesReturns :dropdowns="dropdowns" />
                 
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
-                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
-                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts"
+                    :listRemittances="listRemittances" :arMetrics="arMetrics" :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -91,8 +91,8 @@
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
-                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
-                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts"
+                    :listRemittances="listRemittances" :arMetrics="arMetrics" :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -106,8 +106,8 @@
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
-                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
-                    :listRemittances="listRemittances" :isRightSidebarCollapsed="isRightSidebarCollapsed"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts"
+                    :listRemittances="listRemittances" :arMetrics="arMetrics" :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
               </div>
@@ -121,8 +121,8 @@
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :metrics="metrics"
-                    :listInvoices="listInvoices" :listReceipts="listReceipts" 
-                    :listRemittances="listRemittances" :remittanceMetrics="remittanceMetrics"
+                    :listInvoices="listInvoices" :listReceipts="listReceipts"
+                    :listRemittances="listRemittances" :arMetrics="arMetrics" :remittanceMetrics="remittanceMetrics"
                     :isRightSidebarCollapsed="isRightSidebarCollapsed"
                     @toggle="toggleRightSidebar" />
                 </div>
@@ -204,6 +204,13 @@ export default {
         open_remittances: 0,
         total_amount_remitted: 0
       },
+      arMetrics: {
+        total_invoices: 0,
+        today_invoices: 0,
+        outstanding_balance: 0,
+        pending_invoices: 0,
+        paid_invoices: 0
+      },
       tabs: [
         {
           id: 'sales_orders',
@@ -245,7 +252,7 @@ export default {
     };
   },
   watch: {
-    activeTab(newVal) {
+    activeTab() {
       this.currentView = 'list';
       this.fetchSalesOrders();
     }
@@ -254,6 +261,7 @@ export default {
     this.fetchSalesOrders();
     this.fetchMetrics();
     this.fetchRemittanceMetrics();
+    this.fetchArMetrics();
     
     // Check URL params for tab
     const params = new URLSearchParams(window.location.search);
@@ -312,8 +320,7 @@ export default {
     },
     fetchSalesOrders(page_url) {
       if (this.activeTab === 'sales_orders') {
-        // Handle different types of page_url (string URL or pagination object)
-        let url = '/customers';
+        let url = '/sales-orders';
         if (typeof page_url === 'string' && page_url) {
           url = page_url;
         } else if (page_url && page_url.url) {
@@ -364,6 +371,17 @@ export default {
         .then(response => {
           if (response) {
             this.remittanceMetrics = response.data;
+          }
+        })
+        .catch(err => console.log(err));
+    },
+    fetchArMetrics() {
+      axios.get('/ar-invoices', {
+        params: { option: 'dashboard' }
+      })
+        .then(response => {
+          if (response) {
+            this.arMetrics = response.data;
           }
         })
         .catch(err => console.log(err));

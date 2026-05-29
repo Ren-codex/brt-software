@@ -133,6 +133,12 @@ class SalesOrderController extends Controller
             return $this->sales_order->cancel($id);
         });
 
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'cancel' => $result['info'] ?? 'Unable to cancel sales order.',
+            ]);
+        }
+
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],

@@ -9,17 +9,21 @@ use App\Models\PayrollItem;
 use App\Models\LoanPayment;
 use App\Models\LoanLog;
 use App\Services\SeriesService;
+use App\Services\Accounting\JournalEntryService;
 use DB;
 use App\Models\PayrollLog;
 
 class PayrollClass
 {
     protected $series_service;
+    protected $journalEntryService;
 
     public function __construct(
         SeriesService $series_service,
-    ) { 
+        JournalEntryService $journalEntryService,
+    ) {
         $this->series_service = $series_service;
+        $this->journalEntryService = $journalEntryService;
     }
 
     public function lists($request)
@@ -184,6 +188,8 @@ class PayrollClass
                     'actioned_by_id' => auth()->user()->id,
                     'remarks' => $request->remarks ?? null,
                 ]);
+
+                $this->journalEntryService->recordPayrollEntry($payroll->fresh());
 
                 // Loan deduction logic
                 foreach ($payroll->items as $item) {

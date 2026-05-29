@@ -20,19 +20,15 @@
                             <label for="product_id" class="form-label">Product</label>
                             <div class="input-wrapper">
                                 <i class="ri-bar-chart-2-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.product_id"
-                                :options="availableProducts"
-                                :class="{ 'input-error': form.errors.product_id }"
-                                text-field="name"
-                                value-field="value"
-                                @change="onProductChange"
+                                <select
+                                    class="form-control"
+                                    v-model="form.product_id"
+                                    :class="{ 'input-error': form.errors.product_id }"
+                                    @change="onProductChange"
                                 >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Product</b-form-select-option>
-                                </template>
-                                </b-form-select>
+                                    <option :value="null" disabled>Select Product</option>
+                                    <option v-for="p in availableProducts" :key="p.value" :value="p.value">{{ p.name }}</option>
+                                </select>
                             </div>
                             <span class="error-message" v-if="form.errors.product_id">{{ form.errors.product_id }}</span>
                         </div>
@@ -41,19 +37,15 @@
                             <label for="price_type" class="form-label">Price Type</label>
                             <div class="input-wrapper">
                                 <i class="ri-price-tag-3-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.price_type"
-                                :options="priceTypeOptions"
-                                :class="{ 'input-error': form.errors.price_type }"
-                                text-field="text"
-                                value-field="value"
-                                @change="onPriceTypeChange"
+                                <select
+                                    class="form-control"
+                                    v-model="form.price_type"
+                                    :class="{ 'input-error': form.errors.price_type }"
+                                    @change="onPriceTypeChange"
                                 >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Price Type</b-form-select-option>
-                                </template>
-                                </b-form-select>
+                                    <option :value="null" disabled>Select Price Type</option>
+                                    <option v-for="pt in priceTypeOptions" :key="pt.value" :value="pt.value">{{ pt.text }}</option>
+                                </select>
                             </div>
                             <span class="error-message" v-if="form.errors.price_type">{{ form.errors.price_type }}</span>
                         </div>
@@ -104,7 +96,19 @@
                             <span class="error-message" v-if="form.errors.quantity">{{ form.errors.quantity }}</span>
                         </div>
                          <div class="form-group form-group-half">
-                            <label for="price" class="form-label">Price</label>
+                            <div class="price-label-row">
+                                <label for="price" class="form-label mb-0">Price</label>
+                                <button
+                                    v-if="!shouldSplitIntoMultipleItems"
+                                    type="button"
+                                    class="price-adjust-btn"
+                                    :disabled="!selectedInventoryStock"
+                                    @click="openPriceAdjustment(selectedInventoryStock)"
+                                >
+                                    <i class="ri-edit-line"></i>
+                                    <span>Adjust Price</span>
+                                </button>
+                            </div>
                             <div v-if="!shouldSplitIntoMultipleItems" class="input-wrapper">
                                 <i class="ri-cash-line input-icon"></i>
                                 <input
@@ -123,7 +127,18 @@
                                 >
                                     <div class="split-preview-header">
                                         <span>{{ allocation.batch_code }}</span>
-                                        <strong>Qty: {{ allocation.quantity }}</strong>
+                                        <div class="split-preview-actions">
+                                            <strong>Qty: {{ allocation.quantity }}</strong>
+                                            <button
+                                                type="button"
+                                                class="price-adjust-btn price-adjust-btn-inline"
+                                                :disabled="!allocation.inventoryStock"
+                                                @click="openPriceAdjustment(allocation.inventoryStock)"
+                                            >
+                                                <i class="ri-edit-line"></i>
+                                                <span>Adjust Price</span>
+                                            </button>
+                                        </div>
                                     </div>
                                     <input
                                         type="text"
@@ -180,6 +195,11 @@
             </div>
         </div>
     </div>
+    <UpdatePriceModal
+        :inventoryStock="priceAdjustmentStock"
+        @saved="handlePriceAdjustmentSaved"
+        ref="updatePriceModal"
+    />
 </template>
 
 <script>
@@ -188,9 +208,10 @@ import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import Multiselect from '@/Shared/Components/Forms/Multiselect.vue';
 import Amount from '@/Shared/Components/Forms/Amount.vue';
+import UpdatePriceModal from '@/Pages/Modules/Inventory/Modal/UpdatePriceModal.vue';
 
 export default {
-    components: { InputLabel, TextInput, Multiselect, Amount },
+    components: { InputLabel, TextInput, Multiselect, Amount, UpdatePriceModal },
     props: {
         dropdowns: { type: Object, required: true },
         items: { type: Array, default: () => [] },
@@ -216,6 +237,7 @@ export default {
             showModal: false,
             editable: false,
             saveSuccess: false,
+            priceAdjustmentStock: null,
         }
     },
     computed: {
@@ -245,6 +267,11 @@ export default {
             if (!this.form.batch_code) return null;
             return this.selectedProductBatches.find((batch) => batch.batch_code === this.form.batch_code) || null;
         },
+        selectedInventoryStock() {
+            if (!this.form.product_id || !this.form.batch_code) return null;
+            const product = this.dropdowns.products.find(p => p.value === this.form.product_id);
+            return product?.batch_stocks?.find((batch) => batch.batch_code === this.form.batch_code) || null;
+        },
         selectedProductBatches() {
             if (!this.form.product_id) return [];
             const product = this.dropdowns.products.find(p => p.value === this.form.product_id);
@@ -255,6 +282,7 @@ export default {
                     const key = `${this.form.product_id}::${batch.batch_code}`;
                     const reserved = this.reservedStocks[key] || 0;
                     return {
+                        id: batch.id,
                         batch_code: batch.batch_code,
                         quantity: Math.max((parseFloat(batch.quantity) || 0) - reserved, 0),
                         unit_cost: parseFloat(batch.unit_cost) || 0,
@@ -291,6 +319,7 @@ export default {
                     batch_code: batch.batch_code,
                     quantity: batchQuantity,
                     price: Number(this.getBatchPrice(batch) || 0),
+                    inventoryStock: this.getInventoryStockByBatchCode(batch.batch_code),
                 });
 
                 remainingQuantity -= batchQuantity;
@@ -421,6 +450,36 @@ export default {
             }
         },
 
+        getInventoryStockByBatchCode(batchCode) {
+            if (!this.form.product_id || !batchCode) return null;
+            const product = this.dropdowns.products.find(p => p.value === this.form.product_id);
+            return product?.batch_stocks?.find((batch) => batch.batch_code === batchCode) || null;
+        },
+
+        openPriceAdjustment(stock = null) {
+            if (!stock) return;
+            this.priceAdjustmentStock = stock;
+            this.$refs.updatePriceModal.show();
+        },
+
+        handlePriceAdjustmentSaved(payload = {}) {
+            if (!payload?.inventory_stocks_id) return;
+
+            this.dropdowns.products.forEach((product) => {
+                (product.batch_stocks || []).forEach((batch) => {
+                    if (batch.id !== payload.inventory_stocks_id) return;
+                    batch.retail_price = payload.retail_price;
+                    batch.wholesale_price = payload.wholesale_price;
+                    if (Object.prototype.hasOwnProperty.call(batch, 'reason')) {
+                        batch.reason = payload.reason;
+                    }
+                });
+            });
+
+            this.onPriceTypeChange();
+            this.priceAdjustmentStock = null;
+        },
+
         validateQuantity() {
             this.handleInput('quantity');
             const quantity = parseFloat(this.form.quantity) || 0;
@@ -529,6 +588,43 @@ export default {
     background: #f8f9fa;
 }
 
+.price-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.price-adjust-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid #3d8d7a;
+    background: #eef7f3;
+    color: #267a4c;
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.price-adjust-btn-inline {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+}
+
+.price-adjust-btn:hover:not(:disabled) {
+    background: #3d8d7a;
+    color: #ffffff;
+}
+
+.price-adjust-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .split-preview-header {
     display: flex;
     justify-content: space-between;
@@ -537,5 +633,11 @@ export default {
     margin-bottom: 0.35rem;
     font-size: 0.8rem;
     color: #495057;
+}
+
+.split-preview-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 </style>

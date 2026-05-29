@@ -139,7 +139,7 @@
             </div>
         </div>
     </BRow>
-    <Create @add="fetch()" @update="fetch()" :dropdowns="dropdowns" ref="create" />
+    <Create @add="handleCustomerCreated" @update="handleCustomerUpdated" :dropdowns="dropdowns" ref="create" />
 </template>
 <script>
 import _ from 'lodash';
@@ -255,7 +255,7 @@ export default {
         
         fetch(page_url) {
             page_url = page_url || '/customers';
-            axios.get(page_url, {
+            return axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
                     count: 10,
@@ -270,6 +270,24 @@ export default {
                     }
                 })
                 .catch(err => console.log(err));
+        },
+        
+        loadCustomerDetails(customer) {
+            if (!customer?.id) return Promise.resolve();
+
+            return axios.get(`/customers/${customer.id}/details`)
+                .then((response) => {
+                    this.selectedCustomer = {
+                        ...customer,
+                        ...(response.data?.data || {}),
+                    };
+
+                    return this.selectedCustomer;
+                })
+                .catch((error) => {
+                    console.log(error);
+                    this.$toast.error('Failed to load customer credits and details');
+                });
         },
         
         openCreate() {
@@ -298,18 +316,28 @@ export default {
         openView(data) {
             this.selectedCustomer = data;
             this.currentView = 'details';
+            this.loadCustomerDetails(data);
+        },
 
-            axios.get(`/customers/${data.id}/details`)
-                .then((response) => {
-                    this.selectedCustomer = {
-                        ...data,
-                        ...(response.data?.data || {}),
-                    };
-                })
-                .catch((error) => {
-                    console.log(error);
-                    this.$toast.error('Failed to load customer credits and details');
-                });
+        handleCustomerCreated() {
+            this.fetch();
+        },
+
+        handleCustomerUpdated(payload = {}) {
+            const updatedCustomerId = payload?.id || this.selectedCustomer?.id || null;
+
+            this.fetch().then(() => {
+                const refreshedCustomer = this.lists.find(list => list.id === updatedCustomerId);
+
+                if (refreshedCustomer && this.currentView === 'details') {
+                    this.loadCustomerDetails(refreshedCustomer);
+                    return;
+                }
+
+                if (this.currentView === 'details' && this.selectedCustomer?.id === updatedCustomerId) {
+                    this.loadCustomerDetails(this.selectedCustomer);
+                }
+            });
         },
 
         backToList() {

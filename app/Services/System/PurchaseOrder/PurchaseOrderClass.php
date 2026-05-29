@@ -31,7 +31,9 @@ class PurchaseOrderClass
             'items.product',
             'items.receivedItems.inventoryStocks',
             'items.receivedItems.receivedStock',
-        ])->paginate($request->count ?? 10);
+        ])
+            ->latest('id')
+            ->paginate($request->count ?? 10);
         return PurchaseOrderResource::collection($data);
     }
 

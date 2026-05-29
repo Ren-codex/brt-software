@@ -18,18 +18,24 @@ use App\Models\Product;
 use App\Models\ListStatus;
 use App\Models\InventoryAdjustment;
 use App\Http\Resources\Modules\SalesOrderResource;
+use App\Services\Accounting\JournalEntryService;
 use App\Services\Modules\InventoryService;
 
 
 class SalesOrderClass
 {
-    private const RETURN_WINDOW_DAYS = 7;
+    private static function returnWindowDays(): int
+    {
+        return (int) env('SALES_RETURN_WINDOW_DAYS', 7);
+    }
 
     protected $inventoryService;
+    protected $journalEntryService;
 
-    public function __construct(InventoryService $inventoryService)
+    public function __construct(InventoryService $inventoryService, JournalEntryService $journalEntryService)
     {
         $this->inventoryService = $inventoryService;
+        $this->journalEntryService = $journalEntryService;
     }
 
     public function lists($request){
@@ -39,8 +45,8 @@ class SalesOrderClass
         $includesReturnStatuses = count(array_intersect($requestedStatuses, $returnStatuses)) > 0;
 
         $query = SalesOrder::with([
-            'items', 
-            'arInvoices',
+            'items',
+            'arInvoices.receipts.status',
             'customer',
             'status',
             'sub_status',
@@ -111,6 +117,30 @@ class SalesOrderClass
             }
         }
 
+        // Enforce credit limit for credit sales
+        $isCreditMode = in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true);
+        if ($isCreditMode) {
+            $customer = \App\Models\Customer::find($request->customer_id);
+            if ($customer && $customer->credit_limit > 0) {
+                $orderTotal = collect($request->items)->sum(function ($item) {
+                    return ($item['price'] * $item['quantity']) - (($item['discount_per_unit'] ?? 0) * $item['quantity']);
+                });
+                $outstanding = ArInvoice::whereHas('sales_order', fn($q) => $q->where('customer_id', $request->customer_id))
+                    ->where('balance_due', '>', 0)
+                    ->sum('balance_due');
+                if (($outstanding + $orderTotal) > $customer->credit_limit) {
+                    throw ValidationException::withMessages([
+                        'credit_limit' => sprintf(
+                            'Credit limit exceeded. Limit: ₱%s | Outstanding: ₱%s | This order: ₱%s',
+                            number_format($customer->credit_limit, 2),
+                            number_format($outstanding, 2),
+                            number_format($orderTotal, 2)
+                        ),
+                    ]);
+                }
+            }
+        }
+
         $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Zamboanga City')->pluck('id');
         $isExternal = in_array($request->location_id, $externalLocationIds->toArray());
         $prefix = $isExternal ? 'SO-EXT' : 'SO';
@@ -176,25 +206,50 @@ class SalesOrderClass
             'total_discount' => $totalDiscount,
         ]);
 
+        $isCreditSale = in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+
         // Create AR Invoice
         $invoice = new ArInvoice();
         $invoice->sales_order_id = $data->id;
         $invoice->invoice_number = ArInvoice::generateInvoiceNumber();
         $invoice->invoice_date = $data->order_date;
-        $invoice->amount_paid = 0;
-        $invoice->balance_due = $data->total_amount;
+        $invoice->amount_paid = $isCreditSale ? 0 : $totalAmount;
+        $invoice->balance_due = $isCreditSale ? $totalAmount : 0;
         $invoice->total_discount = $data->total_discount;
-        $invoice->status_id = ListStatus::getBySlug('unpaid')->id; // Unpaid
+        $invoice->status_id = $isCreditSale
+            ? ListStatus::getBySlug('unpaid')->id
+            : ListStatus::getBySlug('paid')->id;
+        $invoice->due_date = $isCreditSale ? $data->due_date : null;
         $invoice->save();
+
+        $autoReceiptId = null;
+        if (!$isCreditSale) {
+            $autoReceipt = Receipt::create([
+                'ar_invoice_id'  => $invoice->id,
+                'customer_id'    => $data->customer_id,
+                'status_id'      => ListStatus::getBySlug('paid')->id,
+                'receipt_number' => Receipt::generateReceiptNumber(),
+                'receipt_type'   => 'payment',
+                'receipt_date'   => $data->order_date,
+                'amount_paid'    => $totalAmount,
+                'balance_due'    => 0,
+                'payment_mode'   => $data->payment_mode,
+            ]);
+
+            $autoReceiptId = $autoReceipt->id;
+            $data->update(['status_id' => ListStatus::getBySlug('closed')->id]);
+        }
+
+        $this->journalEntryService->recordSaleEntries($data->load('items'));
 
         // Reload the data with relationships, including the newly created invoice
         $data = SalesOrder::with(['items', 'customer', 'status', 'created_by', 'arInvoices'])->find($data->id);
-        
-    
+
         return [
             'data' => new SalesOrderResource($data),
             'message' => 'Sales Order saved successfully!',
-            'info' => "You've successfully saved the Sales Order"
+            'info' => "You've successfully saved the Sales Order",
+            'receipt_id' => $autoReceiptId,
         ];
     }
 
@@ -202,11 +257,13 @@ class SalesOrderClass
     public function update($request){
 
         $data = SalesOrder::findOrFail($request->id);
+        $data->load(['items', 'arInvoices']);
 
-        // // Restore old stock
-        // foreach($data->items as $item){
-        //     $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number, $item->batch_code);
-        // }
+        $this->journalEntryService->reverseEntriesForSource($data, 'Sales order updated. Previous accounting entry reversed.', $request->order_date);
+
+        foreach ($data->items as $item) {
+            $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number, $item->batch_code);
+        }
 
         $data->update([
             'customer_id' => $request->customer_id,
@@ -265,7 +322,8 @@ class SalesOrderClass
         $invoice = $data->arInvoices()->first();
         if ($invoice) {
             $invoice->update([
-                'balance_due' => $totalAmount,
+                'balance_due' => in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true) ? $totalAmount : 0,
+                'amount_paid' => in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true) ? $invoice->amount_paid : $totalAmount,
                 'total_discount' => $totalDiscount,
             ]);
         }
@@ -273,6 +331,8 @@ class SalesOrderClass
 
 
         // Reload the data with relationships
+        $this->journalEntryService->recordSaleEntries($data->fresh(['items']));
+
         $data = SalesOrder::with(['items', 'customer', 'status', 'updated_by', 'arInvoices'])->find($data->id);
 
         return [
@@ -337,13 +397,7 @@ class SalesOrderClass
                     continue;
                 }
 
-                $this->inventoryService->addStock(
-                    $item->product_id,
-                    $effectiveQuantity,
-                    'Sales Return Intake (' . strtoupper(str_replace('_', ' ', $returnCondition)) . ') - SO#' . $data->so_number,
-                    $item->batch_code
-                );
-
+                // Damaged goods: write off directly — no phantom intake roundtrip
                 $lossType = $returnCondition === 'damaged' ? 'damage' : 'loss';
                 $this->inventoryService->recordLossOrDamage(
                     $item->product_id,
@@ -364,13 +418,6 @@ class SalesOrderClass
                 }
 
                 $effectiveQuantity = min($returnQuantity, (int) $item->quantity);
-                $this->inventoryService->addStock(
-                    $item->product_id,
-                    $effectiveQuantity,
-                    'Sales Return Intake (Unapproved) - SO#' . $data->so_number,
-                    $item->batch_code
-                );
-
                 $this->inventoryService->recordLossOrDamage(
                     $item->product_id,
                     $effectiveQuantity,
@@ -410,6 +457,7 @@ class SalesOrderClass
                     
                     foreach ($receipts as $receipt) {
                         // Update receipt status to cancelled (void)
+                        $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt voided because of full sales return.', now()->toDateString());
                         $receipt->update([
                             'status_id' => ListStatus::getBySlug('cancelled')->id,
                         ]);
@@ -428,6 +476,11 @@ class SalesOrderClass
                 $refundReceipt = $this->createRefundReceipt($data, $sourceReceipt, $refundAmount);
                 $updatedReceipt = $this->createUpdatedReceipt($data, $refundReceipt);
 
+                $this->journalEntryService->recordSalesReturnEntries($data, $itemsToProcess, $returnRequests, $sourceReceipt);
+                if ($updatedReceipt) {
+                    $this->journalEntryService->recordReceiptEntry($updatedReceipt);
+                }
+
                 return [
                     'data' => SalesOrder::find($id),
                     'message' => 'Sales Order return approved successfully!',
@@ -437,7 +490,7 @@ class SalesOrderClass
             } else {
                 // Partial return - keep the sales order but mark as partially returned
                 $data->update([
-                    'status_id' => ListStatus::getBySlug('sales-returned')->id,
+                    'status_id' => ListStatus::getBySlug('partially-returned')->id,
                     'approved_by_id' => auth()->user()->id,
                     'approved_at' => now(),
                 ]);
@@ -445,14 +498,16 @@ class SalesOrderClass
                 // For partial returns, we adjust the AR invoice balance
                 $arInvoice = $data->arInvoices()->first();
                 if ($arInvoice) {
-                    // Update the invoice balance
                     $newBalanceDue = max(0, $arInvoice->balance_due - $refundAmount);
+                    $newAmountPaid = max(0, $arInvoice->amount_paid - $refundAmount);
                     $arInvoice->update([
                         'balance_due' => $newBalanceDue,
+                        'amount_paid' => $newAmountPaid,
                     ]);
                 }
 
                 if ($sourceReceipt) {
+                    $this->journalEntryService->reverseEntriesForSource($sourceReceipt, 'Receipt voided because of partial sales return.', now()->toDateString());
                     $sourceReceipt->update([
                         'status_id' => ListStatus::getBySlug('cancelled')->id,
                     ]);
@@ -464,6 +519,11 @@ class SalesOrderClass
 
                 $refundReceipt = $this->createRefundReceipt($data, $sourceReceipt, $refundAmount);
                 $updatedReceipt = $this->createUpdatedReceipt($data, $refundReceipt);
+
+                $this->journalEntryService->recordSalesReturnEntries($data, $itemsToProcess, $returnRequests, $sourceReceipt);
+                if ($updatedReceipt) {
+                    $this->journalEntryService->recordReceiptEntry($updatedReceipt);
+                }
 
                 return [
                     'data' => SalesOrder::find($id),
@@ -490,14 +550,46 @@ class SalesOrderClass
 
     public function cancel($id){
         $data = SalesOrder::findOrFail($id);
+        $data->load(['items', 'arInvoices.receipts', 'status']);
+        $cancelledStatusId = ListStatus::getBySlug('cancelled')->id;
+
+        if (optional($data->status)->slug === 'cancelled') {
+            return [
+                'data' => $data,
+                'message' => 'Sales Order already cancelled.',
+                'info' => 'This Sales Order has already been voided.',
+            ];
+        }
+
+        $hasPayments = $data->arInvoices->contains(fn($inv) => $inv->amount_paid > 0);
+        if ($hasPayments) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'cancel' => ['This Sales Order has recorded payments. Void or refund all receipts before cancelling.'],
+            ]);
+        }
 
         // Restore stock
         foreach($data->items as $item){
             $this->inventoryService->addStock($item->product_id, $item->quantity, 'Cancel SO - Restore Stock - SO#' . $data->so_number, $item->batch_code);
         }
 
+        $this->journalEntryService->recordSalesOrderCancellationEntries($data);
+
+        foreach ($data->arInvoices as $invoice) {
+            foreach ($invoice->receipts as $receipt) {
+                $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt reversed because related sales order was cancelled.', now()->toDateString());
+                $receipt->update([
+                    'status_id' => $cancelledStatusId,
+                ]);
+            }
+
+            $invoice->update([
+                'status_id' => $cancelledStatusId,
+            ]);
+        }
+
         $data->update([
-            'status_id' => ListStatus::getBySlug('cancelled')->id, //set to cancelled
+            'status_id' => $cancelledStatusId,
         ]);
 
         return [
@@ -723,7 +815,7 @@ class SalesOrderClass
             ->startOfDay()
             ->diffInDays(now()->startOfDay(), false);
 
-        if ($daysSinceReceipt < 0 || $daysSinceReceipt > self::RETURN_WINDOW_DAYS) {
+        if ($daysSinceReceipt < 0 || $daysSinceReceipt > self::returnWindowDays()) {
             throw ValidationException::withMessages([
                 'receipt_id' => 'This receipt is outside the allowed 7-day return window.',
             ]);
@@ -751,7 +843,7 @@ class SalesOrderClass
             'receipt_date' => now()->toDateString(),
             'amount_paid' => $refundAmount,
             'balance_due' => $invoice->balance_due ?? 0,
-            'payment_mode' => 'Refund',
+            'payment_mode' => $sourceReceipt?->payment_mode ?? $salesOrder->payment_mode,
         ]);
     }
 

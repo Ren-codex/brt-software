@@ -179,4 +179,37 @@ class PrintClass
 
     }
 
+    public function queryExpensesForPrint(\Illuminate\Http\Request $request): \Illuminate\Database\Eloquent\Collection
+    {
+        return \App\Models\Expense::with(['added_by', 'fund'])
+            ->when($request->date_from, fn($q) => $q->whereDate('expense_date', '>=', $request->date_from))
+            ->when($request->date_to,   fn($q) => $q->whereDate('expense_date', '<=', $request->date_to))
+            ->when($request->status,       fn($q, $s) => $q->where('status',       $s))
+            ->when($request->fund_id,      fn($q, $id) => $q->where('fund_id',     $id))
+            ->when($request->expense_type, fn($q, $t) => $q->where('expense_type', $t))
+            ->orderBy('expense_date', 'ASC')
+            ->get();
+    }
+
+    public function printExpenseList(\Illuminate\Http\Request $request)
+    {
+        $expenses = $this->queryExpensesForPrint($request);
+        $total    = $expenses->sum('amount');
+
+        $filters = [
+            'date_from'    => $request->date_from,
+            'date_to'      => $request->date_to,
+            'status'       => $request->status,
+            'fund_name'    => $request->fund_id
+                ? ($expenses->first()?->fund?->name ?? \App\Models\PettyCashFund::find($request->fund_id)?->name)
+                : null,
+            'expense_type' => $request->expense_type,
+        ];
+
+        $pdf = \PDF::loadView('prints.expense-list', compact('expenses', 'total', 'filters'))
+            ->setPaper('A4', 'landscape');
+
+        return $pdf->stream('expense-list-' . now()->format('Ymd') . '.pdf');
+    }
+
 }

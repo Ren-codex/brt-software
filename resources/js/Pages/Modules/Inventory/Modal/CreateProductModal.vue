@@ -73,6 +73,24 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="minimum_stock" class="form-label">Minimum Stock <span class="text-muted small">(low-stock alert threshold)</span></label>
+                        <div class="input-wrapper">
+                            <i class="ri-alarm-warning-line input-icon"></i>
+                            <input
+                                type="number"
+                                id="minimum_stock"
+                                v-model="form.minimum_stock"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.minimum_stock }"
+                                placeholder="0"
+                                min="0"
+                                @input="handleInput('minimum_stock')"
+                            >
+                        </div>
+                        <span class="error-message" v-if="form.errors.minimum_stock">{{ form.errors.minimum_stock }}</span>
+                    </div>
+
+                    <div class="form-group">
                         <label for="unit_id" class="form-label">Unit</label>
                         <div class="input-wrapper">
                             <i class="ri-ruler-line input-icon"></i>
@@ -105,18 +123,18 @@
                         <span class="error-message" v-if="form.errors.price">{{ form.errors.price }}</span>
                     </div> -->
 
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-cancel" @click="hide">
-                            <i class="ri-close-line"></i>
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing">
-                            <i class="ri-save-line" v-if="!form.processing"></i>
-                            <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : 'Save' }}
-                        </button>
-                    </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" @click="hide">
+                    <i class="ri-close-line"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-save" :disabled="form.processing" @click="submit">
+                    <i class="ri-save-line" v-if="!form.processing"></i>
+                    <i class="ri-loader-4-line spinner" v-else></i>
+                    {{ form.processing ? 'Saving...' : 'Save' }}
+                </button>
             </div>
         </div>
     </div>
@@ -139,6 +157,7 @@ export default {
                 pack_size: null,
                 unit_id: null,
                 brand_id: null,
+                minimum_stock: 0,
             }),
             showModal: false,
             editable: false,
@@ -157,6 +176,7 @@ export default {
             this.form.pack_size = data.pack_size;
             this.form.unit_id = data.unit.id;
             this.form.brand_id = data.brand.id;
+            this.form.minimum_stock = data.minimum_stock ?? 0;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;

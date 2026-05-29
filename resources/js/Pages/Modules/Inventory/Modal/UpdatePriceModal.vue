@@ -72,17 +72,17 @@
             <span class="error-message" v-if="form.errors.reason">{{ form.errors.reason }}</span>
           </div>
 
-          <div class="form-actions">
-            <button type="button" class="btn btn-cancel" @click="hide">
-              <i class="ri-close-line"></i>
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-save" :disabled="isUnchanged">
-              <i class="ri-save-line"></i>
-              Save
-            </button>
-          </div>
         </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" @click="hide">
+          <i class="ri-close-line"></i>
+          Cancel
+        </button>
+        <button type="button" class="btn btn-save" :disabled="isUnchanged" @click="savePrices">
+          <i class="ri-save-line"></i>
+          Save
+        </button>
       </div>
     </div>
   </div>
@@ -144,9 +144,15 @@ export default {
         preserveScroll: true,
         onSuccess: (response) => {
           this.saveSuccess = true;
+          const payload = {
+            inventory_stocks_id: this.form.inventory_stocks_id,
+            retail_price: parseFloat(this.form.retail_price) || 0,
+            wholesale_price: parseFloat(this.form.wholesale_price) || 0,
+            reason: this.form.reason || '',
+          };
           this.form.reset();
           setTimeout(() => {
-            this.$emit('saved', true);
+            this.$emit('saved', payload);
             this.hide();
           }, 1000);
         },

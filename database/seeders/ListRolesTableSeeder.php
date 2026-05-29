@@ -22,14 +22,14 @@ class ListRolesTableSeeder extends Seeder
                 'name' => 'Administrator',
                 'type' => 'Staff',
                 'is_active' => 1,
-                'definition' => 'Has full system access, including managing users, roles, and all system configurations',
+                'definition' => 'Manages day-to-day system administration, including users, role assignments, and operational setup.',
             ],
             [
                 'id' => 2,
                 'name' => 'Sales Rep',
                 'type' => 'Staff',
                 'is_active' => 1,
-                'definition' => 'Standard user role with access to personal records, DTR, leave filing, and travel requests.',
+                'definition' => 'Handles customer accounts, sales orders, field activity, and related sales transactions.',
             ],
             [
                 'id' => 3,
@@ -40,18 +40,49 @@ class ListRolesTableSeeder extends Seeder
             ],
             [
                 'id' => 4,
-                'name' => 'Inventory Manager',
+                'name' => 'Warehouse Manager',
                 'type' => 'Staff',
                 'is_active' => 1,
-                'definition' => 'Manages stock movement, inventory monitoring, and warehouse-related operations.',
+                'definition' => 'Supervises receiving, stock movement, inventory monitoring, and warehouse operations.',
             ],
             [
                 'id' => 5,
-                'name' => 'Top Management',
+                'name' => 'Area Business Manager',
                 'type' => 'Staff',
                 'is_active' => 1,
-                'definition' => 'Provides executive approval and oversight across operational modules.',
+                'definition' => 'Oversees regional sales performance, team execution, and business development activities.',
             ],
+            [
+                'id' => 6,
+                'name' => 'Accountant',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Manages financial records, payables, receivables, disbursements, and accounting reports.',
+            ],
+            [
+                'id' => 7,
+                'name' => 'Super Admin',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Has unrestricted access to all modules, settings, approvals, and master data across the system.',
+            ],
+
+            [
+                'id' => 8,
+                'name' => 'Mini Admin',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Has unrestricted access to all modules, settings, approvals, and master data across the system.',
+            ],
+            [
+                'id' => 9,
+                'name' => 'Logistic Coordinator',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Coordinates deliveries, shipment schedules, transport activity, and logistics-related documentation.',
+            ],
+
+        
         ];
 
         $rows = array_map(function ($role) use ($timestamp) {

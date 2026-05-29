@@ -292,6 +292,30 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            22 =>
+            array (
+                'id' => 23,
+                'name' => 'Overdue',
+                'slug' => 'overdue',
+                'description' => 'Invoice is past its due date with an outstanding balance',
+                'text_color' => '#ffffff',
+                'bg_color' => '#dc3545',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            23 =>
+            array (
+                'id' => 24,
+                'name' => 'Partially Returned',
+                'slug' => 'partially-returned',
+                'description' => 'Sales order has had some items returned',
+                'text_color' => '#000000',
+                'bg_color' => '#fd7e14',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
     }
 }

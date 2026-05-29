@@ -11,6 +11,9 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\InventoryStocks;
 use App\Models\PurchaseOrder;
+use App\Models\Employee;
+use App\Models\Loan;
+use App\Models\PayrollTemplate;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -176,7 +179,14 @@ class DashboardController extends Controller
         $inventoryStocksInRange = InventoryStocks::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
         $totalProducts = Product::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
         $totalInventoryValue = (clone $inventoryStocksInRange)->sum(\DB::raw('retail_price * quantity'));
-        $lowStockItems = (clone $inventoryStocksInRange)->where('quantity', '<=', 10)->count();
+        $lowStockItems = \DB::table('inventory_stocks')
+            ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
+            ->join('products', 'received_items.product_id', '=', 'products.id')
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
+            ->count();
         $outOfStock = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
 
         // Stock by Category for bar chart
@@ -196,8 +206,21 @@ class DashboardController extends Controller
             });
 
         // Stock Distribution for donut chart
-        $inStockCount = (clone $inventoryStocksInRange)->where('quantity', '>', 10)->count();
-        $lowStockCount = (clone $inventoryStocksInRange)->where('quantity', '<=', 10)->where('quantity', '>', 0)->count();
+        $stockDistBase = \DB::table('inventory_stocks')
+            ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
+            ->join('products', 'received_items.product_id', '=', 'products.id')
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']]);
+        $inStockCount = (clone $stockDistBase)
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where(function ($q) {
+                $q->where('products.minimum_stock', 0)
+                  ->orWhereColumn('inventory_stocks.quantity', '>', 'products.minimum_stock');
+            })->count();
+        $lowStockCount = (clone $stockDistBase)
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
+            ->count();
         $outOfStockCount = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
         
         $stockDistribution = [
@@ -218,15 +241,18 @@ class DashboardController extends Controller
             ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
             ->join('products', 'received_items.product_id', '=', 'products.id')
             ->join('list_brands', 'products.brand_id', '=', 'list_brands.id')
+            ->join('list_units', 'products.unit_id', '=', 'list_units.id')
             ->select(
                 'products.id',
                 'products.id as code',
                 'list_brands.name as category',
+                DB::raw('CONCAT(products.pack_size, " ", list_units.name, " ", list_brands.name) as product_name'),
                 'inventory_stocks.quantity as current_stock',
-                \DB::raw('10 as minimum_stock')
+                'products.minimum_stock'
             )
             ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
-            ->where('inventory_stocks.quantity', '<=', 10)
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
             ->where('inventory_stocks.quantity', '>', 0)
             ->limit(10)
             ->get()
@@ -234,10 +260,66 @@ class DashboardController extends Controller
                 return [
                     'id' => $item->id,
                     'code' => 'PRD-' . str_pad($item->id, 3, '0', STR_PAD_LEFT),
-                    'name' => 'Product ' . $item->id, // Placeholder - would need product name field
+                    'name' => $item->product_name,
                     'category' => $item->category,
                     'current_stock' => (int) $item->current_stock,
                     'minimum_stock' => (int) $item->minimum_stock,
+                ];
+            });
+
+        $totalEmployees = Employee::count();
+        $activeEmployees = Employee::where('is_active', 1)->count();
+        $regularEmployees = Employee::where('is_regular', 1)->count();
+        $employeesWithAccounts = Employee::whereNotNull('user_id')->count();
+        $employeesWithLoans = Loan::where('remaining_balance', '>', 0)
+            ->distinct('employee_id')
+            ->count('employee_id');
+        $employeesInPayrollGroups = DB::table('payroll_template_employees')
+            ->distinct('employee_id')
+            ->count('employee_id');
+        $totalPositions = Employee::whereNotNull('position_id')
+            ->distinct('position_id')
+            ->count('position_id');
+
+        $employeesByPosition = Employee::query()
+            ->leftJoin('list_positions', 'employees.position_id', '=', 'list_positions.id')
+            ->selectRaw('COALESCE(list_positions.title, "Unassigned") as position, COUNT(employees.id) as count')
+            ->groupBy('list_positions.title')
+            ->orderByDesc('count')
+            ->limit(8)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'department' => $item->position,
+                    'count' => (int) $item->count,
+                ];
+            });
+
+        $recentEmployees = Employee::with('position')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($employee) {
+                return [
+                    'id' => $employee->id,
+                    'employee_name' => $employee->fullname,
+                    'department' => $employee->position->title ?? 'Unassigned',
+                    'joined_at' => optional($employee->created_at)->format('M d, Y'),
+                    'status' => $employee->is_active ? 'Active' : 'Inactive',
+                ];
+            });
+
+        $payrollGroups = PayrollTemplate::withCount('employees')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($template) {
+                return [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'employee_count' => (int) $template->employees_count,
+                    'created_at' => optional($template->created_at)->format('M d, Y'),
+                    'status' => $template->is_active ? 'Active' : 'Inactive',
                 ];
             });
 
@@ -268,6 +350,25 @@ class DashboardController extends Controller
                 'stockDistribution' => $stockDistribution,
             ],
             'lowStockItems' => $lowStockItemsData,
+            'employeeStats' => [
+                'totalEmployees' => $totalEmployees,
+                'activeEmployees' => $activeEmployees,
+                'regularEmployees' => $regularEmployees,
+                'employeesWithAccounts' => $employeesWithAccounts,
+                'employeesWithLoans' => $employeesWithLoans,
+                'employeesInPayrollGroups' => $employeesInPayrollGroups,
+                'totalPositions' => $totalPositions,
+            ],
+            'employeeCharts' => [
+                'employeesByDepartment' => $employeesByPosition,
+            ],
+            'workforceSummary' => [
+                'active' => $activeEmployees,
+                'regular' => $regularEmployees,
+                'withAccounts' => $employeesWithAccounts,
+            ],
+            'recentEmployees' => $recentEmployees,
+            'payrollGroups' => $payrollGroups,
             'filter' => $filter,
             'selectedDate' => optional($dateRange['selectedDate'])->toDateString()
         ]);

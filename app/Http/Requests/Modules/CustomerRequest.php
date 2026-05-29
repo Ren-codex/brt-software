@@ -24,7 +24,8 @@ class CustomerRequest extends FormRequest
                     'regex:/^09\d{9}$/',
                     Rule::unique('customers', 'contact_number')->ignore($this->id),
             ],
-            'address' => 'required|string|max:500',
+            'address'      => 'required|string|max:500',
+            'credit_limit' => 'nullable|numeric|min:0',
         ];
 
     }
