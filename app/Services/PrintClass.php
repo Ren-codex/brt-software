@@ -182,10 +182,8 @@ class PrintClass
     public function queryExpensesForPrint(\Illuminate\Http\Request $request): \Illuminate\Database\Eloquent\Collection
     {
         return \App\Models\Expense::with(['added_by', 'fund'])
-            ->when(
-                $request->date_from && $request->date_to,
-                fn($q) => $q->whereBetween('expense_date', [$request->date_from, $request->date_to])
-            )
+            ->when($request->date_from, fn($q) => $q->whereDate('expense_date', '>=', $request->date_from))
+            ->when($request->date_to,   fn($q) => $q->whereDate('expense_date', '<=', $request->date_to))
             ->when($request->status,       fn($q, $s) => $q->where('status',       $s))
             ->when($request->fund_id,      fn($q, $id) => $q->where('fund_id',     $id))
             ->when($request->expense_type, fn($q, $t) => $q->where('expense_type', $t))
@@ -203,7 +201,7 @@ class PrintClass
             'date_to'      => $request->date_to,
             'status'       => $request->status,
             'fund_name'    => $request->fund_id
-                ? \App\Models\PettyCashFund::find($request->fund_id)?->name
+                ? ($expenses->first()?->fund?->name ?? \App\Models\PettyCashFund::find($request->fund_id)?->name)
                 : null,
             'expense_type' => $request->expense_type,
         ];
