@@ -11,6 +11,7 @@ use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use App\Services\Modules\ExpenseClass;
 use App\Http\Requests\Modules\ExpenseRequest;
+use App\Services\PrintClass;
 use Illuminate\Support\Facades\Storage;
 
 class ExpenseController extends Controller
@@ -19,7 +20,8 @@ class ExpenseController extends Controller
 
     public function __construct(
         protected ExpenseClass $expense,
-        protected DropdownClass $dropdown
+        protected DropdownClass $dropdown,
+        protected PrintClass $print
     ) {}
 
     public function index(Request $request)
@@ -131,6 +133,11 @@ class ExpenseController extends Controller
             'status'  => $result['status'] ?? 'success',
             'data'    => $result['data'] ?? null,
         ]);
+    }
+
+    public function printExpenses(Request $request)
+    {
+        return $this->print->printExpenseList($request);
     }
 
     public function storeBudget(Request $request)

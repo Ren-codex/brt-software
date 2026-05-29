@@ -137,6 +137,7 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::post('/accounting/bank-accounts', [App\Http\Controllers\Modules\BankAccountController::class, 'store']);
         Route::put('/accounting/bank-accounts/{id}', [App\Http\Controllers\Modules\BankAccountController::class, 'update']);
         Route::patch('/accounting/bank-accounts/{id}/toggle', [App\Http\Controllers\Modules\BankAccountController::class, 'toggle']);
+        Route::get('/expenses/print', [App\Http\Controllers\Modules\ExpenseController::class, 'printExpenses']);
         Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
         Route::patch('/expenses/{id}/approve', [App\Http\Controllers\Modules\ExpenseController::class, 'approve']);
         Route::patch('/expenses/{id}/void', [App\Http\Controllers\Modules\ExpenseController::class, 'void']);
