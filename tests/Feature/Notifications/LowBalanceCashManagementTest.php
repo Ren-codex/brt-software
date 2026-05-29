@@ -21,7 +21,7 @@ class LowBalanceCashManagementTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $adminRole   = ListRole::create(['name' => 'Administrator', 'type' => 'role', 'definition' => '', 'is_active' => true]);
+        $adminRole = ListRole::create(['name' => 'Administrator', 'type' => 'role', 'definition' => '', 'is_active' => true]);
         $this->admin = User::factory()->create();
         $this->admin->roles()->attach($adminRole->id, ['added_by_id' => $this->admin->id]);
         $this->actingAs($this->admin);
@@ -30,12 +30,13 @@ class LowBalanceCashManagementTest extends TestCase
     private function makeFund(array $attrs = []): PettyCashFund
     {
         static $seq = 0;
+
         return PettyCashFund::create(array_merge([
-            'name'                  => 'Test Fund',
-            'gl_code'               => 'PCF-CMS-' . (++$seq),
-            'balance'               => 1000,
+            'name' => 'Test Fund',
+            'gl_code' => 'PCF-CMS-'.(++$seq),
+            'balance' => 1000,
             'low_balance_threshold' => 500,
-            'created_by_id'         => $this->admin->id,
+            'created_by_id' => $this->admin->id,
         ], $attrs));
     }
 
@@ -46,8 +47,8 @@ class LowBalanceCashManagementTest extends TestCase
         $fund = $this->makeFund(['balance' => 600, 'low_balance_threshold' => 500]);
 
         app(CashManagementService::class)->addTransaction($fund, [
-            'type'             => 'disbursement',
-            'amount'           => 200,
+            'type' => 'disbursement',
+            'amount' => 200,
             'transaction_date' => now()->toDateString(),
         ]);
 
@@ -61,8 +62,8 @@ class LowBalanceCashManagementTest extends TestCase
         $fund = $this->makeFund(['balance' => 1000, 'low_balance_threshold' => 500]);
 
         app(CashManagementService::class)->addTransaction($fund, [
-            'type'             => 'disbursement',
-            'amount'           => 100,
+            'type' => 'disbursement',
+            'amount' => 100,
             'transaction_date' => now()->toDateString(),
         ]);
 
@@ -74,13 +75,13 @@ class LowBalanceCashManagementTest extends TestCase
         Notification::fake();
 
         $fund = $this->makeFund(['balance' => 600, 'low_balance_threshold' => 500]);
-        $txn  = PettyCashTransaction::create([
-            'transaction_no'   => 'TXN-TEST-001',
-            'fund_id'          => $fund->id,
-            'type'             => 'replenishment',
-            'amount'           => 200,
+        $txn = PettyCashTransaction::create([
+            'transaction_no' => 'TXN-TEST-001',
+            'fund_id' => $fund->id,
+            'type' => 'replenishment',
+            'amount' => 200,
             'transaction_date' => now()->toDateString(),
-            'created_by_id'    => $this->admin->id,
+            'created_by_id' => $this->admin->id,
         ]);
 
         app(CashManagementService::class)->deleteTransaction($txn->id);
