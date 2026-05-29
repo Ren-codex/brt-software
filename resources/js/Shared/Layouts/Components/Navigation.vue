@@ -166,11 +166,11 @@ export default {
     if (userId && window.Echo) {
         window.Echo.private('App.Models.User.' + userId)
             .notification(notification => {
-                if (notification.type === 'low_balance') {
+                if (['low_balance', 'low_stock', 'overdue_invoice'].includes(notification.type)) {
                     this.unreadCount++;
                     this.notifications.unshift({
                         id:         notification.id || null,
-                        type:       'low_balance',
+                        type:       notification.type,
                         data:       notification,
                         read_at:    null,
                         created_at: new Date().toISOString(),
@@ -284,14 +284,40 @@ export default {
                     <i class="ri-alert-line text-warning fs-18"></i>
                   </div>
                   <div class="flex-grow-1">
-                    <p class="mb-0 fs-12 fw-semibold text-truncate" style="max-width:240px;">
-                      <strong>{{ n.data.fund_name }}</strong> balance dropped to
-                      &#8369;{{ Number(n.data.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
-                    </p>
-                    <p class="mb-0 fs-11 text-muted">
-                      Threshold: &#8369;{{ Number(n.data.threshold).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
-                      &middot; {{ timeAgo(n.created_at) }}
-                    </p>
+                    <!-- low_balance -->
+                    <template v-if="n.data.type === 'low_balance'">
+                      <p class="mb-0 fs-12 fw-semibold text-truncate" style="max-width:240px;">
+                        <strong>{{ n.data.fund_name }}</strong> balance dropped to
+                        &#8369;{{ Number(n.data.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                      </p>
+                      <p class="mb-0 fs-11 text-muted">
+                        Threshold: &#8369;{{ Number(n.data.threshold).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                        &middot; {{ timeAgo(n.created_at) }}
+                      </p>
+                    </template>
+
+                    <!-- low_stock -->
+                    <template v-else-if="n.data.type === 'low_stock'">
+                      <p class="mb-0 fs-12 fw-semibold text-truncate" style="max-width:240px;">
+                        <strong>{{ n.data.product_name }}</strong> stock is low
+                      </p>
+                      <p class="mb-0 fs-11 text-muted">
+                        {{ n.data.current_stock }} remaining &middot; min {{ n.data.minimum_stock }}
+                        &middot; {{ timeAgo(n.created_at) }}
+                      </p>
+                    </template>
+
+                    <!-- overdue_invoice -->
+                    <template v-else-if="n.data.type === 'overdue_invoice'">
+                      <p class="mb-0 fs-12 fw-semibold text-truncate" style="max-width:240px;">
+                        <strong>{{ n.data.invoice_number }}</strong> overdue
+                      </p>
+                      <p class="mb-0 fs-11 text-muted">
+                        {{ n.data.customer_name }} &middot;
+                        &#8369;{{ Number(n.data.balance_due).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                        &middot; {{ timeAgo(n.created_at) }}
+                      </p>
+                    </template>
                   </div>
                 </a>
               </template>
