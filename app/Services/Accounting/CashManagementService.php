@@ -6,6 +6,7 @@ use App\Models\BankDeposit;
 use App\Models\FundTransfer;
 use App\Models\PettyCashFund;
 use App\Models\PettyCashTransaction;
+use App\Services\NotificationService;
 use App\Services\SeriesService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class CashManagementService
     public function __construct(
         private SeriesService $series,
         private JournalEntryService $journal,
+        private NotificationService $notificationService,
     ) {}
 
     // ── Fund Transfers ────────────────────────────────────────────────
@@ -23,14 +25,14 @@ class CashManagementService
     {
         return DB::transaction(function () use ($data) {
             $transfer = FundTransfer::create([
-                'transfer_no'          => $this->series->get('fund_transfer_no'),
-                'transfer_date'        => $data['transfer_date'],
+                'transfer_no' => $this->series->get('fund_transfer_no'),
+                'transfer_date' => $data['transfer_date'],
                 'from_bank_account_id' => $data['from_bank_account_id'],
-                'to_bank_account_id'   => $data['to_bank_account_id'],
-                'amount'               => round((float) $data['amount'], 2),
-                'reference_number'     => $data['reference_number'] ?? null,
-                'notes'                => $data['notes'] ?? null,
-                'created_by_id'        => Auth::id(),
+                'to_bank_account_id' => $data['to_bank_account_id'],
+                'amount' => round((float) $data['amount'], 2),
+                'reference_number' => $data['reference_number'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'created_by_id' => Auth::id(),
             ]);
 
             $transfer->load(['fromBankAccount', 'toBankAccount', 'createdBy']);
@@ -55,14 +57,14 @@ class CashManagementService
     {
         return DB::transaction(function () use ($data) {
             $deposit = BankDeposit::create([
-                'deposit_no'      => $this->series->get('bank_deposit_no'),
+                'deposit_no' => $this->series->get('bank_deposit_no'),
                 'cash_account_id' => $data['cash_account_id'],
                 'bank_account_id' => $data['bank_account_id'],
-                'amount'          => round((float) $data['amount'], 2),
-                'deposit_date'    => $data['deposit_date'],
-                'reference'       => $data['reference'] ?? null,
-                'notes'           => $data['notes'] ?? null,
-                'created_by_id'   => Auth::id(),
+                'amount' => round((float) $data['amount'], 2),
+                'deposit_date' => $data['deposit_date'],
+                'reference' => $data['reference'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'created_by_id' => Auth::id(),
             ]);
 
             $deposit->load(['cashAccount', 'bankAccount', 'createdBy']);
@@ -89,11 +91,11 @@ class CashManagementService
             $initialBalance = round((float) ($data['initial_balance'] ?? 0), 2);
 
             $fund = PettyCashFund::create([
-                'name'          => $data['name'],
-                'gl_code'       => $data['gl_code'],
-                'balance'       => $initialBalance,
+                'name' => $data['name'],
+                'gl_code' => $data['gl_code'],
+                'balance' => $initialBalance,
                 'weekly_budget' => $data['weekly_budget'] ?? 0,
-                'is_active'     => true,
+                'is_active' => true,
                 'created_by_id' => Auth::id(),
             ]);
 
@@ -109,21 +111,21 @@ class CashManagementService
     {
         return DB::transaction(function () use ($fund, $data) {
             $amount = round((float) $data['amount'], 2);
-            $type   = $data['type'];
+            $type = $data['type'];
 
             $txn = PettyCashTransaction::create([
-                'transaction_no'   => $this->series->get('petty_cash_txn_no'),
-                'fund_id'          => $fund->id,
-                'type'             => $type,
-                'amount'           => $amount,
-                'category'         => $data['category'] ?? null,
-                'description'      => $data['description'] ?? null,
+                'transaction_no' => $this->series->get('petty_cash_txn_no'),
+                'fund_id' => $fund->id,
+                'type' => $type,
+                'amount' => $amount,
+                'category' => $data['category'] ?? null,
+                'description' => $data['description'] ?? null,
                 'transaction_date' => $data['transaction_date'],
                 'reference_number' => $data['reference_number'] ?? null,
-                'receipt_path'     => $data['receipt_path'] ?? null,
-                'source_type'      => $data['source_type'] ?? null,
-                'bank_account_id'  => $data['bank_account_id'] ?? null,
-                'created_by_id'    => Auth::id(),
+                'receipt_path' => $data['receipt_path'] ?? null,
+                'source_type' => $data['source_type'] ?? null,
+                'bank_account_id' => $data['bank_account_id'] ?? null,
+                'created_by_id' => Auth::id(),
             ]);
 
             if ($type === 'replenishment') {
@@ -131,9 +133,12 @@ class CashManagementService
                 $txn->load(['fund', 'bankAccount']);
                 $this->journal->recordPettyCashReplenishment($txn);
             } else {
+                $previousBalance = (float) $fund->balance;
                 $fund->decrement('balance', $amount);
+                $newBalance = $previousBalance - $amount;
                 $txn->load(['fund']);
                 $this->journal->recordPettyCashDisbursement($txn);
+                $this->notificationService->checkAndNotifyLowBalance($fund, $previousBalance, $newBalance);
             }
 
             return $txn->fresh(['fund', 'bankAccount', 'createdBy']);
@@ -148,7 +153,10 @@ class CashManagementService
             $this->journal->reverseEntriesForSource($txn, 'Petty cash transaction deleted.', now()->toDateString());
 
             if ($txn->type === 'replenishment') {
+                $previousBalance = (float) $txn->fund->balance;
                 $txn->fund->decrement('balance', $txn->amount);
+                $newBalance = $previousBalance - (float) $txn->amount;
+                $this->notificationService->checkAndNotifyLowBalance($txn->fund, $previousBalance, $newBalance);
             } else {
                 $txn->fund->increment('balance', $txn->amount);
             }
