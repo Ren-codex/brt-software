@@ -28,6 +28,14 @@
                             <input type="number" v-model="form.weekly_budget" class="form-control" placeholder="0.00" min="0" step="0.01">
                         </div>
                     </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Low Balance Threshold <span class="text-muted">(optional)</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" v-model="form.low_balance_threshold" class="form-control" placeholder="e.g. 500.00" min="0" step="0.01">
+                        </div>
+                        <small class="text-muted">Admins are notified when the fund balance drops below this amount.</small>
+                    </div>
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Fund saved successfully!</span>
@@ -53,7 +61,7 @@ export default {
     emits: ['add', 'update'],
     data() {
         return {
-            form: useForm({ id: null, name: null, gl_code: null, weekly_budget: null }),
+            form: useForm({ id: null, name: null, gl_code: null, weekly_budget: null, low_balance_threshold: null }),
             showModal: false,
             editable: false,
             saveSuccess: false,
@@ -66,6 +74,7 @@ export default {
                 name: null,
                 gl_code: null,
                 weekly_budget: null,
+                low_balance_threshold: null,
             }).reset();
             this.form.clearErrors();
             this.editable = false;
@@ -73,10 +82,11 @@ export default {
             this.showModal = true;
         },
         edit(fund) {
-            this.form.id            = fund.id;
-            this.form.name          = fund.name;
-            this.form.gl_code       = fund.gl_code;
-            this.form.weekly_budget = fund.weekly_budget;
+            this.form.id                    = fund.id;
+            this.form.name                  = fund.name;
+            this.form.gl_code               = fund.gl_code;
+            this.form.weekly_budget         = fund.weekly_budget;
+            this.form.low_balance_threshold = fund.low_balance_threshold;
             this.editable   = true;
             this.saveSuccess = false;
             this.showModal   = true;
