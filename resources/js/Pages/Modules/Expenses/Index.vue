@@ -27,9 +27,14 @@
                                         <p class="header-subtitle mb-0">Record daily purchases made from the petty cash fund</p>
                                     </div>
                                 </div>
-                                <button class="create-btn" @click="openCreate">
-                                    <i class="ri-add-line"></i><span>Record Expense</span>
-                                </button>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-secondary btn-sm" @click="$refs.printReport.show()">
+                                        <i class="ri-printer-line me-1"></i>Print Report
+                                    </button>
+                                    <button class="create-btn" @click="openCreate">
+                                        <i class="ri-add-line"></i><span>Record Expense</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -504,6 +509,7 @@
         </div>
 
         <Create @add="fetch()" @update="fetch()" @close="selectedRow = null" :dropdowns="dropdowns" ref="create" />
+        <PrintReport ref="printReport" :funds="dropdowns.funds" />
         <DeleteModal ref="deleteModal" />
 
     </div>
@@ -576,9 +582,10 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
 import Create from './Modals/Create.vue';
+import PrintReport from './Modals/PrintReport.vue';
 
 export default {
-    components: { PageHeader, Pagination, Create, DeleteModal },
+    components: { PageHeader, Pagination, Create, DeleteModal, PrintReport },
     props: ['dropdowns'],
     computed: {
         pendingCount() {
