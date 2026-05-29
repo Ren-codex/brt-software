@@ -111,6 +111,15 @@
                                                         >
                                                             <i class="ri-check-double-line"></i>
                                                         </button>
+                                                        <!-- Void -->
+                                                        <button
+                                                            v-if="['recorded', 'approved', 'submitted'].includes(list.status) && canVoid"
+                                                            @click.stop="voidExpense(list)"
+                                                            class="action-icon-btn void"
+                                                            title="Void"
+                                                        >
+                                                            <i class="ri-close-circle-line"></i>
+                                                        </button>
                                                         <button class="action-icon-btn edit" @click.stop="openEdit(list, index)" title="Edit"
                                                             v-if="['recorded'].includes(list.status)">
                                                             <i class="ri-pencil-line"></i>
@@ -184,13 +193,22 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div v-if="list.status === 'recorded' && canApprove" class="d-flex justify-content-end mt-3">
+                                                    <div v-if="(list.status === 'recorded' && canApprove) || (['recorded', 'approved', 'submitted'].includes(list.status) && canVoid)" class="d-flex justify-content-end gap-2 mt-3">
                                                         <button
+                                                            v-if="list.status === 'recorded' && canApprove"
                                                             @click="approveExpense(list)"
                                                             class="system-action-btn system-action-success"
                                                         >
                                                             <i class="ri-check-double-line me-1"></i>
                                                             Approve Expense
+                                                        </button>
+                                                        <button
+                                                            v-if="['recorded', 'approved', 'submitted'].includes(list.status) && canVoid"
+                                                            @click="voidExpense(list)"
+                                                            class="btn-danger-action"
+                                                        >
+                                                            <i class="ri-close-circle-line me-1"></i>
+                                                            Void Expense
                                                         </button>
                                                     </div>
                                                 </td>
@@ -571,6 +589,10 @@ export default {
             return ['Administrator', 'Top Management', 'Area Business Manager', 'Super Admin']
                 .some(r => roles.includes(r));
         },
+        canVoid() {
+            const roles = this.$page?.props?.roles || [];
+            return ['Administrator', 'Top Management'].some(r => roles.includes(r));
+        },
     },
     data() {
         return {
@@ -652,6 +674,30 @@ export default {
                 .catch(() => {
                     this.$swal?.fire?.('Error', 'Failed to approve expense.', 'error');
                 });
+        },
+        voidExpense(expense) {
+            this.$swal?.fire?.({
+                title: 'Void expense?',
+                text: 'This will cancel the expense and restore the fund balance. This cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, void it',
+                confirmButtonColor: '#dc3545',
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                axios.patch(`/expenses/${expense.id}/void`)
+                    .then(res => {
+                        if (res.data.status === 'error') {
+                            this.$swal?.fire?.('Notice', res.data.message, 'warning');
+                            return;
+                        }
+                        const idx = this.lists.findIndex(e => e.id === expense.id);
+                        if (idx !== -1) this.lists[idx].status = 'voided';
+                    })
+                    .catch(() => {
+                        this.$swal?.fire?.('Error', 'Failed to void expense.', 'error');
+                    });
+            });
         },
 
         // ── Replenishment list ────────────────────────────────────
@@ -825,6 +871,8 @@ export default {
 .action-icon-btn.submit:hover { background:#fef08a; }
 .action-icon-btn.approve { background:#dcfce7;color:#15803d; }
 .action-icon-btn.approve:hover { background:#bbf7d0; }
+.action-icon-btn.void    { background:#fee2e2;color:#dc3545;border:1px solid #fca5a5; }
+.action-icon-btn.void:hover { background:#fecaca; }
 
 /* ── Info cards (expand row) ─────────────────────────────── */
 .info-card { background:white;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #e9ecef;height:100%;overflow:hidden; }
