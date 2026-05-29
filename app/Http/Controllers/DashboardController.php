@@ -179,7 +179,14 @@ class DashboardController extends Controller
         $inventoryStocksInRange = InventoryStocks::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
         $totalProducts = Product::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
         $totalInventoryValue = (clone $inventoryStocksInRange)->sum(\DB::raw('retail_price * quantity'));
-        $lowStockItems = (clone $inventoryStocksInRange)->where('quantity', '<=', 10)->count();
+        $lowStockItems = \DB::table('inventory_stocks')
+            ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
+            ->join('products', 'received_items.product_id', '=', 'products.id')
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
+            ->count();
         $outOfStock = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
 
         // Stock by Category for bar chart
@@ -199,8 +206,21 @@ class DashboardController extends Controller
             });
 
         // Stock Distribution for donut chart
-        $inStockCount = (clone $inventoryStocksInRange)->where('quantity', '>', 10)->count();
-        $lowStockCount = (clone $inventoryStocksInRange)->where('quantity', '<=', 10)->where('quantity', '>', 0)->count();
+        $stockDistBase = \DB::table('inventory_stocks')
+            ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
+            ->join('products', 'received_items.product_id', '=', 'products.id')
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']]);
+        $inStockCount = (clone $stockDistBase)
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where(function ($q) {
+                $q->where('products.minimum_stock', 0)
+                  ->orWhereColumn('inventory_stocks.quantity', '>', 'products.minimum_stock');
+            })->count();
+        $lowStockCount = (clone $stockDistBase)
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
+            ->count();
         $outOfStockCount = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
         
         $stockDistribution = [
@@ -228,10 +248,11 @@ class DashboardController extends Controller
                 'list_brands.name as category',
                 DB::raw('CONCAT(products.pack_size, " ", list_units.name, " ", list_brands.name) as product_name'),
                 'inventory_stocks.quantity as current_stock',
-                \DB::raw('10 as minimum_stock')
+                'products.minimum_stock'
             )
             ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
-            ->where('inventory_stocks.quantity', '<=', 10)
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
             ->where('inventory_stocks.quantity', '>', 0)
             ->limit(10)
             ->get()

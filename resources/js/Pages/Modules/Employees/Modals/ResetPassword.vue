@@ -1,17 +1,17 @@
 <template>
-    <div v-if="showModal" class="reset-modal-overlay" @click.self="close">
-        <div class="reset-modal-card">
-            <div class="reset-modal-header">
+    <div v-show="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="close">
+        <div class="modal-container modal-md">
+            <div class="modal-header">
                 <h3>
                     <i class="ri-lock-password-line"></i>
                     Reset Password
                 </h3>
-                <button type="button" class="reset-modal-close" @click="close">
+                <button type="button" class="close-btn" @click="close">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
 
-            <form class="reset-modal-body" @submit.prevent="submit">
+            <form class="modal-body" @submit.prevent="submit">
                 <div class="reset-form-group">
                     <label>New Password</label>
                     <div class="reset-input-wrap">
@@ -179,66 +179,6 @@ export default {
 </script>
 
 <style scoped>
-.reset-modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1200;
-    background: rgba(7, 22, 19, 0.55);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 14px;
-}
-
-.reset-modal-card {
-    width: min(520px, 100%);
-    border-radius: 16px;
-    border: 1px solid #d4e4df;
-    background: #fff;
-    box-shadow: 0 20px 50px rgba(10, 35, 30, 0.22);
-    overflow: hidden;
-}
-
-.reset-modal-header {
-    padding: 14px 16px;
-    border-bottom: 1px solid #e1ece9;
-    background: #f4fbf8;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.reset-modal-header h3 {
-    margin: 0;
-    font-size: 0.98rem;
-    color: #102723;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-}
-
-.reset-modal-close {
-    border: 0;
-    background: transparent;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    color: #35524d;
-    cursor: pointer;
-}
-
-.reset-modal-close:hover {
-    background: #e9f3ef;
-}
-
-.reset-modal-body {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
 .reset-form-group {
     display: flex;
     flex-direction: column;

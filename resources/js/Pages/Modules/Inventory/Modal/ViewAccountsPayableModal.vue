@@ -1,7 +1,7 @@
 <template>
-  <div v-if="showModal" class="ap-details-overlay" @click.self="hide">
-    <div class="ap-details-modal">
-      <div class="ap-details-header">
+  <div v-if="showModal" class="modal-overlay" @click.self="hide">
+    <div class="modal-container modal-xl">
+      <div class="modal-header">
         <div>
           <p class="ap-details-kicker mb-1">Accounts Payable</p>
           <h4 class="ap-details-title mb-0">Credit Payable Details</h4>
@@ -16,13 +16,13 @@
             <i class="ri-money-dollar-circle-line"></i>
             <span>Pay Balance</span>
           </button>
-          <button type="button" class="ap-details-close-btn" @click="hide">
+          <button type="button" class="close-btn" @click="hide">
             <i class="ri-close-line"></i>
           </button>
         </div>
       </div>
 
-      <div class="ap-details-body">
+      <div class="modal-body">
         <div class="ap-detail-info-panel">
           <div class="ap-detail-info-section">
             <div class="ap-detail-section-heading">
@@ -243,49 +243,16 @@ export default {
 </script>
 
 <style scoped>
-.ap-details-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-}
-
-.ap-details-modal {
-  width: min(100%, 1120px);
-  max-height: calc(100vh - 2rem);
-  border-radius: 24px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
-  display: flex;
-  flex-direction: column;
-}
-
-.ap-details-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.2rem 1.4rem;
-  background: linear-gradient(135deg, #3d8d7a 0%, #4f9e8c 100%);
-  color: #fff;
-}
-
 .ap-details-kicker {
-  opacity: 0.85;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: #6b8c85;
 }
 
 .ap-details-title {
-  color: #fff;
+  color: #16322e;
   font-weight: 700;
 }
 
@@ -297,32 +264,20 @@ export default {
 
 .ap-details-pay-btn {
   border: none;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: #3d8d7a;
   color: #fff;
-  padding: 0.7rem 1rem;
+  padding: 0.5rem 0.9rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.ap-details-close-btn {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-}
-
-.ap-details-body {
-  padding: 1rem 1.25rem 1.2rem;
-  overflow: auto;
+.ap-details-pay-btn:hover {
+  background: #347a6a;
 }
 
 .ap-detail-info-panel {
@@ -572,18 +527,9 @@ export default {
 }
 
 @media (max-width: 767px) {
-  .ap-details-header {
-    padding: 1rem;
-    flex-direction: column;
-  }
-
   .ap-details-header-actions {
     width: 100%;
     justify-content: space-between;
-  }
-
-  .ap-details-body {
-    padding: 0.9rem;
   }
 
   .ap-detail-info-row {

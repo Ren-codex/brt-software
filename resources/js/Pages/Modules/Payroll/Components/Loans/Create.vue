@@ -438,38 +438,11 @@ export default {
 </script>
 
 <style scoped>
-/* Modal Overlay */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10050;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-}
-
-.modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
 /* Modal Container */
 .modal-container {
-    background: white;
-    border-radius: 24px;
     width: 90%;
     max-width: 750px;
     max-height: 90vh;
-    overflow-y: hidden;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -493,10 +466,11 @@ export default {
 }
 
 .icon-circle {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
+    width: 40px;
+    height: 40px;
+    background: rgba(61, 141, 122, 0.12);
+    border: 1px solid rgba(61, 141, 122, 0.16);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -505,42 +479,21 @@ export default {
 
 .icon-circle i {
     font-size: 28px;
-    color: white;
+    color: #3d8d7a;
 }
 
 .header-text h2 {
     margin: 0 0 4px 0;
     font-size: 1.5rem;
     font-weight: 600;
-    color: white;
+    color: #16322e;
     letter-spacing: -0.3px;
 }
 
 .header-text p {
     margin: 0;
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.close-btn {
-    background: rgba(255, 255, 255, 0.15);
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: white;
-    position: relative;
-    z-index: 1;
-}
-
-.close-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: rotate(90deg);
+    color: #6b8c85;
 }
 
 .close-btn i {
@@ -550,7 +503,6 @@ export default {
 /* Body */
 .modal-body {
     padding: 2rem;
-    background: white;
 }
 
 /* Progress Steps */
@@ -1154,11 +1106,7 @@ export default {
     .modal-header {
         padding: 1.25rem 1.5rem;
     }
-    
-    .modal-body {
-        padding: 1.5rem;
-    }
-    
+
     .loan-type-grid {
         grid-template-columns: 1fr;
     }

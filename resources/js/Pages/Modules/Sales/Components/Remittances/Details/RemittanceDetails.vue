@@ -5,15 +5,15 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <b-button @click.stop="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.slug == 'open'">
+                        <button @click.stop="openApprovalModal()" class="action-btn approve me-1" v-if="item.status.slug == 'open'" title="Approve">
                             <i class="ri-check-line"></i>
-                        </b-button>
-                        <b-button @click.stop="onPrint(item.id)" size="sm" class="btn-default me-1">
+                        </button>
+                        <button @click.stop="onPrint(item.id)" class="action-btn info me-1" title="Print">
                             <i class="ri-printer-line"></i>
-                        </b-button>
-                        <b-button @click.stop="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.slug == 'open'">
+                        </button>
+                        <button @click.stop="openDelete(item.id)" class="action-btn delete" v-if="item.status.slug == 'open'" title="Delete">
                             <i class="ri-delete-bin-line"></i>
-                        </b-button>
+                        </button>
                     </div>
                 </div>
                 <!-- Remittance Details -->
@@ -58,15 +58,15 @@
                                     <span class="me-3">
                                         <strong>Total Receipt:</strong> {{ item.receipts.length || '-' }}
                                     </span>
-                                    <b-button @click="showReceiptsModal" size="xs" variant="outline-primary" style="border: 1px solid green;">
-                                        <i class="ri-eye-line"></i> View Receipts
-                                    </b-button>
+                                    <button @click="showReceiptsModal" class="action-btn approve" title="View Receipts">
+                                        <i class="ri-eye-line"></i>
+                                    </button>
                                 </div><br>
                                 <p class="mb-1"><strong>Sales Type:</strong> {{ formatRemittanceType(item.remittance_type) }}</p>
                                 <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.fullname || '-' }}</p>
                                 <p class="mb-1"><strong>Date Approved:</strong> {{ item.approved_at || '-' }}</p>
                                 <p class="mb-0"><strong>Remarks:</strong>
-                                    &nbsp;<b-badge variant="dark" style="font-size:12px">{{ item.remarks }}</b-badge></p><br>
+                                    &nbsp;<span style="font-size:12px; background:#343a40; color:#fff; padding:3px 8px; border-radius:4px;">{{ item.remarks }}</span></p><br>
                             </div>
                         </div>
                     </div>

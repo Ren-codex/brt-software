@@ -1,206 +1,297 @@
 <template>
     <div>
-        <PageHeader title="Accounting Module" pageTitle="Trial Balance" />
 
-        <div class="inventory-container">
-            <AccountingSidebar active-tab="trial_balance" :stats="stats" />
-
-            <div class="inventory-main">
-                <div class="report-shell">
-                    <div class="report-header">
-                        <div>
-                            <p class="report-kicker mb-1">Accounting Validation</p>
-                            <h3 class="report-title mb-1">Trial Balance</h3>
-                            <p class="report-subtitle mb-0">
-                                Compare debit and credit totals across all accounts using current posted accounting data.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="summary-grid">
-                        <div v-for="card in summaryCards" :key="card.title" class="summary-card">
-                            <div class="summary-icon"><i :class="card.icon"></i></div>
-                            <div>
-                                <p class="summary-label">{{ card.title }}</p>
-                                <h4 class="summary-value">{{ card.value }}</h4>
-                                <p class="summary-note mb-0">{{ card.description }}</p>
+                    <!-- Summary cards -->
+                    <div class="row g-3 mb-3">
+                        <div v-for="card in summaryCards" :key="card.title" class="col-sm-6 col-xl-3">
+                            <div class="acct-stat-card">
+                                <div class="acct-stat-icon"><i :class="card.icon"></i></div>
+                                <div>
+                                    <p class="acct-stat-label">{{ card.title }}</p>
+                                    <h4 class="acct-stat-value">{{ card.value }}</h4>
+                                    <p class="acct-stat-note">{{ card.description }}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div v-if="!dataReady" class="empty-panel">
+                    <!-- Filter bar -->
+                    <div class="library-card mb-3">
+                        <div class="library-card-body py-2">
+                            <div class="acct-filter-bar">
+                                <div class="acct-filter-field">
+                                    <label class="acct-filter-label">Date From</label>
+                                    <input v-model="dateFrom" type="date" class="acct-filter-input" />
+                                </div>
+                                <div class="acct-filter-field">
+                                    <label class="acct-filter-label">Date To</label>
+                                    <input v-model="dateTo" type="date" class="acct-filter-input" />
+                                </div>
+                                <div class="acct-filter-actions">
+                                    <button type="button" class="acct-btn-secondary" @click="clearFilter">Clear</button>
+                                    <button type="button" class="acct-btn-primary" @click="applyFilter">Apply</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Not ready -->
+                    <div v-if="!dataReady" class="acct-empty-notice">
                         <i class="ri-information-line"></i>
-                        <span>Accounting tables are not ready yet. Run the accounting migrations to populate trial balance data.</span>
+                        Accounting tables are not ready yet. Run the accounting migrations to populate trial balance data.
                     </div>
 
-                    <div v-else class="report-panel">
-                        <div class="panel-head">
-                            <h5 class="panel-title">Trial Balance Rows</h5>
-                            <p class="panel-subtitle mb-0">
-                                Debits and credits should match. Current status: {{ totals.is_balanced ? 'Balanced' : 'Needs Review' }}
-                            </p>
+                    <!-- Main panel -->
+                    <div v-else class="library-card">
+                        <div class="library-card-header">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="header-icon"><i class="ri-scales-3-line"></i></div>
+                                    <div>
+                                        <h4 class="header-title mb-0">Trial Balance</h4>
+                                        <p class="header-subtitle mb-0">All accounts with debit and credit activity for the selected period.</p>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="balance-chip" :class="totals.is_balanced ? 'balanced' : 'unbalanced'">
+                                        <i :class="totals.is_balanced ? 'ri-checkbox-circle-line' : 'ri-alert-line'"></i>
+                                        {{ totals.is_balanced ? 'Balanced' : 'Unbalanced' }}
+                                    </span>
+                                    <div class="export-dropdown">
+                                        <button class="export-btn" @click="exportOpen = !exportOpen">
+                                            <i class="ri-download-2-line"></i> Export
+                                            <i class="ri-arrow-down-s-line"></i>
+                                        </button>
+                                        <div v-if="exportOpen" class="export-menu">
+                                            <a :href="exportUrl('excel')" class="export-item" @click="exportOpen = false">
+                                                <i class="ri-file-excel-2-line"></i> Excel (.xlsx)
+                                            </a>
+                                            <a :href="exportUrl('pdf')" class="export-item" @click="exportOpen = false">
+                                                <i class="ri-file-pdf-line"></i> PDF
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-
-                        <div class="table-responsive">
-                            <table class="table report-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Code</th>
-                                        <th>Account</th>
-                                        <th>Type</th>
-                                        <th>Debit</th>
-                                        <th>Credit</th>
-                                        <th>Balance</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="row in rows" :key="row.id">
-                                        <td>{{ row.code }}</td>
-                                        <td>{{ row.name }}</td>
-                                        <td>{{ formatLabel(row.type) }}</td>
-                                        <td>{{ row.debit_total_formatted }}</td>
-                                        <td>{{ row.credit_total_formatted }}</td>
-                                        <td>{{ row.balance_formatted }}</td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="3">Totals</th>
-                                        <th>{{ totals.debits }}</th>
-                                        <th>{{ totals.credits }}</th>
-                                        <th>{{ totals.difference }}</th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                        <div class="library-card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table report-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Account</th>
+                                            <th>Type</th>
+                                            <th class="text-end">Debit</th>
+                                            <th class="text-end">Credit</th>
+                                            <th class="text-end">Balance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template v-for="(groupRows, groupType) in groupedRows" :key="groupType">
+                                            <tr class="group-header-row">
+                                                <td colspan="6">
+                                                    <span class="group-type-label" :class="groupType">{{ formatLabel(groupType) }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr v-for="row in groupRows" :key="row.id">
+                                                <td class="text-muted font-monospace small">{{ row.code }}</td>
+                                                <td>{{ row.name }}</td>
+                                                <td>
+                                                    <span class="type-chip" :class="row.type">{{ formatLabel(row.type) }}</span>
+                                                </td>
+                                                <td class="text-end">{{ row.debit_total_formatted }}</td>
+                                                <td class="text-end">{{ row.credit_total_formatted }}</td>
+                                                <td class="text-end fw-semibold">{{ row.balance_formatted }}</td>
+                                            </tr>
+                                            <tr class="group-subtotal-row">
+                                                <td colspan="3" class="text-end">
+                                                    <small>{{ formatLabel(groupType) }} subtotal</small>
+                                                </td>
+                                                <td class="text-end fw-bold">{{ groupSubtotals[groupType].debits }}</td>
+                                                <td class="text-end fw-bold">{{ groupSubtotals[groupType].credits }}</td>
+                                                <td class="text-end fw-bold">{{ groupSubtotals[groupType].balance }}</td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="3">Grand Total</th>
+                                            <th class="text-end">{{ totals.debits }}</th>
+                                            <th class="text-end">{{ totals.credits }}</th>
+                                            <th class="text-end">
+                                                <span :class="totals.is_balanced ? 'text-balanced' : 'text-unbalanced'">
+                                                    {{ totals.difference }}
+                                                </span>
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+
     </div>
 </template>
 
 <script>
-import PageHeader from "@/Shared/Components/PageHeader.vue";
-import AccountingSidebar from "@/Pages/Modules/Accounting/Components/AccountingSidebar.vue";
+import { router } from "@inertiajs/vue3";
+import MainLayout from "@/Shared/Layouts/Main.vue";
+import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
 
 export default {
-    components: { PageHeader, AccountingSidebar },
+    layout: [MainLayout, AccountingLayout],
+    components: {},
     props: {
         stats: Object,
         dataReady: Boolean,
         summaryCards: Array,
         rows: Array,
         totals: Object,
+        filters: { type: Object, default: () => ({}) },
+    },
+    data() {
+        return {
+            dateFrom: this.filters?.date_from || '',
+            dateTo: this.filters?.date_to || '',
+            exportOpen: false,
+        };
+    },
+    computed: {
+        groupedRows() {
+            const order = ['asset', 'liability', 'equity', 'revenue', 'expense'];
+            const result = {};
+            for (const type of order) {
+                const items = (this.rows || []).filter(r => r.type === type);
+                if (items.length > 0) result[type] = items;
+            }
+            return result;
+        },
+        groupSubtotals() {
+            const result = {};
+            for (const [type, items] of Object.entries(this.groupedRows)) {
+                result[type] = {
+                    debits:  this.fmt(items.reduce((s, r) => s + (r.debit_total || 0), 0)),
+                    credits: this.fmt(items.reduce((s, r) => s + (r.credit_total || 0), 0)),
+                    balance: this.fmt(items.reduce((s, r) => s + (r.balance || 0), 0)),
+                };
+            }
+            return result;
+        },
     },
     methods: {
-        formatLabel(value) {
-            return String(value || "")
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (char) => char.toUpperCase());
+        applyFilter() {
+            router.get('/accounting/trial-balance', {
+                date_from: this.dateFrom || undefined,
+                date_to:   this.dateTo   || undefined,
+            }, { preserveScroll: true });
+        },
+        clearFilter() {
+            this.dateFrom = '';
+            this.dateTo   = '';
+            router.get('/accounting/trial-balance', {}, { preserveScroll: true });
+        },
+        exportUrl(format) {
+            const params = new URLSearchParams({ option: format });
+            if (this.filters?.date_from) params.set('date_from', this.filters.date_from);
+            if (this.filters?.date_to)   params.set('date_to',   this.filters.date_to);
+            return '/accounting/trial-balance?' + params.toString();
+        },
+        formatLabel(v) {
+            return String(v || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        },
+        fmt(value) {
+            return 'P ' + Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
     },
 };
 </script>
 
 <style scoped>
-.report-shell {
-    display: grid;
-    gap: 1.5rem;
-}
-
-.report-header,
-.report-panel,
-.empty-panel {
-    border: 1px solid rgba(61, 141, 122, 0.12);
-    border-radius: 24px;
-    background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
-    box-shadow: 0 14px 30px rgba(28, 49, 45, 0.08);
-}
-
-.report-header,
-.report-panel {
-    padding: 1.5rem;
-}
-
-.report-kicker {
-    color: #3d8d7a;
-    font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.report-title,
-.panel-title {
-    color: #20413a;
-    font-weight: 700;
-}
-
-.report-subtitle,
-.panel-subtitle,
-.summary-note {
-    color: #648b74;
-}
-
-.summary-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.summary-card {
-    display: flex;
-    gap: 0.9rem;
-    padding: 1.1rem;
-    border-radius: 20px;
-    border: 1px solid rgba(61, 141, 122, 0.12);
-    background: #ffffff;
-    box-shadow: 0 10px 24px rgba(28, 49, 45, 0.06);
-}
-
-.summary-icon {
+.balance-chip {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: #e4f1ed;
-    color: #2f7666;
-    font-size: 1.2rem;
-    flex-shrink: 0;
-}
-
-.summary-label {
-    margin-bottom: 0.2rem;
-    color: #648b74;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.summary-value {
-    margin-bottom: 0.25rem;
-    color: #20413a;
+    gap: 0.35rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
     font-weight: 700;
 }
+.balance-chip.balanced   { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.balance-chip.unbalanced { background: #fff3cd; color: #92400e; border: 1px solid #fcd34d; }
 
 .report-table thead th,
 .report-table tfoot th {
     background: #edf5f2;
     color: #527267;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
+    padding: 0.6rem 0.85rem;
+}
+.report-table tbody td { font-size: 0.84rem; padding: 0.55rem 0.85rem; vertical-align: middle; }
+
+.group-header-row td {
+    background: #f4f9f7;
+    padding: 0.45rem 0.85rem;
+    border-top: 2px solid #daeee6;
+}
+.group-type-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border-radius: 999px;
+}
+.group-type-label.asset     { color: #1e4d8c; background: #dbeafe; }
+.group-type-label.liability { color: #7c2d12; background: #fee2e2; }
+.group-type-label.equity    { color: #5b21b6; background: #ede9fe; }
+.group-type-label.revenue   { color: #166534; background: #dcfce7; }
+.group-type-label.expense   { color: #92400e; background: #fef3c7; }
+
+.group-subtotal-row td {
+    background: #f9fcfb;
+    border-top: 1px dashed #c9e0d8;
+    font-size: 0.8rem;
+    color: #4a6b62;
+    padding: 0.4rem 0.85rem;
 }
 
-.empty-panel {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 1.25rem;
-    color: #7b6a2f;
-    background: linear-gradient(180deg, #fff8e7 0%, #fffdf7 100%);
+.type-chip {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
 }
+.type-chip.asset     { color: #1e4d8c; background: #dbeafe; }
+.type-chip.liability { color: #7c2d12; background: #fee2e2; }
+.type-chip.equity    { color: #5b21b6; background: #ede9fe; }
+.type-chip.revenue   { color: #166534; background: #dcfce7; }
+.type-chip.expense   { color: #92400e; background: #fef3c7; }
+
+.text-balanced   { color: #166534; font-weight: 700; }
+.text-unbalanced { color: #b45309; font-weight: 700; }
+
+.export-dropdown { position: relative; }
+.export-btn {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.38rem 0.8rem; border-radius: 8px; border: 1px solid #c4d9d2;
+    background: #f7fbfa; color: #335c52; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+}
+.export-btn:hover { background: #edf5f2; }
+.export-menu {
+    position: absolute; right: 0; top: calc(100% + 4px); z-index: 100;
+    background: #fff; border: 1px solid #d1e4dc; border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(28,49,45,0.10); min-width: 160px; overflow: hidden;
+}
+.export-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.6rem 0.9rem; color: #335c52; font-size: 0.84rem;
+    text-decoration: none; transition: background 0.12s;
+}
+.export-item:hover { background: #edf5f2; }
+.export-item i { font-size: 1rem; }
 </style>

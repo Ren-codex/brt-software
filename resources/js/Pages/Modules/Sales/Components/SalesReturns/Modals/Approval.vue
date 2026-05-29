@@ -6,12 +6,12 @@
         @click.self="hide"
     >
         <div class="modal-container modal-xl pretty-return-modal" @click.stop>
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header">
                 <div>
                     <h2 class="mb-1">Approve Sales Return</h2>
                     <p class="mb-0 header-subtitle">Review items before confirming this return request.</p>
                 </div>
-                <button class="close-btn" @click="hide">
+                <button type="button" class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
@@ -238,17 +238,22 @@ export default {
 
 <style scoped>
 .pretty-return-modal {
-    border-radius: 16px;
+    border-radius: 24px;
     overflow: hidden;
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .header-subtitle {
     color: rgba(255, 255, 255, 0.85);
     font-size: 13px;
-}
-
-.close-btn {
-    color: #fff;
 }
 
 .summary-grid {
@@ -334,6 +339,7 @@ export default {
 }
 
 .pretty-footer {
+    flex-shrink: 0;
     border-top: 1px solid #e1e9e5;
     background: #fbfdfc;
     padding: 14px 18px;

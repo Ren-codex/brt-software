@@ -20,19 +20,15 @@
                             <label for="product_id" class="form-label">Product</label>
                             <div class="input-wrapper">
                                 <i class="ri-bar-chart-2-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.product_id"
-                                :options="availableProducts"
-                                :class="{ 'input-error': form.errors.product_id }"
-                                text-field="name"
-                                value-field="value"
-                                @change="onProductChange"
+                                <select
+                                    class="form-control"
+                                    v-model="form.product_id"
+                                    :class="{ 'input-error': form.errors.product_id }"
+                                    @change="onProductChange"
                                 >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Product</b-form-select-option>
-                                </template>
-                                </b-form-select>
+                                    <option :value="null" disabled>Select Product</option>
+                                    <option v-for="p in availableProducts" :key="p.value" :value="p.value">{{ p.name }}</option>
+                                </select>
                             </div>
                             <span class="error-message" v-if="form.errors.product_id">{{ form.errors.product_id }}</span>
                         </div>
@@ -41,19 +37,15 @@
                             <label for="price_type" class="form-label">Price Type</label>
                             <div class="input-wrapper">
                                 <i class="ri-price-tag-3-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.price_type"
-                                :options="priceTypeOptions"
-                                :class="{ 'input-error': form.errors.price_type }"
-                                text-field="text"
-                                value-field="value"
-                                @change="onPriceTypeChange"
+                                <select
+                                    class="form-control"
+                                    v-model="form.price_type"
+                                    :class="{ 'input-error': form.errors.price_type }"
+                                    @change="onPriceTypeChange"
                                 >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Price Type</b-form-select-option>
-                                </template>
-                                </b-form-select>
+                                    <option :value="null" disabled>Select Price Type</option>
+                                    <option v-for="pt in priceTypeOptions" :key="pt.value" :value="pt.value">{{ pt.text }}</option>
+                                </select>
                             </div>
                             <span class="error-message" v-if="form.errors.price_type">{{ form.errors.price_type }}</span>
                         </div>

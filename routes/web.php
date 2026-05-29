@@ -12,7 +12,6 @@ Route::get('/landing', function () {
 
 Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
-    Route::resource('/sales', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::get('/reports', [App\Http\Controllers\Modules\ReportsController::class, 'index']);
     Route::post('/sales-orders/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderController::class, 'adjustment']);
@@ -36,9 +35,20 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     // Make revenue reports available to all authenticated users (not just administrators)
     Route::get('/api/revenue-reports', [App\Http\Controllers\Modules\RevenueReportController::class, 'index']);
 
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::patch('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead']);
+    Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead']);
+
     Route::middleware(['role:Administrator,Top Management,Area Business Manager,Super Admin'])->group(function () {
-        Route::patch('/expenses/{id}/approve', [App\Http\Controllers\Modules\ExpenseController::class, 'approve']);
-        Route::patch('/expenses/{id}/release', [App\Http\Controllers\Modules\ExpenseController::class, 'release']);
+        Route::post('/expenses/budgets', [App\Http\Controllers\Modules\ExpenseController::class, 'storeBudget']);
+        Route::delete('/expenses/budgets/{id}', [App\Http\Controllers\Modules\ExpenseController::class, 'destroyBudget']);
+        // Replenishment request workflow
+        Route::get('/replenishments', [App\Http\Controllers\Modules\ReplenishmentController::class, 'index']);
+        Route::post('/replenishments', [App\Http\Controllers\Modules\ReplenishmentController::class, 'store']);
+        Route::get('/replenishments/{id}', [App\Http\Controllers\Modules\ReplenishmentController::class, 'show']);
+        Route::patch('/replenishments/{id}/submit', [App\Http\Controllers\Modules\ReplenishmentController::class, 'submit']);
+        Route::patch('/replenishments/{id}/approve', [App\Http\Controllers\Modules\ReplenishmentController::class, 'approve']);
+        Route::patch('/replenishments/{id}/reject', [App\Http\Controllers\Modules\ReplenishmentController::class, 'reject']);
     });
 
     Route::middleware(['role:Administrator'])->group(function () {
@@ -57,6 +67,11 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
         Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
+
+        Route::resource('/libraries/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
+        Route::post('/libraries/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp']);
+        Route::patch('/libraries/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance']);
+        Route::patch('/libraries/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive']);
     });
 
     Route::middleware(['role:Administrator,Warehouse Manager'])->group(function () {
@@ -96,11 +111,42 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::get('/accounting/trial-balance', [App\Http\Controllers\Modules\AccountingController::class, 'trialBalance']);
         Route::get('/accounting/profit-loss', [App\Http\Controllers\Modules\AccountingController::class, 'profitLoss']);
         Route::get('/accounting/balance-sheet', [App\Http\Controllers\Modules\AccountingController::class, 'balanceSheet']);
+        Route::get('/accounting/cash-flow', [App\Http\Controllers\Modules\AccountingController::class, 'cashFlowStatement']);
         Route::get('/accounting/accounts-receivable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsReceivable']);
         Route::get('/accounting/accounts-payable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsPayable']);
-        Route::get('/accounting/chart-of-accounts', [App\Http\Controllers\Modules\AccountingController::class, 'chartOfAccounts']);
+        Route::get('/accounting/settings', [App\Http\Controllers\Modules\AccountingController::class, 'settings']);
+        Route::get('/accounting/chart-of-accounts', fn() => redirect('/accounting/settings'));
+        Route::get('/accounting/bank-accounts', fn() => redirect('/accounting/settings'));
+        Route::post('/accounting/accounts', [App\Http\Controllers\Modules\AccountingController::class, 'storeAccount']);
+        Route::put('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'updateAccount']);
+        Route::patch('/accounting/accounts/{id}/toggle', [App\Http\Controllers\Modules\AccountingController::class, 'toggleAccount']);
         Route::get('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'journalEntries']);
+        Route::post('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'storeManualJournal']);
+        Route::get('/accounting/cash-management', [App\Http\Controllers\Modules\CashManagementController::class, 'index']);
+        Route::get('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'index']);
+        Route::post('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'start']);
+        Route::get('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'show']);
+        Route::post('/accounting/bank-reconciliation/{id}/toggle-clear', [App\Http\Controllers\Modules\BankReconciliationController::class, 'toggleClear']);
+        Route::post('/accounting/bank-reconciliation/{id}/finalize', [App\Http\Controllers\Modules\BankReconciliationController::class, 'finalize']);
+        Route::delete('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'destroy']);
+        Route::post('/accounting/fund-transfers', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFundTransfer']);
+        Route::delete('/accounting/fund-transfers/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyFundTransfer']);
+        Route::post('/accounting/petty-cash/funds', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFund']);
+        Route::put('/accounting/petty-cash/funds/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'updateFund']);
+        Route::post('/accounting/petty-cash/transactions', [App\Http\Controllers\Modules\CashManagementController::class, 'storePettyCashTransaction']);
+        Route::delete('/accounting/petty-cash/transactions/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyPettyCashTransaction']);
+        Route::post('/accounting/bank-deposits', [App\Http\Controllers\Modules\CashManagementController::class, 'storeDeposit']);
+        Route::delete('/accounting/bank-deposits/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyDeposit']);
+        Route::get('/accounting/bank-accounts/list', [App\Http\Controllers\Modules\BankAccountController::class, 'list']);
+        Route::post('/accounting/bank-accounts', [App\Http\Controllers\Modules\BankAccountController::class, 'store']);
+        Route::put('/accounting/bank-accounts/{id}', [App\Http\Controllers\Modules\BankAccountController::class, 'update']);
+        Route::patch('/accounting/bank-accounts/{id}/toggle', [App\Http\Controllers\Modules\BankAccountController::class, 'toggle']);
+        Route::get('/expenses/print', [App\Http\Controllers\Modules\ExpenseController::class, 'printExpenses']);
         Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
+        Route::patch('/expenses/{id}/approve', [App\Http\Controllers\Modules\ExpenseController::class, 'approve']);
+        Route::patch('/expenses/{id}/release', [App\Http\Controllers\Modules\ExpenseController::class, 'release']);
+        Route::patch('/expenses/{id}/void', [App\Http\Controllers\Modules\ExpenseController::class, 'void']);
+
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
         Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);

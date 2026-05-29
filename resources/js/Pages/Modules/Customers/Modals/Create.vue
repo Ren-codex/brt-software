@@ -124,24 +124,42 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="form-group">
+                        <label for="credit_limit" class="form-label">Credit Limit <span class="text-muted small">(0 = no limit)</span></label>
+                        <div class="input-wrapper">
+                            <i class="ri-bank-card-line input-icon"></i>
+                            <input
+                                type="number"
+                                id="credit_limit"
+                                v-model="form.credit_limit"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.credit_limit }"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.01"
+                            >
+                        </div>
+                        <span class="error-message" v-if="form.errors.credit_limit">{{ form.errors.credit_limit }}</span>
+                    </div>
                     
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Your information has been saved successfully!</span>
                     </div>
                     
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-cancel" @click="hide">
-                            <i class="ri-close-line"></i>
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing">
-                            <i class="ri-save-line" v-if="!form.processing"></i>
-                            <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : 'Save Information' }}
-                        </button>
-                    </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" @click="hide">
+                    <i class="ri-close-line"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-save" :disabled="form.processing" @click="submit">
+                    <i class="ri-save-line" v-if="!form.processing"></i>
+                    <i class="ri-loader-4-line spinner" v-else></i>
+                    {{ form.processing ? 'Saving...' : 'Save Information' }}
+                </button>
             </div>
         </div>
     </div>
@@ -168,6 +186,7 @@ export default {
                 is_regular: 0,
                 is_active: 1,
                 is_blacklisted: 0,
+                credit_limit: 0,
                 option: 'lists'
             }),
             togglePassword: false,
@@ -197,6 +216,7 @@ export default {
             this.form.is_regular = data.is_regular;
             this.form.is_active = data.is_active;
             this.form.is_blacklisted = data.is_blacklisted;
+            this.form.credit_limit = data.credit_limit ?? 0;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;

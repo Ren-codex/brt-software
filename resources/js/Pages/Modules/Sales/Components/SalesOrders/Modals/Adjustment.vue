@@ -20,18 +20,14 @@
                             <label for="type" class="form-label">Type</label>
                             <div class="input-wrapper">
                                 <i class="ri-refund-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.type"
-                                :options="['Sales Return']"
-                                :class="{ 'input-error': form.errors.type }"
-                                text-field="name"
-                                value-field="value"
+                                <select
+                                    class="form-control"
+                                    v-model="form.type"
+                                    :class="{ 'input-error': form.errors.type }"
                                 >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Type</b-form-select-option>
-                                </template>
-                                </b-form-select>    
+                                    <option :value="null" disabled>Select Type</option>
+                                    <option value="Sales Return">Sales Return</option>
+                                </select>    
                             </div>
                             <span class="error-message" v-if="form.errors.type">{{ form.errors.type }}</span>
                         </div>
@@ -41,13 +37,14 @@
                     <div class="form-row">
                       <div class="form-group w-100">
                             <label for="reason" class="form-label">Reason</label>
-                            <b-form-textarea
+                            <textarea
                                 id="textarea-rows"
+                                class="form-control"
                                 placeholder="Enter the reason"
                                 rows="8"
                                 v-model="form.reason"
                                 :class="{ 'input-error': form.errors.reason }"
-                            ></b-form-textarea>
+                            ></textarea>
                             <span class="error-message" v-if="form.errors.reason">{{ form.errors.reason }}</span>
                         </div>
                     </div>

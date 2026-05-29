@@ -109,12 +109,13 @@
                                 </div>
                             </div>
                             <label class="form-label">Reason</label>
-                            <b-form-textarea
+                            <textarea
+                                class="form-control"
                                 v-model="form.reason"
                                 rows="5"
                                 placeholder="Enter the reason for the return"
                                 :class="{ 'input-error': form.errors.reason }"
-                            />
+                            ></textarea>
                             <span v-if="form.errors.reason" class="error-message">{{ form.errors.reason }}</span>
                         </div>
                     </div>
@@ -215,18 +216,18 @@
                         <span>Sales return request created successfully!</span>
                     </div>
 
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-cancel" @click="hide">
-                            <i class="ri-close-line"></i>
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-save" :disabled="isSubmitDisabled">
-                            <i class="ri-save-line" v-if="!form.processing"></i>
-                            <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : 'Create Sales Return' }}
-                        </button>
-                    </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" @click="hide">
+                    <i class="ri-close-line"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-save" :disabled="isSubmitDisabled" @click="submit">
+                    <i class="ri-save-line" v-if="!form.processing"></i>
+                    <i class="ri-loader-4-line spinner" v-else></i>
+                    {{ form.processing ? 'Saving...' : 'Create Sales Return' }}
+                </button>
             </div>
         </div>
     </div>
@@ -483,90 +484,45 @@ export default {
 </script>
 
 <style scoped>
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: rgba(15, 23, 42, 0.52);
-    backdrop-filter: blur(7px);
-    z-index: 1060;
-}
-
 .modal-container {
     width: min(100%, 1120px);
     max-height: 90vh;
-    overflow: hidden;
-    border-radius: 28px;
-    background:
-        radial-gradient(circle at top right, rgba(61, 141, 122, 0.12), transparent 26%),
-        linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
-    box-shadow: 0 32px 80px rgba(15, 23, 42, 0.24);
-}
-
-.modal-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.2rem 1.35rem 1rem;
-    background: linear-gradient(135deg, #d7ece5 0%, #c7e2d9 100%);
-    border-bottom: 1px solid #d7e5de;
 }
 
 .modal-title-wrap {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
+    gap: 0.75rem;
 }
 
 .modal-title-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 15px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: grid;
     place-items: center;
-    background: rgba(26, 104, 87, 0.14);
-    color: #1a6857;
-    font-size: 1.35rem;
+    background: rgba(61, 141, 122, 0.12);
+    border: 1px solid rgba(61, 141, 122, 0.16);
+    color: #3d8d7a;
+    font-size: 18px;
+    flex-shrink: 0;
 }
 
 .modal-kicker,
 .section-kicker {
     display: inline-block;
-    margin-bottom: 0.28rem;
-    font-size: 0.74rem;
+    margin-bottom: 0.2rem;
+    font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #648b74;
+    color: #6b8c85;
 }
 
 .modal-header h2 {
     margin: 0;
-    font-size: 1.22rem;
+    font-size: 1rem;
     font-weight: 700;
-    color: #20413a;
-}
-
-.close-btn {
-    width: 38px;
-    height: 38px;
-    border: 0;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.72);
-    color: #4b5563;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-    background: #fff;
-    transform: rotate(90deg);
 }
 
 .close-btn i {
@@ -574,8 +530,6 @@ export default {
 }
 
 .modal-body {
-    height: 75vh;
-    overflow-y: auto;
     padding: 1.2rem 1.35rem 1.35rem;
 }
 

@@ -4,7 +4,10 @@ namespace App\Services\Libraries;
 
 
 use App\Models\Receipt;
+use App\Models\ArInvoice;
+use App\Models\SalesOrder;
 use App\Models\ListStatus;
+use App\Models\SalesOrderIncentive;
 use App\Http\Resources\Libraries\ReceiptResource;
 use App\Services\Accounting\JournalEntryService;
 use Illuminate\Support\Facades\DB;
@@ -59,51 +62,76 @@ class ReceiptClass
     }
 
     public function dashboard(){
+        $cancelledId = ListStatus::getBySlug('cancelled')->id;
+
         return [
-            'total_receipts' => Receipt::where(function ($query) {
-                $query->whereNull('receipt_type')
-                    ->orWhere('receipt_type', '!=', 'refund');
-            })->count(),
-            'total_amount_collected' => Receipt::where(function ($query) {
-                $query->whereNull('receipt_type')
-                    ->orWhereNotIn('receipt_type', ['refund', 'updated']);
-            })->sum('amount_paid'),
+            'total_receipts' => Receipt::where('status_id', '!=', $cancelledId)
+                ->where(function ($q) {
+                    $q->whereNull('receipt_type')->orWhere('receipt_type', '!=', 'refund');
+                })->count(),
+            'total_amount_collected' => Receipt::where('status_id', '!=', $cancelledId)
+                ->where(function ($q) {
+                    $q->whereNull('receipt_type')->orWhereNotIn('receipt_type', ['refund', 'updated']);
+                })->sum('amount_paid'),
         ];
     }
 
     public function save($request){
-        $arInvoice = \App\Models\ArInvoice::with('sales_order')->findOrFail($request->ar_invoice_id);
+        $arInvoice = ArInvoice::with('sales_order')->findOrFail($request->ar_invoice_id);
 
         $receipt = Receipt::create([
             'ar_invoice_id' => $request->ar_invoice_id,
-            'status_id' => $request->status_id,
+            'status_id'     => ListStatus::getBySlug('paid')->id,
             'receipt_number' => $this->generateReceiptNumber(),
-            'receipt_type' => 'payment',
-            'receipt_date' => $request->receipt_date,
-            'amount_paid' => $request->amount_paid,
-            'payment_mode' => $request->payment_mode,
-            'customer_id' => optional($arInvoice->sales_order)->customer_id,
+            'receipt_type'  => 'payment',
+            'receipt_date'  => $request->receipt_date,
+            'amount_paid'   => $request->amount_paid,
+            'payment_mode'  => $request->payment_mode,
+            'customer_id'   => optional($arInvoice->sales_order)->customer_id,
         ]);
 
         // Update AR Invoice balance
         $arInvoice->amount_paid += $request->amount_paid;
-        $arInvoice->balance_due = $arInvoice->balance_due - $request->amount_paid;
+        $arInvoice->balance_due  = $arInvoice->balance_due - $request->amount_paid;
 
-        // Update status based on balance
         if ($arInvoice->balance_due <= 0) {
-            $arInvoice->status_id = ListStatus::getBySlug('paid')->id; // Paid
+            $arInvoice->status_id = ListStatus::getBySlug('paid')->id;
         } elseif ($arInvoice->amount_paid > 0) {
-            $arInvoice->status_id = ListStatus::getBySlug('partially_paid')->id; // Partially Paid
+            $arInvoice->status_id = ListStatus::getBySlug('partially-paid')->id;
         }
 
         $arInvoice->save();
 
+        // Sync Sales Order status and create incentive on full payment
+        $salesOrder = $arInvoice->sales_order;
+        if ($salesOrder) {
+            if ($arInvoice->balance_due <= 0) {
+                $salesOrder->update(['status_id' => ListStatus::getBySlug('closed')->id]);
+
+                if (!SalesOrderIncentive::where('sales_order_id', $salesOrder->id)->exists()) {
+                    $sold_quantity    = $salesOrder->items->sum('quantity');
+                    $product_total_kg = $salesOrder->items->sum(fn($item) => $item->product->pack_size * $item->quantity);
+
+                    SalesOrderIncentive::create([
+                        'sales_order_id'   => $salesOrder->id,
+                        'employee_id'      => $salesOrder->sales_rep_id,
+                        'sold_quantity'    => $sold_quantity,
+                        'product_total_kg' => $product_total_kg,
+                        'amount'           => $product_total_kg / 25,
+                        'payroll_id'       => null,
+                    ]);
+                }
+            } else {
+                $salesOrder->update(['status_id' => ListStatus::getBySlug('partially-paid')->id]);
+            }
+        }
+
         $this->journalEntryService->recordReceiptEntry($receipt);
 
         return [
-            'data' => $receipt,
+            'data'    => $receipt,
             'message' => 'Receipt saved successfully!',
-            'info' => "You've successfully saved the receipt",
+            'info'    => "You've successfully saved the receipt",
         ];
     }
 
@@ -113,31 +141,44 @@ class ReceiptClass
         $oldAmount = $receipt->amount_paid;
 
         $receipt->update($request->only([
-            'ar_invoice_id', 'status_id', 'receipt_date', 'amount_paid', 'payment_mode'
+            'ar_invoice_id', 'receipt_date', 'amount_paid', 'payment_mode'
         ]));
 
-        // Update AR Invoice balance
-        $arInvoice = \App\Models\ArInvoice::find($receipt->ar_invoice_id);
+        $arInvoice = ArInvoice::with('sales_order')->find($receipt->ar_invoice_id);
         $arInvoice->amount_paid = $arInvoice->amount_paid - $oldAmount + $request->amount_paid;
         $arInvoice->balance_due = $arInvoice->balance_due + $oldAmount - $request->amount_paid;
 
-        // Update status based on balance
         if ($arInvoice->balance_due <= 0) {
-            $arInvoice->status_id = ListStatus::getBySlug('paid')->id; // Paid
+            $arInvoice->status_id = ListStatus::getBySlug('paid')->id;
         } elseif ($arInvoice->amount_paid > 0) {
-            $arInvoice->status_id = ListStatus::getBySlug('partially_paid')->id; // Partially Paid
+            $arInvoice->status_id = ListStatus::getBySlug('partially-paid')->id;
         } else {
-            $arInvoice->status_id = ListStatus::getBySlug('unpaid')->id; // Unpaid
+            $arInvoice->status_id = ListStatus::getBySlug('unpaid')->id;
         }
 
         $arInvoice->save();
 
+        // Sync receipt's own balance_due
+        $receipt->update(['balance_due' => $arInvoice->balance_due]);
+
+        // Sync Sales Order status
+        $salesOrder = $arInvoice->sales_order;
+        if ($salesOrder) {
+            if ($arInvoice->balance_due <= 0) {
+                $salesOrder->update(['status_id' => ListStatus::getBySlug('closed')->id]);
+            } elseif ($arInvoice->amount_paid > 0) {
+                $salesOrder->update(['status_id' => ListStatus::getBySlug('partially-paid')->id]);
+            } else {
+                $salesOrder->update(['status_id' => ListStatus::getBySlug('for-payment')->id]);
+            }
+        }
+
         $this->journalEntryService->recordReceiptEntry($receipt->fresh());
 
         return [
-            'data' => $receipt,
+            'data'    => $receipt,
             'message' => 'Receipt updated successfully!',
-            'info' => "You've successfully updated the receipt",
+            'info'    => "You've successfully updated the receipt",
         ];
     }
 
@@ -150,11 +191,10 @@ class ReceiptClass
         $arInvoice->amount_paid -= $receipt->amount_paid;
         $arInvoice->balance_due += $receipt->amount_paid;
 
-        // Update status
-        if ($arInvoice->amount_paid == 0) {
-            $arInvoice->status_id = ListStatus::getBySlug('unpaid')->id; // Unpaid
-        } elseif ($arInvoice->amount_paid > 0) {
-            $arInvoice->status_id = ListStatus::getBySlug('partially_paid')->id; // Partially Paid
+        if ($arInvoice->amount_paid <= 0) {
+            $arInvoice->status_id = ListStatus::getBySlug('unpaid')->id;
+        } else {
+            $arInvoice->status_id = ListStatus::getBySlug('partially-paid')->id;
         }
 
         $arInvoice->save();

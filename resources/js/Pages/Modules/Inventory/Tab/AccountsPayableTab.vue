@@ -65,7 +65,7 @@
                   </tr>
                 </thead>
                 <tbody class="fs-12">
-                  <template v-for="(record, index) in filteredPayables" :key="record.id">
+                  <template v-for="(record, index) in paginatedPayables" :key="record.id">
                     <tr :class="['main-table-row', rowStateClass(record)]">
                       <td class="text-center">
                         {{ index + 1 }}
@@ -128,6 +128,27 @@
                 </tbody>
               </table>
             </div>
+
+            <div v-if="totalPages > 1" class="ap-pagination">
+              <button
+                type="button"
+                class="ap-page-btn"
+                :disabled="currentPage === 1"
+                @click="currentPage--"
+              >
+                <i class="ri-arrow-left-s-line"></i> Prev
+              </button>
+              <span class="ap-page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+              <button
+                type="button"
+                class="ap-page-btn"
+                :disabled="currentPage === totalPages"
+                @click="currentPage++"
+              >
+                Next <i class="ri-arrow-right-s-line"></i>
+              </button>
+            </div>
+
           </template>
         </div>
       </div>
@@ -180,6 +201,8 @@ export default {
   data() {
     return {
       localKeyword: '',
+      currentPage: 1,
+      pageSize: 15,
     };
   },
   computed: {
@@ -217,6 +240,18 @@ export default {
 
         return haystack.includes(keyword);
       });
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredPayables.length / this.pageSize));
+    },
+    paginatedPayables() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      return this.filteredPayables.slice(start, start + this.pageSize);
+    },
+  },
+  watch: {
+    localKeyword() {
+      this.currentPage = 1;
     },
   },
   methods: {
@@ -466,5 +501,76 @@ export default {
   .action-buttons-row {
     flex-direction: column;
   }
+}
+
+.ap-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.85rem 0.25rem 0;
+}
+
+.ap-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  background: #fff;
+  color: #2e8b57;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.ap-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ap-page-btn:not(:disabled):hover {
+  background: #f0f9f4;
+  border-color: #9ad0b7;
+}
+
+.ap-page-info {
+  font-size: 0.82rem;
+  color: #6c757d;
+}
+
+/* Card Header */
+.library-card-header {
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid #c4d9d2;
+  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+}
+
+.header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(61, 141, 122, 0.12);
+  border: 1px solid rgba(61, 141, 122, 0.16);
+  color: #3d8d7a;
+  font-size: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #16322e;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 0.76rem;
+  color: #6b8c85;
+  margin: 0;
 }
 </style>

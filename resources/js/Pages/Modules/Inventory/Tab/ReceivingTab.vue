@@ -8,7 +8,7 @@
           </div>
           <div>
             <h4 class="receiving-title">Receiving</h4>
-            <p class="receiving-subtitle">List of all paid purchase requests</p>
+            <p class="receiving-subtitle">List of all fully settled stock receipts</p>
           </div>
         </div>
       </div>
@@ -181,8 +181,10 @@ export default {
         .replace(/\s+/g, '-');
     },
     formatBankDetails(record) {
-      const bankName = record?.bank_name || 'No bank';
-      const referenceNumber = record?.reference_number || 'No reference';
+      const latestBankPayment = (record?.payments || [])
+        .find(p => String(p.payment_mode).toLowerCase() === 'bank transfer');
+      const bankName = latestBankPayment?.bank_name || record?.bank_name || 'No bank';
+      const referenceNumber = latestBankPayment?.reference_number || record?.reference_number || 'No reference';
 
       return `${bankName} • ${referenceNumber}`;
     },
@@ -200,39 +202,42 @@ export default {
 }
 
 .receiving-card-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #eef2f7;
-  background: linear-gradient(135deg, #f8fffc 0%, #eef8f4 100%);
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid #c4d9d2;
+  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
 }
 
 .receiving-header-copy {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .receiving-header-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #dff5ed 0%, #cdeee3 100%);
-  color: #2f7666;
-  font-size: 1.4rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(61, 141, 122, 0.12);
+  border: 1px solid rgba(61, 141, 122, 0.16);
+  color: #3d8d7a;
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 .receiving-title {
-  margin: 0 0 0.2rem;
-  color: #0f172a;
-  font-size: 1.35rem;
+  margin: 0;
+  color: #16322e;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
 .receiving-subtitle {
   margin: 0;
-  color: #64748b;
+  color: #6b8c85;
+  font-size: 0.76rem;
 }
 
 .receiving-card-body {

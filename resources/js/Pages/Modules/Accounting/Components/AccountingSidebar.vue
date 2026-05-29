@@ -9,22 +9,37 @@
         </div>
 
         <div class="inventory-sidebar-tabs">
-            <Link
-                v-for="tab in tabs"
-                :key="tab.id"
-                :href="tab.href"
-                class="inventory-sidebar-tab accounting-nav-link"
-                :class="{ 'inventory-tab-active': activeTab === tab.id }"
-                @click.prevent="handleTabClick(tab)"
-            >
-                <div class="inventory-tab-icon">
-                    <i :class="tab.icon"></i>
-                </div>
-                <div v-if="!isSidebarCollapsed" class="inventory-tab-text">
-                    <span class="inventory-tab-title">{{ tab.label }}</span>
-                    <span class="inventory-tab-subtitle">{{ tab.description }}</span>
-                </div>
-            </Link>
+            <template v-for="group in groups" :key="group.label">
+
+                <button v-if="!isSidebarCollapsed"
+                    class="sidebar-group-label"
+                    @click="toggleGroup(group.label)"
+                >
+                    <span>{{ group.label }}</span>
+                    <i class="group-chevron" :class="isGroupOpen(group.label) ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'"></i>
+                </button>
+                <div v-else class="sidebar-group-divider"></div>
+
+                <template v-if="isSidebarCollapsed || isGroupOpen(group.label)">
+                    <Link
+                        v-for="tab in group.tabs"
+                        :key="tab.id"
+                        :href="tab.href"
+                        class="inventory-sidebar-tab accounting-nav-link"
+                        :class="{ 'inventory-tab-active': activeTab === tab.id }"
+                        :preserve-scroll="true"
+                    >
+                        <div class="inventory-tab-icon">
+                            <i :class="tab.icon"></i>
+                        </div>
+                        <div v-if="!isSidebarCollapsed" class="inventory-tab-text">
+                            <span class="inventory-tab-title">{{ tab.label }}</span>
+                            <span class="inventory-tab-subtitle">{{ tab.description }}</span>
+                        </div>
+                    </Link>
+                </template>
+
+            </template>
         </div>
 
         <div class="inventory-sidebar-footer" v-if="!isSidebarCollapsed">
@@ -35,7 +50,7 @@
                 </div>
                 <div class="inventory-stat-item">
                     <i class="ri-book-2-line"></i>
-                    <span>{{ tabs.length }} Accounting Sections</span>
+                    <span>{{ totalTabs }} Sections</span>
                 </div>
             </div>
         </div>
@@ -43,7 +58,7 @@
 </template>
 
 <script>
-import { Link, router } from "@inertiajs/vue3";
+import { Link } from "@inertiajs/vue3";
 
 export default {
     components: { Link },
@@ -54,85 +69,154 @@ export default {
         },
         stats: {
             type: Object,
-            default: () => ({
-                pending_entries: 0,
-            }),
+            default: () => ({ pending_entries: 0 }),
         },
     },
     data() {
+        const defaults = { 'Reports': true, 'Receivables & Payables': true, 'Cash & Banking': true, 'Configuration': true };
+        const saved = (() => {
+            try { return { ...defaults, ...JSON.parse(localStorage.getItem('acct_sidebar_groups') || '{}') }; }
+            catch { return defaults; }
+        })();
         return {
             isSidebarCollapsed: false,
-            tabs: [
+            collapsedGroups: saved,
+            groups: [
                 {
-                    id: "general_ledger",
-                    label: "General Ledger",
-                    icon: "ri-book-open-line",
-                    description: "Ledger balances and activity",
-                    href: "/accounting/general-ledger",
+                    label: 'Reports',
+                    tabs: [
+                        {
+                            id: "dashboard",
+                            label: "Dashboard",
+                            icon: "ri-dashboard-line",
+                            description: "Financial overview",
+                            href: "/accounting",
+                        },
+                        {
+                            id: "general_ledger",
+                            label: "General Ledger",
+                            icon: "ri-book-open-line",
+                            description: "Ledger balances and activity",
+                            href: "/accounting/general-ledger",
+                        },
+                        {
+                            id: "trial_balance",
+                            label: "Trial Balance",
+                            icon: "ri-scales-3-line",
+                            description: "Debit and credit checks",
+                            href: "/accounting/trial-balance",
+                        },
+                        {
+                            id: "profit_loss",
+                            label: "Profit & Loss",
+                            icon: "ri-line-chart-line",
+                            description: "Income and expense results",
+                            href: "/accounting/profit-loss",
+                        },
+                        {
+                            id: "balance_sheet",
+                            label: "Balance Sheet",
+                            icon: "ri-bank-card-line",
+                            description: "Assets and obligations",
+                            href: "/accounting/balance-sheet",
+                        },
+                        {
+                            id: "cash_flow",
+                            label: "Cash Flow",
+                            icon: "ri-funds-box-line",
+                            description: "Operating, investing, financing",
+                            href: "/accounting/cash-flow",
+                        },
+                    ],
                 },
                 {
-                    id: "trial_balance",
-                    label: "Trial Balance",
-                    icon: "ri-scales-3-line",
-                    description: "Debit and credit checks",
-                    href: "/accounting/trial-balance",
+                    label: 'Receivables & Payables',
+                    tabs: [
+                        {
+                            id: "accounts_receivable",
+                            label: "Accounts Receivable",
+                            icon: "ri-file-list-3-line",
+                            description: "Customer balances and aging",
+                            href: "/accounting/accounts-receivable",
+                        },
+                        {
+                            id: "accounts_payable",
+                            label: "Accounts Payable",
+                            icon: "ri-inbox-archive-line",
+                            description: "Supplier balances and aging",
+                            href: "/accounting/accounts-payable",
+                        },
+                    ],
                 },
                 {
-                    id: "profit_loss",
-                    label: "Profit & Loss",
-                    icon: "ri-line-chart-line",
-                    description: "Income and expense results",
-                    href: "/accounting/profit-loss",
+                    label: 'Cash & Banking',
+                    tabs: [
+                        {
+                            id: "cash_management",
+                            label: "Cash Management",
+                            icon: "ri-exchange-dollar-line",
+                            description: "Position, transfers, petty cash",
+                            href: "/accounting/cash-management",
+                        },
+                        {
+                            id: "bank_reconciliation",
+                            label: "Bank Reconciliation",
+                            icon: "ri-bank-card-line",
+                            description: "Match books against statements",
+                            href: "/accounting/bank-reconciliation",
+                        },
+                    ],
                 },
                 {
-                    id: "balance_sheet",
-                    label: "Balance Sheet",
-                    icon: "ri-bank-card-line",
-                    description: "Assets and obligations",
-                    href: "/accounting/balance-sheet",
-                },
-                {
-                    id: "accounts_receivable",
-                    label: "Accounts Receivable",
-                    icon: "ri-file-list-3-line",
-                    description: "Customer balances and aging",
-                    href: "/accounting/accounts-receivable",
-                },
-                {
-                    id: "chart_of_accounts",
-                    label: "Chart Of Accounts",
-                    icon: "ri-node-tree",
-                    description: "Account structure and mapping",
-                    href: "/accounting/chart-of-accounts",
-                },
-                {
-                    id: "journal_entries",
-                    label: "Journal Entries",
-                    icon: "ri-book-2-line",
-                    description: "Generated postings and audit trail",
-                    href: "/accounting/journal-entries",
+                    label: 'Configuration',
+                    tabs: [
+                        {
+                            id: "settings",
+                            label: "Settings",
+                            icon: "ri-settings-3-line",
+                            description: "Chart of accounts & bank accounts",
+                            href: "/accounting/settings",
+                        },
+                        {
+                            id: "journal_entries",
+                            label: "Journal Entries",
+                            icon: "ri-book-2-line",
+                            description: "Generated postings and audit trail",
+                            href: "/accounting/journal-entries",
+                        },
+                    ],
                 },
             ],
         };
+    },
+    computed: {
+        totalTabs() {
+            return this.groups.reduce((sum, g) => sum + g.tabs.length, 0);
+        },
+    },
+    watch: {
+        activeTab(tabId) {
+            const group = this.groups.find(g => g.tabs.some(t => t.id === tabId));
+            if (group && !this.isGroupOpen(group.label)) {
+                this.collapsedGroups[group.label] = false;
+                this.saveGroups();
+            }
+        },
     },
     methods: {
         toggleSidebar() {
             this.isSidebarCollapsed = !this.isSidebarCollapsed;
         },
-        handleTabClick(tab) {
-            localStorage.setItem("accounting_active_tab", tab.id);
-
-            const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
-            const targetUrl = new URL(tab.href, window.location.origin);
-            const targetPath = targetUrl.pathname.replace(/\/+$/, "") || "/";
-
-            if (currentPath === targetPath) {
-                return;
-            }
-
-            router.visit(tab.href, {
-                preserveScroll: true,
-            });
+        isGroupOpen(label) {
+            return this.collapsedGroups[label] !== true;
+        },
+        toggleGroup(label) {
+            this.collapsedGroups[label] = !this.collapsedGroups[label];
+            this.saveGroups();
+        },
+        saveGroups() {
+            try { localStorage.setItem('acct_sidebar_groups', JSON.stringify(this.collapsedGroups)); }
+            catch {}
         },
     },
 };
@@ -202,5 +286,40 @@ export default {
 .accounting-nav-link {
     text-decoration: none;
     color: inherit;
+}
+
+/* Section group labels */
+.sidebar-group-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.6rem 1rem 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 0.35rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.sidebar-group-label:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.group-chevron {
+    font-size: 0.9rem;
+    transition: transform 0.2s ease;
+}
+
+/* Thin divider shown in collapsed mode instead of label */
+.sidebar-group-divider {
+    height: 1px;
+    background: rgba(148, 163, 184, 0.2);
+    margin: 0.4rem 12px;
 }
 </style>

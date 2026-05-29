@@ -1,5 +1,5 @@
 <template>
-    <BRow>
+    <div>
         <div class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
@@ -13,14 +13,14 @@
                                 <p class="header-subtitle mb-0">A comprehensive list of Returned Sales Orders</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
+                        <button class="acct-btn-primary" @click="openCreate">
                             <i class="ri-add-line"></i>
                             <span>Sales Return</span>
                         </button>
                     </div>
 
                 </div>
-                <div class="card-body m-2 p-3">
+                <div class="library-card-body">
                    
                     <div class="search-section">
                         <div class="row">
@@ -57,81 +57,19 @@
 
                     </div>
 
-                    <div class="mb-2">
-                        <!-- <b-button @click="showStock = !showStock" variant="outline-primary" size="sm" class="mb-3">
-                            <i class="ri-eye-line me-1"></i> Stock Availability
-                        </b-button> -->
-                        <b-collapse v-model="showStock">
-                            <div class="card border-primary shadow-sm" style="border-radius: 10px;">
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">Total KG Left</p>
-                                                <h5 class="text-primary mb-0">{{ stock.total_kg_left || 0 }} kg</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">5kg Sacks Left</p>
-                                                <h5 class="text-success mb-0">{{ stock.five_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">10kg Sacks Left</p>
-                                                <h5 class="text-info mb-0">{{ stock.ten_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">25kg Sacks Left</p>
-                                                <h5 class="text-warning mb-0">{{ stock.twenty_five_kg_sacks_left || 0 }}
-                                                </h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div v-if="stock.products && stock.products.length > 0" class="mt-3">
-                                        <h6 class="text-muted">Product Details by Brand:</h6>
-                                        <div v-for="(brandGroup, brandIndex) in groupedProducts" :key="brandIndex"
-                                            class="mb-4">
-                                            <h6 class="text-primary mb-2">
-                                                <i class="ri-building-line me-2"></i>{{ brandGroup.brand || 'No Brand'
-                                                }}
-                                            </h6>
-                                            <div class="row">
-                                                <div v-for="product in brandGroup.products" :key="product.product_name"
-                                                    class="col-md-6 mb-2">
-                                                    <div
-                                                        class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                                        <span class="small">{{ product.product_name }}</span>
-                                                        <span class="badge bg-secondary">{{ product.total_quantity }} x
-                                                            {{ product.pack_size }} {{ product.unit }} ({{
-                                                                product.total_kg }} kg)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </b-collapse>
-                    </div>
-
-                    <div class="table-responsive table-card">
-                        <table class="table align-middle table-hover mb-0"
-                            style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                <tr class="fs-12 fw-bold text-muted">
-                                    <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 10%;" class="text-center border-none">Order Number</th>
-                                    <th style="width: 10%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 10%;" class="text-center border-none">Date</th>
-                                    <th style="width: 8%;" class="text-center border-none">Status</th>
-                                    <th style="width: 10%;" class="text-center border-none">Total Amount</th>
-                                    <th style="width: 10%;" class="text-center border-none">Due Date</th>
-                                    <th style="width: 8%;" class="text-center border-none">Paid %</th>
-                                    <th style="width: 6%;" class="text-center border-none">Actions</th>
+                    <div class="table-responsive">
+                        <table class="table sales-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:3%">#</th>
+                                    <th class="text-center" style="width:10%">Order Number</th>
+                                    <th class="text-center" style="width:10%">Customer</th>
+                                    <th class="text-center" style="width:10%">Date</th>
+                                    <th class="text-center" style="width:8%">Status</th>
+                                    <th class="text-end" style="width:10%">Total Amount</th>
+                                    <th class="text-center" style="width:10%">Due Date</th>
+                                    <th class="text-center" style="width:8%">Paid %</th>
+                                    <th class="text-center" style="width:6%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
@@ -175,16 +113,12 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="onPrint(list)" variant="outline-info"
-                                                    v-b-tooltip.hover title="Print" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                <button @click.stop="onPrint(list)" class="action-btn info" title="Print">
                                                     <i class="ri-printer-line"></i>
-                                                </b-button>
-                                                 <b-button @click.stop="onApprove(list)" variant="outline-success" v-if="list.status?.slug == 'sales-return-approval'"
-                                                    v-b-tooltip.hover title="Approve" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                </button>
+                                                <button @click.stop="onApprove(list)" v-if="list.status?.slug == 'sales-return-approval'" class="action-btn approve" title="Approve">
                                                     <i class="ri-check-line"></i>
-                                                </b-button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -244,23 +178,25 @@
                                     </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9" class="text-center py-4">
-                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                                        <p class="mt-2 mb-0">No sales order returned</p>
-                                        <small class="text-muted">Try changing your search or filter criteria</small>
+                                    <td colspan="9">
+                                        <div class="sales-empty-state">
+                                            <i class="ri-inbox-line"></i>
+                                            <p>No sales returns found.</p>
+                                            <small>Try changing your search or filter criteria.</small>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0 m-3">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
+                <div class="px-3 pb-3">
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
-    </BRow>
+    </div>
     <CreateFromReceipt @add="fetch()" :dropdowns="dropdowns" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
 <Approval @approve="fetch()" ref="approval" :products="dropdowns.products"/>
@@ -281,7 +217,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , CreateFromReceipt, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' , 'user', 'isExternal', 'metrics'],
+    props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -303,32 +239,7 @@ export default {
                 pending_orders: 0,
                 total_cancelled_orders: 0
             },
-            stock: {
-                products: []
-            },
-            showStock: false,
             expandedRow: null,
-        }
-    },
-    computed: {
-        groupedProducts() {
-            if (!this.stock.products || this.stock.products.length === 0) {
-                return [];
-            }
-
-            const grouped = {};
-            this.stock.products.forEach(product => {
-                const brand = product.brand_name || 'No Brand';
-                if (!grouped[brand]) {
-                    grouped[brand] = {
-                        brand: brand,
-                        products: []
-                    };
-                }
-                grouped[brand].products.push(product);
-            });
-
-            return Object.values(grouped);
         }
     },
     watch: {
@@ -339,7 +250,6 @@ export default {
     created() {
         this.fetch();
         this.fetchMetrics();
-        this.fetchStock();
     },
     methods: {
         checkSearchStr: _.debounce(function (string) {
@@ -392,14 +302,6 @@ export default {
             this.$refs.adjustment.show(id);
         },
 
-        selectRow(index) {
-            if (this.selectedRow === index) {
-                this.selectedRow = null;
-            } else {
-                this.selectedRow = index;
-            }
-        },
-
         toggleRowExpansion(index) {
             // Toggle between opening and closing, only one row open at a time
             if (this.expandedRow === index) {
@@ -432,31 +334,12 @@ export default {
                 boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
             };
         },
-        fetchStock() {
-            axios.get(this.isExternal ? '/sales-orders-external' : '/sales-orders', {
-                params: {
-                    option: 'stock'
-                }
-            })
-                .then(response => {
-                    if (response) {
-                        this.stock = response.data;
-                    }
-                })
-                .catch(err => console.log(err));
-        },
-
         formatCurrency(value) {
             if (!value) return '₱0.00';
             return '₱' + Number(value).toLocaleString('en-PH', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
-        },
-
-        getStockPercentage(quantity) {
-            const maxStock = Math.max(...this.stock.products.map(p => p.total_quantity));
-            return Math.min((quantity / maxStock) * 100, 100);
         },
 
         getProduct(product_id) {

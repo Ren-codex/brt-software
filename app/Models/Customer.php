@@ -16,6 +16,7 @@ class Customer extends Model
         'status_id',
         'is_regular',
         'is_blacklisted',
+        'credit_limit',
         'added_by_id'
     ];
 

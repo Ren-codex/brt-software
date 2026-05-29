@@ -16,28 +16,23 @@
                     <div class="mb-3">
                         <label class="form-label mb-2">Remittance Type</label>
                         <div class="d-flex gap-2">
-                            <b-button
-                                size="sm"
-                                :variant="remittanceType === 'cash' ? 'primary' : 'outline-primary'"
+                            <button
+                                type="button"
+                                :class="remittanceType === 'cash' ? 'acct-btn-primary' : 'acct-btn-secondary'"
                                 @click="setRemittanceType('cash')"
-                            >
-                                Cash Sales
-                            </b-button>
-                            <b-button
-                                size="sm"
-                                :variant="remittanceType === 'credit' ? 'primary' : 'outline-primary'"
+                            >Cash Sales</button>
+                            <button
+                                type="button"
+                                :class="remittanceType === 'credit' ? 'acct-btn-primary' : 'acct-btn-secondary'"
                                 @click="setRemittanceType('credit')"
-                            >
-                                Credit Sales
-                            </b-button>
+                            >Credit Sales</button>
                         </div>
                     </div>
 
                     <div class="mb-3 d-flex align-items-center gap-2">
                         <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt"
                             class="form-control" />
-                        <b-button size="sm" variant="outline-primary" @click="toggleSelectAll">{{ allSelected ?
-                            'Unselect All' : 'Select All' }}</b-button>
+                        <button type="button" class="acct-btn-secondary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</button>
                     </div>
 
                     <div class="table-responsive" style="max-height: 180px; overflow:auto;">
@@ -111,6 +106,12 @@
                         <div class="my-4 text-end">
                             TOTAL<h2 class="mb-0"><strong> {{ formatAmount(totals.overall) }}</strong></h2>
                         </div>
+                    </div>
+
+                    <div v-if="Object.keys(form.errors).length > 0" class="alert alert-danger py-2 mt-3">
+                        <ul class="mb-0 ps-3">
+                            <li v-for="(error, field) in form.errors" :key="field" class="small">{{ error }}</li>
+                        </ul>
                     </div>
 
                     <div class="form-actions mt-3 d-flex justify-content-end gap-2">
@@ -313,42 +314,22 @@ export default {
 
 <style scoped>
 .modal-overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 50
+    z-index: 50;
 }
 
 .modal-container {
-    background: #fff;
-    border-radius: 8px;
     overflow: hidden;
     width: 100%;
 }
 
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid #eee
-}
-
 .modal-body {
-    padding: 16px
-}
-
-.close-btn {
-    background: transparent;
-    border: 0
+    padding: 16px;
 }
 
 .form-actions .btn {
-    min-width: 140px
+    min-width: 140px;
 }
+
 @media (max-width: 768px) {
     .modal-container {
         max-height: 85vh;

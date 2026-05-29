@@ -5,8 +5,8 @@
         :class="{ active: showModal }"
         @click.self="hide"
     >
-        <div class="modal-container modal-xl receipts-modal" @click.stop>
-            <div class="modal-header receipts-header">
+        <div class="modal-container modal-xl" @click.stop>
+            <div class="modal-header">
                 <h4 class="mb-0">
                     <i class="ri-file-list-3-line me-2"></i>
                     Invoice Receipts
@@ -88,7 +88,7 @@
                 </div>
             </div>
 
-            <div class="modal-footer receipts-footer">
+            <div class="modal-footer">
                 <button class="btn btn-secondary" @click="hide">Close</button>
             </div>
         </div>
@@ -135,83 +135,6 @@ export default {
 };
 </script>
 <style scoped>
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1050;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    padding: 15px;
-}
-
-.modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-.modal-container {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 980px;
-    overflow: hidden;
-    transform: translateY(25px) scale(0.95);
-    transition: all 0.3s ease;
-}
-
-.modal-overlay.active .modal-container {
-    transform: translateY(0) scale(1);
-}
-
-.receipts-modal {
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.receipts-header {
-    background: #3a8674;
-    color: white;
-    padding: 0.875rem 1.25rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.receipts-header h4 {
-    color: white;
-    font-weight: 700;
-}
-
-.close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 1.1rem;
-}
-
-.close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
-}
-
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -264,16 +187,6 @@ export default {
 .btn-print:hover {
     background: #3a8674;
     color: #ffffff;
-}
-
-.receipts-footer {
-    background: #f6faf8;
-    border-top: 1px solid #dde9e4;
-    padding: 12px 16px;
-}
-
-.receipts-footer .btn {
-    margin-left: 8px;
 }
 
 @media (max-width: 991px) {

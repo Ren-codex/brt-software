@@ -1,17 +1,17 @@
 <template>
-    <div v-if="showModal" class="account-modal-overlay" @click.self="close">
-        <div class="account-modal-card">
-            <div class="account-modal-header">
+    <div v-show="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="close">
+        <div class="modal-container modal-md">
+            <div class="modal-header">
                 <h3>
                     <i class="ri-user-settings-line"></i>
                     Edit Account Details
                 </h3>
-                <button type="button" class="account-modal-close" @click="close">
+                <button type="button" class="close-btn" @click="close">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
 
-            <form class="account-modal-body" @submit.prevent="submit">
+            <form class="modal-body" @submit.prevent="submit">
                 <div class="account-form-group">
                     <label>Username</label>
                     <input
@@ -170,66 +170,6 @@ export default {
 </script>
 
 <style scoped>
-.account-modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1200;
-    background: rgba(7, 22, 19, 0.55);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 14px;
-}
-
-.account-modal-card {
-    width: min(560px, 100%);
-    border-radius: 16px;
-    border: 1px solid #d4e4df;
-    background: #fff;
-    box-shadow: 0 20px 50px rgba(10, 35, 30, 0.22);
-    overflow: hidden;
-}
-
-.account-modal-header {
-    padding: 14px 16px;
-    border-bottom: 1px solid #e1ece9;
-    background: #f4fbf8;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.account-modal-header h3 {
-    margin: 0;
-    font-size: 0.98rem;
-    color: #102723;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-}
-
-.account-modal-close {
-    border: 0;
-    background: transparent;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    color: #35524d;
-    cursor: pointer;
-}
-
-.account-modal-close:hover {
-    background: #e9f3ef;
-}
-
-.account-modal-body {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
 .account-form-group {
     display: flex;
     flex-direction: column;

@@ -1,5 +1,5 @@
 <template>
-    <BRow>
+    <div>
         <div class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
@@ -16,13 +16,13 @@
                     </div>
                 </div>
 
-                <div class="card-body bg-white m-2 p-3">
+                <div class="library-card-body">
                     <div class="search-section">
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
-                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
+                                    <input type="text" v-model="filter.keyword"
                                         placeholder="Search AR invoice..." class="search-input">
                                 </div>
                             </div>
@@ -54,19 +54,18 @@
                     </div>
 
                     <div class="table-responsive table-card">
-                        <table class="table align-middle table-hover mb-0"
-                            style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                <tr class="fs-12 fw-bold text-muted">
-                                    <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 12%;" class="text-center border-none">Invoice Number</th>
-                                    <th style="width: 12%;" class="text-center border-none">Sales Order</th>
-                                    <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 12%;" class="text-center border-none">Invoice Date</th>
-                                    <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 12%;" class="text-center border-none">Balance Due</th>
-                                    <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
-                                    <th style="width: 12%;" class="text-center border-none">Actions</th>
+                        <table class="table sales-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:3%">#</th>
+                                    <th class="text-center" style="width:12%">Invoice Number</th>
+                                    <th class="text-center" style="width:12%">Sales Order</th>
+                                    <th class="text-center" style="width:12%">Customer</th>
+                                    <th class="text-center" style="width:12%">Invoice Date</th>
+                                    <th class="text-center" style="width:12%">Status</th>
+                                    <th class="text-end" style="width:12%">Balance Due</th>
+                                    <th class="text-end" style="width:12%">Amount Paid</th>
+                                    <th class="text-center" style="width:12%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
@@ -104,29 +103,18 @@
                                         <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
                                         <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
                                         <td class="text-center">
-                                            <div class="action-buttons-row">
-                                                <b-button
-                                                    @click.stop="onViewReceipts(list)"
-                                                    variant="success"
-                                                    v-b-tooltip.hover
-                                                    title="View Receipts"
-                                                    size="sm"
-                                                    class="btn-icon"
-                                                >
+                                            <div class="d-flex justify-content-center gap-1">
+                                                <button @click.stop="onViewReceipts(list)" class="action-btn approve" title="View Receipts">
                                                     <i class="ri-file-3-line"></i>
-                                                </b-button>
-                                                <b-button @click.stop="onPrint(list.id)" variant="info"
-                                                    v-b-tooltip.hover title="Print" size="sm"
-                                                    class="btn-icon">
+                                                </button>
+                                                <button @click.stop="onPrint(list.id)" class="action-btn info" title="Print">
                                                     <i class="ri-printer-line"></i>
-                                                </b-button>
-                                                <b-button
+                                                </button>
+                                                <button
                                                     v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
-                                                    @click.stop="onPayment(list)" variant="primary"
-                                                    v-b-tooltip.hover title="Payment" size="sm"
-                                                    class="btn-icon">
+                                                    @click.stop="onPayment(list)" class="action-btn edit" title="Record Payment">
                                                     <i class="ri-money-dollar-circle-fill"></i>
-                                                </b-button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -135,34 +123,20 @@
                                             <div class="details-container">
                                                 <div class="details-content">
                                                     <div class="collapse-actions">
-                                                        <b-button
-                                                            @click.stop="onViewReceipts(list)"
-                                                            variant="success"
-                                                            size="sm"
-                                                            class="system-action-btn system-action-success"
-                                                        >
-                                                            <i class="ri-file-3-line me-1"></i>
+                                                        <button @click.stop="onViewReceipts(list)" class="acct-btn-secondary">
+                                                            <i class="ri-file-3-line"></i>
                                                             View Receipts
-                                                        </b-button>
-                                                        <b-button
-                                                            @click.stop="onPrint(list.id)"
-                                                            variant="info"
-                                                            size="sm"
-                                                            class="system-action-btn system-action-info"
-                                                        >
-                                                            <i class="ri-printer-line me-1"></i>
+                                                        </button>
+                                                        <button @click.stop="onPrint(list.id)" class="acct-btn-secondary">
+                                                            <i class="ri-printer-line"></i>
                                                             Print Invoice
-                                                        </b-button>
-                                                        <b-button
+                                                        </button>
+                                                        <button
                                                             v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
-                                                            @click.stop="onPayment(list)"
-                                                            variant="primary"
-                                                            size="sm"
-                                                            class="system-action-btn system-action-primary"
-                                                        >
-                                                            <i class="ri-money-dollar-circle-fill me-1"></i>
+                                                            @click.stop="onPayment(list)" class="acct-btn-primary">
+                                                            <i class="ri-money-dollar-circle-fill"></i>
                                                             Record Payment
-                                                        </b-button>
+                                                        </button>
                                                     </div>
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Invoice Details
@@ -240,24 +214,25 @@
                                     </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9" class="text-center py-4">
-                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                                        <p class="mt-2 mb-0">No invoice found</p>
-                                        <small class="text-muted">Try changing your search or filter criteria</small>
+                                    <td colspan="9">
+                                        <div class="sales-empty-state">
+                                            <i class="ri-inbox-line"></i>
+                                            <p>No invoices found.</p>
+                                            <small>Try changing your search or filter criteria.</small>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0 mt-3">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
+                <div class="px-3 pb-3">
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
-
-    </BRow>
+    </div>
     <Payment @approve="fetch()" ref="payment" />
     <ReceiptsList ref="receiptsList" />
 </template>
@@ -294,31 +269,6 @@ export default {
                 pending_invoices: 0,
                 today_invoices: 0
             },
-            stock: {
-                products: []
-            },
-            showStock: false
-        }
-    },
-    computed: {
-        groupedProducts() {
-            if (!this.stock.products || this.stock.products.length === 0) {
-                return [];
-            }
-
-            const grouped = {};
-            this.stock.products.forEach(product => {
-                const brand = product.brand_name || 'No Brand';
-                if (!grouped[brand]) {
-                    grouped[brand] = {
-                        brand: brand,
-                        products: []
-                    };
-                }
-                grouped[brand].products.push(product);
-            });
-
-            return Object.values(grouped);
         }
     },
     watch: {
@@ -329,7 +279,6 @@ export default {
     created() {
         this.fetch();
         this.fetchMetrics();
-        this.fetchStock();
     },
     methods: {
         checkSearchStr: _.debounce(function (string) {
@@ -371,14 +320,6 @@ export default {
             window.open(`/ar-invoices/${id}?option=print&type=ar_invoice`);
         },
 
-        selectRow(index) {
-            if (this.selectedRow === index) {
-                this.selectedRow = null;
-            } else {
-                this.selectedRow = index;
-            }
-        },
-
         toggleRowExpansion(index) {
             // Toggle between opening and closing, only one row open at a time
             if (this.expandedRow === index) {
@@ -400,25 +341,6 @@ export default {
                     }
                 })
                 .catch(err => console.log(err));
-        },
-
-        fetchStock() {
-            axios.get('/ar-invoices', {
-                params: {
-                    option: 'stock'
-                }
-            })
-                .then(response => {
-                    if (response) {
-                        this.stock = response.data;
-                    }
-                })
-                .catch(err => console.log(err));
-        },
-
-        getStockPercentage(quantity) {
-            const maxStock = Math.max(...this.stock.products.map(p => p.total_quantity));
-            return Math.min((quantity / maxStock) * 100, 100);
         },
 
         isDueSoon(list) {
@@ -715,39 +637,6 @@ export default {
     letter-spacing: 0.3px;
 }
 
-.btn-icon {
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    min-height: 24px;
-    padding: 0;
-    border-radius: 7px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.btn-icon i {
-    font-size: 12px;
-    line-height: 1;
-}
-
-.btn-icon:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 12px rgba(15, 23, 42, 0.12);
-}
-
-.action-buttons-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-}
-
 .collapse-actions {
     display: flex;
     justify-content: flex-end;
@@ -758,39 +647,6 @@ export default {
     flex-wrap: wrap;
 }
 
-.system-action-btn {
-    border: none;
-    border-radius: 10px;
-    padding: 0.65rem 1rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-}
-
-.system-action-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
-}
-
-.system-action-success {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
-    color: #ffffff;
-}
-
-.system-action-primary {
-    background: linear-gradient(135deg, #3d8d7a 0%, #267a4c 100%);
-    color: #ffffff;
-}
-
-.system-action-info {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
-    color: #ffffff;
-}
 
 .due-soon-badge {
     display: inline-flex;

@@ -1,13 +1,13 @@
 <template>
     <div v-if="show" class="modal-overlay active payment-review-modal" @click.self="$emit('cancel')">
         <div class="modal-container modal-lg" @click.stop>
-            <div class="modal-header bg-primary text-white">
-                <h4 class="mb-0 text-white">
+            <div class="modal-header">
+                <h4 class="mb-0">
                     <i class="ri-money-dollar-circle-line me-2"></i>
                     Proceed Payment
                 </h4>
-                <button class="close-btn text-white" @click="$emit('cancel')">
-                    <i class="ri-close-line fs-20"></i>
+                <button type="button" class="close-btn" @click="$emit('cancel')">
+                    <i class="ri-close-line"></i>
                 </button>
             </div>
             <div class="modal-body p-4 payment-prompt-body">
@@ -197,50 +197,9 @@ export default {
 </script>
 
 <style scoped>
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.55);
-    backdrop-filter: blur(6px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    z-index: 1060;
-}
-
-.modal-container {
-    width: 100%;
-    position: relative;
-    background: #fff;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
-}
-
 .payment-review-modal .modal-container {
     max-width: 900px;
     width: 95%;
-}
-
-.payment-review-modal .modal-header {
-    border-radius: 20px 20px 0 0;
-    background: #C4DAD2 !important;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.payment-review-modal .modal-header h4 {
-    color: #16423C !important;
-    font-weight: 700;
-}
-
-.payment-review-modal .close-btn {
-    background: rgba(255, 255, 255, 0.25);
-    color: #16423C !important;
-}
-
-.payment-review-modal .close-btn:hover {
-    background: rgba(255, 255, 255, 0.35);
 }
 
 .payment-review-modal .card {
@@ -252,8 +211,13 @@ export default {
 }
 
 .payment-prompt-body {
-    height: 75vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+}
+
+.modal-footer {
+    flex-shrink: 0;
 }
 
 .prompt-totals {

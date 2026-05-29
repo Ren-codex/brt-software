@@ -293,16 +293,20 @@
 /* Main Content Area */
 .inventory-main {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 500px;
   background: #E9EFEC;
+  overflow: hidden;
 }
 
 /* Main Content */
 .inventory-main-content {
   flex: 1;
-  overflow: auto;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 20px;
 }
 
@@ -463,4 +467,237 @@
   .inventory-main-content {
     padding: 12px;
   }
+}
+/* ── Shared Accounting Stat Cards ──────────────────────────────── */
+.acct-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(61, 141, 122, 0.12);
+  box-shadow: 0 2px 8px rgba(28, 49, 45, 0.06);
+  height: 100%;
+}
+
+.acct-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(61, 141, 122, 0.12);
+  color: #3d8d7a;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.acct-stat-label {
+  margin-bottom: 0.15rem;
+  color: #6b8c85;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.acct-stat-value {
+  margin-bottom: 0.1rem;
+  color: #16322e;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.acct-stat-note {
+  color: #7a9e93;
+  font-size: 0.72rem;
+  margin: 0;
+}
+
+/* ── Shared Accounting Filter Bar ──────────────────────────────── */
+.acct-filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.acct-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.acct-filter-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b8c85;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.acct-filter-input {
+  border: 1px solid #c4d9d2;
+  border-radius: 8px;
+  padding: 0.38rem 0.65rem;
+  font-size: 0.84rem;
+  color: #16322e;
+  background: #f7fbfa;
+  outline: none;
+
+  &:focus {
+    border-color: #3d8d7a;
+    background: #fff;
+  }
+}
+
+.acct-filter-input-wide { min-width: 180px; }
+
+.acct-filter-actions {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-end;
+}
+
+.acct-btn-primary {
+  padding: 0.38rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: #3d8d7a;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+
+  &:hover { background: #347a6a; }
+}
+
+.acct-btn-secondary {
+  padding: 0.38rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: #f0f5f3;
+  color: #527267;
+  border: 1px solid #c4d9d2;
+  cursor: pointer;
+
+  &:hover { background: #e4eeeb; }
+}
+
+/* ── Shared Sales Table ─────────────────────────────────────────── */
+.sales-table {
+  thead th {
+    background: #edf5f2;
+    color: #527267;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    padding: 0.45rem 0.65rem;
+    border-color: #d6ebe4;
+  }
+  tbody td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+    padding: 0.4rem 0.65rem;
+    border-color: #edf5f2;
+  }
+  tbody tr:hover { background: #f7fbf9; }
+  tfoot td {
+    background: #f0faf6;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.65rem;
+    border-top: 2px solid #c8e3da !important;
+    font-weight: 700;
+  }
+}
+
+/* ── Shared Action Buttons ──────────────────────────────────────── */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid;
+  cursor: pointer;
+  font-size: 0.85rem;
+  background: transparent;
+  transition: all 0.15s;
+
+  &.edit        { border-color: #a8d5c4; color: #2f6b5c; &:hover { background: #e4f0eb; } }
+  &.info        { border-color: #bfdbfe; color: #1e40af; &:hover { background: #eff6ff; } }
+  &.approve     { border-color: #86efac; color: #166534; &:hover { background: #dcfce7; } }
+  &.delete      { border-color: #fca5a5; color: #991b1b; &:hover { background: #fee2e2; } }
+  &.warn        { border-color: #fde68a; color: #92400e; &:hover { background: #fffbeb; } }
+  &:disabled    { opacity: 0.45; cursor: not-allowed; }
+}
+
+/* ── Shared Sales Empty State ───────────────────────────────────── */
+.sales-empty-state {
+  padding: 2.5rem;
+  text-align: center;
+  color: #648b74;
+
+  i {
+    font-size: 2.5rem;
+    color: #3d8d7a;
+    display: block;
+    margin-bottom: 0.6rem;
+  }
+  p { font-size: 0.9rem; color: #3d7060; }
+  small { font-size: 0.78rem; color: #7a9e93; }
+}
+
+/* ── Shared Tab Bar ─────────────────────────────────────────────── */
+.cm-tab-bar {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #e2ece9;
+  padding-bottom: 0;
+  margin-bottom: 1rem;
+}
+
+.cm-tab-btn {
+  padding: 0.5rem 1.1rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #6b8c85;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: -2px;
+  border-radius: 6px 6px 0 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  &:hover { color: #3d8d7a; }
+
+  &.active {
+    color: #3d8d7a;
+    border-bottom-color: #3d8d7a;
+    background: #f4faf8;
+  }
+}
+
+/* ── Shared Accounting Empty State ─────────────────────────────── */
+.acct-empty-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 10px;
+  background: #fff8e7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
 }

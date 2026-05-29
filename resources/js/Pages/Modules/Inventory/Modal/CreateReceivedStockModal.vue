@@ -3,7 +3,7 @@
     <div class="modal-container modal-xl">
       <div class="modal-header">
         <h2>Received Stock</h2>
-        <button class="close-btn" @click="onCancel">&times;</button>
+        <button class="close-btn" @click="onCancel"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
         <form @submit.prevent="handleSubmit">
@@ -150,7 +150,7 @@
     <div class="modal-container modal-md payment-method-modal">
       <div class="modal-header">
         <h2>Select Payment Method</h2>
-        <button type="button" class="close-btn" @click="closePaymentMethodModal" :disabled="isSubmitting">&times;</button>
+        <button type="button" class="close-btn" @click="closePaymentMethodModal" :disabled="isSubmitting"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
         <div class="payment-summary-card">
@@ -235,7 +235,7 @@
     <div class="modal-container modal-md payment-method-modal amount-paid-modal">
       <div class="modal-header">
         <h2>{{ isBankTransferMode ? 'Bank Transfer Details' : 'Total Amount Paid' }}</h2>
-        <button type="button" class="close-btn" @click="backToPaymentMethodModal" :disabled="isSubmitting">&times;</button>
+        <button type="button" class="close-btn" @click="backToPaymentMethodModal" :disabled="isSubmitting"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
         <div class="payment-summary-card">
@@ -258,17 +258,23 @@
 
           <div v-if="isBankTransferMode" class="payment-detail-grid">
             <div class="payment-detail-field">
-              <label for="received_stock_bank_name" class="payment-detail-label">
-                Bank Name
+              <label for="received_stock_bank_account" class="payment-detail-label">
+                Bank Account
               </label>
-              <input
-                id="received_stock_bank_name"
-                v-model.trim="form.bank_name"
-                type="text"
+              <select
+                id="received_stock_bank_account"
+                v-model="form.bank_account_id"
                 class="form-control payment-detail-input"
-                placeholder="Enter bank name"
-                @input="paymentMethodError = ''"
-              />
+                @change="onBankAccountChange"
+              >
+                <option value="">— Select bank account —</option>
+                <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
+                  {{ ba.bank_name }} — {{ ba.account_name }}
+                </option>
+              </select>
+              <small v-if="bankAccounts.length === 0" style="font-size:0.75rem;color:#94a3b8">
+                No bank accounts. <a href="/accounting/bank-accounts" target="_blank">Add one.</a>
+              </small>
             </div>
 
             <div class="payment-detail-field">
@@ -346,11 +352,13 @@ export default {
   data() {
     return {
       showModal: false,
+      bankAccounts: [],
       form: {
         po_id: '',
         supplier_id: '',
         payment_mode: '',
         amount_paid: null,
+        bank_account_id: '',
         bank_name: '',
         reference_number: '',
         items: [],
@@ -421,8 +429,21 @@ export default {
       return item?.product?.name || item?.product_name || 'N/A';
     },
     clearBankTransferDetails() {
+      this.form.bank_account_id = '';
       this.form.bank_name = '';
       this.form.reference_number = '';
+    },
+    async loadBankAccounts() {
+      try {
+        const res = await axios.get('/accounting/bank-accounts/list');
+        this.bankAccounts = res.data || [];
+      } catch {
+        this.bankAccounts = [];
+      }
+    },
+    onBankAccountChange() {
+      const selected = this.bankAccounts.find(b => b.id === this.form.bank_account_id);
+      this.form.bank_name = selected ? selected.bank_name : '';
     },
     markFieldTouched(item, field) {
       if (!item._touched) item._touched = {};
@@ -495,6 +516,7 @@ export default {
 
 
       this.showModal = true;
+      this.loadBankAccounts();
     },
     resetForm() {
       this.form = {
@@ -502,6 +524,7 @@ export default {
         supplier_id: '',
         payment_mode: '',
         amount_paid: null,
+        bank_account_id: '',
         bank_name: '',
         reference_number: '',
         items: [],
@@ -679,8 +702,8 @@ export default {
         }
 
         if (this.isBankTransferMode) {
-          if (!String(this.form.bank_name || '').trim()) {
-            this.paymentMethodError = 'Please enter the bank name for this transfer.';
+          if (!this.form.bank_account_id) {
+            this.paymentMethodError = 'Please select a bank account for this transfer.';
             return;
           }
 
@@ -749,7 +772,7 @@ export default {
 .modal-container.modal-xl {
   display: flex;
   flex-direction: column;
-  max-height: 85vh;
+  max-height: calc(100vh - 2rem);
 }
 
 .modal-body {
@@ -762,7 +785,6 @@ export default {
   flex-shrink: 0;
   padding: 0.875rem 1.5rem;
   border-top: 1px solid #e2e8f0;
-  background: #fff;
 }
 
 .payment-method-overlay {
@@ -771,6 +793,9 @@ export default {
 
 .payment-method-modal {
   max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 2rem);
 }
 
 .amount-paid-modal {

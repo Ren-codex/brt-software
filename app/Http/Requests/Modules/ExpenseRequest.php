@@ -22,11 +22,13 @@ class ExpenseRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'fund_id'      => 'nullable|integer|exists:petty_cash_funds,id',
             'expense_type' => 'required|in:operational,utilities,supplies,transportation,maintenance,others',
-            'amount' => 'required|numeric|min:0',
+            'amount'       => 'required|numeric|min:0',
             'expense_date' => 'required|date',
-            'description' => 'nullable|string|max:1000',
-            'status' => 'nullable|in:pending,approved,rejected,released',
+            'description'  => 'nullable|string|max:1000',
+            'status'       => 'nullable|in:pending,approved,rejected,released,recorded,submitted,reimbursed,voided',
+            'receipt'      => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ];
     }
 }
