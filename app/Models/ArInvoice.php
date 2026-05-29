@@ -14,6 +14,7 @@ class ArInvoice extends Model
         'status_id',
         'invoice_number',
         'invoice_date',
+        'due_date',
         'amount_paid',
         'balance_due',
         'total_discount',
@@ -22,6 +23,7 @@ class ArInvoice extends Model
 
     protected $casts = [
         'invoice_date' => 'date',
+        'due_date' => 'date',
         'amount_paid' => 'decimal:2',
         'balance_due' => 'decimal:2',
         'total_discount' => 'decimal:2',

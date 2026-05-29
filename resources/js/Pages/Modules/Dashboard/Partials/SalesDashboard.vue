@@ -1,7 +1,7 @@
 <template>
     <div class="dashboard-content">
         <div class="stats-grid">
-            <div v-for="stat in salesStats" :key="stat.label" class="stat-card">
+            <div v-for="stat in salesStats" :key="stat.label" class="stat-card animate-on-scroll">
                 <div class="stat-icon" :style="{ background: stat.iconBg }">
                     <i :class="stat.icon" :style="{ color: stat.iconColor }"></i>
                 </div>
@@ -119,6 +119,13 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <tr v-if="recentTransactions.length === 0">
+                            <td colspan="7" class="empty-table-state">
+                                <i class="bx bx-receipt"></i>
+                                <p>No recent transactions</p>
+                                <span>Sales will appear here once completed</span>
+                            </td>
+                        </tr>
                         <tr v-for="t in recentTransactions" :key="t.id">
                             <td><span class="receipt-num">#{{ t.receipt_number }}</span></td>
                             <td>{{ t.customer_name }}</td>
@@ -169,6 +176,20 @@ export default {
             default: () => []
         }
     },
+    mounted() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, i * 80);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        this.$el.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+    },
     methods: {
         formatNumber(val) {
             if (!val && val !== 0) return '0';
@@ -196,6 +217,30 @@ export default {
     margin-bottom: 2rem;
 }
 
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.animate-on-scroll.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-on-scroll {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}
+
 .stat-card {
     background: white;
     padding: 1.5rem;
@@ -204,6 +249,13 @@ export default {
     align-items: center;
     gap: 1rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    cursor: default;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
 }
 
 .stat-icon {
@@ -515,6 +567,31 @@ export default {
 .status-badge.completed {
     background: #e6f9ed;
     color: #10b981;
+}
+
+.empty-table-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #94a3b8;
+}
+
+.empty-table-state i {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #cbd5e1;
+}
+
+.empty-table-state p {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0 0 0.25rem;
+}
+
+.empty-table-state span {
+    font-size: 0.8rem;
+    color: #94a3b8;
 }
 
 @media (max-width: 1200px) {

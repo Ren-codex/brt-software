@@ -1,7 +1,7 @@
 <template>
     <div class="dashboard-content">
         <div class="health-cards">
-            <div v-for="stat in inventoryStats" :key="stat.label" class="health-card" :class="stat.cardClass">
+            <div v-for="stat in inventoryStats" :key="stat.label" class="health-card animate-on-scroll" :class="stat.cardClass">
                 <div class="health-icon" :style="{ background: stat.iconBg }">
                     <i :class="stat.icon"></i>
                 </div>
@@ -69,7 +69,12 @@
                     <button class="btn-outline-modern">Filter</button>
                 </div>
             </div>
-            <div class="alert-grid">
+            <div v-if="lowStockItems.length === 0" class="empty-grid-state">
+                <i class="bx bx-check-shield"></i>
+                <p>All stock levels are healthy</p>
+                <span>No items require immediate attention</span>
+            </div>
+            <div class="alert-grid" v-else>
                 <div v-for="item in lowStockItems" :key="item.id" class="alert-item-card" :class="getAlertClass(item)">
                     <div class="alert-item-header">
                         <span class="product-code">{{ item.code }}</span>
@@ -129,6 +134,18 @@ export default {
             default: () => []
         }
     },
+    mounted() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => entry.target.classList.add('visible'), i * 80);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        this.$el.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+    },
     methods: {
         getStockStatus(item) {
             if (item.current_stock <= 0) return 'Out';
@@ -155,6 +172,50 @@ export default {
 </script>
 
 <style scoped>
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.animate-on-scroll.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-on-scroll {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}
+
+.empty-grid-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #94a3b8;
+}
+
+.empty-grid-state i {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #a7f3d0;
+}
+
+.empty-grid-state p {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0 0 0.25rem;
+}
+
+.empty-grid-state span {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
 .health-cards {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -170,6 +231,12 @@ export default {
     align-items: center;
     gap: 1rem;
     border-left: 4px solid;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.health-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
 }
 
 .health-blue { border-color: #3b82f6; }
