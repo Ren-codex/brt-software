@@ -2,18 +2,20 @@
 
 namespace App\Services\Modules;
 
-use App\Models\InventoryStocks;
 use App\Models\InventoryAdjustment;
+use App\Models\InventoryStocks;
 use App\Models\Product;
-use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class InventoryService
 {
+    public function __construct(protected NotificationService $notificationService) {}
+
     /**
      * Get the current stock quantity for a product.
      *
-     * @param int $productId
-     * @param string|null $batchCode
+     * @param  int  $productId
+     * @param  string|null  $batchCode
      * @return int
      */
     public function getCurrentStock($productId, $batchCode = null)
@@ -32,9 +34,9 @@ class InventoryService
     /**
      * Check if there is sufficient stock for a product.
      *
-     * @param int $productId
-     * @param int $quantity
-     * @param string|null $batchCode
+     * @param  int  $productId
+     * @param  int  $quantity
+     * @param  string|null  $batchCode
      * @return bool
      */
     public function hasSufficientStock($productId, $quantity, $batchCode = null)
@@ -45,14 +47,16 @@ class InventoryService
     /**
      * Deduct stock from inventory using FIFO method.
      *
-     * @param int $productId
-     * @param int $quantity
-     * @param string $reason
-     * @param string|null $batchCode
+     * @param  int  $productId
+     * @param  int  $quantity
+     * @param  string  $reason
+     * @param  string|null  $batchCode
+     *
      * @throws \Exception
      */
     public function deductStock($productId, $quantity, $reason, $batchCode = null)
     {
+        $previousTotal = (int) $this->getCurrentStock($productId, $batchCode);
         $remainingQuantity = $quantity;
 
         // Get inventory stocks for the product, optionally filtered by batch_code
@@ -96,15 +100,17 @@ class InventoryService
         if ($remainingQuantity > 0) {
             throw new \Exception('Insufficient stock to deduct the requested quantity.');
         }
+
+        $this->notificationService->checkAndNotifyLowStock($productId, $previousTotal);
     }
 
     /**
      * Add stock to inventory using LIFO method (add to the most recent stock).
      *
-     * @param int $productId
-     * @param int $quantity
-     * @param string $reason
-     * @param string|null $batchCode
+     * @param  int  $productId
+     * @param  int  $quantity
+     * @param  string  $reason
+     * @param  string|null  $batchCode
      */
     public function addStock($productId, $quantity, $reason, $batchCode = null)
     {
@@ -145,15 +151,17 @@ class InventoryService
     /**
      * Record and apply a loss/damage stock deduction.
      *
-     * @param int $productId
-     * @param int $quantity
-     * @param string $reason
-     * @param string|null $batchCode
-     * @param string $type
+     * @param  int  $productId
+     * @param  int  $quantity
+     * @param  string  $reason
+     * @param  string|null  $batchCode
+     * @param  string  $type
+     *
      * @throws \Exception
      */
     public function recordLossOrDamage($productId, $quantity, $reason, $batchCode = null, $type = 'loss')
     {
+        $previousTotal = (int) $this->getCurrentStock($productId, $batchCode);
         $remainingQuantity = (int) $quantity;
 
         $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
@@ -197,5 +205,7 @@ class InventoryService
         if ($remainingQuantity > 0) {
             throw new \Exception('Insufficient stock to classify requested quantity as loss/damaged.');
         }
+
+        $this->notificationService->checkAndNotifyLowStock($productId, $previousTotal);
     }
 }
