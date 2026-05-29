@@ -35,6 +35,10 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     // Make revenue reports available to all authenticated users (not just administrators)
     Route::get('/api/revenue-reports', [App\Http\Controllers\Modules\RevenueReportController::class, 'index']);
 
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::patch('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead']);
+    Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead']);
+
     Route::middleware(['role:Administrator,Top Management,Area Business Manager,Super Admin'])->group(function () {
         Route::post('/expenses/budgets', [App\Http\Controllers\Modules\ExpenseController::class, 'storeBudget']);
         Route::delete('/expenses/budgets/{id}', [App\Http\Controllers\Modules\ExpenseController::class, 'destroyBudget']);
