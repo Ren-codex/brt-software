@@ -14,8 +14,9 @@ class FundResource extends JsonResource
             'name'          => $this->name,
             'gl_code'       => $this->gl_code,
             'balance'       => (float) $this->balance,
-            'weekly_budget' => $this->weekly_budget ? (float) $this->weekly_budget : null,
-            'is_active'     => (bool) $this->is_active,
+            'weekly_budget'         => $this->weekly_budget ? (float) $this->weekly_budget : null,
+            'low_balance_threshold' => $this->low_balance_threshold ? (float) $this->low_balance_threshold : null,
+            'is_active'             => (bool) $this->is_active,
             'created_at'    => $this->created_at,
         ];
     }

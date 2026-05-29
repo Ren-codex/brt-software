@@ -24,8 +24,9 @@ class FundClass
             'name'          => $request->name,
             'gl_code'       => $request->gl_code,
             'balance'       => 0,
-            'weekly_budget' => $request->weekly_budget ?? null,
-            'is_active'     => true,
+            'weekly_budget'         => $request->weekly_budget ?? null,
+            'low_balance_threshold' => $request->low_balance_threshold ?? null,
+            'is_active'             => true,
             'created_by_id' => $userId ?: auth()->id(),
         ]);
 
@@ -40,9 +41,10 @@ class FundClass
     {
         $data = PettyCashFund::findOrFail($request->id);
         $data->update([
-            'name'          => $request->name,
-            'gl_code'       => $request->gl_code,
-            'weekly_budget' => $request->weekly_budget ?? null,
+            'name'                  => $request->name,
+            'gl_code'               => $request->gl_code,
+            'weekly_budget'         => $request->weekly_budget ?? null,
+            'low_balance_threshold' => $request->low_balance_threshold ?? null,
         ]);
 
         return [
