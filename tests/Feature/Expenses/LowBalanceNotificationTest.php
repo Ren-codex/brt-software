@@ -18,7 +18,9 @@ class LowBalanceNotificationTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $topManagement;
+
     private User $regularUser;
 
     protected function setUp(): void
@@ -26,11 +28,11 @@ class LowBalanceNotificationTest extends TestCase
         parent::setUp();
 
         $adminRole = ListRole::create(['name' => 'Administrator', 'type' => 'role', 'definition' => '', 'is_active' => true]);
-        $tmRole    = ListRole::create(['name' => 'Top Management', 'type' => 'role', 'definition' => '', 'is_active' => true]);
+        $tmRole = ListRole::create(['name' => 'Top Management', 'type' => 'role', 'definition' => '', 'is_active' => true]);
 
-        $this->admin         = User::factory()->create();
+        $this->admin = User::factory()->create();
         $this->topManagement = User::factory()->create();
-        $this->regularUser   = User::factory()->create();
+        $this->regularUser = User::factory()->create();
 
         $this->admin->roles()->attach($adminRole->id, ['added_by_id' => $this->admin->id]);
         $this->topManagement->roles()->attach($tmRole->id, ['added_by_id' => $this->admin->id]);
@@ -40,9 +42,10 @@ class LowBalanceNotificationTest extends TestCase
     private function makeFund(array $attrs = []): PettyCashFund
     {
         static $seq = 0;
+
         return PettyCashFund::create(array_merge([
-            'name'    => 'Test Fund',
-            'gl_code' => 'PCF-LB-' . (++$seq),
+            'name' => 'Test Fund',
+            'gl_code' => 'PCF-LB-'.(++$seq),
             'balance' => 1000,
             'low_balance_threshold' => 500,
         ], $attrs));
@@ -52,12 +55,12 @@ class LowBalanceNotificationTest extends TestCase
     {
         $this->actingAs($this->admin);
         $request = Request::create('/expenses', 'POST', [
-            'fund_id'      => $fund->id,
+            'fund_id' => $fund->id,
             'expense_type' => 'operational',
-            'amount'       => $amount,
+            'amount' => $amount,
             'expense_date' => now()->toDateString(),
-            'description'  => 'Test expense',
-            'status'       => 'recorded',
+            'description' => 'Test expense',
+            'status' => 'recorded',
         ]);
         app(ExpenseClass::class)->save($request, $this->admin->id);
     }
@@ -132,7 +135,7 @@ class LowBalanceNotificationTest extends TestCase
     {
         Notification::fake();
 
-        $fund    = $this->makeFund(['balance' => 600, 'low_balance_threshold' => 500]);
+        $fund = $this->makeFund(['balance' => 600, 'low_balance_threshold' => 500]);
         $service = app(\App\Services\NotificationService::class);
 
         $service->checkAndNotifyLowBalance($fund, 600.0, 400.0);
@@ -145,11 +148,40 @@ class LowBalanceNotificationTest extends TestCase
     {
         Notification::fake();
 
-        $fund    = $this->makeFund(['balance' => 300, 'low_balance_threshold' => 500]);
+        $fund = $this->makeFund(['balance' => 300, 'low_balance_threshold' => 500]);
         $service = app(\App\Services\NotificationService::class);
 
         $service->checkAndNotifyLowBalance($fund, 300.0, 200.0);
 
         Notification::assertNothingSent();
+    }
+
+    public function test_notification_fired_when_expense_update_increases_amount_crossing_threshold(): void
+    {
+        Notification::fake();
+
+        // Fund at 550, threshold 500. Existing expense was 50.
+        $fund = $this->makeFund(['balance' => 550, 'low_balance_threshold' => 500]);
+        $expense = Expense::create([
+            'fund_id' => $fund->id,
+            'expense_type' => 'operational',
+            'amount' => 50.0,
+            'expense_date' => now()->toDateString(),
+            'status' => 'recorded',
+            'added_by_id' => $this->admin->id,
+        ]);
+
+        // Increase amount by 200 — fund goes from 550 to 350 (crosses 500 threshold)
+        $this->actingAs($this->admin);
+        $request = Request::create('/expenses/'.$expense->id, 'PATCH', [
+            'id' => $expense->id,
+            'expense_type' => 'operational',
+            'amount' => 250.0,
+            'expense_date' => now()->toDateString(),
+            'status' => 'recorded',
+        ]);
+        app(\App\Services\Modules\ExpenseClass::class)->update($request);
+
+        Notification::assertSentTo($this->admin, LowBalanceFundNotification::class);
     }
 }
