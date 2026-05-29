@@ -1,7 +1,7 @@
 <template>
     <div class="dashboard-content">
         <div class="team-stats">
-            <div v-for="stat in employeeStats" :key="stat.label" class="team-stat-card">
+            <div v-for="stat in employeeStats" :key="stat.label" class="team-stat-card animate-on-scroll">
                 <div class="stat-main">
                     <span class="stat-main-label">{{ stat.label }}</span>
                     <span class="stat-main-value">{{ stat.value }}</span>
@@ -62,6 +62,10 @@
                     <span class="badge-new">{{ recentEmployees.length }} records</span>
                 </div>
                 <div class="attendance-list">
+                    <div v-if="recentEmployees.length === 0" class="empty-list-state">
+                        <i class="bx bx-user"></i>
+                        <p>No recent employees</p>
+                    </div>
                     <div v-for="employee in recentEmployees" :key="employee.id" class="attendance-item">
                         <div class="employee-avatar">
                             {{ getInitials(employee.employee_name) }}
@@ -84,6 +88,10 @@
                     <span class="badge-new">{{ payrollGroups.length }} groups</span>
                 </div>
                 <div class="leaves-list">
+                    <div v-if="payrollGroups.length === 0" class="empty-list-state">
+                        <i class="bx bx-group"></i>
+                        <p>No payroll groups yet</p>
+                    </div>
                     <div v-for="group in payrollGroups" :key="group.id" class="leave-item">
                         <div class="leave-date">
                             <span class="month">Team</span>
@@ -133,6 +141,18 @@ export default {
             default: () => []
         }
     },
+    mounted() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => entry.target.classList.add('visible'), i * 80);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        this.$el.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+    },
     methods: {
         getInitials(name) {
             return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -142,6 +162,45 @@ export default {
 </script>
 
 <style scoped>
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.animate-on-scroll.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-on-scroll {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}
+
+.empty-list-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #94a3b8;
+}
+
+.empty-list-state i {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #cbd5e1;
+}
+
+.empty-list-state p {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0;
+}
+
 .trend-up { color: #10b981; background: #e6f9ed; }
 .trend-down { color: #ef4444; background: #fee2e2; }
 .trend-neutral { color: #6b7280; background: #f3f4f6; }
@@ -198,6 +257,12 @@ export default {
     padding: 1.5rem;
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.team-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
 }
 
 .stat-main {
