@@ -127,4 +127,29 @@ class LowBalanceNotificationTest extends TestCase
         Notification::assertSentTo($this->admin, LowBalanceFundNotification::class);
         Notification::assertSentTo($this->topManagement, LowBalanceFundNotification::class);
     }
+
+    public function test_check_and_notify_low_balance_fires_notification_on_threshold_crossing(): void
+    {
+        Notification::fake();
+
+        $fund    = $this->makeFund(['balance' => 600, 'low_balance_threshold' => 500]);
+        $service = app(\App\Services\NotificationService::class);
+
+        $service->checkAndNotifyLowBalance($fund, 600.0, 400.0);
+
+        Notification::assertSentTo($this->admin, LowBalanceFundNotification::class);
+        Notification::assertSentTo($this->topManagement, LowBalanceFundNotification::class);
+    }
+
+    public function test_check_and_notify_low_balance_does_not_fire_when_already_below(): void
+    {
+        Notification::fake();
+
+        $fund    = $this->makeFund(['balance' => 300, 'low_balance_threshold' => 500]);
+        $service = app(\App\Services\NotificationService::class);
+
+        $service->checkAndNotifyLowBalance($fund, 300.0, 200.0);
+
+        Notification::assertNothingSent();
+    }
 }
