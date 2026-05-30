@@ -232,7 +232,7 @@
                             </div>
                             <div class="px-3 pb-3">
                                 <Pagination
-                                    v-if="meta && meta.links"
+                                    v-if="meta && meta.last_page > 1"
                                     :lists="lists.length"
                                     :links="links"
                                     :pagination="meta"
