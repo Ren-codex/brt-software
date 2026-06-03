@@ -2,6 +2,7 @@
 
 namespace App\Services\System\PurchaseOrder;
 
+use App\Http\Resources\System\PurchaseOrder\StockReturnResource;
 use App\Models\InventoryStocks;
 use App\Models\ListStatus;
 use App\Models\PurchaseOrder;
@@ -10,7 +11,8 @@ use App\Models\PurchaseOrderLog;
 use App\Models\StockReturn;
 use App\Models\StockReturnItem;
 use App\Models\StockReturnLog;
-use App\Http\Resources\System\PurchaseOrder\StockReturnResource;
+use App\Services\Modules\InventoryService;
+use App\Services\NotificationService;
 use App\Services\SeriesService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,10 +22,18 @@ class StockReturnClass
 {
     protected $series_service;
 
+    protected $notificationService;
+
+    protected $inventoryService;
+
     public function __construct(
         SeriesService $series_service,
+        NotificationService $notificationService,
+        InventoryService $inventoryService,
     ) {
         $this->series_service = $series_service;
+        $this->notificationService = $notificationService;
+        $this->inventoryService = $inventoryService;
     }
 
     public function list($request)
@@ -66,7 +76,7 @@ class StockReturnClass
         $data = DB::transaction(function () use ($request) {
             $requestedItems = collect($request->items ?? [])
                 ->filter(function ($item) {
-                    return !empty($item['po_item_id']) && !empty($item['quantity']);
+                    return ! empty($item['po_item_id']) && ! empty($item['quantity']);
                 })
                 ->values();
 
@@ -109,7 +119,7 @@ class StockReturnClass
                 $poItem = $poItems->get((int) $requestItem['po_item_id']);
                 $returnQty = (int) $requestItem['quantity'];
 
-                if (!$poItem || $returnQty < 1) {
+                if (! $poItem || $returnQty < 1) {
                     $this->fail('Invalid return quantity.');
                 }
 
@@ -197,7 +207,7 @@ class StockReturnClass
             $disapprovedStatusId = ListStatus::where('slug', 'disapproved')->first()?->id;
             $targetStatus = strtolower((string) $request->status);
 
-            if (!$approvedStatusId || !$disapprovedStatusId) {
+            if (! $approvedStatusId || ! $disapprovedStatusId) {
                 $this->fail('Approved status is not configured.');
             }
 
@@ -211,7 +221,7 @@ class StockReturnClass
             foreach ($stockReturn->items as $item) {
                 if ($targetStatus === 'approved') {
                     $poItem = PurchaseOrderItem::lockForUpdate()->find($item->po_item_id);
-                    if (!$poItem) {
+                    if (! $poItem) {
                         $this->fail('One or more purchase order items are invalid.');
                     }
 
@@ -239,6 +249,8 @@ class StockReturnClass
                         $this->fail("Return quantity exceeds available inventory stock for {$productName}.");
                     }
 
+                    $previousTotal = (int) $this->inventoryService->getCurrentStock($poItem->product_id);
+
                     $remainingQty = $returnQty;
                     foreach ($inventoryStocks as $inventoryStock) {
                         if ($remainingQty <= 0) {
@@ -253,6 +265,7 @@ class StockReturnClass
                     }
 
                     $poItem->decrement('received_quantity', $returnQty);
+                    $this->notificationService->checkAndNotifyLowStock($poItem->product_id, $previousTotal);
                 }
 
                 $item->status_id = $targetStatus === 'approved' ? $pendingStatusId : $targetStatusId;
@@ -315,7 +328,7 @@ class StockReturnClass
                 ->findOrFail($stockReturnId);
 
             $approvedStatusId = $this->getStatusIdBySlug('approved');
-            if (!$approvedStatusId) {
+            if (! $approvedStatusId) {
                 $this->fail('Approved status is not configured.');
             }
 
@@ -344,7 +357,7 @@ class StockReturnClass
             $pendingStatusId = $this->getStatusIdBySlug('pending');
             $replacedStatusId = $this->getStatusIdBySlug('replaced');
             $lossStatusId = $this->getStatusIdBySlug('loss');
-            if (!$pendingStatusId || !$replacedStatusId || !$lossStatusId) {
+            if (! $pendingStatusId || ! $replacedStatusId || ! $lossStatusId) {
                 $this->fail('Receive statuses are not configured.');
             }
             if ($actualReceivedQty === 0) {
@@ -360,7 +373,7 @@ class StockReturnClass
 
             if ($replacedQty > 0) {
                 $poItem = PurchaseOrderItem::lockForUpdate()->find($stockReturnItem->po_item_id);
-                if (!$poItem) {
+                if (! $poItem) {
                     $this->fail('One or more purchase order items are invalid.');
                 }
 
@@ -377,7 +390,7 @@ class StockReturnClass
                     ->lockForUpdate()
                     ->first();
 
-                if (!$inventoryStock) {
+                if (! $inventoryStock) {
                     $this->fail('No inventory stock record found for this purchase order item.');
                 }
 
@@ -400,16 +413,16 @@ class StockReturnClass
                 'user_id' => Auth::id(),
                 'action' => 'Item Received',
                 'remarks' => "Received return item {$productName}: replaced {$replacedQty}, loss {$lossQty}, total {$actualReceivedQty}."
-                    . ($remarks !== '' ? " {$remarks}" : ''),
+                    .($remarks !== '' ? " {$remarks}" : ''),
             ]);
 
             $hasUnprocessedItems = StockReturnItem::where('stock_return_id', $stockReturn->id)
                 ->whereNotIn('status_id', [$replacedStatusId, $lossStatusId])
                 ->exists();
 
-            if (!$hasUnprocessedItems) {
+            if (! $hasUnprocessedItems) {
                 $completedStatusId = $this->getStatusIdBySlug('completed');
-                if (!$completedStatusId) {
+                if (! $completedStatusId) {
                     $this->fail('Completed status is not configured.');
                 }
 

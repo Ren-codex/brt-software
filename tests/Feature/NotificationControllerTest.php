@@ -52,7 +52,7 @@ class NotificationControllerTest extends TestCase
 
         $this->patchJson("/notifications/{$n->id}/read")
             ->assertOk()
-            ->assertJson(['success' => true]);
+            ->assertJson(['status' => true]);
 
         $this->assertNotNull($n->fresh()->read_at);
     }
@@ -64,7 +64,7 @@ class NotificationControllerTest extends TestCase
 
         $this->patchJson('/notifications/read-all')
             ->assertOk()
-            ->assertJson(['success' => true]);
+            ->assertJson(['status' => true]);
 
         $this->assertEquals(0, $this->user->unreadNotifications()->count());
     }

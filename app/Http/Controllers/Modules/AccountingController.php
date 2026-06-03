@@ -510,7 +510,7 @@ class AccountingController extends Controller
 
         Account::create($data);
 
-        return back()->with('success', 'Account created successfully.');
+        return response()->json(['message' => 'Account created successfully.']);
     }
 
     public function updateAccount(Request $request, int $id)
@@ -526,7 +526,7 @@ class AccountingController extends Controller
 
         $account->update($data);
 
-        return back()->with('success', 'Account updated successfully.');
+        return response()->json(['message' => 'Account updated successfully.']);
     }
 
     public function toggleAccount(int $id)
@@ -534,7 +534,15 @@ class AccountingController extends Controller
         $account = Account::findOrFail($id);
         $account->update(['is_active' => !$account->is_active]);
 
-        return back()->with('success', 'Account status updated.');
+        return response()->json(['message' => 'Account status updated.']);
+    }
+
+    public function destroyAccount(int $id)
+    {
+        $account = Account::findOrFail($id);
+        $account->delete();
+
+        return response()->json(['message' => 'Account deleted.']);
     }
 
     public function settings()
@@ -586,8 +594,10 @@ class AccountingController extends Controller
                 $this->makeMetricCard('Credit Volume', $this->formatCurrency($balances->sum('credit_total')), 'Total credits across all accounts.', 'ri-arrow-right-up-line'),
             ],
             'accountBalances' => $balances->values(),
-            'ledgerLines'     => $ledgerData['lines'],
+            'ledgerLines'     => $ledgerData['data'],
             'ledgerStats'     => $ledgerData['stats'],
+            'ledgerMeta'      => $ledgerData['meta'],
+            'ledgerLinks'     => $ledgerData['links'],
             'filters'         => [
                 'date_from'     => $dateFrom,
                 'date_to'       => $dateTo,
@@ -652,7 +662,9 @@ class AccountingController extends Controller
         $totalDebits  = (float) $statsRow->total_debits;
         $totalCredits = (float) $statsRow->total_credits;
 
-        $lines = (clone $base)
+        $perPage = max(1, min(100, (int) ($request->per_page ?? 10)));
+
+        $paginator = (clone $base)
             ->select([
                 'jel.id',
                 'je.journal_number',
@@ -672,35 +684,52 @@ class AccountingController extends Controller
             ->orderBy('je.entry_date')
             ->orderBy('je.id')
             ->orderBy('jel.id')
-            ->limit(200)
-            ->get();
+            ->paginate($perPage);
 
-        $sourceMap = $this->batchResolveSourceRefs(collect($lines));
+        $sourceMap = $this->batchResolveSourceRefs($paginator->getCollection());
 
-        $mapped = $lines->map(fn ($line) => [
-            'id'            => $line->id,
-            'journal_number'=> $line->journal_number,
-            'entry_date'    => $line->entry_date,
-            'post_date'     => $line->posted_at
+        $paginator->through(fn ($line) => [
+            'id'             => $line->id,
+            'journal_number' => $line->journal_number,
+            'entry_date'     => $line->entry_date,
+            'post_date'      => $line->posted_at
                 ? Carbon::parse($line->posted_at)->format('Y-m-d')
                 : $line->entry_date,
-            'account_code'  => $line->account_code,
-            'account_name'  => $line->account_name,
-            'account_type'  => $line->account_type,
-            'entry_type'    => Str::of($line->entry_type)->replace('_', ' ')->title()->value(),
-            'source_label'  => $this->resolveSourceLabel($line->entry_type),
-            'reference'     => ($line->source_type && $line->source_id)
+            'account_code'   => $line->account_code,
+            'account_name'   => $line->account_name,
+            'account_type'   => $line->account_type,
+            'entry_type'     => Str::of($line->entry_type)->replace('_', ' ')->title()->value(),
+            'source_label'   => $this->resolveSourceLabel($line->entry_type),
+            'reference'      => ($line->source_type && $line->source_id)
                 ? ($sourceMap[$line->source_type . ':' . $line->source_id] ?? null)
                 : null,
-            'description'   => $line->description ?: '—',
-            'line_type'     => $line->line_type,
-            'debit'         => $line->line_type === 'debit'  ? $this->formatCurrency($line->amount) : null,
-            'credit'        => $line->line_type === 'credit' ? $this->formatCurrency($line->amount) : null,
-            'posted_by'     => $line->posted_by ?: 'System',
-        ])->values();
+            'description'    => $line->description ?: '—',
+            'line_type'      => $line->line_type,
+            'debit'          => $line->line_type === 'debit'  ? $this->formatCurrency($line->amount) : null,
+            'credit'         => $line->line_type === 'credit' ? $this->formatCurrency($line->amount) : null,
+            'posted_by'      => $line->posted_by ?: 'System',
+        ]);
+
+        $paged = $paginator->toArray();
 
         return [
-            'lines' => $mapped,
+            'data'  => $paged['data'],
+            'meta'  => [
+                'current_page' => $paged['current_page'],
+                'from'         => $paged['from'],
+                'last_page'    => $paged['last_page'],
+                'links'        => $paged['links'],
+                'path'         => $paged['path'],
+                'per_page'     => $paged['per_page'],
+                'to'           => $paged['to'],
+                'total'        => $paged['total'],
+            ],
+            'links' => [
+                'first' => $paged['first_page_url'],
+                'last'  => $paged['last_page_url'],
+                'prev'  => $paged['prev_page_url'],
+                'next'  => $paged['next_page_url'],
+            ],
             'stats' => [
                 'total_debits'  => $this->formatCurrency($totalDebits),
                 'total_credits' => $this->formatCurrency($totalCredits),
@@ -1720,7 +1749,7 @@ class AccountingController extends Controller
         // Build source ref map in at most one query per distinct source type on this page.
         $refMap = $this->batchResolveSourceRefs($paginator->getCollection());
 
-        return $paginator->through(function (JournalEntry $entry) use ($hasReversalColumns, $refMap) {
+        $paginator->through(function (JournalEntry $entry) use ($hasReversalColumns, $refMap) {
             return [
                 'id' => $entry->id,
                 'journal_number' => $entry->journal_number,
@@ -1756,6 +1785,28 @@ class AccountingController extends Controller
                 ])->values(),
             ];
         });
+
+        $paged = $paginator->toArray();
+
+        return response()->json([
+            'data'  => $paged['data'],
+            'meta'  => [
+                'current_page' => $paged['current_page'],
+                'from'         => $paged['from'],
+                'last_page'    => $paged['last_page'],
+                'links'        => $paged['links'],
+                'path'         => $paged['path'],
+                'per_page'     => $paged['per_page'],
+                'to'           => $paged['to'],
+                'total'        => $paged['total'],
+            ],
+            'links' => [
+                'first' => $paged['first_page_url'],
+                'last'  => $paged['last_page_url'],
+                'prev'  => $paged['prev_page_url'],
+                'next'  => $paged['next_page_url'],
+            ],
+        ]);
     }
 
     private function batchResolveSourceRefs(Collection $entries): array

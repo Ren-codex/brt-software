@@ -30,6 +30,11 @@ class LowBalanceFundNotification extends Notification implements ShouldBroadcast
         ];
     }
 
+    public function broadcastType(): string
+    {
+        return 'low_balance';
+    }
+
     public function toBroadcast($notifiable): BroadcastMessage
     {
         return new BroadcastMessage($this->toDatabase($notifiable));

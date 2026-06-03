@@ -2,17 +2,20 @@
 
 namespace App\Services\Libraries;
 
+use App\Http\Resources\Libraries\FundResource;
 use App\Models\PettyCashFund;
 use App\Models\PettyCashTransaction;
-use App\Http\Resources\Libraries\FundResource;
+use App\Services\NotificationService;
 use Illuminate\Validation\ValidationException;
 
 class FundClass
 {
+    public function __construct(protected NotificationService $notificationService) {}
+
     public function lists($request)
     {
         return FundResource::collection(
-            PettyCashFund::when($request->keyword, fn($q, $kw) => $q->where('name', 'LIKE', "%{$kw}%"))
+            PettyCashFund::when($request->keyword, fn ($q, $kw) => $q->where('name', 'LIKE', "%{$kw}%"))
                 ->orderBy('name')
                 ->paginate($request->count ?? 15)
         );
@@ -21,19 +24,19 @@ class FundClass
     public function save($request, $userId = null)
     {
         $data = PettyCashFund::create([
-            'name'          => $request->name,
-            'gl_code'       => $request->gl_code,
-            'balance'       => 0,
-            'weekly_budget'         => $request->weekly_budget ?? null,
+            'name' => $request->name,
+            'gl_code' => $request->gl_code,
+            'balance' => 0,
+            'weekly_budget' => $request->weekly_budget ?? null,
             'low_balance_threshold' => $request->low_balance_threshold ?? null,
-            'is_active'             => true,
+            'is_active' => true,
             'created_by_id' => $userId ?: auth()->id(),
         ]);
 
         return [
-            'data'    => new FundResource($data),
+            'data' => new FundResource($data),
             'message' => 'Fund created successfully!',
-            'info'    => "Petty cash fund '{$data->name}' has been created.",
+            'info' => "Petty cash fund '{$data->name}' has been created.",
         ];
     }
 
@@ -41,16 +44,16 @@ class FundClass
     {
         $data = PettyCashFund::findOrFail($request->id);
         $data->update([
-            'name'                  => $request->name,
-            'gl_code'               => $request->gl_code,
-            'weekly_budget'         => $request->weekly_budget ?? null,
+            'name' => $request->name,
+            'gl_code' => $request->gl_code,
+            'weekly_budget' => $request->weekly_budget ?? null,
             'low_balance_threshold' => $request->low_balance_threshold ?? null,
         ]);
 
         return [
-            'data'    => new FundResource($data->fresh()),
+            'data' => new FundResource($data->fresh()),
             'message' => 'Fund updated successfully!',
-            'info'    => "Petty cash fund '{$data->name}' has been updated.",
+            'info' => "Petty cash fund '{$data->name}' has been updated.",
         ];
     }
 
@@ -67,33 +70,36 @@ class FundClass
         $fund = PettyCashFund::findOrFail($id);
 
         PettyCashTransaction::create([
-            'fund_id'          => $fund->id,
-            'type'             => 'replenishment',
-            'amount'           => $amount,
+            'fund_id' => $fund->id,
+            'type' => 'replenishment',
+            'amount' => $amount,
             'transaction_date' => $request->date ?? now()->toDateString(),
-            'description'      => $request->description ?? null,
-            'transaction_no'   => 'TU-' . strtoupper(uniqid()),
-            'created_by_id'    => auth()->id(),
+            'description' => $request->description ?? null,
+            'transaction_no' => 'TU-'.strtoupper(uniqid()),
+            'created_by_id' => auth()->id(),
         ]);
 
         $fund->increment('balance', $amount);
 
         return [
-            'data'    => new FundResource($fund->fresh()),
+            'data' => new FundResource($fund->fresh()),
             'message' => 'Fund topped up successfully!',
-            'info'    => "₱" . number_format($amount, 2) . " added to '{$fund->name}'.",
+            'info' => '₱'.number_format($amount, 2)." added to '{$fund->name}'.",
         ];
     }
 
     public function adjustBalance($id, $request)
     {
         $fund = PettyCashFund::findOrFail($id);
-        $fund->update(['balance' => (float) $request->balance]);
+        $previousBalance = (float) $fund->balance;
+        $newBalance = (float) $request->balance;
+        $fund->update(['balance' => $newBalance]);
+        $this->notificationService->checkAndNotifyLowBalance($fund, $previousBalance, $newBalance);
 
         return [
-            'data'    => new FundResource($fund->fresh()),
+            'data' => new FundResource($fund->fresh()),
             'message' => 'Balance adjusted successfully!',
-            'info'    => "Balance set to ₱" . number_format($fund->balance, 2) . ".",
+            'info' => 'Balance set to ₱'.number_format($fund->balance, 2).'.',
         ];
     }
 
@@ -103,9 +109,9 @@ class FundClass
         $fund->update(['is_active' => $isActive]);
 
         return [
-            'data'    => new FundResource($fund->fresh()),
+            'data' => new FundResource($fund->fresh()),
             'message' => $isActive ? 'Fund activated.' : 'Fund deactivated.',
-            'info'    => "Fund '{$fund->name}' is now " . ($isActive ? 'active' : 'inactive') . ".",
+            'info' => "Fund '{$fund->name}' is now ".($isActive ? 'active' : 'inactive').'.',
         ];
     }
 }

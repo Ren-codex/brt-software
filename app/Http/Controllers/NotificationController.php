@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\NotificationService;
+use App\Traits\HandlesTransaction;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    use HandlesTransaction;
+
+    public function __construct(protected NotificationService $service) {}
+
     public function index(Request $request)
     {
         $user          = $request->user();
@@ -26,20 +32,15 @@ class NotificationController extends Controller
 
     public function markRead(Request $request, $id)
     {
-        $notification = $request->user()
-            ->notifications()
-            ->where('id', $id)
-            ->firstOrFail();
+        $result = $this->handleTransaction(fn() => $this->service->markRead($request, $id));
 
-        $notification->markAsRead();
-
-        return response()->json(['success' => true]);
+        return response()->json($result);
     }
 
     public function markAllRead(Request $request)
     {
-        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+        $result = $this->handleTransaction(fn() => $this->service->markAllRead($request));
 
-        return response()->json(['success' => true]);
+        return response()->json($result);
     }
 }

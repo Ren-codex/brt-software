@@ -97,6 +97,12 @@
                         <option value="inventory">Inventory</option>
                         <option value="manual">Manual</option>
                     </select>
+                    <select v-model="llPerPage" class="ll-source-select" @change="fetchLedgerLines()">
+                        <option :value="10">10 / page</option>
+                        <option :value="25">25 / page</option>
+                        <option :value="50">50 / page</option>
+                        <option :value="100">100 / page</option>
+                    </select>
                     <button class="ll-search-btn" :disabled="llLoading" @click="fetchLedgerLines">
                         <i v-if="llLoading" class="ri-loader-4-line spin me-1"></i>
                         {{ llLoading ? 'Loading…' : 'Search' }}
@@ -163,6 +169,16 @@
                     </table>
                 </div>
 
+                <div class="px-3 pb-3">
+                    <Pagination
+                        v-if="llMeta && llMeta.last_page > 1"
+                        :lists="llLines.length"
+                        :links="llLinks"
+                        :pagination="llMeta"
+                        @fetch="fetchLedgerLines"
+                    />
+                </div>
+
             </div>
         </div>
 
@@ -174,9 +190,11 @@ import axios from "axios";
 import { router } from "@inertiajs/vue3";
 import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
+import Pagination from "@/Shared/Components/Pagination.vue";
 
 export default {
     layout: [MainLayout, AccountingLayout],
+    components: { Pagination },
     props: {
         stats:         { type: Object, default: () => ({}) },
         dataReady:     { type: Boolean, default: false },
@@ -186,6 +204,8 @@ export default {
             type: Object,
             default: () => ({ total_debits: '—', total_credits: '—', is_balanced: true, entry_count: 0, line_count: 0 }),
         },
+        ledgerMeta:    { type: Object, default: () => ({}) },
+        ledgerLinks:   { type: Object, default: () => ({}) },
         accountBalances: { type: Array, default: () => [] },
         filters:       { type: Object, default: () => ({}) },
     },
@@ -195,10 +215,16 @@ export default {
             dateTo:         this.filters?.date_to   || '',
             llLines:        this.ledgerLines,
             llStats:        this.ledgerStats,
+            llMeta:         this.ledgerMeta  || {},
+            llLinks:        this.ledgerLinks || {},
+            llPerPage:      10,
             llSearch:       this.filters?.search        || '',
             llSourceFilter: this.filters?.source_filter || 'all',
             llLoading:      false,
         };
+    },
+    created() {
+        this.fetchLedgerLines();
     },
     methods: {
         applyFilter() {
@@ -215,17 +241,22 @@ export default {
         formatLabel(value) {
             return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         },
-        async fetchLedgerLines() {
+        async fetchLedgerLines(pageUrl) {
             this.llLoading = true;
             try {
-                const params = { option: 'journal_lines' };
+                const url = (typeof pageUrl === 'string' && pageUrl)
+                    ? pageUrl
+                    : '/accounting/general-ledger';
+                const params = { option: 'journal_lines', per_page: this.llPerPage };
                 if (this.dateFrom)                 params.date_from     = this.dateFrom;
                 if (this.dateTo)                   params.date_to       = this.dateTo;
                 if (this.llSearch.trim())           params.search        = this.llSearch.trim();
                 if (this.llSourceFilter !== 'all') params.source_filter = this.llSourceFilter;
-                const { data } = await axios.get('/accounting/general-ledger', { params });
-                this.llLines = data.lines;
-                this.llStats = data.stats;
+                const { data } = await axios.get(url, { params });
+                this.llLines = data.data  || [];
+                this.llStats = data.stats || this.llStats;
+                this.llMeta  = data.meta  || {};
+                this.llLinks = data.links || {};
             } catch {
                 // keep existing data on error
             } finally {
