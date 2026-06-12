@@ -5,7 +5,6 @@
                 <div class="col-md-12 mb-4">
                     <div class="library-card">
                         <div class="library-card-header">
-                            <div class="d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="header-icon">
                                         <i class="ri-shopping-cart-line fs-24"></i>
@@ -25,7 +24,6 @@
                                         Prepare Remittance
                                     </button>
                                 </div>
-                            </div>
                         </div>
 
                         <div class="library-card-body">

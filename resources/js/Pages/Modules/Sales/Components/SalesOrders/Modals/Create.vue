@@ -625,21 +625,29 @@
 
     <div v-if="showCreditVerificationModal" class="modal-overlay active order-review-modal" @click.self="closeCreditVerificationModal">
         <div class="modal-container modal-md" @click.stop>
-            <div class="modal-header bg-primary text-white">
-                <h4 class="mb-0 text-white">
-                    <i class="ri-shield-check-line me-2"></i>
-                    Credit Sales Verification
-                </h4>
-                <button class="close-btn text-white" @click="closeCreditVerificationModal">
+            <div class="modal-header">
+                <div class="modal-header-icon">
+                    <i class="ri-shield-check-line"></i>
+                </div>
+                <div>
+                    <h4 class="mb-0">Credit Sales Verification</h4>
+                    <p class="header-subtitle mb-0">
+                        Step {{ creditStep }} of 2 —
+                        {{ creditStep === 1 ? 'Set payment terms' : 'Verify & confirm' }}
+                    </p>
+                </div>
+                <button class="close-btn ms-auto" @click="closeCreditVerificationModal">
                     <i class="ri-close-line fs-20"></i>
                 </button>
             </div>
-            <div class="modal-body p-4 payment-type-modal-body">
+
+            <!-- Step 1: Credit Terms -->
+            <div v-if="creditStep === 1" class="modal-body p-4 payment-type-modal-body">
                 <div class="payment-success-card text-start">
                     <div class="payment-section-heading payment-section-heading-sm">
-                        <span class="payment-section-kicker">Final Step</span>
-                        <h5>Confirm this credit sale</h5>
-                        <p>Verify this transaction before setting the payment schedule.</p>
+                        <span class="payment-section-kicker">Step 1 of 2</span>
+                        <h5>Set credit terms</h5>
+                        <p>Choose the due date before confirming this sale.</p>
                     </div>
 
                     <div class="credit-verification-summary">
@@ -655,13 +663,67 @@
                             <span>Amount Due</span>
                             <strong>{{ formatCurrency(grandTotal) }}</strong>
                         </div>
-                        <div v-if="isCreditVerificationMatched" class="payment-success-row">
+                    </div>
+
+                    <div class="credit-terms-section mt-3">
+                        <label class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
+                        <div class="credit-preset-btns mb-2">
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 7 }"  @click="setDueDatePreset(7)">Net 7</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 14 }" @click="setDueDatePreset(14)">Net 14</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 30 }" @click="setDueDatePreset(30)">Net 30</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 60 }" @click="setDueDatePreset(60)">Net 60</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 0 }"  @click="setDueDatePreset(0)">Custom</button>
+                        </div>
+                        <div class="input-wrapper">
+                            <i class="ri-calendar-line input-icon"></i>
+                            <input
+                                type="date"
+                                v-model="form.due_date"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.due_date }"
+                                :min="form.order_date"
+                                @change="creditPreset = 0; handleInput('due_date')"
+                            />
+                        </div>
+                        <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date }}</span>
+                        <p v-if="form.due_date" class="credit-due-hint mt-1">
+                            <i class="ri-information-line"></i>
+                            Payment expected by <strong>{{ form.due_date }}</strong>
+                            ({{ dueDateDaysFromOrder }} day{{ dueDateDaysFromOrder === 1 ? '' : 's' }} from order date)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Verify & Confirm -->
+            <div v-if="creditStep === 2" class="modal-body p-4 payment-type-modal-body">
+                <div class="payment-success-card text-start">
+                    <div class="payment-section-heading payment-section-heading-sm">
+                        <span class="payment-section-kicker">Step 2 of 2</span>
+                        <h5>Confirm this credit sale</h5>
+                        <p>Review the details below, then type CREDIT to confirm.</p>
+                    </div>
+
+                    <div class="credit-verification-summary">
+                        <div class="credit-balance-callout" :class="{ 'has-balance': hasCustomerOutstandingBalance }">
+                            <span class="credit-balance-callout-label">Existing Credit Balance</span>
+                            <strong class="credit-balance-callout-value">{{ formatCurrency(customerOutstandingBalance) }}</strong>
+                        </div>
+                        <div class="payment-success-row">
+                            <span>Customer</span>
+                            <strong>{{ selectedCustomer?.name || 'Walk-in Customer' }}</strong>
+                        </div>
+                        <div class="payment-success-row">
+                            <span>Amount Due</span>
+                            <strong>{{ formatCurrency(grandTotal) }}</strong>
+                        </div>
+                        <div class="payment-success-row">
                             <span>Due Date</span>
-                            <strong>{{ form.due_date || 'Not set' }}</strong>
+                            <strong class="text-success">{{ form.due_date }}</strong>
                         </div>
                     </div>
 
-                    <label for="credit_verification_input" class="form-label mt-3">Type <strong>CREDIT</strong> to continue</label>
+                    <label for="credit_verification_input" class="form-label mt-3">Type <strong>CREDIT</strong> to confirm</label>
                     <div class="input-wrapper">
                         <i class="ri-edit-2-line input-icon"></i>
                         <input
@@ -672,42 +734,35 @@
                             :class="{ 'input-error': creditVerificationError }"
                             placeholder="Type CREDIT"
                             @input="creditVerificationError = null"
+                            autocomplete="off"
                         />
                     </div>
                     <span class="error-message" v-if="creditVerificationError">{{ creditVerificationError }}</span>
-
-                    <div v-if="isCreditVerificationMatched" class="payment-detail-card form-group mb-0 mt-3">
-                        <div class="payment-section-heading payment-section-heading-sm">
-                            <span class="payment-section-kicker">Schedule</span>
-                            <h5>Set due date</h5>
-                            <p>Choose when this credit sale should be settled.</p>
-                        </div>
-                        <label for="credit_verification_due_date" class="form-label">Due Date<span class="text-danger">*</span></label>
-                        <div class="input-wrapper">
-                            <i class="ri-calendar-line input-icon"></i>
-                            <text-input
-                                type="date"
-                                id="credit_verification_due_date"
-                                v-model="form.due_date"
-                                class="form-control"
-                                :class="{ 'input-error': form.errors.due_date }"
-                                @input="handleInput('due_date')"
-                            />
-                        </div>
-                        <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date }}</span>
-                    </div>
                 </div>
             </div>
+
+            <!-- Footer -->
             <div class="modal-footer bg-light border-0 p-4">
-                <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeCreditVerificationModal" :disabled="form.processing">
-                    <i class="ri-arrow-left-line me-2"></i>
-                    Back
-                </button>
-                <button type="button" class="btn btn-primary payment-modal-btn" @click="submitCreditSale" :disabled="form.processing || !canSubmitCreditSale">
-                    <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
-                    <i class="ri-check-line me-2" v-else></i>
-                    {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
-                </button>
+                <!-- Step 1 footer -->
+                <template v-if="creditStep === 1">
+                    <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeCreditVerificationModal">
+                        <i class="ri-arrow-left-line me-2"></i>Back
+                    </button>
+                    <button type="button" class="btn btn-primary payment-modal-btn" @click="creditNextStep" :disabled="!form.due_date">
+                        Next <i class="ri-arrow-right-line ms-2"></i>
+                    </button>
+                </template>
+                <!-- Step 2 footer -->
+                <template v-if="creditStep === 2">
+                    <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="creditStep = 1" :disabled="form.processing">
+                        <i class="ri-arrow-left-line me-2"></i>Back
+                    </button>
+                    <button type="button" class="btn btn-primary payment-modal-btn" @click="submitCreditSale" :disabled="form.processing || !isCreditVerificationMatched">
+                        <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
+                        <i class="ri-check-line me-2" v-else></i>
+                        {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
+                    </button>
+                </template>
             </div>
         </div>
     </div>
@@ -966,6 +1021,8 @@ export default {
             showPaymentTypeModal: false,
             showCashReceivedModal: false,
             showCreditVerificationModal: false,
+            creditStep: 1,
+            creditPreset: 30,
             showBankTransferModal: false,
             showChargeSuccessModal: false,
             showPrintPrompt: false,
@@ -1123,6 +1180,21 @@ export default {
         canSubmitCreditSale() {
             return this.isCreditVerificationMatched && !!this.form.due_date;
         },
+        today() {
+            return new Date().toISOString().slice(0, 10);
+        },
+        dueDateDaysFromNow() {
+            if (!this.form.due_date) return 0;
+            const now = new Date(); now.setHours(0,0,0,0);
+            const due = new Date(this.form.due_date); due.setHours(0,0,0,0);
+            return Math.round((due - now) / 86400000);
+        },
+        dueDateDaysFromOrder() {
+            if (!this.form.due_date || !this.form.order_date) return 0;
+            const order = new Date(this.form.order_date); order.setHours(0,0,0,0);
+            const due   = new Date(this.form.due_date);   due.setHours(0,0,0,0);
+            return Math.round((due - order) / 86400000);
+        },
         isPaymentTypeActionDisabled() {
             if (this.form.processing || !this.selectedPaymentType) return true;
             if (this.selectedPaymentType === 'Cash Sales' && !this.cash_payment_modes.includes(this.form.payment_mode)) {
@@ -1244,6 +1316,8 @@ export default {
             this.showPaymentTypeModal = false;
             this.showCashReceivedModal = false;
             this.showCreditVerificationModal = false;
+            this.creditStep = 1;
+            this.creditPreset = 30;
             this.showBankTransferModal = false;
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
@@ -1259,10 +1333,7 @@ export default {
             this.showModal = true;
             this.form.location_id = 0;
             this.form.order_date = new Date().toISOString().slice(0, 10);
-            // Set default due date to 3 days ahead
-            const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + 3);
-            this.form.due_date = dueDate.toISOString().slice(0, 10);
+            this.form.due_date = null;
             // Default sales rep should be the logged-in employee (not user id).
             if (this.currentEmployeeId) {
                 this.form.sales_rep_id = this.currentEmployeeId;
@@ -1395,6 +1466,9 @@ export default {
                 this.showCreditVerificationModal = true;
                 this.creditVerificationText = '';
                 this.creditVerificationError = null;
+                this.creditStep = 1;
+                this.creditPreset = 30;
+                this.setDueDatePreset(30);
                 return;
             } else if (!this.cash_payment_modes.includes(this.form.payment_mode)) {
                 return;
@@ -1557,10 +1631,34 @@ export default {
             this.cashChargeError = null;
             this.showPaymentTypeModal = true;
         },
+        setDueDatePreset(days) {
+            this.creditPreset = days;
+            if (days === 0) {
+                this.form.due_date = '';
+                return;
+            }
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            this.form.due_date = d.toISOString().slice(0, 10);
+            this.handleInput('due_date');
+        },
+        creditNextStep() {
+            if (!this.form.due_date) {
+                this.form.errors.due_date = 'Please set a due date before continuing.';
+                return;
+            }
+            if (this.form.order_date && this.form.due_date < this.form.order_date) {
+                this.form.errors.due_date = 'Due date cannot be before the order date.';
+                return;
+            }
+            this.form.errors.due_date = null;
+            this.creditStep = 2;
+        },
         closeCreditVerificationModal() {
             this.showCreditVerificationModal = false;
             this.creditVerificationText = '';
             this.creditVerificationError = null;
+            this.creditStep = 1;
             this.showPaymentTypeModal = true;
         },
         closeBankTransferModal() {
@@ -1570,15 +1668,9 @@ export default {
         },
         submitCreditSale() {
             if (!this.isCreditVerificationMatched) {
-                this.creditVerificationError = 'Please type CREDIT to verify this credit sale.';
+                this.creditVerificationError = 'Please type CREDIT to confirm this credit sale.';
                 return;
             }
-
-            if (!this.form.due_date) {
-                this.form.errors.due_date = 'Due date is required for credit sales.';
-                return;
-            }
-
             this.creditVerificationError = null;
             this.showCreditVerificationModal = false;
             this.submitOrderCreation();
@@ -2865,6 +2957,39 @@ export default {
 
 .credit-balance-callout.has-balance .credit-balance-callout-value {
     color: #b45309;
+}
+
+.credit-preset-btns {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.credit-preset-btn {
+    padding: 0.28rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid #c4d9d2;
+    background: #f7fbfa;
+    color: #335c52;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.credit-preset-btn:hover {
+    background: #edf5f2;
+    border-color: #3d8d7a;
+}
+.credit-preset-btn.active {
+    background: #3d8d7a;
+    border-color: #3d8d7a;
+    color: #fff;
+}
+
+.credit-due-hint {
+    font-size: 0.78rem;
+    color: #527267;
+    margin-bottom: 0;
 }
 
 .cash-change-note,

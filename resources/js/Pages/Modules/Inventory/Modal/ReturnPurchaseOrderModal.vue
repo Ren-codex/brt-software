@@ -2,7 +2,6 @@
   <div v-if="showModal" class="modal-overlay active" @click.self="hide">
     <div class="modal-container modal-xl">
       <div class="library-card-header modal-header">
-        <div class="d-flex align-items-center justify-content-between w-100">
           <div class="d-flex align-items-center gap-3">
             <div class="header-icon">
               <i class="ri-arrow-go-back-line"></i>
@@ -13,7 +12,6 @@
             </div>
           </div>
           <button class="close-btn" @click="hide">&times;</button>
-        </div>
       </div>
       <div class="modal-body">
         <form @submit.prevent="submit">

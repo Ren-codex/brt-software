@@ -3,7 +3,6 @@
         <div class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-shopping-cart-line fs-24"></i>
@@ -13,7 +12,6 @@
                                 <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
                             </div>
                         </div>
-                    </div>
                 </div>
 
                 <div class="library-card-body">
@@ -344,7 +342,7 @@ export default {
         },
 
         isDueSoon(list) {
-            const dueDateValue = list?.sales_order?.due_date;
+            const dueDateValue = list?.due_date ?? list?.sales_order?.due_date;
             if (!dueDateValue || Number(list?.balance_due || 0) <= 0) return false;
 
             const dueDate = new Date(dueDateValue);
@@ -361,7 +359,7 @@ export default {
         },
 
         isOverdue(list) {
-            const dueDateValue = list?.sales_order?.due_date;
+            const dueDateValue = list?.due_date ?? list?.sales_order?.due_date;
             if (!dueDateValue || Number(list?.balance_due || 0) <= 0) return false;
 
             const dueDate = new Date(dueDateValue);

@@ -270,7 +270,7 @@ class CashManagementController extends Controller
         }
 
         $bankBalances = $bankAccounts->map(function ($ba) {
-            $account = Account::where('gl_code', $ba->gl_code)->first();
+            $account = Account::where('code', $ba->gl_code)->first();
             $balance = 0;
             if ($account) {
                 $debit  = (float) JournalEntryLine::where('account_id', $account->id)->where('line_type', 'debit')->sum('amount');

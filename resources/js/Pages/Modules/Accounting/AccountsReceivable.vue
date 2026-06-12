@@ -45,7 +45,6 @@
                         <!-- Aging Summary by Customer -->
                         <div class="library-card mb-3">
                             <div class="library-card-header">
-                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="header-icon"><i class="ri-user-received-line"></i></div>
                                         <div>
@@ -54,7 +53,6 @@
                                         </div>
                                     </div>
                                     <span class="info-chip">As of {{ filters.as_of }}</span>
-                                </div>
                             </div>
                             <div class="library-card-body p-0">
                                 <div v-if="agingRows.length === 0" class="empty-state">
@@ -98,7 +96,6 @@
                         <!-- Invoice Detail -->
                         <div class="library-card">
                             <div class="library-card-header">
-                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="header-icon"><i class="ri-file-list-3-line"></i></div>
                                         <div>
@@ -107,7 +104,6 @@
                                         </div>
                                     </div>
                                     <span class="info-chip">{{ invoiceRows.length }} open invoices</span>
-                                </div>
                             </div>
                             <div class="library-card-body p-0">
                                 <div v-if="invoiceRows.length === 0" class="empty-state">
@@ -132,7 +128,14 @@
                                                 <td class="font-monospace">{{ inv.invoice_number }}</td>
                                                 <td>{{ inv.customer_name }}</td>
                                                 <td>{{ inv.invoice_date }}</td>
-                                                <td>{{ inv.due_date || '—' }}</td>
+                                                <td>
+                                                    <span v-if="inv.due_date">{{ inv.due_date }}</span>
+                                                    <span v-else-if="inv.effective_due_date" class="text-muted fst-italic" style="font-size:0.82rem">
+                                                        {{ inv.effective_due_date }}
+                                                        <span class="ms-1" title="No explicit due date — using invoice date for aging" style="cursor:help">ⓘ</span>
+                                                    </span>
+                                                    <span v-else>—</span>
+                                                </td>
                                                 <td class="text-end">{{ inv.amount_paid }}</td>
                                                 <td class="text-end fw-bold">{{ inv.balance_due }}</td>
                                                 <td class="text-center">

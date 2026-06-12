@@ -42,7 +42,6 @@
 
             <div v-else class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-node-tree"></i></div>
                             <div>
@@ -53,7 +52,6 @@
                         <button type="button" class="acct-btn-primary" @click="openCreateAccount">
                             <i class="ri-add-line"></i> New Account
                         </button>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div class="table-responsive">
@@ -101,6 +99,9 @@
                                             >
                                                 <i :class="row.is_active ? 'ri-toggle-fill' : 'ri-toggle-line'"></i>
                                             </button>
+                                            <button type="button" class="action-btn delete" @click="deleteAccount(row)" title="Delete">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -130,19 +131,35 @@
 
                     <div class="modal-body p-4">
                         <div class="row g-3">
-                            <div class="col-4">
+                            <!-- Type first so hint is available before Code is filled -->
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Type <span class="text-danger">*</span></label>
+                                <select v-model="coa.form.type" class="form-select" :class="{ 'is-invalid': coa.errors.type }">
+                                    <option value="">-- Select type --</option>
+                                    <option v-for="t in accountTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
+                                </select>
+                                <div v-if="coa.errors.type" class="invalid-feedback">{{ coa.errors.type[0] }}</div>
+                                <small v-if="selectedTypeInfo" class="coa-type-hint">
+                                    <i class="ri-information-line"></i>
+                                    {{ selectedTypeInfo.hint }}
+                                </small>
+                            </div>
+                            <div class="col-3">
                                 <label class="form-label fw-semibold">Code <span class="text-danger">*</span></label>
                                 <input
                                     v-model="coa.form.code"
                                     type="text"
-                                    class="form-control"
+                                    class="form-control font-monospace"
                                     :class="{ 'is-invalid': coa.errors.code }"
-                                    placeholder="e.g. 1100"
+                                    :placeholder="selectedTypeInfo ? selectedTypeInfo.example : 'e.g. 1100'"
                                     maxlength="20"
                                 />
                                 <div v-if="coa.errors.code" class="invalid-feedback">{{ coa.errors.code[0] }}</div>
+                                <small v-if="selectedTypeInfo" class="coa-code-range">
+                                    <i class="ri-key-2-line"></i> {{ selectedTypeInfo.range }}
+                                </small>
                             </div>
-                            <div class="col-8">
+                            <div class="col-9">
                                 <label class="form-label fw-semibold">Account Name <span class="text-danger">*</span></label>
                                 <input
                                     v-model="coa.form.name"
@@ -153,14 +170,6 @@
                                     maxlength="120"
                                 />
                                 <div v-if="coa.errors.name" class="invalid-feedback">{{ coa.errors.name[0] }}</div>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-semibold">Type <span class="text-danger">*</span></label>
-                                <select v-model="coa.form.type" class="form-select" :class="{ 'is-invalid': coa.errors.type }">
-                                    <option value="">-- Select type --</option>
-                                    <option v-for="t in accountTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
-                                </select>
-                                <div v-if="coa.errors.type" class="invalid-feedback">{{ coa.errors.type[0] }}</div>
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-semibold">Subtype</label>
@@ -211,7 +220,6 @@
 
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-bank-line"></i></div>
                             <div>
@@ -222,7 +230,6 @@
                         <button class="acct-btn-primary" @click="openCreateBank">
                             <i class="ri-add-line"></i> Add Bank Account
                         </button>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="bankAccounts.length === 0" class="empty-state">
@@ -329,6 +336,7 @@
 <script>
 import axios from "axios";
 import { router } from "@inertiajs/vue3";
+import Swal from "sweetalert2";
 import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
 
@@ -358,11 +366,11 @@ export default {
                 form: emptyCoaForm(),
             },
             accountTypes: [
-                { value: 'asset',     label: 'Asset' },
-                { value: 'liability', label: 'Liability' },
-                { value: 'equity',    label: 'Equity' },
-                { value: 'revenue',   label: 'Revenue' },
-                { value: 'expense',   label: 'Expense' },
+                { value: 'asset',     label: 'Asset',     range: '1000–1999', example: '1100', hint: 'Cash, receivables, inventory, fixed assets' },
+                { value: 'liability', label: 'Liability', range: '2000–2999', example: '2100', hint: 'Payables, loans, accrued liabilities' },
+                { value: 'equity',    label: 'Equity',    range: '3000–3999', example: '3100', hint: "Owner's equity, retained earnings, capital" },
+                { value: 'revenue',   label: 'Revenue',   range: '4000–4999', example: '4100', hint: 'Sales, service income, other revenues' },
+                { value: 'expense',   label: 'Expense',   range: '5000–5999', example: '5100', hint: 'Operating expenses, cost of sales, payroll' },
             ],
 
             // Bank Accounts state
@@ -373,6 +381,12 @@ export default {
                 saving: false,
             },
         };
+    },
+    computed: {
+        selectedTypeInfo() {
+            if (!this.coa.form.type) return null;
+            return this.accountTypes.find(t => t.value === this.coa.form.type) || null;
+        },
     },
     methods: {
         // ── Chart of Accounts ──────────────────────────────────────────
@@ -413,6 +427,25 @@ export default {
         async toggleAccount(row) {
             await axios.patch(`/accounting/accounts/${row.id}/toggle`);
             router.reload({ only: ['accounts', 'summaryCards'] });
+        },
+        async deleteAccount(row) {
+            const result = await Swal.fire({
+                title: 'Delete Account?',
+                text: `"${row.name}" will be permanently removed.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+            });
+            if (!result.isConfirmed) return;
+            try {
+                await axios.delete(`/accounting/accounts/${row.id}`);
+                router.reload({ only: ['accounts', 'summaryCards'] });
+                Swal.fire('Deleted!', `"${row.name}" has been removed.`, 'success');
+            } catch {
+                Swal.fire('Error', 'Failed to delete the account.', 'error');
+            }
         },
         formatLabel(value) {
             return String(value || '-').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -512,6 +545,21 @@ export default {
 .type-chip.equity    { color: #5b21b6; background: #ede9fe; }
 .type-chip.revenue   { color: #166534; background: #dcfce7; }
 .type-chip.expense   { color: #92400e; background: #fef3c7; }
+
+.coa-type-hint {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.74rem;
+    color: #6b8c85;
+}
+.coa-code-range {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #3d8d7a;
+    letter-spacing: 0.02em;
+}
 
 /* ── Bank Accounts table ─────────────────────────────────────── */
 .ba-table thead th {

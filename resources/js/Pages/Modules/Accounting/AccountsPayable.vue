@@ -45,7 +45,6 @@
             <!-- Aging Summary by Supplier -->
             <div class="library-card mb-3">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-building-2-line"></i></div>
                             <div>
@@ -70,7 +69,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="agingRows.length === 0" class="empty-state">
@@ -114,7 +112,6 @@
             <!-- Receiving Detail -->
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-inbox-archive-line"></i></div>
                             <div>
@@ -123,7 +120,6 @@
                             </div>
                         </div>
                         <span class="info-chip">{{ receivingRows.length }} open records</span>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="receivingRows.length === 0" class="empty-state">

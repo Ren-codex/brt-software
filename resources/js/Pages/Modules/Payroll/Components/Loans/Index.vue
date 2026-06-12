@@ -1,7 +1,6 @@
 <template>
   <div class="library-card">
     <div class="library-card-header">
-      <div class="d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-3">
           <div class="header-icon">
             <i class="ri-bank-card-fill fs-24"></i>
@@ -15,7 +14,6 @@
           <i class="ri-add-line"></i>
           <span>Loan</span>
         </button>
-      </div>
     </div>
 
     <div class="card-body m-2 p-3">

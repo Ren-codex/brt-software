@@ -1,5 +1,6 @@
 <template>
-  <div v-if="showModal" class="modal-overlay" @click.self="hide">
+  <Teleport to="body">
+  <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
     <div class="modal-container modal-xl">
       <div class="modal-header">
         <div>
@@ -159,6 +160,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script>

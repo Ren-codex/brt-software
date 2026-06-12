@@ -81,7 +81,7 @@ class ReceiptClass
 
         $receipt = Receipt::create([
             'ar_invoice_id' => $request->ar_invoice_id,
-            'status_id'     => ListStatus::getBySlug('paid')->id,
+            'status_id'     => ListStatus::getBySlug('pending')->id,
             'receipt_number' => $this->generateReceiptNumber(),
             'receipt_type'  => 'payment',
             'receipt_date'  => $request->receipt_date,

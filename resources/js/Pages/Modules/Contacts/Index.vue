@@ -8,7 +8,6 @@
                 <template v-if="currentView === 'list'">
                     <!-- Header -->
                     <div class="library-card-header">
-                        <div class="d-flex align-items-center justify-content-between">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="header-icon">
                                     <i class="ri-mail-send-line fs-24"></i>
@@ -22,7 +21,6 @@
                                 <i class="ri-refresh-line" :class="{ 'spin': loading }"></i>
                                 <span>Refresh</span>
                             </button>
-                        </div>
                     </div>
 
                     <div class="library-card-body">

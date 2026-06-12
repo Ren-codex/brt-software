@@ -100,15 +100,6 @@
                     </Link>
                 </li>
 
-                <li class="nav-item" v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('Mini Admin')">
-                    <Link href="/expenses" class="nav-link menu-link"
-                        :class="{ 'active': $page.url.startsWith('/expenses') }">
-                    <i class="ri-money-dollar-circle-fill"></i>
-                    <span class="fw-semibold fs-14" data-key="t-dashboards">Expenses</span>
-                    <span class="menu-link-bg"></span>
-                    <span class="active-indicator"></span>
-                    </Link>
-                </li>
                 
                 <li class="nav-item" v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('HR Manager')">
                     <Link href="/payrolls" class="nav-link menu-link"

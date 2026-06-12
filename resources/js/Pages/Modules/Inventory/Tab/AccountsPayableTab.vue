@@ -3,7 +3,6 @@
     <div class="col-lg-12 mb-4">
       <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-wallet-3-line fs-24"></i>
@@ -17,7 +16,6 @@
               <i class="ri-file-list-3-line"></i>
               <span>{{ filteredPayables.length }} Credit {{ filteredPayables.length === 1 ? 'Record' : 'Records' }}</span>
             </div>
-          </div>
         </div>
 
         <div class="card-body bg-white m-2 p-3">

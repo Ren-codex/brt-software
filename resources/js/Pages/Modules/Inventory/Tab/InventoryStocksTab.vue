@@ -3,7 +3,6 @@
     <div class="col-md-12">
       <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-archive-line"></i>
@@ -13,7 +12,6 @@
                 <p class="header-subtitle mb-0">Manage and organize your inventory stocks</p>
               </div>
             </div>
-          </div>
         </div>
 
         <div class="library-card-body">

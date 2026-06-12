@@ -319,13 +319,13 @@ class JournalEntryService
             ];
         }
 
-        // Credit: Cash on Hand (imprest fund replenishment reduces cash)
-        $cashAccount = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+        // Credit: Cash in Bank (replenishment check drawn from bank to restore fund)
+        $cashAccount = $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash');
         $lines[] = [
             'account_id'  => $cashAccount->id,
             'line_type'   => 'credit',
             'amount'      => $total,
-            'description' => 'Replenishment approved — ' . $replenishment->reference_no,
+            'description' => 'Replenishment check issued — ' . $replenishment->reference_no,
         ];
 
         $memo = 'Petty cash replenishment approved. ' . $replenishment->reference_no
@@ -373,6 +373,69 @@ class JournalEntryService
             ],
             'Expense #' . $expense->id . ' - Released expense posting.'
         );
+    }
+
+
+    public function recordGeneralExpenseEntry(Expense $expense): ?JournalEntry
+    {
+        $amount = round((float) $expense->amount, 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $expenseAccount = $expense->gl_account_id
+            ? Account::find($expense->gl_account_id) ?? $this->resolveExpenseAccount($expense->expense_type)
+            : $this->resolveExpenseAccount($expense->expense_type);
+
+        $creditAccount = $this->resolvePaymentAccount($expense->payment_method, $expense->bank_account_id);
+
+        $payee = $expense->payee ? ' — ' . $expense->payee : '';
+        $memo = ($expenseAccount->name ?? $expense->expense_type) . $payee
+            . ($expense->reference_no ? ' [Ref: ' . $expense->reference_no . ']' : '');
+
+        return $this->createEntry(
+            $expense,
+            $expense->expense_date,
+            'general_expense',
+            $memo,
+            [
+                [
+                    'account_id'  => $expenseAccount->id,
+                    'line_type'   => 'debit',
+                    'amount'      => $amount,
+                    'description' => 'Record ' . ($expenseAccount->name ?? 'expense') . '.',
+                ],
+                [
+                    'account_id'  => $creditAccount->id,
+                    'line_type'   => 'credit',
+                    'amount'      => $amount,
+                    'description' => 'Payment via ' . ($expense->payment_method ?? 'cash') . '.',
+                ],
+            ],
+            'General Expense #' . $expense->id . ' released.'
+        );
+    }
+
+    private function resolvePaymentAccount(?string $paymentMethod, ?int $bankAccountId): Account
+    {
+        if ($bankAccountId) {
+            $bank = \App\Models\BankAccount::find($bankAccountId);
+            if ($bank) {
+                $slug = \Illuminate\Support\Str::slug($bank->account_name);
+                return $this->ensureAccount(
+                    $bank->gl_code,
+                    $slug,
+                    $bank->bank_name . ' — ' . $bank->account_name,
+                    'asset',
+                    'current_asset'
+                );
+            }
+        }
+
+        return match (strtolower((string) $paymentMethod)) {
+            'bank_transfer', 'check' => $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash'),
+            default                  => $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset'),
+        };
     }
 
     public function recordReceivedStockEntry(ReceivedStock $receivedStock): ?JournalEntry
@@ -603,6 +666,25 @@ class JournalEntryService
         );
     }
 
+    public function recordFundTopUp(\App\Models\PettyCashFund $fund, float $amount, string $date, ?int $bankAccountId = null, ?string $notes = null): JournalEntry
+    {
+        $pettyCashAccount = $this->resolvePettyCashAccount($fund);
+        $creditAccount    = $bankAccountId
+            ? $this->resolvePaymentAccount('bank_transfer', $bankAccountId)
+            : $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash');
+
+        return $this->createEntry(
+            $fund,
+            $date,
+            'petty_cash_top_up',
+            'Top-up of petty cash fund: ' . $fund->name . ($notes ? ' — ' . $notes : '') . '.',
+            [
+                ['account_id' => $pettyCashAccount->id, 'line_type' => 'debit',  'amount' => $amount, 'description' => 'Increase petty cash fund: ' . $fund->name . '.'],
+                ['account_id' => $creditAccount->id,    'line_type' => 'credit', 'amount' => $amount, 'description' => 'Transfer from bank to petty cash fund.'],
+            ]
+        );
+    }
+
     public function recordFundCapitalization(\App\Models\PettyCashFund $fund, float $amount): JournalEntry
     {
         $pettyCashAccount = $this->resolvePettyCashAccount($fund);
@@ -826,16 +908,21 @@ class JournalEntryService
 
     private function ensureAccount(string $code, string $slug, string $name, string $type, ?string $subtype = null): Account
     {
-        return Account::firstOrCreate(
-            ['slug' => $slug],
-            [
-                'code' => $code,
-                'name' => $name,
-                'type' => $type,
-                'subtype' => $subtype,
-                'is_active' => true,
-            ]
-        );
+        $account = Account::where('slug', $slug)->first()
+            ?? Account::where('code', $code)->first();
+
+        if ($account) {
+            return $account;
+        }
+
+        return Account::create([
+            'code'      => $code,
+            'slug'      => $slug,
+            'name'      => $name,
+            'type'      => $type,
+            'subtype'   => $subtype,
+            'is_active' => true,
+        ]);
     }
 
     private function calculateCostOfGoodsSold(SalesOrder $salesOrder): float
@@ -857,12 +944,12 @@ class JournalEntryService
     private function resolveExpenseAccount(?string $expenseType): Account
     {
         return match (strtolower((string) $expenseType)) {
-            'utilities' => $this->ensureAccount('5300', 'utilities_expense', 'Utilities Expense', 'expense', 'operating_expense'),
-            'supplies' => $this->ensureAccount('5310', 'supplies_expense', 'Supplies Expense', 'expense', 'operating_expense'),
+            'utilities'      => $this->ensureAccount('5300', 'utilities_expense',     'Utilities Expense',     'expense', 'operating_expense'),
+            'supplies'       => $this->ensureAccount('5311', 'supplies_expense',       'Supplies Expense',       'expense', 'operating_expense'),
             'transportation' => $this->ensureAccount('5320', 'transportation_expense', 'Transportation Expense', 'expense', 'operating_expense'),
-            'maintenance' => $this->ensureAccount('5330', 'maintenance_expense', 'Maintenance Expense', 'expense', 'operating_expense'),
-            'operational' => $this->ensureAccount('5340', 'operational_expense', 'Operational Expense', 'expense', 'operating_expense'),
-            default => $this->ensureAccount('5390', 'other_expense', 'Other Expense', 'expense', 'operating_expense'),
+            'maintenance'    => $this->ensureAccount('5341', 'maintenance_expense',    'Maintenance Expense',    'expense', 'operating_expense'),
+            'operational'    => $this->ensureAccount('5370', 'operational_expense',    'Operational Expense',    'expense', 'operating_expense'),
+            default          => $this->ensureAccount('5390', 'other_expense',          'Other Expense',          'expense', 'operating_expense'),
         };
     }
 

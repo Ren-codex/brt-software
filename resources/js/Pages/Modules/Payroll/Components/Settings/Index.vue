@@ -3,7 +3,6 @@
         <div class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-settings-line fs-24"></i>
@@ -17,7 +16,6 @@
                             <i class="ri-add-line"></i>
                             <span>Add Setting</span>
                         </button> -->
-                    </div>
                 </div>
                 <div class="card-body m-2 p-3">
                     <div class="search-section">

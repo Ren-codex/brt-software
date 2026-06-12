@@ -7,7 +7,7 @@
             <i class="ri-inbox-unarchive-line"></i>
           </div>
           <div>
-            <h4 class="receiving-title">Receiving</h4>
+            <h4 class="receiving-title">Received Stocks</h4>
             <p class="receiving-subtitle">List of all fully settled stock receipts</p>
           </div>
         </div>

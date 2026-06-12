@@ -91,11 +91,13 @@ class CashManagementService
             $initialBalance = round((float) ($data['initial_balance'] ?? 0), 2);
 
             $fund = PettyCashFund::create([
-                'name' => $data['name'],
-                'gl_code' => $data['gl_code'],
-                'balance' => $initialBalance,
+                'name'          => $data['name'],
+                'gl_code'       => $data['gl_code'],
+                'balance'       => $initialBalance,
+                'fixed_amount'  => $initialBalance,
+                'custodian_id'  => $data['custodian_id'] ?? null,
                 'weekly_budget' => $data['weekly_budget'] ?? 0,
-                'is_active' => true,
+                'is_active'     => true,
                 'created_by_id' => Auth::id(),
             ]);
 

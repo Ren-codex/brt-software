@@ -2,7 +2,6 @@
   <div v-if="show" class="modal-overlay active" @click.self="$emit('close')">
     <div class="modal-container modal-lg">
       <div class="library-card-header modal-header">
-        <div class="d-flex align-items-center justify-content-between w-100">
           <div class="d-flex align-items-center gap-3">
             <div class="header-icon">
               <i class="ri-inbox-archive-line"></i>
@@ -13,7 +12,6 @@
             </div>
           </div>
           <button class="close-btn" @click="$emit('close')">&times;</button>
-        </div>
       </div>
       <div class="modal-body">
         <div class="form-group mb-3">

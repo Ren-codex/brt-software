@@ -61,7 +61,6 @@
             <!-- Transactions table -->
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-list-check"></i></div>
                             <div>
@@ -74,7 +73,6 @@
                             <button class="filter-chip" :class="{ active: lineFilter === 'uncleared' }" @click="lineFilter = 'uncleared'">Uncleared ({{ unclearedCount }})</button>
                             <button class="filter-chip" :class="{ active: lineFilter === 'cleared' }" @click="lineFilter = 'cleared'">Cleared ({{ clearedCount }})</button>
                         </div>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="loadingLines" class="cm-empty-state">
@@ -143,7 +141,6 @@
         <template v-else>
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-bank-card-line"></i></div>
                             <div>
@@ -154,7 +151,6 @@
                         <button class="acct-btn-primary" @click="openStartModal">
                             <i class="ri-add-line"></i> Start Reconciliation
                         </button>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="reconciliations.length === 0" class="cm-empty-state">
