@@ -41,10 +41,12 @@
                                     type="text"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.username }"
-                                    placeholder="Enter username"
+                                    :disabled="!editable && !!form.employee_id"
+                                    :placeholder="!editable && form.employee_id ? 'Generating…' : 'Enter username'"
                                     @input="handleInput('username')"
                                 >
                             </div>
+                            <span v-if="!editable && form.employee_id" class="hint-message">Generated from the employee's initials and birth date{{ form.username ? '' : ' — will be finalized on save' }}.</span>
                             <span v-if="form.errors.username" class="error-message">{{ form.errors.username }}</span>
                         </div>
 
@@ -67,48 +69,6 @@
                     </div>
 
                     <div v-if="!editable" class="form-row">
-                        <div class="form-group form-group-half">
-                            <label for="password" class="form-label">Password</label>
-                            <div class="input-wrapper has-action">
-                                <i class="ri-lock-password-line input-icon"></i>
-                                <input
-                                    id="password"
-                                    v-model="form.password"
-                                    :type="togglePassword ? 'text' : 'password'"
-                                    class="form-control"
-                                    :class="{ 'input-error': form.errors.password || passwordMismatch }"
-                                    placeholder="Enter password"
-                                    @input="validatePassword"
-                                >
-                                <button class="input-action" type="button" @click="togglePassword = !togglePassword">
-                                    <i :class="togglePassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
-                                </button>
-                            </div>
-                            <span v-if="form.errors.password" class="error-message">{{ form.errors.password }}</span>
-                        </div>
-
-                        <div class="form-group form-group-half">
-                            <label for="confirm_password" class="form-label">Confirm Password</label>
-                            <div class="input-wrapper has-action">
-                                <i class="ri-shield-keyhole-line input-icon"></i>
-                                <input
-                                    id="confirm_password"
-                                    v-model="form.confirm_password"
-                                    :type="toggleConfirm ? 'text' : 'password'"
-                                    class="form-control"
-                                    :class="{ 'input-error': passwordMismatch }"
-                                    placeholder="Confirm password"
-                                    @input="validatePassword"
-                                >
-                                <button class="input-action" type="button" @click="toggleConfirm = !toggleConfirm">
-                                    <i :class="toggleConfirm ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
-                                </button>
-                            </div>
-                            <span v-if="passwordMismatch" class="error-message">Passwords do not match.</span>
-                        </div>
-                    </div>
-
-                    <div v-if="!editable" class="form-row">
                         <div class="form-group">
                             <label class="form-label">Roles</label>
                             <Multiselect
@@ -125,12 +85,34 @@
                         </div>
                     </div>
 
+                    <div v-if="saveSuccess" class="success-alert">
+                        <div class="success-alert-icon"><i class="ri-checkbox-circle-fill"></i></div>
+                        <div class="success-alert-body">
+                            <strong>Account created</strong>
+                            <div class="credentials-list">
+                                <div class="credentials-row">
+                                    <span class="credentials-label">Username</span>
+                                    <span class="credentials-value">{{ createdUsername }}</span>
+                                </div>
+                                <div v-if="createdEmail" class="credentials-row">
+                                    <span class="credentials-label">Email</span>
+                                    <span class="credentials-value">{{ createdEmail }}</span>
+                                </div>
+                                <div class="credentials-row">
+                                    <span class="credentials-label">Default Password</span>
+                                    <span class="credentials-value">{{ createdPassword }}</span>
+                                </div>
+                            </div>
+                            <p class="credentials-note">The user will be required to set a new password on first login.</p>
+                        </div>
+                    </div>
+
                     <div class="form-actions">
                         <button type="button" class="btn btn-cancel" @click="hide">
                             <i class="ri-close-line"></i>
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing || passwordMismatch">
+                        <button type="submit" class="btn btn-save" :disabled="form.processing">
                             <i class="ri-save-line" v-if="!form.processing"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
                             {{ form.processing ? 'Saving...' : editable ? 'Update Account' : 'Save Information' }}
@@ -153,19 +135,17 @@ export default {
             form: useForm({
                 id: null,
                 email: null,
-                password: null,
-                confirm_password: null,
                 username: null,
                 role_ids: null,
                 employee_id: null,
                 option: 'users'
             }),
-            togglePassword: false,
-            toggleConfirm: false,
-            passwordMismatch: false,
             showModal: false,
             editable: false,
-            saveSuccess: false
+            saveSuccess: false,
+            createdUsername: '',
+            createdEmail: '',
+            createdPassword: ''
         }
     },
     mounted() {
@@ -182,26 +162,27 @@ export default {
             if (option?.email) {
                 this.form.email = option.email;
             }
+            this.form.username = option?.username || null;
+            this.form.errors.username = false;
         },
         onEmployeeClear() {
             this.form.email = null;
+            this.form.username = null;
         },
         show(data = null){
             this.form.defaults({
                 id: null,
                 email: null,
-                password: null,
-                confirm_password: null,
                 username: null,
                 role_ids: null,
                 employee_id: null,
                 option: 'users'
             }).reset();
             this.form.clearErrors();
-            this.passwordMismatch = false;
-            this.togglePassword = false;
-            this.toggleConfirm = false;
             this.saveSuccess = false;
+            this.createdUsername = '';
+            this.createdEmail = '';
+            this.createdPassword = '';
             if (data) {
                 this.form.id = data.id;
                 this.form.username = data.username;
@@ -218,25 +199,15 @@ export default {
             this.form.id = data.id;
             this.form.username = data.username;
             this.form.email = data.email;
-            this.form.password = null;
-            this.form.confirm_password = null;
             this.form.role_ids = data.roles ? data.roles.map(r => r.role.id) : [];
-            this.passwordMismatch = false;
-            this.togglePassword = false;
-            this.toggleConfirm = false;
             this.editable = true;
             this.saveSuccess = false;
             this.showModal = true;
         },
-        validatePassword() {
-            this.passwordMismatch =
-                this.form.password &&
-                this.form.confirm_password &&
-                this.form.password !== this.form.confirm_password;
-        },
 
         submit(){
-    
+            this.saveSuccess = false;
+
             if(this.editable){
                 this.form.put('/users/' + this.form.id,{
                     preserveScroll: true,
@@ -249,11 +220,19 @@ export default {
             }else{
                 this.form.post('/users',{
                     preserveScroll: true,
-                    onSuccess: (response) => {
+                    onSuccess: (page) => {
+                        const flash = page?.props?.flash || {};
+                        const created = flash.data?.data || flash.data || {};
+                        this.createdUsername = created.username || '';
+                        this.createdEmail = created.email || '';
+                        this.createdPassword = flash.password || '';
+                        this.saveSuccess = true;
                         this.$emit('add', true);
-                        this.form.reset();
-                        this.hide();
-                        this.$emit('success',true);
+                        this.$emit('success', true);
+                        setTimeout(() => {
+                            this.form.reset();
+                            this.hide();
+                        }, 4000);
                     },
                 });
             }
@@ -265,9 +244,6 @@ export default {
             this.form.reset();
             this.form.clearErrors();
             this.form.employee_id = null;
-            this.passwordMismatch = false;
-            this.togglePassword = false;
-            this.toggleConfirm = false;
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = false;
@@ -390,18 +366,76 @@ export default {
     background: linear-gradient(135deg, #d1fae5, #a7f3d0);
     border: 1px solid #6ee7b7;
     color: #065f46;
-    padding: 1rem 1.25rem;
+    padding: 1.1rem 1.25rem;
     border-radius: 14px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
+}
+
+.success-alert-icon {
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+
+.success-alert-body {
+    flex: 1;
+}
+
+.credentials-list {
+    margin-top: 0.6rem;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+}
+
+.credentials-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.3rem 0;
+}
+
+.credentials-row + .credentials-row {
+    border-top: 1px solid rgba(110, 231, 183, 0.5);
+}
+
+.credentials-label {
+    font-size: 0.8rem;
+    color: #0d6e4f;
+    font-weight: 500;
+}
+
+.credentials-value {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-weight: 600;
+    color: #065f46;
+}
+
+.credentials-note {
+    margin: 0.6rem 0 0;
+    font-size: 0.8rem;
+    color: #0d6e4f;
 }
 
 .error-message {
     color: #dc3545;
     font-size: 0.85rem;
     margin-top: 0.5rem;
+}
+
+.hint-message {
+    color: #6b8c85;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.form-control:disabled {
+    background: #f1f3f5;
+    color: #6c757d;
+    cursor: not-allowed;
 }
 
 .btn {

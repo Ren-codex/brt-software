@@ -2,83 +2,79 @@
     <Head title="Activation" />
 
     <div class="auth-page-wrapper pt-5 d-flex justify-content-center align-items-center min-vh-100">
-       
         <div class="auth-page-content">
             <BContainer>
-                
-
                 <BRow class="justify-content-center">
                     <BCol md="8" lg="6" xl="5">
-                        <BCard no-body class="mt-4">
+                        <BCard no-body class="mt-4 login-card">
+                            <div class="card-header-bg"></div>
 
                             <BCardBody class="p-4">
-                                <!-- <div class="mb-4">
-                                    <div class="avatar-lg mx-auto">
-                                        <div class="avatar-title bg-light text-primary display-5 rounded-circle">
-                                            <i class="ri-rotate-lock-line"></i>
-                                        </div>
+                                <div class="logo-section text-center mb-4">
+                                    <div class="logo-container mb-3">
+                                        <img src="@assets/images/logo-sm.png" alt="" style="max-width: 100%; height: auto;">
                                     </div>
-                                </div> -->
-
-                                <div class="text-center">
-                                    <div class="profile-user position-relative d-inline-block mx-auto mb-3">
-                                        <img :src="$page.props.user.data.avatar" class="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow">
-                                        <div class="avatar-xs p-0 rounded-circle profile-photo-edit">
-                                            <input id="profile-img-file-input" type="file" class="profile-img-file-input" @change="previewImage"/>
-                                            <label for="profile-img-file-input" class="profile-photo-edit avatar-xs">
-                                                <span class="avatar-title rounded-circle bg-light text-body">
-                                                <i class="ri-camera-fill"></i>
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <h5 class="fs-16 mb-1">{{ $page.props.user.data.name }}</h5>
-                                    <p class="text-muted mb-0">{{ $page.props.user.data.username }} | {{ $page.props.user.data.email }}</p>
+                                    <h3 class="brand-name">BRT Accounting Software</h3>
+                                    <p class="brand-tagline">Set up your account to continue</p>
                                 </div>
 
-                                <div class="p-2 mt-4">
-                                    <!-- <div class="text-muted text-center mb-4">
-                                        <div class="text-sm fs-12 text-muted mb-3">
-                                            Set your new password with 1 number and 1 special character.
-                                        </div>
-                                    </div> -->
+                                <div class="text-center mb-4">
+                                    <h5 class="welcome-name mb-1">{{ $page.props.user.data.name }}</h5>
+                                    <p class="welcome-meta mb-0">{{ $page.props.user.data.username }} | {{ $page.props.user.data.email }}</p>
+                                </div>
 
-                                    <form class="customform" @submit.prevent="submit">
-                                        <div class="row g-3">
-                                            <div class="col-md-12 mt-n1">
-                                                <div class="form-floating mb-n3">
-                                                    <TextInput id="password" v-model="form.password" :type="togglePassword ? 'text' : 'password'"  class="form-control" autofocus placeholder="Please enter password"  @input="handleInput('password')" :class="{ 'is-invalid': form.errors.password }" />
-                                                    <InputLabel for="password" value="New Password"/>
-                                                </div>
+                                <div class="p-2">
+                                    <form class="customform" @submit.prevent="create">
+                                        <div class="form-group mb-3">
+                                            <InputLabel for="username" value="Username" class="form-label" />
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="ri-user-line"></i>
+                                                </span>
+                                                <TextInput id="username" v-model="form.username" type="text" class="form-control" placeholder="Enter username" @input="handleInput('username')" :class="{ 'is-invalid': form.errors.username }" />
                                             </div>
-                                            <div class="col-md-12 mb-n4">
-                                                <div class="form-floating">
-                                                    <TextInput id="password_confirmation" v-model="form.password_confirmation" :type="togglePassword ? 'text' : 'password'" class="form-control" autofocus placeholder="Please enter password_confirmation" @input="handleInput('password')" :class="{ 'is-invalid': form.errors.password }" />
-                                                    <InputLabel for="password_confirmation" value="Re-type new Password"/>
-                                                    <InputError :message="form.errors.password"/>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-12 mb-0 mt-4">
-                                                <div class="form-check form-switch float-end">
-                                                    <input class="form-check-input" @click="togglePassword = !togglePassword" type="checkbox" role="switch" id="flexSwitchCheckChecked" v-model="showPassword">
-                                                    <label class="form-check-label" for="flexSwitchCheckChecked">Show Password</label>
-                                                </div>
-                                            </div>
+                                            <InputError :message="form.errors.username" />
                                         </div>
 
-                                        <div class="alert alert-danger mt-2 mb-n3" role="alert">Please select an image to submit</div>
-                                        
-                                        <div class="mt-4">
-                                            <BButton v-if="uploaded" @click="create()"  variant="primary" class="w-100" type="submit" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">Submit</BButton>
-                                            <BButton v-else variant="primary" class="w-100" type="submit" :class="{ 'opacity-25': form.processing }" :disabled="true">Submit</BButton>
+                                        <div class="form-group mb-3">
+                                            <InputLabel for="password" value="New Password" class="form-label" />
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="ri-lock-line"></i>
+                                                </span>
+                                                <input :type="togglePassword ? 'text' : 'password'" id="password" v-model="form.password" class="form-control" placeholder="Enter new password" @input="handleInput('password')" :class="{ 'is-invalid': form.errors.password }" />
+                                                <BButton variant="link" class="password-toggle" type="button" @click="togglePassword = !togglePassword" style="width: auto!important;">
+                                                    <i :class="togglePassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                                                </BButton>
+                                            </div>
                                         </div>
-                                    
-                                        <div class="mt-4 text-center">
-                                            <p class="mb-0"> Aren't ready yet?
+
+                                        <div class="form-group mb-4">
+                                            <InputLabel for="password_confirmation" value="Re-type New Password" class="form-label" />
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="ri-shield-keyhole-line"></i>
+                                                </span>
+                                                <input :type="togglePassword ? 'text' : 'password'" id="password_confirmation" v-model="form.password_confirmation" class="form-control" placeholder="Confirm new password" @input="handleInput('password')" :class="{ 'is-invalid': form.errors.password }" />
+                                            </div>
+                                            <InputError :message="form.errors.password" />
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <BButton variant="primary" class="w-100 login-btn" type="submit" :class="{ 'opacity-25': form.processing }" :disabled="form.processing" style="justify-content: center!important;">
+                                                <span v-if="!form.processing">Submit</span>
+                                                <span v-else>
+                                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                    Submitting...
+                                                </span>
+                                            </BButton>
+                                        </div>
+
+                                        <div class="text-center">
+                                            <p class="mb-0">Aren't ready yet?
                                                 <a style="cursor: pointer;" @click.prevent="logout" class="fw-semibold text-danger">Logout</a>
                                             </p>
                                         </div>
-                                        
                                     </form>
                                 </div>
                             </BCardBody>
@@ -99,58 +95,21 @@ export default {
     components : { InputError, InputLabel, TextInput },
     data(){
         return {
-            currentUrl: window.location.origin,
             form: useForm({
+                username: this.$page.props.user.data.username,
                 password: '',
                 password_confirmation: '',
                 is_active: 1,
                 option: 'activation'
             }),
-            form2: useForm({
-                image: null,
-            }),
-            uploaded: (this.$page.props.user.data.avatar != window.location.origin+'/images/avatars/avatar.jpg') ? true : false,
             togglePassword: false
         }
     },
     methods: {
-        previewImage(e) {
-            var fileInput = document.querySelector(".profile-img-file-input");
-            var preview = document.querySelector(".user-profile-image");
-            var file = fileInput.files[0];
-            this.form2.image = file;
-            var reader = new FileReader();
-
-            reader.addEventListener("load", () => { 
-                preview.src = reader.result;
-                this.form2.post('/profile', {
-                    errorBag: 'updateProfileInformation',
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        this.uploaded = true;
-                    },
-                });
-            }, false);
-
-            if (file) { 
-                reader.readAsDataURL(file); 
-            }
-        },
         create(){
             this.form.put('/activate',{
                 errorBag: 'updatePassword',
                 preserveScroll: true,
-                onSuccess: (response) => {
-                    this.hide();
-                },
-                onError: () => {
-                    if (this.form.errors.password) {
-                        this.form.reset('password', 'password_confirmation');
-                    }
-                    if (this.form.errors.current_password) {
-                        this.form.reset('current_password');
-                    }
-                },
             });
         },
         handleInput(field) {
@@ -165,8 +124,125 @@ import { router } from '@inertiajs/vue3';
         router.post('/logout');
     };
 </script>
-<style>
+<style scoped>
 .auth-page-wrapper {
-    background-color: hsl(201, 80%, 82%);
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+}
+
+.login-card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.card-header-bg {
+    height: 6px;
+    background: linear-gradient(90deg, #2e8b57 0%, #1f6b41 100%);
+}
+
+.logo-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    box-shadow: 0 8px 20px rgba(46, 139, 87, 0.3);
+}
+
+.brand-name {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.brand-tagline {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.welcome-name {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.welcome-meta {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.input-group {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s;
+}
+
+.input-group:focus-within {
+    border-color: #2e8b57;
+    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.2);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: none;
+    color: #7f8c8d;
+}
+
+.form-control {
+    border: none;
+    padding: 12px 15px;
+}
+
+.form-control::placeholder {
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+.password-toggle {
+    background: none;
+    border: none;
+    color: #7f8c8d;
+    transition: color 0.3s;
+}
+
+.password-toggle:hover {
+    color: #2e8b57;
+}
+
+.login-btn {
+    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
+    border: none;
+    padding: 12px;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.3s;
+    box-shadow: 0 6px 15px rgba(46, 139, 87, 0.3);
+}
+
+.login-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(46, 139, 87, 0.4);
+}
+
+@media (max-width: 576px) {
+    .login-card {
+        border-radius: 15px;
+    }
+
+    .brand-name {
+        font-size: 1.5rem;
+    }
 }
 </style>

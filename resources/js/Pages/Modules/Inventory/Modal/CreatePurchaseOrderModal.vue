@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="showModal" class="modal-overlay active" @click.self="hide">
-        <div class="modal-container modal-lg" @click.stop>
+        <div class="modal-container modal-fullscreen" @click.stop>
             <div class="modal-header">
                 <div class="header-title">
                     <i :class="editable ? 'ri-edit-box-line' : 'ri-shopping-bag-3-line'"></i>
@@ -11,7 +11,7 @@
                     <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body modal-body-lg">
                 <form @submit.prevent="submit" class="purchase-order-form">
                     <div class="form-layout">
                         <section class="form-panel form-panel-main">
@@ -50,52 +50,60 @@
                                 </button>
                             </div>
 
-                            <div class="items-container" v-if="form.items.length > 0">
-                                <div v-for="(item, index) in form.items" :key="index" class="item-card">
-                                    <div class="item-header">
-                                        <div>
-                                            <div class="item-number">Item {{ index + 1 }}</div>
-                                            <div class="item-caption">Purchase line details</div>
-                                        </div>
-                                        <div class="item-actions">
-                                            <button type="button" class="btn-action" @click="duplicateItem(index)"
-                                                title="Duplicate">
-                                                <i class="ri-file-copy-line"></i>
-                                            </button>
-                                            <button type="button" class="btn-action btn-danger" @click="removeItem(index)"
-                                                title="Remove">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
-                                        </div>
-                                    </div>
+                            <div class="items-table-wrap">
+                                <table class="table align-middle mb-0 pretty-table">
+                                    <thead class="pretty-header">
+                                        <tr class="fs-11">
+                                            <th style="width: 4%;">#</th>
+                                            <th style="width: 30%;">Product</th>
+                                            <th style="width: 16%;" class="text-center">Quantity</th>
+                                            <th style="width: 18%;" class="text-center">Unit Cost</th>
+                                            <th style="width: 18%;" class="text-center">Total Cost</th>
+                                            <th style="width: 14%;" class="text-center">Actions</th>
+                                        </tr>
+                                    </thead>
 
-                                    <div class="item-body">
-                                        <div class="form-group">
-                                            <label>Product</label>
-                                            <select v-model="item.product_id" class="form-control form-control-plain"
-                                                :class="{ 'input-error': form.errors[`items.${index}.product_id`] }"
-                                                @change="handleInput(`items.${index}.product_id`)">
-                                                <option value="" disabled>Select a product...</option>
-                                                <option v-for="product in dropdowns.products" :value="product.value"
-                                                    :key="product.value">
-                                                    {{ product.name }}
-                                                </option>
-                                            </select>
-                                            <span class="error-message" v-if="form.errors[`items.${index}.product_id`]">
-                                                {{ form.errors[`items.${index}.product_id`] }}
-                                            </span>
-                                        </div>
-
-                                        <div class="item-details">
-                                            <div class="form-group">
-                                                <label>Quantity</label>
+                                    <tbody class="table-white fs-12">
+                                        <tr v-if="form.items.length === 0">
+                                            <td colspan="6" class="empty-table">
+                                                <div class="empty-table-inner">
+                                                    <i class="ri-shopping-cart-line"></i>
+                                                    <h4>No Items Added Yet</h4>
+                                                    <p>Start this request by adding your first product line item.</p>
+                                                    <button type="button" @click="addItem" class="btn-add-item">
+                                                        <i class="ri-add-line"></i>
+                                                        Add Your First Item
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr v-for="(item, index) in form.items" :key="index">
+                                            <td>{{ index + 1 }}</td>
+                                            <td>
+                                                <select v-model="item.product_id" class="form-control form-control-plain table-select"
+                                                    :class="{ 'input-error': form.errors[`items.${index}.product_id`], 'input-warning': isDuplicateProduct(index) }"
+                                                    @change="handleInput(`items.${index}.product_id`)">
+                                                    <option value="" disabled>Select a product...</option>
+                                                    <option v-for="product in dropdowns.products" :value="product.value"
+                                                        :key="product.value">
+                                                        {{ product.name }}
+                                                    </option>
+                                                </select>
+                                                <span class="error-message" v-if="form.errors[`items.${index}.product_id`]">
+                                                    {{ form.errors[`items.${index}.product_id`] }}
+                                                </span>
+                                                <span class="warning-message" v-else-if="isDuplicateProduct(index)">
+                                                    <i class="ri-error-warning-line"></i> Already in list
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
                                                 <div class="quantity-control">
                                                     <button type="button" class="qty-btn"
                                                         @click="adjustQuantity(item, 'decrease')"
                                                         :disabled="item.quantity <= 0">
                                                         <i class="ri-subtract-line"></i>
                                                     </button>
-                                                    <input type="number" v-model="item.quantity" class="form-control form-control-plain"
+                                                    <input type="number" v-model="item.quantity" class="form-control form-control-plain table-qty-input"
                                                         :class="{ 'input-error': form.errors[`items.${index}.quantity`] }"
                                                         @input="calculateTotal(item); handleInput(`items.${index}.quantity`)"
                                                         step="1" min="0" :max="MAX_QUANTITY" required @change="validateQuantity(item)">
@@ -104,10 +112,11 @@
                                                         <i class="ri-add-line"></i>
                                                     </button>
                                                 </div>
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label>Unit Cost</label>
+                                                <span class="error-message" v-if="form.errors[`items.${index}.quantity`]">
+                                                    {{ form.errors[`items.${index}.quantity`] }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
                                                 <div class="money-input">
                                                     <span class="money-prefix">PHP</span>
                                                     <input type="number" v-model="item.unit_cost" class="form-control form-control-plain no-spinner"
@@ -118,29 +127,33 @@
                                                 <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                                     {{ form.errors[`items.${index}.unit_cost`] }}
                                                 </span>
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label>Total Cost</label>
-                                                <div class="total-display">
-                                                    <span class="total-amount">{{ formatCurrency(item.total_cost) }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <strong class="cell-total-amount">{{ formatCurrency(item.total_cost) }}</strong>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="action-buttons">
+                                                    <button type="button" class="table-action-btn" @click="duplicateItem(index)"
+                                                        title="Duplicate">
+                                                        <i class="ri-file-copy-line"></i>
+                                                    </button>
+                                                    <button type="button" class="table-action-btn danger" @click="removeItem(index)"
+                                                        title="Remove">
+                                                        <i class="ri-delete-bin-line"></i>
+                                                    </button>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
 
-                            <div class="empty-state" v-else>
-                                <div class="empty-state-icon">
-                                    <i class="ri-shopping-cart-line"></i>
-                                </div>
-                                <h4>No Items Added Yet</h4>
-                                <p>Start this request by adding your first product line item.</p>
-                                <button type="button" @click="addItem" class="btn-add-item">
-                                    <i class="ri-add-line"></i>
-                                    Add Your First Item
-                                </button>
+                                    <tfoot v-if="form.items.length > 0">
+                                        <tr>
+                                            <td colspan="4" class="text-end footer-label">Totals</td>
+                                            <td class="text-center footer-value">{{ formatCurrency(totalAmount) }}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
                         </section>
 
@@ -273,6 +286,11 @@ export default {
     methods: {
         _onEscape(e) {
             if (e.key === 'Escape' && this.showModal) this.hide();
+        },
+        isDuplicateProduct(index) {
+            const productId = this.form.items[index]?.product_id;
+            if (!productId) return false;
+            return this.form.items.some((other, i) => i !== index && other.product_id === productId);
         },
         show() {
             this.form.reset();
@@ -493,14 +511,16 @@ export default {
 
 <style scoped>
 .modal-container {
+    max-width: 100%;
+    width: 100%;
     max-height: calc(100vh - 2rem);
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
-.modal-container.modal-lg {
-    max-width: 1240px;
+.modal-header {
+    padding: 0.65rem 1rem;
 }
 
 .header-title {
@@ -510,21 +530,21 @@ export default {
 }
 
 .header-title i {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
     display: grid;
     place-items: center;
     background: rgba(61, 141, 122, 0.12);
     border: 1px solid rgba(61, 141, 122, 0.16);
     color: #3d8d7a;
-    font-size: 18px;
+    font-size: 14px;
     flex-shrink: 0;
 }
 
 .header-title h2 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #16322e;
     font-weight: 700;
 }
@@ -533,38 +553,38 @@ export default {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding: 1.5rem 1.75rem 1.75rem;
+    padding: 0.9rem 1.1rem 1.1rem;
 }
 
 .modal-footer {
     flex-shrink: 0;
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
     border-top: 1px solid #e2e8f0;
 }
 
 .form-layout {
     display: grid;
-    grid-template-columns: minmax(0, 2.35fr) minmax(300px, 0.85fr);
-    gap: 1.5rem;
+    grid-template-columns: minmax(0, 2.35fr) minmax(260px, 0.85fr);
+    gap: 0.85rem;
     align-items: start;
 }
 
 .form-panel {
     background: #ffffff;
     border: 1px solid rgba(61, 141, 122, 0.12);
-    border-radius: 24px;
-    box-shadow: 0 16px 35px rgba(39, 84, 72, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 10px 22px rgba(39, 84, 72, 0.07);
 }
 
 .form-panel-main {
-    padding: 1.35rem;
+    padding: 0.75rem;
 }
 
 .form-panel-side {
-    padding: 1.25rem;
+    padding: 0.7rem;
     position: sticky;
     top: 0;
 }
@@ -573,35 +593,35 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.7rem;
 }
 
 .panel-kicker {
     margin: 0;
-    font-size: 0.75rem;
+    font-size: 0.64rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     color: #648b74;
 }
 
 .panel-title {
-    margin: 0.2rem 0 0;
+    margin: 0.15rem 0 0;
     color: #20413a;
-    font-size: 1.1rem;
+    font-size: 0.92rem;
     font-weight: 700;
 }
 
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
 }
 
 .form-label {
     display: block;
-    margin-bottom: 0.375rem;
+    margin-bottom: 0.3rem;
     font-weight: 600;
     color: #2c3e50;
-    font-size: 0.9rem;
+    font-size: 0.78rem;
 }
 
 .input-wrapper {
@@ -610,20 +630,20 @@ export default {
 
 .input-icon {
     position: absolute;
-    left: 0.875rem;
+    left: 0.7rem;
     top: 50%;
     transform: translateY(-50%);
     color: #7f8c8d;
-    font-size: 1.1rem;
+    font-size: 0.92rem;
     z-index: 1;
 }
 
 .form-control {
     width: 100%;
-    padding: 0.85rem 1rem 0.85rem 2.9rem;
+    padding: 0.5rem 0.75rem 0.5rem 2.3rem;
     border: 1px solid #d7e5de;
-    border-radius: 14px;
-    font-size: 0.95rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
     transition: all 0.3s ease;
     background-color: #fdfefe;
 }
@@ -642,8 +662,17 @@ export default {
     box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
 }
 
+.form-control.input-warning {
+    border-color: #d97706;
+    background-color: #fffbeb;
+}
+
+.form-control.input-warning:focus {
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
+}
+
 .form-control-plain {
-    padding-left: 1rem;
+    padding-left: 0.75rem;
 }
 
 .no-spinner::-webkit-outer-spin-button,
@@ -663,10 +692,10 @@ export default {
 
 .money-prefix {
     position: absolute;
-    left: 1rem;
+    left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 0.75rem;
+    font-size: 0.66rem;
     font-weight: 700;
     letter-spacing: 0.05em;
     color: #648b74;
@@ -674,14 +703,24 @@ export default {
 }
 
 .money-input .form-control {
-    padding-left: 3.7rem;
+    padding-left: 3rem;
 }
 
 .error-message {
     display: block;
-    margin-top: 0.375rem;
-    font-size: 0.8125rem;
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
     color: #e74c3c;
+}
+
+.warning-message {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
+    color: #b45309;
+    font-weight: 600;
 }
 
 .error-banner {
@@ -689,29 +728,30 @@ export default {
     border: 1px solid #fecaca;
     color: #991b1b;
     border-radius: 8px;
-    padding: 0.625rem 0.875rem;
-    margin-bottom: 1rem;
+    padding: 0.5rem 0.7rem;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 0.78rem;
     font-weight: 500;
 }
 
 .success-alert {
     background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
     color: #155724;
-    padding: 0.875rem 1.25rem;
-    border-radius: 14px;
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.5rem;
     animation: slideIn 0.5s ease-out;
     border: 1px solid #b9e6ca;
+    font-size: 0.82rem;
 }
 
 .success-alert i {
-    font-size: 1.3rem;
+    font-size: 1.05rem;
 }
 
 @keyframes slideIn {
@@ -730,15 +770,15 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin: 1.5rem 0 1rem;
-    padding-top: 1.25rem;
+    gap: 0.75rem;
+    margin: 0.85rem 0 0.6rem;
+    padding-top: 0.75rem;
     border-top: 1px solid #edf3f1;
 }
 
 .section-title {
     color: #20413a;
-    font-size: 1.02rem;
+    font-size: 0.88rem;
     font-weight: 700;
 }
 
@@ -746,16 +786,16 @@ export default {
     background: linear-gradient(135deg, #3d8d7a 0%, #2f7464 100%);
     color: white;
     border: none;
-    padding: 0.7rem 1rem;
-    border-radius: 12px;
+    padding: 0.45rem 0.75rem;
+    border-radius: 9px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    font-size: 0.85rem;
+    gap: 0.35rem;
+    font-size: 0.76rem;
     transition: all 0.3s ease;
-    box-shadow: 0 10px 20px rgba(61, 141, 122, 0.18);
+    box-shadow: 0 8px 16px rgba(61, 141, 122, 0.18);
 }
 
 .btn-add-item:hover {
@@ -763,100 +803,157 @@ export default {
     box-shadow: 0 14px 25px rgba(61, 141, 122, 0.24);
 }
 
-.items-container {
-    display: grid;
-    gap: 1rem;
-}
-
-.item-card {
-    background: linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
+.items-table-wrap {
     border: 1px solid #d9ebe4;
-    border-radius: 20px;
-    padding: 1rem;
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
 }
 
-.item-card:hover {
-    box-shadow: 0 14px 28px rgba(32, 65, 58, 0.08);
-    transform: translateY(-1px);
+.pretty-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.8rem;
 }
 
-.item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.85rem;
-    border-bottom: 1px solid #e7f0ed;
-}
-
-.item-number {
-    font-weight: 700;
+.pretty-header {
+    background: linear-gradient(140deg, #eff7f4 0%, #e6f2ed 100%);
     color: #20413a;
-    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-size: 0.68rem;
 }
 
-.item-caption {
-    color: #6b8d80;
-    font-size: 0.82rem;
-    margin-top: 0.2rem;
+.pretty-header th {
+    border: none;
+    padding: 7px 6px;
+    vertical-align: middle;
+    background: linear-gradient(140deg, #eff7f4 0%, #e6f2ed 100%);
 }
 
-.item-actions {
-    display: flex;
-    gap: 0.45rem;
-}
-
-.btn-action {
-    background: #ffffff;
-    border: 1px solid #dce9e4;
-    border-radius: 10px;
-    width: 38px;
-    height: 38px;
-    color: #5f786e;
-    cursor: pointer;
+.pretty-table tbody tr {
     transition: all 0.3s ease;
+    border-bottom: 1px solid #edf3f1;
+}
+
+.pretty-table tbody tr:hover {
+    background: #f4faf8;
+}
+
+.pretty-table td {
+    padding: 5px 6px;
+    vertical-align: middle;
+    border: none;
+}
+
+.table-select {
+    min-width: 160px;
+    font-size: 0.8rem;
+}
+
+.table-qty-input {
+    width: 76px;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    text-align: right;
+}
+
+.cell-total-amount {
+    color: #059669;
+    font-size: 0.82rem;
+}
+
+.action-buttons {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0.3rem;
 }
 
-.btn-action:hover {
+.table-action-btn {
+    width: 27px;
+    height: 27px;
+    border-radius: 8px;
+    border: 1px solid #d7e5de;
+    background: #fff;
+    color: #355f55;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 0.78rem;
+}
+
+.table-action-btn:hover {
     background: #eff7f4;
-    color: #20413a;
 }
 
-.btn-action.btn-danger:hover {
+.table-action-btn.danger:hover {
     background: #e74c3c;
-    color: white;
     border-color: #e74c3c;
+    color: #fff;
 }
 
-.item-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    margin-top: 0.75rem;
+.empty-table {
+    padding: 0 !important;
+}
+
+.empty-table-inner {
+    text-align: center;
+    padding: 1.25rem 1rem;
+    color: #74867f;
+}
+
+.empty-table-inner i {
+    font-size: 1.7rem;
+    color: #3d8d7a;
+    margin-bottom: 0.5rem;
+}
+
+.empty-table-inner h4 {
+    margin: 0 0 0.3rem;
+    font-size: 0.92rem;
+    color: #355f55;
+}
+
+.empty-table-inner p {
+    margin: 0 0 0.75rem;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.78rem;
+}
+
+tfoot .footer-label,
+tfoot .footer-value {
+    padding: 0.55rem 0.5rem !important;
+    background: #f1f7f4;
+    font-weight: 700;
+    color: #20413a;
+    font-size: 0.8rem;
 }
 
 .quantity-control {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
 }
 
 .qty-btn {
     background: #ffffff;
     border: 1px solid #d7e5de;
-    border-radius: 12px;
-    width: 40px;
-    height: 40px;
+    border-radius: 8px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: #6b7280;
     transition: all 0.3s ease;
+    font-size: 0.72rem;
 }
 
 .qty-btn:hover:not(:disabled) {
@@ -870,72 +967,17 @@ export default {
     cursor: not-allowed;
 }
 
-.total-display {
-    min-height: 51px;
-    background: linear-gradient(135deg, #effbf6 0%, #e3f5ed 100%);
-    border: 1px solid #cbe9d7;
-    border-radius: 14px;
-    padding: 0.8rem 1rem;
-    font-weight: 600;
-    color: #059669;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.total-display .total-amount {
-    font-size: 1rem;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 2rem 1.25rem;
-    color: #74867f;
-    border: 1px dashed #cfe0da;
-    border-radius: 20px;
-    background: linear-gradient(180deg, #fbfefd 0%, #f5faf8 100%);
-}
-
-.empty-state-icon {
-    width: 72px;
-    height: 72px;
-    margin: 0 auto 1rem;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #e4f2ed 0%, #f0f7f4 100%);
-    color: #3d8d7a;
-}
-
-.empty-state i {
-    font-size: 2rem;
-}
-
-.empty-state h4 {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-    color: #355f55;
-}
-
-.empty-state p {
-    margin-bottom: 16px;
-    max-width: 280px;
-    margin-left: auto;
-    margin-right: auto;
-    font-size: 0.9rem;
-}
 
 .summary-metrics {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .summary-metric-card {
-    padding: 0.95rem 1rem;
-    border-radius: 18px;
+    padding: 0.6rem 0.7rem;
+    border-radius: 12px;
     background: linear-gradient(180deg, #f6fbf9 0%, #eef7f3 100%);
     border: 1px solid #ddebe5;
 }
@@ -943,46 +985,47 @@ export default {
 .summary-metric-label {
     display: block;
     color: #6c877d;
-    font-size: 0.76rem;
+    font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
 }
 
 .summary-metric-value {
     display: block;
-    margin-top: 0.35rem;
+    margin-top: 0.25rem;
     color: #20413a;
-    font-size: 1.25rem;
+    font-size: 1.05rem;
 }
 
 .summary-section {
     background: linear-gradient(135deg, #f8fbfa 0%, #f0f7f4 100%);
     border: 1px solid #e0ece7;
-    border-radius: 20px;
-    padding: 1.15rem;
-    margin-bottom: 1rem;
+    border-radius: 14px;
+    padding: 0.8rem;
+    margin-bottom: 0.75rem;
 }
 
 .summary-header h3 {
-    font-size: 1.1rem;
+    font-size: 0.92rem;
     font-weight: 600;
     color: #20413a;
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.7rem 0;
 }
 
 .summary-content {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
 }
 
 .summary-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 5px 0;
     border-bottom: 1px solid #e4ece8;
+    font-size: 0.82rem;
 }
 
 .summary-row:last-child {
@@ -995,72 +1038,73 @@ export default {
 }
 
 .total-row {
-    font-size: 1rem;
+    font-size: 0.85rem;
 }
 
 .total-row .total-amount {
-    font-size: 1.3rem;
+    font-size: 1.05rem;
     color: #059669;
 }
 
 .hint-card {
     display: flex;
-    gap: 0.8rem;
-    padding: 1rem;
-    border-radius: 18px;
+    gap: 0.55rem;
+    padding: 0.7rem;
+    border-radius: 12px;
     background: #f5faf8;
     border: 1px solid #e0ece7;
     color: #46695d;
 }
 
 .hint-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #e4f1ed;
     color: #2f7666;
     flex-shrink: 0;
+    font-size: 0.85rem;
 }
 
 .hint-title {
-    margin: 0 0 0.25rem;
-    font-size: 0.92rem;
+    margin: 0 0 0.2rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: #20413a;
 }
 
 .hint-text {
-    font-size: 0.85rem;
-    line-height: 1.55;
+    font-size: 0.72rem;
+    line-height: 1.45;
 }
 
 .feedback-stack {
     display: grid;
-    gap: 0.75rem;
-    margin-top: 1.25rem;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
 }
 
 .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
 
 .btn {
-    padding: 0.8rem 1.15rem;
+    padding: 0.55rem 0.9rem;
     border: none;
-    border-radius: 14px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-weight: 600;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
 }
 
 .btn-cancel {
@@ -1127,10 +1171,6 @@ export default {
         position: static;
     }
 
-    .item-details {
-        grid-template-columns: 1fr;
-    }
-
     .form-actions {
         flex-direction: column-reverse;
         gap: 0.625rem;
@@ -1175,10 +1215,6 @@ export default {
     .btn {
         padding: 0.5rem 0.875rem;
         font-size: 0.75rem;
-    }
-
-    .item-card {
-        padding: 12px;
     }
 
     .summary-section {

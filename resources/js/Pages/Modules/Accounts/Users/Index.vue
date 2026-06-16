@@ -64,8 +64,9 @@
                                     <td class="text-center">{{ list.email }}</td>
                                     <td class="text-center">{{ list.mobile }}</td>
                                     <td class="text-center">
-                                        <span v-if="list.is_active" class="badge bg-success">Active</span>
-                                        <span v-else class="badge bg-danger">Inactive</span>
+                                        <span v-if="!list.is_active" class="badge bg-danger">Inactive</span>
+                                        <span v-else-if="list.must_change" class="badge bg-warning text-dark">Pending</span>
+                                        <span v-else class="badge bg-success">Active</span>
                                     </td>
                                    
 

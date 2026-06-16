@@ -1,94 +1,97 @@
 <template>
   <div>
     <div class="col-lg-12">
-      <div class="report-container">
+      <div class="library-card">
         <!-- Header -->
-        <div class="report-header">
-          <div class="header-content">
-            <i class="ri-bar-chart-2-line header-icon"></i>
+        <div class="library-card-header">
+          <div class="d-flex align-items-center gap-3">
+            <div class="header-icon">
+              <i class="ri-bar-chart-2-line"></i>
+            </div>
             <div>
-              <h2>Sales Report</h2>
-              <p>Track your sales performance</p>
+              <h4 class="header-title mb-1">Sales Report</h4>
+              <p class="header-subtitle mb-0">Track your sales performance</p>
             </div>
           </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="filters-section">
-          <div class="filters-grid">
-            <div class="filter-item">
-              <label>From</label>
-              <input v-model="form.from" type="date" class="filter-input" @change="fetchReports" />
-            </div>
-            <div class="filter-item">
-              <label>To</label>
-              <input v-model="form.to" type="date" class="filter-input" @change="fetchReports" />
-            </div>
-            <div class="filter-item">
-              <label>Location</label>
-              <select v-model="form.location_id" class="filter-input" @change="fetchReports">
-                <option :value="null">All Locations</option>
-                <option v-for="location in locations" :key="location.value" :value="location.value">
-                  {{ location.name }}
-                </option>
-              </select>
-            </div>
-            <div class="filter-item">
-              <label>Payment</label>
-              <select v-model="form.payment_mode" class="filter-input" @change="fetchReports">
-                <option value="all">All</option>
-                <option value="cash">Cash</option>
-                <option value="credit">Credit</option>
-              </select>
-            </div>
-            <div class="filter-item">
-              <label>Limit</label>
-              <input v-model.number="form.limit" min="1" max="50" type="number" class="filter-input" @input="debouncedFetchReports" />
-            </div>
-            <div class="filter-actions">
-              <div class="download-dropdown" ref="downloadDropdown">
-                <button :disabled="loading || downloading" class="btn-download" @click="toggleDownloadMenu">
-                  <i class="ri-download-2-line"></i>
-                  <span>{{ downloading ? 'Downloading...' : 'Export' }}</span>
-                  <i class="ri-arrow-down-s-line"></i>
-                </button>
-                <div v-if="showDownloadMenu && !downloading" class="download-menu">
-                  <button class="download-menu-item" @click="downloadReport('excel')">
-                    <i class="ri-file-excel-2-line"></i> Excel
-                  </button>
-                  <button class="download-menu-item" @click="downloadReport('pdf')">
-                    <i class="ri-file-pdf-2-line"></i> PDF
-                  </button>
-                </div>
-              </div>
-              <button :disabled="loading" class="btn-reset" @click="resetFilters">
-                <i class="ri-refresh-line"></i>
+          <div class="d-flex align-items-center gap-2">
+            <div class="download-dropdown" ref="downloadDropdown">
+              <button :disabled="loading || downloading" class="create-btn" @click="toggleDownloadMenu">
+                <i class="ri-download-2-line"></i>
+                <span>{{ downloading ? 'Downloading...' : 'Export' }}</span>
+                <i class="ri-arrow-down-s-line"></i>
               </button>
+              <div v-if="showDownloadMenu && !downloading" class="download-menu">
+                <button class="download-menu-item" @click="downloadReport('excel')">
+                  <i class="ri-file-excel-2-line"></i> Excel
+                </button>
+                <button class="download-menu-item" @click="downloadReport('pdf')">
+                  <i class="ri-file-pdf-2-line"></i> PDF
+                </button>
+              </div>
             </div>
-          </div>
-          <div class="report-tabs">
-            <button
-              v-for="tab in reportTabs"
-              :key="tab.key"
-              type="button"
-              class="report-tab"
-              :class="{ active: activeReport === tab.key }"
-              @click="selectReport(tab.key)"
-            >
-              <i :class="tab.icon"></i>
-              <span>{{ tab.label }}</span>
+            <button :disabled="loading" class="icon-btn" title="Reset filters" @click="resetFilters">
+              <i class="ri-refresh-line"></i>
             </button>
           </div>
         </div>
 
-        <!-- Loading State -->
-        <div v-if="loading" class="loading-state">
-          <div class="spinner"></div>
-          <p>Loading report data...</p>
-        </div>
+        <div class="library-card-body">
+          <!-- Filters -->
+          <div class="filters-section">
+            <div class="filters-grid">
+              <div class="filter-item">
+                <label>From</label>
+                <input v-model="form.from" type="date" class="filter-input" @change="fetchReports" />
+              </div>
+              <div class="filter-item">
+                <label>To</label>
+                <input v-model="form.to" type="date" class="filter-input" @change="fetchReports" />
+              </div>
+              <div class="filter-item">
+                <label>Location</label>
+                <select v-model="form.location_id" class="filter-input" @change="fetchReports">
+                  <option :value="null">All Locations</option>
+                  <option v-for="location in locations" :key="location.value" :value="location.value">
+                    {{ location.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="filter-item">
+                <label>Payment</label>
+                <select v-model="form.payment_mode" class="filter-input" @change="fetchReports">
+                  <option value="all">All</option>
+                  <option value="cash">Cash</option>
+                  <option value="credit">Credit</option>
+                </select>
+              </div>
+              <div class="filter-item">
+                <label>Limit</label>
+                <input v-model.number="form.limit" min="1" max="50" type="number" class="filter-input" @input="debouncedFetchReports" />
+              </div>
+            </div>
+            <div class="report-tabs">
+              <button
+                v-for="tab in reportTabs"
+                :key="tab.key"
+                type="button"
+                class="report-tab"
+                :class="{ active: activeReport === tab.key }"
+                @click="selectReport(tab.key)"
+              >
+                <i :class="tab.icon"></i>
+                <span>{{ tab.label }}</span>
+              </button>
+            </div>
+          </div>
 
-        <!-- Report Content -->
-        <div v-else class="report-content">
+          <!-- Loading State -->
+          <div v-if="loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading report data...</p>
+          </div>
+
+          <!-- Report Content -->
+          <div v-else class="report-content">
           <div v-if="activeReport === 'sales-summary'">
           <!-- Summary Cards -->
           <div class="summary-cards">
@@ -585,6 +588,7 @@
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
   </div>
@@ -738,54 +742,12 @@ export default {
 
 <style scoped>
 .report-container {
-  background: #f8fafc;
-  min-height: 100vh;
-  padding: 1.5rem;
-}
-
-/* Header */
-.report-header {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.header-icon {
-  font-size: 2rem;
-  color: #059669;
-  background: #ecfdf5;
-  padding: 0.75rem;
-  border-radius: 12px;
-}
-
-.header-content h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0;
-}
-
-.header-content p {
-  color: #64748b;
-  margin: 0.25rem 0 0 0;
-  font-size: 0.875rem;
+  padding: 0;
 }
 
 /* Filters */
 .filters-section {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .filters-grid {
@@ -802,94 +764,65 @@ export default {
 }
 
 .filter-item label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #648b74;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.05em;
 }
 
 .filter-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border: 1px solid #d7e5de;
+  border-radius: 10px;
+  font-size: 0.85rem;
   background: white;
   transition: all 0.15s ease;
 }
 
 .filter-input:focus {
   outline: none;
-  border-color: #059669;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
-}
-
-.filter-actions {
-  display: flex;
-  gap: 0.5rem;
+  border-color: #3d8d7a;
+  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.12);
 }
 
 .report-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
 }
 
 .report-tab {
-  border: 1px solid #dbe4ee;
-  background: #f8fafc;
-  color: #475569;
+  border: 1px solid #d7e5de;
+  background: #f7fbfa;
+  color: #355f55;
   border-radius: 999px;
-  padding: 0.55rem 0.9rem;
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   transition: all 0.15s ease;
 }
 
 .report-tab.active,
 .report-tab:hover {
-  background: #059669;
+  background: #3d8d7a;
   color: white;
-  border-color: #059669;
+  border-color: #3d8d7a;
 }
 
 /* Buttons */
-.btn-download {
-  background: #059669;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.btn-download:hover:not(:disabled) {
-  background: #047857;
-}
-
-.btn-download:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-reset {
+.icon-btn {
   width: 36px;
   height: 36px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid #d7e5de;
+  border-radius: 9px;
   background: white;
-  color: #64748b;
+  color: #5f786e;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -897,10 +830,10 @@ export default {
   transition: all 0.15s;
 }
 
-.btn-reset:hover:not(:disabled) {
-  background: #f8fafc;
-  color: #059669;
-  border-color: #059669;
+.icon-btn:hover:not(:disabled) {
+  background: #f4faf8;
+  color: #3d8d7a;
+  border-color: #3d8d7a;
 }
 
 /* Download Dropdown */
@@ -910,32 +843,32 @@ export default {
 
 .download-menu {
   position: absolute;
-  top: calc(100% + 0.25rem);
-  left: 0;
+  top: calc(100% + 0.35rem);
+  right: 0;
   background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-  min-width: 120px;
+  border: 1px solid #d7e5de;
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(39, 84, 72, 0.12);
+  min-width: 130px;
   z-index: 10;
 }
 
 .download-menu-item {
   width: 100%;
-  padding: 0.5rem 1rem;
+  padding: 0.55rem 0.9rem;
   text-align: left;
   background: none;
   border: none;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #1e293b;
+  font-size: 0.82rem;
+  color: #20413a;
   cursor: pointer;
 }
 
 .download-menu-item:hover {
-  background: #f8fafc;
+  background: #f4faf8;
 }
 
 .download-menu-item:first-child {
@@ -948,18 +881,19 @@ export default {
 
 /* Loading State */
 .loading-state {
-  background: white;
-  border-radius: 12px;
+  background: #f7fbfa;
+  border: 1px solid #e0ece7;
+  border-radius: 14px;
   padding: 3rem;
   text-align: center;
-  color: #64748b;
+  color: #5f786e;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #059669;
+  width: 36px;
+  height: 36px;
+  border: 3px solid #d7e5de;
+  border-top-color: #3d8d7a;
   border-radius: 50%;
   margin: 0 auto 1rem;
   animation: spin 0.8s linear infinite;
@@ -978,17 +912,18 @@ export default {
 }
 
 .summary-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e0ece7;
+  border-radius: 14px;
+  padding: 1.1rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .summary-card.total {
-  background: #059669;
+  background: linear-gradient(135deg, #3d8d7a 0%, #2e6f61 100%);
+  border-color: transparent;
 }
 
 .summary-card.total .summary-label,
@@ -997,27 +932,28 @@ export default {
 }
 
 .summary-icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
+  flex-shrink: 0;
 }
 
 .summary-icon.cash {
-  background: #ecfdf5;
-  color: #059669;
+  background: rgba(61, 141, 122, 0.12);
+  color: #3d8d7a;
 }
 
 .summary-icon.credit {
-  background: #fffbeb;
-  color: #d97706;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .summary-icon.other {
-  background: #eff6ff;
+  background: #e0ecff;
   color: #2563eb;
 }
 
@@ -1032,23 +968,24 @@ export default {
 
 .summary-label {
   display: block;
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: 0.72rem;
+  color: #648b74;
+  font-weight: 600;
   margin-bottom: 0.25rem;
 }
 
 .summary-value {
   display: block;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #20413a;
 }
 
 /* Tables */
 .tables-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 1.25rem;
   margin-bottom: 1.5rem;
 }
 
@@ -1058,10 +995,10 @@ export default {
 
 .data-table,
 .daily-sales {
-  background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  background: #ffffff;
+  border: 1px solid #e0ece7;
+  border-radius: 14px;
+  padding: 1.1rem;
 }
 
 .table-title {
@@ -1072,14 +1009,14 @@ export default {
 }
 
 .table-title i {
-  color: #059669;
-  font-size: 1.25rem;
+  color: #3d8d7a;
+  font-size: 1.1rem;
 }
 
 .table-title h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #20413a;
   margin: 0;
 }
 
@@ -1090,24 +1027,28 @@ table {
 
 th {
   text-align: left;
-  padding: 0.75rem 0.5rem 0.5rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #64748b;
+  padding: 0.7rem 0.5rem 0.5rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #648b74;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e0ece7;
 }
 
 td {
-  padding: 0.75rem 0.5rem;
-  font-size: 0.875rem;
-  color: #1e293b;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 0.65rem 0.5rem;
+  font-size: 0.82rem;
+  color: #20413a;
+  border-bottom: 1px solid #edf3f1;
 }
 
 tr:last-child td {
   border-bottom: none;
+}
+
+tbody tr:hover td {
+  background: #f4faf8;
 }
 
 .text-right {
@@ -1127,77 +1068,74 @@ tr:last-child td {
   justify-content: center;
   width: 20px;
   height: 20px;
-  background: #f1f5f9;
-  color: #475569;
+  background: #e8f4ef;
+  color: #2f7666;
   border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 .amount {
-  font-weight: 500;
-  color: #059669;
+  font-weight: 700;
+  color: #2f7666;
 }
 
 .so-number {
-  font-weight: 500;
-  color: #059669;
+  font-weight: 700;
+  color: #2f7666;
 }
 
 .payment-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .payment-badge.cash {
-  background: #ecfdf5;
-  color: #059669;
+  background: rgba(61, 141, 122, 0.12);
+  color: #2f7666;
 }
 
 .payment-badge.credit {
-  background: #fffbeb;
-  color: #d97706;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .payment-badge.other {
-  background: #eff6ff;
+  background: #e0ecff;
   color: #2563eb;
 }
 
 .empty-message {
   text-align: center;
-  color: #94a3b8;
+  color: #8ea298;
   padding: 2rem !important;
 }
 
 .empty-panel {
-  background: white;
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e0ece7;
+  border-radius: 14px;
   padding: 3rem 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   text-align: center;
-  color: #64748b;
+  color: #5f786e;
 }
 
 .empty-panel i {
-  font-size: 2rem;
-  color: #059669;
+  font-size: 1.8rem;
+  color: #3d8d7a;
 }
 
 .empty-panel h3 {
   margin: 0.75rem 0 0.5rem;
-  color: #1e293b;
+  color: #20413a;
+  font-size: 0.95rem;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .report-container {
-    padding: 1rem;
-  }
-  
   .tables-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -1205,10 +1143,6 @@ tr:last-child td {
   
   .filters-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .filter-actions {
-    grid-column: span 1;
   }
 
   .report-tab {
