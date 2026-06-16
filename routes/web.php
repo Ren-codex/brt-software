@@ -10,7 +10,7 @@ Route::get('/landing', function () {
     return Inertia::render('Landing');
 })->middleware('guest')->name('landing');
 
-Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
+Route::middleware(['2fa','auth','is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::get('/reports', [App\Http\Controllers\Modules\ReportsController::class, 'index']);

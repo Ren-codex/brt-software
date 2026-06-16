@@ -17,6 +17,8 @@ use App\Http\Resources\System\User\ViewResource;
 
 class UserClass
 {
+    const DEFAULT_PASSWORD = 'bouyant123';
+
     public function view($code){
         $data = new ViewResource(
             User::query()
@@ -30,12 +32,25 @@ class UserClass
     
     public function save($request){
 
+        $username = $request->username;
+        $employee = null;
+
+        if ($request->filled('employee_id')) {
+            $employee = Employee::whereNull('user_id')->find($request->employee_id);
+            if ($employee) {
+                $username = $this->generateUsername($employee);
+            }
+        }
+
         $data = User::create([
-            'username' =>  $request->username,
+            'username' =>  $username,
             'email' =>  $request->email,
-            'password' =>  bcrypt($request->password),
+            'password' =>  bcrypt(self::DEFAULT_PASSWORD),
             'is_active' => 1,
+            'email_verified_at' => now(),
         ]);
+        $data->must_change = 1;
+        $data->save();
 
         foreach($request->role_ids as $role_id){
             UserRole::create([
@@ -45,10 +60,8 @@ class UserClass
             ]);
         }
 
-        if ($request->filled('employee_id')) {
-            Employee::where('id', $request->employee_id)
-                ->whereNull('user_id')
-                ->update(['user_id' => $data->id]);
+        if ($employee) {
+            $employee->update(['user_id' => $data->id]);
         }
 
         $data = User::with('myroles.role')->find($data->id);
@@ -56,8 +69,26 @@ class UserClass
         return [
             'data' => new UserResource($data),
             'message' => 'User created successful!',
-            'info' => "You've successfully created the user."
+            'info' => "Username: {$data->username} — Default password: " . self::DEFAULT_PASSWORD . ". The user will be required to set a new password on first login.",
+            'password' => self::DEFAULT_PASSWORD,
         ];
+    }
+
+    public function generateUsername(Employee $employee){
+        $first = strtolower(substr($employee->firstname, 0, 1));
+        $middle = $employee->middlename ? strtolower(substr($employee->middlename, 0, 1)) : '';
+        $last = strtolower(substr($employee->lastname, 0, 1));
+        $mmdd = Carbon::parse($employee->birthdate)->format('md');
+
+        $base = $first . $middle . $last . $mmdd;
+        $username = $base;
+        $suffix = 2;
+        while (User::where('username', $username)->exists()) {
+            $username = $base . '-' . $suffix;
+            $suffix++;
+        }
+
+        return $username;
     }
 
     public function update($request){
@@ -164,17 +195,16 @@ class UserClass
 
     public function resetPassword($request){
         $data = User::find($request->id);
-        $data->password = bcrypt($request->password);
+        $data->password = bcrypt(self::DEFAULT_PASSWORD);
         $data->must_change = 1;
         $data->save();
 
         return [
             'data' => new UserResource($data),
-            'message' => 'Password reset was successful!',
-            'info' => "You've successfully updated the selected user."
+            'message' => 'Password reset to default!',
+            'info' => "Default password: " . self::DEFAULT_PASSWORD . ". The user will be required to set a new username and password on their next login.",
+            'password' => self::DEFAULT_PASSWORD,
         ];
-
-        
     }
 
     public function deactivate($request){

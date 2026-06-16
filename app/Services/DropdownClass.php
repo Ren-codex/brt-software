@@ -218,11 +218,13 @@ class DropdownClass
     }
 
     public function employeesWithoutAccount(){
+        $userService = new \App\Services\System\User\UserClass();
+
         return Employee::whereNull('user_id')
             ->with('position')
             ->orderBy('lastname')
             ->get()
-            ->map(function ($item) {
+            ->map(function ($item) use ($userService) {
                 $label = $item->fullname;
                 if ($item->position) {
                     $label .= ' — ' . $item->position->title;
@@ -231,6 +233,7 @@ class DropdownClass
                     'value' => $item->id,
                     'name'  => $label,
                     'email' => $item->email,
+                    'username' => $item->birthdate ? $userService->generateUsername($item) : null,
                 ];
             });
     }

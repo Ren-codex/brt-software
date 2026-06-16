@@ -74,6 +74,7 @@ class UserController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'password' => $result['password'] ?? null,
         ]);
     }
 
@@ -87,6 +88,7 @@ class UserController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'password' => $result['password'] ?? null,
         ]);
     }
 

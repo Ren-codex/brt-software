@@ -14,6 +14,7 @@ trait HandlesTransaction
         $status = false;
         $errors = null;
         $receiptId = null;
+        $password = null;
 
         try {
             $result = \DB::transaction($callback);
@@ -23,6 +24,7 @@ trait HandlesTransaction
             $message = $result['message'] ?? 'Success';
             $status = $result['status'] ?? true;
             $receiptId = $result['receipt_id'] ?? null;
+            $password = $result['password'] ?? null;
         } catch (ValidationException $e) {
             $errors = $e->errors();
             $info = collect($errors)->flatten()->first() ?? 'Validation failed.';
@@ -45,6 +47,7 @@ trait HandlesTransaction
             'status' => $status,
             'errors' => $errors,
             'receipt_id' => $receiptId,
+            'password' => $password,
         ];
     }
 }
