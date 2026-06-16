@@ -38,10 +38,10 @@
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>Code</th>
                     <th>Name</th>
                     <th>Pack Size</th>
                     <th>Unit</th>
-                    <th>Price</th>
                     <th>Active</th>
                     <th>Actions</th>
                   </tr>
@@ -52,11 +52,11 @@
                     'bg-info-subtle': index === selectedRow,
                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                   }">
-                    <td>{{ index + 1}}</td>
+                    <td>{{ (meta?.from ?? 1) + index }}</td>
+                    <td>{{ list.code }}</td>
                     <td>{{ list.brand?.name }}</td>
                     <td>{{ list.pack_size }}</td>
                     <td>{{ list.unit.name }}</td>
-                    <td>{{ formatCurrency(list.price) }}</td>
                     <td>
                       <b-form-checkbox
                         :checked="list.is_active === 1"
@@ -195,13 +195,6 @@ export default {
     handleDeleteSuccess() {
       this.$emit('toast', 'Product deleted successfully');
       this.$emit('fetch');
-    },
-
-    formatCurrency(value) {
-      if (typeof value !== 'number') {
-        return value;
-      }
-      return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
     },
   },
 };

@@ -35,9 +35,10 @@ class UserController extends Controller
             default:
                 return inertia('Modules/Accounts/Users/Index',[
                     'dropdowns' => [
-                        'roles' => $this->dropdown->roles()
+                        'roles'               => $this->dropdown->roles(),
+                        'unlinked_employees'  => $this->dropdown->employeesWithoutAccount(),
                     ]
-                ]); 
+                ]);
         }   
     }
 

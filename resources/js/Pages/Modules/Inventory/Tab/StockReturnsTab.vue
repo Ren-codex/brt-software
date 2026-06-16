@@ -12,9 +12,9 @@
                 <p class="header-subtitle mb-0">Track purchase order stock return requests</p>
               </div>
             </div>
-            <button class="create-btn" @click="openReturnStockModal">
-              <i class="ri-add-line"></i>
-              <span>Return Stock</span>
+            <button class="create-btn" @click="openReturnStockModal" :disabled="loadingOrders">
+              <i :class="loadingOrders ? 'ri-loader-4-line rotating-icon' : 'ri-add-line'"></i>
+              <span>{{ loadingOrders ? 'Loading...' : 'Return Stock' }}</span>
             </button>
         </div>
 
@@ -429,5 +429,15 @@ tbody tr:hover {
   font-size: 0.76rem;
   color: #6b8c85;
   margin: 0;
+}
+
+.rotating-icon {
+  animation: spin 0.9s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 </style>

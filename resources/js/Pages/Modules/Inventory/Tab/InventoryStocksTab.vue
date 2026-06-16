@@ -46,13 +46,13 @@
                     </thead>
                     <tbody>
                       <tr 
-                        v-for="(list,index) in availableStocks" 
-                        v-bind:key="list.id" 
-                        @click="openView(list)" 
+                        v-for="(list,index) in availableStocks"
+                        v-bind:key="list.id"
+                        @click="openView(list)"
                         style="cursor: pointer;"
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
-                        <td>{{ index + 1 }}</td>
+                        <td>{{ (meta?.from ?? 1) + index }}</td>
                         <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
                         <td style="width: 20%">{{ list.batch_code }}
                           <span 
@@ -110,13 +110,13 @@
                     </thead>
                     <tbody>
                       <tr 
-                        v-for="(list,index) in consumedStocks" 
-                        v-bind:key="list.id" 
-                        @click="openView(list)" 
+                        v-for="(list,index) in consumedStocks"
+                        v-bind:key="list.id"
+                        @click="openView(list)"
                         style="cursor: pointer;"
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
-                        <td>{{ index + 1 }}</td>
+                        <td>{{ (meta?.from ?? 1) + index }}</td>
                         <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
                         <td>{{ list.received_item.received_stock.batch_code }}</td>
                         <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>

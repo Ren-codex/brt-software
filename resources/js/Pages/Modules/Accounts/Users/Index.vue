@@ -102,7 +102,7 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
@@ -179,7 +179,6 @@ export default {
         openUpdate(data, index) {
             this.index = index;
             this.selectedRow = index;
-            console.log(data, 999);
             this.$refs.create.show(data);
         },
         openRole(data, index) {

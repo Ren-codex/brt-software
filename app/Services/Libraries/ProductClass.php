@@ -15,7 +15,8 @@ class ProductClass
                     $query->where(function ($q) use ($keyword) {
                         $q->whereHas('brand', function ($qb) use ($keyword) {
                             $qb->where('name', 'LIKE', "%{$keyword}%");
-                        })->orWhere('pack_size', 'LIKE', "%{$keyword}%");
+                        })->orWhere('pack_size', 'LIKE', "%{$keyword}%")
+                          ->orWhere('code', 'LIKE', "%{$keyword}%");
                     });
                 })
                 ->orderBy('created_at', 'DESC')
@@ -27,6 +28,7 @@ class ProductClass
     public function save($request)
     {
         $data = Product::create([
+            'code'          => $request->code,
             'pack_size'     => $request->pack_size,
             'unit_id'       => $request->unit_id,
             'brand_id'      => $request->brand_id,
@@ -44,6 +46,7 @@ class ProductClass
     {
         $data = Product::findOrFail($request->id);
         $data->update([
+            'code'          => $request->code,
             'pack_size'     => $request->pack_size,
             'unit_id'       => $request->unit_id,
             'brand_id'      => $request->brand_id,

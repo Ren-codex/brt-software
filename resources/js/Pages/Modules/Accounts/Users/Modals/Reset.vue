@@ -37,7 +37,7 @@
                 </BCol>
             </BRow>
               <div class="d-flex justify-content-end gap-2 mt-3">
-                    <BButton variant="light" @click="closeModal">Cancels</BButton>
+                    <BButton variant="light" @click="closeModal">Cancel</BButton>
                     <BButton variant="primary" @click="submit()" :disabled="processing || passwordMismatch">Reset Password</BButton>
                 </div>
         </form>
@@ -75,7 +75,6 @@ export default {
     },
     methods: {
         show(data) {
-            console.log(data, 99988);
             this.form.id = data.id;
             this.user = data;
             this.showModal = true;
@@ -112,7 +111,7 @@ export default {
                     this.form.reset();
                     this.closeModal();
                 },
-                OnError: () => {
+                onError: () => {
                     this.processing = false;
                 }
             });

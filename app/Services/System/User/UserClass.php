@@ -45,6 +45,12 @@ class UserClass
             ]);
         }
 
+        if ($request->filled('employee_id')) {
+            Employee::where('id', $request->employee_id)
+                ->whereNull('user_id')
+                ->update(['user_id' => $data->id]);
+        }
+
         $data = User::with('myroles.role')->find($data->id);
 
         return [
@@ -106,6 +112,17 @@ class UserClass
         $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
         ->with('roles')
         ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.employee:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.employee:user_id,firstname,middlename,lastname,suffix')
+        ->when($request->keyword, function ($query, $keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('username', 'like', "%{$keyword}%")
+                  ->orWhere('email', 'like', "%{$keyword}%")
+                  ->orWhereHas('employee', function ($eq) use ($keyword) {
+                      $eq->where('firstname', 'like', "%{$keyword}%")
+                         ->orWhere('lastname', 'like', "%{$keyword}%")
+                         ->orWhere('middlename', 'like', "%{$keyword}%");
+                  });
+            });
+        })
         ->paginate($request->count);
         return UserResource::collection($data);
     }

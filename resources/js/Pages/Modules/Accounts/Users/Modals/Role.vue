@@ -112,18 +112,26 @@ export default {
             showModal: false,
         }
     },
-    methods: { 
+    mounted() {
+        document.addEventListener('keydown', this._onEscape);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this._onEscape);
+    },
+    methods: {
+        _onEscape(e) {
+            if (e.key === 'Escape' && this.showModal && !e.__handledBySubModal) this.hide();
+        },
         show(data){
             this.user = data;
             this.showModal = true;
         },
-        openRemove(data,index){
+        openRemove(data, index){
             this.index = index;
             this.$refs.remove.show(data);
-
         },
 
-        openSetActive(data,index){
+        openSetActive(data, index){
             this.index = index;
             this.$refs.activate.show(data);
         },

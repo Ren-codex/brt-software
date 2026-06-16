@@ -39,6 +39,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Code</th>
                                     <th>Name</th>
                                     <th>Pack Size</th>
                                     <th>Unit</th>
@@ -53,6 +54,7 @@
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                                 }">
                                     <td>{{ index + 1}}</td>
+                                    <td>{{ list.code }}</td>
                                     <td>{{ list.brand?.name }}</td>
                                     <td>{{ list.pack_size }}</td>
                                     <td>{{ list.unit.name }}</td>
@@ -175,13 +177,6 @@ export default {
             .catch(error => {
                 console.error('Error updating product active status:', error);
             });
-        },
-
-        formatCurrency(value) {
-            if (typeof value !== 'number') {
-                return value;
-            }
-            return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
         },
     }
 }

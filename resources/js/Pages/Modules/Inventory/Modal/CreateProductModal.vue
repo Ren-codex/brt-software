@@ -1,8 +1,8 @@
 <template>
+  <Teleport to="body">
     <div
         v-if="showModal"
-        class="modal-overlay"
-        :class="{ active: showModal }"
+        class="modal-overlay active"
         @click.self="hide"
     >
         <div class="modal-container" @click.stop>
@@ -22,6 +22,23 @@
                     <span>{{ form.errors.duplicate }}</span>
                 </div>
                 <form @submit.prevent="submit">
+                    <div class="form-group">
+                        <label for="code" class="form-label">Product Code</label>
+                        <div class="input-wrapper">
+                            <i class="ri-barcode-line input-icon"></i>
+                            <input
+                                type="text"
+                                id="code"
+                                v-model="form.code"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.code }"
+                                placeholder="Enter product code"
+                                @input="form.code = form.code.toUpperCase(); handleInput('code')"
+                            >
+                        </div>
+                        <span class="error-message" v-if="form.errors.code">{{ form.errors.code }}</span>
+                    </div>
+
                     <div class="form-group">
                         <label for="brand_id" class="form-label">Brand</label>
                         <div class="input-wrapper">
@@ -107,22 +124,6 @@
                         <span class="error-message" v-if="form.errors.unit_id">{{ form.errors.unit_id }}</span>
                     </div>
 
-                    <!-- <div class="form-group">
-                        <label for="price" class="form-label">Price</label>
-                        <div class="input-wrapper">
-                            <i class="ri-money-dollar-circle-line input-icon"></i>
-                            <Amount
-                                @amount="value => form.price = value"
-                                :initialValue="form.price"
-                                class="form-control"
-                                :class="{ 'input-error': form.errors.price }"
-                                placeholder="Enter product price"
-                                @input="handleInput('price')"
-                            />
-                        </div>
-                        <span class="error-message" v-if="form.errors.price">{{ form.errors.price }}</span>
-                    </div> -->
-
                 </form>
             </div>
             <div class="modal-footer">
@@ -138,6 +139,7 @@
             </div>
         </div>
     </div>
+  </Teleport>
 </template>
 
 <script>
@@ -145,15 +147,15 @@ import { useForm } from '@inertiajs/vue3';
 import Multiselect from "@vueform/multiselect";
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
-import Amount from '@/Shared/Components/Forms/Amount.vue';
 
 export default {
-    components: { InputLabel, TextInput, Amount, Multiselect },
+    components: { InputLabel, TextInput, Multiselect },
     props: ['dropdowns'],
     data() {
         return {
             form: useForm({
                 id: null,
+                code: '',
                 pack_size: null,
                 unit_id: null,
                 brand_id: null,
@@ -164,7 +166,16 @@ export default {
             saveSuccess: false,
         }
     },
+    mounted() {
+        document.addEventListener('keydown', this._onEscape);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this._onEscape);
+    },
     methods: {
+        _onEscape(e) {
+            if (e.key === 'Escape' && this.showModal) this.hide();
+        },
         show() {
             this.form.reset();
             this.editable = false;
@@ -173,6 +184,7 @@ export default {
         },
         edit(data) {
             this.form.id = data.id;
+            this.form.code = data.code;
             this.form.pack_size = data.pack_size;
             this.form.unit_id = data.unit.id;
             this.form.brand_id = data.brand.id;

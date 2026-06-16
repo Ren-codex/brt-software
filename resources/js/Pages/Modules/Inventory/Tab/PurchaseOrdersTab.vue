@@ -95,7 +95,7 @@
                     style="cursor: pointer;"
                    
                   >
-                    <td>{{ index + 1 }}</td>
+                    <td>{{ (meta?.from ?? 1) + index }}</td>
                     <td>
                       <strong>{{ list.po_number }}</strong>
                     </td>

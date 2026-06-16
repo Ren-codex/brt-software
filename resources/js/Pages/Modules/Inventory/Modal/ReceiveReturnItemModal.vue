@@ -1,4 +1,5 @@
 <template>
+  <Teleport to="body">
   <div v-if="show" class="modal-overlay active" @click.self="$emit('close')">
     <div class="modal-container modal-lg">
       <div class="library-card-header modal-header">
@@ -62,6 +63,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script>
@@ -89,6 +91,12 @@ export default {
     },
   },
   emits: ['close', 'save', 'update-receive-form'],
+  mounted() {
+    document.addEventListener('keydown', this._onEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._onEscape);
+  },
   computed: {
     selectedReturnItemName() {
       return this.selectedReturnItem?.purchase_order_item?.product?.name || 'N/A';
@@ -116,6 +124,9 @@ export default {
     },
   },
   methods: {
+    _onEscape(e) {
+      if (e.key === 'Escape' && this.show) this.$emit('close');
+    },
     updateField(field, value) {
       const isNumericField = field === 'replaced_quantity';
       this.$emit('update-receive-form', {
@@ -127,10 +138,6 @@ export default {
 </script>
 
 <style scoped>
-.modal-overlay {
-  z-index: 1050;
-}
-
 .modal-container {
   display: flex;
   flex-direction: column;
@@ -150,10 +157,6 @@ export default {
   border-top: 1px solid #e9ecef;
 }
 
-.close-btn {
-  font-size: 1.3rem;
-  line-height: 1;
-}
 
 .textarea-control {
   resize: vertical;
