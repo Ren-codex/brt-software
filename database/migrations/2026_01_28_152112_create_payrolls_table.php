@@ -24,6 +24,9 @@ return new class extends Migration
             $table->foreign('payroll_template_id')->references('id')->on('payroll_templates')->onDelete('set null');
             $table->unsignedInteger('created_by')->nullable();
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
+            $table->unsignedInteger('approved_by_id')->nullable();
+            $table->foreign('approved_by_id')->references('id')->on('users')->onDelete('set null');
+            $table->timestamp('approved_at')->nullable();
             $table->timestamps();
         });
     }

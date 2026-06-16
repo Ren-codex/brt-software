@@ -228,6 +228,9 @@ class AccountingController extends Controller
             ? Carbon::parse($request->string('as_of'))->format('Y-m-d')
             : Carbon::today()->format('Y-m-d');
 
+        // Effective due date: ar_invoice.due_date → sales_order.due_date → invoice_date
+        $eff = "COALESCE(ai.due_date, so.due_date, ai.invoice_date)";
+
         $agingRows = DB::table('ar_invoices as ai')
             ->join('sales_orders as so', 'so.id', '=', 'ai.sales_order_id')
             ->join('customers as c', 'c.id', '=', 'so.customer_id')
@@ -237,11 +240,11 @@ class AccountingController extends Controller
                 'c.id as customer_id',
                 'c.name as customer_name',
                 DB::raw("SUM(ai.balance_due) as total_outstanding"),
-                DB::raw("SUM(CASE WHEN ai.due_date IS NULL OR ai.due_date >= '{$asOf}' THEN ai.balance_due ELSE 0 END) as current_bucket"),
-                DB::raw("SUM(CASE WHEN ai.due_date < '{$asOf}' AND DATEDIFF('{$asOf}', ai.due_date) BETWEEN 1 AND 30 THEN ai.balance_due ELSE 0 END) as days_1_30"),
-                DB::raw("SUM(CASE WHEN ai.due_date < '{$asOf}' AND DATEDIFF('{$asOf}', ai.due_date) BETWEEN 31 AND 60 THEN ai.balance_due ELSE 0 END) as days_31_60"),
-                DB::raw("SUM(CASE WHEN ai.due_date < '{$asOf}' AND DATEDIFF('{$asOf}', ai.due_date) BETWEEN 61 AND 90 THEN ai.balance_due ELSE 0 END) as days_61_90"),
-                DB::raw("SUM(CASE WHEN ai.due_date < '{$asOf}' AND DATEDIFF('{$asOf}', ai.due_date) > 90 THEN ai.balance_due ELSE 0 END) as days_90_plus"),
+                DB::raw("SUM(CASE WHEN {$eff} >= '{$asOf}' THEN ai.balance_due ELSE 0 END) as current_bucket"),
+                DB::raw("SUM(CASE WHEN {$eff} < '{$asOf}' AND DATEDIFF('{$asOf}', {$eff}) BETWEEN 1 AND 30 THEN ai.balance_due ELSE 0 END) as days_1_30"),
+                DB::raw("SUM(CASE WHEN {$eff} < '{$asOf}' AND DATEDIFF('{$asOf}', {$eff}) BETWEEN 31 AND 60 THEN ai.balance_due ELSE 0 END) as days_31_60"),
+                DB::raw("SUM(CASE WHEN {$eff} < '{$asOf}' AND DATEDIFF('{$asOf}', {$eff}) BETWEEN 61 AND 90 THEN ai.balance_due ELSE 0 END) as days_61_90"),
+                DB::raw("SUM(CASE WHEN {$eff} < '{$asOf}' AND DATEDIFF('{$asOf}', {$eff}) > 90 THEN ai.balance_due ELSE 0 END) as days_90_plus"),
                 DB::raw("COUNT(ai.id) as invoice_count"),
             ])
             ->groupBy('c.id', 'c.name')
@@ -271,24 +274,26 @@ class AccountingController extends Controller
                 'ai.invoice_number',
                 'ai.invoice_date',
                 'ai.due_date',
+                DB::raw("{$eff} as effective_due_date"),
                 'ai.amount_paid',
                 'ai.balance_due',
                 'c.name as customer_name',
-                DB::raw("CASE WHEN ai.due_date IS NULL OR ai.due_date >= '{$asOf}' THEN 0 ELSE DATEDIFF('{$asOf}', ai.due_date) END as days_overdue"),
+                DB::raw("CASE WHEN {$eff} >= '{$asOf}' THEN 0 ELSE DATEDIFF('{$asOf}', {$eff}) END as days_overdue"),
             ])
-            ->orderByDesc(DB::raw("CASE WHEN ai.due_date IS NULL OR ai.due_date >= '{$asOf}' THEN 0 ELSE DATEDIFF('{$asOf}', ai.due_date) END"))
+            ->orderByDesc(DB::raw("CASE WHEN {$eff} >= '{$asOf}' THEN 0 ELSE DATEDIFF('{$asOf}', {$eff}) END"))
             ->orderBy('c.name')
             ->get()
             ->map(fn ($row) => [
-                'id'             => $row->id,
-                'invoice_number' => $row->invoice_number,
-                'invoice_date'   => $row->invoice_date,
-                'due_date'       => $row->due_date,
-                'customer_name'  => $row->customer_name,
-                'amount_paid'    => $this->formatCurrency($row->amount_paid),
-                'balance_due'    => $this->formatCurrency($row->balance_due),
-                'days_overdue'   => (int) $row->days_overdue,
-                'aging_bucket'   => $this->classifyAgingBucket((int) $row->days_overdue),
+                'id'                 => $row->id,
+                'invoice_number'     => $row->invoice_number,
+                'invoice_date'       => $row->invoice_date,
+                'due_date'           => $row->due_date,
+                'effective_due_date' => $row->effective_due_date,
+                'customer_name'      => $row->customer_name,
+                'amount_paid'        => $this->formatCurrency($row->amount_paid),
+                'balance_due'        => $this->formatCurrency($row->balance_due),
+                'days_overdue'       => (int) $row->days_overdue,
+                'aging_bucket'       => $this->classifyAgingBucket((int) $row->days_overdue),
             ]);
 
         $totalOutstanding = $agingRows->sum('total_raw');
@@ -580,6 +585,25 @@ class AccountingController extends Controller
             return response()->json($this->buildLedgerLines($request, $dateFrom, $dateTo));
         }
 
+        if ($request->option === 'accounts_list') {
+            if (!$this->hasCoreAccountingTables()) {
+                return response()->json([]);
+            }
+            $sourceFilter = $request->string('source_filter')->toString();
+            $q = DB::table('journal_entry_lines as jel')
+                ->join('journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+                ->join('accounts as a', 'a.id', '=', 'jel.account_id')
+                ->select(['a.id', 'a.code', 'a.name', 'a.type'])
+                ->distinct();
+            if ($sourceFilter && $sourceFilter !== 'all') {
+                $types = $this->entryTypesForSource($sourceFilter);
+                if (!empty($types)) {
+                    $q->whereIn('je.entry_type', $types);
+                }
+            }
+            return response()->json($q->orderBy('a.code')->get());
+        }
+
         [$dateFrom, $dateTo] = $this->resolveDateRange($request);
         $balances    = $this->buildAccountBalances($dateFrom, $dateTo);
         $ledgerData  = $this->buildLedgerLines($request, $dateFrom, $dateTo);
@@ -650,6 +674,11 @@ class AccountingController extends Controller
             }
         }
 
+        $accountId = (int) $request->input('account_id', 0);
+        if ($accountId > 0) {
+            $base->where('jel.account_id', $accountId);
+        }
+
         $statsRow = (clone $base)
             ->selectRaw("
                 COALESCE(SUM(CASE WHEN jel.line_type = 'debit'  THEN jel.amount ELSE 0 END), 0) as total_debits,
@@ -681,34 +710,44 @@ class AccountingController extends Controller
                 'jel.description',
                 'u.username as posted_by',
             ])
-            ->orderBy('je.entry_date')
-            ->orderBy('je.id')
-            ->orderBy('jel.id')
+            ->orderByDesc('je.entry_date')
+            ->orderByDesc('je.id')
+            ->orderByDesc('jel.id')
             ->paginate($perPage);
 
-        $sourceMap = $this->batchResolveSourceRefs($paginator->getCollection());
+        $pageCollection   = $paginator->getCollection();
+        $sourceMap        = $this->batchResolveSourceRefs($pageCollection);
+        $runningBalances  = $this->computeRunningBalances($pageCollection->pluck('id')->all());
 
-        $paginator->through(fn ($line) => [
-            'id'             => $line->id,
-            'journal_number' => $line->journal_number,
-            'entry_date'     => $line->entry_date,
-            'post_date'      => $line->posted_at
-                ? Carbon::parse($line->posted_at)->format('Y-m-d')
-                : $line->entry_date,
-            'account_code'   => $line->account_code,
-            'account_name'   => $line->account_name,
-            'account_type'   => $line->account_type,
-            'entry_type'     => Str::of($line->entry_type)->replace('_', ' ')->title()->value(),
-            'source_label'   => $this->resolveSourceLabel($line->entry_type),
-            'reference'      => ($line->source_type && $line->source_id)
-                ? ($sourceMap[$line->source_type . ':' . $line->source_id] ?? null)
-                : null,
-            'description'    => $line->description ?: '—',
-            'line_type'      => $line->line_type,
-            'debit'          => $line->line_type === 'debit'  ? $this->formatCurrency($line->amount) : null,
-            'credit'         => $line->line_type === 'credit' ? $this->formatCurrency($line->amount) : null,
-            'posted_by'      => $line->posted_by ?: 'System',
-        ]);
+        $paginator->through(function ($line) use ($sourceMap, $runningBalances) {
+            $rb    = $runningBalances[(int) $line->id] ?? null;
+            $rbDr  = $rb === null ? null : ($rb >= 0);
+
+            return [
+                'id'                      => $line->id,
+                'journal_number'          => $line->journal_number,
+                'entry_date'              => $line->entry_date,
+                'post_date'               => $line->posted_at
+                    ? Carbon::parse($line->posted_at)->format('Y-m-d')
+                    : $line->entry_date,
+                'account_code'            => $line->account_code,
+                'account_name'            => $line->account_name,
+                'account_type'            => $line->account_type,
+                'entry_type'              => Str::of($line->entry_type)->replace('_', ' ')->title()->value(),
+                'source_label'            => $this->resolveSourceLabel($line->entry_type),
+                'reference'               => ($line->source_type && $line->source_id)
+                    ? ($sourceMap[$line->source_type . ':' . $line->source_id] ?? null)
+                    : null,
+                'description'             => $line->description ?: '—',
+                'line_type'               => $line->line_type,
+                'debit'                   => $line->line_type === 'debit'  ? $this->formatCurrency($line->amount) : null,
+                'credit'                  => $line->line_type === 'credit' ? $this->formatCurrency($line->amount) : null,
+                'posted_by'               => $line->posted_by ?: 'System',
+                'running_balance_raw'     => $rb,
+                'running_balance'         => $rb !== null ? $this->formatCurrency(abs($rb)) : null,
+                'running_balance_dr'      => $rbDr,
+            ];
+        });
 
         $paged = $paginator->toArray();
 
@@ -1094,36 +1133,44 @@ class AccountingController extends Controller
             return $this->emptyCashFlow();
         }
 
-        // Sum of debit-side amounts per entry_type = the monetary size of each entry
+        $hasReversalCols = $this->hasJournalReversalColumns();
+
         $q = DB::table('journal_entries as je')
             ->join('journal_entry_lines as jel', 'jel.journal_entry_id', '=', 'je.id')
             ->where('jel.line_type', 'debit')
             ->selectRaw("je.entry_type, SUM(jel.amount) as total, COUNT(DISTINCT je.id) as cnt")
             ->groupBy('je.entry_type');
 
+        if ($hasReversalCols) {
+            $q->whereNull('je.reversed_at')
+              ->whereNull('je.reversal_of_id');
+        }
+
         $this->applyDateRange($q, 'je.entry_date', $dateFrom, $dateTo);
 
-        $byType = $q->get()->keyBy('entry_type');
-        $amt    = fn ($t) => (float) ($byType->get($t)?->total ?? 0);
-        $cnt    = fn ($t) => (int)   ($byType->get($t)?->cnt   ?? 0);
-        $row    = fn (string $label, float $amount, int $entries, string $dir, string $note = '') => [
+        $byType  = $q->get()->keyBy('entry_type');
+        $amt     = fn ($t) => (float) ($byType->get($t)?->total ?? 0);
+        $cnt     = fn ($t) => (int)   ($byType->get($t)?->cnt   ?? 0);
+        $details = $this->buildAllRowDetails($dateFrom, $dateTo);
+
+        $row = fn (string $label, float $amount, int $entries, string $dir, string $note = '', array $det = []) => [
             'label'      => $label,
             'note'       => $note,
             'amount_raw' => $amount,
             'amount'     => $this->formatCurrency($amount),
             'entries'    => $entries,
             'direction'  => $dir,
+            'details'    => $det,
         ];
 
         // ── OPERATING ────────────────────────────────────────────────────────────
         $opRows = [
-            $row('Cash received from customers',       $amt('receipt_collection'),       $cnt('receipt_collection'),       'inflow',  'AR invoice payments collected'),
-            $row('Cash paid to suppliers',             $amt('accounts_payable_payment'), $cnt('accounts_payable_payment'), 'outflow', 'Accounts payable settlements'),
-            $row('Cash purchases (direct inventory)',  $amt('purchase_receipt_cash'),    $cnt('purchase_receipt_cash'),    'outflow', 'Inventory bought with cash'),
-            $row('Payroll disbursements',              $amt('payroll_disbursement'),     $cnt('payroll_disbursement'),     'outflow', 'Payroll cash payments'),
+            $row('Cash received from customers',       $amt('receipt_collection'),       $cnt('receipt_collection'),       'inflow',  'AR invoice payments collected',  $details['receipt_collection']),
+            $row('Cash paid to suppliers',             $amt('accounts_payable_payment'), $cnt('accounts_payable_payment'), 'outflow', 'Accounts payable settlements',   $details['accounts_payable_payment']),
+            $row('Cash purchases (direct inventory)',  $amt('purchase_receipt_cash'),    $cnt('purchase_receipt_cash'),    'outflow', 'Inventory bought with cash',     $details['purchase_receipt_cash']),
+            $row('Payroll disbursements',              $amt('payroll_disbursement'),     $cnt('payroll_disbursement'),     'outflow', 'Payroll cash payments',          $details['payroll_disbursement']),
         ];
 
-        // Manual entries that physically move cash (detected via cash/bank accounts)
         $manual = $this->buildManualCashRows($dateFrom, $dateTo);
         $opRows = array_merge($opRows, $manual['operating']);
 
@@ -1137,7 +1184,9 @@ class AccountingController extends Controller
         $finRows = $manual['financing'];
         $netFin  = collect($finRows)->sum(fn ($r) => $r['direction'] === 'inflow' ? $r['amount_raw'] : -$r['amount_raw']);
 
-        $netChange = round($netOp + $netInv + $netFin, 2);
+        $netChange      = round($netOp + $netInv + $netFin, 2);
+        $openingBalance = $this->buildOpeningCashBalance($dateFrom);
+        $closingBalance = round($openingBalance + $netChange, 2);
 
         return [
             'sections' => [
@@ -1170,24 +1219,25 @@ class AccountingController extends Controller
                 ],
             ],
             'totals' => [
-                'net_operating'           => $netOp,
-                'net_operating_formatted' => $this->formatCurrency($netOp),
-                'net_investing'           => $netInv,
-                'net_investing_formatted' => $this->formatCurrency($netInv),
-                'net_financing'           => $netFin,
-                'net_financing_formatted' => $this->formatCurrency($netFin),
-                'net_change'              => $netChange,
-                'net_change_formatted'    => $this->formatCurrency($netChange),
+                'net_operating'             => $netOp,
+                'net_operating_formatted'   => $this->formatCurrency($netOp),
+                'net_investing'             => $netInv,
+                'net_investing_formatted'   => $this->formatCurrency($netInv),
+                'net_financing'             => $netFin,
+                'net_financing_formatted'   => $this->formatCurrency($netFin),
+                'net_change'                => $netChange,
+                'net_change_formatted'      => $this->formatCurrency($netChange),
+                'opening_balance'           => $openingBalance,
+                'opening_balance_formatted' => $this->formatCurrency($openingBalance),
+                'closing_balance'           => $closingBalance,
+                'closing_balance_formatted' => $this->formatCurrency($closingBalance),
             ],
         ];
     }
 
-    private function buildManualCashRows(?string $dateFrom, ?string $dateTo): array
+    private function resolveCashAccountIds(): \Illuminate\Support\Collection
     {
-        $result = ['operating' => [], 'investing' => [], 'financing' => []];
-
-        // Identify cash/bank accounts by subtype or name
-        $cashIds = DB::table('accounts')
+        return DB::table('accounts')
             ->where('type', 'asset')
             ->where(function ($q) {
                 $q->whereIn('subtype', ['cash', 'bank', 'petty_cash', 'cash_equivalents'])
@@ -1197,6 +1247,78 @@ class AccountingController extends Controller
                   ->orWhere('slug', 'like', '%bank%');
             })
             ->pluck('id');
+    }
+
+    private function buildOpeningCashBalance(?string $dateFrom): float
+    {
+        if (!$dateFrom) return 0.0;
+
+        $cashIds = $this->resolveCashAccountIds();
+        if ($cashIds->isEmpty()) return 0.0;
+
+        $q = DB::table('journal_entry_lines as jel')
+            ->join('journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+            ->whereIn('jel.account_id', $cashIds)
+            ->where('je.entry_date', '<', $dateFrom)
+            ->selectRaw("SUM(CASE WHEN jel.line_type = 'debit' THEN jel.amount ELSE -jel.amount END) as balance");
+
+        if ($this->hasJournalReversalColumns()) {
+            $q->whereNull('je.reversed_at')->whereNull('je.reversal_of_id');
+        }
+
+        return round((float) ($q->value('balance') ?? 0), 2);
+    }
+
+    private function buildAllRowDetails(?string $dateFrom, ?string $dateTo): array
+    {
+        $types = ['receipt_collection', 'accounts_payable_payment', 'purchase_receipt_cash', 'payroll_disbursement'];
+
+        $q = DB::table('journal_entries as je')
+            ->join('journal_entry_lines as jel', 'jel.journal_entry_id', '=', 'je.id')
+            ->whereIn('je.entry_type', $types)
+            ->select(
+                'je.entry_type',
+                'je.entry_date',
+                'je.journal_number',
+                'je.memo',
+                'jel.line_type',
+                'jel.amount',
+                'jel.description'
+            )
+            ->orderByDesc('je.entry_date')
+            ->orderByDesc('je.id');
+
+        if ($this->hasJournalReversalColumns()) {
+            $q->whereNull('je.reversed_at')->whereNull('je.reversal_of_id');
+        }
+
+        $this->applyDateRange($q, 'je.entry_date', $dateFrom, $dateTo);
+
+        $grouped = $q->get()->groupBy('entry_type');
+
+        $result = [];
+        foreach ($types as $type) {
+            $result[$type] = ($grouped->get($type) ?? collect())
+                ->take(60)
+                ->map(fn ($e) => [
+                    'date'           => $e->entry_date,
+                    'journal_number' => $e->journal_number ?? '—',
+                    'description'    => $e->description ?: ($e->memo ?: '—'),
+                    'debit'          => $e->line_type === 'debit'  ? $this->formatCurrency((float) $e->amount) : null,
+                    'credit'         => $e->line_type === 'credit' ? $this->formatCurrency((float) $e->amount) : null,
+                    'amount_raw'     => (float) $e->amount,
+                ])
+                ->values()
+                ->toArray();
+        }
+
+        return $result;
+    }
+
+    private function buildManualCashRows(?string $dateFrom, ?string $dateTo): array
+    {
+        $result  = ['operating' => [], 'investing' => [], 'financing' => []];
+        $cashIds = $this->resolveCashAccountIds();
 
         if ($cashIds->isEmpty()) {
             return $result;
@@ -1208,11 +1330,17 @@ class AccountingController extends Controller
             ->whereIn('je.entry_type', ['manual', 'adjusting_entry'])
             ->select([
                 'je.id',
+                'je.entry_date',
                 'je.memo',
                 'jel.line_type',
                 'jel.amount',
                 'jel.description',
             ]);
+
+        if ($this->hasJournalReversalColumns()) {
+            $q->whereNull('je.reversed_at')
+              ->whereNull('je.reversal_of_id');
+        }
 
         $this->applyDateRange($q, 'je.entry_date', $dateFrom, $dateTo);
 
@@ -1236,6 +1364,14 @@ class AccountingController extends Controller
                 'amount'     => $this->formatCurrency(abs($netCash)),
                 'entries'    => 1,
                 'direction'  => $netCash > 0 ? 'inflow' : 'outflow',
+                'details'    => [[
+                    'date'           => $first->entry_date,
+                    'journal_number' => '—',
+                    'description'    => $label,
+                    'debit'          => $netCash > 0 ? $this->formatCurrency(abs($netCash)) : null,
+                    'credit'         => $netCash < 0 ? $this->formatCurrency(abs($netCash)) : null,
+                    'amount_raw'     => abs($netCash),
+                ]],
             ];
         }
 
@@ -1258,6 +1394,8 @@ class AccountingController extends Controller
                 'net_investing' => 0, 'net_investing_formatted' => $zero,
                 'net_financing' => 0, 'net_financing_formatted' => $zero,
                 'net_change'    => 0, 'net_change_formatted'    => $zero,
+                'opening_balance' => 0, 'opening_balance_formatted' => $zero,
+                'closing_balance' => 0, 'closing_balance_formatted' => $zero,
             ],
         ];
     }
@@ -1909,6 +2047,44 @@ class AccountingController extends Controller
         ];
     }
 
+    /**
+     * For each jel.id in $lineIds, compute the running balance of its account
+     * up to and including that line (chronological order: entry_date, je.id, jel.id).
+     * Returns [ jel_id => float, ... ]
+     */
+    private function computeRunningBalances(array $lineIds): array
+    {
+        if (empty($lineIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($lineIds), '?'));
+
+        $rows = DB::select("
+            SELECT jel.id,
+                   COALESCE((
+                       SELECT SUM(CASE WHEN jel2.line_type = 'debit' THEN jel2.amount ELSE -jel2.amount END)
+                       FROM journal_entry_lines jel2
+                       INNER JOIN journal_entries je2 ON je2.id = jel2.journal_entry_id
+                       WHERE jel2.account_id = jel.account_id
+                         AND (
+                             je2.entry_date < je.entry_date
+                             OR (je2.entry_date = je.entry_date AND je2.id < je.id)
+                             OR (je2.entry_date = je.entry_date AND je2.id = je.id AND jel2.id <= jel.id)
+                         )
+                   ), 0) AS running_balance
+            FROM journal_entry_lines jel
+            INNER JOIN journal_entries je ON je.id = jel.journal_entry_id
+            WHERE jel.id IN ($placeholders)
+        ", $lineIds);
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row->id] = (float) $row->running_balance;
+        }
+        return $map;
+    }
+
     private function formatCurrency(float|int|null $value): string
     {
         return 'P ' . number_format((float) $value, 2, '.', ',');
@@ -1972,16 +2148,18 @@ class AccountingController extends Controller
         }
 
         $asOf = Carbon::today()->format('Y-m-d');
+        $eff  = "COALESCE(ai.due_date, so.due_date, ai.invoice_date)";
 
-        $row = DB::table('ar_invoices')
-            ->where('balance_due', '>', 0)
+        $row = DB::table('ar_invoices as ai')
+            ->join('sales_orders as so', 'so.id', '=', 'ai.sales_order_id')
+            ->where('ai.balance_due', '>', 0)
             ->selectRaw("
-                COALESCE(SUM(balance_due), 0) as total,
-                COALESCE(SUM(CASE WHEN due_date IS NULL OR due_date >= '{$asOf}' THEN balance_due ELSE 0 END), 0) as current_bucket,
-                COALESCE(SUM(CASE WHEN due_date < '{$asOf}' AND DATEDIFF('{$asOf}', due_date) BETWEEN 1 AND 30 THEN balance_due ELSE 0 END), 0) as days_1_30,
-                COALESCE(SUM(CASE WHEN due_date < '{$asOf}' AND DATEDIFF('{$asOf}', due_date) BETWEEN 31 AND 60 THEN balance_due ELSE 0 END), 0) as days_31_60,
-                COALESCE(SUM(CASE WHEN due_date < '{$asOf}' AND DATEDIFF('{$asOf}', due_date) BETWEEN 61 AND 90 THEN balance_due ELSE 0 END), 0) as days_61_90,
-                COALESCE(SUM(CASE WHEN due_date < '{$asOf}' AND DATEDIFF('{$asOf}', due_date) > 90 THEN balance_due ELSE 0 END), 0) as days_90_plus
+                COALESCE(SUM(ai.balance_due), 0) as total,
+                COALESCE(SUM(CASE WHEN {$eff} >= '{$asOf}' THEN ai.balance_due ELSE 0 END), 0) as current_bucket,
+                COALESCE(SUM(CASE WHEN {$eff} < '{$asOf}' AND DATEDIFF('{$asOf}', {$eff}) BETWEEN 1 AND 30 THEN ai.balance_due ELSE 0 END), 0) as days_1_30,
+                COALESCE(SUM(CASE WHEN {$eff} < '{$asOf}' AND DATEDIFF('{$asOf}', {$eff}) BETWEEN 31 AND 60 THEN ai.balance_due ELSE 0 END), 0) as days_31_60,
+                COALESCE(SUM(CASE WHEN {$eff} < '{$asOf}' AND DATEDIFF('{$asOf}', {$eff}) BETWEEN 61 AND 90 THEN ai.balance_due ELSE 0 END), 0) as days_61_90,
+                COALESCE(SUM(CASE WHEN {$eff} < '{$asOf}' AND DATEDIFF('{$asOf}', {$eff}) > 90 THEN ai.balance_due ELSE 0 END), 0) as days_90_plus
             ")
             ->first();
 

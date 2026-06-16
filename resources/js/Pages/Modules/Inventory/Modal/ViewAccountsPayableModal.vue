@@ -1,5 +1,6 @@
 <template>
-  <div v-if="showModal" class="modal-overlay" @click.self="hide">
+  <Teleport to="body">
+  <div v-if="showModal" class="modal-overlay active" @click.self="hide">
     <div class="modal-container modal-xl">
       <div class="modal-header">
         <div>
@@ -159,9 +160,12 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script>
+import { formatCurrency, formatDate } from '@/Shared/utils/formatters.js';
+
 export default {
   name: 'ViewAccountsPayableModal',
   emits: ['pay'],
@@ -182,7 +186,16 @@ export default {
         });
     },
   },
+  mounted() {
+    document.addEventListener('keydown', this._onEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._onEscape);
+  },
   methods: {
+    _onEscape(e) {
+      if (e.key === 'Escape' && this.showModal) this.hide();
+    },
     show(record) {
       this.record = record;
       this.showModal = true;
@@ -200,29 +213,15 @@ export default {
       this.hide();
       this.$emit('pay', record);
     },
-    formatCurrency(value) {
-      return '₱' + Number(value || 0).toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    },
-    formatDate(value) {
-      if (!value) return 'N/A';
-
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return value;
-
-      return date.toLocaleDateString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    },
+    formatCurrency,
+    formatDate,
     payableStatusLabel(record) {
-      return Number(record?.amount_paid || 0) > 0 ? 'Partially Paid' : 'Unpaid';
+      const isUnpaid = Number(record?.amount_paid || 0) <= 0;
+      return isUnpaid ? 'Unpaid' : 'Partially Paid';
     },
     payableStatusClass(record) {
-      return Number(record?.amount_paid || 0) > 0 ? 'status-partial' : 'status-unpaid';
+      const isUnpaid = Number(record?.amount_paid || 0) <= 0;
+      return isUnpaid ? 'status-unpaid' : 'status-partial';
     },
     paymentModeClass(mode) {
       return String(mode || 'payment')

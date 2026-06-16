@@ -8,12 +8,10 @@
                 <div class="health-info">
                     <span class="health-label">{{ stat.label }}</span>
                     <div class="health-value-wrapper">
-                        <span class="health-value">{{ stat.value }}</span>
-                        <span class="health-unit">{{ stat.unit }}</span>
+                        <span class="health-value">{{ stat.label === 'Inventory Value' ? '₱' : '' }}{{ formatNumber(stat.value) }}</span>
+                        <span v-if="stat.unit" class="health-unit">{{ stat.unit }}</span>
                     </div>
-                    <span v-if="stat.trend" class="health-trend" :class="stat.trendClass">
-                        <i :class="stat.trendIcon"></i> {{ stat.trend }} from last month
-                    </span>
+                    <span v-if="stat.trend" class="health-trend">{{ stat.trend }}</span>
                 </div>
             </div>
         </div>
@@ -62,11 +60,7 @@
             <div class="card-header-modern">
                 <div class="d-flex align-items-center gap-3">
                     <h3>Low Stock Alert</h3>
-                    <span class="alert-badge">{{ lowStockItems.length }} items need attention</span>
-                </div>
-                <div class="d-flex gap-2">
-                    <input type="text" class="search-input" placeholder="Search products...">
-                    <button class="btn-outline-modern">Filter</button>
+                    <span v-if="lowStockItems.length > 0" class="alert-badge">{{ lowStockItems.length }} items need attention</span>
                 </div>
             </div>
             <div v-if="lowStockItems.length === 0" class="empty-grid-state">
@@ -147,6 +141,13 @@ export default {
         this.$el.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
     },
     methods: {
+        formatNumber(val) {
+            if (!val && val !== 0) return '0';
+            const num = parseFloat(val);
+            if (isNaN(num)) return '0';
+            const formatted = Number.isInteger(num) ? num : parseFloat(num.toFixed(2));
+            return formatted.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        },
         getStockStatus(item) {
             if (item.current_stock <= 0) return 'Out';
             if (item.current_stock <= item.minimum_stock * 0.5) return 'Critical';

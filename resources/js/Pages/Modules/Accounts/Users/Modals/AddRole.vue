@@ -95,9 +95,6 @@ export default {
                 .map(role => role.role.id)
         );
 
-        console.log(assignedRoleIds, 'assignedRoleIds');
-
-
         return this.list_roles
             .filter(role => role && !assignedRoleIds.has(role.value))
             .map(role => ({
@@ -108,11 +105,19 @@ export default {
 
         },
 
-        mounted() {
-            console.log(this.list_roles, 'list_roles');
-            console.log(this.roles, 'existingroles');
+    mounted() {
+        document.addEventListener('keydown', this._onEscape);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this._onEscape);
+    },
+    methods: {
+        _onEscape(e) {
+            if (e.key === 'Escape' && this.showModal && !this.form.processing) {
+                e.__handledBySubModal = true;
+                this.hide();
+            }
         },
-    methods: { 
         show(data){
             this.user = data;
             this.form.user_id = this.user.id,

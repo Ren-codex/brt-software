@@ -6,7 +6,6 @@
         <div class="col-md-12">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-team-fill"></i>
@@ -20,7 +19,6 @@
                             <i class="ri-add-line"></i>
                             <span>Create User</span>
                         </button>
-                    </div>
                 </div>
                <div class="card-body m-2 p-3">
                     <div class="search-section">
@@ -104,7 +102,7 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
@@ -181,7 +179,6 @@ export default {
         openUpdate(data, index) {
             this.index = index;
             this.selectedRow = index;
-            console.log(data, 999);
             this.$refs.create.show(data);
         },
         openRole(data, index) {

@@ -1,8 +1,8 @@
 <template>
+  <Teleport to="body">
   <div
     v-if="showModal"
-    class="modal-overlay"
-    :class="{ active: showModal }"
+    class="modal-overlay active"
     @click.self="hide"
   >
     <div class="modal-container" @click.stop>
@@ -83,6 +83,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script>
@@ -146,7 +147,16 @@ export default {
       }
     }
   },
+  mounted() {
+    document.addEventListener('keydown', this._onEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._onEscape);
+  },
   methods: {
+    _onEscape(e) {
+      if (e.key === 'Escape' && this.showModal) this.hide();
+    },
     show() {
         this.form.reset();
         this.saveSuccess = false;

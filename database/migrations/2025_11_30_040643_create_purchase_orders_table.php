@@ -23,6 +23,10 @@ return new class extends Migration
             $table->foreign('supplier_id')->references('id')->on('list_suppliers')->onDelete('cascade');
             $table->unsignedInteger('created_by_id');
             $table->foreign('created_by_id')->references('id')->on('users')->onDelete('cascade');
+            $table->string('pr_number')->nullable();
+            $table->unsignedInteger('approved_by_id')->nullable();
+            $table->foreign('approved_by_id')->references('id')->on('users')->onDelete('cascade');
+            $table->date('approved_date')->nullable();
             $table->timestamps();
         });
     }

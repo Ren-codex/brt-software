@@ -217,6 +217,24 @@ class DropdownClass
         return  $data;
     }
 
+    public function employeesWithoutAccount(){
+        return Employee::whereNull('user_id')
+            ->with('position')
+            ->orderBy('lastname')
+            ->get()
+            ->map(function ($item) {
+                $label = $item->fullname;
+                if ($item->position) {
+                    $label .= ' — ' . $item->position->title;
+                }
+                return [
+                    'value' => $item->id,
+                    'name'  => $label,
+                    'email' => $item->email,
+                ];
+            });
+    }
+
     public function sales_reps(){
         $data = Employee::where('position_id', ListPosition::getID('Sales Rep'))->get()->map(function ($item) {
             return [

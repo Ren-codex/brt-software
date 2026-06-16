@@ -15,6 +15,8 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->increments('id');
 
+            $table->string('stock_return_no')->nullable()->unique();
+
             $table->unsignedInteger('po_id');
             $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('cascade');
             $table->text('reason');

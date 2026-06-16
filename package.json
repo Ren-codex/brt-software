@@ -46,6 +46,7 @@
         "lottie-web": "^5.12.2",
         "maska": "^3.1.0",
         "moment": "^2.29.4",
+        "playwright": "^1.60.0",
         "prismjs": "^1.29.0",
         "qrcode-vue3": "^1.7.1",
         "relative-time": "^1.0.0",

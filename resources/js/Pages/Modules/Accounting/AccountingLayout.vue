@@ -32,6 +32,8 @@ const PAGE_META = {
     'Modules/Accounting/ChartOfAccounts':    { tab: 'settings',            title: 'Settings' },
     'Modules/Accounting/AccountingSettings': { tab: 'settings',            title: 'Settings' },
     'Modules/Accounting/JournalEntries':     { tab: 'journal_entries',     title: 'Journal Entries' },
+    'Modules/Accounting/PettyCash':          { tab: 'petty_cash',          title: 'Petty Cash' },
+    'Modules/Accounting/Expenses':           { tab: 'expenses',            title: 'Expenses' },
 };
 
 export default {

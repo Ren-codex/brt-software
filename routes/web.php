@@ -40,8 +40,6 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
     Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead']);
 
     Route::middleware(['role:Administrator,Top Management,Area Business Manager,Super Admin'])->group(function () {
-        Route::post('/expenses/budgets', [App\Http\Controllers\Modules\ExpenseController::class, 'storeBudget']);
-        Route::delete('/expenses/budgets/{id}', [App\Http\Controllers\Modules\ExpenseController::class, 'destroyBudget']);
         // Replenishment request workflow
         Route::get('/replenishments', [App\Http\Controllers\Modules\ReplenishmentController::class, 'index']);
         Route::post('/replenishments', [App\Http\Controllers\Modules\ReplenishmentController::class, 'store']);
@@ -120,9 +118,20 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::post('/accounting/accounts', [App\Http\Controllers\Modules\AccountingController::class, 'storeAccount']);
         Route::put('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'updateAccount']);
         Route::patch('/accounting/accounts/{id}/toggle', [App\Http\Controllers\Modules\AccountingController::class, 'toggleAccount']);
+        Route::delete('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'destroyAccount']);
         Route::get('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'journalEntries']);
         Route::post('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'storeManualJournal']);
         Route::get('/accounting/cash-management', [App\Http\Controllers\Modules\CashManagementController::class, 'index']);
+        Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index']);
+        Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher']);
+        Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher']);
+        Route::post('/accounting/petty-cash/funds/{id}/top-up', [App\Http\Controllers\Modules\PettyCashController::class, 'topUpFund']);
+        Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index']);
+        Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store']);
+        Route::put('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'update']);
+        Route::patch('/accounting/expenses/{id}/approve', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'approve']);
+        Route::patch('/accounting/expenses/{id}/void', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'void']);
+        Route::delete('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'destroy']);
         Route::get('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'index']);
         Route::post('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'start']);
         Route::get('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'show']);
@@ -141,11 +150,6 @@ Route::middleware(['2fa','auth','verified','is_active'])->group(function () {
         Route::post('/accounting/bank-accounts', [App\Http\Controllers\Modules\BankAccountController::class, 'store']);
         Route::put('/accounting/bank-accounts/{id}', [App\Http\Controllers\Modules\BankAccountController::class, 'update']);
         Route::patch('/accounting/bank-accounts/{id}/toggle', [App\Http\Controllers\Modules\BankAccountController::class, 'toggle']);
-        Route::get('/expenses/print', [App\Http\Controllers\Modules\ExpenseController::class, 'printExpenses']);
-        Route::resource('/expenses', App\Http\Controllers\Modules\ExpenseController::class);
-        Route::patch('/expenses/{id}/approve', [App\Http\Controllers\Modules\ExpenseController::class, 'approve']);
-        Route::patch('/expenses/{id}/release', [App\Http\Controllers\Modules\ExpenseController::class, 'release']);
-        Route::patch('/expenses/{id}/void', [App\Http\Controllers\Modules\ExpenseController::class, 'void']);
 
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);

@@ -15,6 +15,21 @@
 
             <div class="modal-body">
                 <form @submit.prevent="submit">
+                    <div v-if="!editable" class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Link to Employee <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+                            <Multiselect
+                                :options="dropdowns.unlinked_employees || []"
+                                :searchable="true"
+                                label="name"
+                                v-model="form.employee_id"
+                                placeholder="Search employee..."
+                                class="modern-multiselect"
+                                @select="onEmployeeSelect"
+                                @clear="onEmployeeClear"
+                            />
+                        </div>
+                    </div>
                     <div class="form-row">
                         <div class="form-group form-group-half">
                             <label for="username" class="form-label">Username</label>
@@ -142,6 +157,7 @@ export default {
                 confirm_password: null,
                 username: null,
                 role_ids: null,
+                employee_id: null,
                 option: 'users'
             }),
             togglePassword: false,
@@ -152,7 +168,24 @@ export default {
             saveSuccess: false
         }
     },
-    methods: { 
+    mounted() {
+        document.addEventListener('keydown', this._onEscape);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this._onEscape);
+    },
+    methods: {
+        _onEscape(e) {
+            if (e.key === 'Escape' && this.showModal && !this.form.processing) this.hide();
+        },
+        onEmployeeSelect(value, option) {
+            if (option?.email) {
+                this.form.email = option.email;
+            }
+        },
+        onEmployeeClear() {
+            this.form.email = null;
+        },
         show(data = null){
             this.form.defaults({
                 id: null,
@@ -161,6 +194,7 @@ export default {
                 confirm_password: null,
                 username: null,
                 role_ids: null,
+                employee_id: null,
                 option: 'users'
             }).reset();
             this.form.clearErrors();
@@ -230,6 +264,7 @@ export default {
         hide(){
             this.form.reset();
             this.form.clearErrors();
+            this.form.employee_id = null;
             this.passwordMismatch = false;
             this.togglePassword = false;
             this.toggleConfirm = false;
