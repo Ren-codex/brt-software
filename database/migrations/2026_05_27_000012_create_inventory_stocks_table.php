@@ -11,10 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('inventory_stocks', function (Blueprint $table) {
+        Schema::create('inventory_stocks', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->increments('id');
+            $table->string('batch_code')->unique();
+            $table->unsignedInteger('received_item_id');
+            $table->foreign('received_item_id')->references('id')->on('received_items')->onDelete('cascade');
+            $table->integer('quantity');
             $table->decimal('retail_price', 10, 2)->nullable();
             $table->decimal('wholesale_price', 10, 2)->nullable();
             $table->date('expiration_date')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -23,8 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('inventory_stocks', function (Blueprint $table) {
-            $table->dropColumn(['retail_price', 'wholesale_price', 'expiration_date']);
-        });
+        Schema::dropIfExists('inventory_stocks');
     }
 };
