@@ -2,6 +2,7 @@ import './bootstrap';
 
 import { createApp, h } from 'vue';
 import { createInertiaApp, Link, Head } from '@inertiajs/vue3';
+import ConfirmPlugin from '@/Shared/confirm-plugin';
 import BootstrapVueNext from 'bootstrap-vue-next';
 import VueApexCharts from "vue3-apexcharts";
 import Toast from "vue-toastification";
@@ -37,6 +38,7 @@ createInertiaApp({
             .use(BootstrapVueNext)
             .use(VueApexCharts)
             .use(Toast)
+            .use(ConfirmPlugin)
             .component("Link", Link)
             .component("Head", Head)
             .mount(el);

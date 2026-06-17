@@ -33,36 +33,17 @@
           </div>
           
           <div class="tabs-section">
-            <div class="tabs-wrapper">
+            <div class="filter-segment">
               <button
-                :class="['tab-btn', { active: activeTab === 'all' }]"
-                @click="setActiveTab('all')"
+                v-for="tab in statusTabs"
+                :key="tab.value"
+                type="button"
+                class="filter-segment-btn"
+                :class="{ active: activeTab === tab.value }"
+                @click="setActiveTab(tab.value)"
               >
-                All
-              </button>
-              <button
-                :class="['tab-btn', { active: activeTab === 'pending' }]"
-                @click="setActiveTab('pending')"
-              >
-                Pending
-              </button>
-              <button
-                :class="['tab-btn', { active: activeTab === 'approved' }]"
-                @click="setActiveTab('approved')"
-              >
-                Approved
-              </button>
-              <button
-                :class="['tab-btn', { active: activeTab === 'disapproved' }]"
-                @click="setActiveTab('disapproved')"
-              >
-                Disapproved
-              </button>
-              <button
-                :class="['tab-btn', { active: activeTab === 'completed' }]"
-                @click="setActiveTab('completed')"
-              >
-                Completed
+                <i :class="tab.icon"></i>
+                <span>{{ tab.label }}</span>
               </button>
             </div>
           </div>
@@ -195,6 +176,13 @@ export default {
     return {
       localKeyword: this.filter.keyword || '',
       activeTab: 'all',
+      statusTabs: [
+        { value: 'all',          label: 'All',          icon: 'ri-list-check' },
+        { value: 'pending',      label: 'Pending',      icon: 'ri-time-line' },
+        { value: 'approved',     label: 'Approved',     icon: 'ri-check-line' },
+        { value: 'disapproved',  label: 'Disapproved',  icon: 'ri-close-circle-line' },
+        { value: 'completed',    label: 'Completed',    icon: 'ri-checkbox-circle-line' },
+      ],
       loadingOrders: false,
       returnableOrders: [],
     };
@@ -362,31 +350,43 @@ export default {
   margin-bottom: 1rem;
 }
 
-.tabs-wrapper {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid #e9ecef;
+.filter-segment {
+  display: inline-flex;
+  background: #eaf2f0;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
 }
 
-.tab-btn {
-  padding: 8px 16px;
-  background: none;
+.filter-segment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
-  border-bottom: 2px solid transparent;
-  color: #6c757d;
-  font-weight: 500;
+  background: transparent;
+  color: #4a7a70;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 8px;
+  transition: all 0.18s ease;
+  white-space: nowrap;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
 }
 
-.tab-btn:hover {
-  color: #2e8b57;
+.filter-segment-btn i {
+  font-size: 0.95rem;
 }
 
-.tab-btn.active {
-  color: #2e8b57;
-  border-bottom-color: #2e8b57;
+.filter-segment-btn:hover:not(.active) {
+  background: rgba(61, 141, 122, 0.1);
+  color: #3d8d7a;
+}
+
+.filter-segment-btn.active {
+  background: #3d8d7a;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
 }
 
 tbody tr {
