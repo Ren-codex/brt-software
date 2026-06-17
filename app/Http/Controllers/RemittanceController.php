@@ -29,6 +29,12 @@ class RemittanceController extends Controller
             case 'dashboard':
                 return $this->getDashboardMetrics();
             break;
+            case 'summary':
+                return $this->remittance->summary($request);
+            break;
+            case 'my_holdings':
+                return $this->remittance->myHoldings();
+            break;
             default:
                 return inertia('Modules/Sales/Components/Remittances/Index');
             break;

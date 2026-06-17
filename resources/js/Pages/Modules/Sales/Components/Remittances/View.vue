@@ -71,7 +71,7 @@
                                 </div>
                             </div>
                             <div class="profile-info-item">
-                                <div class="profile-label">Collector</div>
+                                <div class="profile-label">Sales Rep</div>
                                 <div class="profile-value">
                                     <i class="ri-user-line"></i>
                                     {{ item.created_by?.fullname || '-' }}
@@ -91,6 +91,23 @@
                                     {{ formatDate(item.approved_at) }}
                                 </div>
                             </div>
+                            <template v-if="item.received_amount !== null && item.received_amount !== undefined">
+                                <div class="profile-info-item">
+                                    <div class="profile-label">Amount Received</div>
+                                    <div class="profile-value">
+                                        <i class="ri-money-dollar-circle-line"></i>
+                                        {{ formatCurrency(item.received_amount) }}
+                                    </div>
+                                </div>
+                                <div class="profile-info-item">
+                                    <div class="profile-label">Variance</div>
+                                    <div class="profile-value">
+                                        <span :class="['variance-chip', Number(item.variance) === 0 ? 'variance-ok' : 'variance-warn']">
+                                            {{ Number(item.variance) === 0 ? '₱0.00 — Match' : (Number(item.variance) > 0 ? '+' : '') + formatCurrency(item.variance) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
                         <div class="profile-subcard">
@@ -730,6 +747,17 @@ export default {
     background: #e3f2fd;
     color: #1976d2;
 }
+
+.variance-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.variance-ok   { background: #e8f5e9; color: #2e7d32; }
+.variance-warn { background: #ffebee; color: #c62828; }
 
 @media (max-width: 1140px) {
     .details-grid {

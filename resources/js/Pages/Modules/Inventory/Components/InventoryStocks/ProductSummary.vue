@@ -364,8 +364,12 @@ export default {
   padding: 2px;
 }
 
+.group-card :deep(.card-body) {
+  padding: 0.5rem 0.75rem;
+}
+
 .group-card-wrapper {
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   border-radius: 8px;
   transition: all 0.3s ease;
 }
@@ -402,7 +406,7 @@ export default {
 .group-name {
   color: #343a40;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.82rem;
 }
 
 .search-wrapper {
@@ -458,10 +462,10 @@ export default {
 }
 
 .qty-badge {
-  min-width: 84px;
-  padding: 6px 10px;
+  min-width: 60px;
+  padding: 4px 8px;
   border: 1px solid #bfe7cf;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #e8f7ef;
   color: #146c43;
   text-align: center;
@@ -469,11 +473,11 @@ export default {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
 }
 
 .qty-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
@@ -481,7 +485,7 @@ export default {
 }
 
 .qty-value {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -498,9 +502,9 @@ export default {
 
 .low-stock-text {
   color: #b42318;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .status-badge {

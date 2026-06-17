@@ -815,7 +815,14 @@ export default {
             }
         },
         async confirmDeleteTransfer(t) {
-            if (!confirm(`Delete transfer ${t.transfer_no} (${t.amount_formatted})? The journal entry will be reversed.`)) return;
+            const ok = await this.$confirm({
+                title:       'Delete Transfer?',
+                message:     `Delete transfer ${t.transfer_no} (${t.amount_formatted})?`,
+                note:        'The journal entry will be reversed.',
+                confirmText: 'Yes, Delete',
+                variant:     'danger',
+            });
+            if (!ok) return;
             await axios.delete(`/accounting/fund-transfers/${t.id}`);
             router.reload({ preserveScroll: true });
         },
@@ -903,7 +910,14 @@ export default {
             }
         },
         async confirmDeleteTransaction(t) {
-            if (!confirm(`Delete transaction ${t.transaction_no}? The journal entry will be reversed and the fund balance will be adjusted.`)) return;
+            const ok = await this.$confirm({
+                title:       'Delete Transaction?',
+                message:     `Delete transaction ${t.transaction_no}?`,
+                note:        'The journal entry will be reversed and the fund balance will be adjusted.',
+                confirmText: 'Yes, Delete',
+                variant:     'danger',
+            });
+            if (!ok) return;
             await axios.delete(`/accounting/petty-cash/transactions/${t.id}`);
             router.reload({ preserveScroll: true });
         },
@@ -928,7 +942,14 @@ export default {
             }
         },
         async confirmDeleteDeposit(d) {
-            if (!confirm(`Delete deposit ${d.deposit_no} (${d.amount_formatted})? The journal entry will be reversed.`)) return;
+            const ok = await this.$confirm({
+                title:       'Delete Deposit?',
+                message:     `Delete deposit ${d.deposit_no} (${d.amount_formatted})?`,
+                note:        'The journal entry will be reversed.',
+                confirmText: 'Yes, Delete',
+                variant:     'danger',
+            });
+            if (!ok) return;
             await axios.delete(`/accounting/bank-deposits/${d.id}`);
             router.reload({ preserveScroll: true });
         },

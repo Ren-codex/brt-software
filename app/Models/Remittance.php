@@ -11,6 +11,8 @@ class Remittance extends Model
         'remittance_date',
         'summary',
         'total_amount',
+        'received_amount',
+        'variance',
         'status_id',
         'created_by_id',
         'approved_by_id',

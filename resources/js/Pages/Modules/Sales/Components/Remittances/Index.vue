@@ -15,10 +15,19 @@
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
-                                    <div class="cash-on-hand-card">
+                                    <div class="cash-on-hand-card" v-if="isSalesRep">
+                                        <span class="cash-on-hand-label">My Cash on Hand</span>
+                                        <strong class="cash-on-hand-value">{{ formatCurrency(myHoldings.total_amount) }}</strong>
+                                        <span class="cash-on-hand-sub">{{ myHoldings.receipt_count }} unremitted receipt{{ myHoldings.receipt_count !== 1 ? 's' : '' }}</span>
+                                    </div>
+                                    <div class="cash-on-hand-card" v-else>
                                         <span class="cash-on-hand-label">Total Cash on Hand</span>
                                         <strong class="cash-on-hand-value">{{ formatCurrency(metrics.total_amount_remitted) }}</strong>
                                     </div>
+                                    <button class="acct-btn-secondary" @click="currentView = 'summary'">
+                                        <i class="ri-bar-chart-grouped-line"></i>
+                                        Daily Summary
+                                    </button>
                                     <button class="acct-btn-primary" @click="openCreate">
                                         <i class="ri-add-line"></i>
                                         Prepare Remittance
@@ -56,18 +65,21 @@
                             </div>
 
                             <div class="mt-3">
-                                <div class="cm-tab-bar">
-                                    <button :class="['cm-tab-btn', activeTab === 'open' ? 'active' : '']" @click="activeTab = 'open'">
-                                        Open
-                                        <span class="tab-count">{{ openRemittance.length }}</span>
+                                <div class="filter-segment">
+                                    <button :class="['filter-segment-btn', activeTab === 'open' ? 'active' : '']" @click="switchTab('open')">
+                                        <i class="ri-folder-open-line"></i>
+                                        <span>Open</span>
+                                        <span v-if="activeTab === 'open'" class="seg-count">{{ meta.total ?? 0 }}</span>
                                     </button>
-                                    <button :class="['cm-tab-btn', activeTab === 'liquidated' ? 'active' : '']" @click="activeTab = 'liquidated'">
-                                        Liquidated
-                                        <span class="tab-count">{{ liquidatedRemittance.length }}</span>
+                                    <button :class="['filter-segment-btn', activeTab === 'liquidated' ? 'active' : '']" @click="switchTab('liquidated')">
+                                        <i class="ri-checkbox-circle-line"></i>
+                                        <span>Liquidated</span>
+                                        <span v-if="activeTab === 'liquidated'" class="seg-count">{{ meta.total ?? 0 }}</span>
                                     </button>
-                                    <button :class="['cm-tab-btn', activeTab === 'disapproved' ? 'active' : '']" @click="activeTab = 'disapproved'">
-                                        Disapproved
-                                        <span class="tab-count">{{ disapprovedRemittance.length }}</span>
+                                    <button :class="['filter-segment-btn', activeTab === 'disapproved' ? 'active' : '']" @click="switchTab('disapproved')">
+                                        <i class="ri-close-circle-line"></i>
+                                        <span>Disapproved</span>
+                                        <span v-if="activeTab === 'disapproved'" class="seg-count">{{ meta.total ?? 0 }}</span>
                                     </button>
                                 </div>
 
@@ -80,7 +92,7 @@
                                                 <th class="text-center" style="width:15%">Date</th>
                                                 <th class="text-end" style="width:15%">Amount</th>
                                                 <th class="text-center" style="width:15%">Status</th>
-                                                <th class="text-center" style="width:20%">Collector Name</th>
+                                                <th class="text-center" style="width:20%">Sales Rep</th>
                                                 <th class="text-center" style="width:7%">Actions</th>
                                             </tr>
                                         </thead>
@@ -127,7 +139,7 @@
                                                 <th class="text-center" style="width:15%">Remittance No.</th>
                                                 <th class="text-center" style="width:15%">Date</th>
                                                 <th class="text-end" style="width:15%">Amount</th>
-                                                <th class="text-center" style="width:20%">Collector Name</th>
+                                                <th class="text-center" style="width:20%">Sales Rep</th>
                                                 <th class="text-center" style="width:7%">Actions</th>
                                             </tr>
                                         </thead>
@@ -169,7 +181,7 @@
                                                 <th class="text-center" style="width:15%">Remittance No.</th>
                                                 <th class="text-center" style="width:15%">Date</th>
                                                 <th class="text-end" style="width:15%">Amount</th>
-                                                <th class="text-center" style="width:20%">Collector Name</th>
+                                                <th class="text-center" style="width:20%">Sales Rep</th>
                                                 <th class="text-center" style="width:7%">Actions</th>
                                             </tr>
                                         </thead>
@@ -214,11 +226,16 @@
         </template>
 
         <View
-            v-else-if="selectedRemittance"
+            v-else-if="currentView === 'view' && selectedRemittance"
             :item="selectedRemittance"
             :dropdowns="dropdowns"
             @back="closeView"
             @reload="handleViewReload"
+        />
+
+        <SummaryView
+            v-else-if="currentView === 'summary'"
+            @back="currentView = 'list'"
         />
     </div>
 </template>
@@ -228,9 +245,10 @@ import _ from 'lodash';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
 import View from './View.vue';
+import SummaryView from './SummaryView.vue';
 
 export default {
-    components: { Pagination, Create, View },
+    components: { Pagination, Create, View, SummaryView },
     props: ['dropdowns', 'isExternal'],
     data() {
         return {
@@ -240,7 +258,7 @@ export default {
             filter: {
                 keyword: '',
                 location_id: null,
-                status: null
+                status: 'open'
             },
             activeTab: 'open',
             currentView: 'list',
@@ -250,26 +268,37 @@ export default {
                 total_amount_remitted: 0,
                 today_remittances: 0,
                 open_remittances: 0
+            },
+            myHoldings: {
+                total_amount: 0,
+                receipt_count: 0,
             }
         };
     },
     computed: {
-        openRemittance() {
-            return this.lists.filter(r => r.status.slug === 'open');
+        openRemittance() { return this.lists; },
+        liquidatedRemittance() { return this.lists; },
+        disapprovedRemittance() { return this.lists; },
+        isSalesRep() {
+            const roles = this.$page.props.roles ?? [];
+            return roles.includes('Sales Rep');
         },
-        liquidatedRemittance() {
-            return this.lists.filter(r => r.status.slug === 'liquidated');
-        },
-        disapprovedRemittance() {
-            return this.lists.filter(r => r.status.slug === 'disapproved');
-        }
     },
     created() {
         this.debouncedSearch = _.debounce(this.fetch, 500);
         this.fetch();
-        this.fetchMetrics();
+        if (this.isSalesRep) {
+            this.fetchMyHoldings();
+        } else {
+            this.fetchMetrics();
+        }
     },
     methods: {
+        switchTab(tab) {
+            this.activeTab = tab;
+            this.filter.status = tab;
+            this.fetch();
+        },
         formatCurrency(value) {
             if (!value && value !== 0) return '-';
             return '\u20B1' + Number(value).toFixed(2);
@@ -321,6 +350,11 @@ export default {
                 }
             });
         },
+        fetchMyHoldings() {
+            axios.get('/remittances', { params: { option: 'my_holdings' } })
+                .then(res => { this.myHoldings = res.data; })
+                .catch(err => console.error(err));
+        },
         fetchMetrics() {
             axios.get('/remittances', {
                 params: {
@@ -339,22 +373,59 @@ export default {
 </script>
 
 <style scoped>
-.tab-count {
+.filter-segment {
+    display: inline-flex;
+    background: #eaf2f0;
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+    margin-bottom: 0.75rem;
+}
+
+.filter-segment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    color: #4a7a70;
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 0.38rem 0.85rem;
+    border-radius: 8px;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.filter-segment-btn i { font-size: 0.95rem; }
+
+.filter-segment-btn:hover:not(.active) {
+    background: rgba(61, 141, 122, 0.1);
+    color: #3d8d7a;
+}
+
+.filter-segment-btn.active {
+    background: #3d8d7a;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+}
+
+.seg-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 9px;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
     font-size: 10px;
     font-weight: 700;
     background: rgba(61, 141, 122, 0.15);
     color: #3d8d7a;
-    margin-left: 5px;
 }
 
-.cm-tab-btn.active .tab-count {
+.filter-segment-btn.active .seg-count {
     background: rgba(255, 255, 255, 0.25);
     color: #fff;
 }
@@ -385,5 +456,12 @@ export default {
     font-weight: 700;
     color: #16423c;
     line-height: 1.3;
+}
+
+.cash-on-hand-sub {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.72rem;
+    color: #5f7f77;
 }
 </style>

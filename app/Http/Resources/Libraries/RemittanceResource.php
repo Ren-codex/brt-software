@@ -15,7 +15,7 @@ class RemittanceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $firstReceipt = $this->receipts()->with('arInvoice.sales_order')->first();
+        $firstReceipt = $this->receipts->first();
         $salesPaymentMode = strtolower(trim((string) data_get($firstReceipt, 'arInvoice.sales_order.payment_mode', '')));
         $remittanceType = $this->isCreditSalesMode($salesPaymentMode) ? 'credit' : 'cash';
 
@@ -26,6 +26,8 @@ class RemittanceResource extends JsonResource
             'remittance_type' => $remittanceType,
             'summary' => $this->summary,
             'total_amount' => $this->total_amount,
+            'received_amount' => $this->received_amount,
+            'variance' => $this->variance,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'created_by' => $this->createdBy ? $this->createdBy->employee : null,

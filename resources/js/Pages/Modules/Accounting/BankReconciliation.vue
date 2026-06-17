@@ -359,7 +359,14 @@ export default {
         },
 
         async finalize() {
-            if (!confirm('Finalize this reconciliation? It cannot be edited after finalization.')) return;
+            const ok = await this.$confirm({
+                title:       'Finalize Reconciliation?',
+                message:     'Are you sure you want to finalize this reconciliation?',
+                note:        'It cannot be edited after finalization.',
+                confirmText: 'Yes, Finalize',
+                variant:     'warning',
+            });
+            if (!ok) return;
             this.finalizing = true;
             try {
                 await axios.post(`/accounting/bank-reconciliation/${this.activeReconciliation.id}/finalize`);
@@ -371,7 +378,13 @@ export default {
         },
 
         async confirmDelete(r) {
-            if (!confirm(`Delete reconciliation for ${r.bank_name} (${r.period_end})?`)) return;
+            const ok = await this.$confirm({
+                title:       'Delete Reconciliation?',
+                message:     `Delete reconciliation for ${r.bank_name} (${r.period_end})?`,
+                confirmText: 'Yes, Delete',
+                variant:     'danger',
+            });
+            if (!ok) return;
             await axios.delete(`/accounting/bank-reconciliation/${r.id}`);
             router.reload({ preserveScroll: true, only: ['reconciliations'] });
         },

@@ -25,16 +25,17 @@
             />
           </div>
 
-          <div class="receiving-filter-group">
+          <div class="filter-segment">
             <button
               v-for="option in paymentFilters"
               :key="option.value"
               type="button"
-              class="filter-chip"
+              class="filter-segment-btn"
               :class="{ active: selectedPaymentFilter === option.value }"
               @click="selectedPaymentFilter = option.value"
             >
-              {{ option.label }}
+              <i :class="option.icon"></i>
+              <span>{{ option.label }}</span>
             </button>
           </div>
         </div>
@@ -111,9 +112,9 @@ export default {
       localKeyword: '',
       selectedPaymentFilter: 'all',
       paymentFilters: [
-        { value: 'all', label: 'All Paid' },
-        { value: 'Cash', label: 'Cash' },
-        { value: 'Bank Transfer', label: 'Bank Transfer' },
+        { value: 'all',           label: 'All Paid',      icon: 'ri-check-double-line' },
+        { value: 'Cash',          label: 'Cash',          icon: 'ri-cash-line' },
+        { value: 'Bank Transfer', label: 'Bank Transfer', icon: 'ri-bank-line' },
       ],
     };
   },
@@ -282,27 +283,42 @@ export default {
   box-shadow: 0 0 0 4px rgba(76, 154, 133, 0.12);
 }
 
-.receiving-filter-group {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+.filter-segment {
+  display: inline-flex;
+  background: #eaf2f0;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
 }
 
-.filter-chip {
-  border: 1px solid #d7e6df;
-  border-radius: 999px;
-  background: #fff;
-  color: #41655d;
+.filter-segment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: #4a7a70;
   font-weight: 600;
-  padding: 0.7rem 1rem;
-  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 8px;
+  transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
-.filter-chip.active {
+.filter-segment-btn i {
+  font-size: 0.95rem;
+}
+
+.filter-segment-btn:hover:not(.active) {
+  background: rgba(61, 141, 122, 0.1);
+  color: #3d8d7a;
+}
+
+.filter-segment-btn.active {
   background: #3d8d7a;
-  border-color: #3d8d7a;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(61, 141, 122, 0.2);
+  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
 }
 
 .receiving-table-wrap {
