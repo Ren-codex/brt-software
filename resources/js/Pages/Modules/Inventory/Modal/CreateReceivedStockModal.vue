@@ -3,17 +3,25 @@
   <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
     <div class="modal-container modal-xl">
       <div class="modal-header">
-        <h2>Received Stock</h2>
+        <div class="d-flex align-items-center gap-2">
+          <div class="modal-header-icon">
+            <i class="ri-archive-drawer-line"></i>
+          </div>
+          <div>
+            <h5 class="modal-title mb-0">Received Stock</h5>
+            <p class="modal-subtitle mb-0">Enter quantities, prices and expiry per item</p>
+          </div>
+        </div>
         <button class="close-btn" @click="onCancel"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
         <form @submit.prevent="handleSubmit">
-          <div v-if="errorMessage" class="alert alert-danger" role="alert">
+          <div v-if="errorMessage" class="alert alert-danger py-2 mb-2" role="alert" style="font-size:0.82rem">
             {{ errorMessage }}
           </div>
 
-          <div class="mb-3">
-            <h6 class="mb-3 fw-semibold text-muted">Purchase Order Items</h6>
+          <div class="mb-2">
+            <p class="section-kicker">Purchase Order Items</p>
             <div class="table-responsive">
               <table class="table purchase-order-table">
                 <thead>
@@ -780,6 +788,18 @@ export default {
   background-color: #f8f8f8;
 }
 
+.modal-title  { font-size: 0.95rem; font-weight: 700; color: #16322e; }
+.modal-subtitle { font-size: 0.75rem; color: #6b8c85; }
+
+.section-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b8c85;
+  margin-bottom: 0.5rem;
+}
+
 .modal-container.modal-xl {
   display: flex;
   flex-direction: column;
@@ -790,11 +810,12 @@ export default {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  padding: 0.9rem 1.1rem;
 }
 
 .modal-footer {
   flex-shrink: 0;
-  padding: 0.875rem 1.5rem;
+  padding: 0.65rem 1.1rem;
   border-top: 1px solid #e2e8f0;
 }
 
@@ -830,22 +851,22 @@ export default {
 .purchase-order-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   background: white;
 }
 
 /* Table Header */
 .purchase-order-table thead tr {
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .purchase-order-table th {
-  padding: 1rem 1rem;
-  font-weight: 600;
-  color: #1e293b;
+  padding: 0.45rem 0.65rem;
+  font-weight: 700;
+  color: #5f7f77;
   text-transform: uppercase;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   letter-spacing: 0.5px;
   white-space: nowrap;
   border: none;
@@ -853,7 +874,7 @@ export default {
 
 /* Table Body */
 .purchase-order-table td {
-  padding: 1rem;
+  padding: 0.45rem 0.65rem;
   border-bottom: 1px solid #edf2f7;
   vertical-align: middle;
 }
@@ -905,11 +926,12 @@ export default {
 
 .quantity-badge {
   display: inline-block;
-  padding: 0.3rem 0.8rem;
+  padding: 0.15rem 0.55rem;
   border-radius: 20px;
   font-weight: 600;
-  font-size: 0.85rem;
-  min-width: 50px;
+  font-size: 0.78rem;
+  min-width: 40px;
+  text-align: center;
 }
 
 .quantity-badge.ordered {
@@ -934,18 +956,18 @@ export default {
 
 .modern-input {
   width: 100%;
-  height: 40px;
-  padding: 0.5rem 0.75rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  height: 32px;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #c4d9d2;
+  border-radius: 7px;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
   background: white;
 }
 
 .modern-input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #3d8d7a;
+  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.1);
   outline: none;
 }
 
@@ -967,12 +989,12 @@ export default {
 
 .currency-symbol {
   position: absolute;
-  left: 0.5rem;
+  left: 0.45rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #64748b;
+  color: #6b8c85;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .currency-value {
@@ -1049,12 +1071,12 @@ export default {
 }
 
 .checkbox-container:hover input~.checkmark {
-  border-color: #667eea;
+  border-color: #3d8d7a;
 }
 
 .checkbox-container input:checked~.checkmark {
-  background-color: #667eea;
-  border-color: #667eea;
+  background-color: #3d8d7a;
+  border-color: #3d8d7a;
 }
 
 .checkmark:after {

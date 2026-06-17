@@ -378,22 +378,42 @@ export default {
                 .finally(() => { this.saving = false; });
         },
 
-        doApprove(e) {
-            if (!confirm(`Approve "${e.payee}" (${e.amount_fmt})?\n\nThis will post a GL journal entry.`)) return;
+        async doApprove(e) {
+            const ok = await this.$confirm({
+                title:       'Approve Expense?',
+                message:     `Approve "${e.payee}" (${e.amount_fmt})?`,
+                note:        'This will post a GL journal entry.',
+                confirmText: 'Yes, Approve',
+                variant:     'info',
+            });
+            if (!ok) return;
             axios.patch(`/accounting/expenses/${e.id}/approve`)
                 .then(res => this.replaceLocal(res.data.data))
                 .catch(err => alert(err.response?.data?.message || 'Error'));
         },
 
-        doVoid(e) {
-            if (!confirm(`Void "${e.payee}" (${e.amount_fmt})?\n\nA reversal entry will be posted.`)) return;
+        async doVoid(e) {
+            const ok = await this.$confirm({
+                title:       'Void Expense?',
+                message:     `Void "${e.payee}" (${e.amount_fmt})?`,
+                note:        'A reversal entry will be posted.',
+                confirmText: 'Yes, Void',
+                variant:     'warning',
+            });
+            if (!ok) return;
             axios.patch(`/accounting/expenses/${e.id}/void`)
                 .then(res => this.replaceLocal(res.data.data))
                 .catch(err => alert(err.response?.data?.message || 'Error'));
         },
 
-        doDelete(e) {
-            if (!confirm(`Permanently delete "${e.payee}" (${e.amount_fmt})?`)) return;
+        async doDelete(e) {
+            const ok = await this.$confirm({
+                title:       'Delete Expense?',
+                message:     `Permanently delete "${e.payee}" (${e.amount_fmt})?`,
+                confirmText: 'Yes, Delete',
+                variant:     'danger',
+            });
+            if (!ok) return;
             axios.delete(`/accounting/expenses/${e.id}`)
                 .then(() => { this.localExpenses = this.localExpenses.filter(x => x.id !== e.id); })
                 .catch(err => alert(err.response?.data?.message || 'Error'));

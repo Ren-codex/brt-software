@@ -31,173 +31,99 @@
               <div class="library-card-body">
                 <div class="row">
                   <div class="col-lg-8">
-                    <div class="card border-0 shadow-sm">
-                      <div class="card-body p-4">
-                        
-                        <!-- Pricing & Quantity Section -->
-                        <div class="mb-4">
-                          <h5 class="card-title mb-3 d-flex align-items-center">
-                            <span class="badge bg-success me-2" style="width: 4px; height: 20px;"></span>
-                            Pricing & Quantity
-                          </h5>
-                          
-                          <div class="row g-4">
-                            <div class="col-md-6">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Unit Cost</label>
-                                <p class="fw-semibold mb-0 fs-5 text-success">
-                                  {{ formatCurrency(data.received_item?.unit_cost) }}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div class="col-md-6">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Quantity</label>
-                                <p class="fw-semibold mb-0 fs-5">
-                                  <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
-                                    <i class="ri-stack-line me-1"></i>
-                                    {{ data.quantity }} units
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-
-                            <div class="col-md-6">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Retail Price</label>
-                                <p class="fw-semibold mb-0">
-                                  <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
-                                    <i class="ri-price-tag-3-line me-1"></i>
-                                    {{ formatCurrency(data.retail_price) }}
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-
-                            <div class="col-md-6">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Wholesale Price</label>
-                                <p class="fw-semibold mb-0">
-                                  <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2">
-                                    <i class="ri-price-tag-line me-1"></i>
-                                    {{ formatCurrency(data.wholesale_price) }}
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <!-- Received Information Section -->
-                        <div class="mb-4">
-                          <h5 class="card-title mb-3 d-flex align-items-center">
-                            <span class="badge bg-primary me-2" style="width: 4px; height: 20px;"></span>
-                            Received Information
-                          </h5>
-                          
-                          <div class="row g-4">
-                            <div class="col-md-6">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Received Date</label>
-                                <p class="fw-semibold mb-0 d-flex align-items-center">
-                                  <i class="ri-calendar-line text-primary me-2"></i>
-                                  {{ formatDate(data.received_item?.received_stock?.received_date) || 'N/A' }}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div class="col-md-6">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Product</label>
-                                <p class="fw-semibold mb-0 d-flex align-items-center">
-                                  <i class="ri-shopping-bag-line text-primary me-2"></i>
-                                  {{ data.received_item?.product?.name || 'N/A' }}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div class="col-md-12">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Supplier</label>
-                                <p class="fw-semibold mb-0 d-flex align-items-center">
-                                  <i class="ri-truck-line text-primary me-2"></i>
-                                  {{ data.received_item?.received_stock?.supplier?.name || 'N/A' }}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Divider -->
-                        <hr class="my-4">
-
-                        <!-- Divider -->
-                        <hr class="my-4">
-
-                        <!-- Additional Information Section -->
+                    <div class="row">
+                      <div class="col-12 mb-1">
+                        <p class="section-label">Pricing &amp; Quantity</p>
+                      </div>
+                      <div class="col-md-6">
                         <div class="mb-3">
-                          <h5 class="card-title mb-3 d-flex align-items-center">
-                            <span class="badge bg-info me-2" style="width: 4px; height: 20px;"></span>
-                            Additional Information
-                          </h5>
-                          
-                          <div class="row g-4">
-                            <div class="col-md-4">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Expiration Date</label>
-                                <p class="fw-semibold mb-0" :class="getExpirationClass(data.expiration_date)">
-                                  <i class="ri-calendar-event-line me-2"></i>
-                                  {{ formatDate(data.expiration_date) || 'No expiration' }}
-                                </p>
-                              </div>
-                            </div>
+                          <label class="form-label">Unit Cost</label>
+                          <p class="text-muted">{{ formatCurrency(data.received_item?.unit_cost) }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Quantity</label>
+                          <p class="text-muted">{{ data.quantity }} units</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Retail Price</label>
+                          <p class="text-muted">{{ formatCurrency(data.retail_price) }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Wholesale Price</label>
+                          <p class="text-muted">{{ formatCurrency(data.wholesale_price) }}</p>
+                        </div>
+                      </div>
 
-                            <div class="col-md-4">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Created At</label>
-                                <p class="fw-semibold mb-0">
-                                  <i class="ri-time-line me-2 text-muted"></i>
-                                  {{ formatDate(data.created_at) }}
-                                </p>
-                              </div>
-                            </div>
+                      <div class="col-12 mb-1 mt-2">
+                        <p class="section-label">Received Information</p>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Received Date</label>
+                          <p class="text-muted">{{ formatDate(data.received_item?.received_stock?.received_date) || 'N/A' }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Product</label>
+                          <p class="text-muted">{{ data.received_item?.product?.name || 'N/A' }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-12">
+                        <div class="mb-3">
+                          <label class="form-label">Supplier</label>
+                          <p class="text-muted">{{ data.received_item?.received_stock?.supplier?.name || 'N/A' }}</p>
+                        </div>
+                      </div>
 
-                            <div class="col-md-4">
-                              <div class="info-item">
-                                <label class="text-muted small text-uppercase tracking-wide mb-1">Last Updated</label>
-                                <p class="fw-semibold mb-0">
-                                  <i class="ri-refresh-line me-2 text-muted"></i>
-                                  {{ formatDate(data.updated_at) }}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
+                      <div class="col-12"><hr class="section-divider"></div>
+
+                      <div class="col-12 mb-1">
+                        <p class="section-label">Additional Information</p>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="mb-3">
+                          <label class="form-label">Expiration Date</label>
+                          <p class="text-muted" :class="getExpirationClass(data.expiration_date)">
+                            {{ formatDate(data.expiration_date) || 'No expiration' }}
+                          </p>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="mb-3">
+                          <label class="form-label">Created At</label>
+                          <p class="text-muted">{{ formatDate(data.created_at) }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="mb-3">
+                          <label class="form-label">Last Updated</label>
+                          <p class="text-muted">{{ formatDate(data.updated_at) }}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Side Panel for Quick Actions/Summary -->
                   <div class="col-lg-4">
-                    <div class="card border-0 shadow-sm bg-light">
-                      <div class="card-body p-4">
-                        <h6 class="card-title mb-3">Quick Summary</h6>
-                        
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                          <span class="text-muted">Total Value</span>
-                          <span class="fw-bold fs-5">{{ calculateTotalValue() }}</span>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                          <span class="text-muted">Profit Margin (Retail)</span>
-                          <span class="fw-bold text-success">{{ calculateProfitMargin('retail') }}</span>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                          <span class="text-muted">Profit Margin (Wholesale)</span>
-                          <span class="fw-bold text-warning">{{ calculateProfitMargin('wholesale') }}</span>
-                        </div>
+                    <div class="summary-panel">
+                      <p class="section-label mb-3">Quick Summary</p>
+                      <div class="mb-3">
+                        <label class="form-label">Total Value</label>
+                        <p class="text-muted">{{ calculateTotalValue() }}</p>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Profit Margin (Retail)</label>
+                        <p class="summary-margin text-success">{{ calculateProfitMargin('retail') }}</p>
+                      </div>
+                      <div class="mb-0">
+                        <label class="form-label">Profit Margin (Wholesale)</label>
+                        <p class="summary-margin text-warning">{{ calculateProfitMargin('wholesale') }}</p>
                       </div>
                     </div>
                   </div>
@@ -208,46 +134,12 @@
         </div>
       </div>
       <div class="col-sm-4">
-        <div class="library-card">
-          <div class="library-card-header">
-            <div class="d-flex align-items-center gap-3">
-              <div class="header-icon">
-                <i class="ri-history-line"></i>
-              </div>
-              <div>
-                <h4 class="header-title mb-1">Inventory Adjustment Logs</h4>
-                <p class="header-subtitle mb-0">Activity history and adjustments</p>
-              </div>
-            </div>
-          </div>
-          <div class="library-card-body">
-            <div class="table-section" v-if="data.inventory_adjustments && data.inventory_adjustments.length">
-              <div class="table-responsive">
-                <table class="table align-middle table-centered mb-0">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Quantity</th>
-                      <th>Type</th>
-                      <th>Reason</th>
-                      <th>Adjusted By</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(log, index) in data.inventory_adjustments" :key="log.id">
-                      <td>{{ formatDate(log.adjustment_date) }}</td>
-                      <td>{{ log.previous_quantity }} → {{ log.new_quantity }}</td>
-                      <td>{{ log.type }}</td>
-                      <td>{{ log.reason }}</td>
-                      <td>{{ log.received_by ? log.received_by.fullname : 'N/A' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <p v-else>No adjustment logs available.</p>
-          </div>
-        </div>
+        <TransactionLogs
+          :logs="adjustmentLogs"
+          title="Inventory Adjustment Logs"
+          subtitle="Activity history and adjustments"
+          :compact="true"
+        />
       </div>
     </div>
 
@@ -268,12 +160,14 @@
 <script>
 import AdjustStockModal from '../../Modal/AdjustStockModal.vue';
 import UpdatePriceModal from '../../Modal/UpdatePriceModal.vue';
+import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 
 export default {
   emits: ['back'],
   components: {
     AdjustStockModal,
     UpdatePriceModal,
+    TransactionLogs,
   },
   props: {
     stock: Object,
@@ -290,6 +184,15 @@ export default {
         return this.stock;
       }
       return this.inventory_stock_data?.data || null;
+    },
+    adjustmentLogs() {
+      return (this.data?.inventory_adjustments || []).map(log => ({
+        id: log.id,
+        created_at: log.adjustment_date,
+        action: `${log.previous_quantity} → ${log.new_quantity}`,
+        actioned_by: log.received_by?.fullname || 'System',
+        remarks: log.reason || null,
+      }));
     },
   },
   methods: {
@@ -336,34 +239,31 @@ export default {
 };
 </script>
 <style scoped>
-.info-item {
-  transition: transform 0.2s ease;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #6b8c85;
+  margin-bottom: 0;
 }
 
-.info-item:hover {
-  transform: translateX(5px);
-  background-color: rgba(13, 110, 253, 0.03);
+.section-divider {
+  border-color: #dee6e3;
+  opacity: 1;
+  margin: 0.5rem 0 1rem;
 }
 
-.tracking-wide {
-  letter-spacing: 0.5px;
+.summary-panel {
+  background: #f6fbf9;
+  border: 1px solid #dee6e3;
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
 }
 
-.card {
-  transition: box-shadow 0.3s ease;
-}
-
-.card:hover {
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
-}
-
-.badge {
-  font-weight: 500;
-}
-
-hr {
-  opacity: 0.1;
+.summary-margin {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0;
 }
 </style>

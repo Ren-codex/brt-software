@@ -29,7 +29,8 @@ class RemittanceClass
         $location_id = $request->location_id ?? $mainOffice->id;
 
         $data = RemittanceResource::collection(
-            Remittance::whereHas('receipts.arInvoice.sales_order', function ($q) use ($request, $location_id) {
+            Remittance::with(['receipts.arInvoice.sales_order', 'status', 'createdBy.employee', 'approvedBy.employee'])
+            ->whereHas('receipts.arInvoice.sales_order', function ($q) use ($request, $location_id) {
                 $q->where(function ($subQ) use ($location_id) {
                     $subQ->where('location_id', $location_id)
                             ->orWhereNull('location_id');
@@ -130,7 +131,7 @@ class RemittanceClass
     public function delete($id)
     {
         try {
-            db::beginTransaction();
+            DB::beginTransaction();
 
             $receipts = Receipt::where('remittance_id', $id)->get();
             foreach ($receipts as $receipt) {
@@ -141,8 +142,8 @@ class RemittanceClass
 
             $data = Remittance::findOrFail($id);
             $data->delete();
-            
-            db::commit();
+
+            DB::commit();
 
             return [
                 'data' => $data,
@@ -150,6 +151,7 @@ class RemittanceClass
                 'info' => "You've successfully deleted the remittance"
             ];
         } catch (\Exception $e){
+            DB::rollBack();
             return [
                 'data' => null,
                 'message' => 'Remittance delete failed!',
@@ -161,28 +163,35 @@ class RemittanceClass
     public function approve($request, $id)
     {
         try{
-            db::beginTransaction();
+            DB::beginTransaction();
 
             $data = Remittance::findOrFail($id);
             $data->status_id = ($request->status == 'Approve') ? ListStatus::getBySlug('liquidated')->id : ListStatus::getBySlug('disapproved')->id;
             $data->approved_by_id = Auth::user()->id;
             $data->approved_at = Carbon::now();
             $data->remarks = $request->remarks;
+
+            if ($request->status === 'Approve' && $request->received_amount !== null) {
+                $data->received_amount = $request->received_amount;
+                $data->variance = round((float) $request->received_amount - (float) $data->total_amount, 2);
+            }
+
             $data->save();
-    
+
             $receipts = Receipt::where('remittance_id', $data->id)->get();
             foreach ($receipts as $receipt) {
                 $receipt->status_id = $request->status == 'Approve' ? ListStatus::getBySlug('liquidated')->id : ListStatus::getBySlug('pending')->id;
                 $receipt->update();
             }
-    
-            db::commit();
+
+            DB::commit();
             return [
                 'data' => new RemittanceResource($data),
                 'message' => 'Remittance approval was successful!',
                 'info' => "You've successfully approved the remittance"
             ];
         } catch (\Exception $e){
+            DB::rollBack();
             return [
                 'data' => null,
                 'message' => 'Remittance approval failed!',
@@ -190,6 +199,75 @@ class RemittanceClass
             ];
         }
     } 
+
+    public function myHoldings()
+    {
+        $employee = Auth::user()->employee;
+
+        if (!$employee) {
+            return response()->json(['total_amount' => 0, 'receipt_count' => 0]);
+        }
+
+        $receipts = Receipt::whereNull('remittance_id')
+            ->whereHas('arInvoice.sales_order', function ($q) use ($employee) {
+                $q->where('sales_rep_id', $employee->id);
+            })
+            ->selectRaw('COUNT(*) as receipt_count, SUM(amount_paid) as total_amount')
+            ->first();
+
+        return response()->json([
+            'total_amount'  => (float) ($receipts->total_amount ?? 0),
+            'receipt_count' => (int)   ($receipts->receipt_count ?? 0),
+        ]);
+    }
+
+    public function summary($request)
+    {
+        $from = $request->from
+            ? Carbon::parse($request->from)->startOfDay()
+            : Carbon::now()->startOfMonth()->startOfDay();
+
+        $to = $request->to
+            ? Carbon::parse($request->to)->endOfDay()
+            : Carbon::now()->endOfMonth()->endOfDay();
+
+        $remittances = Remittance::with(['createdBy.employee', 'status'])
+            ->whereBetween('remittance_date', [$from, $to])
+            ->orderBy('remittance_date', 'DESC')
+            ->get();
+
+        $grouped = $remittances
+            ->groupBy(fn($r) => optional($r->createdBy)->id ?? 0)
+            ->map(function ($repRemittances) {
+                $rep = optional($repRemittances->first()->createdBy)->employee;
+                $byDate = $repRemittances
+                    ->groupBy(fn($r) => Carbon::parse($r->remittance_date)->toDateString())
+                    ->map(fn($dayRows) => [
+                        'date'              => Carbon::parse($dayRows->first()->remittance_date)->toDateString(),
+                        'count'             => $dayRows->count(),
+                        'total_amount'      => $dayRows->sum('total_amount'),
+                        'received_amount'   => $dayRows->whereNotNull('received_amount')->sum('received_amount'),
+                        'statuses'          => $dayRows->groupBy(fn($r) => $r->status?->slug ?? 'unknown')
+                                                       ->map->count(),
+                    ])
+                    ->values();
+
+                return [
+                    'rep_id'             => optional($repRemittances->first()->createdBy)->id,
+                    'rep_name'           => $rep?->fullname ?? 'Unknown',
+                    'total_amount'       => $repRemittances->sum('total_amount'),
+                    'remittance_count'   => $repRemittances->count(),
+                    'dates'              => $byDate,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'data'      => $grouped,
+            'from'      => $from->toDateString(),
+            'to'        => $to->toDateString(),
+        ]);
+    }
 
     private function isCreditSalesMode(string $paymentMode): bool
     {

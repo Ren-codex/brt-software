@@ -69,12 +69,12 @@
                 <input v-model.number="form.limit" min="1" max="50" type="number" class="filter-input" @input="debouncedFetchReports" />
               </div>
             </div>
-            <div class="report-tabs">
+            <div class="filter-segment">
               <button
                 v-for="tab in reportTabs"
                 :key="tab.key"
                 type="button"
-                class="report-tab"
+                class="filter-segment-btn"
                 :class="{ active: activeReport === tab.key }"
                 @click="selectReport(tab.key)"
               >
@@ -787,32 +787,50 @@ export default {
   box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.12);
 }
 
-.report-tabs {
-  display: flex;
+.filter-segment {
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  background: #eaf2f0;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
   margin-top: 1.1rem;
 }
 
-.report-tab {
-  border: 1px solid #d7e5de;
-  background: #f7fbfa;
-  color: #355f55;
-  border-radius: 999px;
-  padding: 0.5rem 0.85rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+.filter-segment-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  transition: all 0.15s ease;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: #4a7a70;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 8px;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.report-tab.active,
-.report-tab:hover {
+.filter-segment-btn i {
+  font-size: 0.95rem;
+}
+
+.filter-segment-btn:hover:not(.active) {
+  background: rgba(61, 141, 122, 0.1);
+  color: #3d8d7a;
+}
+
+.filter-segment-btn.active {
   background: #3d8d7a;
-  color: white;
-  border-color: #3d8d7a;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+}
+
+@media (max-width: 768px) {
+  .filter-segment { width: 100%; }
+  .filter-segment-btn { flex: 1; justify-content: center; }
 }
 
 /* Buttons */
@@ -1145,10 +1163,6 @@ tbody tr:hover td {
     grid-template-columns: 1fr;
   }
 
-  .report-tab {
-    width: 100%;
-    justify-content: center;
-  }
 }
 </style>
 

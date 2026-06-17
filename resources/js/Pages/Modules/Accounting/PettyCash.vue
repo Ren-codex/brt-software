@@ -558,8 +558,15 @@ export default {
             }
         },
 
-        confirmVoid(v) {
-            if (!confirm(`Void voucher ${v.voucher_no || '#' + v.id}? This will restore the fund balance.`)) return;
+        async confirmVoid(v) {
+            const ok = await this.$confirm({
+                title:       'Void Voucher?',
+                message:     `Void voucher ${v.voucher_no || '#' + v.id}?`,
+                note:        'This will restore the fund balance.',
+                confirmText: 'Yes, Void',
+                variant:     'warning',
+            });
+            if (!ok) return;
             axios.delete(`/accounting/petty-cash/vouchers/${v.id}`)
                 .then(() => {
                     const idx = this.localVouchers.findIndex(x => x.id === v.id);
@@ -574,7 +581,13 @@ export default {
             const fundId = this.activeFunds[0].id;
             const pending = this.localVouchers.filter(v => v.fund_id === fundId && v.status === 'recorded');
             if (pending.length === 0) { alert('No pending vouchers to bundle. Record expenses first.'); return; }
-            if (!confirm(`Bundle ${pending.length} pending voucher(s) into a replenishment request?`)) return;
+            const ok = await this.$confirm({
+                title:       'Create Replenishment?',
+                message:     `Bundle ${pending.length} pending voucher(s) into a replenishment request?`,
+                confirmText: 'Yes, Bundle',
+                variant:     'info',
+            });
+            if (!ok) return;
 
             this.replenishing = true;
             try {
@@ -594,7 +607,13 @@ export default {
         },
 
         async submitReplenishment(r) {
-            if (!confirm(`Submit ${r.reference_no} for Finance approval?`)) return;
+            const ok = await this.$confirm({
+                title:       'Submit for Approval?',
+                message:     `Submit ${r.reference_no} for Finance approval?`,
+                confirmText: 'Yes, Submit',
+                variant:     'info',
+            });
+            if (!ok) return;
             try {
                 const res = await axios.patch(`/replenishments/${r.id}/submit`);
                 const idx = this.localReplenishments.findIndex(x => x.id === r.id);

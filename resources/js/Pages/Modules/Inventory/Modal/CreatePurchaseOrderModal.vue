@@ -44,10 +44,17 @@
                                     <p class="panel-kicker mb-1">Line Items</p>
                                     <h4 class="section-title mb-0">Order Items</h4>
                                 </div>
-                                <button type="button" @click="addItem" class="btn-add-item">
-                                    <i class="ri-add-line"></i>
-                                    Add Item
-                                </button>
+                                <div class="d-flex gap-2">
+                                    <button type="button" @click="clearAllItems" class="btn-clear-items"
+                                        :disabled="form.items.length === 0">
+                                        <i class="ri-eraser-line"></i>
+                                        Clear All
+                                    </button>
+                                    <button type="button" @click="addItem" class="btn-add-item">
+                                        <i class="ri-add-line"></i>
+                                        Add Item
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="items-table-wrap">
@@ -441,6 +448,25 @@ export default {
             });
         },
 
+        async clearAllItems() {
+            const ok = await this.$confirm({
+                title:       'Clear All Items?',
+                message:     'Are you sure you want to clear all items?',
+                note:        'Once cleared, all data you have inputted will be lost.',
+                confirmText: 'Yes, Clear All',
+                cancelText:  'Cancel',
+                variant:     'danger',
+            });
+            if (!ok) return;
+            this.form.items = [{
+                product_id: null,
+                quantity: 0,
+                unit_cost: '',
+                total_cost: 0,
+            }];
+            this.form.clearErrors();
+        },
+
         removeItem(index) {
             if (this.form.items.length > 1) {
                 this.form.items.splice(index, 1);
@@ -803,6 +829,30 @@ export default {
     box-shadow: 0 14px 25px rgba(61, 141, 122, 0.24);
 }
 
+.btn-clear-items {
+    background: #fff;
+    color: #b45309;
+    border: 1px solid #f59e0b;
+    padding: 0.45rem 0.75rem;
+    border-radius: 9px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.76rem;
+    transition: all 0.2s ease;
+}
+
+.btn-clear-items:hover:not(:disabled) {
+    background: #fff8e6;
+}
+
+.btn-clear-items:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .items-table-wrap {
     border: 1px solid #d9ebe4;
     border-radius: 14px;
@@ -895,6 +945,7 @@ export default {
     border-color: #e74c3c;
     color: #fff;
 }
+
 
 .empty-table {
     padding: 0 !important;
