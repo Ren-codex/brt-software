@@ -19,7 +19,6 @@
                     <!-- ── EXPENSES TAB ──────────────────────────────────── -->
                     <template v-if="activeTab === 'expenses'">
                         <div class="library-card-header">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="header-icon"><i class="ri-receipt-line fs-24"></i></div>
                                     <div>
@@ -35,7 +34,6 @@
                                         <i class="ri-add-line"></i><span>Record Expense</span>
                                     </button>
                                 </div>
-                            </div>
                         </div>
 
                         <div class="card-body m-2 p-3">
@@ -252,7 +250,6 @@
                     <!-- ── REPLENISHMENT REQUESTS TAB ───────────────────── -->
                     <template v-if="activeTab === 'replenishments'">
                         <div class="library-card-header">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="header-icon"><i class="ri-refresh-line fs-24"></i></div>
                                     <div>
@@ -263,7 +260,6 @@
                                 <button class="create-btn" @click="openCreateReplenishment">
                                     <i class="ri-add-line"></i><span>New Request</span>
                                 </button>
-                            </div>
                         </div>
 
                         <div class="card-body m-2 p-3">

@@ -6,16 +6,11 @@
             <div class="library-card-body py-2">
                 <div class="acct-filter-bar">
                     <div class="acct-filter-field">
-                        <label class="acct-filter-label">Date From</label>
-                        <input v-model="dateFrom" type="date" class="acct-filter-input" />
-                    </div>
-                    <div class="acct-filter-field">
-                        <label class="acct-filter-label">Date To</label>
-                        <input v-model="dateTo" type="date" class="acct-filter-input" />
+                        <label class="acct-filter-label">Date Range</label>
+                        <DrawerDateRangePicker v-model:dateFrom="dateFrom" v-model:dateTo="dateTo" />
                     </div>
                     <div class="acct-filter-actions">
                         <button type="button" class="acct-btn-secondary" @click="clearFilter">Clear</button>
-                        <button type="button" class="acct-btn-primary" @click="applyFilter">Apply</button>
                     </div>
                 </div>
             </div>
@@ -113,7 +108,6 @@
                 <div class="col-md-6">
                     <div class="library-card h-100">
                         <div class="library-card-header">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="header-icon"><i class="ri-file-list-3-line"></i></div>
                                     <div>
@@ -124,7 +118,6 @@
                                 <a href="/accounting/accounts-receivable" class="view-all-link" @click.prevent="goTo('/accounting/accounts-receivable')">
                                     View All <i class="ri-arrow-right-line"></i>
                                 </a>
-                            </div>
                         </div>
                         <div class="library-card-body">
                             <div class="aging-total">
@@ -161,7 +154,6 @@
                 <div class="col-md-6">
                     <div class="library-card h-100">
                         <div class="library-card-header">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="header-icon"><i class="ri-inbox-archive-line"></i></div>
                                     <div>
@@ -172,7 +164,6 @@
                                 <a href="/accounting/accounts-payable" class="view-all-link" @click.prevent="goTo('/accounting/accounts-payable')">
                                     View All <i class="ri-arrow-right-line"></i>
                                 </a>
-                            </div>
                         </div>
                         <div class="library-card-body">
                             <div class="aging-total">
@@ -302,7 +293,6 @@
             <!-- Row 5: Recent journal entries -->
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-book-2-line"></i></div>
                             <div>
@@ -313,7 +303,6 @@
                         <a href="/accounting/journal-entries" class="view-all-link" @click.prevent="goTo('/accounting/journal-entries')">
                             View All <i class="ri-arrow-right-line"></i>
                         </a>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="recentEntries.length === 0" class="empty-state">
@@ -363,9 +352,11 @@
 import { router } from "@inertiajs/vue3";
 import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
+import DrawerDateRangePicker from "@/Pages/Modules/Accounting/Components/DrawerDateRangePicker.vue";
 
 export default {
     layout: [MainLayout, AccountingLayout],
+    components: { DrawerDateRangePicker },
     props: {
         stats:               { type: Object,  default: () => ({}) },
         dataReady:           { type: Boolean, default: false },
@@ -387,6 +378,9 @@ export default {
             dateFrom: this.filters?.date_from || '',
             dateTo:   this.filters?.date_to   || '',
         };
+    },
+    watch: {
+        dateTo() { if (this.dateTo) this.applyFilter(); },
     },
     computed: {
         revExpSeries() {

@@ -1,4 +1,5 @@
 <template>
+  <Teleport to="body">
   <div v-if="showModal" class="modal-overlay active" @click.self="onCancel">
     <div class="modal-container modal-xl">
       <div class="modal-header">
@@ -337,6 +338,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script>
@@ -419,7 +421,16 @@ export default {
       return this.selectedPaymentType === 'Cash' && this.selectedCashPaymentMode === 'Bank Transfer';
     },
   },
+  mounted() {
+    document.addEventListener('keydown', this._onEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._onEscape);
+  },
   methods: {
+    _onEscape(e) {
+      if (e.key === 'Escape' && this.showModal) this.onCancel();
+    },
     toNumber(value) {
       if (value === null || value === undefined || value === '') return null;
       const parsed = Number(value);

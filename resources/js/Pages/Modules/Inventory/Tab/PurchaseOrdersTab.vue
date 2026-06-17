@@ -3,7 +3,6 @@
     <div class="col-md-12">
     <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-shopping-cart-line"></i>
@@ -13,7 +12,6 @@
                 <p class="header-subtitle mb-0">Manage and organize your purchase order catalog</p>
               </div>
             </div>
-          </div>
         </div>
 
         <div class="library-card-body">
@@ -97,7 +95,7 @@
                     style="cursor: pointer;"
                    
                   >
-                    <td>{{ index + 1 }}</td>
+                    <td>{{ (meta?.from ?? 1) + index }}</td>
                     <td>
                       <strong>{{ list.po_number }}</strong>
                     </td>

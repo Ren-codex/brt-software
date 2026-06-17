@@ -19,6 +19,8 @@ class ArInvoiceResource extends JsonResource
             'balance_due' => (float) $this->balance_due,
             'total_discount' => (float) $this->total_discount,
             'created_by' => $this->created_by,
+            'due_date' => $this->due_date?->format('Y-m-d'),
+            'due_date_formatted' => $this->due_date?->format('F d, Y'),
             'sales_order' => $this->sales_order,
             'status' => $this->status,
             'receipts' => $this->whenLoaded('receipts', function () {

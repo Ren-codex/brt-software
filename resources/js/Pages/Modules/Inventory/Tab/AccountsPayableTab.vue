@@ -3,7 +3,6 @@
     <div class="col-lg-12 mb-4">
       <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-wallet-3-line fs-24"></i>
@@ -17,7 +16,6 @@
               <i class="ri-file-list-3-line"></i>
               <span>{{ filteredPayables.length }} Credit {{ filteredPayables.length === 1 ? 'Record' : 'Records' }}</span>
             </div>
-          </div>
         </div>
 
         <div class="card-body bg-white m-2 p-3">
@@ -68,7 +66,7 @@
                   <template v-for="(record, index) in paginatedPayables" :key="record.id">
                     <tr :class="['main-table-row', rowStateClass(record)]">
                       <td class="text-center">
-                        {{ index + 1 }}
+                        {{ (currentPage - 1) * pageSize + index + 1 }}
                       </td>
                       <td class="text-center fw-semibold">{{ record.received_no || `RCV-${record.id}` }}</td>
                       <td class="text-center">
@@ -168,6 +166,7 @@
 <script>
 import PayAccountsPayableModal from '../Modal/PayAccountsPayableModal.vue';
 import ViewAccountsPayableModal from '../Modal/ViewAccountsPayableModal.vue';
+import { formatCurrency, formatDate } from '@/Shared/utils/formatters.js';
 
 export default {
   name: 'AccountsPayableTab',
@@ -218,7 +217,8 @@ export default {
       return this.creditPayables.filter((record) => {
         if (!keyword) return true;
 
-        const paymentTerms = this.partialPayments(record)
+        // requires eager-loaded `payments` on receivedStocks from the backend
+        const paymentTerms = (record?.payments || [])
           .flatMap((payment) => [
             payment?.payment_mode,
             payment?.bank_name,
@@ -264,39 +264,14 @@ export default {
     openPayFromDetails(record) {
       this.$refs.payModal.show(record);
     },
-    partialPayments(record) {
-      return (record?.payments || [])
-        .slice()
-        .sort((left, right) => {
-          const leftDate = `${left?.payment_date || ''} ${left?.created_at || ''}`;
-          const rightDate = `${right?.payment_date || ''} ${right?.created_at || ''}`;
-          return rightDate.localeCompare(leftDate);
-        });
-    },
     isAccountsPayableRecord(record) {
       return Number(record?.remaining_balance || 0) > 0;
     },
     isUnpaid(record) {
       return Number(record?.amount_paid || 0) <= 0;
     },
-    formatCurrency(value) {
-      return '₱' + Number(value || 0).toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    },
-    formatDate(value) {
-      if (!value) return 'N/A';
-
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return value;
-
-      return date.toLocaleDateString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    },
+    formatCurrency,
+    formatDate,
     payableStatusLabel(record) {
       return this.isUnpaid(record) ? 'Unpaid' : 'Partially Paid';
     },

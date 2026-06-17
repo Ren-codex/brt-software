@@ -23,10 +23,15 @@ return new class extends Migration
 
             $table->integer('quantity');
             $table->integer('returned_quantity')->default(0);
+            $table->integer('replaced_quantity')->default(0);
+            $table->integer('loss_quantity')->default(0);
             $table->text('remarks')->nullable();
 
             $table->unsignedInteger('status_id');
             $table->foreign('status_id')->references('id')->on('list_statuses')->onDelete('cascade');
+            $table->unsignedInteger('received_by_id')->nullable();
+            $table->foreign('received_by_id')->references('id')->on('users')->onDelete('set null');
+            $table->timestamp('received_at')->nullable();
             $table->timestamps();
         });
     }

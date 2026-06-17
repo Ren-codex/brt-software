@@ -98,7 +98,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getActivitylogOptions(): LogOptions {
         return LogOptions::defaults()
         ->logOnly(['username','kradworkz','is_active'])
-        ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} the user information")
         ->useLogName('User')
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();

@@ -625,21 +625,29 @@
 
     <div v-if="showCreditVerificationModal" class="modal-overlay active order-review-modal" @click.self="closeCreditVerificationModal">
         <div class="modal-container modal-md" @click.stop>
-            <div class="modal-header bg-primary text-white">
-                <h4 class="mb-0 text-white">
-                    <i class="ri-shield-check-line me-2"></i>
-                    Credit Sales Verification
-                </h4>
-                <button class="close-btn text-white" @click="closeCreditVerificationModal">
+            <div class="modal-header">
+                <div class="modal-header-icon">
+                    <i class="ri-shield-check-line"></i>
+                </div>
+                <div>
+                    <h4 class="mb-0">Credit Sales Verification</h4>
+                    <p class="header-subtitle mb-0">
+                        Step {{ creditStep }} of 2 —
+                        {{ creditStep === 1 ? 'Set payment terms' : 'Verify & confirm' }}
+                    </p>
+                </div>
+                <button class="close-btn ms-auto" @click="closeCreditVerificationModal">
                     <i class="ri-close-line fs-20"></i>
                 </button>
             </div>
-            <div class="modal-body p-4 payment-type-modal-body">
+
+            <!-- Step 1: Credit Terms -->
+            <div v-if="creditStep === 1" class="modal-body p-4 payment-type-modal-body">
                 <div class="payment-success-card text-start">
                     <div class="payment-section-heading payment-section-heading-sm">
-                        <span class="payment-section-kicker">Final Step</span>
-                        <h5>Confirm this credit sale</h5>
-                        <p>Verify this transaction before setting the payment schedule.</p>
+                        <span class="payment-section-kicker">Step 1 of 2</span>
+                        <h5>Set credit terms</h5>
+                        <p>Choose the due date before confirming this sale.</p>
                     </div>
 
                     <div class="credit-verification-summary">
@@ -655,13 +663,67 @@
                             <span>Amount Due</span>
                             <strong>{{ formatCurrency(grandTotal) }}</strong>
                         </div>
-                        <div v-if="isCreditVerificationMatched" class="payment-success-row">
+                    </div>
+
+                    <div class="credit-terms-section mt-3">
+                        <label class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
+                        <div class="credit-preset-btns mb-2">
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 7 }"  @click="setDueDatePreset(7)">Net 7</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 14 }" @click="setDueDatePreset(14)">Net 14</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 30 }" @click="setDueDatePreset(30)">Net 30</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 60 }" @click="setDueDatePreset(60)">Net 60</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 0 }"  @click="setDueDatePreset(0)">Custom</button>
+                        </div>
+                        <div class="input-wrapper">
+                            <i class="ri-calendar-line input-icon"></i>
+                            <input
+                                type="date"
+                                v-model="form.due_date"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.due_date }"
+                                :min="form.order_date"
+                                @change="creditPreset = 0; handleInput('due_date')"
+                            />
+                        </div>
+                        <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date }}</span>
+                        <p v-if="form.due_date" class="credit-due-hint mt-1">
+                            <i class="ri-information-line"></i>
+                            Payment expected by <strong>{{ form.due_date }}</strong>
+                            ({{ dueDateDaysFromOrder }} day{{ dueDateDaysFromOrder === 1 ? '' : 's' }} from order date)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Verify & Confirm -->
+            <div v-if="creditStep === 2" class="modal-body p-4 payment-type-modal-body">
+                <div class="payment-success-card text-start">
+                    <div class="payment-section-heading payment-section-heading-sm">
+                        <span class="payment-section-kicker">Step 2 of 2</span>
+                        <h5>Confirm this credit sale</h5>
+                        <p>Review the details below, then type CREDIT to confirm.</p>
+                    </div>
+
+                    <div class="credit-verification-summary">
+                        <div class="credit-balance-callout" :class="{ 'has-balance': hasCustomerOutstandingBalance }">
+                            <span class="credit-balance-callout-label">Existing Credit Balance</span>
+                            <strong class="credit-balance-callout-value">{{ formatCurrency(customerOutstandingBalance) }}</strong>
+                        </div>
+                        <div class="payment-success-row">
+                            <span>Customer</span>
+                            <strong>{{ selectedCustomer?.name || 'Walk-in Customer' }}</strong>
+                        </div>
+                        <div class="payment-success-row">
+                            <span>Amount Due</span>
+                            <strong>{{ formatCurrency(grandTotal) }}</strong>
+                        </div>
+                        <div class="payment-success-row">
                             <span>Due Date</span>
-                            <strong>{{ form.due_date || 'Not set' }}</strong>
+                            <strong class="text-success">{{ form.due_date }}</strong>
                         </div>
                     </div>
 
-                    <label for="credit_verification_input" class="form-label mt-3">Type <strong>CREDIT</strong> to continue</label>
+                    <label for="credit_verification_input" class="form-label mt-3">Type <strong>CREDIT</strong> to confirm</label>
                     <div class="input-wrapper">
                         <i class="ri-edit-2-line input-icon"></i>
                         <input
@@ -672,42 +734,35 @@
                             :class="{ 'input-error': creditVerificationError }"
                             placeholder="Type CREDIT"
                             @input="creditVerificationError = null"
+                            autocomplete="off"
                         />
                     </div>
                     <span class="error-message" v-if="creditVerificationError">{{ creditVerificationError }}</span>
-
-                    <div v-if="isCreditVerificationMatched" class="payment-detail-card form-group mb-0 mt-3">
-                        <div class="payment-section-heading payment-section-heading-sm">
-                            <span class="payment-section-kicker">Schedule</span>
-                            <h5>Set due date</h5>
-                            <p>Choose when this credit sale should be settled.</p>
-                        </div>
-                        <label for="credit_verification_due_date" class="form-label">Due Date<span class="text-danger">*</span></label>
-                        <div class="input-wrapper">
-                            <i class="ri-calendar-line input-icon"></i>
-                            <text-input
-                                type="date"
-                                id="credit_verification_due_date"
-                                v-model="form.due_date"
-                                class="form-control"
-                                :class="{ 'input-error': form.errors.due_date }"
-                                @input="handleInput('due_date')"
-                            />
-                        </div>
-                        <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date }}</span>
-                    </div>
                 </div>
             </div>
+
+            <!-- Footer -->
             <div class="modal-footer bg-light border-0 p-4">
-                <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeCreditVerificationModal" :disabled="form.processing">
-                    <i class="ri-arrow-left-line me-2"></i>
-                    Back
-                </button>
-                <button type="button" class="btn btn-primary payment-modal-btn" @click="submitCreditSale" :disabled="form.processing || !canSubmitCreditSale">
-                    <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
-                    <i class="ri-check-line me-2" v-else></i>
-                    {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
-                </button>
+                <!-- Step 1 footer -->
+                <template v-if="creditStep === 1">
+                    <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeCreditVerificationModal">
+                        <i class="ri-arrow-left-line me-2"></i>Back
+                    </button>
+                    <button type="button" class="btn btn-primary payment-modal-btn" @click="creditNextStep" :disabled="!form.due_date">
+                        Next <i class="ri-arrow-right-line ms-2"></i>
+                    </button>
+                </template>
+                <!-- Step 2 footer -->
+                <template v-if="creditStep === 2">
+                    <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="creditStep = 1" :disabled="form.processing">
+                        <i class="ri-arrow-left-line me-2"></i>Back
+                    </button>
+                    <button type="button" class="btn btn-primary payment-modal-btn" @click="submitCreditSale" :disabled="form.processing || !isCreditVerificationMatched">
+                        <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
+                        <i class="ri-check-line me-2" v-else></i>
+                        {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
+                    </button>
+                </template>
             </div>
         </div>
     </div>
@@ -966,6 +1021,8 @@ export default {
             showPaymentTypeModal: false,
             showCashReceivedModal: false,
             showCreditVerificationModal: false,
+            creditStep: 1,
+            creditPreset: 30,
             showBankTransferModal: false,
             showChargeSuccessModal: false,
             showPrintPrompt: false,
@@ -1123,6 +1180,21 @@ export default {
         canSubmitCreditSale() {
             return this.isCreditVerificationMatched && !!this.form.due_date;
         },
+        today() {
+            return new Date().toISOString().slice(0, 10);
+        },
+        dueDateDaysFromNow() {
+            if (!this.form.due_date) return 0;
+            const now = new Date(); now.setHours(0,0,0,0);
+            const due = new Date(this.form.due_date); due.setHours(0,0,0,0);
+            return Math.round((due - now) / 86400000);
+        },
+        dueDateDaysFromOrder() {
+            if (!this.form.due_date || !this.form.order_date) return 0;
+            const order = new Date(this.form.order_date); order.setHours(0,0,0,0);
+            const due   = new Date(this.form.due_date);   due.setHours(0,0,0,0);
+            return Math.round((due - order) / 86400000);
+        },
         isPaymentTypeActionDisabled() {
             if (this.form.processing || !this.selectedPaymentType) return true;
             if (this.selectedPaymentType === 'Cash Sales' && !this.cash_payment_modes.includes(this.form.payment_mode)) {
@@ -1244,6 +1316,8 @@ export default {
             this.showPaymentTypeModal = false;
             this.showCashReceivedModal = false;
             this.showCreditVerificationModal = false;
+            this.creditStep = 1;
+            this.creditPreset = 30;
             this.showBankTransferModal = false;
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
@@ -1259,10 +1333,7 @@ export default {
             this.showModal = true;
             this.form.location_id = 0;
             this.form.order_date = new Date().toISOString().slice(0, 10);
-            // Set default due date to 3 days ahead
-            const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + 3);
-            this.form.due_date = dueDate.toISOString().slice(0, 10);
+            this.form.due_date = null;
             // Default sales rep should be the logged-in employee (not user id).
             if (this.currentEmployeeId) {
                 this.form.sales_rep_id = this.currentEmployeeId;
@@ -1395,6 +1466,9 @@ export default {
                 this.showCreditVerificationModal = true;
                 this.creditVerificationText = '';
                 this.creditVerificationError = null;
+                this.creditStep = 1;
+                this.creditPreset = 30;
+                this.setDueDatePreset(30);
                 return;
             } else if (!this.cash_payment_modes.includes(this.form.payment_mode)) {
                 return;
@@ -1403,6 +1477,7 @@ export default {
             if (this.requiresCashReceivedModal) {
                 this.showPaymentTypeModal = false;
                 this.showCashReceivedModal = true;
+                this.cashReceivedAmount = this.grandTotal;
                 this.cashChargeError = null;
                 return;
             }
@@ -1557,10 +1632,34 @@ export default {
             this.cashChargeError = null;
             this.showPaymentTypeModal = true;
         },
+        setDueDatePreset(days) {
+            this.creditPreset = days;
+            if (days === 0) {
+                this.form.due_date = '';
+                return;
+            }
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            this.form.due_date = d.toISOString().slice(0, 10);
+            this.handleInput('due_date');
+        },
+        creditNextStep() {
+            if (!this.form.due_date) {
+                this.form.errors.due_date = 'Please set a due date before continuing.';
+                return;
+            }
+            if (this.form.order_date && this.form.due_date < this.form.order_date) {
+                this.form.errors.due_date = 'Due date cannot be before the order date.';
+                return;
+            }
+            this.form.errors.due_date = null;
+            this.creditStep = 2;
+        },
         closeCreditVerificationModal() {
             this.showCreditVerificationModal = false;
             this.creditVerificationText = '';
             this.creditVerificationError = null;
+            this.creditStep = 1;
             this.showPaymentTypeModal = true;
         },
         closeBankTransferModal() {
@@ -1570,15 +1669,9 @@ export default {
         },
         submitCreditSale() {
             if (!this.isCreditVerificationMatched) {
-                this.creditVerificationError = 'Please type CREDIT to verify this credit sale.';
+                this.creditVerificationError = 'Please type CREDIT to confirm this credit sale.';
                 return;
             }
-
-            if (!this.form.due_date) {
-                this.form.errors.due_date = 'Due date is required for credit sales.';
-                return;
-            }
-
             this.creditVerificationError = null;
             this.showCreditVerificationModal = false;
             this.submitOrderCreation();
@@ -1879,6 +1972,7 @@ export default {
             if (mode === 'Cash') {
                 this.showPaymentTypeModal = false;
                 this.showCashReceivedModal = true;
+                this.cashReceivedAmount = this.grandTotal;
                 this.cashChargeError = null;
             } else if (mode === 'Bank Transfer') {
                 this.showPaymentTypeModal = false;
@@ -1997,12 +2091,12 @@ export default {
 }
 
 .modal-header {
-    padding: 1.35rem 1.5rem;
+    padding: 0.65rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     flex-shrink: 0;
-    gap: 1rem;
+    gap: 0.75rem;
     background: linear-gradient(135deg, #3d8d7a 0%, #4f9e8c 100%);
     border-bottom: none;
 }
@@ -2010,23 +2104,23 @@ export default {
 .header-title {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .header-title i {
-    width: 38px;
-    height: 38px;
-    border-radius: 11px;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
     display: grid;
     place-items: center;
     background: rgba(255, 255, 255, 0.18);
     color: #fff;
-    font-size: 21px;
+    font-size: 16px;
 }
 
 .header-title h2 {
     margin: 0;
-    font-size: 1.16rem;
+    font-size: 0.92rem;
     color: #fff;
     font-weight: 700;
 }
@@ -2035,7 +2129,7 @@ export default {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding: 1.5rem 1.75rem 1.75rem;
+    padding: 0.9rem 1.1rem 1.1rem;
 }
 
 .modal-footer {
@@ -2044,24 +2138,24 @@ export default {
 
 .form-layout {
     display: grid;
-    grid-template-columns: minmax(0, 2.1fr) minmax(300px, 0.95fr);
-    gap: 1.25rem;
+    grid-template-columns: minmax(0, 2.1fr) minmax(260px, 0.95fr);
+    gap: 0.85rem;
     align-items: start;
 }
 
 .form-panel {
     background: #ffffff;
     border: 1px solid rgba(61, 141, 122, 0.12);
-    border-radius: 24px;
-    box-shadow: 0 16px 35px rgba(39, 84, 72, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 10px 22px rgba(39, 84, 72, 0.07);
 }
 
 .form-panel-main {
-    padding: 1.35rem;
+    padding: 0.75rem;
 }
 
 .form-panel-side {
-    padding: 1.25rem;
+    padding: 0.7rem;
     position: sticky;
     top: 0;
 }
@@ -2070,49 +2164,49 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.7rem;
 }
 
 .panel-kicker {
     margin: 0;
-    font-size: 0.75rem;
+    font-size: 0.64rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     color: #648b74;
 }
 
 .panel-title {
-    margin: 0.2rem 0 0;
+    margin: 0.15rem 0 0;
     color: #20413a;
-    font-size: 1.1rem;
+    font-size: 0.92rem;
     font-weight: 700;
 }
 
 .detail-grid {
     display: grid;
-    gap: 1rem;
+    gap: 0.7rem;
 }
 
 .detail-grid-primary {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 170px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 150px;
 }
 
 .detail-grid-secondary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: 1rem;
+    margin-top: 0.7rem;
 }
 
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .form-label {
     display: block;
-    margin-bottom: 0.375rem;
+    margin-bottom: 0.3rem;
     font-weight: 600;
     color: #2c3e50;
-    font-size: 0.9rem;
+    font-size: 0.78rem;
 }
 
 .input-wrapper {
@@ -2121,20 +2215,20 @@ export default {
 
 .input-icon {
     position: absolute;
-    left: 0.875rem;
+    left: 0.7rem;
     top: 50%;
     transform: translateY(-50%);
     color: #7f8c8d;
-    font-size: 1.1rem;
+    font-size: 0.92rem;
     z-index: 1;
 }
 
 .form-control {
     width: 100%;
-    padding: 0.85rem 1rem 0.85rem 2.9rem;
+    padding: 0.5rem 0.75rem 0.5rem 2.3rem;
     border: 1px solid #d7e5de;
-    border-radius: 14px;
-    font-size: 0.95rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
     transition: all 0.3s ease;
     background-color: #fdfefe;
 }
@@ -2151,8 +2245,8 @@ export default {
 
 .error-message {
     display: block;
-    margin-top: 0.375rem;
-    font-size: 0.8125rem;
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
     color: #e74c3c;
 }
 
@@ -2163,16 +2257,17 @@ export default {
 }
 
 .btn-outline-action {
-    min-height: 52px;
+    min-height: 38px;
     border: 1px solid #d7e5de;
-    border-radius: 14px;
+    border-radius: 10px;
     background: #fff;
     color: #355f55;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.45rem;
+    gap: 0.35rem;
     font-weight: 600;
+    font-size: 0.8rem;
     transition: all 0.3s ease;
 }
 
@@ -2185,15 +2280,15 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin: 1.5rem 0 1rem;
-    padding-top: 1.25rem;
+    gap: 0.75rem;
+    margin: 0.85rem 0 0.6rem;
+    padding-top: 0.75rem;
     border-top: 1px solid #edf3f1;
 }
 
 .section-title {
     color: #20413a;
-    font-size: 1.02rem;
+    font-size: 0.88rem;
     font-weight: 700;
 }
 
@@ -2201,16 +2296,16 @@ export default {
     background: linear-gradient(135deg, #3d8d7a 0%, #2f7464 100%);
     color: white;
     border: none;
-    padding: 0.7rem 1rem;
-    border-radius: 12px;
+    padding: 0.45rem 0.75rem;
+    border-radius: 9px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    font-size: 0.85rem;
+    gap: 0.35rem;
+    font-size: 0.76rem;
     transition: all 0.3s ease;
-    box-shadow: 0 10px 20px rgba(61, 141, 122, 0.18);
+    box-shadow: 0 8px 16px rgba(61, 141, 122, 0.18);
 }
 
 .btn-add-item:hover:not(:disabled) {
@@ -2226,17 +2321,16 @@ export default {
 
 .items-table-wrap {
     border: 1px solid #d9ebe4;
-    border-radius: 20px;
-    overflow: auto;
+    border-radius: 14px;
+    overflow: hidden;
     background: linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
-    max-height: calc(100vh - 360px);
 }
 
 .payment-mode-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.75rem;
-    margin-top: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.4rem;
 }
 
 .payment-type-modal-body {
@@ -2246,33 +2340,33 @@ export default {
 }
 
 .payment-section-heading {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.5rem;
 }
 
 .payment-section-heading-sm {
-    margin: 0 0 0.9rem;
+    margin: 0 0 0.6rem;
 }
 
 .payment-section-kicker {
     display: inline-block;
-    margin-bottom: 0.35rem;
-    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.64rem;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     color: #648b74;
 }
 
 .payment-section-heading h5 {
     margin: 0;
-    font-size: 1.02rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: #20413a;
 }
 
 .payment-section-heading p {
-    margin: 0.2rem 0 0;
-    font-size: 0.9rem;
+    margin: 0.15rem 0 0;
+    font-size: 0.78rem;
     color: #6b7f78;
 }
 
@@ -2280,14 +2374,14 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 1.25rem;
-    padding: 1.35rem 1.4rem;
-    border-radius: 24px;
+    gap: 0.85rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 16px;
     background:
         radial-gradient(circle at top right, rgba(61, 141, 122, 0.16), transparent 28%),
         linear-gradient(135deg, #f7fcfa 0%, #edf7f3 100%);
     border: 1px solid #dbe9e3;
-    box-shadow: 0 14px 28px rgba(31, 92, 80, 0.08);
+    box-shadow: 0 10px 20px rgba(31, 92, 80, 0.07);
 }
 
 .review-overview-copy {
@@ -2297,58 +2391,58 @@ export default {
 .review-overview-kicker,
 .review-section-kicker {
     display: inline-block;
-    margin-bottom: 0.35rem;
-    font-size: 0.74rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.64rem;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     color: #648b74;
 }
 
 .review-overview-copy h5 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: #20413a;
 }
 
 .review-overview-copy p {
-    margin: 0.45rem 0 0;
-    font-size: 0.92rem;
-    line-height: 1.6;
+    margin: 0.3rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.5;
     color: #6b7f78;
 }
 
 .review-overview-metrics {
     display: grid;
-    grid-template-columns: repeat(2, minmax(135px, 1fr));
-    gap: 0.8rem;
-    width: min(100%, 320px);
+    grid-template-columns: repeat(2, minmax(110px, 1fr));
+    gap: 0.55rem;
+    width: min(100%, 280px);
 }
 
 .review-overview-metric {
-    padding: 1rem 1.05rem;
-    border-radius: 18px;
+    padding: 0.65rem 0.75rem;
+    border-radius: 12px;
     background: rgba(255, 255, 255, 0.82);
     border: 1px solid #dbe9e3;
 }
 
 .review-overview-metric span {
     display: block;
-    font-size: 0.76rem;
+    font-size: 0.66rem;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: #6c877d;
 }
 
 .review-overview-metric strong {
     display: block;
-    margin-top: 0.45rem;
-    font-size: 1.18rem;
+    margin-top: 0.3rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: #20413a;
-    line-height: 1.35;
+    line-height: 1.3;
 }
 
 .review-overview-metric-total {
@@ -2363,29 +2457,29 @@ export default {
 
 .review-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.95fr);
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.95fr);
+    gap: 0.7rem;
 }
 
 .review-section-card {
-    padding: 1.2rem;
-    border-radius: 22px;
+    padding: 0.8rem;
+    border-radius: 15px;
     background: rgba(255, 255, 255, 0.86);
     border: 1px solid #dbe9e3;
-    box-shadow: 0 12px 26px rgba(31, 92, 80, 0.06);
+    box-shadow: 0 8px 18px rgba(31, 92, 80, 0.05);
 }
 
 .review-section-head {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 0.7rem;
+    margin-bottom: 0.7rem;
 }
 
 .review-section-head h6 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: #20413a;
 }
@@ -2393,7 +2487,7 @@ export default {
 .review-info-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.85rem;
+    gap: 0.6rem;
 }
 
 .review-balance-banner {
@@ -2401,9 +2495,9 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    padding: 0.95rem 1rem;
-    border-radius: 18px;
+    gap: 0.7rem;
+    padding: 0.65rem 0.7rem;
+    border-radius: 12px;
     background: linear-gradient(135deg, #f4f7f6 0%, #edf3f1 100%);
     border: 1px solid #dbe5e1;
 }
@@ -2411,20 +2505,20 @@ export default {
 .review-balance-banner.has-balance {
     background: linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%);
     border-color: #f4b183;
-    box-shadow: 0 12px 24px rgba(217, 119, 6, 0.14);
+    box-shadow: 0 8px 18px rgba(217, 119, 6, 0.12);
 }
 
 .review-balance-banner span {
     color: #7a695d;
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     font-weight: 800;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 
 .review-balance-banner strong {
     color: #20413a;
-    font-size: 1.2rem;
+    font-size: 0.95rem;
     font-weight: 800;
 }
 
@@ -2433,34 +2527,34 @@ export default {
 }
 
 .review-info-item {
-    padding: 0.9rem 0.95rem;
-    border-radius: 16px;
+    padding: 0.6rem 0.65rem;
+    border-radius: 12px;
     background: linear-gradient(180deg, #f8fcfb 0%, #f1f8f5 100%);
     border: 1px solid #e2eeea;
 }
 
 .review-info-item span {
     display: block;
-    margin-bottom: 0.35rem;
-    font-size: 0.76rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.66rem;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: #6c877d;
 }
 
 .review-info-item strong {
     display: block;
-    font-size: 0.96rem;
+    font-size: 0.82rem;
     color: #20413a;
-    line-height: 1.4;
+    line-height: 1.35;
 }
 
 .review-info-item small {
     display: block;
-    margin-top: 0.35rem;
-    font-size: 0.78rem;
-    line-height: 1.45;
+    margin-top: 0.25rem;
+    font-size: 0.68rem;
+    line-height: 1.4;
     color: #7a8d86;
 }
 
@@ -2470,29 +2564,29 @@ export default {
 
 .review-total-list {
     display: grid;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .review-total-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
-    padding: 0.9rem 1rem;
-    border-radius: 16px;
+    gap: 0.7rem;
+    padding: 0.6rem 0.7rem;
+    border-radius: 12px;
     background: rgba(255, 255, 255, 0.82);
     border: 1px solid #e2eeea;
 }
 
 .review-total-row span {
     color: #5f7a70;
-    font-size: 0.9rem;
+    font-size: 0.78rem;
     font-weight: 600;
 }
 
 .review-total-row strong {
     color: #20413a;
-    font-size: 0.98rem;
+    font-size: 0.84rem;
     font-weight: 700;
 }
 
@@ -2507,13 +2601,13 @@ export default {
 }
 
 .review-total-row-grand strong {
-    font-size: 1.15rem;
+    font-size: 0.98rem;
 }
 
 .review-total-note {
-    margin: 0.9rem 0 0;
-    font-size: 0.83rem;
-    line-height: 1.55;
+    margin: 0.6rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.5;
     color: #6b7f78;
 }
 
@@ -2524,37 +2618,38 @@ export default {
 .review-items-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.5rem 0.8rem;
+    gap: 0.35rem;
+    padding: 0.35rem 0.6rem;
     border-radius: 999px;
     background: #eef7f4;
     color: #2f7666;
-    font-size: 0.82rem;
+    font-size: 0.7rem;
     font-weight: 700;
 }
 
 .review-items-table-wrap {
     border: 1px solid #dceae4;
-    border-radius: 18px;
+    border-radius: 12px;
     overflow: hidden;
     background: linear-gradient(180deg, #fbfefd 0%, #f5faf8 100%);
 }
 
 .review-items-table thead th {
-    padding: 0.95rem 0.85rem;
+    padding: 0.6rem 0.55rem;
     border: none;
     background: linear-gradient(180deg, #eff7f4 0%, #e6f2ed 100%);
     color: #49655d;
-    font-size: 0.75rem;
+    font-size: 0.66rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
 .review-items-table tbody td {
-    padding: 0.9rem 0.85rem;
+    padding: 0.55rem 0.55rem;
     vertical-align: middle;
     border-color: #edf3f1;
+    font-size: 0.8rem;
 }
 
 .review-items-table tbody tr:last-child td {
@@ -2564,17 +2659,17 @@ export default {
 .review-product-cell {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.15rem;
 }
 
 .review-product-cell strong {
     color: #20413a;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
 }
 
 .review-product-cell small {
     color: #74867f;
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     text-transform: capitalize;
 }
 
@@ -2583,11 +2678,11 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 44px;
-    padding: 0.28rem 0.65rem;
+    min-width: 36px;
+    padding: 0.22rem 0.55rem;
     border-radius: 999px;
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
 }
 
 .review-batch-pill {
@@ -2601,7 +2696,7 @@ export default {
 }
 
 .review-empty-state {
-    padding: 2rem 1rem;
+    padding: 1.25rem 0.75rem;
     text-align: center;
     color: #74867f;
 }
@@ -2609,56 +2704,56 @@ export default {
 .review-empty-state i {
     display: inline-grid;
     place-items: center;
-    width: 58px;
-    height: 58px;
-    margin-bottom: 0.8rem;
-    border-radius: 18px;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0.55rem;
+    border-radius: 13px;
     background: #eef7f4;
     color: #2f7a68;
-    font-size: 1.7rem;
+    font-size: 1.3rem;
 }
 
 .review-empty-state h6 {
     margin: 0;
     color: #355f55;
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 700;
 }
 
 .review-empty-state p {
-    margin: 0.4rem 0 0;
-    font-size: 0.9rem;
+    margin: 0.3rem 0 0;
+    font-size: 0.76rem;
 }
 
 .review-helper-copy {
     color: #70827b;
-    font-size: 0.9rem;
-    line-height: 1.55;
+    font-size: 0.76rem;
+    line-height: 1.5;
 }
 
 .payment-type-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem;
+    gap: 0.6rem;
 }
 
 .payment-detail-card {
-    margin-top: 1rem;
-    padding: 1rem 1rem 1.05rem;
-    border-radius: 20px;
+    margin-top: 0.7rem;
+    padding: 0.7rem 0.7rem 0.75rem;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.75);
     border: 1px solid #dbe9e3;
-    box-shadow: 0 12px 25px rgba(61, 141, 122, 0.08);
+    box-shadow: 0 8px 18px rgba(61, 141, 122, 0.07);
 }
 
 .payment-subtype-section {
-    margin-top: 1rem;
-    padding-top: 0.9rem;
+    margin-top: 0.7rem;
+    padding-top: 0.6rem;
     border-top: 1px solid #edf3f1;
 }
 
 .payment-subtype-label {
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -2666,7 +2761,7 @@ export default {
 }
 
 .payment-subtype-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 }
 
 .payment-mode-card {
@@ -2674,37 +2769,37 @@ export default {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 1rem 0.5rem;
+    padding: 0.7rem 0.4rem;
     border: 2px solid #e9ecef;
     border-radius: 8px;
     background: white;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-height: 80px;
+    min-height: 58px;
 }
 
 .payment-subtype-card {
-    min-height: 72px;
+    min-height: 52px;
 }
 
 .payment-choice-card {
     align-items: flex-start;
     text-align: left;
-    padding: 1rem;
-    min-height: 132px;
-    border-radius: 18px;
+    padding: 0.7rem;
+    min-height: 96px;
+    border-radius: 13px;
     border-color: #dbe9e3;
-    box-shadow: 0 10px 24px rgba(31, 92, 80, 0.06);
+    box-shadow: 0 8px 18px rgba(31, 92, 80, 0.05);
 }
 
 .payment-choice-icon-wrap {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
     background: #eef7f4;
     display: grid;
     place-items: center;
-    margin-bottom: 0.7rem;
+    margin-bottom: 0.5rem;
     color: #2f7a68;
 }
 
@@ -2727,20 +2822,20 @@ export default {
 }
 
 .payment-icon {
-    font-size: 1.5rem;
-    margin-bottom: 0.25rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
 }
 
 .payment-label {
-    font-size: 0.875rem;
+    font-size: 0.76rem;
     font-weight: 700;
     text-align: left;
 }
 
 .payment-choice-copy {
-    margin-top: 0.35rem;
-    font-size: 0.78rem;
-    line-height: 1.45;
+    margin-top: 0.25rem;
+    font-size: 0.68rem;
+    line-height: 1.4;
     color: #6b7f78;
 }
 
@@ -2761,39 +2856,39 @@ export default {
 }
 
 .payment-success-card {
-    padding: 1.25rem 1rem;
+    padding: 0.9rem 0.7rem;
     text-align: center;
 }
 
 .payment-success-icon {
-    width: 72px;
-    height: 72px;
-    margin: 0 auto 1rem;
-    border-radius: 22px;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 0.7rem;
+    border-radius: 16px;
     display: grid;
     place-items: center;
     background: linear-gradient(135deg, #d8f2e3 0%, #e8f8ef 100%);
     color: #1f7a4d;
-    font-size: 2rem;
+    font-size: 1.45rem;
 }
 
 .payment-success-card h5 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 0.92rem;
     font-weight: 700;
     color: #20413a;
 }
 
 .payment-success-card p {
-    margin: 0.45rem 0 0;
+    margin: 0.3rem 0 0;
     color: #6b7f78;
-    font-size: 0.92rem;
+    font-size: 0.78rem;
 }
 
 .payment-success-breakdown {
     display: grid;
-    gap: 0.75rem;
-    margin-top: 1rem;
+    gap: 0.5rem;
+    margin-top: 0.7rem;
     text-align: left;
 }
 
@@ -2801,16 +2896,16 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    padding: 0.9rem 1rem;
-    border-radius: 16px;
+    gap: 0.7rem;
+    padding: 0.6rem 0.7rem;
+    border-radius: 12px;
     background: rgba(255, 255, 255, 0.82);
     border: 1px solid #dbe9e3;
 }
 
 .payment-success-row span {
     color: #5f7a70;
-    font-size: 0.86rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -2818,7 +2913,7 @@ export default {
 
 .payment-success-row strong {
     color: #20413a;
-    font-size: 1rem;
+    font-size: 0.84rem;
     font-weight: 700;
 }
 
@@ -2829,13 +2924,13 @@ export default {
 
 .credit-verification-summary {
     display: grid;
-    gap: 0.75rem;
-    margin-top: 0.35rem;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
 }
 
 .credit-balance-callout {
-    padding: 1rem 1.05rem;
-    border-radius: 18px;
+    padding: 0.65rem 0.7rem;
+    border-radius: 12px;
     background: linear-gradient(135deg, #f4f7f6 0%, #edf3f1 100%);
     border: 1px solid #dbe5e1;
 }
@@ -2843,23 +2938,23 @@ export default {
 .credit-balance-callout.has-balance {
     background: linear-gradient(135deg, #fff0e6 0%, #ffd9bf 100%);
     border-color: #f4b183;
-    box-shadow: 0 14px 28px rgba(217, 119, 6, 0.18);
+    box-shadow: 0 10px 20px rgba(217, 119, 6, 0.15);
 }
 
 .credit-balance-callout-label {
     display: block;
     color: #7a695d;
-    font-size: 0.78rem;
+    font-size: 0.66rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
 .credit-balance-callout-value {
     display: block;
-    margin-top: 0.35rem;
+    margin-top: 0.25rem;
     color: #20413a;
-    font-size: 1.4rem;
+    font-size: 1.05rem;
     font-weight: 800;
 }
 
@@ -2867,40 +2962,74 @@ export default {
     color: #b45309;
 }
 
+.credit-preset-btns {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+}
+
+.credit-preset-btn {
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid #c4d9d2;
+    background: #f7fbfa;
+    color: #335c52;
+    font-size: 0.68rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.credit-preset-btn:hover {
+    background: #edf5f2;
+    border-color: #3d8d7a;
+}
+.credit-preset-btn.active {
+    background: #3d8d7a;
+    border-color: #3d8d7a;
+    color: #fff;
+}
+
+.credit-due-hint {
+    font-size: 0.68rem;
+    color: #527267;
+    margin-bottom: 0;
+}
+
 .cash-change-note,
 .cash-change-display {
-    margin-top: 0.85rem;
-    padding: 0.85rem 1rem;
-    border-radius: 14px;
+    margin-top: 0.6rem;
+    padding: 0.6rem 0.7rem;
+    border-radius: 10px;
     background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
     border: 1px solid #b9e6ca;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     color: #155724;
 }
 
 .cash-change-note span,
 .cash-change-display span {
-    font-size: 0.85rem;
+    font-size: 0.72rem;
     font-weight: 600;
 }
 
 .cash-change-note strong,
 .cash-change-display strong {
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 700;
 }
 
 .cash-change-display strong {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
 }
 
 .pretty-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
+    font-size: 0.8rem;
 }
 
 .pretty-header {
@@ -2908,17 +3037,15 @@ export default {
     color: #20413a;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
+    font-size: 0.68rem;
 }
 
 .pretty-header th {
     border: none;
-    padding: 12px 8px;
+    padding: 7px 6px;
     vertical-align: middle;
-    position: sticky;
-    top: 0;
     background: linear-gradient(140deg, #eff7f4 0%, #e6f2ed 100%);
-    z-index: 1;
 }
 
 .pretty-table tbody tr {
@@ -2931,7 +3058,7 @@ export default {
 }
 
 .pretty-table td {
-    padding: 10px 8px;
+    padding: 5px 6px;
     vertical-align: middle;
     border: none;
 }
@@ -2946,31 +3073,31 @@ export default {
 
 .empty-table-inner {
     text-align: center;
-    padding: 2rem 1rem;
+    padding: 1.25rem 1rem;
     color: #74867f;
 }
 
 .empty-table-inner i {
-    font-size: 2.2rem;
+    font-size: 1.7rem;
     color: #3d8d7a;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.5rem;
 }
 
 .empty-table-inner h4 {
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.3rem;
     color: #355f55;
-    font-size: 1rem;
+    font-size: 0.85rem;
 }
 
 .empty-table-inner p {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 0.76rem;
 }
 
 .product-cell {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.15rem;
 }
 
 .product-name {
@@ -2980,34 +3107,36 @@ export default {
 
 .product-availability {
     color: #648b74;
+    font-size: 0.7rem;
 }
 
 .metric-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 34px;
-    padding: 0.2rem 0.55rem;
+    min-width: 28px;
+    padding: 0.15rem 0.45rem;
     border-radius: 999px;
     background: #e8f4ef;
     color: #2f7666;
     font-weight: 700;
+    font-size: 0.76rem;
 }
 
 .price-type-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
 }
 
 .type-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.22rem 0.6rem;
+    padding: 0.18rem 0.5rem;
     border-radius: 999px;
-    font-size: 0.75rem;
+    font-size: 0.66rem;
     font-weight: 700;
 }
 
@@ -3025,13 +3154,13 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
+    gap: 0.3rem;
 }
 
 .table-action-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
+    width: 27px;
+    height: 27px;
+    border-radius: 8px;
     border: 1px solid #d7e5de;
     background: #fff;
     color: #355f55;
@@ -3039,6 +3168,7 @@ export default {
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    font-size: 0.78rem;
 }
 
 .table-action-btn:hover {
@@ -3053,22 +3183,23 @@ export default {
 
 tfoot .footer-label,
 tfoot .footer-value {
-    padding: 0.9rem 0.6rem !important;
+    padding: 0.55rem 0.5rem !important;
     background: #f1f7f4;
     font-weight: 700;
     color: #20413a;
+    font-size: 0.8rem;
 }
 
 .summary-metrics {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .summary-metric-card {
-    padding: 0.95rem 1rem;
-    border-radius: 18px;
+    padding: 0.6rem 0.7rem;
+    border-radius: 12px;
     background: linear-gradient(180deg, #f6fbf9 0%, #eef7f3 100%);
     border: 1px solid #ddebe5;
 }
@@ -3076,45 +3207,45 @@ tfoot .footer-value {
 .summary-metric-label {
     display: block;
     color: #6c877d;
-    font-size: 0.76rem;
+    font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
 }
 
 .summary-metric-value {
     display: block;
-    margin-top: 0.35rem;
+    margin-top: 0.25rem;
     color: #20413a;
-    font-size: 1rem;
-    line-height: 1.35;
+    font-size: 0.88rem;
+    line-height: 1.3;
 }
 
 .summary-card,
 .summary-section {
     background: linear-gradient(135deg, #f8fbfa 0%, #f0f7f4 100%);
     border: 1px solid #e0ece7;
-    border-radius: 20px;
-    padding: 1.15rem;
-    margin-bottom: 1rem;
+    border-radius: 14px;
+    padding: 0.8rem;
+    margin-bottom: 0.75rem;
 }
 
 .summary-card-header h4,
 .summary-header h3 {
-    margin: 0 0 1rem;
-    font-size: 1rem;
+    margin: 0 0 0.7rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: #20413a;
 }
 
 .info-list {
     display: grid;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .customer-balance-alert {
-    padding: 0.95rem 1rem;
-    border-radius: 18px;
+    padding: 0.6rem 0.7rem;
+    border-radius: 12px;
     background: linear-gradient(135deg, #f4f7f6 0%, #edf3f1 100%);
     border: 1px solid #dbe5e1;
 }
@@ -3122,23 +3253,23 @@ tfoot .footer-value {
 .customer-balance-alert.has-balance {
     background: linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%);
     border-color: #f4b183;
-    box-shadow: 0 12px 24px rgba(217, 119, 6, 0.14);
+    box-shadow: 0 8px 18px rgba(217, 119, 6, 0.12);
 }
 
 .customer-balance-label {
     display: block;
     color: #7a695d;
-    font-size: 0.76rem;
+    font-size: 0.66rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
 .customer-balance-value {
     display: block;
-    margin-top: 0.35rem;
+    margin-top: 0.25rem;
     color: #20413a;
-    font-size: 1.25rem;
+    font-size: 1.02rem;
     font-weight: 800;
 }
 
@@ -3149,38 +3280,39 @@ tfoot .footer-value {
 .info-row {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.15rem;
 }
 
 .info-row span {
     color: #648b74;
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
 }
 
 .info-row strong {
     color: #20413a;
-    font-size: 0.92rem;
+    font-size: 0.8rem;
 }
 
 .empty-side-note {
     color: #74867f;
-    font-size: 0.9rem;
+    font-size: 0.76rem;
 }
 
 .summary-content {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
 }
 
 .summary-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 5px 0;
     border-bottom: 1px solid #e4ece8;
+    font-size: 0.82rem;
 }
 
 .summary-row:last-child {
@@ -3193,18 +3325,19 @@ tfoot .footer-value {
 }
 
 .total-row .total-amount {
-    font-size: 1.2rem;
+    font-size: 1rem;
     color: #059669;
 }
 
 .success-alert,
 .error-alert {
-    margin-top: 1rem;
-    padding: 0.875rem 1.25rem;
-    border-radius: 14px;
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.5rem;
+    font-size: 0.82rem;
 }
 
 .success-alert {
@@ -3222,21 +3355,21 @@ tfoot .footer-value {
 .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
 
 .btn {
-    padding: 0.8rem 1.15rem;
+    padding: 0.45rem 0.9rem;
     border: none;
-    border-radius: 14px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-weight: 600;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
 }
 
 .btn-cancel {
@@ -3253,7 +3386,7 @@ tfoot .footer-value {
 .btn-save {
     background: linear-gradient(135deg, #3d8d7a 0%, #2e6f61 100%);
     color: white;
-    box-shadow: 0 12px 24px rgba(61, 141, 122, 0.28);
+    box-shadow: 0 8px 18px rgba(61, 141, 122, 0.25);
 }
 
 .btn-save:hover:not(:disabled) {
@@ -3269,9 +3402,9 @@ tfoot .footer-value {
 }
 
 .payment-modal-btn {
-    padding: 0.65rem 0.95rem;
-    font-size: 0.8rem;
-    border-radius: 12px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.72rem;
+    border-radius: 9px;
 }
 
 .spinner {
@@ -3317,10 +3450,6 @@ tfoot .footer-value {
 }
 
 @media (max-width: 768px) {
-    .modal-body {
-        padding: 1.25rem;
-    }
-
     .payment-type-grid {
         grid-template-columns: 1fr;
     }

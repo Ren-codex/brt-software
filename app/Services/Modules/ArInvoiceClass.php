@@ -96,7 +96,7 @@ class ArInvoiceClass
         $receipt->receipt_date = $request->payment_date;
         $receipt->amount_paid = $request->amount_paid;
         $receipt->payment_mode = $request->payment_mode;
-        $receipt->status_id = ListStatus::getBySlug('paid')->id;
+        $receipt->status_id = ListStatus::getBySlug('pending')->id;
         $receipt->customer_id = $ar_invoice->sales_order->customer_id;
         $receipt->ar_invoice_id = $ar_invoice->id;
         $receipt->save();

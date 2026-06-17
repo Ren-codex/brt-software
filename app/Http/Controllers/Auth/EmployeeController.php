@@ -105,7 +105,9 @@ class EmployeeController extends Controller
     }
 
     public function activate(Request $request){
+        $id = \Auth::user()->id;
         $validated = $request->validate([
+            'username' => ['required', 'string', 'unique:users,username,' . $id],
             'password' => [
                 'required',
                 'confirmed',
@@ -117,10 +119,10 @@ class EmployeeController extends Controller
                     ->uncompromised() // checks against data leaks (optional)
             ],
         ]);
-        $id = \Auth::user()->id;
         $user = User::findOrFail($id);
         $user->is_active = 1;
         $user->must_change = 0;
+        $user->username = $validated['username'];
         $user->password = bcrypt($validated['password']);
         $user->password_changed_at = now();
         if($user->save()){

@@ -20,8 +20,6 @@ class UserRequest extends FormRequest
         if ($this->option === 'reset_password') {
             return [
                 'id' => 'required|exists:users,id',
-                'password' => 'required|string|min:8|regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
-                'confirm_password' =>  'nullable|string|same:password',
             ];
         }
         else if($this->option === 'deactivate') {
@@ -45,20 +43,17 @@ class UserRequest extends FormRequest
         }
 
         $rules = [
-            'username' => 'required|string',
             'email' => 'required|email',
         ];
 
         if ($userId) {
-            $rules['username'] .= '|unique:users,username,' . $userId;
+            $rules['username'] = 'required|string|unique:users,username,' . $userId;
             $rules['email'] .= '|unique:users,email,' . $userId;
             $rules['password'] = 'nullable|string';
             $rules['confirm_password'] = 'nullable|string|same:password';
         } else {
-            $rules['username'] .= '|unique:users,username';
+            $rules['username'] = $this->filled('employee_id') ? 'nullable|string' : 'required|string|unique:users,username';
             $rules['email'] .= '|unique:users,email';
-            $rules['password'] = 'required|string';
-            $rules['confirm_password'] = 'required|string|same:password';
         }
 
         return $rules;

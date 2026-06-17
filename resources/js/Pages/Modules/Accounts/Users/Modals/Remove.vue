@@ -29,7 +29,7 @@
                                     </div>
                                 </div>
                                 <div class="alert-content">
-                                    <p class="mb-0 fs-10">Removing this role will revoke the user’s access and permissions associated with the <strong class="text-decoration-underline">{{ selected.name }}</strong> module.</p>
+                                    <p class="mb-0 fs-10">Removing this role will revoke the user’s access and permissions associated with the <strong class="text-decoration-underline">{{ selected.role?.name }}</strong> module.</p>
                                 </div>
                             </div>
                         </div>
@@ -78,7 +78,19 @@ export default {
             showModal: false
         }
     },
-    methods: { 
+    mounted() {
+        document.addEventListener('keydown', this._onEscape);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this._onEscape);
+    },
+    methods: {
+        _onEscape(e) {
+            if (e.key === 'Escape' && this.showModal && !this.form.processing) {
+                e.__handledBySubModal = true;
+                this.hide();
+            }
+        },
         show(selected){
             this.form.reset();
             this.form.role_id = selected.role.id;

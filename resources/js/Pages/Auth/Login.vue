@@ -41,23 +41,23 @@
                                 <!-- Login Form -->
                                 <div class="p-2 mt-3">
                                     <form class="customform" @submit.prevent="submit">
-                                        <!-- Email Field -->
+                                        <!-- Username or Email Field -->
                                         <div class="form-group mb-3">
-                                            <InputLabel for="email" value="Email" class="form-label" />
+                                            <InputLabel for="email" value="Username or Email" class="form-label" />
                                             <div class="input-group">
                                                 <span class="input-group-text">
-                                                    <i class="ri-mail-line"></i>
+                                                    <i class="ri-user-line"></i>
                                                 </span>
-                                                <TextInput 
-                                                    id="email" 
-                                                    v-model="form.email" 
-                                                    type="email" 
-                                                    class="form-control" 
-                                                    autofocus 
-                                                    placeholder="Enter email address" 
-                                                    autocomplete="email" 
-                                                    required 
-                                                    :class="{ 'is-invalid': form.errors.email }" 
+                                                <TextInput
+                                                    id="email"
+                                                    v-model="form.email"
+                                                    type="text"
+                                                    class="form-control"
+                                                    autofocus
+                                                    placeholder="Enter username or email address"
+                                                    autocomplete="username"
+                                                    required
+                                                    :class="{ 'is-invalid': form.errors.email }"
                                                 />
                                             </div>
                                             <InputError :message="form.errors.email" />

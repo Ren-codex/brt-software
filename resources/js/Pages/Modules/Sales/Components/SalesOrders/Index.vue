@@ -2,7 +2,6 @@
     <div>
         <div class="library-card">
             <div class="library-card-header">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <div class="d-flex align-items-center gap-3">
                         <div class="header-icon">
                             <i class="ri-shopping-cart-line"></i>
@@ -15,7 +14,6 @@
                     <button class="acct-btn-primary" @click="openCreate">
                         <i class="ri-add-line me-1"></i>Create Order
                     </button>
-                </div>
             </div>
             <div class="library-card-body">
                    
@@ -70,8 +68,8 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <template v-for="(list, index) in lists" :key="index">
-                                    <tr @click="toggleRowExpansion(index)" 
+                                <template v-for="(list, index) in lists" :key="list.id">
+                                    <tr @click="toggleRowExpansion(index)"
                                         :class="{
                                             'expanded-row': expandedRow === index,
                                             'bg-danger bg-opacity-25': isDueSoon(list),
@@ -142,6 +140,7 @@
                                         </td>
                                     </tr>
                                     <!-- Expanded Details Row -->
+                                <Transition name="details-row">
                                 <tr v-if="expandedRow === index" class="details-row">
                                     <td colspan="9" class="p-0">
                                         <div class="details-container">
@@ -155,7 +154,7 @@
                                                                 <p class="mb-1"><strong>Order Date:</strong> {{
                                                                     list.order_date }}</p>
                                                                 <p class="mb-1"><strong>Added By:</strong> {{
-                                                                    list.added_by.fullname || '-' }}</p>
+                                                                    list.created_by?.fullname || '-' }}</p>
                                                                 <p class="mb-0"><strong>Transferred To:</strong> {{
                                                                     list.transferred_to || '-' }}</p>
                                                             </div>
@@ -240,6 +239,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                </Transition>
                                 </template>
                                 <tr v-if="lists.length === 0">
                                     <td colspan="9">
@@ -510,23 +510,26 @@ export default {
         border-bottom: 2px solid #e9ecef;
     }
 
-    .details-container {
-        animation: slideDown 0.3s ease-out;
-    }
-
     .details-content {
         padding: 1.5rem 2rem;
     }
 
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    /* Expand / collapse transitions */
+    .details-row-enter-active,
+    .details-row-leave-active {
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .details-row-enter-from,
+    .details-row-leave-to {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    .details-row-enter-to,
+    .details-row-leave-from {
+        opacity: 1;
+        transform: translateY(0);
     }
 
     /* Info Card Styles */

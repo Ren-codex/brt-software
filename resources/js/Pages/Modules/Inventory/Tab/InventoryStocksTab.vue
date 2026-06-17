@@ -3,7 +3,6 @@
     <div class="col-md-12">
       <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-archive-line"></i>
@@ -13,7 +12,6 @@
                 <p class="header-subtitle mb-0">Manage and organize your inventory stocks</p>
               </div>
             </div>
-          </div>
         </div>
 
         <div class="library-card-body">
@@ -48,13 +46,13 @@
                     </thead>
                     <tbody>
                       <tr 
-                        v-for="(list,index) in availableStocks" 
-                        v-bind:key="list.id" 
-                        @click="openView(list)" 
+                        v-for="(list,index) in availableStocks"
+                        v-bind:key="list.id"
+                        @click="openView(list)"
                         style="cursor: pointer;"
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
-                        <td>{{ index + 1 }}</td>
+                        <td>{{ (meta?.from ?? 1) + index }}</td>
                         <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
                         <td style="width: 20%">{{ list.batch_code }}
                           <span 
@@ -112,13 +110,13 @@
                     </thead>
                     <tbody>
                       <tr 
-                        v-for="(list,index) in consumedStocks" 
-                        v-bind:key="list.id" 
-                        @click="openView(list)" 
+                        v-for="(list,index) in consumedStocks"
+                        v-bind:key="list.id"
+                        @click="openView(list)"
                         style="cursor: pointer;"
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
-                        <td>{{ index + 1 }}</td>
+                        <td>{{ (meta?.from ?? 1) + index }}</td>
                         <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
                         <td>{{ list.received_item.received_stock.batch_code }}</td>
                         <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>

@@ -1,8 +1,8 @@
 <template>
+  <Teleport to="body">
   <div v-if="showModal" class="modal-overlay active" @click.self="hide">
     <div class="modal-container modal-xl">
       <div class="library-card-header modal-header">
-        <div class="d-flex align-items-center justify-content-between w-100">
           <div class="d-flex align-items-center gap-3">
             <div class="header-icon">
               <i class="ri-arrow-go-back-line"></i>
@@ -13,7 +13,6 @@
             </div>
           </div>
           <button class="close-btn" @click="hide">&times;</button>
-        </div>
       </div>
       <div class="modal-body">
         <form @submit.prevent="submit">
@@ -147,6 +146,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script>
@@ -162,7 +162,7 @@ export default {
       default: () => []
     }
   },
-  emits: ['success', 'toast'],
+  emits: ['success', 'toast', 'close'],
   data() {
     return {
       showModal: false,
@@ -183,7 +183,16 @@ export default {
       return this.selectedOrder?.items || [];
     },
   },
+  mounted() {
+    document.addEventListener('keydown', this._onEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._onEscape);
+  },
   methods: {
+    _onEscape(e) {
+      if (e.key === 'Escape' && this.showModal) this.hide();
+    },
     show(order = null) {
       this.selectedOrder = order || null;
       this.selectedPoId = order?.id || '';
@@ -201,6 +210,7 @@ export default {
       this.rowForm = {};
       this.errors = {};
       this.formError = '';
+      this.$emit('close');
     },
     onPurchaseOrderChange() {
       const selectedId = Number(this.selectedPoId || 0);
@@ -339,8 +349,11 @@ export default {
       } catch (error) {
         const errorMessage = error?.response?.data?.message || 'Unable to process return';
         const responseErrors = error?.response?.data?.errors || {};
-        if (Object.keys(responseErrors).length > 0) this.formError = errorMessage;
-        // this.$emit('toast', { message: errorMessage, type: 'error' });
+        if (Object.keys(responseErrors).length > 0) {
+          this.formError = errorMessage;
+        } else {
+          this.$emit('toast', { message: errorMessage, type: 'error' });
+        }
       } finally {
         this.submitting = false;
       }
@@ -350,37 +363,12 @@ export default {
 </script>
 
 <style scoped>
-.modal-overlay {
-  z-index: 1050;
-}
-
 .modal-container {
   display: flex;
   flex-direction: column;
   max-height: 85vh;
 }
 
-.close-btn {
-  border: none;
-  background: transparent;
-  color: #6c757d;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-  background: #e2e8f0;
-  color: #1e293b;
-}
 
 .modal-body {
   padding: 1.25rem;

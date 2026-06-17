@@ -62,12 +62,10 @@
                                     </select>
                                 </div>
                                 <div class="journal-filter-field">
-                                    <i class="ri-calendar-line"></i>
-                                    <input v-model="filter.date_from" type="date" class="jf-input" />
-                                </div>
-                                <div class="journal-filter-field">
-                                    <i class="ri-calendar-check-line"></i>
-                                    <input v-model="filter.date_to" type="date" class="jf-input" />
+                                    <DrawerDateRangePicker
+                                        v-model:dateFrom="filter.date_from"
+                                        v-model:dateTo="filter.date_to"
+                                    />
                                 </div>
                                 <button v-if="hasActiveFilters" class="jf-clear-btn" @click="clearFilters">
                                     <i class="ri-close-circle-line"></i>
@@ -89,7 +87,6 @@
                     <!-- Journal table -->
                     <div class="library-card">
                         <div class="library-card-header">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="header-icon"><i class="ri-book-open-line"></i></div>
                                     <div>
@@ -100,7 +97,6 @@
                                 <button type="button" class="create-btn" @click="openNewEntry">
                                     <i class="ri-add-line"></i> New Manual Entry
                                 </button>
-                            </div>
                         </div>
                         <div class="library-card-body p-0">
                             <div class="table-responsive">
@@ -369,10 +365,11 @@ import _ from "lodash";
 import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
 import Pagination from "@/Shared/Components/Pagination.vue";
+import DrawerDateRangePicker from "@/Pages/Modules/Accounting/Components/DrawerDateRangePicker.vue";
 
 export default {
     layout: [MainLayout, AccountingLayout],
-    components: { Pagination },
+    components: { Pagination, DrawerDateRangePicker },
     props: {
         stats: {
             type: Object,

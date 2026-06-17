@@ -36,7 +36,7 @@ class BankAccountController extends Controller
 
         BankAccount::create($data);
 
-        return back()->with('success', 'Bank account created.');
+        return response()->json(['message' => 'Bank account created.']);
     }
 
     public function update(Request $request, int $id)
@@ -52,7 +52,7 @@ class BankAccountController extends Controller
 
         $account->update($data);
 
-        return back()->with('success', 'Bank account updated.');
+        return response()->json(['message' => 'Bank account updated.']);
     }
 
     public function toggle(int $id)
@@ -60,7 +60,7 @@ class BankAccountController extends Controller
         $account = BankAccount::findOrFail($id);
         $account->update(['is_active' => !$account->is_active]);
 
-        return back()->with('success', $account->is_active ? 'Bank account activated.' : 'Bank account deactivated.');
+        return response()->json(['message' => $account->is_active ? 'Bank account activated.' : 'Bank account deactivated.']);
     }
 
     public function list()

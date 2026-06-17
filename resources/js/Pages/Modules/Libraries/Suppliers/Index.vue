@@ -4,7 +4,6 @@
         <div class="col-md-12">
             <div class="library-card">
                 <div class="library-card-header" v-if="currentView === 'list'">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-truck-line"></i>
@@ -18,7 +17,6 @@
                             <i class="ri-add-line"></i>
                             <span>Add Supplier</span>
                         </button>
-                    </div>
                 </div>
 
                 <div class="library-card-body" v-if="currentView === 'list'">

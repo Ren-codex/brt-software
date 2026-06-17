@@ -18,7 +18,6 @@
         <!-- Accounts table -->
         <div class="library-card">
             <div class="library-card-header">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <div class="d-flex align-items-center gap-3">
                         <div class="header-icon"><i class="ri-bank-line"></i></div>
                         <div>
@@ -29,7 +28,6 @@
                     <button class="acct-btn-primary" @click="openCreate">
                         <i class="ri-add-line"></i> Add Bank Account
                     </button>
-                </div>
             </div>
             <div class="library-card-body p-0">
                 <div v-if="accounts.length === 0" class="empty-state">

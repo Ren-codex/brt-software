@@ -227,7 +227,7 @@ class SalesOrderClass
             $autoReceipt = Receipt::create([
                 'ar_invoice_id'  => $invoice->id,
                 'customer_id'    => $data->customer_id,
-                'status_id'      => ListStatus::getBySlug('paid')->id,
+                'status_id'      => ListStatus::getBySlug('pending')->id,
                 'receipt_number' => Receipt::generateReceiptNumber(),
                 'receipt_type'   => 'payment',
                 'receipt_date'   => $data->order_date,

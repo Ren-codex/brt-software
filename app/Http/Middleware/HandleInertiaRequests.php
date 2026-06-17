@@ -32,6 +32,7 @@ class HandleInertiaRequests extends Middleware
                 'message' => session('message'),
                 'info' => session('info'),
                 'status' => session('status'),
+                'password' => session('password'),
             ],
         ];
     }

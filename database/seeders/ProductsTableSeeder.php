@@ -19,6 +19,7 @@ class ProductsTableSeeder extends Seeder
             0 =>
             array (
                 'id' => 1,
+                'code' => 'PROD000001',
                 'pack_size' => 5,
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 1, // Jasmine Rice
@@ -29,6 +30,7 @@ class ProductsTableSeeder extends Seeder
             1 =>
             array (
                 'id' => 2,
+                'code' => 'PROD000002',
                 'pack_size' => 10,
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 1, // Jasmine Rice
@@ -39,6 +41,7 @@ class ProductsTableSeeder extends Seeder
             2 =>
             array (
                 'id' => 3,
+                'code' => 'PROD000003',
                 'pack_size' => 5,
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 2, // Basmati Rice
@@ -49,6 +52,7 @@ class ProductsTableSeeder extends Seeder
             3 =>
             array (
                 'id' => 4,
+                'code' => 'PROD000004',
                 'pack_size' => 10,
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 2, // Basmati Rice
@@ -59,6 +63,7 @@ class ProductsTableSeeder extends Seeder
             4 =>
             array (
                 'id' => 5,
+                'code' => 'PROD000005',
                 'pack_size' => 5,
                 'unit_id' => 1, // Kilogram
                 'brand_id' => 3, // Brown Rice
@@ -69,6 +74,7 @@ class ProductsTableSeeder extends Seeder
             5 =>
             array (
                 'id' => 6,
+                'code' => 'PROD000006',
                 'pack_size' => 1,
                 'unit_id' => 2, // Sack
                 'brand_id' => 4, // White Rice

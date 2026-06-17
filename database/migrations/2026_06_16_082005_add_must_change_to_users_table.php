@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('purchase_order_items', function (Blueprint $table) {
-            $table->string('status')->default('pending');
+        Schema::table('users', function (Blueprint $table) {
+            $table->boolean('must_change')->default(0)->after('is_new');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('purchase_order_items', function (Blueprint $table) {
-            //
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('must_change');
         });
     }
 };

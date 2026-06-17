@@ -185,21 +185,13 @@ export default {
         InventoryDashboard,
         EmployeeDashboard
     },
-    mounted() {
-        // Set filter from backend prop
-        if (this.filter) {
-            this.selectedFilter = this.filter;
-        }
-        if (this.selectedDate) {
-            this.selectedDateValue = this.selectedDate;
-        }
-    },
+    mounted() {},
     data() {
         const today = new Date().toISOString().slice(0, 10);
         return {
             activeTab: 'sales',
-            selectedFilter: 'today',
-            selectedDateValue: today,
+            selectedFilter: this.filter || 'monthly',
+            selectedDateValue: this.selectedDate || today,
             dateFilters: [
                 { label: 'Date', value: 'today' },
                 { label: 'Weekly', value: 'weekly' },
@@ -255,19 +247,19 @@ export default {
         salesStatCards() {
             const s = this.stats || {};
             return [
-                { label: 'Total Revenue', value: s.totalSales || 0, icon: 'bx bx-dollar', iconBg: '#E6F9ED', iconColor: '#10b981', trend: null, trendClass: '', trendIcon: '', showCurrency: true },
-                { label: 'Total Receipts', value: s.totalReceipts || 0, icon: 'bx bx-receipt', iconBg: '#E5F0FF', iconColor: '#3b82f6', trend: null, trendClass: '', trendIcon: '', showCurrency: false },
-                { label: 'Outstanding', value: s.totalOutstanding || 0, icon: 'bx bx-credit-card', iconBg: '#FFF0E5', iconColor: '#f97316', trend: null, trendClass: '', trendIcon: '', showCurrency: true },
-                { label: 'Avg Revenue', value: s.avgOrderValue || 0, icon: 'bx bx-calculator', iconBg: '#F3E8FF', iconColor: '#8b5cf6', trend: null, trendClass: '', trendIcon: '', showCurrency: true }
+                { label: 'Total Revenue', value: s.totalSales || 0, icon: 'bx bx-dollar', iconBg: '#E6F9ED', iconColor: '#10b981', trend: `${s.totalReceipts || 0} receipts`, trendClass: 'trend-up', trendIcon: 'bx bx-receipt', showCurrency: true },
+                { label: 'Customers Served', value: s.totalCustomers || 0, icon: 'bx bx-group', iconBg: '#E5F0FF', iconColor: '#3b82f6', trend: null, trendClass: '', trendIcon: '', showCurrency: false },
+                { label: 'Outstanding Balance', value: s.totalOutstanding || 0, icon: 'bx bx-credit-card', iconBg: '#FFF0E5', iconColor: '#f97316', trend: 'total unpaid AR', trendClass: 'trend-down', trendIcon: 'bx bx-error-circle', showCurrency: true },
+                { label: 'Avg. Receipt Value', value: s.avgOrderValue || 0, icon: 'bx bx-calculator', iconBg: '#F3E8FF', iconColor: '#8b5cf6', trend: 'per transaction', trendClass: 'trend-neutral', trendIcon: 'bx bx-trending-up', showCurrency: true }
             ];
         },
         inventoryStatCards() {
             const i = this.inventoryStats || {};
             return [
-                { label: 'Total Products', value: i.totalProducts || 0, unit: 'items', icon: 'bx bx-package', iconBg: '#E5F0FF', trend: null, trendClass: '', trendIcon: '', cardClass: 'health-blue' },
-                { label: 'Low Stock', value: i.lowStockItems || 0, unit: 'items', icon: 'bx bx-error', iconBg: '#FFF0E5', trend: null, trendClass: '', trendIcon: '', cardClass: 'health-orange' },
-                { label: 'Out of Stock', value: i.outOfStock || 0, unit: 'items', icon: 'bx bx-block', iconBg: '#FFE5E5', trend: null, trendClass: '', trendIcon: '', cardClass: 'health-red' },
-                { label: 'Inventory Value', value: i.totalValue || 0, unit: '', icon: 'bx bx-dollar', iconBg: '#E6F9ED', trend: null, trendClass: '', trendIcon: '', cardClass: 'health-green' }
+                { label: 'Pending POs', value: i.pendingPOs || 0, unit: '', icon: 'bx bx-time-five', iconBg: '#E5F0FF', trend: 'awaiting fulfillment', trendClass: 'trend-neutral', trendIcon: '', cardClass: 'health-blue' },
+                { label: 'Low Stock Items', value: i.lowStockItems || 0, unit: 'items', icon: 'bx bx-error', iconBg: '#FFF0E5', trend: 'need replenishment', trendClass: 'trend-down', trendIcon: '', cardClass: 'health-orange' },
+                { label: 'Out of Stock', value: i.outOfStock || 0, unit: 'items', icon: 'bx bx-block', iconBg: '#FFE5E5', trend: 'unavailable', trendClass: 'trend-down', trendIcon: '', cardClass: 'health-red' },
+                { label: 'Inventory Value', value: i.totalValue || 0, unit: '', icon: 'bx bx-dollar', iconBg: '#E6F9ED', trend: 'retail price × qty', trendClass: 'trend-up', trendIcon: '', cardClass: 'health-green' }
             ];
         },
         teamStatCards() {
@@ -333,15 +325,17 @@ export default {
                 }
             };
         },
-        healthChart() {
+        healthData() {
             const data = this.inventoryCharts?.stockDistribution || [];
-            this.healthData = data.map((d, i) => ({
+            return data.map((d, i) => ({
                 ...d,
                 label: d.status,
                 value: d.percentage,
                 color: ['#10b981', '#f97316', '#ef4444', '#6b7280'][i]
             }));
-
+        },
+        healthChart() {
+            const data = this.inventoryCharts?.stockDistribution || [];
             const total = data.reduce((sum, item) => sum + (item.percentage || 0), 0);
             const inStock = data.find(item => item.status === 'In Stock')?.percentage || 0;
             const lowStock = data.find(item => item.status === 'Low Stock')?.percentage || 0;

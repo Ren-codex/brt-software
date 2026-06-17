@@ -156,7 +156,6 @@
         <template v-if="activeTab === 'fund_transfers'">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-exchange-dollar-line"></i></div>
                             <div>
@@ -167,7 +166,6 @@
                         <button class="acct-btn-primary" @click="openCreateTransfer">
                             <i class="ri-add-line"></i> New Transfer
                         </button>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="transfers.length === 0" class="cm-empty-state">
@@ -274,7 +272,6 @@
         <template v-if="activeTab === 'bank_deposits'">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-bank-card-2-line"></i></div>
                             <div>
@@ -285,7 +282,6 @@
                         <button class="acct-btn-primary" @click="openCreateDeposit">
                             <i class="ri-add-line"></i> New Deposit
                         </button>
-                    </div>
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="deposits.length === 0" class="cm-empty-state">

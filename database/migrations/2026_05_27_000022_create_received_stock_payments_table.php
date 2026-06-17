@@ -21,6 +21,8 @@ return new class extends Migration
             $table->decimal('amount_paid', 15, 2);
             $table->string('bank_name')->nullable();
             $table->string('reference_number')->nullable();
+            $table->unsignedInteger('bank_account_id')->nullable();
+            $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->onDelete('set null');
             $table->unsignedInteger('created_by_id')->nullable();
             $table->foreign('created_by_id')->references('id')->on('users')->onDelete('set null');
             $table->timestamps();

@@ -35,9 +35,10 @@ class UserController extends Controller
             default:
                 return inertia('Modules/Accounts/Users/Index',[
                     'dropdowns' => [
-                        'roles' => $this->dropdown->roles()
+                        'roles'               => $this->dropdown->roles(),
+                        'unlinked_employees'  => $this->dropdown->employeesWithoutAccount(),
                     ]
-                ]); 
+                ]);
         }   
     }
 
@@ -73,6 +74,7 @@ class UserController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'password' => $result['password'] ?? null,
         ]);
     }
 
@@ -86,6 +88,7 @@ class UserController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'password' => $result['password'] ?? null,
         ]);
     }
 

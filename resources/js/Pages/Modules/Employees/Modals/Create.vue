@@ -155,7 +155,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Email Address <span v-if="needsAccount" class="required">*</span></label>
+                                <label>Email Address</label>
                                 <input
                                     type="email"
                                     v-model="form.email"
@@ -244,100 +244,6 @@
                         </div>
                     </div>
 
-                    <!-- Account Credentials Section -->
-                    <div class="form-section" v-if="!editable">
-                        <h3 class="section-title">
-                            <i class="ri-lock-line"></i>
-                            Account Credentials
-                        </h3>
-
-                        <div class="toggle-wrapper" style="margin-bottom: 16px;">
-                            <label class="toggle-switch">
-                                <input type="checkbox" v-model="needsAccount">
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <span class="toggle-label">{{ needsAccount ? 'Employee needs account access' : 'No account access required' }}</span>
-                        </div>
-
-                        <div class="form-grid" v-if="needsAccount">
-                            <div class="form-group">
-                                <label>Username</label>
-                                <input
-                                    type="text"
-                                    v-model="form.username"
-                                    :class="{ 'error': form.errors.username }"
-                                    placeholder="Choose a username"
-                                    @input="handleInput('username')"
-                                >
-                                <span class="error-text" v-if="form.errors.username">{{ form.errors.username }}</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Select Roles</label>
-                                <div class="role-picker" :class="{ 'error': form.errors.role_ids }">
-                                    <button type="button" class="role-picker-trigger" @click="roleDropdownOpen = !roleDropdownOpen">
-                                        <span>{{ selectedRolesText }}</span>
-                                        <i :class="roleDropdownOpen ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
-                                    </button>
-                                    <div v-if="roleDropdownOpen" class="role-picker-menu">
-                                        <label v-for="role in roleOptions" :key="role.value" class="role-picker-option">
-                                            <input
-                                                type="checkbox"
-                                                :checked="isRoleSelected(role.value)"
-                                                @change="toggleRoleSelection(role.value, $event.target.checked)"
-                                            >
-                                            <span>{{ role.name }}</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="role-chips" v-if="selectedRoleNames.length">
-                                    <span class="role-chip" v-for="role in selectedRoleNames" :key="role.value">
-                                        {{ role.name }}
-                                        <button type="button" @click="removeRole(role.value)">
-                                            <i class="ri-close-line"></i>
-                                        </button>
-                                    </span>
-                                </div>
-                                <span class="error-text" v-if="form.errors.role_ids">{{ form.errors.role_ids }}</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Password</label>
-                                <div class="password-input">
-                                    <input
-                                        :type="togglePassword ? 'text' : 'password'"
-                                        v-model="form.password"
-                                        :class="{ 'error': form.errors.password }"
-                                        placeholder="Enter password"
-                                        @input="handleInput('password')"
-                                    >
-                                    <button type="button" @click="togglePassword = !togglePassword" class="password-toggle">
-                                        <i :class="togglePassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
-                                    </button>
-                                </div>
-                                <span class="error-text" v-if="form.errors.password">{{ form.errors.password }}</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Confirm Password</label>
-                                <div class="password-input">
-                                    <input
-                                        :type="toggleConfirm ? 'text' : 'password'"
-                                        v-model="form.password_confirmation"
-                                        :class="{ 'error': form.errors.password_confirmation || passwordMismatch }"
-                                        placeholder="Confirm password"
-                                        @input="handleInput('password_confirmation')"
-                                    >
-                                    <button type="button" @click="toggleConfirm = !toggleConfirm" class="password-toggle">
-                                        <i :class="toggleConfirm ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
-                                    </button>
-                                </div>
-                                <span class="error-text" v-if="form.errors.password_confirmation">{{ form.errors.password_confirmation }}</span>
-                                <span class="error-text" v-if="passwordMismatch && !form.errors.password_confirmation">Passwords do not match</span>
-                            </div>
-                        </div>
-                    </div>
-
                     <transition name="fade">
                         <div class="submit-message submit-message-error" v-if="submitError">
                             <div class="submit-message-icon">
@@ -395,10 +301,6 @@ export default {
                 lastname: null,
                 suffix: null,
                 email: null,
-                username: null,
-                role_ids: [],
-                password: null,
-                password_confirmation: null,
                 mobile: null,
                 birthdate: null,
                 sex: null,
@@ -411,54 +313,12 @@ export default {
                 is_blacklisted: 0,
                 option: 'lists'
             }),
-            togglePassword: false,
-            toggleConfirm: false,
             showModal: false,
             editable: false,
             saveSuccess: false,
             successMessage: 'Employee saved successfully!',
             submitError: '',
             previewImage: null,
-            passwordMismatch: false,
-            needsAccount: false,
-            roleDropdownOpen: false,
-        }
-    },
-    computed: {
-        roleOptions() {
-            const roles = Array.isArray(this.dropdowns?.roles) ? this.dropdowns.roles : [];
-            return roles
-                .map((role) => ({
-                    value: role?.value ?? role?.id ?? null,
-                    name: role?.name ?? role?.title ?? '',
-                }))
-                .filter((role) => role.value !== null && role.name);
-        },
-        selectedRoleNames() {
-            const ids = Array.isArray(this.form.role_ids) ? this.form.role_ids.map((id) => Number(id)) : [];
-            return this.roleOptions.filter((role) => ids.includes(Number(role.value)));
-        },
-        selectedRolesText() {
-            if (!this.selectedRoleNames.length) return 'Select roles';
-            if (this.selectedRoleNames.length === 1) return this.selectedRoleNames[0].name;
-            return `${this.selectedRoleNames.length} roles selected`;
-        }
-    },
-    watch: {
-        'form.password'() {
-            this.checkPasswordMatch();
-        },
-        'form.password_confirmation'() {
-            this.checkPasswordMatch();
-        },
-        needsAccount(newValue) {
-            if (!newValue) {
-                this.form.username = null;
-                this.form.password = null;
-                this.form.password_confirmation = null;
-                this.form.role_ids = [];
-                this.roleDropdownOpen = false;
-            }
         }
     },
     methods: {
@@ -471,8 +331,6 @@ export default {
             this.saveSuccess = false;
             this.successMessage = 'Employee saved successfully!';
             this.submitError = '';
-            this.needsAccount = false;
-            this.roleDropdownOpen = false;
             this.showModal = true;
         },
         edit(data) {
@@ -482,8 +340,6 @@ export default {
             this.form.lastname = data.lastname;
             this.form.suffix = data.suffix;
             this.form.email = data.email;
-            this.form.username = data.user ? data.user.username : null;
-            this.form.role_ids = this.extractRoleIds(data.user);
             this.form.mobile = data.mobile;
             this.form.birthdate = data.birthdate;
             this.form.sex = data.sex;
@@ -505,10 +361,6 @@ export default {
                 this.previewImage = null;
             }
             
-            // Set needsAccount based on whether user exists
-            this.needsAccount = !!data.user;
-            this.roleDropdownOpen = false;
-            
             this.editable = true;
             this.saveSuccess = false;
             this.successMessage = 'Employee updated successfully!';
@@ -518,15 +370,6 @@ export default {
         submit() {
             this.saveSuccess = false;
             this.submitError = '';
-
-            if (!this.needsAccount) {
-                this.form.username = null;
-                this.form.password = null;
-                this.form.password_confirmation = null;
-                this.form.role_ids = [];
-            } else if (!Array.isArray(this.form.role_ids)) {
-                this.form.role_ids = [];
-            }
 
             if (this.editable) {
                 this.form.put(`/employees/${this.form.id}`, {
@@ -578,36 +421,6 @@ export default {
                 this.submitError = null;
             }
         },
-        toggleRoleSelection(roleId, checked) {
-            const normalizedRoleId = Number(roleId);
-            if (Number.isNaN(normalizedRoleId)) return;
-
-            const ids = Array.isArray(this.form.role_ids)
-                ? this.form.role_ids.map((id) => Number(id)).filter((id) => !Number.isNaN(id))
-                : [];
-
-            if (checked) {
-                if (!ids.includes(normalizedRoleId)) ids.push(normalizedRoleId);
-                this.form.role_ids = ids;
-            } else {
-                this.form.role_ids = ids.filter((id) => id !== normalizedRoleId);
-            }
-
-            this.handleInput('role_ids');
-        },
-        isRoleSelected(roleId) {
-            const normalizedRoleId = Number(roleId);
-            if (Number.isNaN(normalizedRoleId) || !Array.isArray(this.form.role_ids)) return false;
-            return this.form.role_ids.map((id) => Number(id)).includes(normalizedRoleId);
-        },
-        removeRole(roleId) {
-            const normalizedRoleId = Number(roleId);
-            if (Number.isNaN(normalizedRoleId) || !Array.isArray(this.form.role_ids)) return;
-            this.form.role_ids = this.form.role_ids
-                .map((id) => Number(id))
-                .filter((id) => id !== normalizedRoleId && !Number.isNaN(id));
-            this.handleInput('role_ids');
-        },
         formatSubmitError(errors, fallbackMessage) {
             const messages = Object.values(errors || {})
                 .flat()
@@ -645,32 +458,8 @@ export default {
             this.saveSuccess = false;
             this.successMessage = 'Employee saved successfully!';
             this.submitError = '';
-            this.passwordMismatch = false;
-            this.needsAccount = true;
-            this.roleDropdownOpen = false;
             this.showModal = false;
         },
-        checkPasswordMatch() {
-            this.passwordMismatch = this.form.password && this.form.password_confirmation && 
-                                   this.form.password !== this.form.password_confirmation;
-        },
-        extractRoleIds(user) {
-            if (!user) return [];
-            if (Array.isArray(user.roles) && user.roles.length) {
-                return user.roles.map((role) => role.id).filter(Boolean);
-            }
-            if (user.role && user.role.id) {
-                return [user.role.id];
-            }
-            if (Array.isArray(user.myroles) && user.myroles.length) {
-                const activeRoles = user.myroles
-                    .filter((item) => item.is_active === 1 || item.is_active === true)
-                    .map((item) => item.role_id)
-                    .filter(Boolean);
-                if (activeRoles.length) return activeRoles;
-            }
-            return [];
-        }
     }
 }
 </script>

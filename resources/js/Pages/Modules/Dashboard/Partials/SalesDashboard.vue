@@ -7,12 +7,10 @@
                 </div>
                 <div class="stat-info">
                     <span class="stat-label">{{ stat.label }}</span>
-                    <div class="stat-value-wrapper">
-                        <span class="stat-value">{{ stat.showCurrency ? '&#8369;' : '' }}{{ formatNumber(stat.value) }}</span>
-                        <span v-if="stat.trend" class="stat-trend" :class="stat.trendClass">
-                            <i :class="stat.trendIcon"></i> {{ stat.trend }}
-                        </span>
-                    </div>
+                    <span class="stat-value">{{ stat.showCurrency ? '₱' : '' }}{{ formatNumber(stat.value) }}</span>
+                    <span v-if="stat.trend" class="stat-trend" :class="stat.trendClass">
+                        <i v-if="stat.trendIcon" :class="stat.trendIcon"></i> {{ stat.trend }}
+                    </span>
                 </div>
             </div>
         </div>
@@ -193,7 +191,10 @@ export default {
     methods: {
         formatNumber(val) {
             if (!val && val !== 0) return '0';
-            return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const num = parseFloat(val);
+            if (isNaN(num)) return '0';
+            const formatted = Number.isInteger(num) ? num : parseFloat(num.toFixed(2));
+            return formatted.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
         },
         getRankClass(rank) {
             if (rank === 1) return 'rank-gold';
@@ -279,36 +280,25 @@ export default {
     margin-bottom: 0.25rem;
 }
 
-.stat-value-wrapper {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-}
-
 .stat-value {
+    display: block;
     font-size: 1.5rem;
     font-weight: 700;
     color: #1e293b;
+    margin-bottom: 0.2rem;
 }
 
 .stat-trend {
-    font-size: 0.875rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 20px;
+    font-size: 0.72rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.2rem;
+    color: #94a3b8;
 }
 
-.trend-up {
-    color: #10b981;
-    background: #e6f9ed;
-}
-
-.trend-down {
-    color: #ef4444;
-    background: #fee2e2;
-}
+.trend-up { color: #10b981; }
+.trend-down { color: #f97316; }
+.trend-neutral { color: #94a3b8; }
 
 .charts-row {
     display: grid;

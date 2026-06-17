@@ -50,9 +50,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(order, idx) in filteredOrders" :key="order.id">
+                                <tr v-for="(order, idx) in pagedOrders" :key="order.id">
                                     <td><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
-                                    <td>{{ idx + 1 }}</td>
+                                    <td>{{ (currentPage - 1) * pageSize + idx + 1 }}</td>
                                     <td>{{ order.receipt_number || '-' }}</td>
                                     <td>{{ getCustomerName(order) }}</td>
                                     <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
@@ -65,8 +65,16 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-2 d-flex justify-content-end">
-                        <p>
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <small class="text-muted">
+                            Showing {{ filteredOrders.length ? (currentPage - 1) * pageSize + 1 : 0 }}–{{ Math.min(currentPage * pageSize, filteredOrders.length) }} of {{ filteredOrders.length }}
+                        </small>
+                        <div class="d-flex align-items-center gap-1">
+                            <button type="button" class="page-btn" :disabled="currentPage === 1" @click="currentPage--">←</button>
+                            <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+                            <button type="button" class="page-btn" :disabled="currentPage >= totalPages" @click="currentPage++">→</button>
+                        </div>
+                        <p class="mb-0">
                             <span class="text-primary"><b>{{ selectedIds.length }}</b></span> Selected
                         </p>
                     </div>
@@ -144,6 +152,8 @@ export default {
             selectedIds: [],
             keyword: '',
             remittanceType: 'cash',
+            currentPage: 1,
+            pageSize: 3,
             submitting: false,
             debouncedFetch: null,
             form: useForm({
@@ -158,6 +168,13 @@ export default {
     computed: {
         allSelected() {
             return this.filteredOrders.length > 0 && this.selectedIds.length === this.filteredOrders.length;
+        },
+        pagedOrders() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            return this.filteredOrders.slice(start, start + this.pageSize);
+        },
+        totalPages() {
+            return Math.max(1, Math.ceil(this.filteredOrders.length / this.pageSize));
         },
         totals() {
             const t = { cash: 0, credit_card: 0, debit_card: 0, bank_transfer: 0, overall: 0 };
@@ -183,6 +200,7 @@ export default {
             this.selectedIds = [];
             this.keyword = '';
             this.remittanceType = 'cash';
+            this.currentPage = 1;
             this.fetchPending();
         },
         hide() {
@@ -210,13 +228,12 @@ export default {
                 .catch(err => console.error(err));
         },
         applyFilter() {
-            const byType = this.orders.filter(o => this.matchesRemittanceType(o));
-
+            this.currentPage = 1;
             if (!this.keyword) {
-                this.filteredOrders = byType;
+                this.filteredOrders = [...this.orders];
             } else {
                 const kw = this.keyword.toLowerCase();
-                this.filteredOrders = byType.filter(o =>
+                this.filteredOrders = this.orders.filter(o =>
                     (
                         (o.receipt_number || '') + ' ' +
                         (this.getCustomerName(o) || '') + ' ' +
@@ -328,6 +345,26 @@ export default {
 
 .form-actions .btn {
     min-width: 140px;
+}
+
+.page-btn {
+    background: #fff;
+    border: 1px solid #c4d9d2;
+    border-radius: 6px;
+    color: #16322e;
+    padding: 2px 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    cursor: pointer;
+}
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+.page-info {
+    font-size: 12px;
+    color: #5f756d;
+    padding: 0 4px;
 }
 
 @media (max-width: 768px) {

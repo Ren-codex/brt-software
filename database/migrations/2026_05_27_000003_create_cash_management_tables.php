@@ -30,6 +30,11 @@ return new class extends Migration
             $table->string('name');
             $table->string('gl_code')->unique();
             $table->decimal('balance', 15, 2)->default(0);
+            $table->decimal('fixed_amount', 15, 2)->default(0);
+            $table->unsignedInteger('custodian_id')->nullable();
+            $table->foreign('custodian_id')->references('id')->on('users')->nullOnDelete();
+            $table->decimal('weekly_budget', 15, 2)->default(0);
+            $table->decimal('low_balance_threshold', 10, 2)->nullable();
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('created_by_id')->nullable();
             $table->foreign('created_by_id')->references('id')->on('users')->nullOnDelete();
@@ -46,6 +51,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->date('transaction_date');
             $table->string('reference_number')->nullable();
+            $table->string('receipt_path', 500)->nullable();
             $table->string('source_type')->nullable();
             $table->unsignedInteger('bank_account_id')->nullable();
             $table->unsignedInteger('created_by_id')->nullable();
@@ -60,6 +66,7 @@ return new class extends Migration
         DB::table('series')->upsert([
             ['name' => 'Fund Transfer', 'slug' => 'fund_transfer_no', 'prefix' => 'FT', 'max_digit' => 6, 'starting_value' => 1, 'created_at' => $now, 'updated_at' => $now],
             ['name' => 'Petty Cash Transaction', 'slug' => 'petty_cash_txn_no', 'prefix' => 'PCT', 'max_digit' => 6, 'starting_value' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Petty Cash Voucher', 'slug' => 'pcv_no', 'prefix' => 'PCV', 'max_digit' => 6, 'starting_value' => 1, 'created_at' => $now, 'updated_at' => $now],
         ], ['slug'], ['name', 'prefix', 'max_digit', 'updated_at']);
     }
 

@@ -7,10 +7,8 @@
                     <span class="stat-main-value">{{ stat.value }}</span>
                 </div>
                 <div class="stat-footer">
-                    <span :class="stat.trendClass">
-                        <i :class="stat.trendIcon"></i> {{ stat.trend }}
-                    </span>
-                    <span class="text-muted-600">vs last month</span>
+                    <i :class="stat.trendIcon" class="stat-icon-small"></i>
+                    <span class="stat-foot-text">{{ stat.trend }}</span>
                 </div>
             </div>
         </div>
@@ -35,20 +33,18 @@
                     <h3>Workforce Snapshot</h3>
                 </div>
                 <div class="chart-body">
-                    <div class="attendance-stats">
-                        <div class="attendance-circle">
-                            <div class="circle-item present">
-                                <span class="number">{{ workforceSummary.active }}</span>
-                                <span class="label">Active</span>
-                            </div>
-                            <div class="circle-item late">
-                                <span class="number">{{ workforceSummary.regular }}</span>
-                                <span class="label">Regular</span>
-                            </div>
-                            <div class="circle-item absent">
-                                <span class="number">{{ workforceSummary.withAccounts }}</span>
-                                <span class="label">With Accounts</span>
-                            </div>
+                    <div class="workforce-stats">
+                        <div class="workforce-item wf-active">
+                            <span class="wf-number">{{ workforceSummary.active }}</span>
+                            <span class="wf-label">Active</span>
+                        </div>
+                        <div class="workforce-item wf-regular">
+                            <span class="wf-number">{{ workforceSummary.regular }}</span>
+                            <span class="wf-label">Regular</span>
+                        </div>
+                        <div class="workforce-item wf-accounts">
+                            <span class="wf-number">{{ workforceSummary.withAccounts }}</span>
+                            <span class="wf-label">With Accounts</span>
                         </div>
                     </div>
                 </div>
@@ -289,36 +285,56 @@ export default {
     font-size: 0.875rem;
 }
 
-.attendance-stats {
+.workforce-stats {
     display: flex;
-    justify-content: center;
-    padding: 1rem;
+    justify-content: space-around;
+    padding: 1.5rem 1rem;
+    gap: 1rem;
 }
 
-.attendance-circle {
-    display: flex;
-    gap: 2rem;
-}
-
-.circle-item {
+.workforce-item {
     text-align: center;
+    flex: 1;
+    padding: 1rem;
+    border-radius: 14px;
 }
 
-.circle-item .number {
+.wf-number {
     font-size: 2rem;
     font-weight: 700;
     display: block;
     line-height: 1;
+    margin-bottom: 0.35rem;
 }
 
-.circle-item .label {
-    font-size: 0.875rem;
-    color: #64748b;
+.wf-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
-.circle-item.present .number { color: #10b981; }
-.circle-item.late .number { color: #f97316; }
-.circle-item.absent .number { color: #ef4444; }
+.wf-active { background: #e6f9ed; }
+.wf-active .wf-number { color: #10b981; }
+.wf-active .wf-label { color: #10b981; }
+
+.wf-regular { background: #eff6ff; }
+.wf-regular .wf-number { color: #3b82f6; }
+.wf-regular .wf-label { color: #3b82f6; }
+
+.wf-accounts { background: #f3e8ff; }
+.wf-accounts .wf-number { color: #8b5cf6; }
+.wf-accounts .wf-label { color: #8b5cf6; }
+
+.stat-icon-small {
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+.stat-foot-text {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
 
 .split-view {
     display: grid;

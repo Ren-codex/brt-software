@@ -2,7 +2,6 @@
     <div v-if="item" class="employee-details-page remittance-details-page">
         <div class="library-card">
             <div class="library-card-header">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3">
                         <div class="header-icon">
                             <i class="ri-bank-card-line"></i>
@@ -28,7 +27,6 @@
                             <i class="ri-arrow-left-line"></i>
                         </button>
                     </div>
-                </div>
             </div>
             <div class="library-card-body">
                 <div class="details-grid">

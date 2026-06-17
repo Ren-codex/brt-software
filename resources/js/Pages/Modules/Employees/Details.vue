@@ -130,16 +130,6 @@
                             Account Details
                         </h3>
                         <div class="details-header-actions">
-                            <button class="details-btn details-btn-outline details-btn-sm"
-                                @click="openAccountModal(employee)">
-                                <i class="ri-user-settings-line"></i>
-                                <span>Edit Account</span>
-                            </button>
-                            <button class="details-btn details-btn-outline details-btn-sm"
-                                @click="openResetPasswordModal">
-                                <i class="ri-lock-password-line"></i>
-                                <span>Reset Password</span>
-                            </button>
                         </div>
                     </div>
                     <div class="details-stat-grid">
@@ -362,18 +352,14 @@
     </div>
 
     <Create @add="$emit('update')" @update="$emit('update')" :dropdowns="dropdowns" ref="create" />
-    <AccountEdit @updated="$emit('update')" :dropdowns="dropdowns" ref="accountEditModal" />
     <LoanDetails ref="loanDetailsModal" />
-    <ResetPassword @updated="$emit('update')" ref="resetPasswordModal" />
 </template>
 
 <script>
 import Create from './Modals/Create.vue';
-import AccountEdit from './Modals/AccountEdit.vue';
 import LoanDetails from './Modals/LoanDetails.vue';
-import ResetPassword from './Modals/ResetPassword.vue';
 export default {
-    components: { Create, AccountEdit, LoanDetails, ResetPassword },
+    components: { Create, LoanDetails },
     props: ['employee', 'backToList', 'dropdowns'],
     name: 'EmployeeDetails',
     data() {
@@ -757,13 +743,6 @@ export default {
         },
         openEdit(data) {
             this.$refs.create.edit(data);
-        },
-        openAccountModal(data) {
-            this.$refs.accountEditModal.open(data);
-        },
-        openResetPasswordModal() {
-            if (!this.employee?.user) return;
-            this.$refs.resetPasswordModal.open(this.employee);
         },
         openLoanDetailsModal(loan = null) {
             const selectedLoan = loan || this.currentLoan;

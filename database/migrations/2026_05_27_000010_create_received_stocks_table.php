@@ -20,6 +20,14 @@ return new class extends Migration
             $table->foreign('supplier_id')->references('id')->on('list_suppliers')->onDelete('cascade');
             $table->date('received_date');
             $table->string('received_no')->unique();
+            $table->string('payment_mode')->default('Credit');
+            $table->decimal('amount_paid', 15, 2)->default(0);
+            $table->string('bank_name')->nullable();
+            $table->string('reference_number')->nullable();
+            $table->unsignedInteger('bank_account_id')->nullable();
+            $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->onDelete('set null');
+            $table->unsignedInteger('received_by_id')->nullable();
+            $table->foreign('received_by_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
     }

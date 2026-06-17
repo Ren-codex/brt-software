@@ -1,5 +1,6 @@
 <template>
-  <div v-if="showModal" class="modal-overlay" @click.self="hide">
+  <Teleport to="body">
+  <div v-if="showModal" class="modal-overlay active" @click.self="hide">
     <div class="modal-container modal-md">
       <div class="modal-header">
         <div>
@@ -104,9 +105,12 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script>
+import { formatCurrency } from '@/Shared/utils/formatters.js';
+
 export default {
   name: 'PayAccountsPayableModal',
   emits: ['paid', 'toast'],
@@ -132,7 +136,16 @@ export default {
       return Number(this.record?.remaining_balance || 0);
     },
   },
+  mounted() {
+    document.addEventListener('keydown', this._onEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._onEscape);
+  },
   methods: {
+    _onEscape(e) {
+      if (e.key === 'Escape' && this.showModal) this.hide();
+    },
     show(record) {
       this.record = record;
       this.showModal = true;
@@ -167,7 +180,7 @@ export default {
       }
     },
     onBankAccountChange() {
-      const selected = this.bankAccounts.find(b => b.id === this.form.bank_account_id);
+      const selected = this.bankAccounts.find(b => Number(b.id) === Number(this.form.bank_account_id));
       this.form.bank_name = selected ? selected.bank_name : '';
     },
     selectPaymentMode(mode) {
@@ -182,12 +195,7 @@ export default {
         this.errors.reference_number = null;
       }
     },
-    formatCurrency(value) {
-      return '₱' + Number(value || 0).toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    },
+    formatCurrency,
     validate() {
       const paymentAmount = Number(this.form.payment_amount || 0);
       const errors = {};

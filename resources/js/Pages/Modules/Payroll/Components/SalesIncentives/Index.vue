@@ -3,7 +3,6 @@
         <div class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-trophy-line fs-24"></i>
@@ -13,7 +12,6 @@
                                 <p class="header-subtitle mb-0">A comprehensive list of Sales Incentives</p>
                             </div>
                         </div>
-                    </div>
                 </div>
                 <div class="card-body m-2 p-3">
                     <div class="search-section">

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Libraries;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use App\Models\Product;
 
 class ProductRequest extends FormRequest
@@ -15,6 +16,13 @@ class ProductRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'code'          => [
+                'required',
+                'string',
+                'max:50',
+                'regex:/^[A-Z0-9]+$/',
+                Rule::unique('products', 'code')->ignore($this->id),
+            ],
             'pack_size'     => 'required|integer|max:255',
             'unit_id'       => 'required|exists:list_units,id',
             'brand_id'      => 'required|exists:list_brands,id',
@@ -28,6 +36,7 @@ class ProductRequest extends FormRequest
             $existingProduct = Product::where('brand_id', $this->brand_id)
                 ->where('unit_id', $this->unit_id)
                 ->where('pack_size', $this->pack_size)
+                ->when($this->id, fn ($query) => $query->where('id', '!=', $this->id))
                 ->first();
 
             if ($existingProduct) {

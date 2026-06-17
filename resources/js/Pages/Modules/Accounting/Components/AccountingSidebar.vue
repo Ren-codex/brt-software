@@ -155,8 +155,22 @@ export default {
                             id: "cash_management",
                             label: "Cash Management",
                             icon: "ri-exchange-dollar-line",
-                            description: "Position, transfers, petty cash",
+                            description: "Position, transfers, bank deposits",
                             href: "/accounting/cash-management",
+                        },
+                        {
+                            id: "petty_cash",
+                            label: "Petty Cash",
+                            icon: "ri-wallet-3-line",
+                            description: "Funds, vouchers, replenishments",
+                            href: "/accounting/petty-cash",
+                        },
+                        {
+                            id: "expenses",
+                            label: "Expenses",
+                            icon: "ri-bill-line",
+                            description: "Operating expenses & GL posting",
+                            href: "/accounting/expenses",
                         },
                         {
                             id: "bank_reconciliation",

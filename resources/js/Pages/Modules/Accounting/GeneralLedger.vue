@@ -20,16 +20,11 @@
             <div class="library-card-body py-2">
                 <div class="acct-filter-bar">
                     <div class="acct-filter-field">
-                        <label class="acct-filter-label">Date From</label>
-                        <input v-model="dateFrom" type="date" class="acct-filter-input" />
-                    </div>
-                    <div class="acct-filter-field">
-                        <label class="acct-filter-label">Date To</label>
-                        <input v-model="dateTo" type="date" class="acct-filter-input" />
+                        <label class="acct-filter-label">Date Range</label>
+                        <DrawerDateRangePicker v-model:dateFrom="dateFrom" v-model:dateTo="dateTo" />
                     </div>
                     <div class="acct-filter-actions">
                         <button type="button" class="acct-btn-secondary" @click="clearFilter">Clear</button>
-                        <button type="button" class="acct-btn-primary" @click="applyFilter">Apply</button>
                     </div>
                 </div>
             </div>
@@ -89,13 +84,19 @@
                         placeholder="Search description, account, journal #…"
                         @keyup.enter="fetchLedgerLines"
                     />
-                    <select v-model="llSourceFilter" class="ll-source-select">
+                    <select v-model="llSourceFilter" class="ll-source-select" @change="onSourceChange">
                         <option value="all">All Sources</option>
                         <option value="ar">AR</option>
                         <option value="ap">AP</option>
                         <option value="payroll">Payroll</option>
                         <option value="inventory">Inventory</option>
                         <option value="manual">Manual</option>
+                    </select>
+                    <select v-model="llAccountFilter" class="ll-source-select ll-account-select" @change="fetchLedgerLines()">
+                        <option :value="null">All Accounts</option>
+                        <option v-for="acct in llAccounts" :key="acct.id" :value="acct.id">
+                            {{ acct.code }} – {{ acct.name }}
+                        </option>
                     </select>
                     <select v-model="llPerPage" class="ll-source-select" @change="fetchLedgerLines()">
                         <option :value="10">10 / page</option>
@@ -128,6 +129,7 @@
                                 <th class="text-center">Source</th>
                                 <th class="text-end">Debit</th>
                                 <th class="text-end">Credit</th>
+                                <th class="text-end">Balance</th>
                                 <th>Posted By</th>
                             </tr>
                         </thead>
@@ -155,12 +157,23 @@
                                 </td>
                                 <td class="text-end fw-semibold debit-color">{{ line.debit || '—' }}</td>
                                 <td class="text-end fw-semibold credit-color">{{ line.credit || '—' }}</td>
+                                <td class="text-end">
+                                    <div v-if="line.running_balance !== null" class="running-bal">
+                                        <span :class="line.running_balance_dr ? 'debit-color' : 'credit-color'" class="fw-semibold">
+                                            {{ line.running_balance }}
+                                        </span>
+                                        <small class="bal-label" :class="line.running_balance_dr ? 'debit-color' : 'credit-color'">
+                                            {{ line.running_balance_dr ? 'DR' : 'CR' }}
+                                        </small>
+                                    </div>
+                                    <span v-else class="text-muted">—</span>
+                                </td>
                                 <td class="text-muted small">{{ line.posted_by }}</td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr class="ll-totals-row">
-                                <td colspan="7" class="fw-bold">Period Totals</td>
+                                <td colspan="8" class="fw-bold">Period Totals</td>
                                 <td class="text-end fw-bold debit-color">{{ llStats.total_debits }}</td>
                                 <td class="text-end fw-bold credit-color">{{ llStats.total_credits }}</td>
                                 <td></td>
@@ -191,10 +204,11 @@ import { router } from "@inertiajs/vue3";
 import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
 import Pagination from "@/Shared/Components/Pagination.vue";
+import DrawerDateRangePicker from "@/Pages/Modules/Accounting/Components/DrawerDateRangePicker.vue";
 
 export default {
     layout: [MainLayout, AccountingLayout],
-    components: { Pagination },
+    components: { Pagination, DrawerDateRangePicker },
     props: {
         stats:         { type: Object, default: () => ({}) },
         dataReady:     { type: Boolean, default: false },
@@ -220,10 +234,16 @@ export default {
             llPerPage:      10,
             llSearch:       this.filters?.search        || '',
             llSourceFilter: this.filters?.source_filter || 'all',
+            llAccountFilter: null,
+            llAccounts:     [],
             llLoading:      false,
         };
     },
+    watch: {
+        dateTo() { if (this.dateTo) this.applyFilter(); },
+    },
     created() {
+        this.fetchAccountsForSource(this.llSourceFilter);
         this.fetchLedgerLines();
     },
     methods: {
@@ -241,6 +261,21 @@ export default {
         formatLabel(value) {
             return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         },
+        async fetchAccountsForSource(source) {
+            const params = { option: 'accounts_list' };
+            if (source && source !== 'all') params.source_filter = source;
+            try {
+                const { data } = await axios.get('/accounting/general-ledger', { params });
+                this.llAccounts = data;
+            } catch {
+                this.llAccounts = [];
+            }
+        },
+        onSourceChange() {
+            this.llAccountFilter = null;
+            this.fetchAccountsForSource(this.llSourceFilter);
+            this.fetchLedgerLines();
+        },
         async fetchLedgerLines(pageUrl) {
             this.llLoading = true;
             try {
@@ -252,6 +287,7 @@ export default {
                 if (this.dateTo)                   params.date_to       = this.dateTo;
                 if (this.llSearch.trim())           params.search        = this.llSearch.trim();
                 if (this.llSourceFilter !== 'all') params.source_filter = this.llSourceFilter;
+                if (this.llAccountFilter)          params.account_id    = this.llAccountFilter;
                 const { data } = await axios.get(url, { params });
                 this.llLines = data.data  || [];
                 this.llStats = data.stats || this.llStats;
@@ -264,8 +300,10 @@ export default {
             }
         },
         clearLedgerFilter() {
-            this.llSearch       = '';
-            this.llSourceFilter = 'all';
+            this.llSearch        = '';
+            this.llSourceFilter  = 'all';
+            this.llAccountFilter = null;
+            this.fetchAccountsForSource('all');
             this.fetchLedgerLines();
         },
     },
@@ -419,4 +457,8 @@ export default {
 .src-manual    { background: #f3f4f6; color: #4b5563; }
 
 .ll-totals-row td { background: #e4f0eb; border-top: 2px solid #b8d9cc !important; font-size: 0.75rem; padding: 0.4rem 0.5rem; }
+
+.running-bal       { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.bal-label         { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em; }
+.ll-account-select { min-width: 200px; }
 </style>

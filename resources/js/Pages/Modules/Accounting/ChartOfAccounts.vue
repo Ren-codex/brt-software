@@ -24,7 +24,6 @@
                     <!-- Main panel -->
                     <div v-else class="library-card">
                         <div class="library-card-header">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="header-icon"><i class="ri-node-tree"></i></div>
                                     <div>
@@ -36,7 +35,6 @@
                                     <i class="ri-add-line"></i>
                                     New Account
                                 </button>
-                            </div>
                         </div>
                         <div class="library-card-body p-0">
                             <div class="table-responsive">

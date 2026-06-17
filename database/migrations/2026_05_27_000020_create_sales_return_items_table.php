@@ -16,6 +16,10 @@ return new class extends Migration
             $table->increments('id');
             $table->unsignedInteger('sales_order_item_id');
             $table->foreign('sales_order_item_id')->references('id')->on('sales_order_items')->onDelete('cascade');
+            $table->unsignedInteger('source_receipt_id')->nullable();
+            $table->foreign('source_receipt_id')->references('id')->on('receipts')->onDelete('set null');
+            $table->unsignedInteger('return_quantity')->nullable();
+            $table->string('return_condition')->nullable();
             $table->timestamps();
         });
     }
