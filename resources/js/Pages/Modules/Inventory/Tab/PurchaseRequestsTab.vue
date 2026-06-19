@@ -190,8 +190,9 @@ export default {
       selectedStatus: this.filter.status || '',
       sortBy: this.filter.sort_by || 'date',
       sortDirection: this.filter.sort_direction || 'desc',
-      activeTab: 'pending',
+      activeTab: 'all',
       statusTabs: [
+        { value: 'all',          label: 'All',          icon: 'ri-layout-grid-line' },
         { value: 'pending',      label: 'Pending',      icon: 'ri-time-line' },
         { value: 'approved',     label: 'Approved',     icon: 'ri-check-line' },
         { value: 'completed',    label: 'Completed',    icon: 'ri-checkbox-circle-line' },
@@ -203,7 +204,13 @@ export default {
     filteredAndSortedList() {
       let filtered = [];
       // Filter by active tab
-      if (this.activeTab === 'pending') {
+      if (this.activeTab === 'all') {
+        filtered = [
+          ...this.listPurchaseRequests,
+          ...this.listPurchaseOrders,
+          ...this.listPRDisapproved,
+        ];
+      } else if (this.activeTab === 'pending') {
         filtered = this.listPurchaseRequests;
       } else if (this.activeTab === 'approved') {
         filtered = this.listPurchaseOrders.filter(order => order.status?.name === 'Approved');

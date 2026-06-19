@@ -17,102 +17,88 @@
             </div>
 
             <div class="modal-body">
-                <form @submit.prevent="submit">
-                    <div class="receipt-search-card">
-                        <div class="section-heading">
-                            <div>
-                                <span class="section-kicker">Step 1</span>
-                                <h3>Find the receipt</h3>
+                <form class="return-form" @submit.prevent="submit">
+
+                    <!-- Step 1: Find the receipt -->
+                    <div class="rfw-step">
+                        <div class="rfw-step-rail">
+                            <div class="rfw-dot" :class="selectedReceiptId ? 'done' : 'active'">
+                                <i class="ri-check-line" v-if="selectedReceiptId"></i>
+                                <span v-else>1</span>
                             </div>
+                            <div class="rfw-line"></div>
                         </div>
-                        <div class="form-row align-items-end">
-                            <div class="form-group flex-grow-1">
-                                <label class="form-label">Search Receipt</label>
-                                <div class="input-wrapper">
-                                    <i class="ri-search-line input-icon"></i>
-                                    <input
-                                        v-model="receiptKeyword"
-                                        type="text"
-                                        class="form-control"
-                                        placeholder="Search by receipt number, customer, or sales order"
-                                    >
-                                </div>
-                            </div>
-                            <div class="form-group receipt-refresh">
-                                <button type="button" class="btn btn-cancel" @click="fetchReceipts" :disabled="loadingReceipts">
+                        <div class="rfw-content">
+                            <p class="rfw-title">Find the receipt</p>
+                            <div class="search-compound">
+                                <i class="ri-search-line search-lead-icon"></i>
+                                <input
+                                    v-model="receiptKeyword"
+                                    type="text"
+                                    class="search-compound-input"
+                                    placeholder="Search by receipt number, customer, or sales order"
+                                >
+                                <button type="button" class="search-refresh" @click="fetchReceipts" :disabled="loadingReceipts">
                                     <i :class="loadingReceipts ? 'ri-loader-4-line spinner' : 'ri-refresh-line'"></i>
                                     Refresh
                                 </button>
                             </div>
-                        </div>
-
-                        <div class="form-group mb-0">
-                            <label class="form-label">Receipt</label>
-                            <select v-model="selectedReceiptId" class="form-control">
-                                <option :value="null" disabled>Select receipt</option>
-                                <option v-for="receipt in filteredReceipts" :key="receipt.id" :value="receipt.id">
-                                    {{ receipt.receipt_number }} - {{ receipt.customer?.name || 'No Customer' }}
-                                </option>
-                            </select>
-                            <small v-if="!loadingReceipts && filteredReceipts.length === 0" class="text-muted">
+                            <div class="select-wrapper">
+                                <select v-model="selectedReceiptId" class="form-control receipt-select">
+                                    <option :value="null" disabled>Choose a receipt...</option>
+                                    <option v-for="receipt in filteredReceipts" :key="receipt.id" :value="receipt.id">
+                                        {{ receipt.receipt_number }} — {{ receipt.customer?.name || 'No Customer' }}
+                                    </option>
+                                </select>
+                                <i class="ri-arrow-down-s-line select-chevron"></i>
+                            </div>
+                            <small v-if="!loadingReceipts && filteredReceipts.length === 0" class="help-text">
                                 No receipts available for sales return.
                             </small>
-                        </div>
-                    </div>
-
-                    <div v-if="selectedReceipt" class="receipt-summary-grid">
-                        <div class="summary-card">
-                            <i class="ri-file-list-3-line summary-icon"></i>
-                            <span class="summary-label">Receipt No.</span>
-                            <strong class="summary-value">{{ selectedReceipt.receipt_number }}</strong>
-                        </div>
-                        <div class="summary-card">
-                            <i class="ri-user-line summary-icon"></i>
-                            <span class="summary-label">Customer</span>
-                            <strong class="summary-value">{{ selectedReceipt.customer?.name || '-' }}</strong>
-                        </div>
-                        <div class="summary-card">
-                            <i class="ri-shopping-bag-line summary-icon"></i>
-                            <span class="summary-label">Sales Order</span>
-                            <strong class="summary-value">{{ selectedReceipt.sales_order?.so_number || '-' }}</strong>
-                        </div>
-                        <div class="summary-card">
-                            <i class="ri-money-dollar-circle-line summary-icon"></i>
-                            <span class="summary-label">Amount Paid</span>
-                            <strong class="summary-value">{{ formatCurrency(selectedReceipt.amount_paid) }}</strong>
-                        </div>
-                        <div class="summary-card">
-                            <i class="ri-time-line summary-icon"></i>
-                            <span class="summary-label">Return Window</span>
-                            <strong class="summary-value">
-                                {{ getReturnWindowLabel(selectedReceipt) }}
-                            </strong>
-                        </div>
-                    </div>
-
-                    <div v-if="selectedReceipt && !isReceiptEligible" class="error-alert">
-                        <i class="ri-error-warning-line"></i>
-                        <span>{{ selectedReceipt.return_policy?.reason || 'This receipt is not eligible for return.' }}</span>
-                    </div>
-
-                    <div v-if="submitErrorMessage" class="error-alert">
-                        <i class="ri-error-warning-line"></i>
-                        <span>{{ submitErrorMessage }}</span>
-                    </div>
-
-                    <div v-if="selectedReceipt" class="form-row">
-                        <div class="form-group w-100">
-                            <div class="section-heading section-heading-inline">
-                                <div>
-                                    <span class="section-kicker">Step 2</span>
-                                    <h3>Reason for return</h3>
+                            <div v-if="selectedReceipt" class="receipt-meta">
+                                <div class="meta-chip">
+                                    <span class="meta-chip-label">Receipt</span>
+                                    <strong>{{ selectedReceipt.receipt_number }}</strong>
+                                </div>
+                                <div class="meta-chip">
+                                    <span class="meta-chip-label">Customer</span>
+                                    <strong>{{ selectedReceipt.customer?.name || '—' }}</strong>
+                                </div>
+                                <div class="meta-chip">
+                                    <span class="meta-chip-label">Sales Order</span>
+                                    <strong>{{ selectedReceipt.sales_order?.so_number || '—' }}</strong>
+                                </div>
+                                <div class="meta-chip">
+                                    <span class="meta-chip-label">Amount Paid</span>
+                                    <strong>{{ formatCurrency(selectedReceipt.amount_paid) }}</strong>
+                                </div>
+                                <div class="meta-chip" :class="{ 'meta-chip--warn': !isReceiptEligible }">
+                                    <span class="meta-chip-label">Return Window</span>
+                                    <strong>{{ getReturnWindowLabel(selectedReceipt) }}</strong>
                                 </div>
                             </div>
-                            <label class="form-label">Reason</label>
+                            <div v-if="selectedReceipt && !isReceiptEligible" class="inline-alert inline-alert--error">
+                                <i class="ri-error-warning-line"></i>
+                                <span>{{ selectedReceipt.return_policy?.reason || 'This receipt is not eligible for return.' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Reason for return -->
+                    <div v-if="selectedReceipt" class="rfw-step">
+                        <div class="rfw-step-rail">
+                            <div class="rfw-dot" :class="form.reason ? 'done' : 'active'">
+                                <i class="ri-check-line" v-if="form.reason"></i>
+                                <span v-else>2</span>
+                            </div>
+                            <div class="rfw-line"></div>
+                        </div>
+                        <div class="rfw-content">
+                            <p class="rfw-title">Reason for return</p>
                             <textarea
                                 class="form-control"
                                 v-model="form.reason"
-                                rows="5"
+                                rows="3"
                                 placeholder="Enter the reason for the return"
                                 :class="{ 'input-error': form.errors.reason }"
                             ></textarea>
@@ -120,98 +106,103 @@
                         </div>
                     </div>
 
-                    <div v-if="selectedReceipt" class="form-row">
-                        <div class="form-group w-100">
-                            <div class="items-card-header">
-                                <div>
-                                    <span class="section-kicker">Step 3</span>
-                                    <h3>Items to return</h3>
-                                </div>
+                    <!-- Step 3: Items to return -->
+                    <div v-if="selectedReceipt" class="rfw-step rfw-step--last">
+                        <div class="rfw-step-rail">
+                            <div class="rfw-dot active">3</div>
+                        </div>
+                        <div class="rfw-content">
+                            <div class="rfw-title-row">
+                                <p class="rfw-title">Items to return</p>
                                 <button type="button" class="table-action-btn" @click="toggleAllItems">
                                     <i :class="allItemsSelected ? 'ri-checkbox-multiple-blank-line' : 'ri-checkbox-multiple-line'"></i>
                                     {{ allItemsSelected ? 'Clear All' : 'Select All' }}
                                 </button>
                             </div>
-
                             <div class="table-shell">
                                 <div class="table-responsive">
                                     <table class="table table-sm align-middle mb-0 return-items-table">
                                         <thead>
-                                        <tr>
-                                            <th style="width: 44px;">
-                                                <input type="checkbox" :checked="allItemsSelected" @change="toggleAllItems">
-                                            </th>
-                                            <th>Product</th>
-                                            <th>Batch</th>
-                                            <th class="text-center">Sold Qty</th>
-                                            <th class="text-center">Return Qty</th>
-                                            <th class="text-center">Condition</th>
-                                            <th class="text-end">Price</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="item in selectedItems" :key="item.id">
-                                            <td>
-                                                <input
-                                                    type="checkbox"
-                                                    :checked="isItemSelected(item.id)"
-                                                    @change="toggleItemSelection(item)"
-                                                >
-                                            </td>
-                                            <td>
-                                                <div class="product-cell">
-                                                    <strong>{{ item.product_name || getProductName(item.product_id) }}</strong>
-                                                    <small>Product return candidate</small>
-                                                </div>
-                                            </td>
-                                            <td><span class="batch-pill">{{ item.batch_code || '-' }}</span></td>
-                                            <td class="text-center"><span class="qty-pill">{{ item.quantity }}</span></td>
-                                            <td class="text-center">
-                                                <input
-                                                    type="number"
-                                                    class="form-control form-control-sm return-qty-input"
-                                                    :value="getReturnQuantity(item.id)"
-                                                    :min="isItemSelected(item.id) ? 1 : 0"
-                                                    :max="item.quantity"
-                                                    :disabled="!isItemSelected(item.id)"
-                                                    @input="updateReturnQuantity(item.id, $event.target.value, item.quantity)"
-                                                >
-                                            </td>
-                                            <td class="text-center">
-                                                <select
-                                                    class="form-control form-control-sm"
-                                                    :value="getReturnCondition(item.id)"
-                                                    :disabled="!isItemSelected(item.id)"
-                                                    @change="updateReturnCondition(item.id, $event.target.value)"
-                                                >
-                                                    <option value="restockable">Restockable</option>
-                                                    <option value="damaged">Damaged</option>
-                                                </select>
-                                            </td>
-                                            <td class="text-end">{{ formatCurrency(item.price) }}</td>
-                                        </tr>
-                                        <tr v-if="selectedItems.length === 0">
-                                            <td colspan="7" class="text-center text-muted py-4">No items found for this receipt.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                            <tr>
+                                                <th style="width: 44px;">
+                                                    <input type="checkbox" :checked="allItemsSelected" @change="toggleAllItems">
+                                                </th>
+                                                <th>Product</th>
+                                                <th>Batch</th>
+                                                <th class="text-center">Sold Qty</th>
+                                                <th class="text-center">Return Qty</th>
+                                                <th class="text-center">Condition</th>
+                                                <th class="text-end">Price</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="item in selectedItems" :key="item.id">
+                                                <td>
+                                                    <input
+                                                        type="checkbox"
+                                                        :checked="isItemSelected(item.id)"
+                                                        @change="toggleItemSelection(item)"
+                                                    >
+                                                </td>
+                                                <td>
+                                                    <div class="product-cell">
+                                                        <strong>{{ item.product_name || getProductName(item.product_id) }}</strong>
+                                                        <small>Return candidate</small>
+                                                    </div>
+                                                </td>
+                                                <td><span class="batch-pill">{{ item.batch_code || '-' }}</span></td>
+                                                <td class="text-center"><span class="qty-pill">{{ item.quantity }}</span></td>
+                                                <td class="text-center">
+                                                    <input
+                                                        type="number"
+                                                        class="form-control form-control-sm return-qty-input"
+                                                        :value="getReturnQuantity(item.id)"
+                                                        :min="isItemSelected(item.id) ? 1 : 0"
+                                                        :max="item.quantity"
+                                                        :disabled="!isItemSelected(item.id)"
+                                                        @input="updateReturnQuantity(item.id, $event.target.value, item.quantity)"
+                                                    >
+                                                </td>
+                                                <td class="text-center">
+                                                    <select
+                                                        class="form-control form-control-sm"
+                                                        :value="getReturnCondition(item.id)"
+                                                        :disabled="!isItemSelected(item.id)"
+                                                        @change="updateReturnCondition(item.id, $event.target.value)"
+                                                    >
+                                                        <option value="restockable">Restockable</option>
+                                                        <option value="damaged">Damaged</option>
+                                                    </select>
+                                                </td>
+                                                <td class="text-end">{{ formatCurrency(item.price) }}</td>
+                                            </tr>
+                                            <tr v-if="selectedItems.length === 0">
+                                                <td colspan="7" class="text-center text-muted py-3">No items found for this receipt.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                             <span v-if="form.errors.item_ids" class="error-message">{{ form.errors.item_ids }}</span>
                             <span v-if="form.errors.return_quantities" class="error-message">{{ form.errors.return_quantities }}</span>
                             <span v-if="form.errors.return_conditions" class="error-message">{{ form.errors.return_conditions }}</span>
-                            <small v-if="selectedItems.length > 0 && selectedReturnCount === 0" class="text-muted">
+                            <small v-if="selectedItems.length > 0 && selectedReturnCount === 0" class="help-text">
                                 Select at least one item to return.
                             </small>
                         </div>
                     </div>
 
-                    <div v-if="selectedReceipt && isReceiptUnavailable" class="error-alert">
+                    <div v-if="submitErrorMessage" class="inline-alert inline-alert--error">
+                        <i class="ri-error-warning-line"></i>
+                        <span>{{ submitErrorMessage }}</span>
+                    </div>
+
+                    <div v-if="selectedReceipt && isReceiptUnavailable" class="inline-alert inline-alert--error">
                         <i class="ri-error-warning-line"></i>
                         <span>This receipt's sales order already has a pending or completed sales return.</span>
                     </div>
 
-                    <div v-if="saveSuccess" class="success-alert">
+                    <div v-if="saveSuccess" class="inline-alert inline-alert--success">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Sales return request created successfully!</span>
                     </div>
@@ -484,8 +475,9 @@ export default {
 </script>
 
 <style scoped>
+/* ── Modal shell ── */
 .modal-container {
-    width: min(100%, 1120px);
+    width: min(100%, 1100px);
     max-height: 90vh;
 }
 
@@ -496,23 +488,22 @@ export default {
 }
 
 .modal-title-icon {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-radius: 10px;
     display: grid;
     place-items: center;
     background: rgba(61, 141, 122, 0.12);
     border: 1px solid rgba(61, 141, 122, 0.16);
     color: #3d8d7a;
-    font-size: 18px;
+    font-size: 17px;
     flex-shrink: 0;
 }
 
-.modal-kicker,
-.section-kicker {
+.modal-kicker {
     display: inline-block;
-    margin-bottom: 0.2rem;
-    font-size: 0.72rem;
+    margin-bottom: 0.15rem;
+    font-size: 0.7rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -530,82 +521,176 @@ export default {
 }
 
 .modal-body {
-    padding: 1.2rem 1.35rem 1.35rem;
+    padding: 1.1rem 1.25rem 1.25rem;
 }
 
-.section-heading {
+/* ── Vertical stepper ── */
+.return-form {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.95rem;
+    flex-direction: column;
 }
 
-.section-heading-inline {
-    margin-bottom: 0.7rem;
-}
-
-.section-heading h3,
-.items-card-header h3 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #20413a;
-}
-
-.receipt-search-card {
-    background: rgba(255, 255, 255, 0.82);
-    border: 1px solid #dceae4;
-    border-radius: 22px;
-    padding: 1rem 1rem 1.05rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 12px 24px rgba(31, 92, 80, 0.06);
-}
-
-.form-row {
+.rfw-step {
     display: flex;
-    flex-wrap: wrap;
     gap: 1rem;
 }
 
-.form-group {
-    margin-bottom: 1rem;
+.rfw-step-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 28px;
 }
 
-.form-label {
-    display: block;
-    margin-bottom: 0.45rem;
+.rfw-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    background: #e6f2ec;
+    border: 1.5px solid #c0ddd2;
+    color: #4a7a6e;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rfw-dot.active {
+    background: #3d8d7a;
+    border-color: #3d8d7a;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+}
+
+.rfw-dot.done {
+    background: #2a6657;
+    border-color: #2a6657;
+    color: #fff;
+}
+
+.rfw-line {
+    flex: 1;
+    width: 2px;
+    background: linear-gradient(to bottom, #c0ddd2, #deeee8);
+    min-height: 20px;
+    margin-top: 4px;
+}
+
+.rfw-content {
+    flex: 1;
+    padding-bottom: 1.4rem;
+    min-width: 0;
+}
+
+.rfw-step--last .rfw-content {
+    padding-bottom: 0.25rem;
+}
+
+.rfw-title {
     font-size: 0.88rem;
-    font-weight: 600;
-    color: #2c3e50;
+    font-weight: 700;
+    color: #16322e;
+    margin: 0 0 0.7rem;
+    line-height: 28px;
 }
 
-.input-wrapper {
-    position: relative;
+.rfw-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.7rem;
 }
 
-.input-icon {
-    position: absolute;
-    top: 50%;
-    left: 0.9rem;
-    transform: translateY(-50%);
-    color: #7f8c8d;
+.rfw-title-row .rfw-title {
+    margin-bottom: 0;
+}
+
+/* ── Compound search bar ── */
+.search-compound {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #cfe5dc;
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    margin-bottom: 0.65rem;
+}
+
+.search-compound:focus-within {
+    border-color: #3d8d7a;
+    box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.12);
+}
+
+.search-lead-icon {
+    padding: 0 0.55rem 0 0.85rem;
+    color: #8aab9f;
     font-size: 1rem;
+    flex-shrink: 0;
+    line-height: 1;
 }
 
+.search-compound-input {
+    flex: 1;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0.68rem 0.4rem !important;
+    font-size: 0.88rem;
+    color: #1f2937;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+}
+
+.search-compound-input::placeholder {
+    color: #a4bab3;
+}
+
+.search-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.75rem;
+    margin: 0.25rem 0.25rem 0.25rem 0;
+    border: 1px solid #cfe5dc;
+    border-radius: 9px;
+    background: #f2f9f6;
+    color: #4a7a6e;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+}
+
+.search-refresh:hover:not(:disabled) {
+    background: #e4f2ec;
+    border-color: #b8d9cc;
+    color: #3d8d7a;
+}
+
+.search-refresh:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Form controls ── */
 .form-control,
 :deep(textarea.form-control) {
     width: 100%;
-    min-height: 48px;
-    border: 1px solid #d7e5de;
-    border-radius: 14px;
+    min-height: 44px;
+    border: 1.5px solid #cfe5dc;
+    border-radius: 12px;
     background: #fff;
     color: #1f2937;
-    padding: 0.78rem 1rem;
-    transition: all 0.2s ease;
-}
-
-.input-wrapper .form-control {
-    padding-left: 2.75rem;
+    padding: 0.68rem 1rem;
+    font-size: 0.88rem;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .form-control:focus,
@@ -613,7 +698,7 @@ export default {
 :deep(.form-control:focus) {
     outline: none;
     border-color: #3d8d7a;
-    box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.12);
+    box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.12);
 }
 
 .input-error,
@@ -621,143 +706,173 @@ export default {
     border-color: #dc3545 !important;
 }
 
-.receipt-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-.summary-card {
+/* ── Receipt select ── */
+.select-wrapper {
     position: relative;
-    background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
-    border: 1px solid #dceae4;
-    border-radius: 18px;
-    padding: 0.95rem 1rem;
-    box-shadow: 0 10px 22px rgba(31, 92, 80, 0.05);
 }
 
-.summary-label {
-    display: block;
-    color: #64748b;
-    font-size: 0.75rem;
-    margin-bottom: 0.35rem;
+.receipt-select {
+    -webkit-appearance: none;
+    appearance: none;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+
+.select-chevron {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b8c85;
+    font-size: 1.1rem;
+    pointer-events: none;
+    line-height: 1;
+}
+
+/* ── Receipt meta chips (inline below select) ── */
+.receipt-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.65rem;
+}
+
+.meta-chip {
+    display: flex;
+    flex-direction: column;
+    background: #f2f9f6;
+    border: 1px solid #cce8de;
+    border-radius: 10px;
+    padding: 0.35rem 0.6rem;
+}
+
+.meta-chip-label {
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.055em;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    color: #8aab9f;
+    line-height: 1;
+    margin-bottom: 0.18rem;
 }
 
-.summary-value {
-    color: #20413a;
-    font-size: 0.95rem;
+.meta-chip strong {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #16322e;
+    white-space: nowrap;
 }
 
-.summary-icon {
-    display: inline-grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    margin-bottom: 0.65rem;
-    border-radius: 12px;
-    background: #eef7f4;
-    color: #2f7a68;
-    font-size: 1rem;
+.meta-chip--warn {
+    background: #fff8f1;
+    border-color: #f5d5b0;
 }
 
-.receipt-refresh {
-    flex: 0 0 auto;
+.meta-chip--warn strong {
+    color: #a85e20;
 }
 
-.error-alert,
-.success-alert {
+/* ── Inline alerts ── */
+.inline-alert {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
-    margin-bottom: 1rem;
-    padding: 0.9rem 1rem;
-    border-radius: 16px;
+    gap: 0.6rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    margin-top: 0.65rem;
 }
 
-.error-alert {
-    background: linear-gradient(135deg, #fff3f2 0%, #ffe9e7 100%);
+.inline-alert--error {
+    background: #fff3f2;
     border: 1px solid #f3c3bd;
     color: #a64035;
 }
 
-.success-alert {
-    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
+.inline-alert--success {
+    background: #e6f7ee;
     border: 1px solid #b9e6ca;
     color: #155724;
 }
 
-.error-alert i,
-.success-alert i {
-    font-size: 1.1rem;
+.inline-alert i {
+    font-size: 1rem;
+    flex-shrink: 0;
 }
 
-.items-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.85rem;
+.error-message {
+    display: block;
+    margin-top: 0.4rem;
+    color: #dc3545;
+    font-size: 0.8rem;
 }
 
-.table-action-btn {
-    border: 1px solid #d7e5de;
-    border-radius: 12px;
-    background: #fff;
-    color: #355f55;
-    padding: 0.6rem 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    font-size: 0.82rem;
-    font-weight: 700;
-    transition: all 0.2s ease;
+.help-text {
+    display: block;
+    margin-top: 0.38rem;
+    font-size: 0.78rem;
+    color: #8aab9f;
 }
 
-.table-action-btn:hover {
-    background: #f4faf8;
-    border-color: #b7cec4;
-}
-
+/* ── Items table ── */
 .table-shell {
-    border: 1px solid #dceae4;
-    border-radius: 20px;
+    border: 1.5px solid #cfe5dc;
+    border-radius: 14px;
     overflow: hidden;
-    background: linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
 }
 
 .return-items-table thead th {
-    padding: 0.9rem 0.8rem;
+    padding: 0.6rem 0.8rem;
     border: none;
-    background: linear-gradient(180deg, #eff7f4 0%, #e6f2ed 100%);
+    background: linear-gradient(180deg, #eef6f2 0%, #e7f1ec 100%);
     color: #49655d;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 
 .return-items-table tbody td {
-    padding: 0.85rem 0.8rem;
+    padding: 0.58rem 0.8rem;
     vertical-align: middle;
-    border-color: #edf3f1;
+    border-color: #ecf2ef;
+}
+
+.table-action-btn {
+    border: 1.5px solid #cfe5dc;
+    border-radius: 10px;
+    background: #fff;
+    color: #355f55;
+    padding: 0.42rem 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.79rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.table-action-btn:hover {
+    background: #f2f9f6;
+    border-color: #b8d4c8;
 }
 
 .product-cell {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.12rem;
 }
 
 .product-cell strong {
     color: #20413a;
+    font-size: 0.87rem;
 }
 
 .product-cell small {
     color: #74867f;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
 }
 
 .batch-pill,
@@ -765,11 +880,11 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 44px;
-    padding: 0.28rem 0.65rem;
+    min-width: 40px;
+    padding: 0.2rem 0.55rem;
     border-radius: 999px;
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.77rem;
 }
 
 .batch-pill {
@@ -783,43 +898,24 @@ export default {
 }
 
 .return-qty-input {
-    min-width: 88px;
+    min-width: 76px;
     text-align: center;
 }
 
-.error-message {
-    display: block;
-    margin-top: 0.45rem;
-    color: #dc3545;
-    font-size: 0.82rem;
-}
-
-.form-actions {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.85rem;
-    margin-top: 1.25rem;
-    padding-top: 1rem;
-    background: linear-gradient(180deg, rgba(244, 250, 248, 0.7) 0%, #f4faf8 24px);
-    border-top: 1px solid #dceae4;
-    backdrop-filter: blur(6px);
-}
-
+/* ── Footer buttons ── */
 .btn {
-    min-height: 46px;
+    min-height: 42px;
     border: none;
-    border-radius: 14px;
-    padding: 0.72rem 1.1rem;
-    font-size: 0.9rem;
+    border-radius: 11px;
+    padding: 0.6rem 1rem;
+    font-size: 0.88rem;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.42rem;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.18s ease;
+    cursor: pointer;
 }
 
 .btn-cancel {
@@ -834,12 +930,12 @@ export default {
 .btn-save {
     background: linear-gradient(135deg, #3d8d7a 0%, #2f7464 100%);
     color: #fff;
-    box-shadow: 0 12px 24px rgba(61, 141, 122, 0.2);
+    box-shadow: 0 6px 18px rgba(61, 141, 122, 0.22);
 }
 
 .btn-save:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 16px 28px rgba(61, 141, 122, 0.24);
+    box-shadow: 0 10px 22px rgba(61, 141, 122, 0.28);
 }
 
 .btn:disabled {
@@ -848,37 +944,38 @@ export default {
     box-shadow: none;
 }
 
+/* ── Spinner ── */
 .spinner {
     animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
 
+/* ── Responsive ── */
 @media (max-width: 768px) {
     .modal-body {
-        padding: 1rem;
+        padding: 0.85rem;
     }
 
-    .items-card-header,
-    .form-row {
+    .rfw-step {
+        gap: 0.7rem;
+    }
+
+    .receipt-meta {
         flex-direction: column;
-        align-items: stretch;
     }
 
-    .form-actions {
-        flex-direction: column-reverse;
+    .rfw-title-row {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
-    .btn,
-    .table-action-btn {
+    .btn {
         width: 100%;
     }
 }
+
 </style>

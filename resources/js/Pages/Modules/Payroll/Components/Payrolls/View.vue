@@ -243,7 +243,7 @@ export default {
     canApprove() {
       const roles = this.$page.props.roles;
       const userRoles = roles ? Object.values(roles) : [];
-      return userRoles.some(role => ['Top Management', 'Administrator'].includes(role));
+      return userRoles.some(role => ['Administrator', 'Super Admin'].includes(role));
     }
   },
   methods: {

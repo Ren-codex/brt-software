@@ -247,7 +247,7 @@ export default {
     canApprove() {
       const roles = this.$page.props.roles;
       const userRoles = roles ? Object.values(roles) : [];
-      return userRoles.some(role => ['Inventory Manager', 'Top Management', 'Administrator'].includes(role));
+      return userRoles.some(role => ['Administrator', 'Warehouse Manager', 'Super Admin'].includes(role));
     },
     batchRows() {
       if (!this.purchaseOrder?.items?.length) return [];

@@ -606,16 +606,16 @@ export default {
         },
         canApprove() {
             const roles = this.$page?.props?.roles || [];
-            return ['Administrator', 'Top Management', 'Area Business Manager', 'Super Admin']
+            return ['Administrator', 'Area Business Manager', 'Super Admin']
                 .some(r => roles.includes(r));
         },
         canVoid() {
             const roles = this.$page?.props?.roles || [];
-            return ['Administrator', 'Top Management'].some(r => roles.includes(r));
+            return ['Administrator', 'Super Admin'].some(r => roles.includes(r));
         },
         canRelease() {
             const roles = this.$page?.props?.roles || [];
-            return roles.includes('Administrator');
+            return ['Administrator', 'Super Admin'].some(r => roles.includes(r));
         },
     },
     data() {
