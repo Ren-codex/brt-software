@@ -219,10 +219,10 @@
                                                 <button v-if="r.status === 'draft'" class="pc-action-btn submit" @click="submitReplenishment(r)" title="Submit for approval">
                                                     <i class="ri-send-plane-line"></i>
                                                 </button>
-                                                <button v-if="r.status === 'submitted'" class="pc-action-btn approve" @click="openApproval(r, 'approve')" title="Approve">
+                                                <button v-if="canApprove && r.status === 'submitted'" class="pc-action-btn approve" @click="openApproval(r, 'approve')" title="Approve">
                                                     <i class="ri-check-line"></i>
                                                 </button>
-                                                <button v-if="r.status === 'submitted'" class="pc-action-btn reject" @click="openApproval(r, 'reject')" title="Reject">
+                                                <button v-if="canApprove && r.status === 'submitted'" class="pc-action-btn reject" @click="openApproval(r, 'reject')" title="Reject">
                                                     <i class="ri-close-line"></i>
                                                 </button>
                                             </div>
@@ -494,6 +494,10 @@ export default {
         };
     },
     computed: {
+        canApprove() {
+            const roles = this.$page?.props?.roles || [];
+            return ['Administrator', 'Area Business Manager', 'Super Admin'].some(r => roles.includes(r));
+        },
         activeFunds() {
             return this.localFunds.filter(f => f.is_active);
         },

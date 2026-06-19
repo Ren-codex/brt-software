@@ -114,7 +114,7 @@
                                                 <button @click.stop="onPrint(list)" class="action-btn info" title="Print">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
-                                                <button @click.stop="onApprove(list)" v-if="list.status?.slug == 'sales-return-approval'" class="action-btn approve" title="Approve">
+                                                <button @click.stop="onApprove(list)" v-if="canApprove && list.status?.slug == 'sales-return-approval'" class="action-btn approve" title="Approve">
                                                     <i class="ri-check-line"></i>
                                                 </button>
                                             </div>
@@ -244,6 +244,12 @@ export default {
         "filter.keyword"(newVal) {
             this.checkSearchStr(newVal);
         }
+    },
+    computed: {
+        canApprove() {
+            const roles = this.$page?.props?.roles || [];
+            return ['Administrator', 'Area Business Manager', 'Super Admin'].some(r => roles.includes(r));
+        },
     },
     created() {
         this.fetch();

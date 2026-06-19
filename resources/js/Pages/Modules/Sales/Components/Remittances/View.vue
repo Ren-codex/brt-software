@@ -13,7 +13,7 @@
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-                        <button v-if="item.status?.slug === 'open'" class="create-btn" @click="openApprovalModal">
+                        <button v-if="canApprove && item.status?.slug === 'open'" class="create-btn" @click="openApprovalModal">
                             <i class="ri-check-line"></i>
                             <span>Approval</span>
                         </button>
@@ -227,6 +227,10 @@ export default {
     },
     emits: ['back', 'reload'],
     computed: {
+        canApprove() {
+            const roles = this.$page.props.roles ?? [];
+            return ['Administrator', 'Super Admin'].some(r => roles.includes(r));
+        },
         receiptCount() {
             return Array.isArray(this.item?.receipts) ? this.item.receipts.length : 0;
         },

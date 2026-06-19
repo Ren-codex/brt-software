@@ -1,0 +1,235 @@
+<style>
+  body { background: #f0f4f3; font-family: 'Segoe UI', sans-serif; padding: 2rem; }
+
+  .modal-overlay {
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-container {
+    background: #fff;
+    border-radius: 16px;
+    width: 500px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .modal-header {
+    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+    border-bottom: 1px solid #c4d9d2;
+    padding: 1.1rem 1.4rem;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .modal-header-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(61,141,122,0.12);
+    border: 1px solid rgba(61,141,122,0.16);
+    color: #3d8d7a; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-header h5 { font-size: 0.95rem; font-weight: 700; color: #16322e; margin: 0; }
+  .modal-header p { font-size: 0.76rem; color: #6b8c85; margin: 0; }
+
+  .modal-body { padding: 1.2rem 1.4rem; flex: 1 1 auto; overflow-y: auto; }
+  .modal-footer {
+    padding: 0.85rem 1.4rem;
+    border-top: 1px solid #e8f0ee;
+    display: flex; justify-content: flex-end; gap: 0.6rem;
+    flex-shrink: 0;
+    background: #fff;
+  }
+
+  /* Summary row */
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #f4fbf8; border: 1px solid #c4d9d2; border-radius: 10px;
+    padding: 0.75rem 1rem; margin-bottom: 1.2rem;
+  }
+  .summary-label { font-size: 0.78rem; font-weight: 600; color: #6b8c85; text-transform: uppercase; letter-spacing: 0.05em; }
+  .summary-value { font-size: 1.1rem; font-weight: 700; color: #16423c; }
+
+  /* Field */
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 0.8rem; font-weight: 600; color: #16322e; margin-bottom: 0.3rem; }
+  .field label .req { color: #e53935; margin-left: 2px; }
+  .mock-input {
+    width: 100%; padding: 0.5rem 0.75rem;
+    border: 1px solid #c4d9d2; border-radius: 8px;
+    font-size: 0.9rem; color: #16422c; background: #fff;
+  }
+  .mock-input:focus { outline: none; border-color: #3d8d7a; box-shadow: 0 0 0 3px rgba(61,141,122,0.12); }
+
+  /* Variance badge */
+  .variance-line {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 0.5rem; margin-bottom: 1rem;
+    font-size: 0.82rem;
+  }
+  .variance-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px;
+    font-weight: 700; font-size: 0.8rem;
+  }
+  .variance-badge.ok { background: #e8f5e9; color: #2e7d32; }
+  .variance-badge.warn { background: #ffebee; color: #c62828; }
+  .variance-label { color: #6b8c85; }
+
+  /* Remarks */
+  .mock-textarea {
+    width: 100%; padding: 0.5rem 0.75rem;
+    border: 1px solid #c4d9d2; border-radius: 8px;
+    font-size: 0.85rem; color: #16422c; resize: vertical; min-height: 70px;
+  }
+  .remarks-hint { font-size: 0.75rem; color: #e53935; margin-top: 4px; display: none; }
+  .remarks-hint.show { display: block; }
+
+  /* Buttons */
+  .btn-approve {
+    padding: 0.45rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+    border: none; cursor: pointer;
+    background: #3d8d7a; color: #fff;
+  }
+  .btn-disapprove {
+    padding: 0.45rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+    border: 1px solid #c4d9d2; background: #fff; color: #c62828; cursor: pointer;
+  }
+  .btn-cancel {
+    padding: 0.45rem 1.1rem; border-radius: 8px; font-size: 0.85rem;
+    border: 1px solid #d0d0d0; background: #fff; color: #666; cursor: pointer;
+  }
+
+  /* Tabs for two states */
+  .tab-toggle { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+  .tab-toggle button {
+    padding: 0.35rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+    border: 1px solid #c4d9d2; cursor: pointer; background: #f4fbf8; color: #6b8c85;
+  }
+  .tab-toggle button.active { background: #3d8d7a; color: #fff; border-color: #3d8d7a; }
+
+  h2 { font-size: 1rem; color: #16322e; margin-bottom: 0.3rem; }
+  .subtitle { font-size: 0.82rem; color: #6b8c85; margin-bottom: 1.2rem; }
+  .divider { border: none; border-top: 1px solid #e8f0ee; margin: 1rem 0; }
+</style>
+
+<h2>Approval Modal — Mockup</h2>
+<p class="subtitle">Toggle between "no variance" and "has variance" states to preview the behaviour.</p>
+
+<div class="tab-toggle">
+  <button class="active" onclick="showState('ok')">No Variance (amounts match)</button>
+  <button onclick="showState('warn')">Variance Detected</button>
+</div>
+
+<div class="modal-overlay">
+  <div class="modal-container">
+
+    <div class="modal-header">
+      <div class="modal-header-icon">
+        <i class="ri-checkbox-circle-line" style="font-size:18px">✓</i>
+      </div>
+      <div>
+        <h5>Approve Remittance</h5>
+        <p>REM-000042 · ₱12,500.00 · 5 receipts</p>
+      </div>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Remittance summary -->
+      <div class="summary-row">
+        <div>
+          <div class="summary-label">Remittance Total</div>
+          <div class="summary-value">₱12,500.00</div>
+        </div>
+        <div style="text-align:right">
+          <div class="summary-label">Submitted by</div>
+          <div style="font-size:0.88rem;font-weight:600;color:#16422c">Juan dela Cruz</div>
+        </div>
+      </div>
+
+      <!-- Received amount field -->
+      <div class="field">
+        <label>Amount Received (₱) <span class="req">*</span></label>
+        <input
+          id="receivedInput"
+          class="mock-input"
+          type="number"
+          placeholder="Enter amount physically counted..."
+          value="12500.00"
+          oninput="computeVariance()"
+        >
+      </div>
+
+      <!-- Variance line -->
+      <div class="variance-line" id="varianceLine" style="display:none">
+        <span class="variance-label">Variance:</span>
+        <span class="variance-badge" id="varianceBadge"></span>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Remarks -->
+      <div class="field">
+        <label id="remarksLabel">Remarks</label>
+        <textarea class="mock-textarea" id="remarksField" placeholder="Optional notes..."></textarea>
+        <div class="remarks-hint" id="remarksHint">Variance detected — please explain the difference in remarks.</div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel">Cancel</button>
+      <button class="btn-disapprove">Disapprove</button>
+      <button class="btn-approve">Approve</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-toggle button');
+
+  function showState(state) {
+    tabs.forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    const input = document.getElementById('receivedInput');
+    if (state === 'ok') {
+      input.value = '12500.00';
+    } else {
+      input.value = '12200.00';
+    }
+    computeVariance();
+  }
+
+  function computeVariance() {
+    const total = 12500;
+    const received = parseFloat(document.getElementById('receivedInput').value) || 0;
+    const variance = received - total;
+    const line = document.getElementById('varianceLine');
+    const badge = document.getElementById('varianceBadge');
+    const hint = document.getElementById('remarksHint');
+    const remarksLabel = document.getElementById('remarksLabel');
+    const remarksField = document.getElementById('remarksField');
+
+    if (received === 0) {
+      line.style.display = 'none';
+      return;
+    }
+
+    line.style.display = 'flex';
+
+    if (variance === 0) {
+      badge.className = 'variance-badge ok';
+      badge.textContent = '₱0.00 — Amounts match ✓';
+      hint.classList.remove('show');
+      remarksLabel.innerHTML = 'Remarks';
+      remarksField.placeholder = 'Optional notes...';
+    } else {
+      const sign = variance > 0 ? '+' : '';
+      badge.className = 'variance-badge warn';
+      badge.textContent = sign + '₱' + variance.toFixed(2) + ' — Discrepancy';
+      hint.classList.add('show');
+      remarksLabel.innerHTML = 'Remarks <span style="color:#e53935">*</span>';
+      remarksField.placeholder = 'Required — explain the variance...';
+    }
+  }
+
+  // Init
+  computeVariance();
+</script>

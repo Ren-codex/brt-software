@@ -16,7 +16,7 @@
                 </div>
               </div>
               <div class="d-flex gap-2">
-                <button class="create-btn" @click="approveStockReturn()" v-if="data.status.slug == 'pending'">
+                <button class="create-btn" @click="approveStockReturn()" v-if="canApprove && data.status.slug == 'pending'">
                   <span>{{ approving ? 'Saving...' : 'Approve Return' }}</span>
                 </button>
                 <button @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back">
@@ -235,6 +235,11 @@ export default {
     },
     totalReturnedQty() {
       return (this.data?.items || []).reduce((total, item) => total + Number(item.returned_quantity || 0), 0);
+    },
+    canApprove() {
+      const roles = this.$page.props.roles;
+      const userRoles = roles ? Object.values(roles) : [];
+      return userRoles.some(role => ['Administrator', 'Warehouse Manager', 'Super Admin'].includes(role));
     },
     stockReturnLogs() {
       return this.data?.stock_return_logs || [];

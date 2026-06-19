@@ -1,0 +1,136 @@
+<style>
+  body { background: #f0f4f3; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 1rem; }
+
+  .library-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+  .library-card-header {
+    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+    border-bottom: 1px solid #c4d9d2;
+    padding: 0.85rem 1.1rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;
+  }
+  .header-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(61,141,122,0.12); border: 1px solid rgba(61,141,122,0.16);
+    color: #3d8d7a; font-size: 18px; display: flex; align-items: center; justify-content: center;
+  }
+  .header-title { font-size: 0.95rem; font-weight: 700; color: #16322e; margin: 0; }
+  .header-subtitle { font-size: 0.76rem; color: #6b8c85; margin: 0; }
+
+  .cash-on-hand-card {
+    min-width: 200px; padding: 0.65rem 1rem; border-radius: 14px;
+    background: linear-gradient(135deg, #f4fbf8 0%, #e7f6ef 100%);
+    border: 1px solid rgba(22,66,60,0.12);
+    box-shadow: 0 8px 18px rgba(22,66,60,0.08);
+  }
+  .cash-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5f7f77; }
+  .cash-value { display: block; margin-top: 0.25rem; font-size: 1.15rem; font-weight: 700; color: #16423c; }
+  .cash-sub { display: block; margin-top: 0.1rem; font-size: 0.72rem; color: #5f7f77; }
+
+  .acct-btn-primary {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0.42rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+    background: #3d8d7a; color: #fff; border: none; cursor: pointer;
+  }
+
+  .library-card-body { padding: 1rem 1.1rem; }
+  .search-input {
+    width: 100%; padding: 0.42rem 0.75rem 0.42rem 2rem;
+    border: 1px solid #c4d9d2; border-radius: 8px; font-size: 0.83rem; color: #16322e; background: #fff;
+  }
+  .search-wrapper { position: relative; max-width: 280px; margin-bottom: 0.85rem; }
+  .search-icon { position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #6b8c85; }
+
+  .cm-tab-bar { display: flex; border-bottom: 2px solid #e8f0ee; margin-bottom: 0; }
+  .cm-tab-btn {
+    padding: 0.5rem 1rem; font-size: 0.82rem; font-weight: 600; color: #6b8c85;
+    background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; position: relative; top: 2px;
+  }
+  .cm-tab-btn.active { color: #3d8d7a; border-bottom-color: #3d8d7a; }
+  .tab-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 16px; padding: 0 4px; border-radius: 8px;
+    font-size: 10px; font-weight: 700; background: rgba(61,141,122,0.15); color: #3d8d7a; margin-left: 4px;
+  }
+
+  .sales-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  .sales-table th { padding: 0.55rem 0.75rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f7f77; background: #f6faf8; border-bottom: 1px solid #e0ece8; }
+  .sales-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid #f0f5f3; color: #16322e; }
+  .sales-table tr:last-child td { border-bottom: none; }
+
+  .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; }
+  .badge-open { background: #f59e0b; }
+  .badge-liquidated { background: #3d8d7a; }
+
+  .note { margin-top: 1rem; padding: 0.7rem 1rem; background: #f4fbf8; border-left: 3px solid #3d8d7a; border-radius: 6px; font-size: 0.8rem; color: #35524d; }
+</style>
+
+<h2>Sales Rep View</h2>
+<p class="subtitle">How the Remittances page looks when a Sales Rep account is logged in</p>
+
+<div class="library-card">
+  <div class="library-card-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="header-icon">&#128938;</div>
+      <div>
+        <h4 class="header-title">Remittances</h4>
+        <p class="header-subtitle">Manage remittances</p>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="cash-on-hand-card">
+        <span class="cash-label">My Cash on Hand</span>
+        <strong class="cash-value">&#8369;8,500.00</strong>
+        <span class="cash-sub">5 unremitted receipts</span>
+      </div>
+      <button class="acct-btn-primary">+ Prepare Remittance</button>
+    </div>
+  </div>
+
+  <div class="library-card-body">
+    <div class="search-wrapper">
+      <span class="search-icon">&#128269;</span>
+      <input class="search-input" placeholder="Search remittance...">
+    </div>
+
+    <div class="cm-tab-bar">
+      <button class="cm-tab-btn active">Open <span class="tab-count">2</span></button>
+      <button class="cm-tab-btn">Liquidated</button>
+      <button class="cm-tab-btn">Disapproved</button>
+    </div>
+
+    <table class="sales-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Remittance No.</th>
+          <th>Date</th>
+          <th style="text-align:right">Amount</th>
+          <th style="text-align:center">Status</th>
+          <th style="text-align:center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>REM-000045</strong></td>
+          <td>Jun 17, 2026</td>
+          <td style="text-align:right">&#8369;5,200.00</td>
+          <td style="text-align:center"><span class="status-badge badge-open">Open</span></td>
+          <td style="text-align:center">&#128065;</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>REM-000041</strong></td>
+          <td>Jun 15, 2026</td>
+          <td style="text-align:right">&#8369;3,300.00</td>
+          <td style="text-align:center"><span class="status-badge badge-open">Open</span></td>
+          <td style="text-align:center">&#128065;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Differences from admin view:</strong> &nbsp;"My Cash on Hand" shows only this rep's unremitted receipts. The Daily Summary button and location filter are hidden — reps only see their own data.
+</div>

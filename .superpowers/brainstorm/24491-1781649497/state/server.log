@@ -1,0 +1,4 @@
+{"type":"server-started","port":60518,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:60518","screen_dir":"/Users/radzmilalvarez/Desktop/laravel_projects/brt-software/.superpowers/brainstorm/24491-1781649497/content","state_dir":"/Users/radzmilalvarez/Desktop/laravel_projects/brt-software/.superpowers/brainstorm/24491-1781649497/state"}
+{"type":"screen-added","file":"/Users/radzmilalvarez/Desktop/laravel_projects/brt-software/.superpowers/brainstorm/24491-1781649497/content/test.html"}
+{"type":"screen-added","file":"/Users/radzmilalvarez/Desktop/laravel_projects/brt-software/.superpowers/brainstorm/24491-1781649497/content/approval-modal.html"}
+{"type":"server-stopped","reason":"idle timeout"}
