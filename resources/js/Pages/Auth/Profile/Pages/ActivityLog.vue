@@ -44,6 +44,7 @@
                             <td>
                                 <h5 class="fs-13 mb-0 text-dark">{{list.log_name}}</h5>
                                 <p class="fs-12 text-muted mb-0">{{ list.description }}</p>
+                                <span class="fs-11 text-muted" v-if="list.causer">by {{ list.causer }}</span>
                             </td>
                             <td class="text-center">{{list.event}} </td>
                             <td class="text-center text-muted fs-11">{{list.created_at}}</td>

@@ -22,6 +22,7 @@
             <aside class="details-sidebar">
                 <!-- Contact Information Card -->
                 <div class="profile-card">
+                    <div class="profile-card-banner"></div>
                     <div class="profile-avatar-wrap">
                         <div class="profile-avatar">
                             <div class="profile-avatar-placeholder">
