@@ -1,142 +1,83 @@
 <template>
     <Head title="Log in" />
-    <div class="auth-page-wrapper pt-5 d-flex justify-content-center align-items-center min-vh-100">
-        <!-- Background Animation -->
-        <div class="background-animation">
-            <div class="floating-grain"></div>
-            <div class="floating-grain"></div>
-            <div class="floating-grain"></div>
-            <div class="floating-grain"></div>
-            <div class="floating-grain"></div>
-        </div>
-        
-        <div class="auth-page-content">
-            <BContainer>
-                <BRow class="justify-content-center">
-                    <BCol md="8" lg="6" xl="5">
-                        <BCard no-body class="mt-4 login-card">
-                            <!-- Card Header Accent -->
-                            <div class="card-header-bg"></div>
-                            
-                            <BCardBody class="p-4">
-                                <!-- Logo Section -->
-                                <div class="logo-section text-center mb-4">
-                                    <div class="logo-container mb-3">
-                                         <img src="@assets/images/logo-sm.png" alt=""  style=" max-width: 100%; height: auto;">
-                                    </div>
-                                    <h3 class="brand-name">BRT Accounting Software</h3>
-                                    <p class="brand-tagline">Business Information Management System</p>
-                                </div>
+    <div class="login-page">
+        <div class="deco deco-1"></div>
+        <div class="deco deco-2"></div>
+        <div class="deco deco-3"></div>
 
-                                <!-- Status Alert -->
-                                <div v-if="status" class="alert alert-success text-success">
-                                    {{ status }}
-                                </div>
+        <div class="login-card">
+            <!-- Branding -->
+            <div class="brand">
+                <div class="logo-wrap">
+                    <img src="@assets/images/logo-sm.png" alt="BRT Logo">
+                </div>
+                <div class="brand-name">BRT Accounting Software</div>
+                <div class="brand-tag">Business Information Management System</div>
+            </div>
 
-                                <!-- Error Alert -->
-                                <div v-if="form.errors.email || form.errors.password" class="alert alert-danger">
-                                    Incorrect email or password.
-                                </div>
+            <!-- Status / Error alerts -->
+            <div v-if="status" class="login-alert login-alert-success">
+                <i class="ri-checkbox-circle-line"></i> {{ status }}
+            </div>
+            <div v-if="form.errors.email || form.errors.password" class="login-alert login-alert-error">
+                <i class="ri-error-warning-line"></i> Incorrect email or password.
+            </div>
 
-                                <!-- Login Form -->
-                                <div class="p-2 mt-3">
-                                    <form class="customform" @submit.prevent="submit">
-                                        <!-- Username or Email Field -->
-                                        <div class="form-group mb-3">
-                                            <InputLabel for="email" value="Username or Email" class="form-label" />
-                                            <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="ri-user-line"></i>
-                                                </span>
-                                                <TextInput
-                                                    id="email"
-                                                    v-model="form.email"
-                                                    type="text"
-                                                    class="form-control"
-                                                    autofocus
-                                                    placeholder="Enter username or email address"
-                                                    autocomplete="username"
-                                                    required
-                                                    :class="{ 'is-invalid': form.errors.email }"
-                                                />
-                                            </div>
-                                            <InputError :message="form.errors.email" />
-                                        </div>
+            <form @submit.prevent="submit">
+                <!-- Username / Email -->
+                <label class="field-label" for="email">Username or Email</label>
+                <div class="input-wrap" :class="{ 'input-error': form.errors.email }">
+                    <i class="ri-user-line input-icon"></i>
+                    <input
+                        id="email"
+                        v-model="form.email"
+                        type="text"
+                        class="glass-input"
+                        placeholder="Enter username or email address"
+                        autocomplete="username"
+                        autofocus
+                        required
+                    >
+                </div>
 
-                                        <!-- Password Field -->
-                                        <div class="form-group mb-3">
-                                            <InputLabel for="password" value="Password" class="form-label" />
-                                            <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="ri-lock-line"></i>
-                                                </span>
-                                                <input 
-                                                    :type="togglePassword ? 'text' : 'password'" 
-                                                    class="form-control" 
-                                                    placeholder="Enter password" 
-                                                    id="password-input" 
-                                                    v-model="form.password" 
-                                                    autocomplete="password" 
-                                                    required 
-                                                    :class="{ 'is-invalid': form.errors.password }"
-                                                />
-                                                <BButton 
-                                                    variant="link" 
-                                                    class="password-toggle" 
-                                                    type="button" 
-                                                    @click="togglePassword = !togglePassword"
-                                                    style="width: auto!important;"
-                                                >
-                                                    <i :class="togglePassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
-                                                </BButton>
-                                            </div>
-                                            <InputError :message="form.errors.password" />
-                                        </div>
+                <!-- Password -->
+                <label class="field-label" for="password">Password</label>
+                <div class="input-wrap" :class="{ 'input-error': form.errors.password }">
+                    <i class="ri-lock-line input-icon"></i>
+                    <input
+                        id="password"
+                        v-model="form.password"
+                        :type="togglePassword ? 'text' : 'password'"
+                        class="glass-input"
+                        placeholder="Enter password"
+                        autocomplete="current-password"
+                        required
+                    >
+                    <button type="button" class="input-eye" @click="togglePassword = !togglePassword">
+                        <i :class="togglePassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                    </button>
+                </div>
 
-                                        <!-- Remember Me & Forgot Password -->
-                                        <div class="form-options d-flex justify-content-between align-items-center mb-4">
-                                            <div class="form-check">
-                                                <Checkbox 
-                                                    v-model:checked="form.remember" 
-                                                    name="remember" 
-                                                    class="form-check-input" 
-                                                    id="auth-remember-check" 
-                                                />
-                                                <label class="form-check-label" for="auth-remember-check">
-                                                    Remember me
-                                                </label>
-                                            </div>
-                                            <!-- <div>
-                                                <Link href="/forgot-password" class="forgot-password-link">
-                                                    Forgot Password?
-                                                </Link>
-                                            </div> -->
-                                        </div>
+                <!-- Remember me -->
+                <div class="remember-row">
+                    <Checkbox v-model:checked="form.remember" name="remember" id="auth-remember-check" class="remember-check" />
+                    <label class="remember-label" for="auth-remember-check">Remember me</label>
+                </div>
 
-                                        <!-- Submit Button -->
-                                        <div class="mb-4">
-                                            <BButton 
-                                                variant="primary" 
-                                                class="w-100 login-btn" 
-                                                type="submit" 
-                                                :class="{ 'opacity-25': form.processing }" 
-                                                :disabled="form.processing"
-                                                style="justify-content: center!important;"
-                                            >
-                                                <span v-if="!form.processing">Sign In</span>
-                                                <span v-else>
-                                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                                    Signing In...
-                                                </span>
-                                            </BButton>
-                                        </div>
-                                    </form>
-                                </div>
-                            </BCardBody>
-                        </BCard>
-                    </BCol>
-                </BRow>
-            </BContainer>
+                <!-- Submit -->
+                <button
+                    type="submit"
+                    class="signin-btn"
+                    :disabled="form.processing"
+                    :class="{ 'signin-btn-loading': form.processing }"
+                >
+                    <span v-if="!form.processing">Sign In</span>
+                    <span v-else>
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Signing In...
+                    </span>
+                </button>
+            </form>
         </div>
     </div>
 </template>
@@ -144,13 +85,10 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
 import Checkbox from '@/Shared/Components/Forms/Checkbox.vue';
-import InputError from '@/Shared/Components/Forms/InputError.vue';
-import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
-import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 
 defineProps({
     canResetPassword: Boolean,
-    status: String
+    status: String,
 });
 
 const form = useForm({
@@ -174,239 +112,237 @@ export default {
     layout: null,
     data() {
         return {
-            togglePassword: false
-        }
+            togglePassword: false,
+        };
     },
-    methods: {
-        openRegister(){
-            this.$refs.register.show();
-        }
-    }
-}
+};
 </script>
 
 <style scoped>
-.auth-page-wrapper {
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-.auth-page-content {
-    position: relative;
-    z-index: 2;
-}
-
-.login-card {
-    border: none;
-    border-radius: 20px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-}
-
-.card-header-bg {
-    height: 6px;
-    background: linear-gradient(90deg, #2e8b57 0%, #1f6b41 100%);
-}
-
-.logo-container {
-    display: inline-flex;
+.login-page {
+    min-height: 100vh;
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    box-shadow: 0 8px 20px rgba(46, 139, 87, 0.3);
+    background: linear-gradient(160deg, #0d3b2e 0%, #1a5c48 50%, #0f4a38 100%);
+    position: relative;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-.logo-icon {
-    font-size: 32px;
-    color: white;
+.deco {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    pointer-events: none;
+}
+.deco-1 { width: 300px; height: 300px; top: -90px;  left: -90px; }
+.deco-2 { width: 220px; height: 220px; bottom: -70px; right: -70px; }
+.deco-3 { width: 150px; height: 150px; top: 48%;    left: 80%; }
+
+.login-card {
+    position: relative;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 40px 38px 36px;
+    width: 100%;
+    max-width: 440px;
+    margin: 20px;
+}
+
+/* ── Branding ── */
+.brand {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.logo-wrap {
+    width: 90px;
+    height: 90px;
+    border-radius: 20px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.logo-wrap img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
 }
 
 .brand-name {
-    color: #2c3e50;
+    font-size: 1.1rem;
     font-weight: 700;
-    margin-bottom: 5px;
+    color: #fff;
+    margin-bottom: 4px;
 }
 
-.brand-tagline {
-    color: #7f8c8d;
-    font-size: 0.9rem;
+.brand-tag {
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.45);
 }
 
-.form-label {
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 8px;
-}
-
-.input-group {
+/* ── Alerts ── */
+.login-alert {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #e9ecef;
-    transition: all 0.3s;
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    margin-bottom: 18px;
 }
 
-.input-group:focus-within {
-    border-color: #2e8b57;
-    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.2);
+.login-alert-error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
 }
 
-.input-group-text {
-    background-color: #f8f9fa;
-    border: none;
-    color: #7f8c8d;
+.login-alert-success {
+    background: rgba(61, 191, 152, 0.15);
+    border: 1px solid rgba(61, 191, 152, 0.3);
+    color: #6ee7c7;
 }
 
-.form-control {
-    border: none;
-    padding: 12px 15px;
+/* ── Fields ── */
+.field-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 7px;
 }
 
-.form-control::placeholder {
+.input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    color: rgba(255, 255, 255, 0.35);
     font-size: 1rem;
+    pointer-events: none;
 }
 
-.form-control:focus {
-    box-shadow: none;
+.glass-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 13px 44px 13px 42px;
+    font-size: 0.9rem;
+    color: #fff;
     outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.password-toggle {
+.glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.28);
+}
+
+.glass-input:focus {
+    border-color: rgba(61, 191, 152, 0.6);
+    box-shadow: 0 0 0 3px rgba(61, 191, 152, 0.14);
+}
+
+
+.input-wrap.input-error .glass-input {
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+.input-eye {
+    position: absolute;
+    right: 12px;
     background: none;
     border: none;
-    color: #7f8c8d;
-    transition: color 0.3s;
+    color: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px;
+    line-height: 1;
 }
 
-.password-toggle:hover {
-    color: #2e8b57;
+.input-eye:hover {
+    color: rgba(255, 255, 255, 0.7);
 }
 
-.login-btn {
-    background: linear-gradient(135deg, #2e8b57 0%, #1f6b41 100%);
-    border: none;
-    padding: 12px;
-    font-weight: 600;
-    border-radius: 10px;
-    transition: all 0.3s;
-    box-shadow: 0 6px 15px rgba(46, 139, 87, 0.3);
+/* ── Remember me ── */
+.remember-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 22px;
 }
 
-.login-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(46, 139, 87, 0.4);
+.remember-check {
+    accent-color: #3dbf98;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
 }
 
-.forgot-password-link {
-    color: #2e8b57;
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s;
+.remember-label {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
 }
 
-.forgot-password-link:hover {
-    color: #1f6b41;
-}
-
-.form-check-input:checked {
-    background-color: #2e8b57;
-    border-color: #2e8b57;
-}
-
-/* Background Animation */
-.background-animation {
-    position: absolute;
-    top: 0;
-    left: 0;
+/* ── Sign In button ── */
+.signin-btn {
+    display: block;
     width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 1;
+    padding: 13px;
+    background: linear-gradient(135deg, #3dbf98 0%, #2a9478 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
 }
 
-.floating-grain {
-    position: absolute;
-    background: rgba(46, 139, 87, 0.1);
-    border-radius: 50%;
-    animation: float 15s infinite linear;
+.signin-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
 }
 
-.floating-grain:nth-child(1) {
-    width: 80px;
-    height: 80px;
-    top: 10%;
-    left: 5%;
-    animation-delay: 0s;
-    animation-duration: 20s;
+.signin-btn:disabled,
+.signin-btn-loading {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
-.floating-grain:nth-child(2) {
-    width: 60px;
-    height: 60px;
-    top: 70%;
-    left: 10%;
-    animation-delay: 2s;
-    animation-duration: 18s;
-}
-
-.floating-grain:nth-child(3) {
-    width: 100px;
-    height: 100px;
-    top: 40%;
-    left: 80%;
-    animation-delay: 4s;
-    animation-duration: 22s;
-}
-
-.floating-grain:nth-child(4) {
-    width: 50px;
-    height: 50px;
-    top: 20%;
-    left: 70%;
-    animation-delay: 1s;
-    animation-duration: 16s;
-}
-
-.floating-grain:nth-child(5) {
-    width: 70px;
-    height: 70px;
-    top: 60%;
-    left: 85%;
-    animation-delay: 3s;
-    animation-duration: 19s;
-}
-
-@keyframes float {
-    0% {
-        transform: translateY(0) rotate(0deg);
-        opacity: 0.7;
-    }
-    50% {
-        transform: translateY(-20px) rotate(180deg);
-        opacity: 0.9;
-    }
-    100% {
-        transform: translateY(0) rotate(360deg);
-        opacity: 0.7;
-    }
-}
-
-/* Responsive Design */
-@media (max-width: 576px) {
+@media (max-width: 480px) {
     .login-card {
-        border-radius: 15px;
+        padding: 32px 24px 28px;
     }
-    
-    .brand-name {
-        font-size: 1.5rem;
-    }
-    
-    .form-options {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
+}
+</style>
+
+<style>
+.glass-input:-webkit-autofill,
+.glass-input:-webkit-autofill:hover,
+.glass-input:-webkit-autofill:focus,
+.glass-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px rgba(20, 75, 58, 0.95) inset !important;
+    -webkit-text-fill-color: #fff !important;
+    caret-color: #fff;
+    transition: background-color 5000s ease-in-out 0s;
 }
 </style>

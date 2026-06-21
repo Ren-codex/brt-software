@@ -13,12 +13,12 @@ class AuthenticationResource extends JsonResource
         $agent = new Agent();
         $agent->setUserAgent($this->user_agent);
 
-        if($agent->isDesktop()){
-            $type = 'computer';
+        if($agent->isTablet()){
+            $type = 'tablet';
         }else if($agent->isMobile()){
             $type = 'smartphone';
-        }else if($agent->isTablet()){
-            $type = 'tablet';
+        }else{
+            $type = 'computer';
         }
 
         return [
