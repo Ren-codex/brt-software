@@ -281,8 +281,12 @@ export default {
         });
 
         this.products = response?.data?.data || [];
-        if (!this.selectedProductId && this.products.length > 0) {
-          this.selectedProductId = this.products[0].id;
+        const savedId = Number(sessionStorage.getItem('inv_selected_product_id'));
+        const savedExists = savedId && this.activeProducts.some(p => p.id === savedId);
+        if (savedExists) {
+          this.selectedProductId = savedId;
+        } else if (this.activeProducts.length > 0) {
+          this.selectedProductId = this.activeProducts[0].id;
         }
       } catch (error) {
         console.error(error);
@@ -309,6 +313,7 @@ export default {
     },
     selectProduct(product) {
       this.selectedProductId = product.id;
+      sessionStorage.setItem('inv_selected_product_id', product.id);
     },
     stocksCountByProductId(productId) {
       return this.inventoryStocks.filter((stock) => stock.received_item?.product?.id === productId).length;
