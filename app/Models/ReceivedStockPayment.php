@@ -13,6 +13,7 @@ class ReceivedStockPayment extends Model
         'amount_paid',
         'bank_name',
         'reference_number',
+        'petty_cash_fund_id',
         'created_by_id',
     ];
 
@@ -29,5 +30,10 @@ class ReceivedStockPayment extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    public function pettyCashFund()
+    {
+        return $this->belongsTo(\App\Models\PettyCashFund::class, 'petty_cash_fund_id');
     }
 }

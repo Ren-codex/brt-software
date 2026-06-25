@@ -48,11 +48,11 @@ class ReportClass
             ->join('list_units as lu', 'p.unit_id', '=', 'lu.id')
             ->select(
                 'p.id as product_id',
-                DB::raw("CONCAT(lb.name, ' ', p.pack_size, ' ', lu.name) as product_name"),
+                DB::raw("CONCAT(lb.name, ' ', p.weight, ' ', lu.name) as product_name"),
                 DB::raw('SUM(soi.quantity) as total_quantity'),
                 DB::raw('SUM((soi.price - COALESCE(soi.discount_per_unit, 0)) * soi.quantity) as total_sales')
             )
-            ->groupBy('p.id', 'lb.name', 'p.pack_size', 'lu.name')
+            ->groupBy('p.id', 'lb.name', 'p.weight', 'lu.name')
             ->orderByDesc('total_quantity')
             ->limit($filters['limit'])
             ->get();
@@ -76,7 +76,7 @@ class ReportClass
                 'so.total_amount',
                 DB::raw("COALESCE(
                     GROUP_CONCAT(
-                        CONCAT(lb.name, ' ', p.pack_size, ' ', lu.name, ' x', soi.quantity)
+                        CONCAT(lb.name, ' ', p.weight, ' ', lu.name, ' x', soi.quantity)
                         ORDER BY soi.id ASC
                         SEPARATOR ', '
                     ),
@@ -106,12 +106,12 @@ class ReportClass
             ->join('list_units as lu', 'p.unit_id', '=', 'lu.id')
             ->select(
                 'p.id as product_id',
-                DB::raw("CONCAT(lb.name, ' ', p.pack_size, ' ', lu.name) as product_name"),
+                DB::raw("CONCAT(lb.name, ' ', p.weight, ' ', lu.name) as product_name"),
                 DB::raw('COUNT(DISTINCT so.id) as total_orders'),
                 DB::raw('SUM(soi.quantity) as total_quantity'),
                 DB::raw('SUM((soi.price - COALESCE(soi.discount_per_unit, 0)) * soi.quantity) as total_sales')
             )
-            ->groupBy('p.id', 'lb.name', 'p.pack_size', 'lu.name')
+            ->groupBy('p.id', 'lb.name', 'p.weight', 'lu.name')
             ->orderByDesc('total_sales')
             ->limit($filters['limit'])
             ->get();

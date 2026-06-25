@@ -152,7 +152,7 @@ class CustomerClass
             ->through(function ($order) {
                 $totalItems = (int) $order->items->sum('quantity');
                 $totalKg = (float) $order->items->sum(function ($item) {
-                    return (float) ($item->quantity ?? 0) * (float) ($item->product->pack_size ?? 0);
+                    return (float) ($item->quantity ?? 0) * (float) ($item->product->weight ?? 0);
                 });
 
                 return [
@@ -302,7 +302,7 @@ class CustomerClass
         $totalAmount = (float) $query->sum('total_amount');
         $totalRiceOrdered = (float) $query->leftJoin('sales_order_items', 'sales_order_items.sales_order_id', '=', 'sales_orders.id')
             ->leftJoin('products', 'products.id', '=', 'sales_order_items.product_id')
-            ->sum(DB::raw('COALESCE(sales_order_items.quantity, 0) * COALESCE(products.pack_size, 0)'));
+            ->sum(DB::raw('COALESCE(sales_order_items.quantity, 0) * COALESCE(products.weight, 0)'));
 
         return [
             'total_orders' => $totalOrders,

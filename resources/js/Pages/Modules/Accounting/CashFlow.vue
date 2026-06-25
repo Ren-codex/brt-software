@@ -75,7 +75,7 @@
                         <div class="header-icon"><i class="ri-funds-box-line"></i></div>
                         <div>
                             <h4 class="header-title mb-0">Cash Flow Statement</h4>
-                            <p class="header-subtitle mb-0">Direct method — operating, investing, and financing cash movements for the selected period.</p>
+                            <p class="header-subtitle mb-0">Indirect method — starts from net income and adjusts for non-cash items and working capital changes.</p>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">

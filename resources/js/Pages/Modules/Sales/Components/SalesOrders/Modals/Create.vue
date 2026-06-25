@@ -1009,6 +1009,7 @@ export default {
                 balance_due: 0,
                 amount_paid: 0,
                 payment_date: new Date().toISOString().slice(0, 10),
+                payment_mode: null,
             }),
             showModal: false,
             editable: false,
@@ -1349,7 +1350,7 @@ export default {
         },
         edit(data, index) {
             this.form.id = data.id;
-            this.form.order_date = new Date().toISOString().slice(0, 10);  // set to current date
+            this.form.order_date = data.order_date_raw || new Date().toISOString().slice(0, 10);
             this.form.customer_id = data.customer?.id;
             this.customerSelection = data.customer?.id ?? '__walk_in__';
             this.form.sales_rep_id = data.sales_rep_id;
@@ -1357,7 +1358,7 @@ export default {
             this.form.location_id = data.location_id;
             this.form.status_id = data.status_id;
             this.form.payment_mode = data.payment_mode;
-            this.form.due_date = data.due_date;
+            this.form.due_date = data.due_date_raw || null;
             this.form.items = data.items.map(item => ({
                 id: item.id || Date.now(), // ensure each item has a unique ID
                 product_id: item.product_id,
@@ -1553,10 +1554,11 @@ export default {
                 preserveScroll: true,
                 onSuccess: (response) => {
                     const selectedOrderDate = this.form.order_date;
+                    const paymentMode = this.form.payment_mode;
                     const flashData = response?.props?.flash?.data ?? this.$page?.props?.flash?.data ?? null;
                     const createdOrder = flashData?.data || flashData;
-                    const isCash = ['cash', 'cash sales'].includes((this.form.payment_mode || '').toLowerCase());
-                    const isCashCharge = this.form.payment_mode === 'Cash';
+                    const isCash = ['cash', 'cash sales'].includes((paymentMode || '').toLowerCase());
+                    const isCashCharge = paymentMode === 'Cash';
                     const invoice = createdOrder?.invoices?.[0] || null;
 
                     this.showOrderReview = false;
@@ -1596,6 +1598,7 @@ export default {
                         this.paymentForm.balance_due = invoice.balance_due;
                         this.paymentForm.amount_paid = invoice.balance_due;
                         this.paymentForm.payment_date = selectedOrderDate || new Date().toISOString().slice(0, 10);
+                        this.paymentForm.payment_mode = paymentMode;
                         if (isCashCharge) {
                             this.pendingCashPaid = invoice.balance_due;
                             this.processCashPayment();

@@ -26,6 +26,9 @@ class InventoryStockController extends Controller
             case 'lists':
                 return $this->inventoryStock->lists($request);
                 break;
+            case 'detail':
+                return response()->json(['data' => $this->inventoryStock->view($request->id)]);
+                break;
             default:
                 return inertia('Modules/Inventory/Index');
                 break;
@@ -34,9 +37,7 @@ class InventoryStockController extends Controller
 
     public function show($id)
     {
-        return inertia('Modules/Inventory/Components/InventoryStocks/View', [
-            'inventory_stock_data' => $this->inventoryStock->view($id)
-        ]);
+        return redirect("/inventory?tab=inventoryStocks&stock_id={$id}");
     }
 
     public function update(Request $request, $id)
@@ -50,6 +51,20 @@ class InventoryStockController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+        ]);
+    }
+
+    public function settings(Request $request, $id)
+    {
+        $result = $this->handleTransaction(function () use ($request, $id) {
+            return $this->inventoryStock->updateSettings($request, $id);
+        });
+
+        return back()->with([
+            'data'    => $result['data'],
+            'message' => $result['message'],
+            'info'    => $result['info'],
+            'status'  => $result['status'],
         ]);
     }
 }

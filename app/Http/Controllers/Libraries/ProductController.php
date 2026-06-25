@@ -26,11 +26,20 @@ class ProductController extends Controller
             case 'lists':
                 return $this->product->lists($request);
             break;
+            case 'next-code':
+                $prefix = strtoupper($request->prefix ?? '');
+                $last   = Product::where('code', 'LIKE', $prefix . '%')
+                              ->orderByRaw('CAST(SUBSTRING(code, ?) AS UNSIGNED) DESC', [strlen($prefix) + 1])
+                              ->value('code');
+                $num  = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
+                return response()->json(['code' => $prefix . str_pad($num, 3, '0', STR_PAD_LEFT)]);
+            break;
             default:
                 return inertia('Modules/Libraries/Products/Index',[
                     'dropdowns' => [
-                        'brands' => $this->dropdown->brands(),
-                        'units' => $this->dropdown->units(),
+                        'brands'     => $this->dropdown->brands(),
+                        'units'      => $this->dropdown->units(),
+                        'packagings' => $this->dropdown->packagings(),
                     ]
                 ]); 
             break;
@@ -54,6 +63,15 @@ class ProductController extends Controller
         $result = $this->handleTransaction(function () use ($request) {
             return $this->product->save($request);
         });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data'    => $result['data'],
+                'message' => $result['message'],
+                'info'    => $result['info'],
+                'status'  => $result['status'] ?? true,
+            ]);
+        }
 
         return back()->with([
             'data' => $result['data'],

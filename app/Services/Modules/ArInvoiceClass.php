@@ -58,7 +58,7 @@ class ArInvoiceClass
 
 
     public function dashboard(){
-        $cancelledId = ListStatus::getBySlug('cancelled')->id;
+        $cancelledId = ListStatus::getBySlug('cancelled')?->id ?? 0;
 
         $base = ArInvoice::where('status_id', '!=', $cancelledId);
 
@@ -91,23 +91,10 @@ class ArInvoiceClass
     public function payment($request, $id = null){
         $ar_invoice = ArInvoice::findOrFail($request->id);
 
-        $receipt = new Receipt();
-        $receipt->receipt_number = Receipt::generateReceiptNumber();
-        $receipt->receipt_date = $request->payment_date;
-        $receipt->amount_paid = $request->amount_paid;
-        $receipt->payment_mode = $request->payment_mode;
-        $receipt->status_id = ListStatus::getBySlug('pending')->id;
-        $receipt->customer_id = $ar_invoice->sales_order->customer_id;
-        $receipt->ar_invoice_id = $ar_invoice->id;
-        $receipt->save();
-
-
-        // Update AR Invoice
-        $ar_invoice->amount_paid =  $ar_invoice->amount_paid + $request->amount_paid;
+        // Update AR Invoice balances first so balance_due is correct when receipt is created
+        $ar_invoice->amount_paid = $ar_invoice->amount_paid + $request->amount_paid;
         $ar_invoice->balance_due = $ar_invoice->balance_due - $request->amount_paid;
 
-
-        // fetch Sales order
         $sales_order = SalesOrder::findOrFail($ar_invoice->sales_order_id);
 
         if ($ar_invoice->balance_due <= 0) {
@@ -119,7 +106,7 @@ class ArInvoiceClass
             $existingIncentive = SalesOrderIncentive::where('sales_order_id', $sales_order->id)->first();
             if (!$existingIncentive) {
                 $sold_quantity    = $sales_order->items->sum('quantity');
-                $product_total_kg = $sales_order->items->sum(fn($item) => $item->product->pack_size * $item->quantity);
+                $product_total_kg = $sales_order->items->sum(fn($item) => ($item->product->weight ?? 0) * $item->quantity);
 
                 SalesOrderIncentive::create([
                     'sales_order_id'   => $sales_order->id,
@@ -138,14 +125,20 @@ class ArInvoiceClass
         }
         $ar_invoice->save();
 
-        $receipt = Receipt::findOrFail($receipt->id);
-        $receipt->update([
-            'balance_due' => $ar_invoice->balance_due,
+        $receipt = Receipt::create([
+            'receipt_number' => Receipt::generateReceiptNumber(),
+            'receipt_type'   => 'payment',
+            'receipt_date'   => $request->payment_date,
+            'amount_paid'    => $request->amount_paid,
+            'balance_due'    => $ar_invoice->balance_due,
+            'payment_mode'   => $request->payment_mode,
+            'status_id'      => ListStatus::getBySlug('pending')?->id,
+            'customer_id'    => optional($ar_invoice->sales_order)->customer_id,
+            'ar_invoice_id'  => $ar_invoice->id,
         ]);
 
-        $this->journalEntryService->recordReceiptEntry($receipt->fresh());
+        $this->journalEntryService->recordReceiptEntry($receipt);
 
-        
         return [
             'data' => new ArInvoiceResource($ar_invoice),
             'receipt_id' => $receipt->id,

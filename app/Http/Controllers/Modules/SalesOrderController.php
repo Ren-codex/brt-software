@@ -90,10 +90,6 @@ class SalesOrderController extends Controller
                         $request->merge(['id' => $id]);
                         return $this->sales_order->approve($request->id, $request->item_ids ?? []);
                     break;
-                    case 'cancel':
-                        $request->merge(['id' => $id]);
-                        return $this->sales_order->cancel($request->id);
-                    break;
                     case 'adjustment':
                         $request->merge(['id' => $id]);
                         return $this->sales_order->adjustment($request);
@@ -115,14 +111,33 @@ class SalesOrderController extends Controller
 
 
         return back()->with([
-            'data' => $result['data'],
-            'message' => $result['message'],
-            'info' => $result['info'],
-            'status' => $result['status'],
+            'data'       => $result['data'],
+            'message'    => $result['message'],
+            'info'       => $result['info'],
+            'status'     => $result['status'],
+            'receipt_id' => $result['receipt_id'] ?? null,
         ]);
 
     }
 
+
+    public function adjustment(SalesOrderRequest $request, $id){
+        $request->merge(['id' => $id]);
+        $result = $this->handleTransaction(fn() => $this->sales_order->adjustment($request));
+
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'adjustment' => $result['info'] ?? 'Unable to apply adjustment.',
+            ]);
+        }
+
+        return back()->with([
+            'data'    => $result['data'],
+            'message' => $result['message'],
+            'info'    => $result['info'],
+            'status'  => $result['status'],
+        ]);
+    }
 
     public function show($id , Request $request){
         return $this->print->print($id, $request);

@@ -9,7 +9,9 @@ use App\Models\Expense;
 use App\Models\FundTransfer;
 use App\Models\InventoryAdjustment;
 use App\Models\InventoryStocks;
+use App\Models\InventoryWeightLoss;
 use App\Models\JournalEntry;
+use App\Models\ProductConversion;
 use App\Models\PettyCashTransaction;
 use App\Models\Receipt;
 use App\Models\ReceivedStock;
@@ -517,7 +519,21 @@ class JournalEntryService
         $receivedStock->loadMissing('purchaseOrder');
 
         $payableAccount = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
-        $cashAccount = $this->resolveCashAccountByPaymentMode($payment->payment_mode, $payment->bank_account_id ?? null);
+
+        if (strtolower((string) $payment->payment_mode) === 'cash' && $payment->petty_cash_fund_id) {
+            $fund = \App\Models\PettyCashFund::find($payment->petty_cash_fund_id);
+            $cashAccount = $fund
+                ? $this->ensureAccount(
+                    $fund->gl_code ?: ('1050.' . $fund->id),
+                    'petty_cash_' . \Illuminate\Support\Str::slug($fund->name),
+                    $fund->name,
+                    'asset',
+                    'cash'
+                )
+                : $this->resolveCashAccountByPaymentMode($payment->payment_mode, null);
+        } else {
+            $cashAccount = $this->resolveCashAccountByPaymentMode($payment->payment_mode, $payment->bank_account_id ?? null);
+        }
         $purchaseOrder = $receivedStock->purchaseOrder;
         $memo = 'Supplier payment recorded for received stock ' . $receivedStock->received_no . ' via ' . $payment->payment_mode . '.';
 
@@ -620,6 +636,169 @@ class JournalEntryService
             'Inventory adjustment posted: ' . $adjustment->type,
             $lines,
             'Inventory Adjustment #' . $adjustment->id . ' - ' . ($adjustment->reason ?: 'Inventory adjustment')
+        );
+    }
+
+    public function recordWeightLossEntry(InventoryWeightLoss $loss, ?float $totalLossKg = null): ?JournalEntry
+    {
+        $loss->loadMissing(['inventoryStock.receivedItem', 'inventoryStock.product']);
+
+        $inventoryStock = $loss->inventoryStock;
+        $unitCost = (float) optional($inventoryStock?->receivedItem)->unit_cost;
+        if ($unitCost <= 0) {
+            return null;
+        }
+
+        $productWeight = (float) ($inventoryStock?->product?->weight
+            ?? $inventoryStock?->receivedItem?->product?->weight
+            ?? 0);
+        if ($productWeight <= 0) {
+            return null;
+        }
+
+        $lossKg = $totalLossKg ?? (float) $loss->loss_kg;
+        $amount = round(($lossKg / $productWeight) * $unitCost, 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
+        $lossAccount      = $this->ensureAccount('5201', 'weight_loss_expense', 'Weight Loss Expense', 'expense', 'inventory_variance');
+
+        $lines = [
+            [
+                'account_id'  => $lossAccount->id,
+                'line_type'   => 'debit',
+                'amount'      => $amount,
+                'description' => "Weight loss of {$lossKg} kg — {$loss->reason}.",
+            ],
+            [
+                'account_id'  => $inventoryAccount->id,
+                'line_type'   => 'credit',
+                'amount'      => $amount,
+                'description' => "Reduce inventory value for {$lossKg} kg weight loss.",
+            ],
+        ];
+
+        return $this->createEntry(
+            $loss,
+            $loss->recorded_at,
+            'weight_loss',
+            "Weight loss recorded: {$lossKg} kg — {$loss->reason}",
+            $lines,
+            "Weight Loss (Batch: {$inventoryStock->batch_code}) — {$lossKg} kg total ({$loss->reason})"
+        );
+    }
+
+    public function recordStockConversionEntry(ProductConversion $conversion): ?JournalEntry
+    {
+        $conversion->loadMissing([
+            'sourceStock.receivedItem.product',
+            'sourceStock.product',
+            'outputStock.product',
+        ]);
+
+        $source = $conversion->sourceStock;
+        $output = $conversion->outputStock;
+
+        if (!$source || !$output) return null;
+
+        $sourceUnitCost = floatval($source->receivedItem?->unit_cost ?? $source->unit_cost ?? 0);
+        $sourceQtyUsed  = (int) $conversion->source_qty_used;
+        $outputUnitCost = floatval($output->unit_cost ?? 0);
+        $outputQty      = (int) $conversion->output_quantity;
+
+        $sourceValue = round($sourceQtyUsed * $sourceUnitCost, 2);
+        $outputValue = round($outputQty * $outputUnitCost, 2);
+
+        if ($sourceValue <= 0 && $outputValue <= 0) return null;
+
+        $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
+
+        $sourceBatch = $source->batch_code;
+        $outputBatch = $output->batch_code;
+        $sourceProd  = $source->receivedItem?->product?->name ?? $source->product?->name ?? 'Source';
+        $outputProd  = $output->product?->name ?? 'Output';
+
+        $diff = round($outputValue - $sourceValue, 2);
+
+        if (abs($diff) < 0.01) {
+            // Balanced: simple reclassification
+            $amount = $outputValue ?: $sourceValue;
+            $lines = [
+                [
+                    'account_id'  => $inventoryAccount->id,
+                    'line_type'   => 'debit',
+                    'amount'      => $amount,
+                    'description' => "Conversion in — {$outputBatch} ({$outputProd}): {$outputQty} units",
+                ],
+                [
+                    'account_id'  => $inventoryAccount->id,
+                    'line_type'   => 'credit',
+                    'amount'      => $amount,
+                    'description' => "Conversion out — {$sourceBatch} ({$sourceProd}): {$sourceQtyUsed} units",
+                ],
+            ];
+        } else {
+            // Cost variance — use the larger side as the base and add variance line
+            $varianceAccount = $this->ensureAccount(
+                '5202', 'conversion_variance', 'Inventory Conversion Variance', 'expense', 'inventory_variance'
+            );
+
+            if ($diff > 0) {
+                // Output worth more than source consumed — credit variance (gain)
+                $lines = [
+                    [
+                        'account_id'  => $inventoryAccount->id,
+                        'line_type'   => 'debit',
+                        'amount'      => $outputValue,
+                        'description' => "Conversion in — {$outputBatch} ({$outputProd}): {$outputQty} units",
+                    ],
+                    [
+                        'account_id'  => $inventoryAccount->id,
+                        'line_type'   => 'credit',
+                        'amount'      => $sourceValue,
+                        'description' => "Conversion out — {$sourceBatch} ({$sourceProd}): {$sourceQtyUsed} units",
+                    ],
+                    [
+                        'account_id'  => $varianceAccount->id,
+                        'line_type'   => 'credit',
+                        'amount'      => abs($diff),
+                        'description' => 'Conversion cost variance (gain)',
+                    ],
+                ];
+            } else {
+                // Source worth more than output — debit variance (loss)
+                $lines = [
+                    [
+                        'account_id'  => $inventoryAccount->id,
+                        'line_type'   => 'debit',
+                        'amount'      => $outputValue,
+                        'description' => "Conversion in — {$outputBatch} ({$outputProd}): {$outputQty} units",
+                    ],
+                    [
+                        'account_id'  => $varianceAccount->id,
+                        'line_type'   => 'debit',
+                        'amount'      => abs($diff),
+                        'description' => 'Conversion cost variance (loss)',
+                    ],
+                    [
+                        'account_id'  => $inventoryAccount->id,
+                        'line_type'   => 'credit',
+                        'amount'      => $sourceValue,
+                        'description' => "Conversion out — {$sourceBatch} ({$sourceProd}): {$sourceQtyUsed} units",
+                    ],
+                ];
+            }
+        }
+
+        return $this->createEntry(
+            $conversion,
+            $conversion->conversion_date,
+            'stock_conversion',
+            "Stock conversion: {$sourceBatch} → {$outputBatch}",
+            $lines,
+            "Stock Conversion — {$sourceBatch} ({$sourceQtyUsed} units) → {$outputBatch} ({$outputQty} units)"
         );
     }
 

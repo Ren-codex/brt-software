@@ -4,28 +4,26 @@ namespace App\Http\Resources\Modules;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\DB;
 
 class SalesOrderResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $returnItems = DB::table('sales_return_items')
-            ->join('sales_order_items', 'sales_order_items.id', '=', 'sales_return_items.sales_order_item_id')
-            ->where('sales_order_items.sales_order_id', $this->id)
-            ->select('sales_return_items.sales_order_item_id', 'sales_return_items.return_quantity', 'sales_return_items.return_condition')
-            ->get();
-        $refundReceiptId = DB::table('receipts')
-            ->where('ar_invoice_id', optional($this->arInvoices->first())->id)
+        // Derived from eager-loaded items.salesReturnItems — no extra query
+        $returnItems = $this->items->flatMap->salesReturnItems;
+
+        // Derived from eager-loaded arInvoices.receipts — no extra query
+        $refundReceiptId = $this->arInvoices->first()?->receipts
             ->whereIn('receipt_type', ['refund', 'updated'])
-            ->orderByDesc('id')
-            ->value('id');
+            ->sortByDesc('id')
+            ->first()?->id;
 
         return [
             'id' => $this->id,
             'so_number' => $this->so_number,
             'customer' => $this->customer,
             'order_date' => $this->order_date->format('F d, Y'),
+            'order_date_raw' => $this->order_date->format('Y-m-d'),
             'status' => $this->status,
             'sub_status' => $this->sub_status,
             'total_amount' => $this->total_amount,
@@ -34,6 +32,7 @@ class SalesOrderResource extends JsonResource
             'driver_id' => $this->driver_id,
             'payment_mode' => $this->payment_mode,
             'due_date' => $this->due_date?->format('M d, Y'),
+            'due_date_raw' => $this->due_date?->format('Y-m-d'),
             'transferred_to' => $this->transferred_to,
             'transferred_at' => $this->transferred_at,
             'items' => $this->items,

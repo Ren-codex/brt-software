@@ -125,12 +125,12 @@ class DashboardController extends Controller
         $topProductsQuery = (clone $revenueBaseQuery)
             ->select(
                 'p.id',
-                DB::raw('CONCAT(p.pack_size, " ", lu.name, " ", lb.name) as name'),
+                DB::raw('CONCAT(p.weight, " ", lu.name, " ", lb.name) as name'),
                 DB::raw('lb.name as brand'),
                 DB::raw('SUM(soi.quantity) as quantity_sold'),
                 DB::raw('SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity) as revenue')
             )
-            ->groupBy('p.id', 'p.pack_size', 'lu.name', 'lb.name')
+            ->groupBy('p.id', 'p.weight', 'lu.name', 'lb.name')
             ->orderByDesc('quantity_sold')
             ->limit(10)
             ->get();
@@ -246,7 +246,7 @@ class DashboardController extends Controller
                 'products.id',
                 'products.id as code',
                 'list_brands.name as category',
-                DB::raw('CONCAT(products.pack_size, " ", list_units.name, " ", list_brands.name) as product_name'),
+                DB::raw('CONCAT(products.weight, " ", list_units.name, " ", list_brands.name) as product_name'),
                 'inventory_stocks.quantity as current_stock',
                 'products.minimum_stock'
             )

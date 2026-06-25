@@ -51,7 +51,7 @@ class DamagedItemsReturnTest extends TestCase
         $unitId  = \DB::table('list_units')->insertGetId(['name' => 'Sack', 'created_at' => now(), 'updated_at' => now()]);
         $brandId = \DB::table('list_brands')->insertGetId(['name' => 'Test Brand', 'created_at' => now(), 'updated_at' => now()]);
 
-        $this->product = Product::create(['pack_size' => 50, 'unit_id' => $unitId, 'brand_id' => $brandId, 'is_active' => true]);
+        $this->product = Product::create(['code' => 'TEST-' . uniqid(), 'weight' => 50, 'unit_id' => $unitId, 'brand_id' => $brandId, 'is_active' => true]);
         $this->customer = Customer::create([
             'name' => 'Test Customer', 'address' => 'Test Address',
             'contact_number' => '09000000001', 'added_by_id' => $this->user->id,
@@ -138,6 +138,7 @@ class DamagedItemsReturnTest extends TestCase
             'status_id'      => ListStatus::where('slug', 'paid')->first()->id,
             'invoice_number' => 'INV-' . $soNumber,
             'invoice_date'   => now()->toDateString(),
+            'amount_due'     => $qty * $price,
             'amount_paid'    => $qty * $price,
             'balance_due'    => 0,
         ]);

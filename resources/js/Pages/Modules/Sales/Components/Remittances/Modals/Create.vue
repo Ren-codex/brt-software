@@ -13,22 +13,6 @@
                 </div>
 
                 <form @submit.prevent="submit">
-                    <div class="mb-3">
-                        <label class="form-label mb-2">Remittance Type</label>
-                        <div class="d-flex gap-2">
-                            <button
-                                type="button"
-                                :class="remittanceType === 'cash' ? 'acct-btn-primary' : 'acct-btn-secondary'"
-                                @click="setRemittanceType('cash')"
-                            >Cash Sales</button>
-                            <button
-                                type="button"
-                                :class="remittanceType === 'credit' ? 'acct-btn-primary' : 'acct-btn-secondary'"
-                                @click="setRemittanceType('credit')"
-                            >Credit Sales</button>
-                        </div>
-                    </div>
-
                     <div class="mb-3 d-flex align-items-center gap-2">
                         <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt"
                             class="form-control" />
@@ -151,14 +135,12 @@ export default {
             filteredOrders: [],
             selectedIds: [],
             keyword: '',
-            remittanceType: 'cash',
             currentPage: 1,
             pageSize: 3,
             submitting: false,
             debouncedFetch: null,
             form: useForm({
                 receipts: [],
-                remittance_type: 'cash',
                 summary: {},
                 total_amount: 0,
             }),
@@ -199,7 +181,6 @@ export default {
             this.showModal = true;
             this.selectedIds = [];
             this.keyword = '';
-            this.remittanceType = 'cash';
             this.currentPage = 1;
             this.fetchPending();
         },
@@ -212,7 +193,7 @@ export default {
                     status: "pending",
                     option: 'lists',
                     count: 100,
-                    remittance_type: this.remittanceType,
+                    scope_to_rep: 1,
                 }
             })
                 .then(res => {
@@ -251,22 +232,6 @@ export default {
         normalizeSalesPaymentMode(order) {
             return String(this.getPaymentMode(order) || '').trim().toLowerCase();
         },
-        isCreditSalesMode(mode) {
-            const normalized = String(mode || '').trim().toLowerCase();
-            return normalized === 'credit' || normalized === 'credit sales';
-        },
-        matchesRemittanceType(order) {
-            const mode = this.normalizeSalesPaymentMode(order);
-            const isCredit = this.isCreditSalesMode(mode);
-            return this.remittanceType === 'credit' ? isCredit : !isCredit;
-        },
-        setRemittanceType(type) {
-            if (this.remittanceType === type) return;
-            this.remittanceType = type;
-            this.selectedIds = [];
-            this.fetchPending();
-        },
-
         toggleSelectAll() {
             if (this.allSelected) {
                 this.selectedIds = [];
@@ -298,7 +263,6 @@ export default {
             if (this.selectedIds.length === 0) return;
             this.submitting = true;
             this.form.receipts = this.selectedIds;
-            this.form.remittance_type = this.remittanceType;
             const { overall, ...summary } = this.totals;
             this.form.summary = summary;
             this.form.total_amount = this.totals.overall;

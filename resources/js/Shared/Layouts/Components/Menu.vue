@@ -177,6 +177,14 @@
                             </li>
 
                             <li class="nav-item submenu-item">
+                                <Link href="/libraries/packagings" class="nav-link submenu-link"
+                                    :class="{ 'active': $page.url === '/libraries/packagings' }" data-key="t-basic">
+                                <span class="submenu-dot"></span>
+                                <span class="submenu-text">Packagings</span>
+                                </Link>
+                            </li>
+
+                            <li class="nav-item submenu-item">
                                 <Link href="/libraries/locations" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/locations' }"
                                     data-key="t-basic">

@@ -79,7 +79,7 @@
                                     <td>{{ formatCondition(getReturnCondition(item.id)) }}</td>
                                     <td>{{ item.unit }}</td>
                                     <td>{{ formatCurrency(item.price) }}</td>
-                                    <td class="fw-semibold">{{ formatCurrency(getReturnQuantity(item.id, item.quantity) * item.price) }}</td>
+                                    <td class="fw-semibold">{{ formatCurrency(getReturnQuantity(item.id, item.quantity) * (item.price - (item.discount_per_unit || 0))) }}</td>
                                 </tr>
                             </tbody>
                             <tfoot v-if="items.length > 0">
@@ -109,7 +109,8 @@
             <div class="modal-footer pretty-footer">
                 <button class="btn btn-secondary me-2" @click="hide">Close</button>
                 <button class="btn btn-primary" @click="submit" :disabled="!isValid">
-                    <i class="ri-check-line me-1"></i>
+                    <i class="ri-loader-4-line spinner me-1" v-if="form.processing"></i>
+                    <i class="ri-check-line me-1" v-else></i>
                     {{ form.processing ? "Approving..." : "Approve Return" }}
                 </button>
             </div>
@@ -147,7 +148,7 @@ export default {
         selectedTotal() {
             return this.items
                 .filter(item => this.selectedItems.includes(item.id))
-                .reduce((sum, item) => sum + (this.getReturnQuantity(item.id, item.quantity) * item.price), 0);
+                .reduce((sum, item) => sum + (this.getReturnQuantity(item.id, item.quantity) * (item.price - (item.discount_per_unit || 0))), 0);
         },
         confirmTextValid() {
             return (this.text_confirm || '').trim().toUpperCase() === 'CONFIRM';
