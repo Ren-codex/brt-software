@@ -12,6 +12,7 @@ use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Resources\Libraries\ReceiptResource;
 use App\Services\PrintClass;
 
 class ReceiptController extends Controller
@@ -61,6 +62,9 @@ class ReceiptController extends Controller
 
     public function show($id, Request $request)
     {
+        if ($request->option === 'detail') {
+            return new ReceiptResource($this->receipt->show($id));
+        }
         return $this->print->print($id, $request);
     }
 

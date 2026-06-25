@@ -23,9 +23,10 @@ class ProductRequest extends FormRequest
                 'regex:/^[A-Z0-9]+$/',
                 Rule::unique('products', 'code')->ignore($this->id),
             ],
-            'pack_size'     => 'required|integer|max:255',
+            'weight'     => 'required|integer|max:255',
             'unit_id'       => 'required|exists:list_units,id',
             'brand_id'      => 'required|exists:list_brands,id',
+            'packaging_id'  => 'required|exists:list_packagings,id',
             'minimum_stock' => 'nullable|integer|min:0',
         ];
     }
@@ -35,7 +36,7 @@ class ProductRequest extends FormRequest
         $validator->after(function ($validator) {
             $existingProduct = Product::where('brand_id', $this->brand_id)
                 ->where('unit_id', $this->unit_id)
-                ->where('pack_size', $this->pack_size)
+                ->where('weight', $this->weight)
                 ->when($this->id, fn ($query) => $query->where('id', '!=', $this->id))
                 ->first();
 

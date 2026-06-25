@@ -59,6 +59,6 @@ class Receipt extends Model
 
         $sequence = $lastReceipt ? intval(substr($lastReceipt->receipt_number, -4)) + 1 : 1;
 
-        return 'RCP-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return 'OR-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }

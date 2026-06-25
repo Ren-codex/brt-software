@@ -11,6 +11,7 @@ use App\Models\ListSalary;
 use App\Models\ListStatus;
 use App\Models\ListUnit;
 use App\Models\ListBrand;
+use App\Models\ListPackaging;
 use App\Models\ArInvoice;
 use App\Models\Customer;
 use App\Models\Employee;
@@ -64,8 +65,19 @@ class DropdownClass
                 'name' => $item->name
             ];
         });
-      
+
         return  $data;
+    }
+
+    public function packagings(){
+        $data = ListPackaging::orderBy('name')->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name'  => $item->name,
+            ];
+        });
+
+        return $data;
     }
 
     public function customers(){
@@ -173,7 +185,7 @@ class DropdownClass
             }
             return [
                 'value' => $item->id,
-                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
+                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->weight ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
                 'batch_code' => $batch_code,
                 'batch_available' => $batch_available,
                 'batch_stocks' => $batch_stocks,

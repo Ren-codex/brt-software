@@ -47,7 +47,7 @@ class RemittanceController extends Controller
         $totalAmountRemitted = \App\Models\Remittance::sum('total_amount');
         $todayRemittances = \App\Models\Remittance::whereDate('created_at', today())->count();
         $openRemittances = \App\Models\Remittance::whereHas('status', function($q) {
-            $q->where('name', '!=', 'liquidated');
+            $q->where('slug', '!=', 'liquidated');
         })->count();
 
         return response()->json([
@@ -84,6 +84,19 @@ class RemittanceController extends Controller
         ]);
     }
 
+    public function remit($id){
+        $result = $this->handleTransaction(function () use ($id) {
+            return $this->remittance->remit($id);
+        });
+
+        return response()->json([
+            'data'    => $result['data'],
+            'message' => $result['message'],
+            'info'    => $result['info'],
+            'status'  => $result['status'] ?? 'success',
+        ]);
+    }
+
     public function approve(Request $request, $id){
         $result = $this->handleTransaction(function () use ($request, $id) {
             return $this->remittance->approve($request, $id);
@@ -95,6 +108,11 @@ class RemittanceController extends Controller
             'info' => $result['info'],
             'status' => $result['status'],
         ]);
+    }
+
+    public function printRemittance($id)
+    {
+        return $this->print->printRemittance($id);
     }
 
     public function show($id, Request $request)

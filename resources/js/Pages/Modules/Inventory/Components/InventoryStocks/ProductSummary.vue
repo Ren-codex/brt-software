@@ -27,57 +27,113 @@
                 >
               </div>
 
-              <div class="products-list-section">
-                <div
-                  v-for="product in filteredProducts"
-                  :key="product.id"
-                  class="group-card-wrapper"
-                  :class="{ 'selected-group': selectedProductId === product.id }"
-                >
-                  <b-card
-                    :class="[
-                      'group-card',
-                      {
-                        'active-group': selectedProductId === product.id,
-                        'low-stock-group': isLowStock(product.id),
-                      },
-                    ]"
-                    @click="selectProduct(product)"
-                  >
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h6 class="group-name mb-1">{{ product.brand?.name || 'Unnamed Product' }} {{ product.pack_size || '-' }} {{ product.unit?.name || '' }}</h6>
-                        <small class="text-muted">
-                          {{ stocksCountByProductId(product.id) }} stock records
-                        </small>
-                        <small v-if="isLowStock(product.id)" class="low-stock-text d-block">
-                          <i class="ri-alarm-warning-line"></i>
-                          Low stock
-                        </small>
-                      </div>
-                      <span
+              <BTabs v-model="activeProductTab">
+                <!-- Available Products -->
+                <BTab title="Available">
+                  <div class="products-list-section mt-2">
+                    <div
+                      v-for="product in filteredProducts"
+                      :key="product.id"
+                      class="group-card-wrapper"
+                      :class="{ 'selected-group': selectedProductId === product.id }"
+                    >
+                      <b-card
                         :class="[
-                          'qty-badge',
+                          'group-card',
                           {
-                            'qty-badge-active': selectedProductId === product.id,
-                            'qty-badge-low': isLowStock(product.id),
+                            'active-group': selectedProductId === product.id,
+                            'low-stock-group': isLowStock(product.id),
                           },
                         ]"
+                        @click="selectProduct(product, false)"
                       >
-                        <span class="qty-label">Available</span>
-                        <span class="qty-value">{{ totalQuantityByProductId(product.id) }}</span>
-                      </span>
+                        <div class="d-flex justify-content-between align-items-center">
+                          <div>
+                            <h6 class="group-name mb-1">{{ product.brand?.name || 'Unnamed Product' }} {{ product.weight || '-' }} {{ product.unit?.name || '' }}</h6>
+                            <small class="text-muted">
+                              {{ stocksCountByProductId(product.id) }} stock records
+                            </small>
+                            <small v-if="isLowStock(product.id)" class="low-stock-text d-block">
+                              <i class="ri-alarm-warning-line"></i>
+                              Low stock
+                            </small>
+                          </div>
+                          <span
+                            :class="[
+                              'qty-badge',
+                              {
+                                'qty-badge-active': selectedProductId === product.id,
+                                'qty-badge-low': isLowStock(product.id),
+                              },
+                            ]"
+                          >
+                            <span class="qty-label">Available</span>
+                            <span class="qty-value">{{ totalQuantityByProductId(product.id) }} <span class="qty-unit-label">pcs</span></span>
+                            <span class="qty-kg">{{ totalKgByProduct(product) }} kg</span>
+                          </span>
+                        </div>
+                      </b-card>
                     </div>
-                  </b-card>
-                </div>
-              </div>
+                    <div v-if="filteredProducts.length === 0" class="text-center text-muted py-4" style="font-size:0.85rem">
+                      No products found.
+                    </div>
+                  </div>
+                </BTab>
+
+                <!-- Converted Products -->
+                <BTab>
+                  <template #title>
+                    Converted
+                    <span v-if="filteredConvertedProducts.length > 0" class="conv-tab-badge">{{ filteredConvertedProducts.length }}</span>
+                  </template>
+                  <div class="products-list-section mt-2">
+                    <div
+                      v-for="product in filteredConvertedProducts"
+                      :key="product.id"
+                      class="group-card-wrapper"
+                      :class="{ 'selected-group': selectedProductId === product.id }"
+                    >
+                      <b-card
+                        :class="[
+                          'group-card',
+                          { 'active-group': selectedProductId === product.id },
+                        ]"
+                        @click="selectProduct(product, true)"
+                      >
+                        <div class="d-flex justify-content-between align-items-center">
+                          <div>
+                            <h6 class="group-name mb-1">{{ product.brand?.name || 'Unnamed Product' }} {{ product.weight || '-' }} {{ product.unit?.name || '' }}</h6>
+                            <small class="text-muted">
+                              {{ convertedStocksCountByProductId(product.id) }} converted record{{ convertedStocksCountByProductId(product.id) !== 1 ? 's' : '' }}
+                            </small>
+                          </div>
+                          <span
+                            :class="[
+                              'qty-badge',
+                              { 'qty-badge-active': selectedProductId === product.id },
+                            ]"
+                            style="border-color:#3d8d7a; background:#e6f4f1; color:#16322e;"
+                          >
+                            <span class="qty-label">Converted</span>
+                            <span class="qty-value">{{ convertedQuantityByProductId(product.id) }} <span class="qty-unit-label">pcs</span></span>
+                            <span class="qty-kg">{{ convertedKgByProduct(product) }} kg</span>
+                          </span>
+                        </div>
+                      </b-card>
+                    </div>
+                    <div v-if="filteredConvertedProducts.length === 0" class="text-center text-muted py-4" style="font-size:0.85rem">
+                      No converted products found.
+                    </div>
+                  </div>
+                </BTab>
+              </BTabs>
             </div>
             
             <div class="col-lg-8 col-xl-9">
               <div v-if="selectedProduct" class="stocks-section">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <div>
-                    <h5 class="mb-1">{{ selectedProduct.brand?.name || 'Selected Product' }} {{ selectedProduct.pack_size || '-' }} {{ selectedProduct.unit?.name || '' }}</h5>
+                    <h5 class="mb-1">{{ selectedProduct.brand?.name || 'Selected Product' }} {{ selectedProduct.weight || '-' }} {{ selectedProduct.unit?.name || '' }}</h5>
                     <p class="text-muted mb-0">Inventory Stocks</p>
                   </div>
                   <div class="search-wrapper stocks-search">
@@ -112,16 +168,23 @@
                         @click="$emit('view-details', stock)"
                       >
                         <td>{{ stockRowStart + index + 1 }}</td>
-                        <td>{{ stock.batch_code || '-' }}</td>
-                        <td>{{ formatDate(stock.received_item?.received_stock?.received_date) }}
-                          <span 
-                            class="status-badge"
-                            v-if="stock.expiration_date"
-                          >
-                            EXP: {{ formatDate(stock.expiration_date) }}
+                        <td>
+                          {{ stock.batch_code || '-' }}
+                          <span class="status-badge converted-badge" v-if="stock.conversion_id">Converted</span>
+                          <span class="status-badge" v-if="stock.expiration_date">EXP: {{ formatDate(stock.expiration_date) }}</span>
+                        </td>
+                        <td>{{ stock.received_item ? formatDate(stock.received_item.received_stock?.received_date) : formatDate(stock.created_at) }}</td>
+                        <td>
+                          {{ stock.quantity }} pcs
+                          <span class="d-block text-muted" style="font-size:0.75rem">
+                            {{ stockKg(stock, selectedProduct) }} kg
+                          </span>
+                          <span v-if="stock.total_affected_sacks > 0" class="d-block" style="font-size:0.72rem; margin-top:2px;">
+                            <span style="color:#16a34a; font-weight:600;">{{ stock.quantity - stock.total_affected_sacks }} normal</span>
+                            <span style="color:#6b7280;"> · </span>
+                            <span style="color:#dc2626; font-weight:600;">{{ stock.total_affected_sacks }} short</span>
                           </span>
                         </td>
-                        <td>{{ stock.quantity }}</td>
                         <td>{{ formatCurrency(stock.received_item?.unit_cost) }}</td>
                         <td>{{ formatCurrency(stock.retail_price) }}</td>
                         <td>{{ formatCurrency(stock.wholesale_price) }}</td>
@@ -141,23 +204,9 @@
                     of {{ totalFilteredStockRows }}
                   </small>
                   <div class="d-flex align-items-center gap-2">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-primary"
-                      :disabled="stockPage === 1"
-                      @click="stockPage = Math.max(1, stockPage - 1)"
-                    >
-                      Prev
-                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" :disabled="stockPage === 1" @click="stockPage = Math.max(1, stockPage - 1)">Prev</button>
                     <span class="text-muted small">Page {{ stockPage }} / {{ totalStockPages }}</span>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-primary"
-                      :disabled="stockPage === totalStockPages"
-                      @click="stockPage = Math.min(totalStockPages, stockPage + 1)"
-                    >
-                      Next
-                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" :disabled="stockPage === totalStockPages" @click="stockPage = Math.min(totalStockPages, stockPage + 1)">Next</button>
                   </div>
                 </div>
               </div>
@@ -186,6 +235,8 @@ export default {
       products: [],
       inventoryStocks: [],
       selectedProductId: null,
+      viewingConverted: false,
+      activeProductTab: 0,
       productKeyword: '',
       batchKeyword: '',
       stockPage: 1,
@@ -198,33 +249,67 @@ export default {
       return this.products.filter((product) => this.isProductActive(product));
     },
     filteredProducts() {
+      // Exclude only products that have conversion stock but NO received stock
+      // (pure conversion-output products belong in the Converted tab only)
+      const base = this.activeProducts.filter(p =>
+        this.receivedProductIds.has(p.id) || !this.convertedProductIds.has(p.id)
+      );
       const keyword = this.productKeyword.trim().toLowerCase();
-      const filtered = this.activeProducts.filter((product) => {
+
+      if (!keyword) {
+        return [...base].sort((a, b) => Number(this.isLowStock(a.id)) - Number(this.isLowStock(b.id)));
+      }
+
+      return base.filter((product) => {
         const haystack = [
           product.name,
           product.brand?.name,
           product.code,
-          product.pack_size,
+          product.weight,
           product.unit?.name,
         ]
           .map((value) => String(value || '').toLowerCase())
           .join(' ');
-
         return haystack.includes(keyword);
-      });
-
-      if (!keyword) {
-        return [...this.activeProducts].sort((a, b) => Number(this.isLowStock(a.id)) - Number(this.isLowStock(b.id)));
-      }
-
-      return filtered.sort((a, b) => Number(this.isLowStock(a.id)) - Number(this.isLowStock(b.id)));
+      }).sort((a, b) => Number(this.isLowStock(a.id)) - Number(this.isLowStock(b.id)));
     },
     selectedProduct() {
       return this.products.find((product) => product.id === this.selectedProductId) || null;
     },
+    convertedProductIds() {
+      const ids = new Set();
+      this.inventoryStocks.forEach(s => {
+        if (s.conversion_id && s.product?.id) ids.add(s.product.id);
+      });
+      return ids;
+    },
+    receivedProductIds() {
+      // Products that have at least one stock batch from a PO receipt (not a conversion)
+      const ids = new Set();
+      this.inventoryStocks.forEach(s => {
+        if (!s.conversion_id && s.received_item?.product?.id) ids.add(s.received_item.product.id);
+      });
+      return ids;
+    },
+    filteredConvertedProducts() {
+      const keyword = this.productKeyword.trim().toLowerCase();
+      const list = this.activeProducts.filter(p => this.convertedProductIds.has(p.id));
+      if (!keyword) return list;
+      return list.filter(product => {
+        const haystack = [product.name, product.brand?.name, product.code, product.weight, product.unit?.name]
+          .map(v => String(v || '').toLowerCase()).join(' ');
+        return haystack.includes(keyword);
+      });
+    },
     productStocks() {
       if (!this.selectedProductId) return [];
-      return this.inventoryStocks.filter((stock) => stock.received_item?.product?.id === this.selectedProductId);
+      return this.inventoryStocks.filter((stock) => {
+        const matchesProduct =
+          stock.received_item?.product?.id === this.selectedProductId ||
+          stock.product?.id === this.selectedProductId;
+        if (!matchesProduct) return false;
+        return this.viewingConverted ? !!stock.conversion_id : !stock.conversion_id;
+      });
     },
     filteredProductStocks() {
       const keyword = this.batchKeyword.trim().toLowerCase();
@@ -250,6 +335,15 @@ export default {
   watch: {
     selectedProductId() {
       this.stockPage = 1;
+    },
+    activeProductTab(tab) {
+      if (tab === 0) {
+        this.viewingConverted = false;
+        this.selectedProductId = this.filteredProducts[0]?.id ?? null;
+      } else {
+        this.viewingConverted = true;
+        this.selectedProductId = this.filteredConvertedProducts[0]?.id ?? null;
+      }
     },
     batchKeyword() {
       this.stockPage = 1;
@@ -311,16 +405,41 @@ export default {
         this.stocksLoaded = true;
       }
     },
-    selectProduct(product) {
+    selectProduct(product, isConverted = false) {
       this.selectedProductId = product.id;
+      this.viewingConverted = isConverted;
       sessionStorage.setItem('inv_selected_product_id', product.id);
     },
+    convertedStocksCountByProductId(productId) {
+      return this.inventoryStocks.filter(s =>
+        s.conversion_id &&
+        (s.received_item?.product?.id === productId || s.product?.id === productId)
+      ).length;
+    },
+    convertedQuantityByProductId(productId) {
+      return this.inventoryStocks
+        .filter(s => s.conversion_id && (s.received_item?.product?.id === productId || s.product?.id === productId))
+        .reduce((total, s) => total + Number(s.quantity || 0), 0);
+    },
+    convertedKgByProduct(product) {
+      const packSize = parseFloat(product.weight) || 0;
+      return this.inventoryStocks
+        .filter(s => s.conversion_id && (s.received_item?.product?.id === product.id || s.product?.id === product.id))
+        .reduce((sum, s) => sum + Number(s.quantity || 0) * packSize, 0)
+        .toLocaleString('en-PH');
+    },
     stocksCountByProductId(productId) {
-      return this.inventoryStocks.filter((stock) => stock.received_item?.product?.id === productId).length;
+      return this.inventoryStocks.filter((stock) =>
+        stock.received_item?.product?.id === productId ||
+        stock.product?.id === productId
+      ).length;
     },
     totalQuantityByProductId(productId) {
       return this.inventoryStocks
-        .filter((stock) => stock.received_item?.product?.id === productId)
+        .filter((stock) =>
+          stock.received_item?.product?.id === productId ||
+          stock.product?.id === productId
+        )
         .reduce((total, stock) => total + Number(stock.quantity || 0), 0);
     },
     isLowStock(productId) {
@@ -341,6 +460,22 @@ export default {
         style: 'currency',
         currency: 'PHP',
       }).format(Number(amount));
+    },
+    totalKgByProduct(product) {
+      const packSize   = parseFloat(product.weight) || 0;
+      const stocks     = this.inventoryStocks.filter(s =>
+        s.received_item?.product?.id === product.id ||
+        s.product?.id === product.id
+      );
+      const grossKg    = stocks.reduce((sum, s) => sum + Number(s.quantity || 0) * packSize, 0);
+      const lossKg     = stocks.reduce((sum, s) => sum + Number(s.total_weight_loss || 0), 0);
+      return Math.max(0, grossKg - lossKg).toLocaleString('en-PH');
+    },
+    stockKg(stock, product) {
+      const packSize = parseFloat(product?.weight) || 0;
+      const gross    = Number(stock.quantity || 0) * packSize;
+      const loss     = Number(stock.total_weight_loss || 0);
+      return Math.max(0, gross - loss).toLocaleString('en-PH');
     },
     isWithinThreeMonths(date) {
       if (!date) return false;
@@ -366,6 +501,7 @@ export default {
 .products-list-section {
   overflow-y: auto;
   overflow-x: hidden;
+  max-height: 580px;
   padding: 2px;
 }
 
@@ -494,6 +630,19 @@ export default {
   font-weight: 800;
 }
 
+.qty-unit-label {
+  font-size: 9px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.qty-kg {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.85;
+  letter-spacing: 0.2px;
+}
+
 .qty-badge-active {
   border-color: #0f5132;
   box-shadow: 0 0 0 2px rgba(20, 108, 67, 0.12);
@@ -525,5 +674,26 @@ export default {
   cursor: default;
   background-color: #7a848e;
   color: white;
+}
+
+.converted-badge {
+  background-color: #3d8d7a;
+}
+
+.conv-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 5px;
+  background: #3d8d7a;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
 }
 </style>

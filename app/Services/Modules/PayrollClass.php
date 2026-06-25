@@ -54,7 +54,7 @@ class PayrollClass
 
         $exists = !empty($employeeIds) && Payroll::where('pay_period_start', $request->pay_period_start)
             ->where('pay_period_end', $request->pay_period_end)
-            ->where('status_id', '!=', ListStatus::where('slug', 'disapproved')->first()->id)
+            ->where('status_id', '!=', ListStatus::getBySlug('disapproved')?->id ?? 0)
             ->whereHas('items', function ($query) use ($employeeIds) {
                 $query->whereIn('employee_id', $employeeIds);
             })
@@ -73,7 +73,7 @@ class PayrollClass
                 'payroll_no' => $this->series_service->get('payroll_number'),
                 'pay_period_start' => $request->pay_period_start,
                 'pay_period_end' => $request->pay_period_end,
-                'status_id' => ListStatus::where('slug', $request->status)->first()->id,
+                'status_id' => ListStatus::getBySlug($request->status)?->id,
                 'total_amount' => $request->total_amount,
                 'payroll_template_id' => $request->payroll_template_id,
                 'created_by' => auth()->user()->id,
@@ -122,7 +122,7 @@ class PayrollClass
             $payroll->update([
                 'pay_period_start' => $request->pay_period_start,
                 'pay_period_end' => $request->pay_period_end,
-                'status_id' => ListStatus::where('slug', $request->status)->first()->id,
+                'status_id' => ListStatus::getBySlug($request->status)?->id,
                 'total_amount' => $request->total_amount,
                 'payroll_template_id' => $request->payroll_template_id,
             ]);
@@ -179,7 +179,7 @@ class PayrollClass
 
             if($request->status == 'released'){
                 $payroll->update([
-                    'status_id' => ListStatus::where('slug', 'completed')->first()->id,
+                    'status_id' => ListStatus::getBySlug('completed')?->id,
                 ]);
 
                 PayrollLog::create([
@@ -237,13 +237,16 @@ class PayrollClass
                     }
                 }
             }else{
-                $status = '';
                 if($request->status == 'approved'){
-                    $status = ListStatus::where('slug', 'for-release')->first();
+                    $status = ListStatus::getBySlug('for-release');
                 }else{
-                    $status = ListStatus::where('slug', $request->status)->first();
+                    $status = ListStatus::getBySlug($request->status);
                 }
-    
+
+                if (!$status) {
+                    throw new \Exception("Invalid payroll status: {$request->status}");
+                }
+
                 $payload = [
                     'status_id' => $status->id,
                 ];

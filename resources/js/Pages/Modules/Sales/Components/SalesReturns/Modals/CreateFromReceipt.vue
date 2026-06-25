@@ -234,8 +234,10 @@ export default {
         return {
             showModal: false,
             loadingReceipts: false,
+            loadingDetail: false,
             saveSuccess: false,
             receipts: [],
+            receiptDetail: null,
             receiptKeyword: '',
             selectedReceiptId: null,
             form: useForm({
@@ -277,7 +279,7 @@ export default {
             return this.receipts.find(receipt => Number(receipt.id) === Number(this.selectedReceiptId)) || null;
         },
         selectedItems() {
-            return this.selectedReceipt?.sales_order?.items || [];
+            return this.receiptDetail?.sales_order?.items || [];
         },
         allItemsSelected() {
             return this.selectedItems.length > 0 && this.selectedItems.every(item => this.isItemSelected(item.id));
@@ -327,20 +329,35 @@ export default {
         }
     },
     watch: {
-        selectedReceipt(receipt) {
+        async selectedReceipt(receipt) {
             this.form.clearErrors();
             this.form.reason = null;
-            this.form.id = receipt?.sales_order?.id || null;
-            this.form.receipt_id = receipt?.id || null;
-            this.form.item_ids = receipt?.sales_order?.items?.map(item => item.id) || [];
-            this.form.return_quantities = (receipt?.sales_order?.items || []).reduce((quantities, item) => {
-                quantities[item.id] = item.quantity;
-                return quantities;
-            }, {});
-            this.form.return_conditions = (receipt?.sales_order?.items || []).reduce((conditions, item) => {
-                conditions[item.id] = 'restockable';
-                return conditions;
-            }, {});
+            this.receiptDetail = null;
+
+            if (!receipt) {
+                this.form.id = null;
+                this.form.receipt_id = null;
+                this.form.item_ids = [];
+                this.form.return_quantities = {};
+                this.form.return_conditions = {};
+                return;
+            }
+
+            this.form.receipt_id = receipt.id;
+            this.loadingDetail = true;
+            try {
+                const res = await axios.get(`/receipts/${receipt.id}`, { params: { option: 'detail' } });
+                this.receiptDetail = res.data?.data ?? res.data;
+                const items = this.receiptDetail?.sales_order?.items || [];
+                this.form.id = this.receiptDetail?.sales_order?.id || null;
+                this.form.item_ids = items.map(item => item.id);
+                this.form.return_quantities = items.reduce((q, item) => { q[item.id] = item.quantity; return q; }, {});
+                this.form.return_conditions = items.reduce((c, item) => { c[item.id] = 'restockable'; return c; }, {});
+            } catch (e) {
+                console.error('Failed to load receipt detail', e);
+            } finally {
+                this.loadingDetail = false;
+            }
         }
     },
     methods: {
@@ -379,6 +396,7 @@ export default {
             this.receiptKeyword = '';
             this.selectedReceiptId = null;
             this.receipts = [];
+            this.receiptDetail = null;
             this.form.reset();
             this.form.type = 'Sales Return';
             this.form.action = 'adjustment';

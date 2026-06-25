@@ -1133,50 +1133,12 @@ class AccountingController extends Controller
             return $this->emptyCashFlow();
         }
 
-        $hasReversalCols = $this->hasJournalReversalColumns();
-
-        $q = DB::table('journal_entries as je')
-            ->join('journal_entry_lines as jel', 'jel.journal_entry_id', '=', 'je.id')
-            ->where('jel.line_type', 'debit')
-            ->selectRaw("je.entry_type, SUM(jel.amount) as total, COUNT(DISTINCT je.id) as cnt")
-            ->groupBy('je.entry_type');
-
-        if ($hasReversalCols) {
-            $q->whereNull('je.reversed_at')
-              ->whereNull('je.reversal_of_id');
-        }
-
-        $this->applyDateRange($q, 'je.entry_date', $dateFrom, $dateTo);
-
-        $byType  = $q->get()->keyBy('entry_type');
-        $amt     = fn ($t) => (float) ($byType->get($t)?->total ?? 0);
-        $cnt     = fn ($t) => (int)   ($byType->get($t)?->cnt   ?? 0);
-        $details = $this->buildAllRowDetails($dateFrom, $dateTo);
-
-        $row = fn (string $label, float $amount, int $entries, string $dir, string $note = '', array $det = []) => [
-            'label'      => $label,
-            'note'       => $note,
-            'amount_raw' => $amount,
-            'amount'     => $this->formatCurrency($amount),
-            'entries'    => $entries,
-            'direction'  => $dir,
-            'details'    => $det,
-        ];
-
-        // ── OPERATING ────────────────────────────────────────────────────────────
-        $opRows = [
-            $row('Cash received from customers',       $amt('receipt_collection'),       $cnt('receipt_collection'),       'inflow',  'AR invoice payments collected',  $details['receipt_collection']),
-            $row('Cash paid to suppliers',             $amt('accounts_payable_payment'), $cnt('accounts_payable_payment'), 'outflow', 'Accounts payable settlements',   $details['accounts_payable_payment']),
-            $row('Cash purchases (direct inventory)',  $amt('purchase_receipt_cash'),    $cnt('purchase_receipt_cash'),    'outflow', 'Inventory bought with cash',     $details['purchase_receipt_cash']),
-            $row('Payroll disbursements',              $amt('payroll_disbursement'),     $cnt('payroll_disbursement'),     'outflow', 'Payroll cash payments',          $details['payroll_disbursement']),
-        ];
-
-        $manual = $this->buildManualCashRows($dateFrom, $dateTo);
-        $opRows = array_merge($opRows, $manual['operating']);
-
-        $netOp = collect($opRows)->sum(fn ($r) => $r['direction'] === 'inflow' ? $r['amount_raw'] : -$r['amount_raw']);
+        // ── OPERATING (indirect method) ───────────────────────────────────────
+        $opRows = $this->buildIndirectOperatingRows($dateFrom, $dateTo);
+        $netOp  = collect($opRows)->sum(fn ($r) => $r['direction'] === 'inflow' ? $r['amount_raw'] : -$r['amount_raw']);
 
         // ── INVESTING ────────────────────────────────────────────────────────────
+        $manual  = $this->buildManualCashRows($dateFrom, $dateTo);
         $invRows = $manual['investing'];
         $netInv  = collect($invRows)->sum(fn ($r) => $r['direction'] === 'inflow' ? $r['amount_raw'] : -$r['amount_raw']);
 
@@ -1233,6 +1195,101 @@ class AccountingController extends Controller
                 'closing_balance_formatted' => $this->formatCurrency($closingBalance),
             ],
         ];
+    }
+
+    private function buildIndirectOperatingRows(?string $dateFrom, ?string $dateTo): array
+    {
+        // Cumulative balances up to the day before the period start (opening snapshot)
+        $openingDate = $dateFrom ? Carbon::parse($dateFrom)->subDay()->format('Y-m-d') : null;
+        $openingBals = $openingDate ? $this->buildAccountBalances(null, $openingDate) : collect();
+        $closingBals = $this->buildAccountBalances(null, $dateTo);
+
+        // Net income for the period = closing P&L minus opening P&L
+        $plClosing = $this->buildProfitLossTotals($closingBals);
+        $plOpening = $this->buildProfitLossTotals($openingBals);
+        $netIncome = round($plClosing['net_income_raw'] - $plOpening['net_income_raw'], 2);
+
+        $makeRow = fn (string $label, float $amount, string $dir, string $note = '') => [
+            'label'      => $label,
+            'note'       => $note,
+            'amount_raw' => abs($amount),
+            'amount'     => $this->formatCurrency(abs($amount)),
+            'entries'    => null,
+            'direction'  => $dir,
+            'details'    => [],
+        ];
+
+        // Helper: sum a filtered balance collection then diff opening vs closing
+        $delta = fn (callable $filter) => round(
+            (float) $closingBals->filter($filter)->sum('balance')
+            - (float) $openingBals->filter($filter)->sum('balance'),
+            2
+        );
+
+        $rows = [];
+
+        // ── Net Income (always shown) ─────────────────────────────────────────
+        $rows[] = $makeRow(
+            $netIncome >= 0 ? 'Net Income' : 'Net Loss',
+            abs($netIncome),
+            $netIncome >= 0 ? 'inflow' : 'outflow',
+            'Profit or loss for the period'
+        );
+
+        // ── Depreciation & Amortization add-back ─────────────────────────────
+        $deprDelta = $delta(fn ($a) =>
+            in_array($a['subtype'], ['depreciation', 'amortization'])
+            || str_contains(strtolower($a['name']), 'depreciation')
+            || str_contains(strtolower($a['name']), 'amortization')
+        );
+        if (abs($deprDelta) >= 0.01) {
+            $rows[] = $makeRow('Add: Depreciation & Amortization', abs($deprDelta), 'inflow', 'Non-cash expense added back');
+        }
+
+        // ── Working capital — asset accounts (increase = outflow) ─────────────
+        $assetItems = [
+            [
+                '(Increase) / Decrease in Accounts Receivable',
+                $delta(fn ($a) => $a['slug'] === 'accounts_receivable' || $a['subtype'] === 'accounts_receivable'),
+                'Changes in accounts receivable balance',
+            ],
+            [
+                '(Increase) / Decrease in Inventory',
+                $delta(fn ($a) => in_array($a['subtype'], ['inventory', 'merchandise_inventory'])),
+                'Changes in inventory balance',
+            ],
+            [
+                '(Increase) / Decrease in Prepaid Expenses',
+                $delta(fn ($a) => $a['subtype'] === 'prepaid'),
+                'Changes in prepaid expenses balance',
+            ],
+        ];
+
+        foreach ($assetItems as [$label, $d, $note]) {
+            if (abs($d) < 0.01) continue;
+            $rows[] = $makeRow($label, abs($d), $d > 0 ? 'outflow' : 'inflow', $note);
+        }
+
+        // ── Working capital — liability accounts (increase = inflow) ──────────
+        $liabItems = [
+            [
+                'Increase / (Decrease) in Accounts Payable',
+                $delta(fn ($a) => $a['slug'] === 'accounts_payable' || $a['subtype'] === 'accounts_payable'),
+                'Changes in accounts payable balance',
+            ],
+            [
+                'Increase / (Decrease) in Accrued Liabilities',
+                $delta(fn ($a) => in_array($a['subtype'], ['accrued_liabilities', 'accrued'])),
+                'Changes in accrued liabilities balance',
+            ],
+        ];
+
+        foreach ($liabItems as [$label, $d, $note]) {
+            if (abs($d) < 0.01) continue;
+            $rows[] = $makeRow($label, abs($d), $d > 0 ? 'inflow' : 'outflow', $note);
+        }
+
+        return $rows;
     }
 
     private function resolveCashAccountIds(): \Illuminate\Support\Collection

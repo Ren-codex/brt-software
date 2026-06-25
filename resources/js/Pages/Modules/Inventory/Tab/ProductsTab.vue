@@ -40,7 +40,7 @@
                     <th>#</th>
                     <th>Code</th>
                     <th>Name</th>
-                    <th>Pack Size</th>
+                    <th>Weight</th>
                     <th>Unit</th>
                     <th>Active</th>
                     <th>Actions</th>
@@ -55,7 +55,7 @@
                     <td>{{ (meta?.from ?? 1) + index }}</td>
                     <td>{{ list.code }}</td>
                     <td>{{ list.brand?.name }}</td>
-                    <td>{{ list.pack_size }}</td>
+                    <td>{{ list.weight }}</td>
                     <td>{{ list.unit.name }}</td>
                     <td>
                       <b-form-checkbox

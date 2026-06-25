@@ -125,6 +125,24 @@ class SalesOrderExternalController extends Controller
     }
 
 
+    public function adjustment(SalesOrderRequest $request, $id){
+        $request->merge(['id' => $id]);
+        $result = $this->handleTransaction(fn() => $this->sales_order->adjustment($request));
+
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'adjustment' => $result['info'] ?? 'Unable to apply adjustment.',
+            ]);
+        }
+
+        return back()->with([
+            'data'    => $result['data'],
+            'message' => $result['message'],
+            'info'    => $result['info'],
+            'status'  => $result['status'],
+        ]);
+    }
+
     public function show($id , Request $request){
         return $this->print->print($id, $request);
     }

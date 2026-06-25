@@ -13,9 +13,14 @@
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-                        <button v-if="canApprove && item.status?.slug === 'open'" class="create-btn" @click="openApprovalModal">
+                        <button v-if="canApprove && ['open', 'remitted'].includes(item.status?.slug)" class="create-btn" @click="openApprovalModal">
                             <i class="ri-check-line"></i>
                             <span>Approval</span>
+                        </button>
+                        <button v-if="item.status?.slug === 'open'" class="create-btn" @click="markAsRemitted" :disabled="isRemitting">
+                            <i v-if="isRemitting" class="ri-loader-4-line"></i>
+                            <i v-else class="ri-send-plane-line"></i>
+                            <span>{{ isRemitting ? 'Submitting...' : 'Mark as Remitted' }}</span>
                         </button>
                         <button v-if="item.status?.slug === 'open'" class="create-btn" @click="openDelete(item.id)">
                             <i class="ri-delete-bin-line"></i>
@@ -215,6 +220,11 @@ export default {
     components: {
         ApprovalModal,
     },
+    data() {
+        return {
+            isRemitting: false,
+        };
+    },
     props: {
         item: {
             type: Object,
@@ -275,12 +285,38 @@ export default {
                 day: 'numeric',
             });
         },
+        async markAsRemitted() {
+            const result = await Swal.fire({
+                title: 'Mark as Remitted?',
+                text: 'This confirms the cash has been physically submitted. The status will change to Remitted and you will no longer be able to edit or delete this remittance.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0ea5e9',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, mark as remitted',
+            });
+
+            if (!result.isConfirmed) return;
+
+            this.isRemitting = true;
+            try {
+                await axios.post(`/remittances/${this.item.id}/remit`);
+                Swal.fire('Submitted!', 'Remittance has been marked as remitted.', 'success');
+                this.reload();
+            } catch (error) {
+                const msg = error.response?.data?.info || error.response?.data?.message || 'Failed to mark as remitted.';
+                Swal.fire('Error!', msg, 'error');
+            } finally {
+                this.isRemitting = false;
+            }
+        },
         getStatusClass(slug) {
             const value = String(slug || '').toLowerCase();
 
             if (['approved', 'completed', 'liquidated'].includes(value)) return 'emp-status-success';
             if (['rejected', 'disapproved', 'cancelled'].includes(value)) return 'emp-status-danger';
             if (['open', 'pending'].includes(value)) return 'emp-status-warning';
+            if (value === 'remitted') return 'emp-status-info';
 
             return 'profile-badge-neutral';
         },
@@ -290,6 +326,7 @@ export default {
             if (statusClass === 'emp-status-success') return 'profile-badge-success';
             if (statusClass === 'emp-status-danger') return 'profile-badge-danger';
             if (statusClass === 'emp-status-warning') return 'profile-badge-warning';
+            if (statusClass === 'emp-status-info') return 'profile-badge-info';
 
             return 'profile-badge-neutral';
         },
@@ -497,6 +534,12 @@ export default {
 .emp-status-warning {
     color: #9a6b19;
     background: #fff1d8;
+}
+
+.profile-badge-info,
+.emp-status-info {
+    color: #0369a1;
+    background: #e0f2fe;
 }
 
 .profile-info-list {

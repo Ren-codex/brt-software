@@ -22,8 +22,8 @@ class ReceivedItemResource extends JsonResource
             'product' => $this->product ? new ProductResource($this->product) : null,
             'purchase_order_item' => $this->purchaseOrderItem ? new PurchaseOrderItemResource($this->purchaseOrderItem) : null,
             'quantity' => $this->quantity,
-            'unit_cost' => $this->unit_cost,
-            'total_cost' => $this->total_cost,
+            'unit_cost' => (float) $this->unit_cost,
+            'total_cost' => (float) $this->total_cost,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

@@ -20,22 +20,23 @@ class RemittanceClass
 
     public function __construct(
         SeriesService $series_service,
-    ) { 
+    ) {
         $this->series_service = $series_service;
     }
 
     public function lists($request){
         $mainOffice = ListLocation::where('name', 'Zamboanga City')->first();
-        $location_id = $request->location_id ?? $mainOffice->id;
+        $location_id = $request->location_id ?? $mainOffice?->id;
 
         $data = RemittanceResource::collection(
-            Remittance::with(['receipts.arInvoice.sales_order', 'status', 'createdBy.employee', 'approvedBy.employee'])
-            ->whereHas('receipts.arInvoice.sales_order', function ($q) use ($request, $location_id) {
-                $q->where(function ($subQ) use ($location_id) {
-                    $subQ->where('location_id', $location_id)
+            Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee'])
+            ->whereHas('receipts', function ($q) use ($location_id) {
+                $q->where(function ($inner) use ($location_id) {
+                    $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($location_id) {
+                        $soQ->where('location_id', $location_id)
                             ->orWhereNull('location_id');
+                    })->orWhereDoesntHave('arInvoice');
                 });
-                      
             })
             ->when($request->keyword, function ($query,$keyword) {
                 $query->where('remittance_no', 'LIKE', "%{$keyword}%");
@@ -53,32 +54,15 @@ class RemittanceClass
 
     public function save($request)
     {
-        try{
-            DB::beginTransaction();
-
-            $remittanceType = strtolower((string) $request->input('remittance_type', 'cash'));
+        try {
             $receiptIds = collect($request->receipts ?? [])->unique()->values();
-            $pendingStatusId = ListStatus::getBySlug('pending')->id;
+            $pendingStatusId = ListStatus::getBySlug('pending')?->id;
 
-            $receipts = Receipt::with('arInvoice.sales_order')
-                ->whereIn('id', $receiptIds)
-                ->get();
+            $receipts = Receipt::whereIn('id', $receiptIds)->get();
 
             if ($receipts->count() !== $receiptIds->count()) {
                 throw ValidationException::withMessages([
                     'receipts' => 'Some selected receipts are invalid.',
-                ]);
-            }
-
-            $hasInvalidType = $receipts->contains(function ($receipt) use ($remittanceType) {
-                $mode = strtolower(trim((string) optional(optional($receipt->arInvoice)->sales_order)->payment_mode));
-                $isCredit = $this->isCreditSalesMode($mode);
-                return $remittanceType === 'credit' ? !$isCredit : $isCredit;
-            });
-
-            if ($hasInvalidType) {
-                throw ValidationException::withMessages([
-                    'receipts' => "Selected receipts must all match {$remittanceType} sales.",
                 ]);
             }
 
@@ -93,37 +77,34 @@ class RemittanceClass
             }
 
             $data = Remittance::create([
-                'remittance_no' =>  $this->series_service->get('remittance'),
-                'remittance_date' =>  Carbon::now(),
-                'summary' =>  $request->summary,
-                'total_amount' =>  $request->total_amount,
-                'status_id' =>  ListStatus::getBySlug('open')->id,
-                'created_by_id' =>  Auth::user()->id,
+                'remittance_no'   => $this->series_service->get('remittance'),
+                'remittance_date' => Carbon::now(),
+                'summary'         => $request->summary,
+                'total_amount'    => $request->total_amount,
+                'status_id'       => ListStatus::getBySlug('open')?->id,
+                'created_by_id'   => Auth::user()->id,
             ]);
 
             foreach ($receiptIds as $receiptId) {
                 Receipt::where('id', $receiptId)->update([
-                    'status_id' => ListStatus::getBySlug('open')->id,
+                    'status_id'    => ListStatus::getBySlug('open')?->id,
                     'remittance_id' => $data->id,
                 ]);
             }
 
-            DB::commit();
-
             return [
-                'data' => new RemittanceResource($data),
+                'data'    => new RemittanceResource($data),
                 'message' => 'Remittance saved was successful!',
-                'info' => "You've successfully saved the remittance"
+                'info'    => "You've successfully saved the remittance",
             ];
-        } catch (ValidationException $e){
-            DB::rollBack();
+        } catch (ValidationException $e) {
             throw $e;
-        } catch (\Exception $e){
-            DB::rollBack();
+        } catch (\Exception $e) {
             return [
-                'data' => null,
+                'data'    => null,
                 'message' => 'Remittance save failed!',
-                'info' => $e->getMessage()
+                'info'    => $e->getMessage(),
+                'status'  => false,
             ];
         }
     }
@@ -131,74 +112,114 @@ class RemittanceClass
     public function delete($id)
     {
         try {
-            DB::beginTransaction();
+            $data = Remittance::with('status')->findOrFail($id);
+
+            if ($data->status?->slug !== 'open') {
+                throw new \Exception('Only open remittances can be deleted.');
+            }
 
             $receipts = Receipt::where('remittance_id', $id)->get();
             foreach ($receipts as $receipt) {
-                $receipt->status_id = ListStatus::getBySlug('pending')->id;
+                $receipt->status_id   = ListStatus::getBySlug('pending')?->id;
                 $receipt->remittance_id = null;
-                $receipt->update();
+                $receipt->save();
             }
 
-            $data = Remittance::findOrFail($id);
             $data->delete();
 
-            DB::commit();
+            return [
+                'data'    => $data,
+                'message' => 'Remittance deleted was successful!',
+                'info'    => "You've successfully deleted the remittance",
+            ];
+        } catch (\Exception $e) {
+            return [
+                'data'    => null,
+                'message' => 'Remittance delete failed!',
+                'info'    => $e->getMessage(),
+                'status'  => false,
+            ];
+        }
+    }
+
+    public function remit($id)
+    {
+        try {
+            $data = Remittance::with('status')->findOrFail($id);
+
+            if (!in_array($data->status?->slug, ['open'])) {
+                throw new \Exception('Only open remittances can be marked as remitted.');
+            }
+
+            $remittedStatusId = ListStatus::getBySlug('remitted')?->id;
+            $data->status_id = $remittedStatusId;
+            $data->save();
+
+            Receipt::where('remittance_id', $data->id)->update(['status_id' => $remittedStatusId]);
 
             return [
-                'data' => $data,
-                'message' => 'Remittance deleted was successful!',
-                'info' => "You've successfully deleted the remittance"
+                'data'    => new RemittanceResource($data),
+                'message' => 'Remittance marked as remitted!',
+                'info'    => "The remittance has been submitted for approval.",
             ];
-        } catch (\Exception $e){
-            DB::rollBack();
+        } catch (\Exception $e) {
             return [
-                'data' => null,
-                'message' => 'Remittance delete failed!',
-                'info' => $e->getMessage()
+                'data'    => null,
+                'message' => 'Failed to mark as remitted.',
+                'info'    => $e->getMessage(),
+                'status'  => false,
             ];
         }
     }
 
     public function approve($request, $id)
     {
-        try{
-            DB::beginTransaction();
+        try {
+            $data = Remittance::with('status')->findOrFail($id);
 
-            $data = Remittance::findOrFail($id);
-            $data->status_id = ($request->status == 'Approve') ? ListStatus::getBySlug('liquidated')->id : ListStatus::getBySlug('disapproved')->id;
+            if ($data->status?->slug !== 'remitted') {
+                throw new \Exception('Only remitted remittances can be approved or disapproved.');
+            }
+
+            $isApprove = $request->status === 'Approve';
+
+            $data->status_id      = $isApprove ? ListStatus::getBySlug('liquidated')?->id : ListStatus::getBySlug('disapproved')?->id;
             $data->approved_by_id = Auth::user()->id;
-            $data->approved_at = Carbon::now();
-            $data->remarks = $request->remarks;
+            $data->approved_at    = Carbon::now();
+            $data->remarks        = $request->remarks;
 
-            if ($request->status === 'Approve' && $request->received_amount !== null) {
+            if ($isApprove && $request->received_amount !== null) {
                 $data->received_amount = $request->received_amount;
-                $data->variance = round((float) $request->received_amount - (float) $data->total_amount, 2);
+                $data->variance        = round((float) $request->received_amount - (float) $data->total_amount, 2);
             }
 
             $data->save();
 
             $receipts = Receipt::where('remittance_id', $data->id)->get();
             foreach ($receipts as $receipt) {
-                $receipt->status_id = $request->status == 'Approve' ? ListStatus::getBySlug('liquidated')->id : ListStatus::getBySlug('pending')->id;
-                $receipt->update();
+                $receipt->status_id = $isApprove
+                    ? ListStatus::getBySlug('liquidated')?->id
+                    : ListStatus::getBySlug('pending')?->id;
+                if (!$isApprove) {
+                    $receipt->remittance_id = null;
+                }
+                $receipt->save();
             }
 
-            DB::commit();
             return [
-                'data' => new RemittanceResource($data),
+                'data'    => new RemittanceResource($data),
                 'message' => 'Remittance approval was successful!',
-                'info' => "You've successfully approved the remittance"
+                'info'    => "You've successfully approved the remittance",
             ];
-        } catch (\Exception $e){
-            DB::rollBack();
+        } catch (\Exception $e) {
             return [
-                'data' => null,
+                'data'    => null,
                 'message' => 'Remittance approval failed!',
-                'info' => $e->getMessage()
+                'info'    => $e->getMessage(),
+                'status'  => false,
             ];
         }
-    } 
+    }
 
     public function myHoldings()
     {
@@ -243,34 +264,30 @@ class RemittanceClass
                 $byDate = $repRemittances
                     ->groupBy(fn($r) => Carbon::parse($r->remittance_date)->toDateString())
                     ->map(fn($dayRows) => [
-                        'date'              => Carbon::parse($dayRows->first()->remittance_date)->toDateString(),
-                        'count'             => $dayRows->count(),
-                        'total_amount'      => $dayRows->sum('total_amount'),
-                        'received_amount'   => $dayRows->whereNotNull('received_amount')->sum('received_amount'),
-                        'statuses'          => $dayRows->groupBy(fn($r) => $r->status?->slug ?? 'unknown')
-                                                       ->map->count(),
+                        'date'            => Carbon::parse($dayRows->first()->remittance_date)->toDateString(),
+                        'count'           => $dayRows->count(),
+                        'total_amount'    => $dayRows->sum('total_amount'),
+                        'received_amount' => $dayRows->whereNotNull('received_amount')->sum('received_amount'),
+                        'statuses'        => $dayRows->groupBy(fn($r) => $r->status?->slug ?? 'unknown')
+                                                     ->map->count(),
                     ])
                     ->values();
 
                 return [
-                    'rep_id'             => optional($repRemittances->first()->createdBy)->id,
-                    'rep_name'           => $rep?->fullname ?? 'Unknown',
-                    'total_amount'       => $repRemittances->sum('total_amount'),
-                    'remittance_count'   => $repRemittances->count(),
-                    'dates'              => $byDate,
+                    'rep_id'           => optional($repRemittances->first()->createdBy)->id,
+                    'rep_name'         => $rep?->fullname ?? 'Unknown',
+                    'total_amount'     => $repRemittances->sum('total_amount'),
+                    'remittance_count' => $repRemittances->count(),
+                    'dates'            => $byDate,
                 ];
             })
             ->values();
 
         return response()->json([
-            'data'      => $grouped,
-            'from'      => $from->toDateString(),
-            'to'        => $to->toDateString(),
+            'data' => $grouped,
+            'from' => $from->toDateString(),
+            'to'   => $to->toDateString(),
         ]);
     }
 
-    private function isCreditSalesMode(string $paymentMode): bool
-    {
-        return in_array(strtolower(trim($paymentMode)), ['credit', 'credit sales'], true);
-    }
 }
