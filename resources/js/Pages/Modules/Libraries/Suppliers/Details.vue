@@ -23,6 +23,7 @@
             <aside class="details-sidebar">
                 <!-- Contact Information Card -->
                 <div class="profile-card">
+                    <div class="profile-card-banner"></div>
                     <div class="profile-avatar-wrap">
                         <div class="profile-avatar">
                             <div class="profile-avatar-placeholder">
@@ -429,7 +430,6 @@ export default {
 
 <style scoped>
 .employee-details-page {
-    zoom: 1.1;
     --ink-900: #102723;
     --ink-700: #35524d;
     --ink-500: #5c7974;
@@ -442,7 +442,7 @@ export default {
     --warn-600: #9a6b19;
     --ok-600: #157856;
     padding: 20px;
-    max-width: 1360px;
+    max-width: 960px;
     margin: 0 auto;
 }
 
@@ -527,14 +527,23 @@ export default {
 .profile-card {
     border: 1px solid var(--line-200);
     border-radius: 22px;
-    padding: 20px;
+    padding: 0 20px 20px;
     background: linear-gradient(160deg, #f9fffd 0%, #eff9f6 100%);
     box-shadow: 0 12px 32px rgba(28, 64, 56, 0.08);
+    overflow: hidden;
+}
+
+.profile-card-banner {
+    margin: 0 -20px 0;
+    height: 64px;
+    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+    border-bottom: 1px solid #c4d9d2;
 }
 
 .profile-avatar-wrap {
     display: flex;
     justify-content: center;
+    margin-top: -44px;
     margin-bottom: 12px;
     position: relative;
 }

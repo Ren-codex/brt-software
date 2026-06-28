@@ -61,6 +61,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
         Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
         Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class);
+        Route::resource('/libraries/packagings', App\Http\Controllers\Libraries\PackagingController::class);
 
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
@@ -87,6 +88,9 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class);
         Route::post('inventory-stocks/adjustment/{id}', [App\Http\Controllers\InventoryAdjustmentController::class, 'store']);
         Route::post('/inventory-stocks/{id}/update-price', [App\Http\Controllers\InventoryStockController::class, 'update']);
+        Route::post('/inventory-stocks/conversions', [App\Http\Controllers\ProductConversionController::class, 'store']);
+        Route::post('/inventory-stocks/{id}/weight-loss', [App\Http\Controllers\WeightLossController::class, 'store']);
+        Route::post('/inventory-stocks/{id}/settings', [App\Http\Controllers\InventoryStockController::class, 'settings']);
     });
 
     Route::middleware(['role:Administrator'])->group(function () {
@@ -95,6 +99,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::resource('/remittances', App\Http\Controllers\RemittanceController::class);
         Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
         Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
+        Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])->name('remittances.remit');
         
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class);
         Route::get('/payroll-templates/available-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'getAvailableEmployees']);

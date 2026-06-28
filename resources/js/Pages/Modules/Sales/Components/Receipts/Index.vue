@@ -99,7 +99,7 @@
                                                 {{ getReceiptTypeLabel(list.receipt_type) }}
                                             </span>
                                         </td>
-                                        <td class="text-center">{{ list.balance_due }}</td>
+                                        <td class="text-center">₱{{ list.balance_due }}</td>
                                         <td class="text-center">₱{{ list.amount_paid }}</td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">
@@ -258,8 +258,8 @@ export default {
             window.open(`/receipts/${id}?option=print&type=receipt`);
         },
         getReceiptTypeLabel(type) {
-            if (type === 'updated') return 'Updated Receipt';
-            if (type === 'refund') return 'Refund';
+            if (type === 'updated') return 'Adjusted Payment';
+            if (type === 'refund') return 'Return Refund';
             return 'Payment';
         },
         getReceiptTypeClass(type) {

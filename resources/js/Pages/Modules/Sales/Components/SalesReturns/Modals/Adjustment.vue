@@ -8,7 +8,7 @@
     >
         <div class="modal-container modal-lg">
             <div class="modal-header">
-                <h2>{{ 'Sales Adjustment'}}</h2>
+                <h2>Sales Allowance</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -26,11 +26,10 @@
                                     :class="{ 'input-error': form.errors.type }"
                                 >
                                     <option :value="null" disabled>Select Type</option>
-                                    <option value="Sales Return">Sales Return</option>
                                     <option value="Sales Allowance">Sales Allowance</option>
                                 </select>    
                             </div>
-                            <span class="error-message" v-if="form.errors.brand_id">{{ form.errors.type }}</span>
+                            <span class="error-message" v-if="form.errors.type">{{ form.errors.type }}</span>
                         </div>
 
                     </div>
@@ -88,6 +87,7 @@ export default {
             currentUrl: window.location.origin,
             form: useForm({
                 id: null,
+                action: 'adjustment',
                 type: null,
                 reason: null,
             }),
@@ -103,7 +103,7 @@ export default {
         },
 
         submit() {
-            this.form.post(`/sales-orders/adjustment/${this.form.id}`, {
+            this.form.post(`/sales-orders/${this.form.id}/adjustment`, {
                 onSuccess: () => {
                     this.saveSuccess = true;
                     this.$emit('update');

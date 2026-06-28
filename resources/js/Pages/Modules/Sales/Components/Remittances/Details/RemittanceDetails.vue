@@ -5,13 +5,17 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <button @click.stop="openApprovalModal()" class="action-btn approve me-1" v-if="item.status.slug == 'open'" title="Approve">
+                        <button @click.stop="openApprovalModal()" class="action-btn approve me-1" v-if="['open', 'remitted'].includes(item.status?.slug)" title="Approve">
                             <i class="ri-check-line"></i>
+                        </button>
+                        <button @click.stop="markAsRemitted()" class="action-btn info me-1" v-if="item.status?.slug == 'open'" :disabled="isRemitting" title="Mark as Remitted">
+                            <i v-if="isRemitting" class="ri-loader-4-line"></i>
+                            <i v-else class="ri-send-plane-line"></i>
                         </button>
                         <button @click.stop="onPrint(item.id)" class="action-btn info me-1" title="Print">
                             <i class="ri-printer-line"></i>
                         </button>
-                        <button @click.stop="openDelete(item.id)" class="action-btn delete" v-if="item.status.slug == 'open'" title="Delete">
+                        <button @click.stop="openDelete(item.id)" class="action-btn delete" v-if="item.status?.slug == 'open'" title="Delete">
                             <i class="ri-delete-bin-line"></i>
                         </button>
                     </div>
@@ -62,7 +66,6 @@
                                         <i class="ri-eye-line"></i>
                                     </button>
                                 </div><br>
-                                <p class="mb-1"><strong>Sales Type:</strong> {{ formatRemittanceType(item.remittance_type) }}</p>
                                 <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.fullname || '-' }}</p>
                                 <p class="mb-1"><strong>Date Approved:</strong> {{ item.approved_at || '-' }}</p>
                                 <p class="mb-0"><strong>Remarks:</strong>
@@ -98,8 +101,9 @@ export default {
     },
     data() {
         return {
-            showReceipts: false
-        }
+            showReceipts: false,
+            isRemitting: false,
+        };
     },
     methods: {
         showReceiptsModal() {
@@ -107,6 +111,31 @@ export default {
         },
         openApprovalModal() {
             this.$refs.approvalModal.show();
+        },
+        async markAsRemitted() {
+            const result = await Swal.fire({
+                title: 'Mark as Remitted?',
+                text: 'This confirms the cash has been physically submitted. The status will change to Remitted.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0ea5e9',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, mark as remitted',
+            });
+
+            if (!result.isConfirmed) return;
+
+            this.isRemitting = true;
+            try {
+                await axios.post(`/remittances/${this.item.id}/remit`);
+                Swal.fire('Submitted!', 'Remittance has been marked as remitted.', 'success');
+                this.reload();
+            } catch (error) {
+                const msg = error.response?.data?.info || error.response?.data?.message || 'Failed to mark as remitted.';
+                Swal.fire('Error!', msg, 'error');
+            } finally {
+                this.isRemitting = false;
+            }
         },
         formatSummaryKey(key) {
             return String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());

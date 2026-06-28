@@ -53,23 +53,19 @@
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
                         <td>{{ (meta?.from ?? 1) + index }}</td>
-                        <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
+                        <td>{{ list.received_item ? formatDate(list.received_item.received_stock?.received_date) : formatDate(list.created_at) }}</td>
                         <td style="width: 20%">{{ list.batch_code }}
-                          <span 
-                            class="status-badge"
-                            v-if="list.expiration_date"
-                          >
-                            EXP: {{ formatDate(list.expiration_date) }}
-                          </span>
+                          <span class="status-badge" v-if="list.conversion">Converted</span>
+                          <span class="status-badge" v-if="list.expiration_date">EXP: {{ formatDate(list.expiration_date) }}</span>
                         </td>
-                        <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
+                        <td>{{ list.received_item?.received_stock?.supplier?.name ?? (list.conversion ? 'Converted Batch' : 'N/A') }}</td>
                         <td>
                           <div class="product-info">
-                            <strong>{{ list.received_item.product.name }}</strong>
-                            <small class="text-muted d-block">{{ list.received_item.product.code || 'No Code' }}</small>
+                            <strong>{{ list.received_item?.product?.name ?? list.product?.name ?? '—' }}</strong>
+                            <small class="text-muted d-block">{{ list.received_item?.product?.code ?? list.product?.code ?? 'No Code' }}</small>
                           </div>
                         </td>
-                        <td><b>{{ formatCurrency(list.received_item.unit_cost) }}</b>
+                        <td><b>{{ formatCurrency(list.received_item?.unit_cost ?? 0) }}</b>
                           <br>Retail Price: {{ formatCurrency(list.retail_price) }}
                           <br>Wholesale Price: {{ formatCurrency(list.wholesale_price) }}
                         </td>
@@ -117,16 +113,16 @@
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
                         <td>{{ (meta?.from ?? 1) + index }}</td>
-                        <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
-                        <td>{{ list.received_item.received_stock.batch_code }}</td>
-                        <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
+                        <td>{{ list.received_item ? formatDate(list.received_item.received_stock?.received_date) : formatDate(list.created_at) }}</td>
+                        <td>{{ list.received_item?.received_stock?.batch_code ?? list.batch_code }}</td>
+                        <td>{{ list.received_item?.received_stock?.supplier?.name ?? (list.conversion ? 'Converted Batch' : 'N/A') }}</td>
                         <td>
                           <div class="product-info">
-                            <strong>{{ list.received_item.product.name }}</strong>
-                            <small class="text-muted d-block">{{ list.received_item.product.code || 'No Code' }}</small>
+                            <strong>{{ list.received_item?.product?.name ?? list.product?.name ?? '—' }}</strong>
+                            <small class="text-muted d-block">{{ list.received_item?.product?.code ?? list.product?.code ?? 'No Code' }}</small>
                           </div>
                         </td>
-                        <td>{{ formatCurrency(list.received_item.unit_cost) }}</td>
+                        <td>{{ formatCurrency(list.received_item?.unit_cost ?? 0) }}</td>
                         <td>
                           <span class="quantity-badge text-danger">
                             {{ list.quantity }}

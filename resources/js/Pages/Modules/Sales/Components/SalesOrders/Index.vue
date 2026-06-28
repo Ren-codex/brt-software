@@ -117,6 +117,11 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
+                                                <button v-if="canApprove && list.status?.slug == 'for-payment'"
+                                                    @click.stop="onApproval(list.id)"
+                                                    class="action-btn success" title="Approve Order">
+                                                    <i class="ri-check-line"></i>
+                                                </button>
                                                 <button v-if="list.status?.slug == 'for-payment'"
                                                     @click.stop="onSalesAdjustment(list)"
                                                     class="action-btn warn" title="Sales Adjustment">
@@ -154,7 +159,7 @@
                                                                 <p class="mb-1"><strong>Order Date:</strong> {{
                                                                     list.order_date }}</p>
                                                                 <p class="mb-1"><strong>Added By:</strong> {{
-                                                                    list.created_by?.fullname || '-' }}</p>
+                                                                    list.added_by?.fullname || '-' }}</p>
                                                                 <p class="mb-0"><strong>Transferred To:</strong> {{
                                                                     list.transferred_to || '-' }}</p>
                                                             </div>
@@ -305,6 +310,12 @@ export default {
             expandedRow: null
         }
     },
+    computed: {
+        canApprove() {
+            const roles = this.$page?.props?.roles || [];
+            return ['Administrator', 'Area Business Manager', 'Super Admin'].some(r => roles.includes(r));
+        },
+    },
     watch: {
         "filter.keyword"(newVal) {
             this.checkSearchStr(newVal);
@@ -316,8 +327,8 @@ export default {
     },
     methods: {
         getReceiptTypeLabel(type) {
-            if (type === 'updated') return 'Updated';
-            if (type === 'refund') return 'Refund';
+            if (type === 'updated') return 'Adjusted Payment';
+            if (type === 'refund') return 'Return Refund';
             return 'Payment';
         },
         getReceiptTypeBadge(type) {

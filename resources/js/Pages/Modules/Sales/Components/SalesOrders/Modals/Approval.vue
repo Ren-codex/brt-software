@@ -19,8 +19,12 @@
 
             </div>
             <div class="modal-footer m-3">
-                <button class="btn btn-secondary me-2" @click="hide">Close</button>
-                <button class="btn btn-primary" @click="submit">Yes, Approve</button>
+                <button class="btn btn-secondary me-2" @click="hide" :disabled="form.processing">Close</button>
+                <button class="btn btn-primary" @click="submit" :disabled="form.processing">
+                    <i class="ri-loader-4-line spinner me-1" v-if="form.processing"></i>
+                    <i class="ri-check-line me-1" v-else></i>
+                    {{ form.processing ? 'Approving...' : 'Yes, Approve' }}
+                </button>
             </div>
         </div>
     </div>

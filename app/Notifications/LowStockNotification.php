@@ -32,7 +32,7 @@ class LowStockNotification extends Notification implements ShouldBroadcast
         return [
             'type'          => 'low_stock',
             'product_id'    => $this->product->id,
-            'product_name'  => $this->product->brand->name . ' ' . $this->product->pack_size . ' ' . $this->product->unit->name,
+            'product_name'  => $this->product->brand->name . ' ' . $this->product->weight . ' ' . $this->product->unit->name,
             'current_stock' => $this->currentStock,
             'minimum_stock' => $this->product->minimum_stock,
         ];

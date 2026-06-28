@@ -9,8 +9,9 @@ class Product extends Model
     protected $fillable = [
         'code',
         'brand_id',
-        'pack_size',
+        'weight',
         'unit_id',
+        'packaging_id',
         'is_active',
         'minimum_stock',
     ];
@@ -23,6 +24,11 @@ class Product extends Model
     public function brand()
     {
         return $this->belongsTo('App\Models\ListBrand', 'brand_id');
+    }
+
+    public function packaging()
+    {
+        return $this->belongsTo('App\Models\ListPackaging', 'packaging_id');
     }
 
     public function receivedItems()

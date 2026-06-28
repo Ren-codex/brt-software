@@ -71,6 +71,11 @@
                                         <span>Open</span>
                                         <span v-if="activeTab === 'open'" class="seg-count">{{ meta.total ?? 0 }}</span>
                                     </button>
+                                    <button :class="['filter-segment-btn', activeTab === 'remitted' ? 'active' : '']" @click="switchTab('remitted')">
+                                        <i class="ri-send-plane-line"></i>
+                                        <span>Remitted</span>
+                                        <span v-if="activeTab === 'remitted'" class="seg-count">{{ meta.total ?? 0 }}</span>
+                                    </button>
                                     <button :class="['filter-segment-btn', activeTab === 'liquidated' ? 'active' : '']" @click="switchTab('liquidated')">
                                         <i class="ri-checkbox-circle-line"></i>
                                         <span>Liquidated</span>
@@ -120,6 +125,48 @@
                                                         {{ item.status?.name }}
                                                     </span>
                                                 </td>
+                                                <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
+                                                <td class="text-center">
+                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                        <i class="ri-eye-line"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div v-show="activeTab === 'remitted'" class="table-responsive">
+                                    <table class="table sales-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:3%">#</th>
+                                                <th class="text-center" style="width:15%">Remittance No.</th>
+                                                <th class="text-center" style="width:15%">Date</th>
+                                                <th class="text-end" style="width:15%">Amount</th>
+                                                <th class="text-center" style="width:20%">Sales Rep</th>
+                                                <th class="text-center" style="width:7%">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="remittedRemittance.length === 0">
+                                                <td colspan="6">
+                                                    <div class="sales-empty-state">
+                                                        <i class="ri-inbox-line"></i>
+                                                        <p>No remitted remittances found.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="(item, index) in remittedRemittance"
+                                                :key="item.id || index"
+                                                class="cursor-pointer"
+                                                @click="openView(item)"
+                                            >
+                                                <td>{{ index + 1 }}</td>
+                                                <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
+                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                                 <td class="text-center">
                                                     <button @click.stop="openView(item)" class="action-btn info" title="View">
@@ -277,6 +324,7 @@ export default {
     },
     computed: {
         openRemittance() { return this.lists; },
+        remittedRemittance() { return this.lists; },
         liquidatedRemittance() { return this.lists; },
         disapprovedRemittance() { return this.lists; },
         isSalesRep() {

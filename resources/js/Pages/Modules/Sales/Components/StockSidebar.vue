@@ -54,7 +54,7 @@
                                 <div class="stock-product-list">
                                     <div v-for="product in brandGroup.products" :key="product.product_name" class="stock-product-item">
                                         <span class="stock-product-name">{{ product.product_name }}</span>
-                                        <span class="stock-product-meta">{{ product.total_quantity }} x {{ product.pack_size }} {{ product.unit }} ({{ product.total_kg }} kg)</span>
+                                        <span class="stock-product-meta">{{ product.total_quantity }} x {{ product.weight }} {{ product.unit }} ({{ product.total_kg }} kg)</span>
                                     </div>
                                 </div>
                             </div>

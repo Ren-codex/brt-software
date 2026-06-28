@@ -16,10 +16,11 @@ class ApplyReceivedStockPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_mode' => 'required|in:Cash,Bank Transfer',
-            'payment_amount' => 'required|numeric|min:0.01',
-            'bank_name' => 'nullable|string|max:255',
-            'reference_number' => 'nullable|string|max:255',
+            'payment_mode'       => 'required|in:Cash,Bank Transfer',
+            'payment_amount'     => 'required|numeric|min:0.01',
+            'bank_name'          => 'nullable|string|max:255',
+            'reference_number'   => 'nullable|string|max:255',
+            'petty_cash_fund_id' => 'nullable|exists:petty_cash_funds,id',
         ];
     }
 
@@ -50,6 +51,20 @@ class ApplyReceivedStockPaymentRequest extends FormRequest
 
             if ($paymentAmount > $remainingBalance) {
                 $validator->errors()->add('payment_amount', 'Payment amount cannot exceed the remaining payable balance.');
+            }
+
+            if ($paymentMode === 'Cash') {
+                $fundId = $this->input('petty_cash_fund_id');
+                if (!$fundId) {
+                    $validator->errors()->add('petty_cash_fund_id', 'Please select a cash fund source.');
+                } else {
+                    $fund = \App\Models\PettyCashFund::find($fundId);
+                    if (!$fund || !$fund->is_active) {
+                        $validator->errors()->add('petty_cash_fund_id', 'Selected fund is inactive or not found.');
+                    } elseif ($fund->balance < $paymentAmount) {
+                        $validator->errors()->add('petty_cash_fund_id', "Insufficient fund balance. Available: ₱" . number_format($fund->balance, 2));
+                    }
+                }
             }
 
             if ($paymentMode === 'Bank Transfer') {

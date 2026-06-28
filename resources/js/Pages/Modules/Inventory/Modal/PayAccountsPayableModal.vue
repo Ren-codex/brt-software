@@ -61,6 +61,25 @@
             <small v-if="errors.payment_amount" class="field-error">{{ errors.payment_amount }}</small>
           </div>
 
+          <template v-if="form.payment_mode === 'Cash'">
+            <div>
+              <label class="form-label" for="petty_cash_fund_id">Cash Fund Source</label>
+              <select
+                id="petty_cash_fund_id"
+                v-model="form.petty_cash_fund_id"
+                class="form-input"
+              >
+                <option value="">— Select fund —</option>
+                <option v-for="fund in cashFunds" :key="fund.id" :value="fund.id">
+                  {{ fund.name }} (₱{{ Number(fund.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }})
+                </option>
+              </select>
+              <small v-if="cashFunds.length === 0" class="form-help text-muted">No active cash funds found.</small>
+              <small v-if="errors.petty_cash_fund_id" class="field-error">{{ errors.petty_cash_fund_id }}</small>
+            </div>
+            <div></div>
+          </template>
+
           <template v-if="form.payment_mode === 'Bank Transfer'">
             <div>
               <label class="form-label" for="bank_account_id">Bank Account</label>
@@ -120,12 +139,14 @@ export default {
       isSubmitting: false,
       record: null,
       bankAccounts: [],
+      cashFunds: [],
       form: {
         payment_mode: 'Cash',
         payment_amount: '',
         bank_account_id: '',
         bank_name: '',
         reference_number: '',
+        petty_cash_fund_id: '',
       },
       errors: {},
       paymentOptions: ['Cash', 'Bank Transfer'],
@@ -156,6 +177,7 @@ export default {
       this.form.bank_name = '';
       this.form.reference_number = '';
       this.loadBankAccounts();
+      this.loadCashFunds();
     },
     hide(force = false) {
       if (this.isSubmitting && !force) return;
@@ -169,6 +191,7 @@ export default {
         bank_account_id: '',
         bank_name: '',
         reference_number: '',
+        petty_cash_fund_id: '',
       };
     },
     async loadBankAccounts() {
@@ -177,6 +200,17 @@ export default {
         this.bankAccounts = res.data || [];
       } catch {
         this.bankAccounts = [];
+      }
+    },
+    async loadCashFunds() {
+      try {
+        const res = await axios.get('/libraries/funds', { params: { option: 'lists', count: 100 } });
+        this.cashFunds = (res.data?.data || []).filter(f => f.is_active);
+        if (this.cashFunds.length === 1) {
+          this.form.petty_cash_fund_id = this.cashFunds[0].id;
+        }
+      } catch {
+        this.cashFunds = [];
       }
     },
     onBankAccountChange() {
@@ -194,6 +228,10 @@ export default {
         this.errors.bank_account_id = null;
         this.errors.reference_number = null;
       }
+      if (mode !== 'Cash') {
+        this.form.petty_cash_fund_id = '';
+        this.errors.petty_cash_fund_id = null;
+      }
     },
     formatCurrency,
     validate() {
@@ -208,6 +246,12 @@ export default {
         errors.payment_amount = 'Payment amount must be greater than zero.';
       } else if (paymentAmount > this.remainingBalance) {
         errors.payment_amount = 'Payment amount cannot exceed the remaining balance.';
+      }
+
+      if (this.form.payment_mode === 'Cash') {
+        if (!this.form.petty_cash_fund_id) {
+          errors.petty_cash_fund_id = 'Please select a cash fund source.';
+        }
       }
 
       if (this.form.payment_mode === 'Bank Transfer') {
@@ -234,6 +278,7 @@ export default {
         const response = await axios.post(`/received-stocks/${this.record.id}/pay`, {
           payment_mode: this.form.payment_mode,
           payment_amount: Number(this.form.payment_amount),
+          petty_cash_fund_id: this.form.payment_mode === 'Cash' ? (this.form.petty_cash_fund_id || null) : null,
           bank_account_id: this.form.payment_mode === 'Bank Transfer' ? (this.form.bank_account_id || null) : null,
           bank_name: this.form.payment_mode === 'Bank Transfer' ? this.form.bank_name : null,
           reference_number: this.form.payment_mode === 'Bank Transfer' ? this.form.reference_number : null,

@@ -31,8 +31,8 @@
                     <th>Received</th>
                     <th>To Receive</th>
                     <th>Unit Cost</th>
-                    <th>Retail Price</th>
                     <th>Wholesale Price</th>
+                    <th>Retail Price</th>
                     <th>Expiry</th>
                   </tr>
                 </thead>
@@ -82,21 +82,6 @@
                       <span class="currency-value">{{ formatCurrency(item.unit_cost) }}</span>
                     </td>
 
-                    <!-- Retail Price -->
-                    <td class="input-cell">
-                      <div class="input-wrapper">
-                        <span class="currency-symbol">₱</span>
-                        <input type="number" v-model="item.retail_price" class="form-control modern-input with-currency"
-                          :class="{ 'error': shouldShowRetailPriceError(item) }"
-                          @input="markFieldTouched(item, 'retail_price')" @blur="markFieldTouched(item, 'retail_price')"
-                          :min="item.unit_cost || 0" step="0.01" :disabled="item.status !== 'pending'"
-                          placeholder="0.00" />
-                        <div v-if="shouldShowRetailPriceError(item)" class="field-error">
-                          {{ getRetailPriceError(item) }}
-                        </div>
-                      </div>
-                    </td>
-
                     <!-- Wholesale Price -->
                     <td class="input-cell">
                       <div class="input-wrapper">
@@ -109,6 +94,21 @@
                           :disabled="item.status !== 'pending'" placeholder="0.00" />
                         <div v-if="shouldShowWholesalePriceError(item)" class="field-error">
                           {{ getWholesalePriceError(item) }}
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Retail Price -->
+                    <td class="input-cell">
+                      <div class="input-wrapper">
+                        <span class="currency-symbol">₱</span>
+                        <input type="number" v-model="item.retail_price" class="form-control modern-input with-currency"
+                          :class="{ 'error': shouldShowRetailPriceError(item) }"
+                          @input="markFieldTouched(item, 'retail_price')" @blur="markFieldTouched(item, 'retail_price')"
+                          :min="item.unit_cost || 0" step="0.01" :disabled="item.status !== 'pending'"
+                          placeholder="0.00" />
+                        <div v-if="shouldShowRetailPriceError(item)" class="field-error">
+                          {{ getRetailPriceError(item) }}
                         </div>
                       </div>
                     </td>
@@ -482,11 +482,15 @@ export default {
       const toReceive = this.toNumber(item.to_received_quantity) ?? 0;
       const retailPrice = this.toNumber(item.retail_price);
       const unitCost = this.toNumber(item.unit_cost) ?? 0;
+      const wholesalePrice = this.toNumber(item.wholesale_price);
 
-      if (toReceive > 0 && retailPrice === null) return 'Required when To Receive > 0';
+      if (toReceive > 0 && retailPrice === null) return 'Required when receiving stock';
       if (retailPrice !== null && retailPrice < 0) return 'Must be 0 or greater';
-      if (toReceive > 0 && retailPrice !== null && retailPrice < unitCost) {
-        return `Must be at least ${this.formatCurrency(unitCost)}`;
+      if (retailPrice !== null && unitCost > 0 && retailPrice <= unitCost) {
+        return `Must be greater than unit cost (${this.formatCurrency(unitCost)})`;
+      }
+      if (retailPrice !== null && wholesalePrice !== null && wholesalePrice > 0 && retailPrice <= wholesalePrice) {
+        return `Must be greater than wholesale price (${this.formatCurrency(wholesalePrice)})`;
       }
 
       return '';
@@ -499,13 +503,13 @@ export default {
       const unitCost = this.toNumber(item.unit_cost) ?? 0;
       const retailPrice = this.toNumber(item.retail_price);
 
-      if (toReceive > 0 && wholesalePrice === null) return 'Required when To Receive > 0';
+      if (toReceive > 0 && wholesalePrice === null) return 'Required when receiving stock';
       if (wholesalePrice !== null && wholesalePrice < 0) return 'Must be 0 or greater';
-      if (toReceive > 0 && wholesalePrice !== null && wholesalePrice < unitCost) {
-        return `Must be at least ${this.formatCurrency(unitCost)}`;
+      if (wholesalePrice !== null && unitCost > 0 && wholesalePrice <= unitCost) {
+        return `Must be greater than unit cost (${this.formatCurrency(unitCost)})`;
       }
-      if (toReceive > 0 && retailPrice !== null && wholesalePrice !== null && wholesalePrice > retailPrice) {
-        return `Must be at most ${this.formatCurrency(retailPrice)}`;
+      if (wholesalePrice !== null && retailPrice !== null && retailPrice > 0 && wholesalePrice >= retailPrice) {
+        return `Must be less than retail price (${this.formatCurrency(retailPrice)})`;
       }
 
       return '';
@@ -594,18 +598,18 @@ export default {
             return false;
           }
 
-          if (retailPrice < unitCost) {
-            this.errorMessage = `Retail price for ${productName} must not be less than unit cost (${this.formatCurrency(unitCost)}).`;
+          if (unitCost > 0 && wholesalePrice <= unitCost) {
+            this.errorMessage = `Wholesale price for ${productName} must be greater than unit cost (${this.formatCurrency(unitCost)}).`;
             return false;
           }
 
-          if (wholesalePrice < unitCost) {
-            this.errorMessage = `Wholesale price for ${productName} must be at least unit cost (${this.formatCurrency(unitCost)}).`;
+          if (unitCost > 0 && retailPrice <= unitCost) {
+            this.errorMessage = `Retail price for ${productName} must be greater than unit cost (${this.formatCurrency(unitCost)}).`;
             return false;
           }
 
-          if (wholesalePrice > retailPrice) {
-            this.errorMessage = `Wholesale price for ${productName} must be at most retail price (${this.formatCurrency(retailPrice)}).`;
+          if (wholesalePrice >= retailPrice) {
+            this.errorMessage = `Wholesale price for ${productName} must be less than retail price (${this.formatCurrency(retailPrice)}).`;
             return false;
           }
         }

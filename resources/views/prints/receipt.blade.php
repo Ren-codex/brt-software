@@ -184,7 +184,7 @@
             @endphp
             <tr>
                 <td>{{ number_format($item->quantity) }}</td>
-                <td><strong>{{ trim((optional($item->product)->pack_size ?? '') . ' ' . (optional(optional($item->product)->unit)->name ?? '') . ' ' . (optional(optional($item->product)->brand)->name ?? '')) ?: '-' }}</strong></td>
+                <td><strong>{{ trim((optional($item->product)->weight ?? '') . ' ' . (optional(optional($item->product)->unit)->name ?? '') . ' ' . (optional(optional($item->product)->brand)->name ?? '')) ?: '-' }}</strong></td>
                 <td>{{ optional($item->product)->description ?? '-' }}</td>
                 <td>{{ optional(optional($item->product)->unit)->name ?? '-' }}</td>
                 <td class="text-right">{{ number_format($item->price, 2) }}</td>

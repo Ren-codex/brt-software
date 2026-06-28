@@ -480,6 +480,7 @@ export default {
               keyword: this.filter.keyword,
               count: 10,
               option: 'lists',
+              exclude_converted: 1,
             },
           })
           .then((response) => {
@@ -644,7 +645,7 @@ export default {
 
     fetchInventoryStockDetails(id) {
       axios
-        .get(`/inventory-stocks/${id}`)
+        .get(`/inventory-stocks?option=detail&id=${id}`)
         .then((response) => {
           this.selectedInventoryStock = response.data.data;
           this.currentView = 'inventoryStockDetails';

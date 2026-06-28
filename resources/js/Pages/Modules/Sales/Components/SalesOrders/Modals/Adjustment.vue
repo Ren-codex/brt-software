@@ -27,6 +27,7 @@
                                 >
                                     <option :value="null" disabled>Select Type</option>
                                     <option value="Sales Return">Sales Return</option>
+                                    <option value="Sales Allowance">Sales Allowance</option>
                                 </select>    
                             </div>
                             <span class="error-message" v-if="form.errors.type">{{ form.errors.type }}</span>
@@ -73,7 +74,9 @@
                                                 >
                                             </th>
                                             <th>Item</th>
-                                            <th>Qty</th>
+                                            <th>Sold Qty</th>
+                                            <th>Return Qty</th>
+                                            <th>Condition</th>
                                             <th class="text-end">Price</th>
                                         </tr>
                                     </thead>
@@ -88,10 +91,32 @@
                                             </td>
                                             <td>{{ getProductName(item.product_id) }}</td>
                                             <td>{{ item.quantity }}</td>
+                                            <td>
+                                                <input
+                                                    type="number"
+                                                    class="form-control form-control-sm"
+                                                    v-model.number="form.return_quantities[item.id]"
+                                                    :min="1"
+                                                    :max="item.quantity"
+                                                    :disabled="!form.item_ids.includes(item.id)"
+                                                    style="width: 72px;"
+                                                >
+                                            </td>
+                                            <td>
+                                                <select
+                                                    class="form-control form-control-sm"
+                                                    v-model="form.return_conditions[item.id]"
+                                                    :disabled="!form.item_ids.includes(item.id)"
+                                                    style="width: 120px;"
+                                                >
+                                                    <option value="restockable">Restockable</option>
+                                                    <option value="damaged">Damaged</option>
+                                                </select>
+                                            </td>
                                             <td class="text-end">{{ formatCurrency(item.price) }}</td>
                                         </tr>
                                         <tr v-if="items.length === 0">
-                                            <td colspan="4" class="text-center text-muted">No items found for this order.</td>
+                                            <td colspan="6" class="text-center text-muted">No items found for this order.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -143,6 +168,8 @@ export default {
                 reason: null,
                 action: 'adjustment',
                 item_ids: [],
+                return_quantities: {},
+                return_conditions: {},
             }),
             showModal: false,
             saveSuccess: false,
@@ -166,6 +193,14 @@ export default {
             this.isExternal = isExternal;
             this.items = items || [];
             this.form.item_ids = this.items.map(item => item.id);
+            const quantities = {};
+            const conditions = {};
+            this.items.forEach(item => {
+                quantities[item.id] = item.quantity;
+                conditions[item.id] = 'restockable';
+            });
+            this.form.return_quantities = quantities;
+            this.form.return_conditions = conditions;
             this.showModal = true;
         },
 
@@ -192,6 +227,9 @@ export default {
             this.saveSuccess = false;
             this.showModal = false;
             this.items = [];
+        },
+        getReturnQty(itemId) {
+            return this.form.return_quantities[itemId] ?? 0;
         },
         toggleAllItems() {
             if (this.allItemsSelected) {
