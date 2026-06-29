@@ -69,25 +69,19 @@
                     <div>
                         <h6 class="text-primary"><i class="ri-money-dollar-circle-line"></i> Summary</h6>
                         <div class="row g-2">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Cash</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.cash) }}</div>
+                                    <small class="text-muted">Cash Sales</small>
+                                    <div class="fw-bold">{{ formatAmount(totals.cash_sales) }}</div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Credit Card</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.credit_card) }}</div>
+                                    <small class="text-muted">Credit Sales</small>
+                                    <div class="fw-bold">{{ formatAmount(totals.credit_sales) }}</div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Debit Card</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.debit_card) }}</div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="p-2 bg-light rounded">
                                     <small class="text-muted">Bank Transfer</small>
                                     <div class="fw-bold">{{ formatAmount(totals.bank_transfer) }}</div>
@@ -159,15 +153,14 @@ export default {
             return Math.max(1, Math.ceil(this.filteredOrders.length / this.pageSize));
         },
         totals() {
-            const t = { cash: 0, credit_card: 0, debit_card: 0, bank_transfer: 0, overall: 0 };
+            const t = { cash_sales: 0, credit_sales: 0, bank_transfer: 0, overall: 0 };
             const selected = this.orders.filter(o => this.selectedIds.includes(o.id));
             selected.forEach(o => {
                 const amt = parseFloat(o.amount_paid) || 0;
                 const mode = this.normalizeSalesPaymentMode(o);
-                if (mode === 'cash') t.cash += amt;
-                else if (mode === 'credit card' || mode === 'credit_card' || mode === 'creditcard') t.credit_card += amt;
-                else if (mode === 'debit card' || mode === 'debit_card' || mode === 'debitcard') t.debit_card += amt;
-                else if (mode === 'bank transfer' || mode === 'bank_transfer' || mode === 'banktransfer') t.bank_transfer += amt;
+                if (mode === 'credit' || mode === 'credit sales') t.credit_sales += amt;
+                else if (mode === 'bank transfer' || mode === 'bank_transfer') t.bank_transfer += amt;
+                else t.cash_sales += amt;
                 t.overall += amt;
             });
             return t;
@@ -227,7 +220,9 @@ export default {
             return order?.customer?.name || order?.ar_invoice?.sales_order?.customer?.name || '-';
         },
         getPaymentMode(order) {
-            return order?.payment_mode || order?.ar_invoice?.sales_order?.payment_mode || '';
+            const raw = String(order?.payment_mode || order?.ar_invoice?.sales_order?.payment_mode || '').trim().toLowerCase();
+            if (raw === 'credit' || raw === 'credit sales') return 'Credit Sales';
+            return 'Cash Sales';
         },
         normalizeSalesPaymentMode(order) {
             return String(this.getPaymentMode(order) || '').trim().toLowerCase();

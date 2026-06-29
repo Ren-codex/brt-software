@@ -8,6 +8,7 @@ use App\Services\DropdownClass;
 use App\Services\PrintClass;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Services\Modules\SalesOrderClass;
 use App\Http\Requests\Modules\SalesOrderRequest;
 
@@ -35,6 +36,9 @@ class SalesOrderController extends Controller
             case 'stock':
                 return $this->sales_order->stockAvailability();
             break;
+            case 'return-history':
+                return response()->json($this->sales_order->returnHistory($request));
+            break;
             default:
                 return inertia('Modules/Sales/Index', [
                     'dropdowns' => [
@@ -48,7 +52,7 @@ class SalesOrderController extends Controller
                         'sales_statuses' => $this->dropdown->sales_statuses(),
                     ],
                     'isExternal' => false,
-
+                    'return_grace_period' => (int) AppSetting::get('return_grace_period', 7),
                 ]);
             break;
         }
@@ -88,7 +92,7 @@ class SalesOrderController extends Controller
                     break;
                     case 'approve':
                         $request->merge(['id' => $id]);
-                        return $this->sales_order->approve($request->id, $request->item_ids ?? []);
+                        return $this->sales_order->approve($request->id, $request->item_ids ?? [], $request->replacement_items ?? []);
                     break;
                     case 'adjustment':
                         $request->merge(['id' => $id]);

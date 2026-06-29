@@ -151,16 +151,16 @@
                                                     </div>
                                                 </td>
                                                 <td><span class="batch-pill">{{ item.batch_code || '-' }}</span></td>
-                                                <td class="text-center"><span class="qty-pill">{{ item.quantity }}</span></td>
+                                                <td class="text-center"><span class="qty-pill">{{ returnableQty(item) }}</span></td>
                                                 <td class="text-center">
                                                     <input
                                                         type="number"
                                                         class="form-control form-control-sm return-qty-input"
                                                         :value="getReturnQuantity(item.id)"
                                                         :min="isItemSelected(item.id) ? 1 : 0"
-                                                        :max="item.quantity"
+                                                        :max="returnableQty(item)"
                                                         :disabled="!isItemSelected(item.id)"
-                                                        @input="updateReturnQuantity(item.id, $event.target.value, item.quantity)"
+                                                        @input="updateReturnQuantity(item.id, $event.target.value, returnableQty(item))"
                                                     >
                                                 </td>
                                                 <td class="text-center">
@@ -229,7 +229,7 @@ import axios from 'axios';
 import { useForm } from '@inertiajs/vue3';
 
 export default {
-    props: ['dropdowns'],
+    props: ['dropdowns', 'returnGracePeriod'],
     data() {
         return {
             showModal: false,
@@ -255,8 +255,21 @@ export default {
     computed: {
         filteredReceipts() {
             const keyword = (this.receiptKeyword || '').trim().toLowerCase();
+            const windowDays = this.returnGracePeriod || 7;
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - windowDays);
+            cutoff.setHours(0, 0, 0, 0);
 
             return this.receipts.filter((receipt) => {
+                // Only payment-type receipts that aren't cancelled
+                if (receipt.receipt_type !== 'payment') return false;
+                if (receipt.status?.slug === 'cancelled') return false;
+
+                // Within return grace period window
+                const receiptDate = receipt.receipt_date ? new Date(receipt.receipt_date) : null;
+                if (!receiptDate || receiptDate < cutoff) return false;
+
+                // Sales order must exist and not be in a blocked status
                 if (!receipt?.sales_order || this.isBlockedStatus(receipt.sales_order.status?.slug)) {
                     return false;
                 }
@@ -348,10 +361,11 @@ export default {
             try {
                 const res = await axios.get(`/receipts/${receipt.id}`, { params: { option: 'detail' } });
                 this.receiptDetail = res.data?.data ?? res.data;
-                const items = this.receiptDetail?.sales_order?.items || [];
+                const allItems = this.receiptDetail?.sales_order?.items || [];
+                const items = allItems.filter(item => (item.quantity - (item.returned_quantity || 0)) > 0);
                 this.form.id = this.receiptDetail?.sales_order?.id || null;
                 this.form.item_ids = items.map(item => item.id);
-                this.form.return_quantities = items.reduce((q, item) => { q[item.id] = item.quantity; return q; }, {});
+                this.form.return_quantities = items.reduce((q, item) => { q[item.id] = item.quantity - (item.returned_quantity || 0); return q; }, {});
                 this.form.return_conditions = items.reduce((c, item) => { c[item.id] = 'restockable'; return c; }, {});
             } catch (e) {
                 console.error('Failed to load receipt detail', e);
@@ -411,6 +425,9 @@ export default {
             }
             return `${policy.window_days} day window`;
         },
+        returnableQty(item) {
+            return Math.max(0, (item.quantity || 0) - (item.returned_quantity || 0));
+        },
         isItemSelected(itemId) {
             return Number(this.form.return_quantities?.[itemId] || 0) > 0;
         },
@@ -424,7 +441,7 @@ export default {
             if (this.isItemSelected(item.id)) {
                 this.form.return_quantities[item.id] = 0;
             } else {
-                this.form.return_quantities[item.id] = item.quantity;
+                this.form.return_quantities[item.id] = item.quantity - (item.returned_quantity || 0);
                 if (!this.form.return_conditions[item.id]) {
                     this.form.return_conditions[item.id] = 'restockable';
                 }
@@ -453,7 +470,7 @@ export default {
         },
         toggleAllItems() {
             this.form.return_quantities = this.selectedItems.reduce((quantities, item) => {
-                quantities[item.id] = this.allItemsSelected ? 0 : item.quantity;
+                quantities[item.id] = this.allItemsSelected ? 0 : item.quantity - (item.returned_quantity || 0);
                 return quantities;
             }, {});
             this.syncSelectedItems();

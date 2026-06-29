@@ -298,6 +298,64 @@ class JournalEntryService
         return $entries;
     }
 
+    public function recordReplacementEntries(SalesOrder $salesOrder, array $replacementItems, ?Receipt $extraReceipt = null): array
+    {
+        $entries = [];
+
+        $replacementCost = round(array_sum(array_map(function ($item) {
+            $productId = (int) ($item['product_id'] ?? 0);
+            $quantity  = (int) ($item['quantity']   ?? 0);
+            if ($productId <= 0 || $quantity <= 0) {
+                return 0;
+            }
+            $stock = InventoryStocks::where(function ($q) use ($productId) {
+                $q->whereHas('receivedItem', fn ($s) => $s->where('product_id', $productId))
+                  ->orWhere(fn ($s) => $s->where('product_id', $productId)->whereNotNull('conversion_id'));
+            })->orderBy('created_at')->first();
+
+            $unitCost = (float) ($stock?->receivedItem?->unit_cost ?? $stock?->unit_cost ?? 0);
+
+            return $unitCost * $quantity;
+        }, $replacementItems)), 2);
+
+        if ($replacementCost > 0) {
+            $cogsAccount      = $this->ensureAccount('5100', 'cost_of_goods_sold', 'Cost of Goods Sold', 'expense', 'cost_of_sales');
+            $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
+            $memo = 'Replacement goods issued for SO#' . $salesOrder->so_number . '. Inventory reduction entry.';
+
+            $entries[] = $this->createEntry(
+                $salesOrder,
+                now()->toDateString(),
+                'replacement_inventory_out',
+                $memo,
+                [
+                    [
+                        'account_id'  => $cogsAccount->id,
+                        'line_type'   => 'debit',
+                        'amount'      => $replacementCost,
+                        'description' => 'Cost of replacement goods issued to customer.',
+                    ],
+                    [
+                        'account_id'  => $inventoryAccount->id,
+                        'line_type'   => 'credit',
+                        'amount'      => $replacementCost,
+                        'description' => 'Reduce inventory for replacement goods issued.',
+                    ],
+                ],
+                $memo
+            );
+        }
+
+        if ($extraReceipt) {
+            $entry = $this->recordReceiptEntry($extraReceipt);
+            if ($entry) {
+                $entries[] = $entry;
+            }
+        }
+
+        return $entries;
+    }
+
     public function recordReplenishmentEntry(\App\Models\ReplenishmentRequest $replenishment): ?JournalEntry
     {
         $expenses = $replenishment->expenses;

@@ -177,8 +177,8 @@ class RemittanceClass
         try {
             $data = Remittance::with('status')->findOrFail($id);
 
-            if ($data->status?->slug !== 'remitted') {
-                throw new \Exception('Only remitted remittances can be approved or disapproved.');
+            if (!in_array($data->status?->slug, ['open', 'remitted'])) {
+                throw new \Exception('Only open remittances can be approved or disapproved.');
             }
 
             $isApprove = $request->status === 'Approve';

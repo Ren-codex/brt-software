@@ -24,7 +24,6 @@ class RemittanceRequest extends FormRequest
         return [
             'receipts' => 'required|array|min:1',
             'receipts.*' => 'integer|exists:receipts,id',
-            'remittance_type' => 'required|in:cash,credit',
             'summary' => 'required|array',
             'total_amount' => 'required|numeric|min:0',
         ];

@@ -93,6 +93,10 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::post('/inventory-stocks/{id}/settings', [App\Http\Controllers\InventoryStockController::class, 'settings']);
     });
 
+    Route::middleware(['role:Administrator,Super Admin'])->group(function () {
+        Route::patch('/app-settings/{key}', [App\Http\Controllers\AppSettingController::class, 'update']);
+    });
+
     Route::middleware(['role:Administrator'])->group(function () {
         // Route::get('/receipts', [App\Http\Controllers\Libraries\ReceiptController::class, 'index']);
         // Route::get('/receipts/{id}/print', [App\Http\Controllers\Libraries\ReceiptController::class, 'print']);
