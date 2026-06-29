@@ -71,7 +71,7 @@
               <div v-if="activeTab === 'sales_returns'" class="row">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                  
-                    <SalesReturns :dropdowns="dropdowns" />
+                    <SalesReturns :dropdowns="dropdowns" :returnGracePeriod="return_grace_period || 7" />
                 
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -171,7 +171,7 @@ import StockSidebar from "@/Pages/Modules/Sales/Components/StockSidebar.vue";
 
 export default {
   components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar, StockSidebar },
-  props: ['dropdowns'],
+  props: ['dropdowns', 'return_grace_period'],
   data() {
     return {
       isSidebarCollapsed: false,

@@ -19,6 +19,7 @@ class Receipt extends Model
         'ar_invoice_id',
         'source_receipt_id',
         'remittance_id',
+        'notes',
     ];
 
     public function arInvoice()

@@ -118,23 +118,30 @@ class ReceiptClass
 
             $salesOrder = $arInvoice->sales_order;
             if ($salesOrder) {
+                $salesOrder->loadMissing('status');
+                $currentSlug       = $salesOrder->status?->slug ?? '';
+                $isFullyReturned   = ($currentSlug === 'sales-returned');
+                $isPartialReturned = ($currentSlug === 'partially-returned');
+
                 if ($arInvoice->balance_due <= 0) {
-                    $salesOrder->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+                    if (!$isFullyReturned) {
+                        $salesOrder->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
 
-                    if (!SalesOrderIncentive::where('sales_order_id', $salesOrder->id)->exists()) {
-                        $sold_quantity    = $salesOrder->items->sum('quantity');
-                        $product_total_kg = $salesOrder->items->sum(fn($item) => ($item->product->weight ?? 0) * $item->quantity);
+                        if ($salesOrder->sales_rep_id && !SalesOrderIncentive::where('sales_order_id', $salesOrder->id)->exists()) {
+                            $sold_quantity    = $salesOrder->items->sum('quantity');
+                            $product_total_kg = $salesOrder->items->sum(fn($item) => ($item->product->weight ?? 0) * $item->quantity);
 
-                        SalesOrderIncentive::create([
-                            'sales_order_id'   => $salesOrder->id,
-                            'employee_id'      => $salesOrder->sales_rep_id,
-                            'sold_quantity'    => $sold_quantity,
-                            'product_total_kg' => $product_total_kg,
-                            'amount'           => $product_total_kg / 25,
-                            'payroll_id'       => null,
-                        ]);
+                            SalesOrderIncentive::create([
+                                'sales_order_id'   => $salesOrder->id,
+                                'employee_id'      => $salesOrder->sales_rep_id,
+                                'sold_quantity'    => $sold_quantity,
+                                'product_total_kg' => $product_total_kg,
+                                'amount'           => $product_total_kg / 25,
+                                'payroll_id'       => null,
+                            ]);
+                        }
                     }
-                } else {
+                } elseif (!$isFullyReturned && !$isPartialReturned) {
                     $salesOrder->update(['status_id' => ListStatus::getBySlug('partially-paid')?->id]);
                 }
             }
@@ -176,12 +183,21 @@ class ReceiptClass
 
         $salesOrder = $arInvoice->sales_order;
         if ($salesOrder) {
+            $salesOrder->loadMissing('status');
+            $currentSlug       = $salesOrder->status?->slug ?? '';
+            $isFullyReturned   = ($currentSlug === 'sales-returned');
+            $isPartialReturned = ($currentSlug === 'partially-returned');
+
             if ($arInvoice->balance_due <= 0) {
-                $salesOrder->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
-            } elseif ($arInvoice->amount_paid > 0) {
-                $salesOrder->update(['status_id' => ListStatus::getBySlug('partially-paid')?->id]);
-            } else {
-                $salesOrder->update(['status_id' => ListStatus::getBySlug('for-payment')?->id]);
+                if (!$isFullyReturned) {
+                    $salesOrder->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+                }
+            } elseif (!$isFullyReturned && !$isPartialReturned) {
+                if ($arInvoice->amount_paid > 0) {
+                    $salesOrder->update(['status_id' => ListStatus::getBySlug('partially-paid')?->id]);
+                } else {
+                    $salesOrder->update(['status_id' => ListStatus::getBySlug('for-payment')?->id]);
+                }
             }
         }
 
@@ -221,10 +237,16 @@ class ReceiptClass
         // Bug 5 fix: sync SO status after reversing the payment
         $salesOrder = $arInvoice->sales_order;
         if ($salesOrder) {
-            if ($arInvoice->amount_paid <= 0) {
-                $salesOrder->update(['status_id' => ListStatus::getBySlug('for-payment')?->id]);
-            } else {
-                $salesOrder->update(['status_id' => ListStatus::getBySlug('partially-paid')?->id]);
+            $salesOrder->loadMissing('status');
+            $currentSlug    = $salesOrder->status?->slug ?? '';
+            $isReturnStatus = in_array($currentSlug, ['partially-returned', 'sales-returned']);
+
+            if (!$isReturnStatus) {
+                if ($arInvoice->amount_paid <= 0) {
+                    $salesOrder->update(['status_id' => ListStatus::getBySlug('for-payment')?->id]);
+                } else {
+                    $salesOrder->update(['status_id' => ListStatus::getBySlug('partially-paid')?->id]);
+                }
             }
         }
 
