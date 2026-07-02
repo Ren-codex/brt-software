@@ -58,22 +58,6 @@
                                 </span>
                             </div>
                         </div>
-
-                        <!-- Weekly budget footer (only if fund has a weekly budget) -->
-                        <div v-if="selectedFundData.weekly_budget > 0" class="fund-split-footer">
-                            <div class="split-budget-row">
-                                <span class="split-budget-label"><i class="ri-bar-chart-box-line me-1"></i>Weekly Budget</span>
-                                <span class="split-budget-meta">
-                                    {{ fmt(projectedWeeklySpent) }} of {{ fmt(selectedFundData.weekly_budget) }}
-                                    <span v-if="typedAmount > 0 && !insufficientBalance" class="split-budget-delta">
-                                        (+{{ fmt(typedAmount) }})
-                                    </span>
-                                </span>
-                            </div>
-                            <div class="split-progress-track">
-                                <div class="split-progress-fill" :style="budgetBarStyle"></div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="form-row">
@@ -182,28 +166,22 @@ export default {
             if (!this.selectedFundData || this.typedAmount <= 0) return false;
             return this.typedAmount > parseFloat(this.selectedFundData.balance || 0);
         },
-        overWeeklyBudget() {
-            if (!this.selectedFundData || !this.selectedFundData.weekly_budget) return false;
-            if (this.typedAmount <= 0) return false;
-            const remaining = this.selectedFundData.weekly_remaining;
-            return remaining !== null && this.typedAmount > remaining;
-        },
         afterExpenseDisplay() {
             if (this.typedAmount <= 0 || !this.selectedFundData) return '—';
             return this.fmt(this.afterBalance);
         },
         afterExpenseClass() {
             if (this.typedAmount <= 0) return 'fund-panel-value-neutral';
-            if (this.insufficientBalance || this.overWeeklyBudget) return 'fund-panel-value-warn';
+            if (this.insufficientBalance) return 'fund-panel-value-warn';
             return 'fund-panel-value-ok';
         },
         splitCardClass() {
-            if (this.insufficientBalance || this.overWeeklyBudget) return 'split-card-warn';
+            if (this.insufficientBalance) return 'split-card-warn';
             if (this.typedAmount > 0) return 'split-card-ok';
             return '';
         },
         splitRightClass() {
-            if (this.insufficientBalance || this.overWeeklyBudget) return 'split-right-warn';
+            if (this.insufficientBalance) return 'split-right-warn';
             if (this.typedAmount > 0) return 'split-right-ok';
             return '';
         },
@@ -214,32 +192,15 @@ export default {
                     .toLocaleString('en-PH', { minimumFractionDigits: 2 });
                 return `Out-of-pocket by ₱${short} — include in replenishment`;
             }
-            if (this.overWeeklyBudget) {
-                const remaining = this.selectedFundData.weekly_remaining ?? 0;
-                const over = (this.typedAmount - remaining).toLocaleString('en-PH', { minimumFractionDigits: 2 });
-                return `Over weekly budget by ₱${over}`;
-            }
             return 'Sufficient balance';
         },
         fundPanelStatusClass() {
             if (this.insufficientBalance) return 'status-warn';
-            if (this.overWeeklyBudget) return 'status-warn';
             return 'status-ok';
         },
         fundPanelStatusIcon() {
             if (this.insufficientBalance) return 'ri-error-warning-fill';
-            if (this.overWeeklyBudget) return 'ri-alert-fill';
             return 'ri-checkbox-circle-fill';
-        },
-        projectedWeeklySpent() {
-            if (!this.selectedFundData) return 0;
-            return this.selectedFundData.weekly_spent + this.typedAmount;
-        },
-        budgetBarStyle() {
-            if (!this.selectedFundData || !this.selectedFundData.weekly_budget) return {};
-            const pct = Math.min((this.projectedWeeklySpent / this.selectedFundData.weekly_budget) * 100, 100);
-            const color = pct >= 100 ? '#ef4444' : pct >= 75 ? '#f59e0b' : '#22c55e';
-            return { width: pct + '%', background: color };
         },
     },
     methods: {
@@ -433,46 +394,4 @@ export default {
 .status-ok     { color: #15803d; }
 .status-warn   { color: #b45309; }
 .status-danger { color: #dc2626; }
-
-/* Footer — weekly budget bar */
-.fund-split-footer {
-    padding: 0.55rem 1.1rem 0.65rem;
-    background: #edf6f2;
-    border-top: 1.5px solid #a8d5c5;
-}
-.split-budget-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.3rem;
-}
-.split-budget-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #4d8c7a;
-}
-.split-budget-meta {
-    font-size: 0.77rem;
-    font-weight: 600;
-    color: #3d6b5e;
-}
-.split-budget-delta {
-    color: #9db9b0;
-    font-weight: 500;
-    font-size: 0.71rem;
-    margin-left: 0.2rem;
-}
-.split-progress-track {
-    height: 5px;
-    border-radius: 999px;
-    background: #c4dfd5;
-    overflow: hidden;
-}
-.split-progress-fill {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 0.3s ease, background 0.3s;
-}
 </style>

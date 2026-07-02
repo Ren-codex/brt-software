@@ -29,10 +29,16 @@
                 <div v-if="funds.length === 0" class="acct-empty-notice">
                     <i class="ri-wallet-3-line"></i>
                     No petty cash fund set up yet.
-                    Go to <strong>Libraries → Funds</strong> to create one.
+                    Go to <strong>Accounting → Petty Cash Funds</strong> to create one.
                 </div>
 
-                <div v-else v-for="fund in funds" :key="fund.id" class="library-card mb-3">
+                <div v-if="funds.length > 0" class="d-flex justify-content-end mb-2">
+                    <a href="/accounting/funds" class="acct-btn-secondary">
+                        <i class="ri-external-link-line"></i> Manage Funds
+                    </a>
+                </div>
+
+                <div v-for="fund in funds" :key="fund.id" class="library-card mb-3">
                     <div class="library-card-header">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-wallet-3-line"></i></div>
@@ -45,9 +51,6 @@
                             <span v-if="fund.low_balance" class="pc-low-badge">
                                 <i class="ri-error-warning-line"></i> Low Balance
                             </span>
-                            <button class="acct-btn-primary" @click="openTopUp(fund)">
-                                <i class="ri-add-circle-line"></i> Top Up
-                            </button>
                         </div>
                     </div>
                     <div class="library-card-body">
@@ -399,51 +402,6 @@
             </div>
         </div>
 
-        <!-- ── Top Up Fund Modal ──────────────────────────────────── -->
-        <div v-if="topUpModal.open" class="modal-overlay active" @click.self="topUpModal.open = false">
-            <div class="modal-container modal-sm" @click.stop>
-                <div class="modal-header">
-                    <div class="modal-header-icon"><i class="ri-add-circle-line"></i></div>
-                    <div>
-                        <h4 class="mb-0">Top Up Fund</h4>
-                        <p class="header-subtitle mb-0">{{ topUpForm.fund?.name }}</p>
-                    </div>
-                    <button class="close-btn ms-auto" @click="topUpModal.open = false"><i class="ri-close-line fs-20"></i></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label fw-semibold">Amount <span class="text-danger">*</span></label>
-                            <input v-model="topUpForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
-                            <input v-model="topUpForm.top_up_date" type="date" class="form-control" />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Source Bank Account <span class="text-muted fw-normal">(optional)</span></label>
-                            <select v-model="topUpForm.bank_account_id" class="form-select">
-                                <option value="">Cash on Hand</option>
-                                <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.label }}</option>
-                            </select>
-                            <small class="text-muted">If blank, the source will be recorded as Cash in Bank (general).</small>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Notes</label>
-                            <input v-model="topUpForm.notes" type="text" class="form-control" placeholder="e.g. Monthly replenishment" maxlength="300" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="topUpModal.open = false">Cancel</button>
-                    <button class="btn btn-save" @click="doTopUp" :disabled="topUpModal.saving">
-                        <span v-if="topUpModal.saving"><i class="ri-loader-4-line spin me-1"></i>Processing…</span>
-                        <span v-else><i class="ri-add-circle-line me-1"></i>Top Up Fund</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
     </div>
 </template>
 
@@ -482,10 +440,6 @@ export default {
 
             // Approval modal
             approvalModal: { open: false, action: 'approve', data: null, notes: '', saving: false },
-
-            // Top Up modal
-            topUpModal: { open: false, saving: false },
-            topUpForm:  { fund: null, amount: '', top_up_date: new Date().toISOString().slice(0, 10), bank_account_id: '', notes: '' },
 
             // Local copies (updated after mutations)
             localFunds:          this.funds,
@@ -650,30 +604,6 @@ export default {
             }
         },
 
-        openTopUp(fund) {
-            this.topUpForm = { fund, amount: '', top_up_date: new Date().toISOString().slice(0, 10), bank_account_id: '', notes: '' };
-            this.topUpModal = { open: true, saving: false };
-        },
-        async doTopUp() {
-            if (!this.topUpForm.amount || this.topUpForm.amount <= 0) { alert('Enter a valid amount.'); return; }
-            if (!this.topUpForm.top_up_date) { alert('Date is required.'); return; }
-            this.topUpModal.saving = true;
-            try {
-                const res = await axios.post(`/accounting/petty-cash/funds/${this.topUpForm.fund.id}/top-up`, {
-                    amount:          this.topUpForm.amount,
-                    top_up_date:     this.topUpForm.top_up_date,
-                    bank_account_id: this.topUpForm.bank_account_id || null,
-                    notes:           this.topUpForm.notes || null,
-                });
-                const idx = this.localFunds.findIndex(f => f.id === this.topUpForm.fund.id);
-                if (idx !== -1) this.localFunds[idx] = res.data.fund;
-                this.topUpModal.open = false;
-            } catch (err) {
-                alert(err.response?.data?.message || 'Top-up failed.');
-            } finally {
-                this.topUpModal.saving = false;
-            }
-        },
     },
 };
 </script>

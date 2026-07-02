@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Libraries;
 
+use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
@@ -20,7 +21,9 @@ class FundController extends Controller
             return $this->fund->lists($request);
         }
 
-        return inertia('Modules/Libraries/Funds/Index');
+        return inertia('Modules/Accounting/Funds', [
+            'bankAccounts' => BankAccount::active()->orderBy('bank_name')->get(['id', 'bank_name', 'account_name']),
+        ]);
     }
 
     public function store(FundRequest $request)

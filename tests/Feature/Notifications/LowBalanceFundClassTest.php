@@ -41,6 +41,7 @@ class LowBalanceFundClassTest extends TestCase
         $request = Request::create('/funds/'.$fund->id.'/adjust', 'PATCH', [
             'id' => $fund->id,
             'balance' => 300,
+            'reason' => 'Cash count correction',
         ]);
 
         app(FundClass::class)->adjustBalance($fund->id, $request);
@@ -62,6 +63,7 @@ class LowBalanceFundClassTest extends TestCase
         $request = Request::create('/funds/'.$fund->id.'/adjust', 'PATCH', [
             'id' => $fund->id,
             'balance' => 100,
+            'reason' => 'Cash count correction',
         ]);
 
         app(FundClass::class)->adjustBalance($fund->id, $request);

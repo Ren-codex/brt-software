@@ -37,7 +37,6 @@
                                         <th>Name</th>
                                         <th>GL Code</th>
                                         <th>Balance</th>
-                                        <th>Weekly Budget</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -53,7 +52,6 @@
                                         <td>{{ list.name }}</td>
                                         <td><code>{{ list.gl_code }}</code></td>
                                         <td>₱{{ Number(list.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</td>
-                                        <td>{{ list.weekly_budget ? '₱' + Number(list.weekly_budget).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '—' }}</td>
                                         <td>
                                             <span class="badge" :class="list.is_active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
                                                 {{ list.is_active ? 'Active' : 'Inactive' }}
@@ -121,7 +119,7 @@ export default {
     methods: {
         checkSearchStr: _.debounce(function() { this.fetch(); }, 300),
         fetch(page_url) {
-            page_url = page_url || '/libraries/funds';
+            page_url = page_url || '/accounting/funds';
             axios.get(page_url, {
                 params: { option: 'lists', keyword: this.filter.keyword, count: 10 }
             })
@@ -153,7 +151,7 @@ export default {
                 confirmButtonText: 'Yes',
             }).then(result => {
                 if (!result.isConfirmed) return;
-                axios.patch(`/libraries/funds/${fund.id}/toggle-active`, { is_active: !fund.is_active })
+                axios.patch(`/accounting/funds/${fund.id}/toggle-active`, { is_active: !fund.is_active })
                     .then(() => this.fetch())
                     .catch(err => Swal.fire('Error', err.response?.data?.message || 'Failed', 'error'));
             });

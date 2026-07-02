@@ -297,9 +297,6 @@
                                             <td class="text-center">{{ index + 1 }}</td>
                                             <td>
                                                 <span class="fw-600">{{ r.reference_no }}</span>
-                                                <span v-if="r.over_weekly_budget" class="over-budget-chip ms-1" title="Exceeds weekly budget">
-                                                    <i class="ri-alert-line"></i>
-                                                </span>
                                             </td>
                                             <td class="text-muted">{{ r.fund_name }}</td>
                                             <td class="fw-600">{{ r.total_formatted }}</td>
@@ -431,12 +428,6 @@
                         </div>
                     </div>
 
-                    <!-- Over-budget alert -->
-                    <div v-if="viewModal.data.over_weekly_budget" class="over-budget-alert mb-3">
-                        <i class="ri-alert-fill"></i>
-                        <span>This request exceeds the weekly budget by ₱{{ Number(viewModal.data.over_by).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}.</span>
-                    </div>
-
                     <!-- Period & notes -->
                     <div v-if="viewModal.data.period_label" class="text-muted small mb-3">
                         <i class="ri-calendar-line me-1"></i>{{ viewModal.data.period_label }}
@@ -492,10 +483,6 @@
                     <button class="close-btn" @click="reviewModal.open = false"><i class="ri-close-line"></i></button>
                 </div>
                 <div class="modal-body">
-                    <div v-if="reviewModal.data?.over_weekly_budget" class="over-budget-alert mb-3">
-                        <i class="ri-alert-fill"></i>
-                        <span>This request exceeds the weekly budget by ₱{{ Number(reviewModal.data.over_by).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}.</span>
-                    </div>
                     <p class="text-muted fs-13 mb-3">
                         <template v-if="reviewModal.action === 'approve'">
                             Approving will post the journal entry and replenish <strong>{{ reviewModal.data?.fund_name }}</strong> by <strong>{{ reviewModal.data?.total_formatted }}</strong>.
@@ -557,32 +544,6 @@
                         <span class="fund-card-balance-value">₱{{ Number(f.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</span>
                         <span class="fund-card-balance-label">Available Balance</span>
                     </div>
-
-                    <!-- Weekly budget section (only if set) -->
-                    <template v-if="f.weekly_budget > 0">
-                        <div class="fund-card-divider"></div>
-                        <div class="fund-card-budget-header">
-                            <span class="fund-card-budget-title"><i class="ri-calendar-check-line"></i> Weekly Budget</span>
-                            <span class="fund-card-budget-total">₱{{ Number(f.weekly_budget).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</span>
-                        </div>
-                        <div class="fund-card-progress-track">
-                            <div class="fund-card-progress-fill" :style="fundBarStyle(f)"></div>
-                        </div>
-                        <div class="fund-card-metrics">
-                            <div class="fund-card-metric">
-                                <span class="fund-card-metric-label">Spent</span>
-                                <span class="fund-card-metric-value metric-spent">₱{{ Number(f.weekly_spent || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</span>
-                            </div>
-                            <div class="fund-card-metric-divider"></div>
-                            <div class="fund-card-metric">
-                                <span class="fund-card-metric-label">Remaining</span>
-                                <span class="fund-card-metric-value"
-                                    :class="f.weekly_remaining <= 0 ? 'metric-over' : f.weekly_remaining < f.weekly_budget * 0.25 ? 'metric-low' : 'metric-ok'">
-                                    ₱{{ Number(f.weekly_remaining ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
-                                </span>
-                            </div>
-                        </div>
-                    </template>
                 </div>
             </div>
         </div>
@@ -821,12 +782,6 @@ export default {
         },
 
         // ── Helpers ───────────────────────────────────────────────
-        fundBarStyle(f) {
-            if (!f.weekly_budget) return {};
-            const pct = Math.min((f.weekly_spent / f.weekly_budget) * 100, 100);
-            const color = pct >= 100 ? '#ef4444' : pct >= 75 ? '#f59e0b' : '#22c55e';
-            return { width: pct + '%', background: color };
-        },
         getStatusStyle(status, fallbackSlug) {
             const fallbacks = {
                 recorded:    { bg: '#e0f2fe', text: '#0369a1' },
@@ -942,15 +897,6 @@ export default {
 .receipt-link:hover { text-decoration:underline; }
 .receipt-icon-link { color:#3d8d7a;text-decoration:none; }
 
-/* ── Over-budget alert ───────────────────────────────────── */
-.over-budget-alert {
-    display:flex;align-items:flex-start;gap:0.5rem;
-    background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;
-    padding:0.65rem 0.9rem;font-size:0.82rem;color:#9a3412;
-}
-.over-budget-alert i { font-size:1rem;flex-shrink:0;margin-top:1px;color:#ea580c; }
-.over-budget-chip { display:inline-flex;align-items:center;background:#fff7ed;color:#ea580c;border-radius:999px;padding:0.05rem 0.35rem;font-size:0.7rem;border:1px solid #fed7aa; }
-
 /* ── Replenishment view modal ────────────────────────────── */
 .rep-view-summary { display:flex;flex-wrap:wrap;gap:1rem;background:#f4faf8;border:1px solid #c4dfd5;border-radius:10px;padding:0.85rem 1rem; }
 .rep-view-stat { display:flex;flex-direction:column;gap:0.15rem;flex:1;min-width:100px; }
@@ -1061,26 +1007,4 @@ export default {
 .fund-card-balance-value { font-size:1.45rem;font-weight:800;color:#1a4d3d;line-height:1.1; }
 .fund-card-balance-label { font-size:0.67rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#6b8c85; }
 
-/* Divider */
-.fund-card-divider { height:1px;background:#e4f0ea;margin:0.8rem 0 0.65rem; }
-
-/* Budget section */
-.fund-card-budget-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem; }
-.fund-card-budget-title  { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#4d8c7a;display:flex;align-items:center;gap:0.3rem; }
-.fund-card-budget-total  { font-size:0.8rem;font-weight:700;color:#1a4d3d; }
-
-.fund-card-progress-track { height:6px;border-radius:999px;background:#d1e8df;overflow:hidden;margin-bottom:0.6rem; }
-.fund-card-progress-fill  { height:100%;border-radius:999px;transition:width 0.3s,background 0.3s; }
-
-/* Spent / Remaining row */
-.fund-card-metrics { display:flex;align-items:stretch;gap:0; }
-.fund-card-metric  { flex:1;display:flex;flex-direction:column;gap:0.1rem; }
-.fund-card-metric:last-child { align-items:flex-end; }
-.fund-card-metric-divider { width:1px;background:#e4f0ea;margin:0 0.75rem; }
-.fund-card-metric-label { font-size:0.67rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#6b8c85; }
-.fund-card-metric-value { font-size:0.92rem;font-weight:700; }
-.metric-spent { color:#6b8c85; }
-.metric-ok    { color:#15803d; }
-.metric-low   { color:#b45309; }
-.metric-over  { color:#dc2626; }
 </style>

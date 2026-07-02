@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Modules;
 
 use App\Models\Expense;
 use App\Models\PettyCashFund;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Services\DropdownClass;
 use App\Traits\HandlesTransaction;
@@ -32,7 +31,7 @@ class ExpenseController extends Controller
             case 'budgets':
                 return $this->expense->getBudgets($request);
             case 'funds':
-                return response()->json($this->fundsWithBudget());
+                return response()->json($this->fundsList());
             case 'pending':
                 $fundId = $request->fund_id;
                 $rows = \App\Models\Expense::where('fund_id', $fundId)
@@ -44,7 +43,7 @@ class ExpenseController extends Controller
             default:
                 return inertia('Modules/Expenses/Index', [
                     'dropdowns' => [
-                        'funds' => $this->fundsWithBudget(),
+                        'funds' => $this->fundsList(),
                     ],
                 ]);
         }
@@ -179,30 +178,15 @@ class ExpenseController extends Controller
         ]);
     }
 
-    private function fundsWithBudget(): array
+    private function fundsList(): array
     {
-        $weekStart = Carbon::now()->startOfWeek()->toDateString();
-        $weekEnd   = Carbon::now()->endOfWeek()->toDateString();
-
         return PettyCashFund::orderBy('name')
-            ->get(['id', 'name', 'balance', 'weekly_budget'])
-            ->map(function ($f) use ($weekStart, $weekEnd) {
-                $weeklySpent = (float) Expense::where('fund_id', $f->id)
-                    ->whereIn('status', ['recorded', 'submitted', 'reimbursed'])
-                    ->whereBetween('expense_date', [$weekStart, $weekEnd])
-                    ->sum('amount');
-
-                return [
-                    'id'            => $f->id,
-                    'name'          => $f->name,
-                    'balance'       => (float) $f->balance,
-                    'weekly_budget' => (float) $f->weekly_budget,
-                    'weekly_spent'  => round($weeklySpent, 2),
-                    'weekly_remaining' => $f->weekly_budget > 0
-                        ? round((float) $f->weekly_budget - $weeklySpent, 2)
-                        : null,
-                ];
-            })
+            ->get(['id', 'name', 'balance'])
+            ->map(fn($f) => [
+                'id'      => $f->id,
+                'name'    => $f->name,
+                'balance' => (float) $f->balance,
+            ])
             ->values()
             ->all();
     }

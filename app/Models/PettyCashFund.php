@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class PettyCashFund extends Model
 {
-    protected $fillable = ['name', 'gl_code', 'balance', 'fixed_amount', 'custodian_id', 'weekly_budget', 'low_balance_threshold', 'is_active', 'created_by_id'];
+    protected $fillable = ['name', 'gl_code', 'balance', 'fixed_amount', 'custodian_id', 'low_balance_threshold', 'is_active', 'created_by_id'];
 
-    protected $casts = ['is_active' => 'boolean', 'balance' => 'float', 'fixed_amount' => 'float', 'weekly_budget' => 'float', 'low_balance_threshold' => 'float'];
+    protected $casts = ['is_active' => 'boolean', 'balance' => 'float', 'fixed_amount' => 'float', 'low_balance_threshold' => 'float'];
 
     public function custodian()
     {

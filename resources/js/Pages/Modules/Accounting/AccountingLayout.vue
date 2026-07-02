@@ -33,6 +33,7 @@ const PAGE_META = {
     'Modules/Accounting/AccountingSettings': { tab: 'settings',            title: 'Settings' },
     'Modules/Accounting/JournalEntries':     { tab: 'journal_entries',     title: 'Journal Entries' },
     'Modules/Accounting/PettyCash':          { tab: 'petty_cash',          title: 'Petty Cash' },
+    'Modules/Accounting/Funds':              { tab: 'petty_cash_funds',    title: 'Petty Cash Funds' },
     'Modules/Accounting/Expenses':           { tab: 'expenses',            title: 'Expenses' },
 };
 
@@ -50,3 +51,13 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.inventory-container {
+    max-height: 85vh;
+}
+
+.inventory-main-content {
+    min-height: 0;
+}
+</style>
