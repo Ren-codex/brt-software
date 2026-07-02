@@ -67,10 +67,10 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
         Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
 
-        Route::resource('/libraries/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
-        Route::post('/libraries/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp']);
-        Route::patch('/libraries/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance']);
-        Route::patch('/libraries/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive']);
+        Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
+        Route::post('/accounting/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp']);
+        Route::patch('/accounting/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance']);
+        Route::patch('/accounting/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive']);
     });
 
     Route::middleware(['role:Administrator,Warehouse Manager'])->group(function () {
