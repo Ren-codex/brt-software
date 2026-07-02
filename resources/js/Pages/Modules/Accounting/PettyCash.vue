@@ -29,7 +29,7 @@
                 <div v-if="funds.length === 0" class="acct-empty-notice">
                     <i class="ri-wallet-3-line"></i>
                     No petty cash fund set up yet.
-                    Go to <strong>Libraries → Funds</strong> to create one.
+                    Go to <strong>Accounting → Petty Cash Funds</strong> to create one.
                 </div>
 
                 <div v-else v-for="fund in funds" :key="fund.id" class="library-card mb-3">

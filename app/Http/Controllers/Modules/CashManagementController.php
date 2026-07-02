@@ -6,12 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\BankDeposit;
-use App\Models\Expense;
 use App\Models\FundTransfer;
 use App\Models\JournalEntryLine;
 use App\Models\PettyCashFund;
 use App\Services\Accounting\CashManagementService;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -40,21 +38,10 @@ class CashManagementController extends Controller
                 'created_at'       => $t->created_at?->toDateTimeString(),
             ]);
 
-        $weekStart = Carbon::now()->startOfWeek()->toDateString();
-        $weekEnd   = Carbon::now()->endOfWeek()->toDateString();
-
         $funds = PettyCashFund::with(['transactions' => fn($q) => $q->orderByDesc('transaction_date')->orderByDesc('id')])
             ->orderBy('name')
             ->get()
-            ->map(function ($f) use ($weekStart, $weekEnd) {
-                $weeklySpent = (float) Expense::where('fund_id', $f->id)
-                    ->whereIn('status', ['recorded', 'submitted', 'reimbursed'])
-                    ->whereBetween('expense_date', [$weekStart, $weekEnd])
-                    ->sum('amount');
-
-                $weeklyBudget    = (float) $f->weekly_budget;
-                $weeklyRemaining = $weeklyBudget > 0 ? round($weeklyBudget - $weeklySpent, 2) : null;
-
+            ->map(function ($f) {
                 return [
                     'id'               => $f->id,
                     'name'             => $f->name,
@@ -62,9 +49,6 @@ class CashManagementController extends Controller
                     'balance'          => (float) $f->balance,
                     'balance_formatted'=> '₱' . number_format($f->balance, 2),
                     'is_active'        => $f->is_active,
-                    'weekly_budget'    => $weeklyBudget,
-                    'weekly_spent'     => round($weeklySpent, 2),
-                    'weekly_remaining' => $weeklyRemaining,
                     'transactions'     => $f->transactions->map(fn($t) => [
                         'id'               => $t->id,
                         'transaction_no'   => $t->transaction_no,
@@ -168,8 +152,8 @@ class CashManagementController extends Controller
         $data = $request->validate([
             'name'            => 'required|string|max:100',
             'gl_code'         => 'required|string|max:20|unique:petty_cash_funds,gl_code',
-            'weekly_budget'   => 'nullable|numeric|min:0',
             'initial_balance' => 'nullable|numeric|min:0.01',
+            'bank_account_id' => 'nullable|integer|exists:bank_accounts,id',
         ]);
 
         $fund = $this->service->createFund($data);
@@ -182,13 +166,11 @@ class CashManagementController extends Controller
         $fund = \App\Models\PettyCashFund::findOrFail($id);
 
         $data = $request->validate([
-            'name'          => 'required|string|max:100',
-            'weekly_budget' => 'nullable|numeric|min:0',
+            'name' => 'required|string|max:100',
         ]);
 
         $fund->update([
-            'name'          => $data['name'],
-            'weekly_budget' => $data['weekly_budget'] ?? 0,
+            'name' => $data['name'],
         ]);
 
         return response()->json(['message' => 'Fund updated.', 'data' => $fund->fresh()]);
@@ -262,6 +244,7 @@ class CashManagementController extends Controller
             return [
                 'bank_balances'     => [],
                 'petty_cash'        => [],
+                'cash_on_hand'      => 0,
                 'total_bank'        => 0,
                 'total_petty_cash'  => 0,
                 'total_cash'        => 0,
@@ -296,15 +279,24 @@ class CashManagementController extends Controller
             'balance_formatted'=> '₱' . number_format($f->balance, 2),
         ])->values()->all();
 
+        $cashAccount = Account::where('slug', 'cash')->first() ?? Account::where('code', '1000')->first();
+        $cashOnHand  = 0;
+        if ($cashAccount) {
+            $debit      = (float) JournalEntryLine::where('account_id', $cashAccount->id)->where('line_type', 'debit')->sum('amount');
+            $credit     = (float) JournalEntryLine::where('account_id', $cashAccount->id)->where('line_type', 'credit')->sum('amount');
+            $cashOnHand = round($debit - $credit, 2);
+        }
+
         $totalBank      = round(array_sum(array_column($bankBalances, 'balance')), 2);
         $totalPettyCash = round(array_sum(array_column($pettyCash, 'balance')), 2);
 
         return [
             'bank_balances'    => $bankBalances,
             'petty_cash'       => $pettyCash,
+            'cash_on_hand'     => $cashOnHand,
             'total_bank'       => $totalBank,
             'total_petty_cash' => $totalPettyCash,
-            'total_cash'       => round($totalBank + $totalPettyCash, 2),
+            'total_cash'       => round($totalBank + $totalPettyCash + $cashOnHand, 2),
             'data_ready'       => true,
         ];
     }

@@ -17,8 +17,9 @@ class FundRequest extends FormRequest
         return [
             'name'          => 'required|string|max:255',
             'gl_code'       => 'required|string|max:50|unique:petty_cash_funds,gl_code' . ($id ? ",{$id}" : ''),
-            'weekly_budget'         => 'nullable|numeric|min:0',
             'low_balance_threshold' => 'nullable|numeric|min:0',
+            'initial_balance'       => 'nullable|numeric|min:0.01',
+            'bank_account_id'       => 'nullable|integer|exists:bank_accounts,id',
         ];
     }
 

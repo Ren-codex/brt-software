@@ -22,13 +22,6 @@
                         <div class="invalid-feedback" v-if="form.errors.gl_code">{{ form.errors.gl_code }}</div>
                     </div>
                     <div class="form-group mb-3">
-                        <label class="form-label">Weekly Budget <span class="text-muted">(optional)</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text">₱</span>
-                            <input type="number" v-model="form.weekly_budget" class="form-control" placeholder="0.00" min="0" step="0.01">
-                        </div>
-                    </div>
-                    <div class="form-group mb-3">
                         <label class="form-label">Low Balance Threshold <span class="text-muted">(optional)</span></label>
                         <div class="input-group">
                             <span class="input-group-text">₱</span>
@@ -36,6 +29,30 @@
                         </div>
                         <small class="text-muted">Admins are notified when the fund balance drops below this amount.</small>
                     </div>
+                    <template v-if="!editable">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Initial Balance <span class="text-muted">(optional)</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" v-model="form.initial_balance" class="form-control" :class="{ 'is-invalid': form.errors.initial_balance }" placeholder="0.00" min="0.01" step="0.01">
+                            </div>
+                            <div class="invalid-feedback" v-if="form.errors.initial_balance">{{ form.errors.initial_balance }}</div>
+                        </div>
+                        <div class="form-group mb-3" v-if="form.initial_balance">
+                            <label class="form-label">Funded From</label>
+                            <select v-model="form.source_type" class="form-control">
+                                <option value="cash">Cash on Hand</option>
+                                <option value="bank">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3" v-if="form.initial_balance && form.source_type === 'bank'">
+                            <label class="form-label">Bank Account</label>
+                            <select v-model="form.bank_account_id" class="form-control">
+                                <option value="">-- Select bank --</option>
+                                <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.bank_name }} — {{ b.account_name }}</option>
+                            </select>
+                        </div>
+                    </template>
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Fund saved successfully!</span>
@@ -59,9 +76,12 @@ import { useForm } from '@inertiajs/vue3';
 
 export default {
     emits: ['add', 'update'],
+    props: {
+        bankAccounts: { type: Array, default: () => [] },
+    },
     data() {
         return {
-            form: useForm({ id: null, name: null, gl_code: null, weekly_budget: null, low_balance_threshold: null }),
+            form: useForm({ id: null, name: null, gl_code: null, low_balance_threshold: null, initial_balance: null, source_type: 'cash', bank_account_id: null }),
             showModal: false,
             editable: false,
             saveSuccess: false,
@@ -73,8 +93,10 @@ export default {
                 id: null,
                 name: null,
                 gl_code: null,
-                weekly_budget: null,
                 low_balance_threshold: null,
+                initial_balance: null,
+                source_type: 'cash',
+                bank_account_id: null,
             }).reset();
             this.form.clearErrors();
             this.editable = false;
@@ -85,7 +107,6 @@ export default {
             this.form.id                    = fund.id;
             this.form.name                  = fund.name;
             this.form.gl_code               = fund.gl_code;
-            this.form.weekly_budget         = fund.weekly_budget;
             this.form.low_balance_threshold = fund.low_balance_threshold;
             this.editable   = true;
             this.saveSuccess = false;
@@ -99,8 +120,11 @@ export default {
             this.showModal = false;
         },
         submit() {
+            if (this.form.source_type !== 'bank') {
+                this.form.bank_account_id = null;
+            }
             if (this.editable) {
-                this.form.put(`/libraries/funds/${this.form.id}`, {
+                this.form.put(`/accounting/funds/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: () => {
                         this.saveSuccess = true;
@@ -109,7 +133,7 @@ export default {
                     },
                 });
             } else {
-                this.form.post('/libraries/funds', {
+                this.form.post('/accounting/funds', {
                     preserveScroll: true,
                     onSuccess: () => {
                         this.saveSuccess = true;

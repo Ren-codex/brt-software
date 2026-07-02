@@ -55,6 +55,10 @@
                                 <p class="cash-sub-label mb-0">Petty Cash</p>
                                 <p class="cash-sub-value mb-0">{{ formatCurrency(cashPosition.total_petty_cash) }}</p>
                             </div>
+                            <div class="text-end">
+                                <p class="cash-sub-label mb-0">Cash on Hand</p>
+                                <p class="cash-sub-value mb-0">{{ formatCurrency(cashPosition.cash_on_hand) }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -423,17 +427,10 @@
                             <div class="fund-balance-icon"><i class="ri-wallet-3-line"></i></div>
                             <div>
                                 <p class="fund-name mb-0">{{ selectedFund.name }}</p>
-                                <p class="fund-gl mb-0">GL: {{ selectedFund.gl_code }}</p>
-                                <p class="fund-gl mb-0" v-if="selectedFund.weekly_budget > 0">
-                                    Weekly Budget: <strong style="color:#a8e6cf">{{ formatCurrency(selectedFund.weekly_budget) }}</strong>
-                                    <button class="fund-edit-btn ms-2" @click="openEditFund(selectedFund)" title="Edit budget">
+                                <p class="fund-gl mb-0">
+                                    GL: {{ selectedFund.gl_code }}
+                                    <button class="fund-edit-btn ms-2" @click="openEditFund(selectedFund)" title="Rename fund">
                                         <i class="ri-pencil-line"></i>
-                                    </button>
-                                </p>
-                                <p class="fund-gl mb-0" v-else>
-                                    No weekly budget set
-                                    <button class="fund-edit-btn ms-2" @click="openEditFund(selectedFund)" title="Set weekly budget">
-                                        <i class="ri-add-line"></i> Set Budget
                                     </button>
                                 </p>
                             </div>
@@ -443,23 +440,6 @@
                             <h3 class="fund-balance-value mb-0" :class="selectedFund.balance < 0 ? 'text-danger' : ''">{{ selectedFund.balance_formatted }}</h3>
                         </div>
                     </div>
-                    <!-- Weekly budget usage bar -->
-                    <template v-if="selectedFund.weekly_budget > 0 && weeklyRemaining !== null">
-                        <div class="week-budget-bar-wrap mt-3">
-                            <div class="d-flex justify-content-between mb-1" style="font-size:0.75rem;color:#527267">
-                                <span>This week's spending</span>
-                                <span class="fw-semibold" style="color:#1a4d3d">{{ formatCurrency(weeklySpent) }} / {{ formatCurrency(selectedFund.weekly_budget) }}</span>
-                            </div>
-                            <div class="week-budget-bar">
-                                <div class="week-budget-fill" :style="weeklyBarStyle"></div>
-                            </div>
-                            <div class="d-flex justify-content-between mt-1" style="font-size:0.72rem;color:#6b8c85">
-                                <span v-if="weeklyRemaining >= 0">Remaining: <strong style="color:#1a6b4a">{{ formatCurrency(weeklyRemaining) }}</strong></span>
-                                <span v-else style="color:#b91c1c;font-weight:700">Over budget by {{ formatCurrency(Math.abs(weeklyRemaining)) }}</span>
-                                <span v-if="weeklyRemaining < 0" style="color:#9a3b1b;font-style:italic">Can still request additional budget</span>
-                            </div>
-                        </div>
-                    </template>
                 </div>
 
                 <!-- Transactions table -->
@@ -556,13 +536,29 @@
                             <div class="col-12 col-sm-6">
                                 <label class="form-label">Initial Balance <span class="text-muted">(optional)</span></label>
                                 <input v-model="pcFundForm.initial_balance" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
-                                <div class="form-text">Posts DR Petty Cash / CR Cash on Hand.</div>
                                 <div v-if="pcFundErrors.initial_balance" class="error-msg">{{ pcFundErrors.initial_balance[0] }}</div>
                             </div>
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Weekly Budget <span class="text-muted">(optional)</span></label>
-                                <input v-model="pcFundForm.weekly_budget" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" />
-                            </div>
+                            <template v-if="pcFundForm.initial_balance">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label">Funded From</label>
+                                    <select v-model="pcFundForm.source_type" class="form-select">
+                                        <option value="cash">Cash on Hand</option>
+                                        <option value="bank">Bank Transfer</option>
+                                    </select>
+                                </div>
+                                <div v-if="pcFundForm.source_type === 'bank'" class="col-12">
+                                    <label class="form-label">Bank Account</label>
+                                    <select v-model="pcFundForm.bank_account_id" class="form-select">
+                                        <option value="">-- Select bank --</option>
+                                        <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.bank_name }} — {{ b.account_name }}</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-text">
+                                        Posts DR Petty Cash / CR {{ pcFundForm.source_type === 'bank' ? 'the selected bank account' : 'Cash on Hand' }}.
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -581,8 +577,8 @@
                     <div class="modal-header">
                         <div class="modal-header-icon"><i class="ri-pencil-line"></i></div>
                         <div>
-                            <h5 class="modal-title">Edit Fund Settings</h5>
-                            <p class="modal-subtitle">Update the fund name and weekly budget.</p>
+                            <h5 class="modal-title">Rename Fund</h5>
+                            <p class="modal-subtitle">Update the fund name.</p>
                         </div>
                         <button class="close-btn ms-auto" @click="fundEditModal.open = false"><i class="ri-close-line"></i></button>
                     </div>
@@ -591,11 +587,6 @@
                             <div class="col-12">
                                 <label class="form-label">Fund Name <span class="text-danger">*</span></label>
                                 <input v-model="fundEditForm.name" type="text" class="form-control" placeholder="Fund name" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Weekly Budget <span class="text-muted">(optional)</span></label>
-                                <input v-model="fundEditForm.weekly_budget" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" />
-                                <div class="form-text">Set to 0 to remove the weekly budget limit.</div>
                             </div>
                         </div>
                     </div>
@@ -729,7 +720,7 @@ export default {
         bankAccounts: { type: Array,  default: () => [] },
         cashAccounts: { type: Array,  default: () => [] },
         deposits:     { type: Array,  default: () => [] },
-        cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
+        cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], cash_on_hand: 0, total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
         summaryCards: { type: Array,  default: () => [] },
         stats:        { type: Object, default: () => ({}) },
     },
@@ -746,7 +737,7 @@ export default {
 
             // Petty cash fund creation
             pcFundModal:  { open: false },
-            pcFundForm:   { name: '', gl_code: '', initial_balance: '', weekly_budget: '' },
+            pcFundForm:   { name: '', gl_code: '', initial_balance: '', source_type: 'cash', bank_account_id: '' },
             pcFundErrors: {},
             pcFundSaving: false,
 
@@ -764,7 +755,7 @@ export default {
 
             // Fund edit modal
             fundEditModal:  { open: false },
-            fundEditForm:   { name: '', weekly_budget: '' },
+            fundEditForm:   { name: '' },
             fundEditSaving: false,
 
             // Approved replenishment requests for the replenish modal
@@ -776,18 +767,6 @@ export default {
     computed: {
         selectedFund() {
             return this.funds.find(f => f.id === this.selectedFundId) ?? null;
-        },
-        weeklySpent() {
-            return this.selectedFund?.weekly_spent ?? 0;
-        },
-        weeklyRemaining() {
-            return this.selectedFund?.weekly_remaining ?? null;
-        },
-        weeklyBarStyle() {
-            if (!this.selectedFund || !this.selectedFund.weekly_budget) return {};
-            const pct = Math.min((this.weeklySpent / this.selectedFund.weekly_budget) * 100, 100);
-            const color = pct >= 100 ? '#ef4444' : pct >= 75 ? '#f59e0b' : '#22c55e';
-            return { width: pct + '%', background: color };
         },
     },
     methods: {
@@ -829,7 +808,7 @@ export default {
 
         // ── Petty Cash ────────────────────────────────────────────────
         openCreateFund() {
-            this.pcFundForm   = { name: '', gl_code: '', initial_balance: '', weekly_budget: '' };
+            this.pcFundForm   = { name: '', gl_code: '', initial_balance: '', source_type: 'cash', bank_account_id: '' };
             this.pcFundErrors = {};
             this.pcFundModal.open = true;
         },
@@ -837,7 +816,13 @@ export default {
             this.pcFundSaving = true;
             this.pcFundErrors = {};
             try {
-                const res = await axios.post('/accounting/petty-cash/funds', this.pcFundForm);
+                const payload = {
+                    name: this.pcFundForm.name,
+                    gl_code: this.pcFundForm.gl_code,
+                    initial_balance: this.pcFundForm.initial_balance,
+                    bank_account_id: this.pcFundForm.source_type === 'bank' ? this.pcFundForm.bank_account_id : null,
+                };
+                const res = await axios.post('/accounting/petty-cash/funds', payload);
                 this.pcFundModal.open = false;
                 router.reload({ preserveScroll: true });
             } catch (e) {
@@ -956,7 +941,7 @@ export default {
 
         // ── Fund Edit ─────────────────────────────────────────────────
         openEditFund(fund) {
-            this.fundEditForm = { name: fund.name, weekly_budget: fund.weekly_budget || '' };
+            this.fundEditForm = { name: fund.name };
             this.fundEditModal.open = true;
         },
         async submitEditFund() {
@@ -1123,15 +1108,4 @@ export default {
     cursor: pointer; line-height: 1.6; vertical-align: middle;
 }
 .fund-edit-btn:hover { background: rgba(61,141,122,0.28); }
-
-/* ── Weekly budget progress bar ──────────────────────────────── */
-.week-budget-bar {
-    height: 8px; border-radius: 999px;
-    background: #c4dfd5;
-    overflow: hidden;
-}
-.week-budget-fill {
-    height: 100%; border-radius: 999px;
-    transition: width 0.4s ease, background 0.3s;
-}
 </style>
