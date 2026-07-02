@@ -134,7 +134,6 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index']);
         Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher']);
         Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher']);
-        Route::post('/accounting/petty-cash/funds/{id}/top-up', [App\Http\Controllers\Modules\PettyCashController::class, 'topUpFund']);
         Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index']);
         Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store']);
         Route::put('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'update']);
@@ -149,8 +148,6 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::delete('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'destroy']);
         Route::post('/accounting/fund-transfers', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFundTransfer']);
         Route::delete('/accounting/fund-transfers/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyFundTransfer']);
-        Route::post('/accounting/petty-cash/funds', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFund']);
-        Route::put('/accounting/petty-cash/funds/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'updateFund']);
         Route::post('/accounting/petty-cash/transactions', [App\Http\Controllers\Modules\CashManagementController::class, 'storePettyCashTransaction']);
         Route::delete('/accounting/petty-cash/transactions/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyPettyCashTransaction']);
         Route::post('/accounting/bank-deposits', [App\Http\Controllers\Modules\CashManagementController::class, 'storeDeposit']);

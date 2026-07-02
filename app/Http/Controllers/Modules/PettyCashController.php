@@ -8,7 +8,6 @@ use App\Models\Expense;
 use App\Models\PettyCashFund;
 use App\Models\ReplenishmentRequest;
 use App\Models\User;
-use App\Services\Accounting\CashManagementService;
 use App\Services\Accounting\JournalEntryService;
 use App\Services\NotificationService;
 use App\Services\SeriesService;
@@ -21,7 +20,6 @@ class PettyCashController extends Controller
 {
     public function __construct(
         protected SeriesService $series,
-        protected CashManagementService $cashManagement,
         protected JournalEntryService $journal,
         protected NotificationService $notificationService,
     ) {}
@@ -136,33 +134,6 @@ class PettyCashController extends Controller
             'message' => 'Voucher ' . $voucher->voucher_no . ' recorded.',
             'data'    => $this->formatVoucher($voucher->fresh(['fund', 'added_by'])),
             'fund'    => $this->formatFund($fund->fresh()),
-        ]);
-    }
-
-    public function topUpFund(Request $request, int $id)
-    {
-        $data = $request->validate([
-            'amount'         => 'required|numeric|min:0.01',
-            'top_up_date'    => 'required|date',
-            'bank_account_id'=> 'nullable|integer|exists:bank_accounts,id',
-            'notes'          => 'nullable|string|max:300',
-        ]);
-
-        $fund = PettyCashFund::findOrFail($id);
-        $amount = round((float) $data['amount'], 2);
-
-        $this->cashManagement->addTransaction($fund, [
-            'type' => 'replenishment',
-            'amount' => $amount,
-            'transaction_date' => $data['top_up_date'],
-            'bank_account_id' => $data['bank_account_id'] ?? null,
-            'source_type' => !empty($data['bank_account_id']) ? 'bank' : null,
-            'description' => $data['notes'] ?? null,
-        ]);
-
-        return response()->json([
-            'message' => '₱' . number_format($amount, 2) . ' added to ' . $fund->name . '.',
-            'fund'    => $this->formatFund($fund->fresh(['custodian'])),
         ]);
     }
 

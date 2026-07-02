@@ -147,35 +147,6 @@ class CashManagementController extends Controller
         return response()->json(['message' => 'Transfer deleted and journal entry reversed.']);
     }
 
-    public function storeFund(Request $request)
-    {
-        $data = $request->validate([
-            'name'            => 'required|string|max:100',
-            'gl_code'         => 'required|string|max:20|unique:petty_cash_funds,gl_code',
-            'initial_balance' => 'nullable|numeric|min:0.01',
-            'bank_account_id' => 'nullable|integer|exists:bank_accounts,id',
-        ]);
-
-        $fund = $this->service->createFund($data);
-
-        return response()->json(['message' => 'Petty cash fund created.', 'data' => $fund]);
-    }
-
-    public function updateFund(Request $request, int $id)
-    {
-        $fund = \App\Models\PettyCashFund::findOrFail($id);
-
-        $data = $request->validate([
-            'name' => 'required|string|max:100',
-        ]);
-
-        $fund->update([
-            'name' => $data['name'],
-        ]);
-
-        return response()->json(['message' => 'Fund updated.', 'data' => $fund->fresh()]);
-    }
-
     public function storePettyCashTransaction(Request $request)
     {
         $data = $request->validate([
