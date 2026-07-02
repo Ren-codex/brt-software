@@ -786,14 +786,4 @@ export default {
 /* ── Bank Deposits ───────────────────────────────────────────── */
 .deposit-no     { font-size: 0.78rem; font-weight: 700; color: #2f6b5c; font-family: monospace; }
 .deposit-amount { color: #1e4d8c; }
-
-/* ── Fund edit button ────────────────────────────────────────── */
-.fund-edit-btn {
-    display: inline-flex; align-items: center; gap: 0.2rem;
-    padding: 1px 8px; border-radius: 6px;
-    background: rgba(61,141,122,0.15); border: 1px solid rgba(61,141,122,0.3);
-    color: #1a4d3d; font-size: 0.72rem; font-weight: 600;
-    cursor: pointer; line-height: 1.6; vertical-align: middle;
-}
-.fund-edit-btn:hover { background: rgba(61,141,122,0.28); }
 </style>
