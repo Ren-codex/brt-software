@@ -92,7 +92,7 @@ class CashManagementService
 
             $fund = PettyCashFund::create([
                 'name'          => $data['name'],
-                'gl_code'       => $data['gl_code'],
+                'gl_code'       => $data['gl_code'] ?? $this->generateFundGlCode(),
                 'balance'       => $initialBalance,
                 'fixed_amount'  => $initialBalance,
                 'custodian_id'  => $data['custodian_id'] ?? null,
@@ -195,5 +195,15 @@ class CashManagementService
 
             $txn->delete();
         });
+    }
+
+    private function generateFundGlCode(): string
+    {
+        $lastNumber = PettyCashFund::where('gl_code', 'like', 'PCF-%')
+            ->get()
+            ->map(fn ($f) => (int) substr($f->gl_code, 4))
+            ->max() ?? 0;
+
+        return 'PCF-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
     }
 }

@@ -16,7 +16,7 @@
                         <input type="text" v-model="form.name" class="form-control" :class="{ 'is-invalid': form.errors.name }" placeholder="e.g. Main Office Fund">
                         <div class="invalid-feedback" v-if="form.errors.name">{{ form.errors.name }}</div>
                     </div>
-                    <div class="form-group mb-3">
+                    <div class="form-group mb-3" v-if="editable">
                         <label class="form-label">GL Code <span class="text-danger">*</span></label>
                         <input type="text" v-model="form.gl_code" class="form-control" :class="{ 'is-invalid': form.errors.gl_code }" placeholder="e.g. PCF-001">
                         <div class="invalid-feedback" v-if="form.errors.gl_code">{{ form.errors.gl_code }}</div>

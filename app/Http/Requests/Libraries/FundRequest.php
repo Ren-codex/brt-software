@@ -16,7 +16,7 @@ class FundRequest extends FormRequest
         $id = $this->input('id');
         return [
             'name'          => 'required|string|max:255',
-            'gl_code'       => 'required|string|max:50|unique:petty_cash_funds,gl_code' . ($id ? ",{$id}" : ''),
+            'gl_code'       => ($id ? 'required' : 'nullable') . '|string|max:50|unique:petty_cash_funds,gl_code' . ($id ? ",{$id}" : ''),
             'low_balance_threshold' => 'nullable|numeric|min:0',
             'initial_balance'       => 'nullable|numeric|min:0.01',
             'bank_account_id'       => 'nullable|integer|exists:bank_accounts,id',
