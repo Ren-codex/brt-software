@@ -1033,30 +1033,6 @@ class JournalEntryService
         );
     }
 
-    public function recordPettyCashVoucherEntry(Expense $voucher): ?JournalEntry
-    {
-        $voucher->loadMissing('fund');
-
-        $amount = round((float) $voucher->amount, 2);
-        if ($amount <= 0 || !$voucher->fund) {
-            return null;
-        }
-
-        $pettyCashAccount = $this->resolvePettyCashAccount($voucher->fund);
-        $expenseAccount   = $this->resolveExpenseAccount($voucher->expense_type);
-
-        return $this->createEntry(
-            $voucher,
-            $voucher->expense_date,
-            'petty_cash_voucher',
-            'Petty cash voucher ' . $voucher->voucher_no . ($voucher->description ? ' — ' . $voucher->description : '') . '.',
-            [
-                ['account_id' => $expenseAccount->id,   'line_type' => 'debit',  'amount' => $amount, 'description' => 'Record petty cash expense: ' . ($voucher->description ?? $voucher->expense_type) . '.'],
-                ['account_id' => $pettyCashAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Reduce petty cash fund: ' . $voucher->fund->name . '.'],
-            ]
-        );
-    }
-
     public function recordPettyCashAdjustment(PettyCashTransaction $txn, float $delta): JournalEntry
     {
         $txn->loadMissing(['fund']);
