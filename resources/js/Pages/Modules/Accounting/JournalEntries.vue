@@ -135,7 +135,14 @@
                                                 <td>
                                                     <div class="source-cell">
                                                         <span class="source-type">{{ formatSourceType(entry.source_type) }}</span>
-                                                        <span class="source-ref">{{ entry.source_ref || ('#' + entry.source_id) }}</span>
+                                                        <span v-if="entry.source_type === 'ReplenishmentRequest'"
+                                                            class="source-ref source-ref-link"
+                                                            title="View voucher breakdown"
+                                                            @click.stop="openVoucherBreakdown(entry)">
+                                                            {{ entry.source_ref || ('#' + entry.source_id) }}
+                                                            <i class="ri-file-list-3-line"></i>
+                                                        </span>
+                                                        <span v-else class="source-ref">{{ entry.source_ref || ('#' + entry.source_id) }}</span>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -356,6 +363,66 @@
             </div>
         </div>
 
+        <!-- Voucher breakdown drawer -->
+        <div v-if="voucherDrawer.open" class="drawer-overlay" @click="closeVoucherDrawer"></div>
+        <div class="drawer-panel" :class="{ 'drawer-open': voucherDrawer.open }">
+            <div class="drawer-header">
+                <div class="drawer-header-info">
+                    <span class="drawer-acc-code">{{ voucherDrawer.data?.reference_no || '—' }}</span>
+                    <h6 class="drawer-acc-name">{{ voucherDrawer.data?.fund_name || 'Petty Cash Replenishment' }}</h6>
+                    <p class="drawer-period mb-0">
+                        {{ voucherDrawer.data?.reviewed_at ? 'Approved ' + voucherDrawer.data.reviewed_at : (voucherDrawer.data?.status || '') }}
+                    </p>
+                </div>
+                <button class="drawer-close-btn" @click="closeVoucherDrawer">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+
+            <div class="drawer-body">
+                <div v-if="voucherDrawer.loading" class="drawer-loading">
+                    <i class="ri-loader-4-line spin"></i>
+                    Loading vouchers…
+                </div>
+
+                <template v-else>
+                    <div class="drawer-table-wrap">
+                        <table class="drawer-table">
+                            <thead>
+                                <tr>
+                                    <th>Voucher #</th>
+                                    <th>Date</th>
+                                    <th>Payee</th>
+                                    <th>Category</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-if="!voucherDrawer.data?.expenses?.length">
+                                    <td colspan="5" class="drawer-empty">
+                                        <i class="ri-inbox-line"></i>
+                                        No vouchers found for this replenishment.
+                                    </td>
+                                </tr>
+                                <tr v-for="voucher in voucherDrawer.data?.expenses" :key="voucher.voucher_no" class="drawer-line-row">
+                                    <td class="font-monospace drawer-jnum">{{ voucher.voucher_no }}</td>
+                                    <td class="text-nowrap">{{ voucher.expense_date }}</td>
+                                    <td class="drawer-desc">{{ voucher.payee || '-' }}</td>
+                                    <td>{{ formatLabel(voucher.expense_type) }}</td>
+                                    <td class="text-end drawer-num">{{ voucher.amount_fmt }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="drawer-balance-row closing">
+                        <span class="dbal-label">Total Replenished</span>
+                        <span class="dbal-value">{{ voucherDrawer.data?.total_formatted }}</span>
+                    </div>
+                </template>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -405,6 +472,11 @@ export default {
             showEntryModal: false,
             entrySaving: false,
             entryErrors: {},
+            voucherDrawer: {
+                open: false,
+                loading: false,
+                data: null,
+            },
             entryForm: {
                 entry_date: '',
                 memo: '',
@@ -502,6 +574,18 @@ export default {
         closeEntryModal() {
             this.showEntryModal = false;
         },
+        openVoucherBreakdown(entry) {
+            this.voucherDrawer.open = true;
+            this.voucherDrawer.loading = true;
+            this.voucherDrawer.data = null;
+            axios.get(`/replenishments/${entry.source_id}`)
+                .then(({ data }) => { this.voucherDrawer.data = data; })
+                .catch(() => {})
+                .finally(() => { this.voucherDrawer.loading = false; });
+        },
+        closeVoucherDrawer() {
+            this.voucherDrawer.open = false;
+        },
         addLine() {
             this.entryForm.lines.push({ account_id: null, line_type: 'debit', amount: null, description: '' });
         },
@@ -547,6 +631,7 @@ export default {
                 ReceivedStock: 'Stock Receipt', Expense: 'Expense',
                 InventoryAdjustment: 'Inv. Adjustment', SalesReturn: 'Sales Return',
                 Loan: 'Loan', Payroll: 'Payroll',
+                ReplenishmentRequest: 'Petty Cash Replenishment',
             };
             return map[type] || type || '—';
         },
@@ -852,4 +937,101 @@ export default {
 
 .spin { display: inline-block; animation: spin 0.8s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ── Source ref link (opens voucher breakdown drawer) ────── */
+.source-ref-link {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    color: #3d8d7a; font-weight: 700; cursor: pointer; text-decoration: underline dotted;
+}
+.source-ref-link:hover { color: #2c6b5c; }
+.source-ref-link i { font-size: 0.85rem; }
+
+/* ── Voucher breakdown drawer ─────────────────────────────── */
+.drawer-overlay {
+    position: fixed; inset: 0; z-index: 1040;
+    background: rgba(10, 28, 25, 0.35);
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.drawer-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 1050;
+    width: 680px; max-width: 95vw;
+    background: #fff;
+    box-shadow: -6px 0 32px rgba(10,28,25,0.14);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.drawer-panel.drawer-open { transform: translateX(0); }
+
+.drawer-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+    border-bottom: 1px solid #c4d9d2;
+    flex-shrink: 0;
+}
+.drawer-header-info { display: flex; flex-direction: column; gap: 0.1rem; }
+.drawer-acc-code {
+    font-family: monospace; font-size: 0.72rem;
+    color: #6b8c85; font-weight: 600; letter-spacing: 0.05em;
+}
+.drawer-acc-name { font-size: 1rem; font-weight: 700; color: #16322e; margin: 0; }
+.drawer-period   { font-size: 0.78rem; color: #6b8c85; }
+
+.drawer-close-btn {
+    width: 32px; height: 32px; border-radius: 10px;
+    border: 1px solid #c4d9d2; background: #fff;
+    color: #16322e; font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    transition: background 0.12s;
+}
+.drawer-close-btn:hover { background: #edf5f2; }
+
+.drawer-body {
+    flex: 1 1 auto; overflow-y: auto;
+    padding: 0;
+    display: flex; flex-direction: column;
+}
+
+.drawer-loading {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    gap: 0.6rem; color: #6b8c85; font-size: 0.88rem;
+}
+
+.drawer-table-wrap { flex: 1; overflow-x: auto; }
+.drawer-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.78rem;
+}
+.drawer-table thead th {
+    position: sticky; top: 0;
+    background: #edf5f2; color: #527267;
+    font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
+    padding: 0.45rem 0.75rem; white-space: nowrap;
+    border-bottom: 2px solid #d5eae2;
+}
+.drawer-table tbody td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #f0f7f4; vertical-align: middle; }
+.drawer-line-row:hover { background: #fafcfb; }
+
+.drawer-jnum  { font-size: 0.72rem; color: #3d8d7a; font-weight: 700; }
+.drawer-desc  { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #527267; }
+.drawer-num   { font-family: 'Courier New', monospace; white-space: nowrap; color: #1e3530; font-weight: 600; }
+
+.drawer-empty {
+    text-align: center; color: #9ab8af;
+    padding: 2rem !important; font-size: 0.84rem;
+}
+.drawer-empty i { display: block; font-size: 1.5rem; margin-bottom: 0.4rem; }
+
+.drawer-balance-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.7rem 1.5rem; font-size: 0.84rem; font-weight: 600;
+    background: #f4f9f7; border-top: 2px solid #b8d9cc; flex-shrink: 0;
+}
+.dbal-label { color: #527267; }
+.dbal-value { font-family: 'Courier New', monospace; color: #1e3530; }
 </style>

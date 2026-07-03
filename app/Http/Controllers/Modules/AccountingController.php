@@ -2011,6 +2011,7 @@ class AccountingController extends Controller
             'ArInvoice'   => ['table' => 'ar_invoices',     'column' => 'invoice_number'],
             'Receipt'     => ['table' => 'receipts',        'column' => 'receipt_number'],
             'ReceivedStock' => ['table' => 'received_stocks', 'column' => 'received_no'],
+            'ReplenishmentRequest' => ['table' => 'replenishment_requests', 'column' => 'reference_no'],
         ];
 
         $refMap = [];
@@ -2049,6 +2050,7 @@ class AccountingController extends Controller
             'ArInvoice'    => ['table' => 'ar_invoices',     'column' => 'invoice_number'],
             'Receipt'      => ['table' => 'receipts',        'column' => 'receipt_number'],
             'ReceivedStock'=> ['table' => 'received_stocks', 'column' => 'received_no'],
+            'ReplenishmentRequest' => ['table' => 'replenishment_requests', 'column' => 'reference_no'],
             default        => null,
         };
 
