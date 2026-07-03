@@ -166,6 +166,13 @@ export default {
                             href: "/accounting/petty-cash",
                         },
                         {
+                            id: "petty_cash_funds",
+                            label: "Petty Cash Funds",
+                            icon: "ri-safe-2-line",
+                            description: "Fund setup, top-ups, balance adjustments",
+                            href: "/accounting/funds",
+                        },
+                        {
                             id: "expenses",
                             label: "Expenses",
                             icon: "ri-bill-line",
@@ -264,6 +271,12 @@ export default {
 
 .inventory-sidebar {
     transition: width 0.3s ease;
+}
+
+.inventory-sidebar-tabs {
+    overflow-y: auto;
+    min-height: 0;
+    max-height: 85vh;
 }
 
 .inventory-sidebar.sidebar-collapsed {

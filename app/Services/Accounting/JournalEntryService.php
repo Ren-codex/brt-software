@@ -298,6 +298,64 @@ class JournalEntryService
         return $entries;
     }
 
+    public function recordReplacementEntries(SalesOrder $salesOrder, array $replacementItems, ?Receipt $extraReceipt = null): array
+    {
+        $entries = [];
+
+        $replacementCost = round(array_sum(array_map(function ($item) {
+            $productId = (int) ($item['product_id'] ?? 0);
+            $quantity  = (int) ($item['quantity']   ?? 0);
+            if ($productId <= 0 || $quantity <= 0) {
+                return 0;
+            }
+            $stock = InventoryStocks::where(function ($q) use ($productId) {
+                $q->whereHas('receivedItem', fn ($s) => $s->where('product_id', $productId))
+                  ->orWhere(fn ($s) => $s->where('product_id', $productId)->whereNotNull('conversion_id'));
+            })->orderBy('created_at')->first();
+
+            $unitCost = (float) ($stock?->receivedItem?->unit_cost ?? $stock?->unit_cost ?? 0);
+
+            return $unitCost * $quantity;
+        }, $replacementItems)), 2);
+
+        if ($replacementCost > 0) {
+            $cogsAccount      = $this->ensureAccount('5100', 'cost_of_goods_sold', 'Cost of Goods Sold', 'expense', 'cost_of_sales');
+            $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
+            $memo = 'Replacement goods issued for SO#' . $salesOrder->so_number . '. Inventory reduction entry.';
+
+            $entries[] = $this->createEntry(
+                $salesOrder,
+                now()->toDateString(),
+                'replacement_inventory_out',
+                $memo,
+                [
+                    [
+                        'account_id'  => $cogsAccount->id,
+                        'line_type'   => 'debit',
+                        'amount'      => $replacementCost,
+                        'description' => 'Cost of replacement goods issued to customer.',
+                    ],
+                    [
+                        'account_id'  => $inventoryAccount->id,
+                        'line_type'   => 'credit',
+                        'amount'      => $replacementCost,
+                        'description' => 'Reduce inventory for replacement goods issued.',
+                    ],
+                ],
+                $memo
+            );
+        }
+
+        if ($extraReceipt) {
+            $entry = $this->recordReceiptEntry($extraReceipt);
+            if ($entry) {
+                $entries[] = $entry;
+            }
+        }
+
+        return $entries;
+    }
+
     public function recordReplenishmentEntry(\App\Models\ReplenishmentRequest $replenishment): ?JournalEntry
     {
         $expenses = $replenishment->expenses;
@@ -352,7 +410,9 @@ class JournalEntryService
         }
 
         $expenseAccount = $this->resolveExpenseAccount($expense->expense_type);
-        $cashAccount = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+        $creditAccount  = $expense->fund_id
+            ? $this->resolvePettyCashAccount($expense->loadMissing('fund')->fund)
+            : $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
 
         return $this->createEntry(
             $expense,
@@ -367,10 +427,10 @@ class JournalEntryService
                     'description' => 'Recognize released expense.',
                 ],
                 [
-                    'account_id' => $cashAccount->id,
+                    'account_id' => $creditAccount->id,
                     'line_type' => 'credit',
                     'amount' => $amount,
-                    'description' => 'Reduce cash for expense payment.',
+                    'description' => $expense->fund_id ? 'Reduce petty cash fund: ' . $expense->fund->name . '.' : 'Reduce cash for expense payment.',
                 ],
             ],
             'Expense #' . $expense->id . ' - Released expense posting.'
@@ -864,10 +924,12 @@ class JournalEntryService
         );
     }
 
-    public function recordFundCapitalization(\App\Models\PettyCashFund $fund, float $amount): JournalEntry
+    public function recordFundCapitalization(\App\Models\PettyCashFund $fund, float $amount, ?int $bankAccountId = null): JournalEntry
     {
         $pettyCashAccount = $this->resolvePettyCashAccount($fund);
-        $cashAccount      = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+        $creditAccount    = $bankAccountId
+            ? $this->resolvePaymentAccount('bank_transfer', $bankAccountId)
+            : $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
 
         return $this->createEntry(
             $fund,
@@ -876,7 +938,7 @@ class JournalEntryService
             'Initial capitalization of petty cash fund: ' . $fund->name . '.',
             [
                 ['account_id' => $pettyCashAccount->id, 'line_type' => 'debit',  'amount' => $amount, 'description' => 'Establish petty cash fund: ' . $fund->name . '.'],
-                ['account_id' => $cashAccount->id,      'line_type' => 'credit', 'amount' => $amount, 'description' => 'Transfer from cash on hand to petty cash fund.'],
+                ['account_id' => $creditAccount->id,    'line_type' => 'credit', 'amount' => $amount, 'description' => $bankAccountId ? 'Transfer from bank to petty cash fund.' : 'Transfer from cash on hand to petty cash fund.'],
             ]
         );
     }
@@ -968,6 +1030,57 @@ class JournalEntryService
                 ['account_id' => $expenseAccount->id,   'line_type' => 'debit',  'amount' => $amount, 'description' => 'Record petty cash expense: ' . ($txn->description ?? $txn->category ?? 'disbursement') . '.'],
                 ['account_id' => $pettyCashAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Reduce petty cash fund.'],
             ]
+        );
+    }
+
+    public function recordPettyCashVoucherEntry(Expense $voucher): ?JournalEntry
+    {
+        $voucher->loadMissing('fund');
+
+        $amount = round((float) $voucher->amount, 2);
+        if ($amount <= 0 || !$voucher->fund) {
+            return null;
+        }
+
+        $pettyCashAccount = $this->resolvePettyCashAccount($voucher->fund);
+        $expenseAccount   = $this->resolveExpenseAccount($voucher->expense_type);
+
+        return $this->createEntry(
+            $voucher,
+            $voucher->expense_date,
+            'petty_cash_voucher',
+            'Petty cash voucher ' . $voucher->voucher_no . ($voucher->description ? ' — ' . $voucher->description : '') . '.',
+            [
+                ['account_id' => $expenseAccount->id,   'line_type' => 'debit',  'amount' => $amount, 'description' => 'Record petty cash expense: ' . ($voucher->description ?? $voucher->expense_type) . '.'],
+                ['account_id' => $pettyCashAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Reduce petty cash fund: ' . $voucher->fund->name . '.'],
+            ]
+        );
+    }
+
+    public function recordPettyCashAdjustment(PettyCashTransaction $txn, float $delta): JournalEntry
+    {
+        $txn->loadMissing(['fund']);
+
+        $pettyCashAccount  = $this->resolvePettyCashAccount($txn->fund);
+        $overShortAccount  = $this->ensureAccount('5900', 'cash_over_short', 'Cash Over/Short', 'expense', 'operating_expense');
+        $amount            = round(abs($delta), 2);
+
+        $lines = $delta > 0
+            ? [
+                ['account_id' => $pettyCashAccount->id, 'line_type' => 'debit',  'amount' => $amount, 'description' => 'Cash count overage — increase petty cash fund.'],
+                ['account_id' => $overShortAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Record cash overage.'],
+            ]
+            : [
+                ['account_id' => $overShortAccount->id, 'line_type' => 'debit',  'amount' => $amount, 'description' => 'Record cash shortage.'],
+                ['account_id' => $pettyCashAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Cash count shortage — reduce petty cash fund.'],
+            ];
+
+        return $this->createEntry(
+            $txn,
+            $txn->transaction_date,
+            'petty_cash_adjustment',
+            'Petty cash balance adjustment ' . $txn->transaction_no . ($txn->description ? ' — ' . $txn->description : '') . '.',
+            $lines
         );
     }
 

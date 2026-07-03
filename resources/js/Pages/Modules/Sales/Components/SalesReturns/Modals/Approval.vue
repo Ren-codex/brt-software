@@ -49,14 +49,10 @@
                             <thead>
                                 <tr>
                                     <th class="col-check">
-                                        <input
-                                            type="checkbox"
-                                            :checked="allItemsSelected"
-                                            @change="toggleAll"
-                                        >
+                                        <input type="checkbox" :checked="allItemsSelected" @change="toggleAll">
                                     </th>
                                     <th>Product</th>
-                                    <th>Sold Qty</th>
+                                    <th>Returnable Qty</th>
                                     <th>Return Qty</th>
                                     <th>Condition</th>
                                     <th>Unit</th>
@@ -67,28 +63,103 @@
                             <tbody>
                                 <tr v-for="item in items" :key="item.id">
                                     <td>
-                                        <input
-                                            type="checkbox"
-                                            v-model="selectedItems"
-                                            :value="item.id"
-                                        >
+                                        <input type="checkbox" v-model="selectedItems" :value="item.id">
                                     </td>
                                     <td>{{ getProductName(item.product_id) }}</td>
-                                    <td>{{ item.quantity }}</td>
-                                    <td>{{ getReturnQuantity(item.id, item.quantity) }}</td>
+                                    <td>{{ item.quantity - (item.returned_quantity || 0) }}</td>
+                                    <td>{{ getReturnQuantity(item.id, item.quantity - (item.returned_quantity || 0)) }}</td>
                                     <td>{{ formatCondition(getReturnCondition(item.id)) }}</td>
                                     <td>{{ item.unit }}</td>
                                     <td>{{ formatCurrency(item.price) }}</td>
-                                    <td class="fw-semibold">{{ formatCurrency(getReturnQuantity(item.id, item.quantity) * (item.price - (item.discount_per_unit || 0))) }}</td>
+                                    <td class="fw-semibold">{{ formatCurrency(getReturnQuantity(item.id, item.quantity - (item.returned_quantity || 0)) * (item.price - (item.discount_per_unit || 0))) }}</td>
                                 </tr>
                             </tbody>
                             <tfoot v-if="items.length > 0">
                                 <tr>
-                                    <td colspan="7" class="text-end fw-bold">Selected Total:</td>
-                                    <td class="fw-bold text-success">{{ formatCurrency(selectedTotal) }}</td>
+                                    <td colspan="7" class="text-end fw-bold">Return Value:</td>
+                                    <td class="fw-bold text-danger">{{ formatCurrency(selectedTotal) }}</td>
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Replacement Items -->
+                <div class="table-wrap mt-3">
+                    <div class="table-toolbar">
+                        <h6 class="mb-0">Replacement Items</h6>
+                        <button type="button" class="btn btn-sm btn-outline-success" @click="addReplacementRow">
+                            <i class="ri-add-line me-1"></i> Add Item
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 pretty-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th style="width:120px">Qty</th>
+                                    <th style="width:130px">Unit Price</th>
+                                    <th style="width:130px">Total</th>
+                                    <th style="width:44px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(row, i) in replacementRows" :key="i">
+                                    <td>
+                                        <select v-model="row.product_id" @change="onReplacementProductChange(row)" class="form-select form-select-sm">
+                                            <option :value="null">Select product...</option>
+                                            <option v-for="p in productsWithStock" :key="p.value" :value="p.value">{{ p.name }}</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" v-model.number="row.quantity" min="1" class="form-control form-control-sm" placeholder="Qty">
+                                    </td>
+                                    <td>
+                                        <input type="number" v-model.number="row.price" min="0" step="0.01" class="form-control form-control-sm" placeholder="Price">
+                                    </td>
+                                    <td class="fw-semibold">{{ formatCurrency((row.quantity || 0) * (row.price || 0)) }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" @click="removeReplacementRow(i)">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="replacementRows.length === 0">
+                                    <td colspan="5" class="text-center text-muted small py-2">No replacement items added yet.</td>
+                                </tr>
+                            </tbody>
+                            <tfoot v-if="replacementRows.length > 0">
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Replacement Value:</td>
+                                    <td class="fw-bold text-success">{{ formatCurrency(replacementTotal) }}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Under-value warning -->
+                    <div v-if="replacementUndervalue" class="alert-undervalue mt-2">
+                        <i class="ri-error-warning-line"></i>
+                        Replacement value ({{ formatCurrency(replacementTotal) }}) must be equal to or greater than the return value ({{ formatCurrency(selectedTotal) }}). No under-value replacements allowed.
+                    </div>
+
+                    <!-- Cash return summary -->
+                    <div class="cash-return-summary mt-3">
+                        <div class="crs-row">
+                            <span>Return Value</span>
+                            <span class="text-danger">- {{ formatCurrency(selectedTotal) }}</span>
+                        </div>
+                        <div class="crs-row">
+                            <span>Replacement Value</span>
+                            <span class="text-success">+ {{ formatCurrency(replacementTotal) }}</span>
+                        </div>
+                        <div class="crs-row crs-total">
+                            <span>Extra to Collect</span>
+                            <span :class="extraAmount > 0 ? 'text-primary fw-bold' : 'text-muted'">
+                                {{ extraAmount > 0 ? formatCurrency(extraAmount) : 'None' }}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -131,34 +202,53 @@ export default {
                 id: null,
                 action: 'approve',
                 item_ids: [],
+                replacement_items: [],
             }),
             so_number: null,
+            paymentMode: '',
             text_confirm: '',
             showModal: false,
             items: [],
             selectedItems: [],
             returnItems: {},
             returnConditions: {},
+            replacementRows: [],
         }
     },
     computed: {
+        productsWithStock() {
+            return (this.products || []).filter(p => (p.available_quantity || 0) > 0);
+        },
+        isCashSale() {
+            const mode = (this.paymentMode || '').trim().toLowerCase();
+            return mode !== 'credit' && mode !== 'credit sales';
+        },
         allItemsSelected() {
             return this.items.length > 0 && this.selectedItems.length === this.items.length;
         },
         selectedTotal() {
             return this.items
                 .filter(item => this.selectedItems.includes(item.id))
-                .reduce((sum, item) => sum + (this.getReturnQuantity(item.id, item.quantity) * (item.price - (item.discount_per_unit || 0))), 0);
+                .reduce((sum, item) => sum + (this.getReturnQuantity(item.id, item.quantity - (item.returned_quantity || 0)) * (item.price - (item.discount_per_unit || 0))), 0);
+        },
+        replacementTotal() {
+            return this.replacementRows.reduce((sum, row) => sum + ((row.quantity || 0) * (row.price || 0)), 0);
+        },
+        extraAmount() {
+            return Math.max(0, this.replacementTotal - this.selectedTotal);
+        },
+        replacementUndervalue() {
+            return this.replacementRows.length > 0 && this.replacementTotal < this.selectedTotal;
         },
         confirmTextValid() {
             return (this.text_confirm || '').trim().toUpperCase() === 'CONFIRM';
         },
         isValid() {
-            return this.selectedItems.length > 0 && this.confirmTextValid && !this.form.processing;
+            return this.selectedItems.length > 0 && this.confirmTextValid && !this.form.processing && !this.replacementUndervalue;
         }
     },
     methods: {
-        show(id, so_number, route, items = [], preselectedItemIds = [], returnItems = {}, returnConditions = {}){
+        show(id, so_number, route, items = [], preselectedItemIds = [], returnItems = {}, returnConditions = {}, paymentMode = ''){
             this.form.reset();
             this.form.clearErrors();
             this.showModal = true;
@@ -166,18 +256,34 @@ export default {
             this.so_number = so_number;
             this.route = route;
             this.items = items;
+            this.paymentMode = paymentMode;
             this.returnItems = returnItems || {};
             this.returnConditions = returnConditions || {};
+            this.replacementRows = [];
             this.selectedItems = preselectedItemIds.length > 0
                 ? preselectedItemIds
                 : items.map(item => item.id);
             this.text_confirm = '';
         },
 
+        addReplacementRow() {
+            this.replacementRows.push({ product_id: null, quantity: 1, price: 0 });
+        },
+        removeReplacementRow(index) {
+            this.replacementRows.splice(index, 1);
+        },
+        onReplacementProductChange(row) {
+            const product = (this.products || []).find(p => p.value === row.product_id);
+            if (product) {
+                row.price = product.retail_price || product.price || 0;
+            }
+        },
+
         submit(){
             if (!this.isValid) return;
 
             this.form.item_ids = this.selectedItems;
+            this.form.replacement_items = this.replacementRows.filter(r => r.product_id && r.quantity > 0);
             this.form.put(`${this.route}/${this.form.id}`,{
                 preserveScroll: true,
                 onSuccess: (response) => {
@@ -200,6 +306,8 @@ export default {
             this.selectedItems = [];
             this.returnItems = {};
             this.returnConditions = {};
+            this.replacementRows = [];
+            this.paymentMode = '';
             this.text_confirm = '';
         },
         toggleAll(){
@@ -337,6 +445,38 @@ export default {
     color: #2f4a3f;
     border-radius: 6px;
     padding: 2px 6px;
+}
+
+.alert-undervalue {
+    background: #fff5f5;
+    border: 1px solid #ffc5c5;
+    color: #c0392b;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cash-return-summary {
+    background: #f8fbfa;
+    border: 1px solid #e2e8e5;
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+.crs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 13px;
+    border-bottom: 1px dashed #e2e8e5;
+}
+.crs-row:last-child { border-bottom: none; }
+.crs-total {
+    font-size: 14px;
+    padding-top: 8px;
+    margin-top: 4px;
 }
 
 .pretty-footer {

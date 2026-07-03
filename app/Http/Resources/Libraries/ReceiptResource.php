@@ -79,6 +79,7 @@ class ReceiptResource extends JsonResource
                             'product_id' => $item->product_id,
                             'product_name' => $item->relationLoaded('product') ? optional($item->product)->name : null,
                             'quantity' => $item->quantity,
+                            'returned_quantity' => (int) ($item->returned_quantity ?? 0),
                             'price' => $item->price,
                             'price_type' => $item->price_type,
                             'batch_code' => $item->batch_code,

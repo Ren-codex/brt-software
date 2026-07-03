@@ -1,6 +1,18 @@
 <template>
     <div>
-        <div class="col-lg-12 mb-4">
+        <!-- Sub-tab switcher -->
+        <div class="d-flex gap-2 mb-3">
+            <button class="sub-tab-btn" :class="{ active: activeSubTab === 'list' }" @click="activeSubTab = 'list'">
+                <i class="ri-list-check me-1"></i> Returns List
+            </button>
+            <button class="sub-tab-btn" :class="{ active: activeSubTab === 'history' }" @click="activeSubTab = 'history'">
+                <i class="ri-history-line me-1"></i> Returns History
+            </button>
+        </div>
+
+        <ReturnHistory v-if="activeSubTab === 'history'" :isExternal="isExternal" />
+
+        <div v-if="activeSubTab === 'list'" class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
                         <div class="d-flex align-items-center gap-3">
@@ -12,10 +24,15 @@
                                 <p class="header-subtitle mb-0">A comprehensive list of Returned Sales Orders</p>
                             </div>
                         </div>
-                        <button class="acct-btn-primary" @click="openCreate">
-                            <i class="ri-add-line"></i>
-                            <span>Sales Return</span>
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <button v-if="isAdmin" class="btn btn-sm btn-outline-secondary" @click="openSettings" title="Return Settings">
+                                <i class="ri-settings-3-line"></i>
+                            </button>
+                            <button class="acct-btn-primary" @click="openCreate">
+                                <i class="ri-add-line"></i>
+                                <span>Sales Return</span>
+                            </button>
+                        </div>
 
                 </div>
                 <div class="library-card-body">
@@ -124,51 +141,156 @@
                                         <td colspan="12" class="p-0">
                                             <div class="details-container">
                                                 <div class="details-content">
-                                                    <div class="row g-4">
-                                                        <div class="col-md-6">
-                                                            <div class="info-card order-card">
-                                                                <div class="info-card-header">
-                                                                    <i class="ri-file-list-line"></i>
-                                                                    <h6>Order Information</h6>
+                                                    <div class="row g-3">
+
+                                                        <!-- Order Info -->
+                                                        <div class="col-md-4">
+                                                            <div class="det-card">
+                                                                <div class="det-card-header">
+                                                                    <i class="ri-file-list-3-line"></i>
+                                                                    <span>Order Info</span>
                                                                 </div>
-                                                                <div class="info-card-body">
-                                                                    <div class="info-item">
-                                                                        <span class="info-label">Order Date:</span>
-                                                                        <span class="info-value">{{ list.order_date }}</span>
+                                                                <div class="det-card-body">
+                                                                    <div class="det-row">
+                                                                        <span class="det-label">Order Date</span>
+                                                                        <span class="det-value">{{ list.order_date }}</span>
                                                                     </div>
-                                                                    <div class="info-item">
-                                                                        <span class="info-label">Added By:</span>
-                                                                        <span class="info-value">{{ list.added_by?.name || '-' }}</span>
+                                                                    <div class="det-row">
+                                                                        <span class="det-label">Payment Mode</span>
+                                                                        <span class="det-value">
+                                                                            <span class="mode-pill" :class="list.payment_mode?.toLowerCase().includes('credit') ? 'mode-credit' : 'mode-cash'">
+                                                                                {{ list.payment_mode || '-' }}
+                                                                            </span>
+                                                                        </span>
                                                                     </div>
-                                                                    <div class="info-item">
-                                                                        <span class="info-label">Transferred To:</span>
-                                                                        <span class="info-value">{{ list.transferred_to || '-' }}</span>
+                                                                    <div class="det-row" v-if="list.due_date">
+                                                                        <span class="det-label">Due Date</span>
+                                                                        <span class="det-value">{{ list.due_date }}</span>
+                                                                    </div>
+                                                                    <div class="det-row">
+                                                                        <span class="det-label">Location</span>
+                                                                        <span class="det-value">{{ list.location?.name || '-' }}</span>
+                                                                    </div>
+                                                                    <div class="det-row">
+                                                                        <span class="det-label">Added By</span>
+                                                                        <span class="det-value">{{ list.added_by?.name || '-' }}</span>
+                                                                    </div>
+                                                                    <div class="det-row">
+                                                                        <span class="det-label">Approved By</span>
+                                                                        <span class="det-value">{{ list.approved_by_user || '-' }}</span>
+                                                                    </div>
+                                                                    <div class="det-row" v-if="list.approved_at">
+                                                                        <span class="det-label">Approved At</span>
+                                                                        <span class="det-value">{{ list.approved_at }}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-md-6">
-                                                            <div class="info-card items-card">
-                                                                <div class="info-card-header">
-                                                                    <i class="ri-shopping-bag-line"></i>
-                                                                    <h6>Items</h6>
+
+                                                        <!-- Payment / Invoice -->
+                                                        <div class="col-md-4">
+                                                            <div class="det-card">
+                                                                <div class="det-card-header">
+                                                                    <i class="ri-bill-line"></i>
+                                                                    <span>Payment & Invoice</span>
                                                                 </div>
-                                                                <div class="info-card-body">
-                                                                    <div v-if="list.items && list.items.length > 0">
-                                                                        <div v-for="item in list.items" :key="item.id" class="info-item">
-                                                                            <span class="info-label">
-                                                                                {{ getProduct(item.product_id).name || 'Unknown Product' }}
-                                                                            </span>
-                                                                            <span class="info-value">
-                                                                                <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
-                                                                                <span class="badge bg-secondary ms-1">₱{{ item.price }}</span>
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <p v-else class="text-muted mb-0">No items found</p>
+                                                                <div class="det-card-body">
+                                                                    <template v-if="list.invoices && list.invoices.length > 0">
+                                                                        <template v-for="inv in list.invoices" :key="inv.id">
+                                                                            <div class="det-row">
+                                                                                <span class="det-label">Invoice #</span>
+                                                                                <span class="det-value fw-semibold">{{ inv.invoice_number }}</span>
+                                                                            </div>
+                                                                            <div class="det-row">
+                                                                                <span class="det-label">Amount Due</span>
+                                                                                <span class="det-value">{{ formatCurrency(inv.amount_due) }}</span>
+                                                                            </div>
+                                                                            <div class="det-row">
+                                                                                <span class="det-label">Amount Paid</span>
+                                                                                <span class="det-value text-success">{{ formatCurrency(inv.amount_paid) }}</span>
+                                                                            </div>
+                                                                            <div class="det-row">
+                                                                                <span class="det-label">Balance</span>
+                                                                                <span class="det-value" :class="inv.balance_due > 0 ? 'text-danger' : 'text-success'">{{ formatCurrency(inv.balance_due) }}</span>
+                                                                            </div>
+                                                                            <div class="det-divider" v-if="inv.receipts && inv.receipts.length > 0"></div>
+                                                                            <div v-for="r in inv.receipts" :key="r.id" class="det-row det-receipt-row">
+                                                                                <span class="det-label">{{ r.receipt_number }}</span>
+                                                                                <span class="det-value d-flex align-items-center gap-1">
+                                                                                    <span class="small text-muted">{{ formatCurrency(r.amount_paid) }}</span>
+                                                                                    <span class="rcpt-badge" :style="{ background: r.status?.bg_color + '22', color: r.status?.text_color }">{{ r.status?.name }}</span>
+                                                                                </span>
+                                                                            </div>
+                                                                        </template>
+                                                                    </template>
+                                                                    <p v-else class="text-muted small mb-0">No invoice found</p>
                                                                 </div>
                                                             </div>
                                                         </div>
+
+                                                        <!-- Items & Replacements -->
+                                                        <div class="col-md-4">
+                                                            <div class="det-card mb-3">
+                                                                <div class="det-card-header">
+                                                                    <i class="ri-shopping-bag-3-line"></i>
+                                                                    <span>Items</span>
+                                                                </div>
+                                                                <div class="det-card-body p-0">
+                                                                    <table class="det-items-table" v-if="list.items && list.items.length > 0">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Product</th>
+                                                                                <th class="text-center">Sold</th>
+                                                                                <th class="text-center">Returned</th>
+                                                                                <th class="text-end">Price</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            <tr v-for="item in list.items" :key="item.id">
+                                                                                <td>
+                                                                                    <div class="fw-semibold" style="font-size:12px">{{ item.product_name || getProduct(item.product_id).name }}</div>
+                                                                                    <div class="text-muted" style="font-size:11px">{{ item.batch_code || '-' }}</div>
+                                                                                </td>
+                                                                                <td class="text-center" style="font-size:12px">{{ item.quantity }}</td>
+                                                                                <td class="text-center">
+                                                                                    <span v-if="item.returned_quantity > 0" class="ret-badge">{{ item.returned_quantity }}</span>
+                                                                                    <span v-else class="text-muted" style="font-size:11px">—</span>
+                                                                                </td>
+                                                                                <td class="text-end" style="font-size:12px">{{ formatCurrency(item.price) }}</td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                    <p v-else class="text-muted small mb-0 p-3">No items found</p>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Replacement Items -->
+                                                            <div class="det-card" v-if="list.return_replacements && list.return_replacements.length > 0">
+                                                                <div class="det-card-header" style="background:linear-gradient(to right,#fff8e1,#fffdf0);border-bottom-color:#ffe082;">
+                                                                    <i class="ri-exchange-line" style="color:#f59e0b;"></i>
+                                                                    <span style="color:#92610a;">Replacement Items</span>
+                                                                </div>
+                                                                <div class="det-card-body p-0">
+                                                                    <table class="det-items-table">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Product</th>
+                                                                                <th class="text-center">Qty</th>
+                                                                                <th class="text-end">Total</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            <tr v-for="rep in list.return_replacements" :key="rep.id">
+                                                                                <td class="fw-semibold" style="font-size:12px">{{ rep.product_name }}</td>
+                                                                                <td class="text-center" style="font-size:12px">{{ rep.quantity }}</td>
+                                                                                <td class="text-end" style="font-size:12px">{{ formatCurrency(rep.total_value) }}</td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
                                                     </div>
                                                 </div>
                                             </div>
@@ -194,13 +316,42 @@
                 </div>
             </div>
         </div>
-    </div>
-    <CreateFromReceipt @add="fetch()" :dropdowns="dropdowns" ref="create"/>
-    <Cancel @cancel="fetch()" ref="cancel"/>
-<Approval @approve="fetch()" ref="approval" :products="dropdowns.products"/>
-    <Adjustment @update="fetch()"  ref="adjustment"/>
 
-    
+        <CreateFromReceipt @add="fetch()" :dropdowns="dropdowns" :returnGracePeriod="gracePeriod" ref="create"/>
+        <Cancel @cancel="fetch()" ref="cancel"/>
+        <Approval @approve="fetch()" ref="approval" :products="dropdowns.products"/>
+        <Adjustment @update="fetch()" ref="adjustment"/>
+
+        <!-- Return Settings Modal -->
+        <div v-if="showSettings" class="modal-overlay active" @click.self="showSettings = false">
+            <div class="modal-container settings-modal" @click.stop>
+                <div class="modal-header">
+                    <div>
+                        <h2 class="mb-1">Return Settings</h2>
+                        <p class="mb-0 header-subtitle">Configure the sales return grace period.</p>
+                    </div>
+                    <button type="button" class="close-btn" @click="showSettings = false">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="settings-field">
+                        <label class="form-label fw-semibold mb-1">Return Grace Period (days)</label>
+                        <p class="text-muted small mb-2">Customers can only return items within this many days from their purchase date.</p>
+                        <input type="number" v-model.number="settingsForm.gracePeriod" min="1" max="365" class="form-control" style="max-width:160px">
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-end gap-2">
+                    <button class="btn btn-secondary" @click="showSettings = false">Cancel</button>
+                    <button class="btn btn-primary" @click="saveSettings" :disabled="settingsSaving">
+                        <i class="ri-loader-4-line spinner me-1" v-if="settingsSaving"></i>
+                        <i class="ri-save-line me-1" v-else></i>
+                        {{ settingsSaving ? 'Saving...' : 'Save' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 <script>
 import _ from 'lodash';
@@ -211,13 +362,19 @@ import Cancel from './Modals/Cancel.vue';
 import CreateFromReceipt from './Modals/CreateFromReceipt.vue';
 import Adjustment from './Modals/Adjustment.vue';
 import Approval from './Modals/Approval.vue';
+import ReturnHistory from './ReturnHistory.vue';
 
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , CreateFromReceipt, Cancel, Adjustment, Approval },
-    props: ['dropdowns', 'invoices', 'user', 'isExternal'],
+    components: { PageHeader, Pagination, Multiselect, CreateFromReceipt, Cancel, Adjustment, Approval, ReturnHistory },
+    props: ['dropdowns', 'invoices', 'user', 'isExternal', 'returnGracePeriod'],
     data(){
         return {
+            activeSubTab: 'list',
+            gracePeriod: this.returnGracePeriod || 7,
+            showSettings: false,
+            settingsSaving: false,
+            settingsForm: { gracePeriod: this.returnGracePeriod || 7 },
             currentUrl: window.location.origin,
             lists: [],
             meta: {},
@@ -225,7 +382,7 @@ export default {
             filter: {
                 keyword: null,
                 location_id: null,
-                status: ['sales-returned', 'sales-return-approval']
+                status: ['sales-returned', 'sales-return-approval', 'partially-returned']
             },
             index: null,
             selectedRow: null,
@@ -249,6 +406,10 @@ export default {
         canApprove() {
             const roles = this.$page?.props?.roles || [];
             return ['Administrator', 'Area Business Manager', 'Super Admin'].some(r => roles.includes(r));
+        },
+        isAdmin() {
+            const roles = this.$page?.props?.roles || [];
+            return ['Administrator', 'Super Admin'].some(r => roles.includes(r));
         },
     },
     created() {
@@ -282,6 +443,20 @@ export default {
         openCreate() {
             this.$refs.create.show();
         },
+        openSettings() {
+            this.settingsForm.gracePeriod = this.gracePeriod;
+            this.showSettings = true;
+        },
+        saveSettings() {
+            this.settingsSaving = true;
+            axios.patch('/app-settings/return_grace_period', { value: this.settingsForm.gracePeriod })
+                .then(() => {
+                    this.gracePeriod = this.settingsForm.gracePeriod;
+                    this.showSettings = false;
+                })
+                .catch(err => console.error('Failed to save setting', err))
+                .finally(() => { this.settingsSaving = false; });
+        },
 
 
 
@@ -297,7 +472,7 @@ export default {
 
         onApprove(data) {
             const route = this.isExternal ? '/sales-orders-external' : '/sales-orders';
-            this.$refs.approval.show(data.id, data.so_number, route, data.items || [], data.return_item_ids || [], data.return_items || {}, data.return_conditions || {});
+            this.$refs.approval.show(data.id, data.so_number, route, data.items || [], data.return_item_ids || [], data.return_items || {}, data.return_conditions || {}, data.payment_mode || '');
         },
     
 
@@ -372,6 +547,20 @@ export default {
 }
 </script>
 <style scoped>
+.sub-tab-btn {
+    padding: 6px 16px;
+    border-radius: 8px;
+    border: 1px solid #c4d9d2;
+    background: #fff;
+    color: #6b8c85;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.sub-tab-btn:hover { background: #edf6f2; color: #16322e; }
+.sub-tab-btn.active { background: #3D8D7A; border-color: #3D8D7A; color: #fff; }
+
 /* Modern Collapsible Row Styles */
 .main-table-row {
     cursor: pointer;
@@ -558,4 +747,77 @@ export default {
         width: 100%;
     }
 }
+
+/* ── Detail card redesign ─────────────────────────────────── */
+.det-card {
+    background: #fff;
+    border: 1px solid #e2ece8;
+    border-radius: 12px;
+    overflow: hidden;
+    height: 100%;
+}
+.det-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: linear-gradient(to right, #edf6f2, #f6fbf9);
+    border-bottom: 1px solid #dceee8;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2a6b58;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+.det-card-header i { font-size: 15px; color: #3d8d7a; }
+.det-card-body { padding: 4px 0; }
+.det-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 14px;
+    border-bottom: 1px dashed #f0f4f2;
+    font-size: 12px;
+}
+.det-row:last-child { border-bottom: none; }
+.det-label { color: #7a9b90; font-weight: 500; }
+.det-value { color: #1e3d33; font-weight: 600; text-align: right; }
+.det-divider { height: 1px; background: #e2ece8; margin: 4px 0; }
+.det-receipt-row { background: #fafcfb; }
+.mode-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.mode-cash { background: #e8f5e9; color: #2e7d32; }
+.mode-credit { background: #e3f2fd; color: #1565c0; }
+.rcpt-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+}
+.ret-badge {
+    display: inline-block;
+    background: #fff3e0;
+    color: #e65100;
+    border-radius: 20px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.det-items-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.det-items-table thead th {
+    background: #f5f9f7;
+    color: #5a7e72;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 7px 10px;
+    border-bottom: 1px solid #dceee8;
+}
+.det-items-table tbody td { padding: 8px 10px; border-bottom: 1px dashed #f0f4f2; }
+.det-items-table tbody tr:last-child td { border-bottom: none; }
 </style>

@@ -96,6 +96,11 @@ class SalesOrder extends Model
         return $this->hasMany(ArInvoice::class);
     }
 
+    public function returnReplacements()
+    {
+        return $this->hasMany(\App\Models\SalesReturnReplacement::class);
+    }
+
     public static function generateSoNumber($date = null, $prefix = 'SO')
     {
         $date = $date ?: now();

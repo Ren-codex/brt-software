@@ -67,10 +67,10 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
         Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
 
-        Route::resource('/libraries/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
-        Route::post('/libraries/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp']);
-        Route::patch('/libraries/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance']);
-        Route::patch('/libraries/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive']);
+        Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
+        Route::post('/accounting/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp']);
+        Route::patch('/accounting/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance']);
+        Route::patch('/accounting/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive']);
     });
 
     Route::middleware(['role:Administrator,Warehouse Manager'])->group(function () {
@@ -91,6 +91,10 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::post('/inventory-stocks/conversions', [App\Http\Controllers\ProductConversionController::class, 'store']);
         Route::post('/inventory-stocks/{id}/weight-loss', [App\Http\Controllers\WeightLossController::class, 'store']);
         Route::post('/inventory-stocks/{id}/settings', [App\Http\Controllers\InventoryStockController::class, 'settings']);
+    });
+
+    Route::middleware(['role:Administrator,Super Admin'])->group(function () {
+        Route::patch('/app-settings/{key}', [App\Http\Controllers\AppSettingController::class, 'update']);
     });
 
     Route::middleware(['role:Administrator'])->group(function () {
@@ -130,7 +134,6 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index']);
         Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher']);
         Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher']);
-        Route::post('/accounting/petty-cash/funds/{id}/top-up', [App\Http\Controllers\Modules\PettyCashController::class, 'topUpFund']);
         Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index']);
         Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store']);
         Route::put('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'update']);
@@ -145,8 +148,6 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::delete('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'destroy']);
         Route::post('/accounting/fund-transfers', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFundTransfer']);
         Route::delete('/accounting/fund-transfers/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyFundTransfer']);
-        Route::post('/accounting/petty-cash/funds', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFund']);
-        Route::put('/accounting/petty-cash/funds/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'updateFund']);
         Route::post('/accounting/petty-cash/transactions', [App\Http\Controllers\Modules\CashManagementController::class, 'storePettyCashTransaction']);
         Route::delete('/accounting/petty-cash/transactions/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyPettyCashTransaction']);
         Route::post('/accounting/bank-deposits', [App\Http\Controllers\Modules\CashManagementController::class, 'storeDeposit']);

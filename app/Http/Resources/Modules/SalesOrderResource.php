@@ -35,7 +35,20 @@ class SalesOrderResource extends JsonResource
             'due_date_raw' => $this->due_date?->format('Y-m-d'),
             'transferred_to' => $this->transferred_to,
             'transferred_at' => $this->transferred_at,
-            'items' => $this->items,
+            'location' => $this->location ? ['id' => $this->location->id, 'name' => $this->location->name] : null,
+            'approved_by_user' => $this->approved_by ? ($this->approved_by->employee ? $this->approved_by->employee->full_name ?? $this->approved_by->name : $this->approved_by->name) : null,
+            'approved_at' => $this->approved_at?->format('M d, Y'),
+            'items' => $this->items->map(fn($item) => [
+                'id'                 => $item->id,
+                'product_id'         => $item->product_id,
+                'product_name'       => $item->product?->name,
+                'quantity'           => $item->quantity,
+                'returned_quantity'  => (int) ($item->returned_quantity ?? 0),
+                'price'              => $item->price,
+                'discount_per_unit'  => $item->discount_per_unit ?? 0,
+                'unit'               => $item->unit,
+                'batch_code'         => $item->batch_code,
+            ])->values(),
             'return_item_ids' => $returnItems
                 ->pluck('sales_order_item_id')
                 ->map(fn ($id) => (int) $id)
@@ -65,6 +78,15 @@ class SalesOrderResource extends JsonResource
             'created_at' => $this->created_at->format('M d, Y'),
             'updated_at' => $this->updated_at?->format('M d, Y'),
             'approved_by' => $this->approved_by,
+            'return_replacements' => $this->returnReplacements->map(fn($r) => [
+                'id'          => $r->id,
+                'product_id'  => $r->product_id,
+                'product_name'=> $r->product?->name,
+                'quantity'    => $r->quantity,
+                'price'       => $r->price,
+                'total_value' => $r->total_value,
+                'replaced_at' => $r->replaced_at,
+            ])->values(),
         ];
     }
 }

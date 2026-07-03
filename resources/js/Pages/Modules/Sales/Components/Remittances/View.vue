@@ -13,14 +13,9 @@
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-                        <button v-if="canApprove && ['open', 'remitted'].includes(item.status?.slug)" class="create-btn" @click="openApprovalModal">
+                        <button v-if="canApprove && item.status?.slug === 'open'" class="create-btn" @click="openApprovalModal">
                             <i class="ri-check-line"></i>
                             <span>Approval</span>
-                        </button>
-                        <button v-if="item.status?.slug === 'open'" class="create-btn" @click="markAsRemitted" :disabled="isRemitting">
-                            <i v-if="isRemitting" class="ri-loader-4-line"></i>
-                            <i v-else class="ri-send-plane-line"></i>
-                            <span>{{ isRemitting ? 'Submitting...' : 'Mark as Remitted' }}</span>
                         </button>
                         <button v-if="item.status?.slug === 'open'" class="create-btn" @click="openDelete(item.id)">
                             <i class="ri-delete-bin-line"></i>
@@ -316,7 +311,6 @@ export default {
             if (['approved', 'completed', 'liquidated'].includes(value)) return 'emp-status-success';
             if (['rejected', 'disapproved', 'cancelled'].includes(value)) return 'emp-status-danger';
             if (['open', 'pending'].includes(value)) return 'emp-status-warning';
-            if (value === 'remitted') return 'emp-status-info';
 
             return 'profile-badge-neutral';
         },

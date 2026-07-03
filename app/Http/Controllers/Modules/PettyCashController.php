@@ -9,6 +9,7 @@ use App\Models\PettyCashFund;
 use App\Models\ReplenishmentRequest;
 use App\Models\User;
 use App\Services\Accounting\JournalEntryService;
+use App\Services\NotificationService;
 use App\Services\SeriesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class PettyCashController extends Controller
     public function __construct(
         protected SeriesService $series,
         protected JournalEntryService $journal,
+        protected NotificationService $notificationService,
     ) {}
 
     public function index()
@@ -104,51 +106,34 @@ class PettyCashController extends Controller
             $receiptPath = $request->file('receipt')->store('receipts/petty-cash-vouchers', 'public');
         }
 
-        $voucher = Expense::create([
-            'voucher_no'   => $this->series->get('pcv_no'),
-            'fund_id'      => $data['fund_id'],
-            'expense_date' => $data['expense_date'],
-            'payee'        => $data['payee'],
-            'expense_type' => $data['expense_type'],
-            'amount'       => $data['amount'],
-            'description'  => $data['description'] ?? null,
-            'receipt_path' => $receiptPath,
-            'status'       => 'recorded',
-            'added_by_id'  => auth()->id(),
-        ]);
+        $voucher = DB::transaction(function () use ($data, $fund, $receiptPath) {
+            $voucher = Expense::create([
+                'voucher_no'   => $this->series->get('pcv_no'),
+                'fund_id'      => $data['fund_id'],
+                'expense_date' => $data['expense_date'],
+                'payee'        => $data['payee'],
+                'expense_type' => $data['expense_type'],
+                'amount'       => $data['amount'],
+                'description'  => $data['description'] ?? null,
+                'receipt_path' => $receiptPath,
+                'status'       => 'recorded',
+                'added_by_id'  => auth()->id(),
+            ]);
 
-        // Deduct from fund balance
-        $fund->decrement('balance', $data['amount']);
+            $previousBalance = (float) $fund->balance;
+            $fund->decrement('balance', $data['amount']);
+            $newBalance = $previousBalance - $data['amount'];
+
+            $this->journal->recordPettyCashVoucherEntry($voucher->fresh('fund'));
+            $this->notificationService->checkAndNotifyLowBalance($fund, $previousBalance, $newBalance);
+
+            return $voucher;
+        });
 
         return response()->json([
             'message' => 'Voucher ' . $voucher->voucher_no . ' recorded.',
             'data'    => $this->formatVoucher($voucher->fresh(['fund', 'added_by'])),
             'fund'    => $this->formatFund($fund->fresh()),
-        ]);
-    }
-
-    public function topUpFund(Request $request, int $id)
-    {
-        $data = $request->validate([
-            'amount'         => 'required|numeric|min:0.01',
-            'top_up_date'    => 'required|date',
-            'bank_account_id'=> 'nullable|integer|exists:bank_accounts,id',
-            'notes'          => 'nullable|string|max:300',
-        ]);
-
-        $fund = PettyCashFund::findOrFail($id);
-        $amount = round((float) $data['amount'], 2);
-
-        DB::transaction(function () use ($fund, $amount, $data) {
-            $fund->increment('balance', $amount);
-            $fund->increment('fixed_amount', $amount);
-
-            $this->journal->recordFundTopUp($fund->fresh(), $amount, $data['top_up_date'], $data['bank_account_id'] ?? null, $data['notes'] ?? null);
-        });
-
-        return response()->json([
-            'message' => '₱' . number_format($amount, 2) . ' added to ' . $fund->name . '.',
-            'fund'    => $this->formatFund($fund->fresh(['custodian'])),
         ]);
     }
 
@@ -160,16 +145,20 @@ class PettyCashController extends Controller
             return response()->json(['message' => 'Only unsubmitted vouchers can be voided.'], 422);
         }
 
-        // Restore fund balance
-        if ($voucher->fund_id) {
-            PettyCashFund::where('id', $voucher->fund_id)->increment('balance', $voucher->amount);
-        }
+        DB::transaction(function () use ($voucher) {
+            $this->journal->reverseEntriesForSource($voucher, 'Petty cash voucher voided.', now()->toDateString());
+
+            // Restore fund balance
+            if ($voucher->fund_id) {
+                PettyCashFund::where('id', $voucher->fund_id)->increment('balance', $voucher->amount);
+            }
+
+            $voucher->delete();
+        });
 
         if ($voucher->receipt_path) {
             Storage::disk('public')->delete($voucher->receipt_path);
         }
-
-        $voucher->delete();
 
         return response()->json(['message' => 'Voucher voided and fund balance restored.']);
     }

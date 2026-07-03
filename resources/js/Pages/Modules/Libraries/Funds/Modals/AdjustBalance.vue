@@ -12,7 +12,7 @@
             <div class="modal-body">
                 <div class="alert alert-warning fs-12 mb-3">
                     <i class="ri-alert-line me-1"></i>
-                    This directly overrides the fund balance with no transaction record. Use only for cash count corrections.
+                    This posts the difference to Cash Over/Short. Use only for cash count corrections.
                 </div>
                 <div class="form-group mb-3">
                     <label class="form-label">New Balance <span class="text-danger">*</span></label>
@@ -66,7 +66,7 @@ export default {
         submit() {
             this.saving = true;
             this.errors = {};
-            axios.patch(`/libraries/funds/${this.fund.id}/balance`, this.form)
+            axios.patch(`/accounting/funds/${this.fund.id}/balance`, this.form)
                 .then(res => {
                     this.success = res.data.message;
                     this.$emit('done');

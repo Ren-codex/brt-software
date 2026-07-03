@@ -4,13 +4,12 @@ namespace App\Services\Libraries;
 
 use App\Http\Resources\Libraries\FundResource;
 use App\Models\PettyCashFund;
-use App\Models\PettyCashTransaction;
-use App\Services\NotificationService;
+use App\Services\Accounting\CashManagementService;
 use Illuminate\Validation\ValidationException;
 
 class FundClass
 {
-    public function __construct(protected NotificationService $notificationService) {}
+    public function __construct(protected CashManagementService $cashManagement) {}
 
     public function lists($request)
     {
@@ -23,14 +22,12 @@ class FundClass
 
     public function save($request, $userId = null)
     {
-        $data = PettyCashFund::create([
+        $data = $this->cashManagement->createFund([
             'name' => $request->name,
             'gl_code' => $request->gl_code,
-            'balance' => 0,
-            'weekly_budget' => $request->weekly_budget ?? null,
+            'initial_balance' => $request->initial_balance ?? null,
+            'bank_account_id' => $request->bank_account_id ?? null,
             'low_balance_threshold' => $request->low_balance_threshold ?? null,
-            'is_active' => true,
-            'created_by_id' => $userId ?: auth()->id(),
         ]);
 
         return [
@@ -46,7 +43,6 @@ class FundClass
         $data->update([
             'name' => $request->name,
             'gl_code' => $request->gl_code,
-            'weekly_budget' => $request->weekly_budget ?? null,
             'low_balance_threshold' => $request->low_balance_threshold ?? null,
         ]);
 
@@ -69,17 +65,12 @@ class FundClass
 
         $fund = PettyCashFund::findOrFail($id);
 
-        PettyCashTransaction::create([
-            'fund_id' => $fund->id,
+        $this->cashManagement->addTransaction($fund, [
             'type' => 'replenishment',
             'amount' => $amount,
             'transaction_date' => $request->date ?? now()->toDateString(),
             'description' => $request->description ?? null,
-            'transaction_no' => 'TU-'.strtoupper(uniqid()),
-            'created_by_id' => auth()->id(),
         ]);
-
-        $fund->increment('balance', $amount);
 
         return [
             'data' => new FundResource($fund->fresh()),
@@ -91,15 +82,22 @@ class FundClass
     public function adjustBalance($id, $request)
     {
         $fund = PettyCashFund::findOrFail($id);
-        $previousBalance = (float) $fund->balance;
         $newBalance = (float) $request->balance;
-        $fund->update(['balance' => $newBalance]);
-        $this->notificationService->checkAndNotifyLowBalance($fund, $previousBalance, $newBalance);
+
+        $txn = $this->cashManagement->adjustFundBalance($fund, $newBalance, $request->reason);
+
+        if (!$txn) {
+            return [
+                'data' => new FundResource($fund->fresh()),
+                'message' => 'No change made.',
+                'info' => 'Balance already ₱'.number_format($fund->balance, 2).'.',
+            ];
+        }
 
         return [
             'data' => new FundResource($fund->fresh()),
             'message' => 'Balance adjusted successfully!',
-            'info' => 'Balance set to ₱'.number_format($fund->balance, 2).'.',
+            'info' => 'Balance set to ₱'.number_format($fund->fresh()->balance, 2).'.',
         ];
     }
 

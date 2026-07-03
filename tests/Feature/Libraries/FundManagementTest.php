@@ -30,7 +30,6 @@ class FundManagementTest extends TestCase
             'name'          => 'Test Fund',
             'gl_code'       => 'PCF-' . (++$seq),
             'balance'       => 500.00,
-            'weekly_budget' => 0,
             'is_active'     => true,
             'created_by_id' => $this->user->id,
         ], $overrides));
@@ -44,7 +43,6 @@ class FundManagementTest extends TestCase
         $request = \Illuminate\Http\Request::create('/libraries/funds', 'POST', [
             'name'          => 'Main Fund',
             'gl_code'       => 'PCF-001',
-            'weekly_budget' => 1000,
         ]);
 
         $result = $service->save($request, $this->user->id);
@@ -78,7 +76,7 @@ class FundManagementTest extends TestCase
 
     // --- adjust balance ---
 
-    public function test_adjust_balance_sets_balance_directly_without_transaction(): void
+    public function test_adjust_balance_persists_audit_trail_and_journal_entry(): void
     {
         $fund    = $this->makeFund(['balance' => 100]);
         $service = app(FundClass::class);
@@ -90,6 +88,32 @@ class FundManagementTest extends TestCase
         $service->adjustBalance($fund->id, $request);
 
         $this->assertEquals(250.0, $fund->fresh()->balance);
+
+        $txn = PettyCashTransaction::where('fund_id', $fund->id)->where('category', 'cash_count_adjustment')->first();
+        $this->assertNotNull($txn);
+        $this->assertEquals('replenishment', $txn->type);
+        $this->assertEquals(150.0, $txn->amount);
+        $this->assertEquals('Cash count correction', $txn->description);
+
+        $this->assertDatabaseHas('journal_entries', [
+            'source_type' => PettyCashTransaction::class,
+            'source_id'   => $txn->id,
+            'entry_type'  => 'petty_cash_adjustment',
+        ]);
+    }
+
+    public function test_adjust_balance_no_change_creates_no_transaction(): void
+    {
+        $fund    = $this->makeFund(['balance' => 100]);
+        $service = app(FundClass::class);
+        $request = \Illuminate\Http\Request::create('/libraries/funds/1/balance', 'PATCH', [
+            'balance' => 100,
+            'reason'  => 'Recount, no discrepancy',
+        ]);
+
+        $service->adjustBalance($fund->id, $request);
+
+        $this->assertEquals(100.0, $fund->fresh()->balance);
         $this->assertEquals(0, PettyCashTransaction::where('fund_id', $fund->id)->count());
     }
 

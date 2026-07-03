@@ -92,17 +92,17 @@ class CashManagementService
 
             $fund = PettyCashFund::create([
                 'name'          => $data['name'],
-                'gl_code'       => $data['gl_code'],
+                'gl_code'       => $data['gl_code'] ?? $this->generateFundGlCode(),
                 'balance'       => $initialBalance,
                 'fixed_amount'  => $initialBalance,
                 'custodian_id'  => $data['custodian_id'] ?? null,
-                'weekly_budget' => $data['weekly_budget'] ?? 0,
+                'low_balance_threshold' => $data['low_balance_threshold'] ?? null,
                 'is_active'     => true,
                 'created_by_id' => Auth::id(),
             ]);
 
             if ($initialBalance > 0) {
-                $this->journal->recordFundCapitalization($fund, $initialBalance);
+                $this->journal->recordFundCapitalization($fund, $initialBalance, $data['bank_account_id'] ?? null);
             }
 
             return $fund;
@@ -147,6 +147,36 @@ class CashManagementService
         });
     }
 
+    public function adjustFundBalance(PettyCashFund $fund, float $newBalance, string $reason): ?PettyCashTransaction
+    {
+        return DB::transaction(function () use ($fund, $newBalance, $reason) {
+            $previousBalance = (float) $fund->balance;
+            $delta = round($newBalance - $previousBalance, 2);
+
+            if ($delta === 0.0) {
+                return null;
+            }
+
+            $txn = PettyCashTransaction::create([
+                'transaction_no' => $this->series->get('petty_cash_txn_no'),
+                'fund_id' => $fund->id,
+                'type' => $delta > 0 ? 'replenishment' : 'disbursement',
+                'amount' => abs($delta),
+                'category' => 'cash_count_adjustment',
+                'description' => $reason,
+                'transaction_date' => now()->toDateString(),
+                'created_by_id' => Auth::id(),
+            ]);
+
+            $fund->update(['balance' => $newBalance]);
+            $txn->load('fund');
+            $this->journal->recordPettyCashAdjustment($txn, $delta);
+            $this->notificationService->checkAndNotifyLowBalance($fund, $previousBalance, $newBalance);
+
+            return $txn->fresh(['fund', 'createdBy']);
+        });
+    }
+
     public function deleteTransaction(int $id): void
     {
         DB::transaction(function () use ($id) {
@@ -165,5 +195,15 @@ class CashManagementService
 
             $txn->delete();
         });
+    }
+
+    private function generateFundGlCode(): string
+    {
+        $lastNumber = PettyCashFund::where('gl_code', 'like', 'PCF-%')
+            ->get()
+            ->map(fn ($f) => (int) substr($f->gl_code, 4))
+            ->max() ?? 0;
+
+        return 'PCF-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
     }
 }

@@ -40,7 +40,7 @@ class ComplexScenariosTest extends TestCase
         foreach ([
             'sales-return-approval', 'sales-returned', 'partially-returned',
             'paid', 'cancelled', 'closed', 'for-payment', 'unpaid', 'partially-paid',
-            'pending', 'allowance-applied',
+            'pending', 'allowance-applied', 'liquidated',
         ] as $slug) {
             ListStatus::firstOrCreate(['slug' => $slug], [
                 'name' => ucwords(str_replace('-', ' ', $slug)),
@@ -193,7 +193,7 @@ class ComplexScenariosTest extends TestCase
             'customer_id'  => $this->customer->id,
             'status_id'    => ListStatus::where('slug', 'sales-return-approval')->first()->id,
             'total_amount' => 4000,
-            'payment_mode' => 'cash',
+            'payment_mode' => 'credit',
             'added_by_id'  => $this->user->id,
         ]);
 
@@ -238,7 +238,7 @@ class ComplexScenariosTest extends TestCase
             'customer_id'  => $this->customer->id,
             'status_id'    => ListStatus::where('slug', 'sales-return-approval')->first()->id,
             'total_amount' => 6000,
-            'payment_mode' => 'cash',
+            'payment_mode' => 'credit',
             'added_by_id'  => $this->user->id,
         ]);
 
@@ -446,7 +446,7 @@ class ComplexScenariosTest extends TestCase
             'customer_id'  => $this->customer->id,
             'status_id'    => ListStatus::where('slug', 'sales-return-approval')->first()->id,
             'total_amount' => 2000,
-            'payment_mode' => 'cash',
+            'payment_mode' => 'credit',
             'added_by_id'  => $this->user->id,
         ]);
 
@@ -487,7 +487,7 @@ class ComplexScenariosTest extends TestCase
             'customer_id'  => $this->customer->id,
             'status_id'    => ListStatus::where('slug', 'sales-return-approval')->first()->id,
             'total_amount' => 4000,
-            'payment_mode' => 'cash',
+            'payment_mode' => 'credit',
             'added_by_id'  => $this->user->id,
         ]);
 

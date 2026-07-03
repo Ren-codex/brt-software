@@ -5,12 +5,8 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <button @click.stop="openApprovalModal()" class="action-btn approve me-1" v-if="['open', 'remitted'].includes(item.status?.slug)" title="Approve">
+                        <button @click.stop="openApprovalModal()" class="action-btn approve me-1" v-if="item.status?.slug === 'open'" title="Approve">
                             <i class="ri-check-line"></i>
-                        </button>
-                        <button @click.stop="markAsRemitted()" class="action-btn info me-1" v-if="item.status?.slug == 'open'" :disabled="isRemitting" title="Mark as Remitted">
-                            <i v-if="isRemitting" class="ri-loader-4-line"></i>
-                            <i v-else class="ri-send-plane-line"></i>
                         </button>
                         <button @click.stop="onPrint(item.id)" class="action-btn info me-1" title="Print">
                             <i class="ri-printer-line"></i>

@@ -137,10 +137,18 @@ class DropdownClass
         $data = Product::with(['brand', 'unit'])->get()->map(function ($item) {
             $batchStocks = InventoryStocks::query()
                 ->with('receivedItem')
-                ->whereHas('receivedItem', function ($query) use ($item) {
-                    $query->where('product_id', $item->id);
-                })
                 ->where('quantity', '>', 0)
+                ->where(function ($q) use ($item) {
+                    // Received stocks (linked via received_item)
+                    $q->whereHas('receivedItem', function ($sub) use ($item) {
+                        $sub->where('product_id', $item->id);
+                    })
+                    // Converted stocks (product_id set directly on the row)
+                    ->orWhere(function ($sub) use ($item) {
+                        $sub->where('product_id', $item->id)
+                            ->whereNotNull('conversion_id');
+                    });
+                })
                 ->orderBy('created_at')
                 ->get();
 
@@ -156,7 +164,7 @@ class DropdownClass
                 return [
                     'batch_code' => $batchCode,
                     'quantity' => (int) $stocks->sum('quantity'),
-                    'unit_cost' => $firstStock?->receivedItem?->unit_cost,
+                    'unit_cost' => $firstStock?->receivedItem?->unit_cost ?? $firstStock?->unit_cost,
                     'retail_price' => $firstStock?->retail_price,
                     'wholesale_price' => $firstStock?->wholesale_price,
                 ];
@@ -170,10 +178,16 @@ class DropdownClass
                 $batch_available = $batch_stocks[0]['quantity'];
                 $firstInventoryStock = InventoryStocks::query()
                     ->where('batch_code', $batch_code)
-                    ->whereHas('receivedItem', function ($query) use ($item) {
-                        $query->where('product_id', $item->id);
-                    })
                     ->where('quantity', '>', 0)
+                    ->where(function ($q) use ($item) {
+                        $q->whereHas('receivedItem', function ($sub) use ($item) {
+                            $sub->where('product_id', $item->id);
+                        })
+                        ->orWhere(function ($sub) use ($item) {
+                            $sub->where('product_id', $item->id)
+                                ->whereNotNull('conversion_id');
+                        });
+                    })
                     ->orderBy('created_at')
                     ->first();
             }

@@ -53,7 +53,7 @@ class ProductConversionService
             ]);
         }
 
-        $newBatchCode = $this->series->get('batch_code');
+        $newBatchCode = $this->series->get('batch_code') . '-Con';
 
         // Use frontend-computed unit cost if provided, otherwise derive from source
         $sourceUnitCost = floatval($source->receivedItem?->unit_cost ?? $source->unit_cost ?? 0);

@@ -55,6 +55,10 @@
                                 <p class="cash-sub-label mb-0">Petty Cash</p>
                                 <p class="cash-sub-value mb-0">{{ formatCurrency(cashPosition.total_petty_cash) }}</p>
                             </div>
+                            <div class="text-end">
+                                <p class="cash-sub-label mb-0">Cash on Hand</p>
+                                <p class="cash-sub-value mb-0">{{ formatCurrency(cashPosition.cash_on_hand) }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -389,16 +393,16 @@
         <template v-if="activeTab === 'petty_cash'">
 
             <!-- No funds yet -->
-            <div v-if="funds.length === 0 && !pcFundModal.open" class="cm-empty-state mb-3">
+            <div v-if="funds.length === 0" class="cm-empty-state mb-3">
                 <i class="ri-wallet-3-line"></i>
                 <p class="mb-2">No petty cash funds set up</p>
-                <button class="acct-btn-primary" @click="openCreateFund">
-                    <i class="ri-add-line"></i> Set Up Petty Cash Fund
-                </button>
+                <a href="/accounting/funds" class="acct-btn-primary">
+                    <i class="ri-external-link-line"></i> Set Up in Petty Cash Funds
+                </a>
             </div>
 
             <template v-else>
-                <!-- Fund selector + new fund button -->
+                <!-- Fund selector + manage-funds link -->
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                     <div class="d-flex align-items-center gap-2">
                         <label class="form-label mb-0 fw-semibold">Fund:</label>
@@ -406,14 +410,9 @@
                             <option v-for="f in funds" :key="f.id" :value="f.id">{{ f.name }} ({{ f.balance_formatted }})</option>
                         </select>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="acct-btn-secondary" @click="openCreateFund">
-                            <i class="ri-add-line"></i> New Fund
-                        </button>
-                        <button class="acct-btn-primary" @click="openAddTransaction('replenishment')" :disabled="!selectedFund">
-                            <i class="ri-arrow-down-circle-line"></i> Replenish Fund
-                        </button>
-                    </div>
+                    <a href="/accounting/funds" class="acct-btn-secondary">
+                        <i class="ri-external-link-line"></i> Manage Funds
+                    </a>
                 </div>
 
                 <!-- Fund balance card -->
@@ -424,18 +423,6 @@
                             <div>
                                 <p class="fund-name mb-0">{{ selectedFund.name }}</p>
                                 <p class="fund-gl mb-0">GL: {{ selectedFund.gl_code }}</p>
-                                <p class="fund-gl mb-0" v-if="selectedFund.weekly_budget > 0">
-                                    Weekly Budget: <strong style="color:#a8e6cf">{{ formatCurrency(selectedFund.weekly_budget) }}</strong>
-                                    <button class="fund-edit-btn ms-2" @click="openEditFund(selectedFund)" title="Edit budget">
-                                        <i class="ri-pencil-line"></i>
-                                    </button>
-                                </p>
-                                <p class="fund-gl mb-0" v-else>
-                                    No weekly budget set
-                                    <button class="fund-edit-btn ms-2" @click="openEditFund(selectedFund)" title="Set weekly budget">
-                                        <i class="ri-add-line"></i> Set Budget
-                                    </button>
-                                </p>
                             </div>
                         </div>
                         <div class="text-end">
@@ -443,23 +430,6 @@
                             <h3 class="fund-balance-value mb-0" :class="selectedFund.balance < 0 ? 'text-danger' : ''">{{ selectedFund.balance_formatted }}</h3>
                         </div>
                     </div>
-                    <!-- Weekly budget usage bar -->
-                    <template v-if="selectedFund.weekly_budget > 0 && weeklyRemaining !== null">
-                        <div class="week-budget-bar-wrap mt-3">
-                            <div class="d-flex justify-content-between mb-1" style="font-size:0.75rem;color:#527267">
-                                <span>This week's spending</span>
-                                <span class="fw-semibold" style="color:#1a4d3d">{{ formatCurrency(weeklySpent) }} / {{ formatCurrency(selectedFund.weekly_budget) }}</span>
-                            </div>
-                            <div class="week-budget-bar">
-                                <div class="week-budget-fill" :style="weeklyBarStyle"></div>
-                            </div>
-                            <div class="d-flex justify-content-between mt-1" style="font-size:0.72rem;color:#6b8c85">
-                                <span v-if="weeklyRemaining >= 0">Remaining: <strong style="color:#1a6b4a">{{ formatCurrency(weeklyRemaining) }}</strong></span>
-                                <span v-else style="color:#b91c1c;font-weight:700">Over budget by {{ formatCurrency(Math.abs(weeklyRemaining)) }}</span>
-                                <span v-if="weeklyRemaining < 0" style="color:#9a3b1b;font-style:italic">Can still request additional budget</span>
-                            </div>
-                        </div>
-                    </template>
                 </div>
 
                 <!-- Transactions table -->
@@ -528,158 +498,6 @@
                     </div>
                 </div>
             </template>
-
-            <!-- Create Fund Modal -->
-            <div v-if="pcFundModal.open" class="modal-overlay active" @click.self="pcFundModal.open = false">
-                <div class="modal-container" style="max-width:440px">
-                    <div class="modal-header">
-                        <div class="modal-header-icon"><i class="ri-wallet-3-line"></i></div>
-                        <div>
-                            <h5 class="modal-title">Create Petty Cash Fund</h5>
-                            <p class="modal-subtitle">Set up a new petty cash fund with a dedicated GL account.</p>
-                        </div>
-                        <button class="close-btn ms-auto" @click="pcFundModal.open = false"><i class="ri-close-line"></i></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Fund Name <span class="text-danger">*</span></label>
-                                <input v-model="pcFundForm.name" type="text" class="form-control" placeholder="e.g. Main Office Petty Cash" />
-                                <div v-if="pcFundErrors.name" class="error-msg">{{ pcFundErrors.name[0] }}</div>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">GL Code <span class="text-danger">*</span></label>
-                                <input v-model="pcFundForm.gl_code" type="text" class="form-control font-monospace" placeholder="e.g. 1050" />
-                                <div class="form-text">Unique GL code for this petty cash account.</div>
-                                <div v-if="pcFundErrors.gl_code" class="error-msg">{{ pcFundErrors.gl_code[0] }}</div>
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Initial Balance <span class="text-muted">(optional)</span></label>
-                                <input v-model="pcFundForm.initial_balance" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
-                                <div class="form-text">Posts DR Petty Cash / CR Cash on Hand.</div>
-                                <div v-if="pcFundErrors.initial_balance" class="error-msg">{{ pcFundErrors.initial_balance[0] }}</div>
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Weekly Budget <span class="text-muted">(optional)</span></label>
-                                <input v-model="pcFundForm.weekly_budget" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" />
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="acct-btn-secondary" @click="pcFundModal.open = false">Cancel</button>
-                        <button class="acct-btn-primary" :disabled="pcFundSaving" @click="submitFund">
-                            <span v-if="pcFundSaving"><i class="ri-loader-4-line spin"></i> Saving...</span>
-                            <span v-else>Create Fund</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Edit Fund Modal -->
-            <div v-if="fundEditModal.open" class="modal-overlay active" @click.self="fundEditModal.open = false">
-                <div class="modal-container" style="max-width:420px">
-                    <div class="modal-header">
-                        <div class="modal-header-icon"><i class="ri-pencil-line"></i></div>
-                        <div>
-                            <h5 class="modal-title">Edit Fund Settings</h5>
-                            <p class="modal-subtitle">Update the fund name and weekly budget.</p>
-                        </div>
-                        <button class="close-btn ms-auto" @click="fundEditModal.open = false"><i class="ri-close-line"></i></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Fund Name <span class="text-danger">*</span></label>
-                                <input v-model="fundEditForm.name" type="text" class="form-control" placeholder="Fund name" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Weekly Budget <span class="text-muted">(optional)</span></label>
-                                <input v-model="fundEditForm.weekly_budget" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" />
-                                <div class="form-text">Set to 0 to remove the weekly budget limit.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="acct-btn-secondary" @click="fundEditModal.open = false">Cancel</button>
-                        <button class="acct-btn-primary" :disabled="fundEditSaving" @click="submitEditFund">
-                            <span v-if="fundEditSaving"><i class="ri-loader-4-line spin"></i> Saving...</span>
-                            <span v-else>Save Changes</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add Transaction Modal -->
-            <div v-if="pcTxnModal.open" class="modal-overlay active" @click.self="pcTxnModal.open = false">
-                <div class="modal-container" style="max-width:500px">
-                    <div class="modal-header">
-                        <div class="modal-header-icon"><i class="ri-arrow-down-circle-line"></i></div>
-                        <div>
-                            <h5 class="modal-title">Replenish Fund</h5>
-                            <p class="modal-subtitle">Finance transfers cash to the petty cash custodian. Posts DR Petty Cash / CR Cash automatically.</p>
-                        </div>
-                        <button class="close-btn ms-auto" @click="pcTxnModal.open = false"><i class="ri-close-line"></i></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <!-- Replenishment request selector -->
-                            <div class="col-12">
-                                <label class="form-label">
-                                    Replenishment Request
-                                    <span class="text-muted" style="font-weight:400;">(optional — auto-fills amount)</span>
-                                </label>
-                                <select v-model="selectedRepRequest" class="form-select" @change="selectRepRequest" :disabled="repRequestsLoading">
-                                    <option value="">{{ repRequestsLoading ? 'Loading...' : repRequests.length ? '— Select to auto-fill —' : '— No approved requests for this fund —' }}</option>
-                                    <option v-for="r in repRequests" :key="r.id" :value="r.id">
-                                        {{ r.reference_no }} — ₱{{ Number(r.total_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }} ({{ r.expense_count }} expense{{ r.expense_count !== 1 ? 's' : '' }})
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col-12" v-if="repRequests.length"><hr class="my-0" style="border-color:#e4f0ea;"></div>
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input v-model="pcTxnForm.transaction_date" type="date" class="form-control" />
-                                <div v-if="pcTxnErrors.transaction_date" class="error-msg">{{ pcTxnErrors.transaction_date[0] }}</div>
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Amount <span class="text-danger">*</span></label>
-                                <input v-model="pcTxnForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
-                                <div v-if="pcTxnErrors.amount" class="error-msg">{{ pcTxnErrors.amount[0] }}</div>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Funded From</label>
-                                <select v-model="pcTxnForm.source_type" class="form-select">
-                                    <option value="cash">Cash on Hand</option>
-                                    <option value="bank">Bank Transfer</option>
-                                </select>
-                            </div>
-                            <div v-if="pcTxnForm.source_type === 'bank'" class="col-12">
-                                <label class="form-label">Bank Account</label>
-                                <select v-model="pcTxnForm.bank_account_id" class="form-select">
-                                    <option value="">-- Select bank --</option>
-                                    <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.bank_name }} — {{ b.account_name }}</option>
-                                </select>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Description <span class="text-muted">(optional)</span></label>
-                                <input v-model="pcTxnForm.description" type="text" class="form-control" placeholder="e.g. Weekly budget release" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Reference No <span class="text-muted">(optional)</span></label>
-                                <input v-model="pcTxnForm.reference_number" type="text" class="form-control" placeholder="Voucher / transfer ref" />
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="acct-btn-secondary" @click="pcTxnModal.open = false">Cancel</button>
-                        <button class="acct-btn-primary" :disabled="pcTxnSaving" @click="submitTransaction">
-                            <span v-if="pcTxnSaving"><i class="ri-loader-4-line spin"></i> Saving...</span>
-                            <span v-else>Replenish Fund</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
         </template>
 
     </div>
@@ -709,18 +527,6 @@ const emptyBdForm = () => ({
     notes: '',
 });
 
-const emptyPcTxnForm = (type = 'replenishment') => ({
-    type,
-    transaction_date: new Date().toISOString().slice(0, 10),
-    amount: '',
-    category: '',
-    description: '',
-    reference_number: '',
-    source_type: 'cash',
-    bank_account_id: '',
-    receipt: null,
-});
-
 export default {
     layout: [MainLayout, AccountingLayout],
     props: {
@@ -729,7 +535,7 @@ export default {
         bankAccounts: { type: Array,  default: () => [] },
         cashAccounts: { type: Array,  default: () => [] },
         deposits:     { type: Array,  default: () => [] },
-        cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
+        cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], cash_on_hand: 0, total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
         summaryCards: { type: Array,  default: () => [] },
         stats:        { type: Object, default: () => ({}) },
     },
@@ -744,50 +550,16 @@ export default {
             ftErrors: {},
             ftSaving: false,
 
-            // Petty cash fund creation
-            pcFundModal:  { open: false },
-            pcFundForm:   { name: '', gl_code: '', initial_balance: '', weekly_budget: '' },
-            pcFundErrors: {},
-            pcFundSaving: false,
-
-            // Petty cash transaction
-            pcTxnModal:  { open: false },
-            pcTxnForm:   emptyPcTxnForm(),
-            pcTxnErrors: {},
-            pcTxnSaving: false,
-
             // Bank deposits
             bdModal:  { open: false },
             bdForm:   emptyBdForm(),
             bdErrors: {},
             bdSaving: false,
-
-            // Fund edit modal
-            fundEditModal:  { open: false },
-            fundEditForm:   { name: '', weekly_budget: '' },
-            fundEditSaving: false,
-
-            // Approved replenishment requests for the replenish modal
-            repRequests:        [],
-            repRequestsLoading: false,
-            selectedRepRequest: '',
         };
     },
     computed: {
         selectedFund() {
             return this.funds.find(f => f.id === this.selectedFundId) ?? null;
-        },
-        weeklySpent() {
-            return this.selectedFund?.weekly_spent ?? 0;
-        },
-        weeklyRemaining() {
-            return this.selectedFund?.weekly_remaining ?? null;
-        },
-        weeklyBarStyle() {
-            if (!this.selectedFund || !this.selectedFund.weekly_budget) return {};
-            const pct = Math.min((this.weeklySpent / this.selectedFund.weekly_budget) * 100, 100);
-            const color = pct >= 100 ? '#ef4444' : pct >= 75 ? '#f59e0b' : '#22c55e';
-            return { width: pct + '%', background: color };
         },
     },
     methods: {
@@ -828,87 +600,6 @@ export default {
         },
 
         // ── Petty Cash ────────────────────────────────────────────────
-        openCreateFund() {
-            this.pcFundForm   = { name: '', gl_code: '', initial_balance: '', weekly_budget: '' };
-            this.pcFundErrors = {};
-            this.pcFundModal.open = true;
-        },
-        async submitFund() {
-            this.pcFundSaving = true;
-            this.pcFundErrors = {};
-            try {
-                const res = await axios.post('/accounting/petty-cash/funds', this.pcFundForm);
-                this.pcFundModal.open = false;
-                router.reload({ preserveScroll: true });
-            } catch (e) {
-                if (e.response?.status === 422) this.pcFundErrors = e.response.data.errors || {};
-            } finally {
-                this.pcFundSaving = false;
-            }
-        },
-        async openAddTransaction(type) {
-            this.pcTxnForm        = emptyPcTxnForm(type);
-            this.pcTxnErrors      = {};
-            this.selectedRepRequest = '';
-            this.repRequests      = [];
-            this.pcTxnModal.open  = true;
-            this.$nextTick(() => {
-                if (this.$refs.pcReceiptInput) this.$refs.pcReceiptInput.value = '';
-            });
-
-            if (type === 'replenishment' && this.selectedFundId) {
-                this.repRequestsLoading = true;
-                try {
-                    const { data } = await axios.get('/replenishments', {
-                        params: { fund_id: this.selectedFundId, status: 'approved', count: 100 },
-                    });
-                    this.repRequests = data.data ?? [];
-                } catch (e) {
-                    this.repRequests = [];
-                } finally {
-                    this.repRequestsLoading = false;
-                }
-            }
-        },
-        selectRepRequest() {
-            const req = this.repRequests.find(r => r.id == this.selectedRepRequest);
-            if (!req) return;
-            this.pcTxnForm.amount      = req.total_amount;
-            this.pcTxnForm.description = `Replenishment for ${req.reference_no}`;
-        },
-        onPcReceiptChange(e) {
-            this.pcTxnForm.receipt = e.target.files[0] || null;
-        },
-        async submitTransaction() {
-            this.pcTxnSaving = true;
-            this.pcTxnErrors = {};
-            try {
-                const base = {
-                    ...this.pcTxnForm,
-                    fund_id: this.selectedFundId,
-                    replenishment_request_id: this.selectedRepRequest || null,
-                };
-                const payload = this.pcTxnForm.receipt
-                    ? (() => {
-                        const fd = new FormData();
-                        Object.entries(base).forEach(([k, v]) => {
-                            if (k === 'receipt' && v instanceof File) fd.append('receipt', v);
-                            else if (v !== null && v !== undefined) fd.append(k, v);
-                        });
-                        return fd;
-                    })()
-                    : base;
-
-                const headers = this.pcTxnForm.receipt ? { 'Content-Type': 'multipart/form-data' } : {};
-                await axios.post('/accounting/petty-cash/transactions', payload, { headers });
-                this.pcTxnModal.open = false;
-                router.reload({ preserveScroll: true });
-            } catch (e) {
-                if (e.response?.status === 422) this.pcTxnErrors = e.response.data.errors || {};
-            } finally {
-                this.pcTxnSaving = false;
-            }
-        },
         async confirmDeleteTransaction(t) {
             const ok = await this.$confirm({
                 title:       'Delete Transaction?',
@@ -952,24 +643,6 @@ export default {
             if (!ok) return;
             await axios.delete(`/accounting/bank-deposits/${d.id}`);
             router.reload({ preserveScroll: true });
-        },
-
-        // ── Fund Edit ─────────────────────────────────────────────────
-        openEditFund(fund) {
-            this.fundEditForm = { name: fund.name, weekly_budget: fund.weekly_budget || '' };
-            this.fundEditModal.open = true;
-        },
-        async submitEditFund() {
-            this.fundEditSaving = true;
-            try {
-                await axios.put(`/accounting/petty-cash/funds/${this.selectedFundId}`, this.fundEditForm);
-                this.fundEditModal.open = false;
-                router.reload({ preserveScroll: true });
-            } catch (e) {
-                // validation errors not expected here; reload will re-sync
-            } finally {
-                this.fundEditSaving = false;
-            }
         },
     },
 };
@@ -1113,25 +786,4 @@ export default {
 /* ── Bank Deposits ───────────────────────────────────────────── */
 .deposit-no     { font-size: 0.78rem; font-weight: 700; color: #2f6b5c; font-family: monospace; }
 .deposit-amount { color: #1e4d8c; }
-
-/* ── Fund edit button ────────────────────────────────────────── */
-.fund-edit-btn {
-    display: inline-flex; align-items: center; gap: 0.2rem;
-    padding: 1px 8px; border-radius: 6px;
-    background: rgba(61,141,122,0.15); border: 1px solid rgba(61,141,122,0.3);
-    color: #1a4d3d; font-size: 0.72rem; font-weight: 600;
-    cursor: pointer; line-height: 1.6; vertical-align: middle;
-}
-.fund-edit-btn:hover { background: rgba(61,141,122,0.28); }
-
-/* ── Weekly budget progress bar ──────────────────────────────── */
-.week-budget-bar {
-    height: 8px; border-radius: 999px;
-    background: #c4dfd5;
-    overflow: hidden;
-}
-.week-budget-fill {
-    height: 100%; border-radius: 999px;
-    transition: width 0.4s ease, background 0.3s;
-}
 </style>

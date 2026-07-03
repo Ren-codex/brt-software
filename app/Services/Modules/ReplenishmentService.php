@@ -171,19 +171,7 @@ class ReplenishmentService
 
     public function formatForFrontend(ReplenishmentRequest $r): array
     {
-        $weeklyBudget   = (float) optional($r->fund)->weekly_budget;
-        $totalAmount    = (float) $r->total_amount;
-
-        // Compare actual total weekly spend (all fund expenses this week) to the budget,
-        // not just this replenishment's total — so prior batches are counted.
-        $weekStart    = now()->startOfWeek()->toDateString();
-        $weekEnd      = now()->endOfWeek()->toDateString();
-        $weeklySpent  = $weeklyBudget > 0
-            ? (float) Expense::where('fund_id', $r->fund_id)
-                ->whereBetween('expense_date', [$weekStart, $weekEnd])
-                ->sum('amount')
-            : 0;
-        $overBudget   = $weeklyBudget > 0 && $weeklySpent > $weeklyBudget;
+        $totalAmount = (float) $r->total_amount;
 
         return [
             'id'                 => $r->id,
@@ -201,9 +189,6 @@ class ReplenishmentService
             'created_by'         => optional($r->createdBy)->name,
             'reviewed_by'        => optional($r->reviewedBy)->name,
             'created_at'         => $r->created_at?->toDateTimeString(),
-            'weekly_budget'      => $weeklyBudget,
-            'over_weekly_budget' => $overBudget,
-            'over_by'            => $overBudget ? round($weeklySpent - $weeklyBudget, 2) : null,
             'expenses'           => $r->relationLoaded('expenses')
                 ? $r->expenses->map(fn($e) => [
                     'id'           => $e->id,
