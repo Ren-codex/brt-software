@@ -124,7 +124,6 @@ class PettyCashController extends Controller
             $fund->decrement('balance', $data['amount']);
             $newBalance = $previousBalance - $data['amount'];
 
-            $this->journal->recordPettyCashVoucherEntry($voucher->fresh('fund'));
             $this->notificationService->checkAndNotifyLowBalance($fund, $previousBalance, $newBalance);
 
             return $voucher;
