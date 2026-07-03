@@ -192,6 +192,8 @@ class ReplenishmentService
             'expenses'           => $r->relationLoaded('expenses')
                 ? $r->expenses->map(fn($e) => [
                     'id'           => $e->id,
+                    'voucher_no'   => $e->voucher_no,
+                    'payee'        => $e->payee,
                     'expense_type' => $e->expense_type,
                     'amount'       => (float) $e->amount,
                     'amount_fmt'   => '₱' . number_format($e->amount, 2),
