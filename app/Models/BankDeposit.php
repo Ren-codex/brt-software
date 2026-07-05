@@ -31,4 +31,9 @@ class BankDeposit extends Model
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
+
+    public function remittances()
+    {
+        return $this->hasMany(Remittance::class, 'bank_deposit_id');
+    }
 }

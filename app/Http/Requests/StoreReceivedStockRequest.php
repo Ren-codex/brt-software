@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\Accounting\CashManagementService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -27,6 +28,7 @@ class StoreReceivedStockRequest extends FormRequest
             'supplier_id' => 'required|exists:list_suppliers,id',
             'payment_mode' => 'required|in:Cash,Bank Transfer,Credit',
             'amount_paid' => 'nullable|numeric|min:0',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'bank_name' => 'nullable|string|max:255',
             'reference_number' => 'nullable|string|max:255',
             'items' => 'required|array',
@@ -74,6 +76,16 @@ class StoreReceivedStockRequest extends FormRequest
                 }
             }
 
+            if ($paymentMode === 'Cash' && $amountPaid !== null && $amountPaid !== '' && (float) $amountPaid > 0) {
+                $cashOnHand = app(CashManagementService::class)->getCashOnHandBalance();
+                if ((float) $amountPaid > $cashOnHand) {
+                    $validator->errors()->add(
+                        'amount_paid',
+                        'Amount paid exceeds available Cash on Hand (₱' . number_format($cashOnHand, 2) . '). Reduce the amount, use Bank Transfer, or record this as Credit and settle it later.'
+                    );
+                }
+            }
+
             if ($paymentMode === 'Bank Transfer') {
                 if ($bankName === '') {
                     $validator->errors()->add('bank_name', 'Bank name is required for bank transfer payments.');
@@ -81,6 +93,17 @@ class StoreReceivedStockRequest extends FormRequest
 
                 if ($referenceNumber === '') {
                     $validator->errors()->add('reference_number', 'Reference number is required for bank transfer payments.');
+                }
+
+                $bankAccountId = $this->input('bank_account_id');
+                if ($bankAccountId && $amountPaid !== null && $amountPaid !== '' && (float) $amountPaid > 0) {
+                    $bankBalance = app(CashManagementService::class)->getBankAccountBalance((int) $bankAccountId);
+                    if ((float) $amountPaid > $bankBalance) {
+                        $validator->errors()->add(
+                            'amount_paid',
+                            'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').'
+                        );
+                    }
                 }
             }
         });

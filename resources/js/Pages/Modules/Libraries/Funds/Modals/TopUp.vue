@@ -70,7 +70,7 @@ export default {
         submit() {
             this.saving = true;
             this.errors = {};
-            axios.post(`/libraries/funds/${this.fund.id}/top-up`, this.form)
+            axios.post(`/accounting/funds/${this.fund.id}/top-up`, this.form)
                 .then(res => {
                     this.success = res.data.message;
                     this.$emit('done');

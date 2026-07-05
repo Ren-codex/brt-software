@@ -14,6 +14,7 @@ class Remittance extends Model
         'received_amount',
         'variance',
         'status_id',
+        'bank_deposit_id',
         'created_by_id',
         'approved_by_id',
         'approved_at',
@@ -43,5 +44,10 @@ class Remittance extends Model
     public function receipts()
     {
         return $this->hasMany(Receipt::class, 'remittance_id');
+    }
+
+    public function bankDeposit()
+    {
+        return $this->belongsTo(BankDeposit::class, 'bank_deposit_id');
     }
 }

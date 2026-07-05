@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Modules;
 
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
+use App\Services\Accounting\CashManagementService;
 use Illuminate\Http\Request;
 
 class BankAccountController extends Controller
 {
+    public function __construct(private CashManagementService $cashManagementService) {}
+
     public function index()
     {
         $accounts = BankAccount::orderBy('bank_name')->orderBy('account_name')->get();
@@ -65,9 +68,14 @@ class BankAccountController extends Controller
 
     public function list()
     {
-        return response()->json(
-            BankAccount::active()->orderBy('bank_name')->orderBy('account_name')
-                ->get(['id', 'bank_name', 'account_name', 'account_number', 'gl_code'])
-        );
+        $accounts = BankAccount::active()->orderBy('bank_name')->orderBy('account_name')
+            ->get(['id', 'bank_name', 'account_name', 'account_number', 'gl_code']);
+
+        $accounts->each(function ($account) {
+            $account->balance = $this->cashManagementService->getBankAccountBalance($account->id);
+            $account->balance_formatted = '₱' . number_format($account->balance, 2);
+        });
+
+        return response()->json($accounts);
     }
 }

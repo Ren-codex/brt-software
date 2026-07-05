@@ -72,7 +72,7 @@ class ReplenishmentService
             ]);
 
         return [
-            'data'    => $replenishment->fresh(['fund', 'createdBy']),
+            'data'    => $replenishment->fresh(['fund', 'createdBy', 'expenses.added_by']),
             'message' => 'Replenishment request created: ' . $replenishment->reference_no,
         ];
     }
@@ -93,7 +93,7 @@ class ReplenishmentService
         ]);
 
         return [
-            'data'    => $replenishment->fresh(['fund', 'createdBy']),
+            'data'    => $replenishment->fresh(['fund', 'createdBy', 'expenses.added_by']),
             'message' => $replenishment->reference_no . ' submitted for review.',
         ];
     }
@@ -134,7 +134,7 @@ class ReplenishmentService
         });
 
         return [
-            'data'    => $replenishment->fresh(['fund', 'createdBy', 'reviewedBy']),
+            'data'    => $replenishment->fresh(['fund', 'createdBy', 'reviewedBy', 'expenses.added_by']),
             'message' => $replenishment->reference_no . ' approved. Fund replenished by ₱' . number_format($replenishment->total_amount, 2) . '.',
         ];
     }
@@ -173,6 +173,21 @@ class ReplenishmentService
     {
         $totalAmount = (float) $r->total_amount;
 
+        $expenses = $r->relationLoaded('expenses')
+            ? $r->expenses->map(fn($e) => [
+                'id'           => $e->id,
+                'voucher_no'   => $e->voucher_no,
+                'payee'        => $e->payee,
+                'expense_type' => $e->expense_type,
+                'amount'       => (float) $e->amount,
+                'amount_fmt'   => '₱' . number_format($e->amount, 2),
+                'expense_date' => $e->expense_date,
+                'description'  => $e->description,
+                'receipt_path' => $e->receipt_path,
+                'recorded_by'  => optional($e->added_by)->name,
+            ])->values()
+            : collect();
+
         return [
             'id'                 => $r->id,
             'reference_no'       => $r->reference_no,
@@ -189,18 +204,10 @@ class ReplenishmentService
             'created_by'         => optional($r->createdBy)->name,
             'reviewed_by'        => optional($r->reviewedBy)->name,
             'created_at'         => $r->created_at?->toDateTimeString(),
-            'expenses'           => $r->relationLoaded('expenses')
-                ? $r->expenses->map(fn($e) => [
-                    'id'           => $e->id,
-                    'expense_type' => $e->expense_type,
-                    'amount'       => (float) $e->amount,
-                    'amount_fmt'   => '₱' . number_format($e->amount, 2),
-                    'expense_date' => $e->expense_date,
-                    'description'  => $e->description,
-                    'receipt_path' => $e->receipt_path,
-                    'recorded_by'  => optional($e->added_by)->name,
-                ])->values()
-                : [],
+            'expenses'           => $expenses,
+            // Kept as an alias for the "vouchers" key expected by PettyCash.vue's
+            // replenishment view modal, which uses the same shape as this array.
+            'vouchers'           => $expenses,
         ];
     }
 }

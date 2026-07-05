@@ -9,6 +9,7 @@ use App\Models\BankDeposit;
 use App\Models\FundTransfer;
 use App\Models\JournalEntryLine;
 use App\Models\PettyCashFund;
+use App\Models\Remittance;
 use App\Services\Accounting\CashManagementService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,16 @@ use Illuminate\Support\Facades\Storage;
 class CashManagementController extends Controller
 {
     public function __construct(private CashManagementService $service) {}
+
+    public function cashOnHand()
+    {
+        $balance = $this->service->getCashOnHandBalance();
+
+        return response()->json([
+            'balance'           => $balance,
+            'balance_formatted' => '₱' . number_format($balance, 2),
+        ]);
+    }
 
     public function index()
     {
@@ -77,12 +88,15 @@ class CashManagementController extends Controller
                     $q->whereIn('subtype', ['cash', 'petty_cash', 'current_asset'])
                       ->orWhere('name', 'like', '%Cash%');
                 })
+                // Exclude "Cash in Bank" control accounts — those represent money
+                // already deposited, not a valid source for a NEW bank deposit.
+                ->where('name', 'not like', '%Cash in Bank%')
                 ->where('is_active', true)
                 ->orderBy('code')
                 ->get(['id', 'code', 'name', 'subtype'])
             : collect();
 
-        $deposits = BankDeposit::with(['cashAccount', 'bankAccount', 'createdBy'])
+        $deposits = BankDeposit::with(['cashAccount', 'bankAccount', 'createdBy', 'remittances.createdBy.employee'])
             ->orderByDesc('deposit_date')
             ->orderByDesc('id')
             ->get()
@@ -98,7 +112,28 @@ class CashManagementController extends Controller
                 'notes'            => $d->notes,
                 'created_by'       => optional($d->createdBy)->name,
                 'created_at'       => $d->created_at?->toDateTimeString(),
+                'remittances'      => $d->remittances->map(fn($r) => [
+                    'id'             => $r->id,
+                    'remittance_no'  => $r->remittance_no,
+                    'rep_name'       => optional(optional($r->createdBy)->employee)->fullname,
+                    'amount'         => (float) ($r->received_amount ?? $r->total_amount),
+                ])->values(),
             ]);
+
+        $undepositedRemittances = Remittance::with(['createdBy.employee'])
+            ->whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
+            ->whereNull('bank_deposit_id')
+            ->orderBy('remittance_date')
+            ->get()
+            ->map(fn($r) => [
+                'id'                => $r->id,
+                'remittance_no'     => $r->remittance_no,
+                'remittance_date'   => $r->remittance_date,
+                'rep_name'          => optional(optional($r->createdBy)->employee)->fullname ?? 'Unknown',
+                'amount'            => (float) ($r->received_amount ?? $r->total_amount),
+                'amount_formatted'  => '₱' . number_format($r->received_amount ?? $r->total_amount, 2),
+            ])
+            ->values();
 
         $totalTransferred  = FundTransfer::sum('amount');
         $transferCount     = FundTransfer::count();
@@ -113,6 +148,7 @@ class CashManagementController extends Controller
             'bankAccounts' => $bankAccounts,
             'cashAccounts' => $cashAccounts,
             'deposits'     => $deposits,
+            'undepositedRemittances' => $undepositedRemittances,
             'cashPosition' => $cashPosition,
             'stats'        => $this->buildStats(),
             'summaryCards' => [
@@ -189,12 +225,14 @@ class CashManagementController extends Controller
     public function storeDeposit(Request $request)
     {
         $data = $request->validate([
-            'cash_account_id' => 'required|integer|exists:accounts,id',
-            'bank_account_id' => 'required|integer|exists:bank_accounts,id',
-            'amount'          => 'required|numeric|min:0.01',
-            'deposit_date'    => 'required|date',
-            'reference'       => 'nullable|string|max:100',
-            'notes'           => 'nullable|string|max:500',
+            'cash_account_id'    => 'required|integer|exists:accounts,id',
+            'bank_account_id'    => 'required|integer|exists:bank_accounts,id',
+            'amount'             => 'required|numeric|min:0.01',
+            'deposit_date'       => 'required|date',
+            'reference'          => 'nullable|string|max:100',
+            'notes'              => 'nullable|string|max:500',
+            'remittance_ids'     => 'nullable|array',
+            'remittance_ids.*'   => 'integer|exists:remittances,id',
         ]);
 
         $deposit = $this->service->createBankDeposit($data);
@@ -250,13 +288,7 @@ class CashManagementController extends Controller
             'balance_formatted'=> '₱' . number_format($f->balance, 2),
         ])->values()->all();
 
-        $cashAccount = Account::where('slug', 'cash')->first() ?? Account::where('code', '1000')->first();
-        $cashOnHand  = 0;
-        if ($cashAccount) {
-            $debit      = (float) JournalEntryLine::where('account_id', $cashAccount->id)->where('line_type', 'debit')->sum('amount');
-            $credit     = (float) JournalEntryLine::where('account_id', $cashAccount->id)->where('line_type', 'credit')->sum('amount');
-            $cashOnHand = round($debit - $credit, 2);
-        }
+        $cashOnHand = $this->service->getCashOnHandBalance();
 
         $totalBank      = round(array_sum(array_column($bankBalances, 'balance')), 2);
         $totalPettyCash = round(array_sum(array_column($pettyCash, 'balance')), 2);

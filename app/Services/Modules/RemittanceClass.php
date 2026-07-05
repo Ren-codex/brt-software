@@ -29,7 +29,7 @@ class RemittanceClass
         $location_id = $request->location_id ?? $mainOffice?->id;
 
         $data = RemittanceResource::collection(
-            Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee'])
+            Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount'])
             ->whereHas('receipts', function ($q) use ($location_id) {
                 $q->where(function ($inner) use ($location_id) {
                     $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($location_id) {
@@ -41,7 +41,11 @@ class RemittanceClass
             ->when($request->keyword, function ($query,$keyword) {
                 $query->where('remittance_no', 'LIKE', "%{$keyword}%");
             })
-            ->when($request->status, function ($query, $status) {
+            ->when($request->status === 'undeposited', function ($query) {
+                $query->whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
+                    ->whereNull('bank_deposit_id');
+            })
+            ->when($request->status && $request->status !== 'undeposited', function ($query, $status) {
                 $query->whereHas('status', function ($q) use ($status) {
                     $q->where('slug', $status);
                 });
@@ -50,6 +54,28 @@ class RemittanceClass
             ->paginate($request->count)
         );
         return $data;
+    }
+
+    public function undepositedSummary($request)
+    {
+        $mainOffice = ListLocation::where('name', 'Zamboanga City')->first();
+        $location_id = $request->location_id ?? $mainOffice?->id;
+
+        $query = Remittance::whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
+            ->whereNull('bank_deposit_id')
+            ->whereHas('receipts', function ($q) use ($location_id) {
+                $q->where(function ($inner) use ($location_id) {
+                    $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($location_id) {
+                        $soQ->where('location_id', $location_id)
+                            ->orWhereNull('location_id');
+                    })->orWhereDoesntHave('arInvoice');
+                });
+            });
+
+        return response()->json([
+            'total_amount' => (float) $query->sum('total_amount'),
+            'count'        => $query->count(),
+        ]);
     }
 
     public function save($request)
