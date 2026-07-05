@@ -278,7 +278,7 @@
               >
                 <option value="">— Select bank account —</option>
                 <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
-                  {{ ba.bank_name }} — {{ ba.account_name }}
+                  {{ ba.bank_name }} — {{ ba.account_name }} ({{ formatCurrency(ba.balance) }})
                 </option>
               </select>
               <small v-if="bankAccounts.length === 0" style="font-size:0.75rem;color:#94a3b8">
@@ -329,6 +329,17 @@
                 Fully paid
               </strong>
             </div>
+
+            <div v-if="!isBankTransferMode" class="payment-cash-on-hand-note">
+              <i class="ri-wallet-3-line"></i>
+              <span v-if="cashOnHandLoaded">Available Cash on Hand: <strong>{{ formatCurrency(cashOnHand) }}</strong></span>
+              <span v-else>Loading current Cash on Hand balance…</span>
+            </div>
+
+            <div v-if="isBankTransferMode && selectedBankAccount" class="payment-cash-on-hand-note">
+              <i class="ri-bank-line"></i>
+              <span>Available balance for {{ selectedBankAccount.bank_name }} — {{ selectedBankAccount.account_name }}: <strong>{{ formatCurrency(selectedBankAccount.balance) }}</strong></span>
+            </div>
           </div>
 
           <div v-if="paymentMethodError" class="alert alert-danger mt-3 mb-0" role="alert">
@@ -363,6 +374,8 @@ export default {
     return {
       showModal: false,
       bankAccounts: [],
+      cashOnHand: 0,
+      cashOnHandLoaded: false,
       form: {
         po_id: '',
         supplier_id: '',
@@ -428,6 +441,9 @@ export default {
     isBankTransferMode() {
       return this.selectedPaymentType === 'Cash' && this.selectedCashPaymentMode === 'Bank Transfer';
     },
+    selectedBankAccount() {
+      return this.bankAccounts.find(b => Number(b.id) === Number(this.form.bank_account_id)) || null;
+    },
   },
   mounted() {
     document.addEventListener('keydown', this._onEscape);
@@ -458,6 +474,17 @@ export default {
         this.bankAccounts = res.data || [];
       } catch {
         this.bankAccounts = [];
+      }
+    },
+    async loadCashOnHand() {
+      this.cashOnHandLoaded = false;
+      try {
+        const res = await axios.get('/accounting/cash-on-hand');
+        this.cashOnHand = Number(res.data?.balance || 0);
+      } catch {
+        this.cashOnHand = 0;
+      } finally {
+        this.cashOnHandLoaded = true;
       }
     },
     onBankAccountChange() {
@@ -540,6 +567,7 @@ export default {
 
       this.showModal = true;
       this.loadBankAccounts();
+      this.loadCashOnHand();
     },
     resetForm() {
       this.form = {
@@ -724,6 +752,11 @@ export default {
           return;
         }
 
+        if (!this.isBankTransferMode && amountPaid > this.cashOnHand) {
+          this.paymentMethodError = `Amount exceeds available Cash on Hand (${this.formatCurrency(this.cashOnHand)}). Reduce the amount, use Bank Transfer, or record this as Credit.`;
+          return;
+        }
+
         if (this.isBankTransferMode) {
           if (!this.form.bank_account_id) {
             this.paymentMethodError = 'Please select a bank account for this transfer.';
@@ -732,6 +765,11 @@ export default {
 
           if (!String(this.form.reference_number || '').trim()) {
             this.paymentMethodError = 'Please enter the transfer reference number.';
+            return;
+          }
+
+          if (this.selectedBankAccount && amountPaid > Number(this.selectedBankAccount.balance)) {
+            this.paymentMethodError = `Amount exceeds this bank account's available balance (${this.formatCurrency(this.selectedBankAccount.balance)}).`;
             return;
           }
         } else {
@@ -1333,6 +1371,19 @@ export default {
   margin-top: 0.65rem;
   color: #527267;
   font-size: 0.9rem;
+}
+
+.payment-cash-on-hand-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.84rem;
 }
 
 .payment-panel-heading h5 {

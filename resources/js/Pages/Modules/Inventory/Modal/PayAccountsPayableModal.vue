@@ -34,13 +34,13 @@
             <div class="method-options">
               <button
                 v-for="option in paymentOptions"
-                :key="option"
+                :key="option.value"
                 type="button"
                 class="method-option"
-                :class="{ active: form.payment_mode === option }"
-                @click="selectPaymentMode(option)"
+                :class="{ active: form.payment_mode === option.value }"
+                @click="selectPaymentMode(option.value)"
               >
-                {{ option }}
+                {{ option.label }}
               </button>
             </div>
             <small v-if="errors.payment_mode" class="field-error">{{ errors.payment_mode }}</small>
@@ -60,6 +60,17 @@
             <small class="form-help">Maximum payable amount: {{ formatCurrency(remainingBalance) }}</small>
             <small v-if="errors.payment_amount" class="field-error">{{ errors.payment_amount }}</small>
           </div>
+
+          <template v-if="form.payment_mode === 'Cash on Hand'">
+            <div class="info-banner" style="margin-bottom: 0; grid-column: 1 / -1;">
+              <i class="ri-information-line"></i>
+              <span>
+                Paid directly from Cash on Hand (general cash, not a petty cash fund).
+                <strong v-if="cashOnHandLoaded">Available balance: {{ formatCurrency(cashOnHand) }}</strong>
+                <span v-else>Loading current balance…</span>
+              </span>
+            </div>
+          </template>
 
           <template v-if="form.payment_mode === 'Cash'">
             <div>
@@ -91,7 +102,7 @@
               >
                 <option value="">— Select bank account —</option>
                 <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
-                  {{ ba.bank_name }} — {{ ba.account_name }}
+                  {{ ba.bank_name }} — {{ ba.account_name }} ({{ formatCurrency(ba.balance) }})
                 </option>
               </select>
               <small v-if="bankAccounts.length === 0" class="form-help text-muted">
@@ -140,6 +151,8 @@ export default {
       record: null,
       bankAccounts: [],
       cashFunds: [],
+      cashOnHand: 0,
+      cashOnHandLoaded: false,
       form: {
         payment_mode: 'Cash',
         payment_amount: '',
@@ -149,12 +162,19 @@ export default {
         petty_cash_fund_id: '',
       },
       errors: {},
-      paymentOptions: ['Cash', 'Bank Transfer'],
+      paymentOptions: [
+        { value: 'Cash', label: 'Petty Cash Fund' },
+        { value: 'Cash on Hand', label: 'Cash on Hand' },
+        { value: 'Bank Transfer', label: 'Bank Transfer' },
+      ],
     };
   },
   computed: {
     remainingBalance() {
       return Number(this.record?.remaining_balance || 0);
+    },
+    selectedBankAccount() {
+      return this.bankAccounts.find(b => Number(b.id) === Number(this.form.bank_account_id)) || null;
     },
   },
   mounted() {
@@ -178,6 +198,7 @@ export default {
       this.form.reference_number = '';
       this.loadBankAccounts();
       this.loadCashFunds();
+      this.loadCashOnHand();
     },
     hide(force = false) {
       if (this.isSubmitting && !force) return;
@@ -202,9 +223,20 @@ export default {
         this.bankAccounts = [];
       }
     },
+    async loadCashOnHand() {
+      this.cashOnHandLoaded = false;
+      try {
+        const res = await axios.get('/accounting/cash-on-hand');
+        this.cashOnHand = Number(res.data?.balance || 0);
+      } catch {
+        this.cashOnHand = 0;
+      } finally {
+        this.cashOnHandLoaded = true;
+      }
+    },
     async loadCashFunds() {
       try {
-        const res = await axios.get('/libraries/funds', { params: { option: 'lists', count: 100 } });
+        const res = await axios.get('/accounting/funds', { params: { option: 'lists', count: 100 } });
         this.cashFunds = (res.data?.data || []).filter(f => f.is_active);
         if (this.cashFunds.length === 1) {
           this.form.petty_cash_fund_id = this.cashFunds[0].id;
@@ -246,6 +278,10 @@ export default {
         errors.payment_amount = 'Payment amount must be greater than zero.';
       } else if (paymentAmount > this.remainingBalance) {
         errors.payment_amount = 'Payment amount cannot exceed the remaining balance.';
+      } else if (this.form.payment_mode === 'Cash on Hand' && paymentAmount > this.cashOnHand) {
+        errors.payment_amount = `Amount exceeds available Cash on Hand (${this.formatCurrency(this.cashOnHand)}).`;
+      } else if (this.form.payment_mode === 'Bank Transfer' && this.selectedBankAccount && paymentAmount > Number(this.selectedBankAccount.balance)) {
+        errors.payment_amount = `Amount exceeds this bank account's available balance (${this.formatCurrency(this.selectedBankAccount.balance)}).`;
       }
 
       if (this.form.payment_mode === 'Cash') {

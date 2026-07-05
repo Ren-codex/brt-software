@@ -83,6 +83,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO']);
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
+        Route::get('/accounting/cash-on-hand', [App\Http\Controllers\Modules\CashManagementController::class, 'cashOnHand']);
         Route::post('/received-stocks/{receivedStock}/pay', [App\Http\Controllers\ReceivedStockController::class, 'pay']);
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);
         Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class);
