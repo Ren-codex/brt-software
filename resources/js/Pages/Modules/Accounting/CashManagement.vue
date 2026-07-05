@@ -303,6 +303,7 @@
                                     <th>Deposited To</th>
                                     <th class="text-end">Amount</th>
                                     <th>Reference</th>
+                                    <th>Linked Collections</th>
                                     <th>Recorded By</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
@@ -315,6 +316,12 @@
                                     <td><span class="bank-chip to">{{ d.bank_name }}</span></td>
                                     <td class="text-end fw-semibold deposit-amount">{{ d.amount_formatted }}</td>
                                     <td class="text-muted">{{ d.reference || '—' }}</td>
+                                    <td>
+                                        <span v-if="!d.remittances || d.remittances.length === 0" class="text-muted">—</span>
+                                        <span v-else class="remit-chip" :title="d.remittances.map(r => r.remittance_no + ' (' + r.rep_name + ')').join(', ')">
+                                            <i class="ri-links-line"></i> {{ d.remittances.length }} remittance{{ d.remittances.length > 1 ? 's' : '' }}
+                                        </span>
+                                    </td>
                                     <td class="text-muted small">{{ d.created_by }}</td>
                                     <td class="text-center">
                                         <button class="action-btn delete" @click="confirmDeleteDeposit(d)" title="Delete & Reverse">
@@ -346,6 +353,24 @@
                                 <input v-model="bdForm.deposit_date" type="date" class="form-control" />
                                 <div v-if="bdErrors.deposit_date" class="error-msg">{{ bdErrors.deposit_date[0] }}</div>
                             </div>
+                        </div>
+
+                        <div v-if="undepositedRemittances.length > 0" class="bd-remit-section">
+                            <label class="form-label mb-1">Link Collections <span class="text-muted">(optional)</span></label>
+                            <p class="form-text mt-0 mb-2">Check the remittance(s) this deposit covers — the amount below fills in automatically.</p>
+                            <div class="bd-remit-list">
+                                <label v-for="r in undepositedRemittances" :key="r.id" class="bd-remit-row">
+                                    <input type="checkbox" :checked="isRemittanceSelected(r)" @change="toggleRemittance(r)" />
+                                    <span class="bd-remit-info">
+                                        <span class="bd-remit-no">{{ r.remittance_no }}</span>
+                                        <span class="bd-remit-rep">{{ r.rep_name }} · {{ r.remittance_date }}</span>
+                                    </span>
+                                    <span class="bd-remit-amount">{{ r.amount_formatted }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-0">
                             <div class="col-12 col-sm-6">
                                 <label class="form-label">Amount <span class="text-danger">*</span></label>
                                 <input v-model="bdForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
@@ -396,8 +421,8 @@
             <div v-if="funds.length === 0" class="cm-empty-state mb-3">
                 <i class="ri-wallet-3-line"></i>
                 <p class="mb-2">No petty cash funds set up</p>
-                <a href="/accounting/funds" class="acct-btn-primary">
-                    <i class="ri-external-link-line"></i> Set Up in Petty Cash Funds
+                <a href="/accounting/petty-cash" class="acct-btn-primary">
+                    <i class="ri-external-link-line"></i> Set Up in Petty Cash
                 </a>
             </div>
 
@@ -410,7 +435,7 @@
                             <option v-for="f in funds" :key="f.id" :value="f.id">{{ f.name }} ({{ f.balance_formatted }})</option>
                         </select>
                     </div>
-                    <a href="/accounting/funds" class="acct-btn-secondary">
+                    <a href="/accounting/petty-cash" class="acct-btn-secondary">
                         <i class="ri-external-link-line"></i> Manage Funds
                     </a>
                 </div>
@@ -525,6 +550,7 @@ const emptyBdForm = () => ({
     amount: '',
     reference: '',
     notes: '',
+    remittance_ids: [],
 });
 
 export default {
@@ -535,6 +561,7 @@ export default {
         bankAccounts: { type: Array,  default: () => [] },
         cashAccounts: { type: Array,  default: () => [] },
         deposits:     { type: Array,  default: () => [] },
+        undepositedRemittances: { type: Array, default: () => [] },
         cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], cash_on_hand: 0, total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
         summaryCards: { type: Array,  default: () => [] },
         stats:        { type: Object, default: () => ({}) },
@@ -618,6 +645,19 @@ export default {
             this.bdForm   = emptyBdForm();
             this.bdErrors = {};
             this.bdModal.open = true;
+        },
+        isRemittanceSelected(r) {
+            return this.bdForm.remittance_ids.includes(r.id);
+        },
+        toggleRemittance(r) {
+            const idx = this.bdForm.remittance_ids.indexOf(r.id);
+            if (idx === -1) this.bdForm.remittance_ids.push(r.id);
+            else this.bdForm.remittance_ids.splice(idx, 1);
+
+            const total = this.undepositedRemittances
+                .filter(x => this.bdForm.remittance_ids.includes(x.id))
+                .reduce((sum, x) => sum + Number(x.amount || 0), 0);
+            this.bdForm.amount = total > 0 ? total.toFixed(2) : '';
         },
         async submitDeposit() {
             this.bdSaving = true;
@@ -786,4 +826,31 @@ export default {
 /* ── Bank Deposits ───────────────────────────────────────────── */
 .deposit-no     { font-size: 0.78rem; font-weight: 700; color: #2f6b5c; font-family: monospace; }
 .deposit-amount { color: #1e4d8c; }
+
+.remit-chip {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 2px 10px; border-radius: 999px;
+    background: #eff6ff; color: #1e4d8c; border: 1px solid #bfdbfe;
+    font-size: 0.76rem; font-weight: 600; cursor: default;
+}
+
+.bd-remit-section {
+    margin-top: 0.75rem; padding: 0.85rem 1rem;
+    background: #f7fbfa; border: 1px solid #e0eeea; border-radius: 10px;
+}
+.bd-remit-list {
+    max-height: 180px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 0.35rem;
+}
+.bd-remit-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.45rem 0.6rem; border-radius: 8px;
+    background: #fff; border: 1px solid #e5efec;
+    cursor: pointer; font-size: 0.82rem;
+}
+.bd-remit-row:hover { border-color: #a7d4c4; }
+.bd-remit-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.bd-remit-no  { font-weight: 700; color: #16322e; font-family: monospace; font-size: 0.78rem; }
+.bd-remit-rep { color: #6b8c85; font-size: 0.74rem; }
+.bd-remit-amount { font-weight: 700; color: #1e4d8c; white-space: nowrap; }
 </style>
