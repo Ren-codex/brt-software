@@ -64,6 +64,15 @@
                                 </div><br>
                                 <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.fullname || '-' }}</p>
                                 <p class="mb-1"><strong>Date Approved:</strong> {{ item.approved_at || '-' }}</p>
+                                <p class="mb-1" v-if="item.status?.slug === 'liquidated'">
+                                    <strong>Bank Deposit:</strong>
+                                    <span v-if="item.is_deposited" class="deposit-status-chip deposited ms-1">
+                                        <i class="ri-checkbox-circle-fill"></i> {{ item.bank_deposit?.deposit_no }} — {{ item.bank_deposit?.deposit_date }}
+                                    </span>
+                                    <span v-else class="deposit-status-chip pending ms-1">
+                                        <i class="ri-time-line"></i> Not yet deposited
+                                    </span>
+                                </p>
                                 <p class="mb-0"><strong>Remarks:</strong>
                                     &nbsp;<span style="font-size:12px; background:#343a40; color:#fff; padding:3px 8px; border-radius:4px;">{{ item.remarks }}</span></p><br>
                             </div>
@@ -213,6 +222,14 @@ export default {
 </script>
 
 <style scoped>
+.deposit-status-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+}
+.deposit-status-chip.deposited { background: #dcfce7; color: #166534; }
+.deposit-status-chip.pending   { background: #fef3c7; color: #92400e; }
+
 .summary-table th {
     width: 40%;
     font-weight: 600;
