@@ -83,6 +83,14 @@ class AccountingReportExport implements WithMultipleSheets
         $rows[] = ['', '', 'Gross Profit', $this->data['totals']['gross_profit'] ?? ''];
         $rows[] = [];
 
+        foreach ($this->data['inventoryVarianceAccounts'] ?? [] as $acct) {
+            $rows[] = ['Inventory Variance', $acct['code'] ?? '', $acct['name'] ?? '', (float) ($acct['balance'] ?? 0)];
+        }
+        if (!empty($this->data['inventoryVarianceAccounts'])) {
+            $rows[] = ['', '', 'Total Inventory Variance', $this->data['totals']['inventory_variance'] ?? ''];
+            $rows[] = [];
+        }
+
         foreach ($this->data['operatingExpenseAccounts'] ?? [] as $acct) {
             $rows[] = ['Operating Expenses', $acct['code'] ?? '', $acct['name'] ?? '', (float) ($acct['balance'] ?? 0)];
         }

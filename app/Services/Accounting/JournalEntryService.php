@@ -356,7 +356,7 @@ class JournalEntryService
         return $entries;
     }
 
-    public function recordReplenishmentEntry(\App\Models\ReplenishmentRequest $replenishment): ?JournalEntry
+    public function recordReplenishmentEntry(\App\Models\ReplenishmentRequest $replenishment, ?string $sourceType = null, ?int $bankAccountId = null): ?JournalEntry
     {
         $expenses = $replenishment->expenses;
         $total    = round((float) $replenishment->total_amount, 2);
@@ -379,13 +379,15 @@ class JournalEntryService
             ];
         }
 
-        // Credit: Cash in Bank (replenishment check drawn from bank to restore fund)
-        $cashAccount = $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash');
+        // Credit: the source that funded the replenishment (Cash on Hand, a specific bank, or generic Cash in Bank)
+        $cashAccount = $sourceType === 'cash'
+            ? $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset')
+            : $this->resolvePaymentAccount('bank_transfer', $bankAccountId);
         $lines[] = [
             'account_id'  => $cashAccount->id,
             'line_type'   => 'credit',
             'amount'      => $total,
-            'description' => 'Replenishment check issued — ' . $replenishment->reference_no,
+            'description' => 'Replenishment issued — ' . $replenishment->reference_no,
         ];
 
         $memo = 'Petty cash replenishment approved. ' . $replenishment->reference_no
@@ -483,10 +485,9 @@ class JournalEntryService
         if ($bankAccountId) {
             $bank = \App\Models\BankAccount::find($bankAccountId);
             if ($bank) {
-                $slug = \Illuminate\Support\Str::slug($bank->account_name);
                 return $this->ensureAccount(
                     $bank->gl_code,
-                    $slug,
+                    'bank_' . $bank->gl_code,
                     $bank->bank_name . ' — ' . $bank->account_name,
                     'asset',
                     'current_asset'
@@ -585,7 +586,7 @@ class JournalEntryService
             $cashAccount = $fund
                 ? $this->ensureAccount(
                     $fund->gl_code ?: ('1050.' . $fund->id),
-                    'petty_cash_' . \Illuminate\Support\Str::slug($fund->name),
+                    'petty_cash_' . strtolower($fund->gl_code ?: $fund->id),
                     $fund->name,
                     'asset',
                     'cash'
@@ -963,6 +964,26 @@ class JournalEntryService
         );
     }
 
+    public function recordBankWithdrawalEntry(\App\Models\BankWithdrawal $withdrawal): JournalEntry
+    {
+        $withdrawal->loadMissing(['cashAccount', 'bankAccount']);
+
+        $bankGlAccount = $this->resolveBankAccountGl($withdrawal->bankAccount);
+        $cashGlAccount = $withdrawal->cashAccount;
+        $amount        = round((float) $withdrawal->amount, 2);
+
+        return $this->createEntry(
+            $withdrawal,
+            $withdrawal->withdrawal_date,
+            'bank_withdrawal',
+            'Bank withdrawal ' . $withdrawal->withdrawal_no . ' — cash withdrawn from ' . $withdrawal->bankAccount->bank_name . '.',
+            [
+                ['account_id' => $cashGlAccount->id,  'line_type' => 'debit',  'amount' => $amount, 'description' => 'Increase cash on hand account: ' . $withdrawal->cashAccount->name . '.'],
+                ['account_id' => $bankGlAccount->id,  'line_type' => 'credit', 'amount' => $amount, 'description' => 'Withdraw cash from ' . $withdrawal->bankAccount->bank_name . ' — ' . $withdrawal->bankAccount->account_name . '.'],
+            ]
+        );
+    }
+
     public function recordPayrollEntry(\App\Models\Payroll $payroll): array
     {
         $payroll->loadMissing(['items']);
@@ -975,7 +996,7 @@ class JournalEntryService
             return [];
         }
 
-        $salaryExpenseAccount   = $this->ensureAccount('5200', 'salaries_wages_expense', 'Salaries and Wages Expense', 'expense', 'operating_expense');
+        $salaryExpenseAccount   = $this->ensureAccount('5310', 'salaries_wages_expense', 'Salaries and Wages Expense', 'expense', 'operating_expense');
         $cashAccount            = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
         $payrollDate            = $payroll->pay_period_end ?? now()->toDateString();
         $memo                   = 'Payroll #' . $payroll->payroll_no . ' released for period ' . $payroll->pay_period_start . ' to ' . $payroll->pay_period_end . '.';
@@ -1064,7 +1085,7 @@ class JournalEntryService
     {
         return $this->ensureAccount(
             $bankAccount->gl_code,
-            \Illuminate\Support\Str::slug($bankAccount->account_name),
+            'bank_' . $bankAccount->gl_code,
             $bankAccount->bank_name . ' — ' . $bankAccount->account_name,
             'asset',
             'current_asset'
@@ -1075,7 +1096,7 @@ class JournalEntryService
     {
         return $this->ensureAccount(
             $fund->gl_code,
-            'petty_cash_' . \Illuminate\Support\Str::slug($fund->name),
+            'petty_cash_' . strtolower($fund->gl_code),
             'Petty Cash — ' . $fund->name,
             'asset',
             'current_asset'
@@ -1226,10 +1247,9 @@ class JournalEntryService
         if ($bankAccountId && strtolower((string) $paymentMode) === 'bank transfer') {
             $bankAccount = BankAccount::find($bankAccountId);
             if ($bankAccount) {
-                $slug = \Illuminate\Support\Str::slug($bankAccount->account_name);
                 return $this->ensureAccount(
                     $bankAccount->gl_code,
-                    $slug,
+                    'bank_' . $bankAccount->gl_code,
                     $bankAccount->bank_name . ' — ' . $bankAccount->account_name,
                     'asset',
                     'current_asset'
@@ -1238,8 +1258,8 @@ class JournalEntryService
         }
 
         return match (strtolower((string) $paymentMode)) {
-            'bank transfer' => $this->ensureAccount('1010', 'cash_in_bank', 'Cash In Bank', 'asset', 'current_asset'),
-            'credit card', 'debit card' => $this->ensureAccount('1020', 'card_clearing', 'Card Clearing', 'asset', 'current_asset'),
+            'bank transfer' => $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash'),
+            'credit card', 'debit card' => $this->ensureAccount('1090', 'card_clearing', 'Card Clearing', 'asset', 'current_asset'),
             default => $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset'),
         };
     }

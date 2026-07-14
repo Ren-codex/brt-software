@@ -148,16 +148,16 @@
                 </div>
 
                 <div class="table-responsive">
-                  <table class="table align-middle table-hover mb-0">
-                    <thead class="table-light">
+                  <table class="table inv-stock-table mb-0">
+                    <thead>
                       <tr>
                         <th style="width: 5%">#</th>
                         <th>Batch Code</th>
-                        <th style="width: 20%">Received Date</th>
-                        <th>Quantity</th>
-                        <th>Unit Cost</th>
-                        <th>Retail Price</th>
-                        <th>Wholesale Price</th>
+                        <th style="width: 18%">Received Date</th>
+                        <th style="width: 21%">Quantity</th>
+                        <th class="text-end">Unit Cost</th>
+                        <th class="text-end">Retail Price</th>
+                        <th class="text-end">Wholesale Price</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -167,27 +167,26 @@
                         :class="['stock-row', { 'expiring-soon-row': isWithinThreeMonths(stock.expiration_date) }]"
                         @click="$emit('view-details', stock)"
                       >
-                        <td>{{ stockRowStart + index + 1 }}</td>
+                        <td class="text-muted">{{ stockRowStart + index + 1 }}</td>
                         <td>
-                          {{ stock.batch_code || '-' }}
-                          <span class="status-badge converted-badge" v-if="stock.conversion_id">Converted</span>
-                          <span class="status-badge" v-if="stock.expiration_date">EXP: {{ formatDate(stock.expiration_date) }}</span>
-                        </td>
-                        <td>{{ stock.received_item ? formatDate(stock.received_item.received_stock?.received_date) : formatDate(stock.created_at) }}</td>
-                        <td>
-                          {{ stock.quantity }} pcs
-                          <span class="d-block text-muted" style="font-size:0.75rem">
-                            {{ stockKg(stock, selectedProduct) }} kg
-                          </span>
-                          <span v-if="stock.total_affected_sacks > 0" class="d-block" style="font-size:0.72rem; margin-top:2px;">
-                            <span style="color:#16a34a; font-weight:600;">{{ stock.quantity - stock.total_affected_sacks }} normal</span>
-                            <span style="color:#6b7280;"> · </span>
-                            <span style="color:#dc2626; font-weight:600;">{{ stock.total_affected_sacks }} short</span>
+                          <span class="batch-code">{{ stock.batch_code || '-' }}</span>
+                          <span class="inv-chip-row">
+                            <span class="inv-chip converted" v-if="stock.conversion_id">Converted</span>
+                            <span class="inv-chip expiring" v-if="stock.expiration_date">EXP {{ formatDate(stock.expiration_date) }}</span>
                           </span>
                         </td>
-                        <td>{{ formatCurrency(stock.received_item?.unit_cost) }}</td>
-                        <td>{{ formatCurrency(stock.retail_price) }}</td>
-                        <td>{{ formatCurrency(stock.wholesale_price) }}</td>
+                        <td class="text-muted">{{ stock.received_item ? formatDate(stock.received_item.received_stock?.received_date) : formatDate(stock.created_at) }}</td>
+                        <td>
+                          <span class="qty-primary">{{ stock.quantity }} <span class="qty-unit">pcs</span></span>
+                          <span class="qty-secondary">{{ stockKg(stock, selectedProduct) }} kg</span>
+                          <span v-if="stock.total_affected_sacks > 0" class="inv-chip-row mt-1">
+                            <span class="inv-chip normal">{{ stock.quantity - stock.total_affected_sacks }} normal</span>
+                            <span class="inv-chip short">{{ stock.total_affected_sacks }} short</span>
+                          </span>
+                        </td>
+                        <td class="text-end">{{ formatCurrency(stock.received_item?.unit_cost) }}</td>
+                        <td class="text-end fw-semibold">{{ formatCurrency(stock.retail_price) }}</td>
+                        <td class="text-end fw-semibold">{{ formatCurrency(stock.wholesale_price) }}</td>
                       </tr>
                       <tr v-if="filteredProductStocks.length === 0">
                         <td colspan="7" class="text-center py-4 text-muted">
@@ -583,23 +582,94 @@ export default {
   flex-wrap: wrap;
 }
 
-.stocks-section .table {
+.inv-stock-table {
   table-layout: fixed;
   width: 100%;
 }
 
-.stocks-section .table th,
-.stocks-section .table td {
+.inv-stock-table th,
+.inv-stock-table td {
   white-space: normal;
   word-break: break-word;
 }
 
-.stock-row {
-  cursor: pointer;
+.inv-stock-table thead th {
+  background: #edf5f2;
+  color: #527267;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid #c4d9d2;
 }
 
-.expiring-soon-row > td {
-  background-color: #fff3cd;
+.inv-stock-table tbody td {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  vertical-align: middle;
+  color: #1f2937;
+}
+
+.stock-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.stock-row:hover {
+  background-color: #f9fafb;
+}
+
+.expiring-soon-row {
+  background-color: #fef9c3;
+}
+
+.expiring-soon-row:hover {
+  background-color: #fef3a3;
+}
+
+.batch-code {
+  font-weight: 600;
+  color: #16322e;
+}
+
+.inv-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.inv-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inv-chip.converted { background: #e6f4f1; color: #16322e; }
+.inv-chip.expiring  { background: #fef9c3; color: #854d0e; }
+.inv-chip.normal    { background: #dcfce7; color: #166534; }
+.inv-chip.short     { background: #fee2e2; color: #991b1b; }
+
+.qty-primary {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.qty-unit {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.qty-secondary {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b8c85;
 }
 
 .qty-badge {
@@ -659,25 +729,6 @@ export default {
   font-size: 10px;
   font-weight: 700;
   margin-top: 1px;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: all 0.3s ease;
-  cursor: default;
-  background-color: #7a848e;
-  color: white;
-}
-
-.converted-badge {
-  background-color: #3d8d7a;
 }
 
 .conv-tab-badge {

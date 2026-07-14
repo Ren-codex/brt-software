@@ -490,7 +490,7 @@ export default {
 /* ── Drawer panel ────────────────────────────────── */
 .drawer-panel {
     position: fixed; top: 0; right: 0; bottom: 0; z-index: 1050;
-    width: 680px; max-width: 95vw;
+    width: 860px; max-width: 95vw;
     background: #fff;
     box-shadow: -6px 0 32px rgba(10,28,25,0.14);
     display: flex; flex-direction: column;
@@ -567,7 +567,7 @@ export default {
 .drawer-line-row:hover { background: #fafcfb; }
 
 .drawer-jnum  { font-size: 0.72rem; color: #3d8d7a; font-weight: 700; }
-.drawer-desc  { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #527267; }
+.drawer-desc  { min-width: 160px; white-space: normal; word-break: break-word; color: #527267; }
 .drawer-num   { font-family: 'Courier New', monospace; white-space: nowrap; }
 .debit-col    { color: #1e4d8c; }
 .credit-col   { color: #7c2d12; }

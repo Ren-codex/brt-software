@@ -20,8 +20,8 @@
                         <div class="library-card-body py-2">
                             <div class="acct-filter-bar">
                                 <div class="acct-filter-field">
-                                    <label class="acct-filter-label">Date Range</label>
-                                    <DrawerDateRangePicker v-model:dateFrom="dateFrom" v-model:dateTo="dateTo" />
+                                    <label class="acct-filter-label">As Of Date</label>
+                                    <input type="date" class="form-control" v-model="dateTo">
                                 </div>
                                 <div class="acct-filter-actions">
                                     <button type="button" class="acct-btn-secondary" @click="clearFilter">Clear</button>
@@ -339,7 +339,6 @@ export default {
     },
     data() {
         return {
-            dateFrom: this.filters?.date_from || '',
             dateTo: this.filters?.date_to || '',
             exportOpen: false,
             drawer: {
@@ -405,18 +404,15 @@ export default {
         },
         exportUrl(format) {
             const params = new URLSearchParams({ option: format });
-            if (this.filters?.date_from) params.set('date_from', this.filters.date_from);
-            if (this.filters?.date_to)   params.set('date_to',   this.filters.date_to);
+            if (this.filters?.date_to) params.set('date_to', this.filters.date_to);
             return '/accounting/balance-sheet?' + params.toString();
         },
         applyFilter() {
             router.get('/accounting/balance-sheet', {
-                date_from: this.dateFrom || undefined,
                 date_to: this.dateTo || undefined,
             }, { preserveScroll: true });
         },
         clearFilter() {
-            this.dateFrom = '';
             this.dateTo = '';
             router.get('/accounting/balance-sheet', {}, { preserveScroll: true });
         },
@@ -563,7 +559,7 @@ export default {
 /* ── Drawer panel ────────────────────────────────── */
 .drawer-panel {
     position: fixed; top: 0; right: 0; bottom: 0; z-index: 1050;
-    width: 680px; max-width: 95vw;
+    width: 860px; max-width: 95vw;
     background: #fff;
     box-shadow: -6px 0 32px rgba(10,28,25,0.14);
     display: flex; flex-direction: column;
@@ -640,7 +636,7 @@ export default {
 .drawer-line-row:hover { background: #fafcfb; }
 
 .drawer-jnum  { font-size: 0.72rem; color: #3d8d7a; font-weight: 700; }
-.drawer-desc  { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #527267; }
+.drawer-desc  { min-width: 160px; white-space: normal; word-break: break-word; color: #527267; }
 .drawer-num   { font-family: 'Courier New', monospace; white-space: nowrap; }
 .debit-col    { color: #1e4d8c; }
 .credit-col   { color: #7c2d12; }

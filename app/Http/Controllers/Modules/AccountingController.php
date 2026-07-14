@@ -96,13 +96,15 @@ class AccountingController extends Controller
             'filters'             => ['date_from' => $dateFrom, 'date_to' => $dateTo],
             'kpiCards'            => $kpiCards,
             'plSummary'           => [
-                'revenue'            => $this->formatCurrency($totalRevenue),
-                'cost_of_sales'      => $this->formatCurrency($plTotals['cost_of_sales_raw']),
-                'gross_profit'       => $this->formatCurrency($grossProfit),
-                'gross_profit_raw'   => $grossProfit,
-                'operating_expenses' => $this->formatCurrency($plTotals['operating_expenses_raw']),
-                'net_income'         => $this->formatCurrency($netIncome),
-                'net_income_raw'     => $netIncome,
+                'revenue'              => $this->formatCurrency($totalRevenue),
+                'cost_of_sales'        => $this->formatCurrency($plTotals['cost_of_sales_raw']),
+                'gross_profit'         => $this->formatCurrency($grossProfit),
+                'gross_profit_raw'     => $grossProfit,
+                'inventory_variance'   => $this->formatCurrency($plTotals['inventory_variance_raw']),
+                'inventory_variance_raw' => $plTotals['inventory_variance_raw'],
+                'operating_expenses'   => $this->formatCurrency($plTotals['operating_expenses_raw']),
+                'net_income'           => $this->formatCurrency($netIncome),
+                'net_income_raw'       => $netIncome,
             ],
             'bsSummary'           => [
                 'total_assets'           => $this->formatCurrency($totalAssets),
@@ -545,6 +547,13 @@ class AccountingController extends Controller
     public function destroyAccount(int $id)
     {
         $account = Account::findOrFail($id);
+
+        if ($account->journalEntryLines()->exists()) {
+            return response()->json([
+                'message' => 'This account has posted journal entries and cannot be deleted, as doing so would erase transaction history. Deactivate it instead to hide it from new entries.',
+            ], 422);
+        }
+
         $account->delete();
 
         return response()->json(['message' => 'Account deleted.']);
@@ -970,11 +979,13 @@ class AccountingController extends Controller
 
         $revenueAccounts          = $balances->where('type', 'revenue')->values();
         $costOfSalesAccounts      = $balances->where('type', 'expense')->where('subtype', 'cost_of_sales')->values();
-        $operatingExpenseAccounts = $balances->where('type', 'expense')->where('subtype', '!=', 'cost_of_sales')->values();
+        $inventoryVarianceAccounts = $balances->where('type', 'expense')->where('subtype', 'inventory_variance')->values();
+        $operatingExpenseAccounts = $balances->where('type', 'expense')->whereNotIn('subtype', ['cost_of_sales', 'inventory_variance'])->values();
         $totals = [
             'revenue'             => $this->formatCurrency($pl['revenue_raw']),
             'cost_of_sales'       => $this->formatCurrency($pl['cost_of_sales_raw']),
             'gross_profit'        => $this->formatCurrency($grossProfit),
+            'inventory_variance'  => $this->formatCurrency($pl['inventory_variance_raw']),
             'operating_expenses'  => $this->formatCurrency($pl['operating_expenses_raw']),
             'net_income'          => $this->formatCurrency($pl['net_income_raw']),
             'net_income_raw'      => $pl['net_income_raw'],
@@ -984,10 +995,11 @@ class AccountingController extends Controller
         if ($request->option === 'excel') {
             return Excel::download(
                 new AccountingReportExport('profit_loss', [
-                    'revenueAccounts'          => $revenueAccounts->all(),
-                    'costOfSalesAccounts'      => $costOfSalesAccounts->all(),
-                    'operatingExpenseAccounts' => $operatingExpenseAccounts->all(),
-                    'totals'                   => $totals,
+                    'revenueAccounts'           => $revenueAccounts->all(),
+                    'costOfSalesAccounts'       => $costOfSalesAccounts->all(),
+                    'inventoryVarianceAccounts' => $inventoryVarianceAccounts->all(),
+                    'operatingExpenseAccounts'  => $operatingExpenseAccounts->all(),
+                    'totals'                    => $totals,
                 ], $filters),
                 'profit-loss-' . now()->format('Ymd') . '.xlsx'
             );
@@ -995,11 +1007,12 @@ class AccountingController extends Controller
 
         if ($request->option === 'pdf') {
             return \PDF::loadView('prints.accounting-profit-loss', [
-                'revenueAccounts'          => $revenueAccounts->all(),
-                'costOfSalesAccounts'      => $costOfSalesAccounts->all(),
-                'operatingExpenseAccounts' => $operatingExpenseAccounts->all(),
-                'totals'                   => $totals,
-                'filters'                  => $filters,
+                'revenueAccounts'           => $revenueAccounts->all(),
+                'costOfSalesAccounts'       => $costOfSalesAccounts->all(),
+                'inventoryVarianceAccounts' => $inventoryVarianceAccounts->all(),
+                'operatingExpenseAccounts'  => $operatingExpenseAccounts->all(),
+                'totals'                    => $totals,
+                'filters'                   => $filters,
             ])->setPaper('A4', 'portrait')->download('profit-loss-' . now()->format('Ymd') . '.pdf');
         }
 
@@ -1009,20 +1022,27 @@ class AccountingController extends Controller
             'summaryCards' => [
                 $this->makeMetricCard('Revenue', $this->formatCurrency($pl['revenue_raw']), 'Net revenue from posted entries.', 'ri-funds-line'),
                 $this->makeMetricCard('Cost Of Sales', $this->formatCurrency($pl['cost_of_sales_raw']), 'Inventory-out cost postings.', 'ri-shopping-basket-line'),
+                $this->makeMetricCard('Inventory Variance', $this->formatCurrency($pl['inventory_variance_raw']), 'Weight loss & conversion variance.', 'ri-scales-3-line'),
                 $this->makeMetricCard('Operating Expenses', $this->formatCurrency($pl['operating_expenses_raw']), 'Non-COGS operating expenses.', 'ri-wallet-line'),
                 $this->makeMetricCard('Net Income', $this->formatCurrency($pl['net_income_raw']), 'Revenue less total expenses.', 'ri-line-chart-line'),
             ],
-            'revenueAccounts'          => $revenueAccounts,
-            'costOfSalesAccounts'      => $costOfSalesAccounts,
-            'operatingExpenseAccounts' => $operatingExpenseAccounts,
-            'totals'                   => $totals,
-            'filters'                  => $filters,
+            'revenueAccounts'           => $revenueAccounts,
+            'costOfSalesAccounts'       => $costOfSalesAccounts,
+            'inventoryVarianceAccounts' => $inventoryVarianceAccounts,
+            'operatingExpenseAccounts'  => $operatingExpenseAccounts,
+            'totals'                    => $totals,
+            'filters'                   => $filters,
         ]);
     }
 
     public function balanceSheet(Request $request)
     {
-        [$dateFrom, $dateTo] = $this->resolveDateRange($request);
+        [, $dateTo] = $this->resolveDateRange($request);
+        // Balance Sheet is a point-in-time statement — balances are always cumulative
+        // from inception up to $dateTo. A "from" date would wrongly exclude prior
+        // activity, so it's intentionally ignored here (unlike Profit & Loss, which
+        // is a period statement and correctly uses both bounds).
+        $dateFrom = null;
         $balances = $this->buildAccountBalances($dateFrom, $dateTo);
         $pl       = $this->buildProfitLossTotals($balances);
         $filters  = ['date_from' => $dateFrom, 'date_to' => $dateTo];
@@ -1837,12 +1857,14 @@ class AccountingController extends Controller
         $revenue = (float) $balances->where('type', 'revenue')->sum('balance');
         $expenses = (float) $balances->where('type', 'expense')->sum('balance');
         $costOfSales = (float) $balances->where('type', 'expense')->where('subtype', 'cost_of_sales')->sum('balance');
-        $operatingExpenses = round($expenses - $costOfSales, 2);
+        $inventoryVariance = (float) $balances->where('type', 'expense')->where('subtype', 'inventory_variance')->sum('balance');
+        $operatingExpenses = round($expenses - $costOfSales - $inventoryVariance, 2);
         $netIncome = round($revenue - $expenses, 2);
 
         return [
             'revenue_raw' => $revenue,
             'cost_of_sales_raw' => $costOfSales,
+            'inventory_variance_raw' => $inventoryVariance,
             'operating_expenses_raw' => $operatingExpenses,
             'expenses_raw' => $expenses,
             'net_income_raw' => $netIncome,

@@ -3,7 +3,7 @@
 
         <!-- Summary cards -->
         <div class="row g-3 mb-3">
-            <div v-for="card in summaryCards" :key="card.title" class="col-sm-6 col-xl-3">
+            <div v-for="card in summaryCards" :key="card.title" class="col-sm-6 col-lg-4">
                 <div class="acct-stat-card">
                     <div class="acct-stat-icon"><i :class="card.icon"></i></div>
                     <div>
@@ -25,6 +25,9 @@
             </button>
             <button class="cm-tab-btn" :class="{ active: activeTab === 'bank_deposits' }" @click="activeTab = 'bank_deposits'">
                 <i class="ri-bank-card-2-line me-1"></i>Bank Deposits
+            </button>
+            <button class="cm-tab-btn" :class="{ active: activeTab === 'bank_withdrawals' }" @click="activeTab = 'bank_withdrawals'">
+                <i class="ri-bank-card-line me-1"></i>Cash Withdrawals
             </button>
             <button class="cm-tab-btn" :class="{ active: activeTab === 'petty_cash' }" @click="activeTab = 'petty_cash'">
                 <i class="ri-wallet-3-line me-1"></i>Petty Cash
@@ -382,7 +385,12 @@
                                     <option value="">-- Select cash GL account --</option>
                                     <option v-for="a in cashAccounts" :key="a.id" :value="a.id">{{ a.code }} — {{ a.name }}</option>
                                 </select>
-                                <div class="form-text">The cash account that will be reduced (credited).</div>
+                                <div class="form-text">
+                                    The cash account that will be reduced (credited).
+                                    <span v-if="bdSelectedCashAccount" class="cash-balance-hint" :class="{ over: Number(bdForm.amount) > bdSelectedCashAccount.balance }">
+                                        Available: {{ bdSelectedCashAccount.balance_formatted }}
+                                    </span>
+                                </div>
                                 <div v-if="bdErrors.cash_account_id" class="error-msg">{{ bdErrors.cash_account_id[0] }}</div>
                             </div>
                             <div class="col-12">
@@ -408,6 +416,123 @@
                         <button class="acct-btn-primary" :disabled="bdSaving" @click="submitDeposit">
                             <span v-if="bdSaving"><i class="ri-loader-4-line spin"></i> Saving...</span>
                             <span v-else>Record Deposit</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ── Cash Withdrawals ────────────────────────────────────── -->
+        <template v-if="activeTab === 'bank_withdrawals'">
+            <div class="library-card">
+                <div class="library-card-header">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="header-icon"><i class="ri-bank-card-line"></i></div>
+                            <div>
+                                <h4 class="header-title mb-0">Cash Withdrawals</h4>
+                                <p class="header-subtitle mb-0">Withdraw cash from a bank back to cash on hand. Posts DR Cash / CR Bank automatically.</p>
+                            </div>
+                        </div>
+                        <button class="acct-btn-primary" @click="openCreateWithdrawal">
+                            <i class="ri-add-line"></i> New Withdrawal
+                        </button>
+                </div>
+                <div class="library-card-body p-0">
+                    <div v-if="withdrawals.length === 0" class="cm-empty-state">
+                        <i class="ri-bank-card-line"></i>
+                        <p class="mb-1">No cash withdrawals recorded</p>
+                        <small>Record cash pulled out of a bank account back into cash on hand.</small>
+                    </div>
+                    <div v-else class="table-responsive">
+                        <table class="table cm-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Withdrawal No</th>
+                                    <th>Date</th>
+                                    <th>Withdrawn From</th>
+                                    <th>Cash Account</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Reference</th>
+                                    <th>Recorded By</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="w in withdrawals" :key="w.id">
+                                    <td class="font-monospace deposit-no">{{ w.withdrawal_no }}</td>
+                                    <td class="text-nowrap">{{ w.withdrawal_date }}</td>
+                                    <td><span class="bank-chip to">{{ w.bank_name }}</span></td>
+                                    <td class="text-muted small">{{ w.cash_account }}</td>
+                                    <td class="text-end fw-semibold deposit-amount">{{ w.amount_formatted }}</td>
+                                    <td class="text-muted">{{ w.reference || '—' }}</td>
+                                    <td class="text-muted small">{{ w.created_by }}</td>
+                                    <td class="text-center">
+                                        <button class="action-btn delete" @click="confirmDeleteWithdrawal(w)" title="Delete & Reverse">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cash Withdrawal Modal -->
+            <div v-if="wdModal.open" class="modal-overlay active" @click.self="wdModal.open = false">
+                <div class="modal-container" style="max-width:520px">
+                    <div class="modal-header">
+                        <div class="modal-header-icon"><i class="ri-bank-card-line"></i></div>
+                        <div>
+                            <h5 class="modal-title">Record Cash Withdrawal</h5>
+                            <p class="modal-subtitle">Cash withdrawn from a bank account back to cash on hand. Posts DR Cash / CR Bank automatically.</p>
+                        </div>
+                        <button class="close-btn ms-auto" @click="wdModal.open = false"><i class="ri-close-line"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Withdrawal Date <span class="text-danger">*</span></label>
+                                <input v-model="wdForm.withdrawal_date" type="date" class="form-control" />
+                                <div v-if="wdErrors.withdrawal_date" class="error-msg">{{ wdErrors.withdrawal_date[0] }}</div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                <input v-model="wdForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
+                                <div v-if="wdErrors.amount" class="error-msg">{{ wdErrors.amount[0] }}</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Withdraw From (Bank Account) <span class="text-danger">*</span></label>
+                                <select v-model="wdForm.bank_account_id" class="form-select">
+                                    <option value="">-- Select bank account --</option>
+                                    <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.bank_name }} — {{ b.account_name }}</option>
+                                </select>
+                                <div class="form-text">The bank account that will be reduced (credited).</div>
+                                <div v-if="wdErrors.bank_account_id" class="error-msg">{{ wdErrors.bank_account_id[0] }}</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Cash Account (Destination) <span class="text-danger">*</span></label>
+                                <select v-model="wdForm.cash_account_id" class="form-select">
+                                    <option value="">-- Select cash GL account --</option>
+                                    <option v-for="a in cashAccounts" :key="a.id" :value="a.id">{{ a.code }} — {{ a.name }}</option>
+                                </select>
+                                <div v-if="wdErrors.cash_account_id" class="error-msg">{{ wdErrors.cash_account_id[0] }}</div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Reference No <span class="text-muted">(optional)</span></label>
+                                <input v-model="wdForm.reference" type="text" class="form-control" placeholder="Withdrawal slip / ref no." />
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
+                                <input v-model="wdForm.notes" type="text" class="form-control" placeholder="e.g. Cash for petty fund top-up" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="acct-btn-secondary" @click="wdModal.open = false">Cancel</button>
+                        <button class="acct-btn-primary" :disabled="wdSaving" @click="submitWithdrawal">
+                            <span v-if="wdSaving"><i class="ri-loader-4-line spin"></i> Saving...</span>
+                            <span v-else>Record Withdrawal</span>
                         </button>
                     </div>
                 </div>
@@ -543,14 +668,23 @@ const emptyFtForm = () => ({
     notes: '',
 });
 
-const emptyBdForm = () => ({
+const emptyBdForm = (cashAccounts = []) => ({
     deposit_date: new Date().toISOString().slice(0, 10),
-    cash_account_id: '',
+    cash_account_id: (cashAccounts.find(a => a.code === '1000') ?? cashAccounts[0])?.id ?? '',
     bank_account_id: '',
     amount: '',
     reference: '',
     notes: '',
     remittance_ids: [],
+});
+
+const emptyWdForm = (cashAccounts = []) => ({
+    withdrawal_date: new Date().toISOString().slice(0, 10),
+    bank_account_id: '',
+    cash_account_id: (cashAccounts.find(a => a.code === '1000') ?? cashAccounts[0])?.id ?? '',
+    amount: '',
+    reference: '',
+    notes: '',
 });
 
 export default {
@@ -561,6 +695,7 @@ export default {
         bankAccounts: { type: Array,  default: () => [] },
         cashAccounts: { type: Array,  default: () => [] },
         deposits:     { type: Array,  default: () => [] },
+        withdrawals:  { type: Array,  default: () => [] },
         undepositedRemittances: { type: Array, default: () => [] },
         cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], cash_on_hand: 0, total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
         summaryCards: { type: Array,  default: () => [] },
@@ -579,14 +714,23 @@ export default {
 
             // Bank deposits
             bdModal:  { open: false },
-            bdForm:   emptyBdForm(),
+            bdForm:   emptyBdForm(this.cashAccounts),
             bdErrors: {},
             bdSaving: false,
+
+            // Cash withdrawals
+            wdModal:  { open: false },
+            wdForm:   emptyWdForm(this.cashAccounts),
+            wdErrors: {},
+            wdSaving: false,
         };
     },
     computed: {
         selectedFund() {
             return this.funds.find(f => f.id === this.selectedFundId) ?? null;
+        },
+        bdSelectedCashAccount() {
+            return this.cashAccounts.find(a => a.id === this.bdForm.cash_account_id) ?? null;
         },
     },
     methods: {
@@ -642,7 +786,7 @@ export default {
 
         // ── Bank Deposits ─────────────────────────────────────────────
         openCreateDeposit() {
-            this.bdForm   = emptyBdForm();
+            this.bdForm   = emptyBdForm(this.cashAccounts);
             this.bdErrors = {};
             this.bdModal.open = true;
         },
@@ -682,6 +826,38 @@ export default {
             });
             if (!ok) return;
             await axios.delete(`/accounting/bank-deposits/${d.id}`);
+            router.reload({ preserveScroll: true });
+        },
+
+        // ── Cash Withdrawals ──────────────────────────────────────────
+        openCreateWithdrawal() {
+            this.wdForm   = emptyWdForm(this.cashAccounts);
+            this.wdErrors = {};
+            this.wdModal.open = true;
+        },
+        async submitWithdrawal() {
+            this.wdSaving = true;
+            this.wdErrors = {};
+            try {
+                await axios.post('/accounting/bank-withdrawals', this.wdForm);
+                this.wdModal.open = false;
+                router.reload({ preserveScroll: true });
+            } catch (e) {
+                if (e.response?.status === 422) this.wdErrors = e.response.data.errors || {};
+            } finally {
+                this.wdSaving = false;
+            }
+        },
+        async confirmDeleteWithdrawal(w) {
+            const ok = await this.$confirm({
+                title:       'Delete Withdrawal?',
+                message:     `Delete withdrawal ${w.withdrawal_no} (${w.amount_formatted})?`,
+                note:        'The journal entry will be reversed.',
+                confirmText: 'Yes, Delete',
+                variant:     'danger',
+            });
+            if (!ok) return;
+            await axios.delete(`/accounting/bank-withdrawals/${w.id}`);
             router.reload({ preserveScroll: true });
         },
     },
@@ -819,6 +995,8 @@ export default {
 /* ── Modal misc ──────────────────────────────────────────────── */
 .modal-subtitle { font-size: 0.82rem; color: #6b8c85; margin: 0; }
 .error-msg      { font-size: 0.78rem; color: #dc2626; margin-top: 3px; }
+.cash-balance-hint { float: right; font-weight: 700; color: #16a34a; }
+.cash-balance-hint.over { color: #dc2626; }
 
 .spin { display: inline-block; animation: spin 0.8s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
