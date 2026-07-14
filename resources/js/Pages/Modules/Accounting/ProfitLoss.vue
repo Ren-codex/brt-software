@@ -141,6 +141,34 @@
                                     </strong>
                                 </div>
 
+                                <!-- INVENTORY VARIANCE -->
+                                <div class="statement-section" v-if="inventoryVarianceAccounts.length > 0">
+                                    <div class="section-label variance">
+                                        <i class="ri-scales-3-line"></i>
+                                        Inventory Variance
+                                    </div>
+                                    <table class="table statement-table mb-0">
+                                        <tbody>
+                                            <tr v-for="account in inventoryVarianceAccounts" :key="account.id" class="pl-account-row" @click="openDrawer(account)">
+                                                <td>
+                                                    <span class="acct-code">{{ account.code }}</span>
+                                                    {{ account.name }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{ account.balance_formatted }}
+                                                    <i class="ri-arrow-right-s-line row-arrow ms-1"></i>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="subtotal-row">
+                                                <th>Total Inventory Variance</th>
+                                                <th class="text-end">{{ totals.inventory_variance }}</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
                                 <!-- OPERATING EXPENSES -->
                                 <div class="statement-section">
                                     <div class="section-label opex">
@@ -321,6 +349,7 @@ export default {
         summaryCards: Array,
         revenueAccounts: { type: Array, default: () => [] },
         costOfSalesAccounts: { type: Array, default: () => [] },
+        inventoryVarianceAccounts: { type: Array, default: () => [] },
         operatingExpenseAccounts: { type: Array, default: () => [] },
         totals: Object,
         filters: { type: Object, default: () => ({}) },
@@ -448,6 +477,7 @@ export default {
 .section-label.revenue { background: #f0fdf4; color: #166534; border-bottom: 1px solid #d1fae5; }
 .section-label.cogs    { background: #fff7ed; color: #92400e; border-bottom: 1px solid #fed7aa; }
 .section-label.opex    { background: #fefce8; color: #854d0e; border-bottom: 1px solid #fef08a; }
+.section-label.variance { background: #f1f5f9; color: #334155; border-bottom: 1px solid #cbd5e1; }
 
 .statement-table tbody td {
     padding: 0.55rem 0.9rem;
@@ -531,7 +561,7 @@ export default {
 /* ── Drawer panel ────────────────────────────────── */
 .drawer-panel {
     position: fixed; top: 0; right: 0; bottom: 0; z-index: 1050;
-    width: 680px; max-width: 95vw;
+    width: 860px; max-width: 95vw;
     background: #fff;
     box-shadow: -6px 0 32px rgba(10,28,25,0.14);
     display: flex; flex-direction: column;
@@ -608,7 +638,7 @@ export default {
 .drawer-line-row:hover { background: #fafcfb; }
 
 .drawer-jnum  { font-size: 0.72rem; color: #3d8d7a; font-weight: 700; }
-.drawer-desc  { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #527267; }
+.drawer-desc  { min-width: 160px; white-space: normal; word-break: break-word; color: #527267; }
 .drawer-num   { font-family: 'Courier New', monospace; white-space: nowrap; }
 .debit-col    { color: #1e4d8c; }
 .credit-col   { color: #7c2d12; }

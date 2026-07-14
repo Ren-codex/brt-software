@@ -45,9 +45,9 @@ class RemittanceClass
                 $query->whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
                     ->whereNull('bank_deposit_id');
             })
-            ->when($request->status && $request->status !== 'undeposited', function ($query, $status) {
-                $query->whereHas('status', function ($q) use ($status) {
-                    $q->where('slug', $status);
+            ->when($request->status && $request->status !== 'undeposited', function ($query) use ($request) {
+                $query->whereHas('status', function ($q) use ($request) {
+                    $q->where('slug', $request->status);
                 });
             })
             ->orderBy('created_at', 'DESC')

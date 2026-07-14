@@ -97,7 +97,7 @@
                 </div>
 
                 <FundCreate ref="fundCreate" :bank-accounts="bankAccounts" @add="refreshFunds" @update="refreshFunds" />
-                <FundTopUp ref="fundTopup" @done="refreshFunds" />
+                <FundTopUp ref="fundTopup" :bank-accounts="bankAccounts" @done="refreshFunds" />
                 <FundAdjustBalance ref="fundAdjust" @done="refreshFunds" />
 
             </template>
@@ -438,6 +438,21 @@
                     </p>
                     <label class="form-label fw-semibold">Notes <span v-if="approvalModal.action === 'reject'" class="text-danger">*</span></label>
                     <textarea v-model="approvalModal.notes" class="form-control" rows="3" placeholder="Optional notes…"></textarea>
+
+                    <template v-if="approvalModal.action === 'approve'">
+                        <label class="form-label fw-semibold mt-3">Funded From</label>
+                        <select v-model="approvalModal.source_type" class="form-control">
+                            <option value="cash">Cash on Hand</option>
+                            <option value="bank">Bank Transfer</option>
+                        </select>
+                        <template v-if="approvalModal.source_type === 'bank'">
+                            <label class="form-label fw-semibold mt-3">Bank Account</label>
+                            <select v-model="approvalModal.bank_account_id" class="form-control">
+                                <option value="">-- Select bank --</option>
+                                <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.label || (b.bank_name + ' — ' + b.account_name) }}</option>
+                            </select>
+                        </template>
+                    </template>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="approvalModal.open = false">Cancel</button>
@@ -498,7 +513,7 @@ export default {
             viewModal: { open: false, data: null },
 
             // Approval modal
-            approvalModal: { open: false, action: 'approve', data: null, notes: '', saving: false },
+            approvalModal: { open: false, action: 'approve', data: null, notes: '', saving: false, source_type: 'cash', bank_account_id: '' },
 
             // Local copies (updated after mutations)
             localFunds:          this.funds,
@@ -692,13 +707,18 @@ export default {
         },
 
         openApproval(r, action) {
-            this.approvalModal = { open: true, action, data: r, notes: '', saving: false };
+            this.approvalModal = { open: true, action, data: r, notes: '', saving: false, source_type: 'cash', bank_account_id: '' };
         },
         async submitApproval() {
             this.approvalModal.saving = true;
-            const { action, data, notes } = this.approvalModal;
+            const { action, data, notes, source_type, bank_account_id } = this.approvalModal;
+            const payload = { review_notes: notes };
+            if (action === 'approve') {
+                payload.source_type = source_type;
+                payload.bank_account_id = source_type === 'bank' ? bank_account_id : null;
+            }
             try {
-                const res = await axios.patch(`/replenishments/${data.id}/${action}`, { review_notes: notes });
+                const res = await axios.patch(`/replenishments/${data.id}/${action}`, payload);
                 const idx = this.localReplenishments.findIndex(x => x.id === data.id);
                 if (idx !== -1) this.localReplenishments[idx] = res.data.data;
                 if (action === 'approve') {

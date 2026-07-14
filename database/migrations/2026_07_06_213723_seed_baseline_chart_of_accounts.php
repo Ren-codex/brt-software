@@ -1,22 +1,21 @@
 <?php
 
-namespace Database\Seeders;
-
 use App\Models\Account;
-use Illuminate\Database\Seeder;
+use Illuminate\Database\Migrations\Migration;
 
-class ChartOfAccountsSeeder extends Seeder
+return new class extends Migration
 {
     /**
-     * Baseline structural Chart of Accounts — codes and names only, no
-     * monetary balances (balances are always derived live from posted
-     * journal entries). Mirrors the accounts created by the
-     * seed_baseline_chart_of_accounts migration, kept here too so a fresh
-     * `php artisan db:seed` sets up the same reference data.
+     * Baseline structural Chart of Accounts for the business — codes and names
+     * only, no monetary balances (balances are always derived live from posted
+     * journal entries). Includes every account already referenced by
+     * JournalEntryService::ensureAccount() calls (so they exist upfront
+     * instead of being coincidentally auto-created) plus standard accounts a
+     * complete rice-trading + payroll chart of accounts needs.
      */
-    public function run(): void
+    private function accounts(): array
     {
-        $accounts = [
+        return [
             // Assets
             ['code' => '1000', 'slug' => 'cash', 'name' => 'Cash', 'type' => 'asset', 'subtype' => 'current_asset'],
             ['code' => '1011', 'slug' => 'cash_in_bank', 'name' => 'Cash in Bank', 'type' => 'asset', 'subtype' => 'cash'],
@@ -73,12 +72,30 @@ class ChartOfAccountsSeeder extends Seeder
             ['code' => '5420', 'slug' => 'depreciation_expense', 'name' => 'Depreciation Expense', 'type' => 'expense', 'subtype' => 'operating_expense'],
             ['code' => '5900', 'slug' => 'cash_over_short', 'name' => 'Cash Over/Short', 'type' => 'expense', 'subtype' => 'operating_expense'],
         ];
+    }
 
-        foreach ($accounts as $account) {
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        foreach ($this->accounts() as $account) {
             Account::firstOrCreate(
                 ['slug' => $account['slug']],
                 $account + ['is_active' => true]
             );
         }
     }
-}
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        $slugs = collect($this->accounts())->pluck('slug');
+
+        Account::whereIn('slug', $slugs)
+            ->whereDoesntHave('journalEntryLines')
+            ->delete();
+    }
+};

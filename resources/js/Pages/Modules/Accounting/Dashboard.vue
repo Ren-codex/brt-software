@@ -227,6 +227,10 @@
                                             {{ plSummary.gross_profit }}
                                         </td>
                                     </tr>
+                                    <tr v-if="plSummary.inventory_variance_raw">
+                                        <td class="snap-label text-muted ps-3">Inventory Variance</td>
+                                        <td class="snap-value text-end text-muted">{{ plSummary.inventory_variance }}</td>
+                                    </tr>
                                     <tr>
                                         <td class="snap-label text-muted ps-3">Operating Expenses</td>
                                         <td class="snap-value text-end text-muted">{{ plSummary.operating_expenses }}</td>

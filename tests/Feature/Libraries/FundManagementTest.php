@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Libraries;
 
+use App\Models\Account;
+use App\Models\JournalEntry;
+use App\Models\JournalEntryLine;
 use App\Models\PettyCashFund;
 use App\Models\PettyCashTransaction;
 use App\Models\User;
@@ -21,6 +24,22 @@ class FundManagementTest extends TestCase
         parent::setUp();
         $this->user = User::factory()->create();
         $this->actingAs($this->user);
+    }
+
+    private function fundCashOnHand(float $amount): void
+    {
+        $cash = Account::firstOrCreate(['slug' => 'cash'], ['code' => '1000', 'name' => 'Cash', 'type' => 'asset', 'subtype' => 'current_asset', 'is_active' => true]);
+        $equity = Account::firstOrCreate(['slug' => 'opening-balance-equity'], ['code' => '3900', 'name' => 'Opening Balance Equity', 'type' => 'equity', 'subtype' => 'opening_balance', 'is_active' => true]);
+
+        $entry = JournalEntry::create([
+            'journal_number' => 'JE-TEST-FUND-' . uniqid(),
+            'entry_date'     => now()->toDateString(),
+            'entry_type'     => 'manual',
+            'status'         => 'posted',
+            'posted_at'      => now(),
+        ]);
+        JournalEntryLine::create(['journal_entry_id' => $entry->id, 'account_id' => $cash->id, 'line_type' => 'debit', 'amount' => $amount, 'line_order' => 1]);
+        JournalEntryLine::create(['journal_entry_id' => $entry->id, 'account_id' => $equity->id, 'line_type' => 'credit', 'amount' => $amount, 'line_order' => 2]);
     }
 
     private function makeFund(array $overrides = []): PettyCashFund
@@ -56,6 +75,7 @@ class FundManagementTest extends TestCase
 
     public function test_top_up_increments_balance_and_records_transaction(): void
     {
+        $this->fundCashOnHand(1000);
         $fund    = $this->makeFund(['balance' => 100]);
         $service = app(FundClass::class);
         $request = \Illuminate\Http\Request::create('/libraries/funds/1/top-up', 'POST', [

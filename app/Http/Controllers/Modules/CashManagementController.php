@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\BankDeposit;
+use App\Models\BankWithdrawal;
 use App\Models\FundTransfer;
 use App\Models\JournalEntryLine;
 use App\Models\PettyCashFund;
@@ -94,6 +95,11 @@ class CashManagementController extends Controller
                 ->where('is_active', true)
                 ->orderBy('code')
                 ->get(['id', 'code', 'name', 'subtype'])
+                ->map(function ($a) {
+                    $a->balance = $this->service->getAccountBalance($a->id);
+                    $a->balance_formatted = '₱' . number_format($a->balance, 2);
+                    return $a;
+                })
             : collect();
 
         $deposits = BankDeposit::with(['cashAccount', 'bankAccount', 'createdBy', 'remittances.createdBy.employee'])
@@ -120,6 +126,24 @@ class CashManagementController extends Controller
                 ])->values(),
             ]);
 
+        $withdrawals = BankWithdrawal::with(['cashAccount', 'bankAccount', 'createdBy'])
+            ->orderByDesc('withdrawal_date')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn($w) => [
+                'id'                => $w->id,
+                'withdrawal_no'     => $w->withdrawal_no,
+                'withdrawal_date'   => $w->withdrawal_date,
+                'cash_account'      => optional($w->cashAccount)->name,
+                'bank_name'         => optional($w->bankAccount)->bank_name . ' — ' . optional($w->bankAccount)->account_name,
+                'amount'            => (float) $w->amount,
+                'amount_formatted'  => '₱' . number_format($w->amount, 2),
+                'reference'         => $w->reference,
+                'notes'             => $w->notes,
+                'created_by'        => optional($w->createdBy)->name,
+                'created_at'        => $w->created_at?->toDateTimeString(),
+            ]);
+
         $undepositedRemittances = Remittance::with(['createdBy.employee'])
             ->whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
             ->whereNull('bank_deposit_id')
@@ -141,6 +165,8 @@ class CashManagementController extends Controller
         $totalPettyCash    = PettyCashFund::sum('balance');
         $depositCount      = BankDeposit::count();
         $totalDeposited    = BankDeposit::sum('amount');
+        $withdrawalCount   = BankWithdrawal::count();
+        $totalWithdrawn    = BankWithdrawal::sum('amount');
 
         return inertia('Modules/Accounting/CashManagement', [
             'transfers'    => $transfers,
@@ -148,14 +174,14 @@ class CashManagementController extends Controller
             'bankAccounts' => $bankAccounts,
             'cashAccounts' => $cashAccounts,
             'deposits'     => $deposits,
+            'withdrawals'  => $withdrawals,
             'undepositedRemittances' => $undepositedRemittances,
             'cashPosition' => $cashPosition,
             'stats'        => $this->buildStats(),
             'summaryCards' => [
-                ['title' => 'Fund Transfers',    'value' => $transferCount,    'description' => 'Total transfers recorded.',        'icon' => 'ri-exchange-dollar-line'],
-                ['title' => 'Total Transferred', 'value' => '₱' . number_format($totalTransferred, 2), 'description' => 'Cumulative amount moved.', 'icon' => 'ri-bank-line'],
-                ['title' => 'Bank Deposits',     'value' => $depositCount,     'description' => 'Cash deposited to bank.',          'icon' => 'ri-bank-card-2-line'],
-                ['title' => 'Total Deposited',   'value' => '₱' . number_format($totalDeposited, 2),  'description' => 'Cumulative cash deposited.',  'icon' => 'ri-money-dollar-circle-line'],
+                ['title' => 'Fund Transfers',   'value' => '₱' . number_format($totalTransferred, 2), 'description' => $transferCount . ' transfer' . ($transferCount === 1 ? '' : 's') . ' recorded.',   'icon' => 'ri-exchange-dollar-line'],
+                ['title' => 'Bank Deposits',    'value' => '₱' . number_format($totalDeposited, 2),   'description' => $depositCount . ' deposit' . ($depositCount === 1 ? '' : 's') . ' recorded.',     'icon' => 'ri-bank-card-2-line'],
+                ['title' => 'Bank Withdrawals', 'value' => '₱' . number_format($totalWithdrawn, 2),   'description' => $withdrawalCount . ' withdrawal' . ($withdrawalCount === 1 ? '' : 's') . ' recorded.', 'icon' => 'ri-bank-card-line'],
             ],
         ]);
     }
@@ -170,6 +196,15 @@ class CashManagementController extends Controller
             'reference_number'     => 'nullable|string|max:100',
             'notes'                => 'nullable|string|max:500',
         ]);
+
+        $amount = round((float) $data['amount'], 2);
+        $fromBalance = $this->service->getBankAccountBalance((int) $data['from_bank_account_id']);
+        if ($amount > $fromBalance) {
+            return response()->json([
+                'message' => 'Amount exceeds the source bank account\'s available balance (₱' . number_format($fromBalance, 2) . ').',
+                'errors'  => ['amount' => ['Amount exceeds the source bank account\'s available balance (₱' . number_format($fromBalance, 2) . ').']],
+            ], 422);
+        }
 
         $transfer = $this->service->createFundTransfer($data);
 
@@ -235,6 +270,15 @@ class CashManagementController extends Controller
             'remittance_ids.*'   => 'integer|exists:remittances,id',
         ]);
 
+        $amount = round((float) $data['amount'], 2);
+        $sourceBalance = $this->service->getAccountBalance((int) $data['cash_account_id']);
+        if ($amount > $sourceBalance) {
+            return response()->json([
+                'message' => 'Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').',
+                'errors'  => ['amount' => ['Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').']],
+            ], 422);
+        }
+
         $deposit = $this->service->createBankDeposit($data);
 
         return response()->json(['message' => 'Bank deposit recorded.', 'data' => $deposit]);
@@ -245,6 +289,38 @@ class CashManagementController extends Controller
         $this->service->deleteBankDeposit($id);
 
         return response()->json(['message' => 'Deposit deleted and journal entry reversed.']);
+    }
+
+    public function storeWithdrawal(Request $request)
+    {
+        $data = $request->validate([
+            'bank_account_id'    => 'required|integer|exists:bank_accounts,id',
+            'cash_account_id'    => 'required|integer|exists:accounts,id',
+            'amount'             => 'required|numeric|min:0.01',
+            'withdrawal_date'    => 'required|date',
+            'reference'          => 'nullable|string|max:100',
+            'notes'              => 'nullable|string|max:500',
+        ]);
+
+        $amount = round((float) $data['amount'], 2);
+        $bankBalance = $this->service->getBankAccountBalance((int) $data['bank_account_id']);
+        if ($amount > $bankBalance) {
+            return response()->json([
+                'message' => 'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').',
+                'errors'  => ['amount' => ['Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').']],
+            ], 422);
+        }
+
+        $withdrawal = $this->service->createBankWithdrawal($data);
+
+        return response()->json(['message' => 'Bank withdrawal recorded.', 'data' => $withdrawal]);
+    }
+
+    public function destroyWithdrawal(int $id)
+    {
+        $this->service->deleteBankWithdrawal($id);
+
+        return response()->json(['message' => 'Withdrawal deleted and journal entry reversed.']);
     }
 
     private function buildCashPosition($bankAccounts): array

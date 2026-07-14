@@ -54,12 +54,23 @@ class FundController extends Controller
     public function topUp(Request $request, $id)
     {
         $request->validate([
-            'amount'      => 'required|numeric|min:0.01',
-            'date'        => 'required|date',
-            'description' => 'nullable|string|max:500',
+            'amount'          => 'required|numeric|min:0.01',
+            'date'            => 'required|date',
+            'description'     => 'nullable|string|max:500',
+            'source_type'     => 'nullable|in:cash,bank',
+            'bank_account_id' => 'nullable|required_if:source_type,bank|exists:bank_accounts,id',
         ]);
 
         $result = $this->handleTransaction(fn() => $this->fund->topUp($id, $request));
+
+        if (!$result['status']) {
+            return response()->json([
+                'message' => $result['info'] ?? $result['message'],
+                'info'    => $result['info'],
+                'errors'  => $result['errors'],
+                'status'  => 'error',
+            ], $result['errors'] ? 422 : 500);
+        }
 
         return response()->json([
             'message' => $result['message'],

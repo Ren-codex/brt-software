@@ -74,6 +74,19 @@
             <td class="num">{{ $totals['gross_profit'] }}</td>
         </tr>
 
+        <!-- INVENTORY VARIANCE -->
+        @if(count($inventoryVarianceAccounts) > 0)
+        <tr><td colspan="3" class="section-label">Inventory Variance</td></tr>
+        @foreach($inventoryVarianceAccounts as $acct)
+        <tr>
+            <td class="code">{{ $acct['code'] }}</td>
+            <td>{{ $acct['name'] }}</td>
+            <td class="num">{{ $acct['balance_formatted'] }}</td>
+        </tr>
+        @endforeach
+        <tr class="subtotal"><td colspan="2" style="text-align:right;padding:4px 7px">Total Inventory Variance</td><td class="num">{{ $totals['inventory_variance'] }}</td></tr>
+        @endif
+
         <!-- OPERATING EXPENSES -->
         <tr><td colspan="3" class="section-label">Operating Expenses</td></tr>
         @foreach($operatingExpenseAccounts as $acct)
