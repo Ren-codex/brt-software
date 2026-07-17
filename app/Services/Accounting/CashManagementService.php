@@ -2,10 +2,15 @@
 
 namespace App\Services\Accounting;
 
+use App\Models\Account;
 use App\Models\BankDeposit;
+use App\Models\BankWithdrawal;
 use App\Models\FundTransfer;
+use App\Models\JournalEntryLine;
+use App\Models\ListStatus;
 use App\Models\PettyCashFund;
 use App\Models\PettyCashTransaction;
+use App\Models\Remittance;
 use App\Services\NotificationService;
 use App\Services\SeriesService;
 use Illuminate\Support\Facades\Auth;
@@ -70,6 +75,14 @@ class CashManagementService
             $deposit->load(['cashAccount', 'bankAccount', 'createdBy']);
             $this->journal->recordBankDepositEntry($deposit);
 
+            if (!empty($data['remittance_ids'])) {
+                $liquidatedStatusId = ListStatus::getBySlug('liquidated')?->id;
+                Remittance::whereIn('id', $data['remittance_ids'])
+                    ->where('status_id', $liquidatedStatusId)
+                    ->whereNull('bank_deposit_id')
+                    ->update(['bank_deposit_id' => $deposit->id]);
+            }
+
             return $deposit;
         });
     }
@@ -79,7 +92,40 @@ class CashManagementService
         DB::transaction(function () use ($id) {
             $deposit = BankDeposit::with(['cashAccount', 'bankAccount'])->findOrFail($id);
             $this->journal->reverseEntriesForSource($deposit, 'Bank deposit deleted.', now()->toDateString());
+            Remittance::where('bank_deposit_id', $id)->update(['bank_deposit_id' => null]);
             $deposit->delete();
+        });
+    }
+
+    // ── Bank Withdrawals ─────────────────────────────────────────────
+
+    public function createBankWithdrawal(array $data): BankWithdrawal
+    {
+        return DB::transaction(function () use ($data) {
+            $withdrawal = BankWithdrawal::create([
+                'withdrawal_no' => $this->series->get('bank_withdrawal_no'),
+                'bank_account_id' => $data['bank_account_id'],
+                'cash_account_id' => $data['cash_account_id'],
+                'amount' => round((float) $data['amount'], 2),
+                'withdrawal_date' => $data['withdrawal_date'],
+                'reference' => $data['reference'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'created_by_id' => Auth::id(),
+            ]);
+
+            $withdrawal->load(['bankAccount', 'cashAccount', 'createdBy']);
+            $this->journal->recordBankWithdrawalEntry($withdrawal);
+
+            return $withdrawal;
+        });
+    }
+
+    public function deleteBankWithdrawal(int $id): void
+    {
+        DB::transaction(function () use ($id) {
+            $withdrawal = BankWithdrawal::with(['bankAccount', 'cashAccount'])->findOrFail($id);
+            $this->journal->reverseEntriesForSource($withdrawal, 'Bank withdrawal deleted.', now()->toDateString());
+            $withdrawal->delete();
         });
     }
 
@@ -195,6 +241,58 @@ class CashManagementService
 
             $txn->delete();
         });
+    }
+
+    public function getCashOnHandBalance(): float
+    {
+        $cashAccount = Account::where('slug', 'cash')->first() ?? Account::where('code', '1000')->first();
+        if (!$cashAccount) {
+            return 0.0;
+        }
+
+        $debit = (float) JournalEntryLine::where('account_id', $cashAccount->id)->where('line_type', 'debit')->sum('amount');
+        $credit = (float) JournalEntryLine::where('account_id', $cashAccount->id)->where('line_type', 'credit')->sum('amount');
+
+        return round($debit - $credit, 2);
+    }
+
+    public function getAccountBalance(int $accountId): float
+    {
+        $debit = (float) JournalEntryLine::where('account_id', $accountId)->where('line_type', 'debit')->sum('amount');
+        $credit = (float) JournalEntryLine::where('account_id', $accountId)->where('line_type', 'credit')->sum('amount');
+
+        return round($debit - $credit, 2);
+    }
+
+    public function getCashInBankBalance(): float
+    {
+        $account = Account::where('slug', 'cash_in_bank')->first() ?? Account::where('code', '1011')->first();
+        if (!$account) {
+            return 0.0;
+        }
+
+        $debit = (float) JournalEntryLine::where('account_id', $account->id)->where('line_type', 'debit')->sum('amount');
+        $credit = (float) JournalEntryLine::where('account_id', $account->id)->where('line_type', 'credit')->sum('amount');
+
+        return round($debit - $credit, 2);
+    }
+
+    public function getBankAccountBalance(int $bankAccountId): float
+    {
+        $bankAccount = \App\Models\BankAccount::find($bankAccountId);
+        if (!$bankAccount || !$bankAccount->gl_code) {
+            return 0.0;
+        }
+
+        $account = Account::where('code', $bankAccount->gl_code)->first();
+        if (!$account) {
+            return 0.0;
+        }
+
+        $debit = (float) JournalEntryLine::where('account_id', $account->id)->where('line_type', 'debit')->sum('amount');
+        $credit = (float) JournalEntryLine::where('account_id', $account->id)->where('line_type', 'credit')->sum('amount');
+
+        return round($debit - $credit, 2);
     }
 
     private function generateFundGlCode(): string

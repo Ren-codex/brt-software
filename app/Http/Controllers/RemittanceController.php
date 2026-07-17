@@ -35,6 +35,9 @@ class RemittanceController extends Controller
             case 'my_holdings':
                 return $this->remittance->myHoldings();
             break;
+            case 'undeposited_summary':
+                return $this->remittance->undepositedSummary($request);
+            break;
             default:
                 return inertia('Modules/Sales/Components/Remittances/Index');
             break;

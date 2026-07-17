@@ -81,13 +81,17 @@ class ReplenishmentController extends Controller
 
     public function approve(Request $request, $id)
     {
-        $request->validate(['review_notes' => 'nullable|string|max:1000']);
+        $request->validate([
+            'review_notes'    => 'nullable|string|max:1000',
+            'source_type'     => 'nullable|in:cash,bank',
+            'bank_account_id' => 'nullable|required_if:source_type,bank|exists:bank_accounts,id',
+        ]);
 
-        $result = $this->handleTransaction(fn() => $this->service->approve($id, $request->review_notes));
+        $result = $this->handleTransaction(fn() => $this->service->approve($id, $request->review_notes, $request->source_type, $request->bank_account_id));
 
         if (!$result['status']) {
             return response()->json([
-                'message' => $result['message'],
+                'message' => $result['info'] ?? $result['message'],
                 'info'    => $result['info'],
                 'errors'  => $result['errors'],
                 'status'  => 'error',

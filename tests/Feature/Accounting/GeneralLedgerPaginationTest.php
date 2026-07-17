@@ -25,7 +25,7 @@ class GeneralLedgerPaginationTest extends TestCase
 
         $this->account = Account::create([
             'code'      => '1001',
-            'slug'      => 'cash',
+            'slug'      => 'cash-ledger-pagination-test',
             'name'      => 'Cash',
             'type'      => 'asset',
             'is_active' => true,

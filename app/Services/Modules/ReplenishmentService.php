@@ -6,6 +6,7 @@ use App\Models\Expense;
 use App\Models\PettyCashFund;
 use App\Models\ReplenishmentRequest;
 use App\Services\SeriesService;
+use App\Services\Accounting\CashManagementService;
 use App\Services\Accounting\JournalEntryService;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ class ReplenishmentService
 {
     public function __construct(
         protected SeriesService $series,
-        protected JournalEntryService $journalEntryService
+        protected JournalEntryService $journalEntryService,
+        protected CashManagementService $cashManagement
     ) {}
 
     public function lists($request)
@@ -72,7 +74,7 @@ class ReplenishmentService
             ]);
 
         return [
-            'data'    => $replenishment->fresh(['fund', 'createdBy']),
+            'data'    => $replenishment->fresh(['fund', 'createdBy', 'expenses.added_by']),
             'message' => 'Replenishment request created: ' . $replenishment->reference_no,
         ];
     }
@@ -93,12 +95,12 @@ class ReplenishmentService
         ]);
 
         return [
-            'data'    => $replenishment->fresh(['fund', 'createdBy']),
+            'data'    => $replenishment->fresh(['fund', 'createdBy', 'expenses.added_by']),
             'message' => $replenishment->reference_no . ' submitted for review.',
         ];
     }
 
-    public function approve($id, $notes = null)
+    public function approve($id, $notes = null, $sourceType = null, $bankAccountId = null)
     {
         $replenishment = ReplenishmentRequest::with(['expenses', 'fund'])->findOrFail($id);
 
@@ -108,7 +110,33 @@ class ReplenishmentService
             ]);
         }
 
-        DB::transaction(function () use ($replenishment, $notes) {
+        $sourceType = $sourceType ?: 'cash';
+        $amount = round((float) $replenishment->total_amount, 2);
+
+        if ($sourceType === 'bank' && $bankAccountId) {
+            $bankBalance = $this->cashManagement->getBankAccountBalance((int) $bankAccountId);
+            if ($amount > $bankBalance) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').',
+                ]);
+            }
+        } elseif ($sourceType === 'cash') {
+            $cashOnHand = $this->cashManagement->getCashOnHandBalance();
+            if ($amount > $cashOnHand) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Amount exceeds available Cash on Hand (₱' . number_format($cashOnHand, 2) . '). Reduce the amount or fund from a bank account instead.',
+                ]);
+            }
+        } else {
+            $cashInBank = $this->cashManagement->getCashInBankBalance();
+            if ($amount > $cashInBank) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Amount exceeds available Cash in Bank (₱' . number_format($cashInBank, 2) . '). Reduce the amount or select a specific bank account with sufficient balance.',
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($replenishment, $notes, $sourceType, $bankAccountId) {
             $replenishment->update([
                 'status'         => 'approved',
                 'reviewed_by_id' => auth()->id(),
@@ -130,11 +158,11 @@ class ReplenishmentService
             $replenishment->fund->increment('balance', $replenishment->total_amount);
 
             // Fire the journal entry
-            $this->journalEntryService->recordReplenishmentEntry($replenishment->fresh(['expenses', 'fund']));
+            $this->journalEntryService->recordReplenishmentEntry($replenishment->fresh(['expenses', 'fund']), $sourceType, $bankAccountId);
         });
 
         return [
-            'data'    => $replenishment->fresh(['fund', 'createdBy', 'reviewedBy']),
+            'data'    => $replenishment->fresh(['fund', 'createdBy', 'reviewedBy', 'expenses.added_by']),
             'message' => $replenishment->reference_no . ' approved. Fund replenished by ₱' . number_format($replenishment->total_amount, 2) . '.',
         ];
     }
@@ -173,6 +201,21 @@ class ReplenishmentService
     {
         $totalAmount = (float) $r->total_amount;
 
+        $expenses = $r->relationLoaded('expenses')
+            ? $r->expenses->map(fn($e) => [
+                'id'           => $e->id,
+                'voucher_no'   => $e->voucher_no,
+                'payee'        => $e->payee,
+                'expense_type' => $e->expense_type,
+                'amount'       => (float) $e->amount,
+                'amount_fmt'   => '₱' . number_format($e->amount, 2),
+                'expense_date' => $e->expense_date,
+                'description'  => $e->description,
+                'receipt_path' => $e->receipt_path,
+                'recorded_by'  => optional($e->added_by)->name,
+            ])->values()
+            : collect();
+
         return [
             'id'                 => $r->id,
             'reference_no'       => $r->reference_no,
@@ -189,18 +232,10 @@ class ReplenishmentService
             'created_by'         => optional($r->createdBy)->name,
             'reviewed_by'        => optional($r->reviewedBy)->name,
             'created_at'         => $r->created_at?->toDateTimeString(),
-            'expenses'           => $r->relationLoaded('expenses')
-                ? $r->expenses->map(fn($e) => [
-                    'id'           => $e->id,
-                    'expense_type' => $e->expense_type,
-                    'amount'       => (float) $e->amount,
-                    'amount_fmt'   => '₱' . number_format($e->amount, 2),
-                    'expense_date' => $e->expense_date,
-                    'description'  => $e->description,
-                    'receipt_path' => $e->receipt_path,
-                    'recorded_by'  => optional($e->added_by)->name,
-                ])->values()
-                : [],
+            'expenses'           => $expenses,
+            // Kept as an alias for the "vouchers" key expected by PettyCash.vue's
+            // replenishment view modal, which uses the same shape as this array.
+            'vouchers'           => $expenses,
         ];
     }
 }

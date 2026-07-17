@@ -26,19 +26,18 @@
             <!-- ── Tab: Fund ───────────────────────────────────────── -->
             <template v-if="tab === 'fund'">
 
-                <div v-if="funds.length === 0" class="acct-empty-notice">
+                <div v-if="localFunds.length === 0" class="acct-empty-notice">
                     <i class="ri-wallet-3-line"></i>
-                    No petty cash fund set up yet.
-                    Go to <strong>Accounting → Petty Cash Funds</strong> to create one.
+                    No petty cash fund set up yet. Create one to get started.
                 </div>
 
-                <div v-if="funds.length > 0" class="d-flex justify-content-end mb-2">
-                    <a href="/accounting/funds" class="acct-btn-secondary">
-                        <i class="ri-external-link-line"></i> Manage Funds
-                    </a>
+                <div class="d-flex justify-content-end mb-2">
+                    <button type="button" class="acct-btn-primary" @click="openCreateFund">
+                        <i class="ri-add-line"></i> Add Fund
+                    </button>
                 </div>
 
-                <div v-for="fund in funds" :key="fund.id" class="library-card mb-3">
+                <div v-for="fund in localFunds" :key="fund.id" class="library-card mb-3">
                     <div class="library-card-header">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon"><i class="ri-wallet-3-line"></i></div>
@@ -51,6 +50,23 @@
                             <span v-if="fund.low_balance" class="pc-low-badge">
                                 <i class="ri-error-warning-line"></i> Low Balance
                             </span>
+                            <span class="badge" :class="fund.is_active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
+                                {{ fund.is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                            <div class="pc-fund-actions">
+                                <button type="button" class="pc-action-btn" title="Top-up" @click="openTopUpFund(fund)">
+                                    <i class="ri-add-circle-line"></i>
+                                </button>
+                                <button type="button" class="pc-action-btn" title="Adjust Balance" @click="openAdjustFund(fund)">
+                                    <i class="ri-scales-line"></i>
+                                </button>
+                                <button type="button" class="pc-action-btn" title="Edit" @click="openEditFund(fund)">
+                                    <i class="ri-pencil-line"></i>
+                                </button>
+                                <button type="button" class="pc-action-btn" :title="fund.is_active ? 'Deactivate' : 'Activate'" @click="toggleFundActive(fund)">
+                                    <i :class="fund.is_active ? 'ri-forbid-line' : 'ri-check-line'"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="library-card-body">
@@ -79,6 +95,10 @@
                         </p>
                     </div>
                 </div>
+
+                <FundCreate ref="fundCreate" :bank-accounts="bankAccounts" @add="refreshFunds" @update="refreshFunds" />
+                <FundTopUp ref="fundTopup" :bank-accounts="bankAccounts" @done="refreshFunds" />
+                <FundAdjustBalance ref="fundAdjust" @done="refreshFunds" />
 
             </template>
 
@@ -119,9 +139,10 @@
                                 <thead>
                                     <tr>
                                         <th>Voucher #</th>
+                                        <th>SI/OR No.</th>
                                         <th>Date</th>
                                         <th>Fund</th>
-                                        <th>Payee</th>
+                                        <th>Payee / Company</th>
                                         <th>Category</th>
                                         <th>Description</th>
                                         <th class="text-end">Amount</th>
@@ -132,13 +153,19 @@
                                 </thead>
                                 <tbody>
                                     <tr v-if="filteredVouchers.length === 0">
-                                        <td colspan="10" class="text-center text-muted py-4">No vouchers found.</td>
+                                        <td colspan="11" class="text-center text-muted py-4">No vouchers found.</td>
                                     </tr>
-                                    <tr v-for="v in filteredVouchers" :key="v.id">
+                                    <tr v-for="v in paginatedVouchers" :key="v.id">
                                         <td class="font-monospace text-muted">{{ v.voucher_no || '—' }}</td>
+                                        <td class="font-monospace text-muted">{{ v.reference_no || '—' }}</td>
                                         <td>{{ v.expense_date }}</td>
                                         <td>{{ v.fund_name }}</td>
-                                        <td class="fw-semibold">{{ v.payee }}</td>
+                                        <td :title="v.business_address || ''">
+                                            <div class="fw-semibold">{{ v.payee }}</div>
+                                            <small v-if="v.company || v.tin" class="text-muted d-block">
+                                                {{ v.company }}<span v-if="v.company && v.tin"> · </span><span v-if="v.tin">TIN: {{ v.tin }}</span>
+                                            </small>
+                                        </td>
                                         <td>{{ formatType(v.expense_type) }}</td>
                                         <td class="text-muted" style="max-width:200px;white-space:normal">{{ v.description || '—' }}</td>
                                         <td class="text-end fw-semibold">{{ v.amount_fmt }}</td>
@@ -163,6 +190,15 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="px-3 pb-3">
+                            <Pagination
+                                v-if="voucherPaginationMeta.total > 0"
+                                :lists="paginatedVouchers.length"
+                                :links="voucherLinks"
+                                :pagination="voucherPaginationMeta"
+                                @fetch="goToVoucherPage"
+                            />
                         </div>
                     </div>
                 </div>
@@ -278,6 +314,22 @@
                             <input v-model="voucherForm.amount" type="number" step="0.01" min="0.01" class="form-control" :class="{ 'is-invalid': voucherErrors.amount }" placeholder="0.00" />
                             <div v-if="voucherErrors.amount" class="invalid-feedback">{{ voucherErrors.amount }}</div>
                         </div>
+                        <div class="col-7">
+                            <label class="form-label fw-semibold">Company <span class="text-muted fw-normal">(optional)</span></label>
+                            <input v-model="voucherForm.company" type="text" class="form-control" placeholder="e.g. Mercury Drug Corporation" maxlength="150" />
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-semibold">SI/OR Number <span class="text-muted fw-normal">(optional)</span></label>
+                            <input v-model="voucherForm.reference_no" type="text" class="form-control" placeholder="e.g. SI-00123" maxlength="60" />
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-semibold">TIN <span class="text-muted fw-normal">(optional)</span></label>
+                            <input v-model="voucherForm.tin" type="text" class="form-control" placeholder="e.g. 000-000-000-000" maxlength="30" />
+                        </div>
+                        <div class="col-7">
+                            <label class="form-label fw-semibold">Business Address <span class="text-muted fw-normal">(optional)</span></label>
+                            <input v-model="voucherForm.business_address" type="text" class="form-control" placeholder="Vendor's registered address" maxlength="255" />
+                        </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
                             <div class="d-flex flex-wrap gap-2">
@@ -386,6 +438,21 @@
                     </p>
                     <label class="form-label fw-semibold">Notes <span v-if="approvalModal.action === 'reject'" class="text-danger">*</span></label>
                     <textarea v-model="approvalModal.notes" class="form-control" rows="3" placeholder="Optional notes…"></textarea>
+
+                    <template v-if="approvalModal.action === 'approve'">
+                        <label class="form-label fw-semibold mt-3">Funded From</label>
+                        <select v-model="approvalModal.source_type" class="form-control">
+                            <option value="cash">Cash on Hand</option>
+                            <option value="bank">Bank Transfer</option>
+                        </select>
+                        <template v-if="approvalModal.source_type === 'bank'">
+                            <label class="form-label fw-semibold mt-3">Bank Account</label>
+                            <select v-model="approvalModal.bank_account_id" class="form-control">
+                                <option value="">-- Select bank --</option>
+                                <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.label || (b.bank_name + ' — ' + b.account_name) }}</option>
+                            </select>
+                        </template>
+                    </template>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="approvalModal.open = false">Cancel</button>
@@ -409,10 +476,15 @@
 import { router } from '@inertiajs/vue3';
 import MainLayout from '@/Shared/Layouts/Main.vue';
 import AccountingLayout from '@/Pages/Modules/Accounting/AccountingLayout.vue';
+import FundCreate from '@/Pages/Modules/Libraries/Funds/Modals/Create.vue';
+import FundTopUp from '@/Pages/Modules/Libraries/Funds/Modals/TopUp.vue';
+import FundAdjustBalance from '@/Pages/Modules/Libraries/Funds/Modals/AdjustBalance.vue';
+import Pagination from '@/Shared/Components/Pagination.vue';
 import axios from 'axios';
 
 export default {
     layout: [MainLayout, AccountingLayout],
+    components: { FundCreate, FundTopUp, FundAdjustBalance, Pagination },
     props: {
         dataReady:      { type: Boolean, default: false },
         funds:          { type: Array,   default: () => [] },
@@ -429,23 +501,29 @@ export default {
 
             // Voucher filters
             vFilter: { fund_id: '', status: '', search: '' },
+            voucherPage: 1,
+            voucherPerPage: 10,
 
             // New Voucher modal
             voucherModal: { open: false, saving: false },
-            voucherForm:  { fund_id: '', expense_date: new Date().toISOString().slice(0, 10), payee: '', expense_type: '', amount: '', description: '', receipt: null },
+            voucherForm:  { fund_id: '', expense_date: new Date().toISOString().slice(0, 10), payee: '', company: '', tin: '', business_address: '', reference_no: '', expense_type: '', amount: '', description: '', receipt: null },
             voucherErrors: {},
 
             // View replenishment modal
             viewModal: { open: false, data: null },
 
             // Approval modal
-            approvalModal: { open: false, action: 'approve', data: null, notes: '', saving: false },
+            approvalModal: { open: false, action: 'approve', data: null, notes: '', saving: false, source_type: 'cash', bank_account_id: '' },
 
             // Local copies (updated after mutations)
             localFunds:          this.funds,
             localVouchers:       this.vouchers,
             localReplenishments: this.replenishments,
         };
+    },
+    watch: {
+        funds(newVal) { this.localFunds = newVal; },
+        vFilter: { deep: true, handler() { this.voucherPage = 1; } },
     },
     computed: {
         canApprove() {
@@ -471,6 +549,24 @@ export default {
                 return true;
             });
         },
+        voucherPaginationMeta() {
+            const total = this.filteredVouchers.length;
+            const lastPage = Math.max(1, Math.ceil(total / this.voucherPerPage));
+            return { current_page: this.voucherPage, last_page: lastPage, per_page: this.voucherPerPage, total };
+        },
+        voucherLinks() {
+            const { current_page, last_page } = this.voucherPaginationMeta;
+            return {
+                first: current_page > 1 ? 'first' : null,
+                prev:  current_page > 1 ? 'prev'  : null,
+                next:  current_page < last_page ? 'next' : null,
+                last:  current_page < last_page ? 'last' : null,
+            };
+        },
+        paginatedVouchers() {
+            const start = (this.voucherPage - 1) * this.voucherPerPage;
+            return this.filteredVouchers.slice(start, start + this.voucherPerPage);
+        },
     },
     methods: {
         formatNum(n) { return Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }); },
@@ -485,8 +581,37 @@ export default {
             return { draft: 'Draft', submitted: 'For Review', approved: 'Approved', rejected: 'Rejected' }[s] || s;
         },
 
+        goToVoucherPage(action) {
+            const { last_page } = this.voucherPaginationMeta;
+            if (action === 'first') this.voucherPage = 1;
+            else if (action === 'prev') this.voucherPage = Math.max(1, this.voucherPage - 1);
+            else if (action === 'next') this.voucherPage = Math.min(last_page, this.voucherPage + 1);
+            else if (action === 'last') this.voucherPage = last_page;
+        },
+
+        refreshFunds() {
+            router.reload({ only: ['funds'] });
+        },
+        openCreateFund()      { this.$refs.fundCreate.show(); },
+        openEditFund(fund)    { this.$refs.fundCreate.edit(fund); },
+        openTopUpFund(fund)   { this.$refs.fundTopup.show(fund); },
+        openAdjustFund(fund)  { this.$refs.fundAdjust.show(fund); },
+        async toggleFundActive(fund) {
+            const action = fund.is_active ? 'deactivate' : 'activate';
+            const ok = await this.$confirm({
+                title:       `${action.charAt(0).toUpperCase() + action.slice(1)} fund?`,
+                message:     `Are you sure you want to ${action} "${fund.name}"?`,
+                confirmText: 'Yes',
+                variant:     'warning',
+            });
+            if (!ok) return;
+            axios.patch(`/accounting/funds/${fund.id}/toggle-active`, { is_active: !fund.is_active })
+                .then(() => this.refreshFunds())
+                .catch(err => alert(err.response?.data?.message || 'Failed to update fund.'));
+        },
+
         openVoucherModal() {
-            this.voucherForm   = { fund_id: this.activeFunds[0]?.id || '', expense_date: new Date().toISOString().slice(0, 10), payee: '', expense_type: '', amount: '', description: '', receipt: null };
+            this.voucherForm   = { fund_id: this.activeFunds[0]?.id || '', expense_date: new Date().toISOString().slice(0, 10), payee: '', company: '', tin: '', business_address: '', reference_no: '', expense_type: '', amount: '', description: '', receipt: null };
             this.voucherErrors = {};
             this.voucherModal.open = true;
         },
@@ -582,13 +707,18 @@ export default {
         },
 
         openApproval(r, action) {
-            this.approvalModal = { open: true, action, data: r, notes: '', saving: false };
+            this.approvalModal = { open: true, action, data: r, notes: '', saving: false, source_type: 'cash', bank_account_id: '' };
         },
         async submitApproval() {
             this.approvalModal.saving = true;
-            const { action, data, notes } = this.approvalModal;
+            const { action, data, notes, source_type, bank_account_id } = this.approvalModal;
+            const payload = { review_notes: notes };
+            if (action === 'approve') {
+                payload.source_type = source_type;
+                payload.bank_account_id = source_type === 'bank' ? bank_account_id : null;
+            }
             try {
-                const res = await axios.patch(`/replenishments/${data.id}/${action}`, { review_notes: notes });
+                const res = await axios.patch(`/replenishments/${data.id}/${action}`, payload);
                 const idx = this.localReplenishments.findIndex(x => x.id === data.id);
                 if (idx !== -1) this.localReplenishments[idx] = res.data.data;
                 if (action === 'approve') {
@@ -643,6 +773,8 @@ export default {
     background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;
     font-size: 0.78rem; font-weight: 700;
 }
+
+.pc-fund-actions { display: flex; align-items: center; gap: 0.35rem; }
 
 /* ── Table ─────────────────────────────────────────────────── */
 .pc-table thead th {

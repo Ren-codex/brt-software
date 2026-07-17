@@ -24,6 +24,11 @@
                                         <span class="cash-on-hand-label">Total Cash on Hand</span>
                                         <strong class="cash-on-hand-value">{{ formatCurrency(metrics.total_amount_remitted) }}</strong>
                                     </div>
+                                    <div class="cash-on-hand-card undeposited-card" v-if="!isSalesRep" @click="switchTab('undeposited')" title="View undeposited remittances">
+                                        <span class="cash-on-hand-label">Undeposited Cash</span>
+                                        <strong class="cash-on-hand-value">{{ formatCurrency(undepositedSummary.total_amount) }}</strong>
+                                        <span class="cash-on-hand-sub">{{ undepositedSummary.count }} liquidated remittance{{ undepositedSummary.count !== 1 ? 's' : '' }} awaiting deposit</span>
+                                    </div>
                                     <button class="acct-btn-secondary" @click="currentView = 'summary'">
                                         <i class="ri-bar-chart-grouped-line"></i>
                                         Daily Summary
@@ -81,6 +86,11 @@
                                         <span>Disapproved</span>
                                         <span v-if="activeTab === 'disapproved'" class="seg-count">{{ meta.total ?? 0 }}</span>
                                     </button>
+                                    <button v-if="!isSalesRep" :class="['filter-segment-btn', activeTab === 'undeposited' ? 'active' : '']" @click="switchTab('undeposited')">
+                                        <i class="ri-time-line"></i>
+                                        <span>Undeposited</span>
+                                        <span v-if="activeTab === 'undeposited'" class="seg-count">{{ meta.total ?? 0 }}</span>
+                                    </button>
                                 </div>
 
                                 <div v-show="activeTab === 'open'" class="table-responsive">
@@ -137,16 +147,17 @@
                                         <thead>
                                             <tr>
                                                 <th style="width:3%">#</th>
-                                                <th class="text-center" style="width:15%">Remittance No.</th>
-                                                <th class="text-center" style="width:15%">Date</th>
-                                                <th class="text-end" style="width:15%">Amount</th>
-                                                <th class="text-center" style="width:20%">Sales Rep</th>
+                                                <th class="text-center" style="width:13%">Remittance No.</th>
+                                                <th class="text-center" style="width:12%">Date</th>
+                                                <th class="text-end" style="width:12%">Amount</th>
+                                                <th class="text-center" style="width:18%">Sales Rep</th>
+                                                <th class="text-center" style="width:15%">Bank Deposit</th>
                                                 <th class="text-center" style="width:7%">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-if="liquidatedRemittance.length === 0">
-                                                <td colspan="6">
+                                                <td colspan="7">
                                                     <div class="sales-empty-state">
                                                         <i class="ri-inbox-line"></i>
                                                         <p>No liquidated remittances found.</p>
@@ -164,6 +175,14 @@
                                                 <td class="text-center">{{ item.date || item.remittance_date }}</td>
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
+                                                <td class="text-center">
+                                                    <span v-if="item.is_deposited" class="deposit-status-chip deposited" :title="item.bank_deposit?.bank_name">
+                                                        <i class="ri-checkbox-circle-fill"></i> {{ item.bank_deposit?.deposit_no }}
+                                                    </span>
+                                                    <span v-else class="deposit-status-chip pending">
+                                                        <i class="ri-time-line"></i> Not yet deposited
+                                                    </span>
+                                                </td>
                                                 <td class="text-center">
                                                     <button @click.stop="openView(item)" class="action-btn info" title="View">
                                                         <i class="ri-eye-line"></i>
@@ -197,6 +216,48 @@
                                             </tr>
                                             <tr
                                                 v-for="(item, index) in disapprovedRemittance"
+                                                :key="item.id || index"
+                                                class="cursor-pointer"
+                                                @click="openView(item)"
+                                            >
+                                                <td>{{ index + 1 }}</td>
+                                                <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
+                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
+                                                <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
+                                                <td class="text-center">
+                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                        <i class="ri-eye-line"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div v-show="activeTab === 'undeposited'" class="table-responsive">
+                                    <table class="table sales-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:3%">#</th>
+                                                <th class="text-center" style="width:15%">Remittance No.</th>
+                                                <th class="text-center" style="width:15%">Date</th>
+                                                <th class="text-end" style="width:15%">Amount</th>
+                                                <th class="text-center" style="width:20%">Sales Rep</th>
+                                                <th class="text-center" style="width:7%">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="undepositedRemittance.length === 0">
+                                                <td colspan="6">
+                                                    <div class="sales-empty-state">
+                                                        <i class="ri-checkbox-circle-line"></i>
+                                                        <p>Nothing awaiting deposit — all liquidated remittances have been banked.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="(item, index) in undepositedRemittance"
                                                 :key="item.id || index"
                                                 class="cursor-pointer"
                                                 @click="openView(item)"
@@ -273,6 +334,10 @@ export default {
             myHoldings: {
                 total_amount: 0,
                 receipt_count: 0,
+            },
+            undepositedSummary: {
+                total_amount: 0,
+                count: 0,
             }
         };
     },
@@ -280,6 +345,7 @@ export default {
         openRemittance() { return this.lists; },
         liquidatedRemittance() { return this.lists; },
         disapprovedRemittance() { return this.lists; },
+        undepositedRemittance() { return this.lists; },
         isSalesRep() {
             const roles = this.$page.props.roles ?? [];
             return roles.includes('Sales Rep');
@@ -292,6 +358,7 @@ export default {
             this.fetchMyHoldings();
         } else {
             this.fetchMetrics();
+            this.fetchUndepositedSummary();
         }
     },
     methods: {
@@ -368,12 +435,30 @@ export default {
                 }
             })
             .catch(err => console.log(err));
-        }
+        },
+        fetchUndepositedSummary() {
+            axios.get('/remittances', {
+                params: {
+                    option: 'undeposited_summary',
+                    location_id: this.filter.location_id === null || this.filter.location_id === '' ? null : Number(this.filter.location_id),
+                }
+            })
+                .then(res => { this.undepositedSummary = res.data; })
+                .catch(err => console.error(err));
+        },
     }
 };
 </script>
 
 <style scoped>
+.deposit-status-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+}
+.deposit-status-chip.deposited { background: #dcfce7; color: #166534; }
+.deposit-status-chip.pending   { background: #fef3c7; color: #92400e; }
+
 .filter-segment {
     display: inline-flex;
     background: #eaf2f0;
@@ -440,6 +525,15 @@ export default {
     box-shadow: 0 8px 18px rgba(22, 66, 60, 0.08);
     text-align: left;
 }
+
+.undeposited-card {
+    cursor: pointer;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: rgba(146, 64, 14, 0.15);
+    transition: box-shadow 0.15s;
+}
+.undeposited-card:hover { box-shadow: 0 10px 22px rgba(146, 64, 14, 0.15); }
+.undeposited-card .cash-on-hand-label { color: #92400e; }
 
 .cash-on-hand-label {
     display: block;

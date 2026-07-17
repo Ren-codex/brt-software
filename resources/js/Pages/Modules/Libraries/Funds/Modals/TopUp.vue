@@ -31,6 +31,21 @@
                     <label class="form-label">Description</label>
                     <input type="text" v-model="form.description" class="form-control" placeholder="e.g. Monthly replenishment">
                 </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Funded From</label>
+                    <select v-model="form.source_type" class="form-control">
+                        <option value="cash">Cash on Hand</option>
+                        <option value="bank">Bank Transfer</option>
+                    </select>
+                </div>
+                <div class="form-group mb-3" v-if="form.source_type === 'bank'">
+                    <label class="form-label">Bank Account</label>
+                    <select v-model="form.bank_account_id" class="form-control" :class="{ 'is-invalid': errors.bank_account_id }">
+                        <option value="">-- Select bank --</option>
+                        <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.label || (b.bank_name + ' — ' + b.account_name) }}</option>
+                    </select>
+                    <div class="invalid-feedback d-block" v-if="errors.bank_account_id">{{ errors.bank_account_id[0] }}</div>
+                </div>
                 <div class="alert alert-success" v-if="success">{{ success }}</div>
             </div>
             <div class="modal-footer">
@@ -48,10 +63,13 @@
 <script>
 export default {
     emits: ['done'],
+    props: {
+        bankAccounts: { type: Array, default: () => [] },
+    },
     data() {
         return {
             fund: null,
-            form: { amount: null, date: new Date().toISOString().split('T')[0], description: null },
+            form: { amount: null, date: new Date().toISOString().split('T')[0], description: null, source_type: 'cash', bank_account_id: '' },
             errors: {},
             saving: false,
             success: null,
@@ -61,7 +79,7 @@ export default {
     methods: {
         show(fund) {
             this.fund    = fund;
-            this.form    = { amount: null, date: new Date().toISOString().split('T')[0], description: null };
+            this.form    = { amount: null, date: new Date().toISOString().split('T')[0], description: null, source_type: 'cash', bank_account_id: '' };
             this.errors  = {};
             this.success = null;
             this.showModal = true;
@@ -70,7 +88,7 @@ export default {
         submit() {
             this.saving = true;
             this.errors = {};
-            axios.post(`/libraries/funds/${this.fund.id}/top-up`, this.form)
+            axios.post(`/accounting/funds/${this.fund.id}/top-up`, this.form)
                 .then(res => {
                     this.success = res.data.message;
                     this.$emit('done');

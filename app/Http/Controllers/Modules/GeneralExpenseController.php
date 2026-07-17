@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\Expense;
+use App\Services\Accounting\CashManagementService;
 use App\Services\Accounting\JournalEntryService;
 use App\Services\SeriesService;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class GeneralExpenseController extends Controller
     public function __construct(
         private JournalEntryService $journal,
         private SeriesService $series,
+        private CashManagementService $cashManagement,
     ) {}
 
     public function index()
@@ -139,6 +141,35 @@ class GeneralExpenseController extends Controller
 
         if ($expense->status !== 'draft') {
             return response()->json(['message' => 'Only draft expenses can be approved.'], 422);
+        }
+
+        $amount = round((float) $expense->amount, 2);
+
+        if ($expense->payment_method === 'cash') {
+            $cashOnHand = $this->cashManagement->getCashOnHandBalance();
+            if ($amount > $cashOnHand) {
+                return response()->json([
+                    'message' => 'Amount exceeds available Cash on Hand (₱' . number_format($cashOnHand, 2) . '). Reduce the amount or use Bank Transfer instead.',
+                ], 422);
+            }
+        }
+
+        if (in_array($expense->payment_method, ['check', 'bank_transfer'], true)) {
+            if ($expense->bank_account_id) {
+                $bankBalance = $this->cashManagement->getBankAccountBalance($expense->bank_account_id);
+                if ($amount > $bankBalance) {
+                    return response()->json([
+                        'message' => 'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').',
+                    ], 422);
+                }
+            } else {
+                $cashInBank = $this->cashManagement->getCashInBankBalance();
+                if ($amount > $cashInBank) {
+                    return response()->json([
+                        'message' => 'Amount exceeds available Cash in Bank (₱' . number_format($cashInBank, 2) . '). Reduce the amount or select a specific bank account with sufficient balance.',
+                    ], 422);
+                }
+            }
         }
 
         $expense->update([

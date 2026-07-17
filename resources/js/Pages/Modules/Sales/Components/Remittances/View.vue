@@ -91,6 +91,17 @@
                                     {{ formatDate(item.approved_at) }}
                                 </div>
                             </div>
+                            <div class="profile-info-item" v-if="item.status?.slug === 'liquidated'">
+                                <div class="profile-label">Bank Deposit</div>
+                                <div class="profile-value">
+                                    <span v-if="item.is_deposited" class="deposit-status-chip deposited">
+                                        <i class="ri-checkbox-circle-fill"></i> {{ item.bank_deposit?.deposit_no }} — {{ formatDate(item.bank_deposit?.deposit_date) }}
+                                    </span>
+                                    <span v-else class="deposit-status-chip pending">
+                                        <i class="ri-time-line"></i> Not yet deposited
+                                    </span>
+                                </div>
+                            </div>
                             <template v-if="item.received_amount !== null && item.received_amount !== undefined">
                                 <div class="profile-info-item">
                                     <div class="profile-label">Amount Received</div>
@@ -690,6 +701,14 @@ export default {
     align-items: center;
     gap: 5px;
 }
+
+.deposit-status-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+}
+.deposit-status-chip.deposited { background: #dcfce7; color: #166534; }
+.deposit-status-chip.pending   { background: #fef3c7; color: #92400e; }
 
 .loan-history-count {
     font-size: 0.75rem;

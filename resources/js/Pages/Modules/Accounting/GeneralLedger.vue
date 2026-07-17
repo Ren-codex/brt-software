@@ -331,7 +331,7 @@ export default {
 .empty-state { padding: 1.5rem; text-align: center; color: #648b74; }
 .empty-state i { font-size: 2rem; color: #3d8d7a; display: block; margin-bottom: 0.5rem; }
 
-.desc-cell { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desc-cell { min-width: 160px; white-space: normal; word-break: break-word; }
 
 /* Journal Lines stats bar */
 .ll-stats-bar {

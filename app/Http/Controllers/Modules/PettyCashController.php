@@ -84,13 +84,17 @@ class PettyCashController extends Controller
     public function storeVoucher(Request $request)
     {
         $data = $request->validate([
-            'fund_id'      => 'required|integer|exists:petty_cash_funds,id',
-            'expense_date' => 'required|date',
-            'payee'        => 'required|string|max:120',
-            'expense_type' => 'required|string|max:80',
-            'amount'       => 'required|numeric|min:0.01',
-            'description'  => 'nullable|string|max:300',
-            'receipt'      => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'fund_id'           => 'required|integer|exists:petty_cash_funds,id',
+            'expense_date'      => 'required|date',
+            'payee'             => 'required|string|max:120',
+            'company'           => 'nullable|string|max:150',
+            'tin'               => 'nullable|string|max:30',
+            'business_address'  => 'nullable|string|max:255',
+            'reference_no'      => 'nullable|string|max:60',
+            'expense_type'      => 'required|string|max:80',
+            'amount'            => 'required|numeric|min:0.01',
+            'description'       => 'nullable|string|max:300',
+            'receipt'           => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
         $fund = PettyCashFund::findOrFail($data['fund_id']);
@@ -108,16 +112,20 @@ class PettyCashController extends Controller
 
         $voucher = DB::transaction(function () use ($data, $fund, $receiptPath) {
             $voucher = Expense::create([
-                'voucher_no'   => $this->series->get('pcv_no'),
-                'fund_id'      => $data['fund_id'],
-                'expense_date' => $data['expense_date'],
-                'payee'        => $data['payee'],
-                'expense_type' => $data['expense_type'],
-                'amount'       => $data['amount'],
-                'description'  => $data['description'] ?? null,
-                'receipt_path' => $receiptPath,
-                'status'       => 'recorded',
-                'added_by_id'  => auth()->id(),
+                'voucher_no'        => $this->series->get('pcv_no'),
+                'fund_id'           => $data['fund_id'],
+                'expense_date'      => $data['expense_date'],
+                'payee'             => $data['payee'],
+                'company'           => $data['company'] ?? null,
+                'tin'               => $data['tin'] ?? null,
+                'business_address'  => $data['business_address'] ?? null,
+                'reference_no'      => $data['reference_no'] ?? null,
+                'expense_type'      => $data['expense_type'],
+                'amount'            => $data['amount'],
+                'description'       => $data['description'] ?? null,
+                'receipt_path'      => $receiptPath,
+                'status'            => 'recorded',
+                'added_by_id'       => auth()->id(),
             ]);
 
             $previousBalance = (float) $fund->balance;
@@ -195,6 +203,10 @@ class PettyCashController extends Controller
             'fund_name'    => optional($e->fund)->name,
             'expense_date' => $e->expense_date,
             'payee'        => $e->payee,
+            'company'      => $e->company,
+            'tin'          => $e->tin,
+            'business_address' => $e->business_address,
+            'reference_no' => $e->reference_no,
             'expense_type' => $e->expense_type,
             'amount'       => (float) $e->amount,
             'amount_fmt'   => '₱' . number_format($e->amount, 2),

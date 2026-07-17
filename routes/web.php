@@ -83,6 +83,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO']);
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
+        Route::get('/accounting/cash-on-hand', [App\Http\Controllers\Modules\CashManagementController::class, 'cashOnHand']);
         Route::post('/received-stocks/{receivedStock}/pay', [App\Http\Controllers\ReceivedStockController::class, 'pay']);
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);
         Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class);
@@ -152,6 +153,8 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::delete('/accounting/petty-cash/transactions/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyPettyCashTransaction']);
         Route::post('/accounting/bank-deposits', [App\Http\Controllers\Modules\CashManagementController::class, 'storeDeposit']);
         Route::delete('/accounting/bank-deposits/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyDeposit']);
+        Route::post('/accounting/bank-withdrawals', [App\Http\Controllers\Modules\CashManagementController::class, 'storeWithdrawal']);
+        Route::delete('/accounting/bank-withdrawals/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyWithdrawal']);
         Route::get('/accounting/bank-accounts/list', [App\Http\Controllers\Modules\BankAccountController::class, 'list']);
         Route::post('/accounting/bank-accounts', [App\Http\Controllers\Modules\BankAccountController::class, 'store']);
         Route::put('/accounting/bank-accounts/{id}', [App\Http\Controllers\Modules\BankAccountController::class, 'update']);

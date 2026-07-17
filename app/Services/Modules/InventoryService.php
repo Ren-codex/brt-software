@@ -12,6 +12,35 @@ class InventoryService
     public function __construct(protected NotificationService $notificationService) {}
 
     /**
+     * Base query for a product's inventory stock rows. Matches stock received
+     * through a purchase (linked via receivedItem) AND stock created via
+     * Product Conversion (no receivedItem — linked via conversion_id
+     * instead), mirroring DropdownClass::products(). Using only the
+     * receivedItem relation here would make converted-batch stock invisible
+     * to stock checks/deductions even though it's real, sellable inventory.
+     *
+     * @param  int  $productId
+     * @param  string|null  $batchCode
+     */
+    private function stockQuery($productId, $batchCode = null)
+    {
+        $query = InventoryStocks::where(function ($q) use ($productId) {
+            $q->whereHas('receivedItem', function ($sub) use ($productId) {
+                $sub->where('product_id', $productId);
+            })->orWhere(function ($sub) use ($productId) {
+                $sub->where('product_id', $productId)
+                    ->whereNotNull('conversion_id');
+            });
+        });
+
+        if ($batchCode) {
+            $query->where('batch_code', $batchCode);
+        }
+
+        return $query;
+    }
+
+    /**
      * Get the current stock quantity for a product.
      *
      * @param  int  $productId
@@ -20,15 +49,7 @@ class InventoryService
      */
     public function getCurrentStock($productId, $batchCode = null)
     {
-        $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
-            $query->where('product_id', $productId);
-        });
-
-        if ($batchCode) {
-            $query->where('batch_code', $batchCode);
-        }
-
-        return $query->sum('quantity');
+        return $this->stockQuery($productId, $batchCode)->sum('quantity');
     }
 
     /**
@@ -59,16 +80,7 @@ class InventoryService
         $previousTotal = (int) $this->getCurrentStock($productId);
         $remainingQuantity = $quantity;
 
-        // Get inventory stocks for the product, optionally filtered by batch_code
-        $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
-            $query->where('product_id', $productId);
-        });
-
-        if ($batchCode) {
-            $query->where('batch_code', $batchCode);
-        }
-
-        $inventoryStocks = $query->orderBy('created_at')->get();
+        $inventoryStocks = $this->stockQuery($productId, $batchCode)->orderBy('created_at')->get();
 
         foreach ($inventoryStocks as $stock) {
             if ($remainingQuantity <= 0) {
@@ -115,15 +127,7 @@ class InventoryService
     public function addStock($productId, $quantity, $reason, $batchCode = null)
     {
         // Get the most recent inventory stock for the product (LIFO), optionally filtered by batch_code
-        $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
-            $query->where('product_id', $productId);
-        });
-
-        if ($batchCode) {
-            $query->where('batch_code', $batchCode);
-        }
-
-        $stock = $query->orderBy('created_at', 'desc')->first();
+        $stock = $this->stockQuery($productId, $batchCode)->orderBy('created_at', 'desc')->first();
 
         if ($stock) {
             $previousQuantity = $stock->quantity;
@@ -164,15 +168,7 @@ class InventoryService
         $previousTotal = (int) $this->getCurrentStock($productId);
         $remainingQuantity = (int) $quantity;
 
-        $query = InventoryStocks::whereHas('receivedItem', function ($query) use ($productId) {
-            $query->where('product_id', $productId);
-        });
-
-        if ($batchCode) {
-            $query->where('batch_code', $batchCode);
-        }
-
-        $inventoryStocks = $query->orderBy('created_at')->get();
+        $inventoryStocks = $this->stockQuery($productId, $batchCode)->orderBy('created_at')->get();
 
         foreach ($inventoryStocks as $stock) {
             if ($remainingQuantity <= 0) {

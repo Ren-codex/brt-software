@@ -65,11 +65,32 @@ class FundClass
 
         $fund = PettyCashFund::findOrFail($id);
 
+        $sourceType = $request->source_type ?? 'cash';
+        $bankAccountId = $sourceType === 'bank' ? $request->bank_account_id : null;
+
+        if ($sourceType === 'cash') {
+            $cashOnHand = $this->cashManagement->getCashOnHandBalance();
+            if ($amount > $cashOnHand) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Amount exceeds available Cash on Hand (₱' . number_format($cashOnHand, 2) . '). Reduce the amount or fund from a bank account instead.',
+                ]);
+            }
+        } else {
+            $bankBalance = $this->cashManagement->getBankAccountBalance((int) $bankAccountId);
+            if ($amount > $bankBalance) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').',
+                ]);
+            }
+        }
+
         $this->cashManagement->addTransaction($fund, [
             'type' => 'replenishment',
             'amount' => $amount,
             'transaction_date' => $request->date ?? now()->toDateString(),
             'description' => $request->description ?? null,
+            'source_type' => $sourceType,
+            'bank_account_id' => $bankAccountId,
         ]);
 
         return [
