@@ -133,6 +133,7 @@
                                     <th>Received No.</th>
                                     <th>Supplier</th>
                                     <th>Received Date</th>
+                                    <th>Due Date</th>
                                     <th class="text-center">Days Out</th>
                                     <th>PO No.</th>
                                     <th class="text-end">Total Cost</th>
@@ -146,6 +147,11 @@
                                     <td class="font-monospace">{{ row.received_no }}</td>
                                     <td>{{ row.supplier_name }}</td>
                                     <td>{{ row.received_date }}</td>
+                                    <td>
+                                        <span v-if="row.due_date">{{ row.due_date }}</span>
+                                        <span v-else class="text-muted">—</span>
+                                        <span v-if="row.is_past_due" class="overdue-chip">Past Due</span>
+                                    </td>
                                     <td class="text-center">{{ row.days_out }}</td>
                                     <td>{{ row.po_number }}</td>
                                     <td class="text-end">{{ row.total_cost }}</td>
@@ -276,6 +282,22 @@ export default {
 .aging-chip.bucket-31-60   { background: #fed7aa; color: #9a3412; }
 .aging-chip.bucket-61-90   { background: #fee2e2; color: #991b1b; }
 .aging-chip.bucket-90plus  { background: #fce7f3; color: #831843; }
+
+.overdue-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.35rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #b91c1c;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    white-space: nowrap;
+}
 
 .empty-state {
     padding: 1.5rem;

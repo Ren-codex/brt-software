@@ -27,6 +27,7 @@ class StoreReceivedStockRequest extends FormRequest
             'po_id' => 'required|exists:purchase_orders,id',
             'supplier_id' => 'required|exists:list_suppliers,id',
             'payment_mode' => 'required|in:Cash,Bank Transfer,Credit',
+            'due_date' => 'nullable|date|required_if:payment_mode,Credit',
             'amount_paid' => 'nullable|numeric|min:0',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'bank_name' => 'nullable|string|max:255',
@@ -83,6 +84,13 @@ class StoreReceivedStockRequest extends FormRequest
                         'amount_paid',
                         'Amount paid exceeds available Cash on Hand (₱' . number_format($cashOnHand, 2) . '). Reduce the amount, use Bank Transfer, or record this as Credit and settle it later.'
                     );
+                }
+            }
+
+            if ($paymentMode === 'Credit') {
+                $dueDate = $this->input('due_date');
+                if ($dueDate && $dueDate < now()->toDateString()) {
+                    $validator->errors()->add('due_date', 'Due date cannot be earlier than today.');
                 }
             }
 

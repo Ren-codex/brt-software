@@ -35,6 +35,7 @@ class ReceivedStockResource extends JsonResource
             'received_date' => $this->received_date,
             'payment_mode' => $resolvedPaymentMode,
             'original_payment_mode' => $this->payment_mode,
+            'due_date' => optional($this->due_date)->toDateString() ?: $this->due_date,
             'amount_paid' => $amountPaid,
             'received_total' => $receivedTotal,
             'remaining_balance' => round(max($receivedTotal - $amountPaid, 0), 2),

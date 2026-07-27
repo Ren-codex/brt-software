@@ -212,6 +212,36 @@
           </div>
         </div>
 
+        <div v-if="selectedPaymentType === 'Credit'" class="payment-suboption-panel">
+          <div class="payment-panel-heading">
+            <span class="payment-panel-kicker">Credit Terms</span>
+            <h5>Set the due date</h5>
+            <p>This receipt will be recorded under accounts payable and settled by the due date.</p>
+          </div>
+
+          <div class="credit-terms-section">
+            <label class="payment-detail-label">Due Date <span class="text-danger">*</span></label>
+            <div class="credit-preset-btns mb-2">
+              <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 7 }" @click="setDueDatePreset(7)">Net 7</button>
+              <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 14 }" @click="setDueDatePreset(14)">Net 14</button>
+              <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 30 }" @click="setDueDatePreset(30)">Net 30</button>
+              <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 60 }" @click="setDueDatePreset(60)">Net 60</button>
+              <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 0 }" @click="setDueDatePreset(0)">Custom</button>
+            </div>
+            <div class="date-input-wrapper">
+              <i class="ri-calendar-line"></i>
+              <input
+                type="date"
+                v-model="form.due_date"
+                class="form-control modern-input date-input"
+                :class="{ error: paymentMethodError && !form.due_date }"
+                :min="todayDate"
+                @change="creditPreset = 0; paymentMethodError = ''"
+              />
+            </div>
+          </div>
+        </div>
+
         <div v-if="paymentMethodError" class="alert alert-danger mt-3 mb-0" role="alert">
           {{ paymentMethodError }}
         </div>
@@ -384,6 +414,7 @@ export default {
         bank_account_id: '',
         bank_name: '',
         reference_number: '',
+        due_date: null,
         items: [],
       },
       errorMessage: '',
@@ -393,6 +424,7 @@ export default {
       showAmountPaidModal: false,
       selectedPaymentType: null,
       selectedCashPaymentMode: null,
+      creditPreset: 30,
       paymentMethodError: '',
       isSubmitting: false,
       paymentTypes: [
@@ -443,6 +475,9 @@ export default {
     },
     selectedBankAccount() {
       return this.bankAccounts.find(b => Number(b.id) === Number(this.form.bank_account_id)) || null;
+    },
+    todayDate() {
+      return new Date().toISOString().slice(0, 10);
     },
   },
   mounted() {
@@ -578,6 +613,7 @@ export default {
         bank_account_id: '',
         bank_name: '',
         reference_number: '',
+        due_date: null,
         items: [],
       };
       this.errorMessage = '';
@@ -586,6 +622,7 @@ export default {
       this.showAmountPaidModal = false;
       this.selectedPaymentType = null;
       this.selectedCashPaymentMode = null;
+      this.creditPreset = 30;
       this.paymentMethodError = '';
       this.isSubmitting = false;
     },
@@ -684,7 +721,21 @@ export default {
         this.form.amount_paid = 0;
         this.showAmountPaidModal = false;
         this.clearBankTransferDetails();
+        if (!this.form.due_date) {
+          this.setDueDatePreset(this.creditPreset || 30);
+        }
       }
+    },
+    setDueDatePreset(days) {
+      this.creditPreset = days;
+      if (days === 0) {
+        this.form.due_date = '';
+        return;
+      }
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      this.form.due_date = d.toISOString().slice(0, 10);
+      this.paymentMethodError = '';
     },
     selectCashPaymentMode(mode) {
       if (this.isSubmitting) return;
@@ -721,6 +772,7 @@ export default {
       this.selectedCashPaymentMode = null;
       this.form.payment_mode = '';
       this.form.amount_paid = null;
+      this.form.due_date = null;
       this.clearBankTransferDetails();
     },
     async confirmPaymentMethod() {
@@ -732,6 +784,18 @@ export default {
       if (this.selectedPaymentType === 'Cash' && !this.selectedCashPaymentMode) {
         this.paymentMethodError = 'Please choose Cash or Bank Transfer.';
         return;
+      }
+
+      if (this.selectedPaymentType === 'Credit') {
+        if (!this.form.due_date) {
+          this.paymentMethodError = 'Please select a due date for this credit purchase.';
+          return;
+        }
+
+        if (this.form.due_date < this.todayDate) {
+          this.paymentMethodError = 'Due date cannot be earlier than today.';
+          return;
+        }
       }
 
       if (this.selectedPaymentType === 'Cash') {
@@ -784,6 +848,8 @@ export default {
       if (this.selectedPaymentType === 'Credit') {
         this.form.amount_paid = 0;
         this.clearBankTransferDetails();
+      } else {
+        this.form.due_date = null;
       }
 
       await this.submitReceivedStock();
@@ -1405,6 +1471,40 @@ export default {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.credit-terms-section .payment-detail-label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.credit-preset-btns {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.credit-preset-btn {
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #c4d9d2;
+  background: #f7fbfa;
+  color: #335c52;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.credit-preset-btn:hover {
+  background: #edf5f2;
+  border-color: #3d8d7a;
+}
+
+.credit-preset-btn.active {
+  background: #3d8d7a;
+  border-color: #3d8d7a;
+  color: #fff;
 }
 
 .suboption-grid {

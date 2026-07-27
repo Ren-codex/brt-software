@@ -396,6 +396,7 @@ class AccountingController extends Controller
                 'rs.id',
                 'rs.received_no',
                 'rs.received_date',
+                'rs.due_date',
                 's.id as supplier_id',
                 's.name as supplier_name',
                 'po.po_number',
@@ -403,18 +404,20 @@ class AccountingController extends Controller
                 DB::raw('COALESCE(rs.amount_paid, 0) as amount_paid_legacy'),
                 DB::raw('COALESCE(SUM(DISTINCT rsp.amount_paid * 1), 0) as payments_total'),
             ])
-            ->groupBy('rs.id', 'rs.received_no', 'rs.received_date', 's.id', 's.name', 'po.po_number', 'rs.amount_paid')
+            ->groupBy('rs.id', 'rs.received_no', 'rs.received_date', 'rs.due_date', 's.id', 's.name', 'po.po_number', 'rs.amount_paid')
             ->get()
             ->map(function ($row) use ($asOf) {
                 $totalCost    = (float) $row->total_cost;
                 $paid         = (float) max($row->amount_paid_legacy, $row->payments_total);
                 $balance      = round(max($totalCost - $paid, 0), 2);
                 $daysOut      = (int) max(0, Carbon::parse($row->received_date)->diffInDays(Carbon::parse($asOf), false));
+                $isPastDue    = $row->due_date && Carbon::parse($row->due_date)->lt(Carbon::parse($asOf));
 
                 return (object) [
                     'id'            => $row->id,
                     'received_no'   => $row->received_no,
                     'received_date' => $row->received_date,
+                    'due_date'      => $row->due_date,
                     'supplier_id'   => $row->supplier_id,
                     'supplier_name' => $row->supplier_name,
                     'po_number'     => $row->po_number,
@@ -423,6 +426,7 @@ class AccountingController extends Controller
                     'balance_due'   => $balance,
                     'days_out'      => $daysOut,
                     'bucket'        => $this->classifyAgingBucket($daysOut),
+                    'is_past_due'   => $isPastDue,
                 ];
             })
             ->filter(fn ($r) => $r->balance_due > 0.009);
@@ -463,6 +467,7 @@ class AccountingController extends Controller
                 'id'            => $r->id,
                 'received_no'   => $r->received_no,
                 'received_date' => $r->received_date,
+                'due_date'      => $r->due_date,
                 'supplier_name' => $r->supplier_name,
                 'po_number'     => $r->po_number ?: '—',
                 'total_cost'    => $this->formatCurrency($r->total_cost),
@@ -470,6 +475,7 @@ class AccountingController extends Controller
                 'balance_due'   => $this->formatCurrency($r->balance_due),
                 'days_out'      => $r->days_out,
                 'bucket'        => $r->bucket,
+                'is_past_due'   => $r->is_past_due,
             ])
             ->values();
 
