@@ -5,7 +5,6 @@ namespace App\Services\Modules;
 
 use App\Models\Remittance;
 use App\Models\Receipt;
-use App\Models\ListLocation;
 use App\Http\Resources\Libraries\RemittanceResource;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -25,17 +24,16 @@ class RemittanceClass
     }
 
     public function lists($request){
-        $mainOffice = ListLocation::where('name', 'Zamboanga City')->first();
-        $location_id = $request->location_id ?? $mainOffice?->id;
-
         $data = RemittanceResource::collection(
             Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount'])
-            ->whereHas('receipts', function ($q) use ($location_id) {
-                $q->where(function ($inner) use ($location_id) {
-                    $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($location_id) {
-                        $soQ->where('location_id', $location_id)
-                            ->orWhereNull('location_id');
-                    })->orWhereDoesntHave('arInvoice');
+            ->when($request->location_id, function ($query, $location_id) {
+                $query->whereHas('receipts', function ($q) use ($location_id) {
+                    $q->where(function ($inner) use ($location_id) {
+                        $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($location_id) {
+                            $soQ->where('location_id', $location_id)
+                                ->orWhereNull('location_id');
+                        })->orWhereDoesntHave('arInvoice');
+                    });
                 });
             })
             ->when($request->keyword, function ($query,$keyword) {
@@ -58,17 +56,16 @@ class RemittanceClass
 
     public function undepositedSummary($request)
     {
-        $mainOffice = ListLocation::where('name', 'Zamboanga City')->first();
-        $location_id = $request->location_id ?? $mainOffice?->id;
-
         $query = Remittance::whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
             ->whereNull('bank_deposit_id')
-            ->whereHas('receipts', function ($q) use ($location_id) {
-                $q->where(function ($inner) use ($location_id) {
-                    $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($location_id) {
-                        $soQ->where('location_id', $location_id)
-                            ->orWhereNull('location_id');
-                    })->orWhereDoesntHave('arInvoice');
+            ->when($request->location_id, function ($query, $location_id) {
+                $query->whereHas('receipts', function ($q) use ($location_id) {
+                    $q->where(function ($inner) use ($location_id) {
+                        $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($location_id) {
+                            $soQ->where('location_id', $location_id)
+                                ->orWhereNull('location_id');
+                        })->orWhereDoesntHave('arInvoice');
+                    });
                 });
             });
 

@@ -348,7 +348,7 @@ export default {
         undepositedRemittance() { return this.lists; },
         isSalesRep() {
             const roles = this.$page.props.roles ?? [];
-            return roles.includes('Sales Rep');
+            return roles.includes('Sales Rep') && !!this.$page.props.user?.employee_id;
         },
     },
     created() {

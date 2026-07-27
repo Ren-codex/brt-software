@@ -206,31 +206,7 @@
     "src": "public/images/sidebar/img-4.jpg"
   },
   "resources/js/app.js": {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "file": "assets/app-DKIVzC6a.js",
-=======
-    "file": "assets/app-Czoe-J8H.js",
->>>>>>> 82f0c357d689f6199741fd0510fee0a8949addb5
-=======
-    "file": "assets/app-CooQ7s5b.js",
->>>>>>> 7b8d3f577474707bae49cc8b275f340c4933adc7
-=======
-    "file": "assets/app-Dd7OobKy.js",
->>>>>>> 127c607b0ca02f87df932b52737c322eb026e8de
-=======
-    "file": "assets/app-DDM7BCNY.js",
->>>>>>> 4c8e344d108a24cc52411f7a6a6cf3e7d23e07b3
-=======
-    "file": "assets/app-BTv6tDBF.js",
->>>>>>> 1d69075a0f0b29c071aca96a568280ebf891badc
-=======
-    "file": "assets/app-TRi3RvRd.js",
->>>>>>> f23ba65e29c07eadcbdf1f1525757255fc2f6d45
+    "file": "assets/app-B8CvWW3y.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -239,31 +215,7 @@
       "node_modules/vue3-apexcharts/dist/apexcharts.ssr.esm-fe46cd2d.js"
     ],
     "css": [
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-      "assets/app-BC7FezhW.css"
-=======
-      "assets/app-DjI_gxFr.css"
->>>>>>> 82f0c357d689f6199741fd0510fee0a8949addb5
-=======
-      "assets/app-DWTY48cx.css"
->>>>>>> 7b8d3f577474707bae49cc8b275f340c4933adc7
-=======
-      "assets/app-poFlPtP_.css"
->>>>>>> 127c607b0ca02f87df932b52737c322eb026e8de
-=======
-      "assets/app-QBy2xmWv.css"
->>>>>>> 4c8e344d108a24cc52411f7a6a6cf3e7d23e07b3
-=======
-      "assets/app-CnTRRXlO.css"
->>>>>>> 1d69075a0f0b29c071aca96a568280ebf891badc
-=======
-      "assets/app-C0YCPLKQ.css"
->>>>>>> f23ba65e29c07eadcbdf1f1525757255fc2f6d45
+      "assets/app-B5US9NAN.css"
     ],
     "assets": [
       "assets/logo-sm-C9p9en_o.png",

@@ -12,10 +12,15 @@ class ReceivedStock extends Model
         'received_date',
         'received_no',
         'payment_mode',
+        'due_date',
         'amount_paid',
         'bank_name',
         'reference_number',
         'received_by_id',
+    ];
+
+    protected $casts = [
+        'due_date' => 'date',
     ];
 
     public function purchaseOrder()

@@ -55,6 +55,7 @@
                     <th class="text-center">Purchase Order</th>
                     <th class="text-center">Supplier</th>
                     <th class="text-center">Received Date</th>
+                    <th class="text-center">Due Date</th>
                     <th class="text-center">Status</th>
                     <th class="text-center">Total Payable</th>
                     <th class="text-center">Total Paid</th>
@@ -82,6 +83,11 @@
                         </div>
                       </td>
                       <td class="text-center">{{ formatDate(record.received_date) }}</td>
+                      <td class="text-center">
+                        <span v-if="record.due_date">{{ formatDate(record.due_date) }}</span>
+                        <span v-else class="text-muted">-</span>
+                        <span v-if="isOverdue(record)" class="overdue-chip">Overdue</span>
+                      </td>
                       <td class="text-center">
                         <div class="status-cell">
                           <span class="status-badge" :class="payableStatusClass(record)">
@@ -117,7 +123,7 @@
                   </template>
 
                   <tr v-if="filteredPayables.length === 0">
-                    <td colspan="10" class="text-center py-4">
+                    <td colspan="11" class="text-center py-4">
                       <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
                       <p class="mt-2 mb-0">No open accounts payable credit found</p>
                       <small class="text-muted">Supplier balances with remaining unpaid credit will appear here automatically.</small>
@@ -269,6 +275,10 @@ export default {
     },
     isUnpaid(record) {
       return Number(record?.amount_paid || 0) <= 0;
+    },
+    isOverdue(record) {
+      if (!record?.due_date || Number(record?.remaining_balance || 0) <= 0) return false;
+      return record.due_date < new Date().toISOString().slice(0, 10);
     },
     formatCurrency,
     formatDate,
@@ -423,6 +433,21 @@ export default {
   color: #7c2d12;
   background: #ffedd5;
   border: 1px solid #fed7aa;
+}
+
+.overdue-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.35rem;
+  padding: 2px 8px;
+  border-radius: 14px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
 }
 
 .amount-value {

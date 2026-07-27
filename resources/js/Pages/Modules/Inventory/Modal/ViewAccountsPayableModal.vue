@@ -56,6 +56,13 @@
                   {{ formatDate(record?.received_date) }}
                 </div>
               </div>
+              <div v-if="record?.due_date" class="ap-detail-info-row">
+                <span class="ap-detail-info-label">Due Date</span>
+                <div class="ap-detail-info-value ap-detail-info-value-soft" :class="{ 'ap-detail-info-value-overdue': isOverdue }">
+                  {{ formatDate(record?.due_date) }}
+                  <span v-if="isOverdue" class="ap-overdue-badge">Overdue</span>
+                </div>
+              </div>
               <div class="ap-detail-info-row">
                 <span class="ap-detail-info-label">Partial Payments</span>
                 <div class="ap-detail-info-value ap-detail-info-value-soft">
@@ -176,6 +183,10 @@ export default {
     };
   },
   computed: {
+    isOverdue() {
+      if (!this.record?.due_date || Number(this.record?.remaining_balance || 0) <= 0) return false;
+      return this.record.due_date < new Date().toISOString().slice(0, 10);
+    },
     partialPayments() {
       return (this.record?.payments || [])
         .slice()
@@ -362,6 +373,22 @@ export default {
 
 .ap-detail-info-value-amount {
   color: #1f6b56;
+}
+
+.ap-detail-info-value-overdue {
+  color: #b91c1c;
+}
+
+.ap-overdue-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .ap-detail-status-chip {

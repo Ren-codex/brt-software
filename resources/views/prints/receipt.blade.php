@@ -35,8 +35,17 @@
             border-radius: 4px;
         }
         .company-name { font-size: 20px; font-weight: bold; color: #1a1a1a; margin: 0; }
-        .order-title { font-size: 26px; font-weight: bold; text-align: right; margin: 0; }
+        .order-title { font-size: 26px; font-weight: bold; text-align: right; margin: 0 0 8px 0; }
         .order-info { text-align: right; font-size: 13px; }
+        .order-meta-table { width: 100%; border-collapse: collapse; }
+        .order-meta-label {
+            font-size: 10px;
+            font-weight: bold;
+            text-align: right;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+        }
+        .order-meta-value { text-align: right; font-size: 13px; padding: 2px 0 8px 0; }
 
         /* Address & Total Section */
         .summary-container { width: 100%; display: table; margin-bottom: 15px; }
@@ -53,7 +62,7 @@
             font-weight: bold;
             border-bottom: 1px solid #ccc;
             margin-bottom: 5px;
-            display: inline-block;
+            display: block;
             width: 90%;
         }
 
@@ -77,6 +86,11 @@
         /* Footer */
         .footer-table { width: 100%; margin-top: 30px; }
         .grand-total-box { background-color: #D5DBDB; padding: 10px; font-weight: bold; }
+        .sales-rep-box {
+            display: inline-block;
+            border: 1px solid #BDC3C7;
+            padding: 8px 12px;
+        }
     </style>
 </head>
 <body>
@@ -111,10 +125,22 @@
                 <h1 class="company-name">BOUYANT RICE TRADING</h1>
                 Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
             </td>
-            <td class="order-info">
+            <td class="order-info" style="width: 160px;">
                 <h2 class="order-title">{{ $isUpdatedReceipt ? 'Updated Receipt' : ($isRefundReceipt ? 'Refund Receipt' : 'Receipt') }}</h2>
-                #{{ $receiptNumber }}<br>
-                {{ $receiptDate }}
+                <table class="order-meta-table">
+                    <tr>
+                        <td class="order-meta-label">Date</td>
+                    </tr>
+                    <tr>
+                        <td class="order-meta-value">{{ $receiptDate }}</td>
+                    </tr>
+                    <tr>
+                        <td class="order-meta-label">Receipt No.</td>
+                    </tr>
+                    <tr>
+                        <td class="order-meta-value">{{ $receiptNumber }}</td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
@@ -122,13 +148,13 @@
     <div class="summary-container">
         <div class="address-block">
             <div class="address-label">Bill To</div>
-            <strong>{{ optional($customer)->name ?? '-' }}</strong><br>
-            {!! nl2br(e(optional($customer)->address ?? '-')) !!}
+            <strong>{{ optional($customer)->name ?? '---' }}</strong><br>
+            {!! nl2br(e(optional($customer)->address ?? '---')) !!}
         </div>
         <div class="address-block">
             <div class="address-label">Ship To</div>
-            <strong>{{ optional($customer)->name ?? '-' }}</strong><br>
-            {!! nl2br(e(optional($customer)->address ?? '-')) !!}
+            <strong>{{ optional($customer)->name ?? '---' }}</strong><br>
+            {!! nl2br(e(optional($customer)->address ?? '---')) !!}
         </div>
         <div class="total-block">
             <div style="text-align: left; font-weight: bold; font-size: 14px;">
@@ -217,7 +243,9 @@
                 @elseif($isRefundReceipt)
                 <strong>Refund Amount:</strong> PHP {{ number_format((float) ($receipt->amount_paid ?? 0), 2) }}<br><br>
                 @endif
-                <strong>Sales Rep:</strong> {{ optional($sales_order)->salesRep->fullname ?? '---' }}
+                <div class="sales-rep-box" style="margin-top: 8px;">
+                    <strong>Sales Rep:</strong> {{ optional($sales_order)->salesRep->fullname ?? '---' }}
+                </div>
             </td>
             <td style="width: 300px;">
                 <table style="width: 100%; border-collapse: collapse;">

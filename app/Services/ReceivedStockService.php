@@ -51,6 +51,7 @@ class ReceivedStockService
             $bankAccountId   = $isBankTransfer ? (int) ($data['bank_account_id'] ?? 0) ?: null : null;
             $bankName        = $isBankTransfer ? trim((string) ($data['bank_name'] ?? '')) : null;
             $referenceNumber = $isBankTransfer ? trim((string) ($data['reference_number'] ?? '')) : null;
+            $dueDate         = $paymentMode === 'Credit' ? ($data['due_date'] ?? null) : null;
 
             $receivedStock = ReceivedStock::create([
                 'po_id' => $data['po_id'],
@@ -58,6 +59,7 @@ class ReceivedStockService
                 'received_date' => Carbon::now(),
                 'received_no' => $this->series_service->get('received_no'),
                 'payment_mode' => $paymentMode,
+                'due_date' => $dueDate,
                 'amount_paid' => $amountPaid,
                 'bank_account_id' => $bankAccountId,
                 'bank_name' => $bankName,
@@ -176,6 +178,7 @@ class ReceivedStockService
                 $data['amount_paid'] = 0;
                 $data['bank_name'] = null;
                 $data['reference_number'] = null;
+                $data['due_date'] = $data['due_date'] ?? $receivedStock->due_date;
             } elseif (!isset($data['amount_paid']) || $data['amount_paid'] === null || $data['amount_paid'] === '') {
                 $data['amount_paid'] = $data['payment_mode'] === 'Credit'
                     ? 0
@@ -191,6 +194,9 @@ class ReceivedStockService
             } elseif ($data['payment_mode'] !== 'Credit') {
                 $data['bank_name'] = null;
                 $data['reference_number'] = null;
+            }
+            if ($data['payment_mode'] !== 'Credit') {
+                $data['due_date'] = null;
             }
             $receivedStock->update($data);
 
