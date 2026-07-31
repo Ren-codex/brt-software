@@ -96,7 +96,9 @@ export default {
         },
 
         submit() {
-            this.form.post(`remittances/${this.item.id}/approve`, {
+            // Absolute path: the relative form resolved against the current URL
+            // and broke on any route deeper than /remittances.
+            this.form.post(`/remittances/${this.item.id}/approve`, {
                 onSuccess: () => {
                     this.saveSuccess = true;
                     setTimeout(() => {
