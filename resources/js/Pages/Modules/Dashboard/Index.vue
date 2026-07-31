@@ -5,14 +5,36 @@
 
     <!-- Modern Tab Design -->
     <div class="tab-container">
-        <div class="tab-buttons">
-            <button v-for="tab in tabs" :key="tab.value"
+        <div v-if="visibleTabs.length" class="tab-buttons">
+            <button v-for="tab in visibleTabs" :key="tab.value"
                     @click="activeTab = tab.value"
                     :class="['tab-btn', { active: activeTab === tab.value }]">
                 <i :class="tab.icon"></i>
                 <span>{{ tab.label }}</span>
             </button>
         </div>
+
+        <button type="button" class="manual-btn" @click="showManual = true">
+            <span class="manual-btn-book">
+                <i class="ri-book-open-line"></i>
+            </span>
+            <span class="manual-btn-text">
+                <strong>User Manual</strong>
+                <small>Roles &amp; system processes</small>
+            </span>
+            <i class="ri-arrow-right-up-line manual-btn-arrow"></i>
+        </button>
+    </div>
+
+    <UserManualBook v-model="showManual" />
+
+    <!-- No dashboard section is available for this user's role -->
+    <div v-if="!visibleTabs.length" class="dashboard-empty">
+        <i class="ri-lock-2-line"></i>
+        <h3>No dashboard sections for your role</h3>
+        <p>Your account does not have access to the Sales, Inventory or Team summaries.
+           Open the User Manual above to see what your role covers, or ask an Administrator
+           if you think this is wrong.</p>
     </div>
 
     <!-- Sales Dashboard - Modern Design -->
@@ -336,6 +358,7 @@
 
 <script>
 import PageHeader from '@/Shared/Components/PageHeader.vue';
+import UserManualBook from '@/Shared/Components/UserManual/UserManualBook.vue';
 import VueApexCharts from 'vue3-apexcharts';
 
 export default {
@@ -351,15 +374,28 @@ export default {
     },
     components: {
         PageHeader,
+        UserManualBook,
         apexchart: VueApexCharts
     },
     data() {
         return {
             activeTab: 'sales',
+            showManual: false,
+            // `roles` mirrors the guards in Shared/Layouts/Components/Menu.vue so a
+            // dashboard tab is only offered to whoever can open the matching module.
             tabs: [
-                { label: 'Sales', value: 'sales', icon: 'bx bx-store' },
-                { label: 'Inventory', value: 'inventory', icon: 'bx bx-package' },
-                { label: 'Team', value: 'employee', icon: 'bx bx-user' }
+                {
+                    label: 'Sales', value: 'sales', icon: 'bx bx-store',
+                    roles: ['Administrator', 'Sales Rep', 'Sales Manager']
+                },
+                {
+                    label: 'Inventory', value: 'inventory', icon: 'bx bx-package',
+                    roles: ['Administrator', 'Inventory Manager']
+                },
+                {
+                    label: 'Team', value: 'employee', icon: 'bx bx-user',
+                    roles: ['Administrator', 'Human Resource Officer']
+                }
             ],
             // Demo data
             recentAttendance: [
@@ -375,7 +411,21 @@ export default {
             ]
         };
     },
+    created() {
+        // Without this the default 'sales' tab would still render its content for
+        // a user whose role hides the Sales button.
+        if (!this.visibleTabs.some(tab => tab.value === this.activeTab)) {
+            this.activeTab = this.visibleTabs.length ? this.visibleTabs[0].value : null;
+        }
+    },
     computed: {
+        userRoles() {
+            const shared = this.$page?.props?.roles;
+            return Array.isArray(shared) ? shared : [];
+        },
+        visibleTabs() {
+            return this.tabs.filter(tab => tab.roles.some(role => this.userRoles.includes(role)));
+        },
         salesStats() {
             const s = this.stats || {};
             return [
@@ -570,6 +620,11 @@ export default {
 
 .tab-container {
     margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .tab-buttons {
@@ -579,6 +634,102 @@ export default {
     padding: 0.5rem;
     border-radius: 16px;
     max-width: 500px;
+    flex: 1 1 auto;
+}
+
+/* Empty state when no tab is permitted */
+.dashboard-empty {
+    background: white;
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.dashboard-empty i {
+    font-size: 2.5rem;
+    color: #94a3b8;
+}
+
+.dashboard-empty h3 {
+    margin: 1rem 0 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.dashboard-empty p {
+    max-width: 460px;
+    margin: 0 auto;
+    color: #64748b;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* User Manual launcher */
+.manual-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 1.15rem;
+    border: 1px solid rgba(46, 139, 87, 0.22);
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #f4fbf7 100%);
+    color: #1e293b;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 4px 14px rgba(46, 139, 87, 0.08);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.manual-btn:hover {
+    transform: translateY(-2px);
+    border-color: rgba(46, 139, 87, 0.5);
+    box-shadow: 0 10px 26px rgba(46, 139, 87, 0.18);
+}
+
+.manual-btn-book {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #f3ead9;
+    background: linear-gradient(150deg, #2f6d4f 0%, #1d4835 100%);
+    box-shadow: inset -3px 0 6px -3px rgba(0, 0, 0, 0.6);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.manual-btn:hover .manual-btn-book {
+    transform: rotateY(-22deg) scale(1.05);
+}
+
+.manual-btn-text strong {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.manual-btn-text small {
+    display: block;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.manual-btn-arrow {
+    color: #2e8b57;
+    font-size: 1.05rem;
+    opacity: 0.6;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.manual-btn:hover .manual-btn-arrow {
+    opacity: 1;
+    transform: translate(2px, -2px);
 }
 
 .tab-btn {
@@ -1180,6 +1331,13 @@ export default {
     }
     .tab-buttons {
         flex-direction: column;
+    }
+    .tab-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .manual-btn {
+        width: 100%;
     }
 }
 </style>
