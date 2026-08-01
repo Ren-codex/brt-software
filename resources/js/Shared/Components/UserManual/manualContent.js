@@ -4,10 +4,20 @@
  * Written for someone on their first day. Assume no prior knowledge: spell out
  * where to click, what will appear, and what to do when it does not.
  *
- * Pages are rendered two-up as a book spread. `pages` is a flat, ordered list:
- * index 0 is the front cover, the final entry is the back cover, and everything
- * in between is a printed page. The book component pads the list so the back
- * cover always lands on the reverse side of a sheet.
+ * The manual ships in English and Tagalog. Both language variants share the
+ * exact same page `id`, `kind`, `part` and `roleKey` values so that the TOC,
+ * role-audience filtering and page-jump logic in UserManualBook.vue work
+ * identically no matter which language array is in use — only the displayed
+ * text differs. On-screen system labels (menu names, statuses, module names
+ * such as "Sales Management" or "Purchase Order") are deliberately left in
+ * English in both variants, since the running application itself is in
+ * English and a translated label would no longer match what the reader sees
+ * on their screen.
+ *
+ * Pages are rendered two-up as a book spread. Each `pagesXx` array is flat and
+ * ordered: index 0 is the front cover, the final entry is the back cover, and
+ * everything in between is a printed page. The book component pads the list
+ * so the back cover always lands on the reverse side of a sheet.
  *
  * Block types understood by the renderer:
  *   lead   { text }                     - opening paragraph, larger type
@@ -40,9 +50,15 @@ export const PART_START = 'Getting Started';
 export const PART_ROLES = 'Roles & Access';
 export const PART_PROCESS = 'System Processes';
 
+const PART_START_TL = 'Mga Unang Hakbang';
+const PART_ROLES_TL = 'Mga Tungkulin & Access';
+const PART_PROCESS_TL = 'Mga Proseso ng Sistema';
+
 /**
  * Role names as they are actually enforced in the UI and route middleware
- * (see Shared/Layouts/Components/Menu.vue and routes/web.php).
+ * (see Shared/Layouts/Components/Menu.vue and routes/web.php). Names are not
+ * translated: they are matched directly against the role names assigned in
+ * the database and shown as-is in both language variants.
  */
 export const roles = [
     {
@@ -82,7 +98,96 @@ export const roles = [
     },
 ];
 
-const rawPages = [
+/** Static chrome text for the book UI itself (toolbar, nav, small labels). */
+export const UI_STRINGS = {
+    en: {
+        bookTitle: 'User Manual',
+        bookSubtitle: 'Roles & system processes',
+        contents: 'Contents',
+        cover: 'Cover',
+        myRole: 'My role',
+        everything: 'Everything',
+        previous: 'Previous',
+        next: 'Next',
+        frontCover: 'Front cover',
+        backCover: 'Back cover',
+        pagesOf: (left, right, last) => `Pages ${left}–${right} of ${last}`,
+        closeManual: 'Close manual',
+        previousPage: 'Previous page',
+        nextPage: 'Next page',
+        yourRole: 'Your role',
+        openHint: 'Click the page edge to open',
+        blankPage: 'This page intentionally left blank',
+        switchTo: 'Tagalog',
+    },
+    tl: {
+        bookTitle: 'Manwal ng Gumagamit',
+        bookSubtitle: 'Mga tungkulin at proseso ng sistema',
+        contents: 'Nilalaman',
+        cover: 'Pabalat',
+        myRole: 'Aking Tungkulin',
+        everything: 'Lahat',
+        previous: 'Nakaraan',
+        next: 'Susunod',
+        frontCover: 'Harap na pabalat',
+        backCover: 'Likod na pabalat',
+        pagesOf: (left, right, last) => `Pahina ${left}–${right} ng ${last}`,
+        closeManual: 'Isara ang manwal',
+        previousPage: 'Nakaraang pahina',
+        nextPage: 'Susunod na pahina',
+        yourRole: 'Iyong tungkulin',
+        openHint: 'I-click ang gilid ng pahina para buksan',
+        blankPage: 'Sadyang iniwang walang laman ang pahinang ito',
+        switchTo: 'English',
+    },
+};
+
+/**
+ * Which roles each page is written for, by page id. Shared by both language
+ * variants since ids match one-to-one.
+ *
+ * A page listed here is shown only to those roles while the reader has the
+ * "My role" filter on, so a Sales Rep opens the book and finds their own job
+ * rather than everyone else's. Any page NOT listed here is considered general
+ * and is always shown — that covers the cover, contents, all of Getting
+ * Started, the access matrix and the reference pages at the back.
+ *
+ * Values are role `key`s from the `roles` array above.
+ */
+const AUDIENCE = {
+    // Part II - each role reads only its own pages
+    'role-administrator': ['administrator'],
+    'role-administrator-day': ['administrator'],
+    'role-sales-rep': ['sales-rep'],
+    'role-sales-rep-day': ['sales-rep'],
+    'role-sales-manager': ['sales-manager'],
+    'role-inventory-manager': ['inventory-manager'],
+    'role-inventory-manager-day': ['inventory-manager'],
+    'role-hr-officer': ['hr-officer'],
+
+    // Part III - processes go to whoever actually performs them
+    'process-sales': ['sales-rep', 'administrator'],
+    'process-receipt': ['sales-rep', 'administrator'],
+    'process-ar': ['sales-rep', 'administrator'],
+    'process-customers': ['sales-manager', 'administrator'],
+    'process-purchasing': ['inventory-manager', 'administrator'],
+    'process-receiving': ['inventory-manager', 'administrator'],
+    'process-inventory': ['inventory-manager', 'administrator'],
+    'process-employees': ['hr-officer', 'administrator'],
+    'process-payroll': ['hr-officer', 'administrator'],
+    'process-loans': ['hr-officer', 'administrator'],
+    'process-libraries': ['administrator'],
+    'process-expenses': ['administrator'],
+};
+
+const withAudience = (list) => list.map((page) => (
+    AUDIENCE[page.id] ? { ...page, audience: AUDIENCE[page.id] } : page
+));
+
+/* =========================================================================
+ * ENGLISH
+ * ========================================================================= */
+const rawPagesEn = [
     /* ---------------------------------------------------------------- 0 */
     {
         id: 'cover',
@@ -1228,43 +1333,1154 @@ const rawPages = [
     },
 ];
 
-/**
- * Which roles each page is written for, by page id.
- *
- * A page listed here is shown only to those roles while the reader has the
- * "My role" filter on, so a Sales Rep opens the book and finds their own job
- * rather than everyone else's. Any page NOT listed here is considered general
- * and is always shown — that covers the cover, contents, all of Getting
- * Started, the access matrix and the reference pages at the back.
- *
- * Values are role `key`s from the `roles` array above.
- */
-const AUDIENCE = {
-    // Part II - each role reads only its own pages
-    'role-administrator': ['administrator'],
-    'role-administrator-day': ['administrator'],
-    'role-sales-rep': ['sales-rep'],
-    'role-sales-rep-day': ['sales-rep'],
-    'role-sales-manager': ['sales-manager'],
-    'role-inventory-manager': ['inventory-manager'],
-    'role-inventory-manager-day': ['inventory-manager'],
-    'role-hr-officer': ['hr-officer'],
+/* =========================================================================
+ * TAGALOG
+ * ========================================================================= */
+const rawPagesTl = [
+    /* ---------------------------------------------------------------- 0 */
+    {
+        id: 'cover',
+        kind: 'cover',
+        title: 'Manwal ng Gumagamit',
+        subtitle: 'Gabay para sa unang araw sa sistema, mga tungkulin, at kung paano nagagawa ang trabaho',
+        edition: 'BRT Software — Gabay sa Operasyon',
+    },
 
-    // Part III - processes go to whoever actually performs them
-    'process-sales': ['sales-rep', 'administrator'],
-    'process-receipt': ['sales-rep', 'administrator'],
-    'process-ar': ['sales-rep', 'administrator'],
-    'process-customers': ['sales-manager', 'administrator'],
-    'process-purchasing': ['inventory-manager', 'administrator'],
-    'process-receiving': ['inventory-manager', 'administrator'],
-    'process-inventory': ['inventory-manager', 'administrator'],
-    'process-employees': ['hr-officer', 'administrator'],
-    'process-payroll': ['hr-officer', 'administrator'],
-    'process-loans': ['hr-officer', 'administrator'],
-    'process-libraries': ['administrator'],
-    'process-expenses': ['administrator'],
-};
+    /* ---------------------------------------------------------------- 1 */
+    {
+        id: 'how-to-use',
+        kind: 'plain',
+        kicker: 'Basahin muna ito',
+        title: 'Paano gamitin ang manwal na ito',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Hindi mo kailangang basahin ito mula simula hanggang dulo. Ginawa itong mabuksan sa pahinang kailangan mo, sa araw na kailangan mo ito.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Bago lang dito? Magsimula sa Mga Unang Hakbang',
+                        text: 'Ipinapaliwanag dito kung para saan ang sistema, paano mag-log in, at kung ano ang tawag sa bawat bagay na makikita mo sa screen.',
+                    },
+                    {
+                        title: 'Pagkatapos, basahin ang para sa iyong tungkulin',
+                        text: 'Sasabihin sa iyo ng Bahagi I kung aling mga menu ang makikita mo at kung ano ang responsibilidad mo.',
+                    },
+                    {
+                        title: 'Panatilihing bukas ang Bahagi II habang nagtatrabaho',
+                        text: 'Nakasulat ang bawat gawain bilang mga hakbang na may numero na masusundan mo.',
+                    },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'tip',
+                title: 'Pagbaling ng pahina',
+                text: 'I-click ang labas na gilid ng pahina, gamitin ang kaliwa at kanang arrow key, o pumili ng kabanata mula sa listahan sa kaliwa. Pindutin ang Esc para isara ang aklat.',
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Mga diagram lang ang mga larawan',
+                text: 'Ipinapakita ng mga guhit ang hugis at ayos ng bawat screen para alam mo kung ano ang hahanapin. Ang totoong screen mo ay may aktwal na mga pangalan at numero.',
+            },
+        ],
+    },
 
-export const pages = rawPages.map((page) => (
-    AUDIENCE[page.id] ? { ...page, audience: AUDIENCE[page.id] } : page
-));
+    /* ---------------------------------------------------------------- 2 */
+    {
+        id: 'contents',
+        kind: 'toc',
+        kicker: 'Nabigasyon',
+        title: 'Nilalaman',
+    },
+
+    /* ---------------------------------------------------------------- 3 */
+    {
+        id: 'part-start',
+        kind: 'part',
+        part: PART_START_TL,
+        number: 'Bahagi I',
+        title: 'Mga Unang Hakbang',
+        blurb: 'Para sa iyong unang araw. Walang ipinapalagay na dating kaalaman.',
+    },
+
+    /* ---------------------------------------------------------------- 4 */
+    {
+        id: 'what-is-this',
+        kind: 'plain',
+        part: PART_START_TL,
+        kicker: 'Bahagi I · Oryentasyon',
+        title: 'Para saan ang sistemang ito',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Sinusubaybayan ng sistemang ito ang apat na bagay: ang binibili ng negosyo, ang hawak nitong stock, ang ibinebenta nito, at kung sino ang binabayaran nito. Ang bawat screen na gagamitin mo ay kabilang sa isa sa apat na ito.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Bumibili kami',
+                        text: 'Nagpapadala ng purchase order sa isang supplier. Kapag dumating ang mga paninda, itinatala ang mga ito bilang natanggap na stock.',
+                    },
+                    {
+                        title: 'Iniingatan namin',
+                        text: 'Tumataas ang stock kapag dumating ang paninda at bumababa kapag naibenta. Bibigyan ka ng babala ng sistema kapag paubos na ang isang item.',
+                    },
+                    {
+                        title: 'Nagbebenta kami',
+                        text: 'Itinatala ng sales order kung ano ang binili ng customer. Itinatala ng receipt kung magkano ang binayad nila.',
+                    },
+                    {
+                        title: 'Nagbabayad kami',
+                        text: 'Binabayaran ang mga empleyado sa pamamagitan ng payroll, bawas ang anumang bayad sa loan at iba pang deductions.',
+                    },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Bakit mahalaga ito',
+                text: 'Magkakaugnay ang apat na daloy na ito. Ang benta ay nagpapababa ng stock. Ang mababang stock ay nagiging dahilan ng pagbili. Ang bawat screen ay isang hakbang sa isa sa mga kadenang ito, kaya naman ang paglagay ng impormasyon sa maling lugar ay nagdudulot ng problema sa hinaharap.',
+            },
+        ],
+    },
+
+    /* ---------------------------------------------------------------- 5 */
+    {
+        id: 'first-login',
+        kind: 'plain',
+        part: PART_START_TL,
+        kicker: 'Bahagi I · Hakbang-hakbang',
+        title: 'Ang iyong unang pag-sign in',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'login',
+                caption: 'Ang sign-in screen. Ang iyong username ay hindi ang iyong email address.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Buksan ang address',
+                        text: 'Gamitin ang web address na ibinigay sa iyo ng iyong Administrator. I-bookmark ito.',
+                    },
+                    {
+                        title: 'I-type ang iyong username',
+                        text: 'Ito ang maikling pangalang ibinigay sa iyo, hindi ang buo mong email.',
+                    },
+                    {
+                        title: 'I-type ang iyong password',
+                        text: 'Kung ito ang unang pagkakataon mo, gamitin ang pansamantalang password na ipinadala sa iyo.',
+                    },
+                    {
+                        title: 'Palitan ang iyong password',
+                        text: 'Agad na itakda ang sarili mong password. Walang ibang dapat makaalam nito, kabilang na ang iyong supervisor.',
+                    },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Kung hindi ka mapapasok',
+                text: 'Huwag paulit-ulit na susubukan. Maaaring hindi pa na-activate ang account mo, o hindi pa na-verify ang iyong email address. Hilingin sa isang Administrator na tingnan pareho.',
+            },
+        ],
+    },
+
+    /* ---------------------------------------------------------------- 6 */
+    {
+        id: 'screen-tour',
+        kind: 'plain',
+        part: PART_START_TL,
+        kicker: 'Bahagi I · Oryentasyon',
+        title: 'Ang tawag sa bawat bagay',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'sidebar',
+                caption: 'Ang madilim na guhit sa kaliwa ay ang menu. Ang malaking bahagi sa kanan ay ang pahina.',
+                callouts: ['Ang mga menu item na wala kang pahintulot ay hindi lang ipinapakita'],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Menu (o sidebar) — ang madilim na guhit sa kaliwa. Dito naaabot ang bawat bahagi ng sistema.',
+                    'Page (Pahina) — ang malaking puting bahagi. Nagbabago ito kapag nag-click ka ng menu item.',
+                    'List (Listahan) — karamihan sa mga pahina ay bumubukas bilang listahan ng mga umiiral na record, pinakabago muna.',
+                    'Record — isang hilera sa listahang iyon: isang benta, isang empleyado, isang purchase order.',
+                    'Form — ang screen kung saan mo ipinapasok ang bagong record o ineedit ang isang umiiral na.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'tip',
+                title: 'Mas maikli ang menu mo kaysa sa kasamahan mo',
+                text: 'Normal lang iyon at hindi kamalian. Ipinapakita lang ng menu ang pinapayagang buksan ng iyong tungkulin. Ipinapaliwanag sa Bahagi II kung sino ang nakakakita ng ano.',
+            },
+        ],
+    },
+
+    /* ---------------------------------------------------------------- 7 */
+    {
+        id: 'dashboard-tour',
+        kind: 'plain',
+        part: PART_START_TL,
+        kicker: 'Bahagi I · Oryentasyon',
+        title: 'Ang iyong home screen',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'dashboard',
+                caption: 'Ang dashboard. May mga tab sa itaas, mga summary card sa ibaba, at mga chart pa pababa.',
+            },
+            {
+                type: 'p',
+                text: 'Ang dashboard ang unang makikita mo pagkatapos mag-sign in. Isa lang itong buod — walang direktang ineedit dito.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Pumili ng tab',
+                        text: 'Ang Sales, Inventory, at Team ay bawat isa ay nagpapakita ng ibang bahagi ng negosyo.',
+                    },
+                    {
+                        title: 'Basahin ang mga card',
+                        text: 'Ipinapakita ng hilera ng mga kahon ang kabuuan sa kasalukuyan, kasama ang pagbabago mula noong nakaraang buwan.',
+                    },
+                    {
+                        title: 'Tingnan ang mga chart',
+                        text: 'Ipinapakita ng mga graph ang trend sa mga nakaraang buwan, para makita mo ang direksyon, hindi lang ang ngayon.',
+                    },
+                    {
+                        title: 'Kumilos base sa mga alerto',
+                        text: 'Nakalista sa Inventory tab ang mga item na paubos na. Ang listahang iyon ang iyong gagawin para sa muling pag-order.',
+                    },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'tip',
+                title: 'Binabasa mo na ito ngayon',
+                text: 'Nasa kanang itaas ng dashboard ang User Manual button. Isang click lang ang layo ng aklat na ito, kahit kailan.',
+            },
+        ],
+    },
+
+    /* ---------------------------------------------------------------- 8 */
+    {
+        id: 'words',
+        kind: 'plain',
+        part: PART_START_TL,
+        kicker: 'Bahagi I · Payak na Paliwanag',
+        title: 'Mga salitang maririnig mo',
+        blocks: [
+            {
+                type: 'p',
+                text: 'Walang magpapaliwanag nito sa iyo nang dalawang beses. Nasa payak na wika ang mga ito dito.',
+            },
+            {
+                type: 'table',
+                head: ['Salita', 'Ang aktwal na kahulugan'],
+                rows: [
+                    ['Sales order', 'Talaan ng binili ng customer'],
+                    ['Receipt', 'Talaan ng pera na binayad ng customer'],
+                    ['AR invoice', 'Bill para sa bentang hindi pa lubos na bayad'],
+                    ['Outstanding', 'Perang utang pa sa amin ng customer'],
+                    ['Remittance', 'Cash na isinasauli ng rep sa opisina'],
+                    ['Purchase order (PO)', 'Order na ipinapadala namin sa supplier'],
+                    ['Received stock', 'Mga paninda na aktwal na dumating mula sa isang PO'],
+                    ['Batch', 'Isang delivery, binigyan ng code para masubaybayan'],
+                    ['Adjustment', 'Pagwawasto sa isang naka-save na record'],
+                    ['Minimum stock', 'Ang level kung saan dapat na kaming mag-order muli'],
+                    ['Payroll run', 'Isang pay period na kinakalkula'],
+                    ['Deduction', 'Perang bawas sa sahod, hal. bayad sa loan'],
+                    ['Library', 'Master list na pinagmumulan ng laman ng mga dropdown'],
+                    ['Role', 'Ang pinapayagan mong buksan at gawin'],
+                ],
+            },
+        ],
+    },
+
+    /* ---------------------------------------------------------------- 9 */
+    {
+        id: 'golden-rules',
+        kind: 'plain',
+        part: PART_START_TL,
+        kicker: 'Bahagi I · Mga Ugali',
+        title: 'Anim na patakaran na nagpapanatili sa iyong ligtas',
+        blocks: [
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Maghanap muna bago gumawa',
+                        text: 'Ang duplicate na customer at produkto ang pinakakaraniwang pagkakamali. Tumingin muna.',
+                    },
+                    {
+                        title: 'Iwasto, huwag burahin',
+                        text: 'Gumamit ng adjustment. Ang pagbura ay sumisira sa history na inaasahan ng mga report at audit.',
+                    },
+                    {
+                        title: 'I-deactivate, huwag alisin',
+                        text: 'Kapag may umalis o may produktong hindi na ginagawa, gawin itong inactive. Kailangan pa rin ito ng mga lumang record.',
+                    },
+                    {
+                        title: 'Ilagay ang aktwal na nangyari',
+                        text: 'Itala ang aktwal na dami na na-deliver at ang aktwal na halagang binayad, kahit iba ito sa inaasahan.',
+                    },
+                    {
+                        title: 'Tapusin ang sinimulan',
+                        text: 'Ang kalahating na-enter na order ay humaharang sa susunod na tao. Tapusin ito o kanselahin.',
+                    },
+                    {
+                        title: 'Magtanong bago mag-approve',
+                        text: 'Ang approval ay parang pirma. Kung hindi ka sigurado, magtanong muna — mas mahirap bawiin ito.',
+                    },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Ang isang bagay na hinding-hindi dapat gawin',
+                text: 'Huwag kailanman ibahagi ang iyong sign-in. Naitatala sa bawat record kung sino ang gumawa nito. Kung may gumamit ng account mo, ang pagkakamali nila ay magdadala ng pangalan mo.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 10 */
+    {
+        id: 'part-roles',
+        kind: 'part',
+        part: PART_ROLES_TL,
+        number: 'Bahagi II',
+        title: 'Mga Tungkulin & Access',
+        blurb: 'Sino ang pwedeng gumawa ng ano, at saan ito matatagpuan sa menu.',
+    },
+
+    /* --------------------------------------------------------------- 11 */
+    {
+        id: 'role-administrator',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'administrator',
+        kicker: 'Bahagi II · Tungkulin',
+        title: 'Administrator',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Buong access sa lahat. Ang Administrator lang ang tungkuling pinapayagang pumasok sa users, libraries, purchasing, payroll, loans, at expenses.',
+            },
+            {
+                type: 'grid',
+                items: [
+                    { label: 'Menu access', value: 'Lahat' },
+                    { label: 'Karaniwang may-hawak', value: 'May-ari ng sistema / IT' },
+                    { label: 'Ina-approve', value: 'Remittances, payroll' },
+                    { label: 'Namamahala ng roles', value: 'Oo' },
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Gumawa ng user account at magbigay o mag-alis ng roles.',
+                    'Alagaan ang bawat library: products, brands, units, locations, statuses, suppliers, positions, roles.',
+                    'Mag-approve ng remittances at ipagpatuloy ang payroll at purchase orders.',
+                    'Basahin ang guest messages na ipinadala mula sa pampublikong contact form.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Ingatan sa paggamit',
+                text: 'Agad na magkakabisa ang pag-deactivate ng user o role. Walang babala at walang grace period.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 12 */
+    {
+        id: 'role-administrator-day',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'administrator',
+        kicker: 'Bahagi II · Administrator',
+        title: 'Isang araw bilang Administrator',
+        blocks: [
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Tingnan ang dashboard',
+                        text: 'Ang mga tab na Sales, Inventory, at Team ay nagbibigay ng kalusugan ng negosyo sa isang screen.',
+                    },
+                    {
+                        title: 'Linisin ang mga approval',
+                        text: 'Ang mga remittance na naghihintay ng approval, at ang mga payroll na nasa Draft, ay humaharang sa lahat pagkatapos nito.',
+                    },
+                    {
+                        title: 'Suriin ang stock alerts',
+                        text: 'Gumawa ng purchase order para sa anumang naka-flag na Low o Critical bago ito maubos.',
+                    },
+                    {
+                        title: 'I-audit ang mga account',
+                        text: 'Sa ilalim ng Accounts, i-deactivate ang sinumang umalis na at tiyaking walang humahawak ng role na hindi na nila kailangan.',
+                    },
+                ],
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 13 */
+    {
+        id: 'role-sales-rep',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'sales-rep',
+        kicker: 'Bahagi II · Tungkulin',
+        title: 'Sales Rep',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Ang unahan. Itinatala ng Sales Rep ang binibili ng mga customer, kinokolekta ang pera, at isinasauli ito sa opisina.',
+            },
+            {
+                type: 'grid',
+                items: [
+                    { label: 'Menu access', value: 'Sales Management, Payroll' },
+                    { label: 'Ginagawa mo', value: 'Sales orders, receipts' },
+                    { label: 'Hindi mo magagawa', value: 'I-edit ang libraries o users' },
+                    { label: 'Nag-uulat kay', value: 'Sales Manager' },
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Itala ang benta laban sa isang customer at ang mga produktong binili nila.',
+                    'Kolektahin ang bayad at maglabas ng receipt na magsasara sa order.',
+                    'Isauli ang cash sa opisina sa pamamagitan ng remittance.',
+                    'Subaybayan kung sinong mga customer ang may utang pa.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Bumababa ang stock kapag nagbenta ka',
+                text: 'Ang pag-save ng order ay nagpapababa ng bilang ng stock. Kung hindi lumalabas ang isang produkto sa listahan, tingnan muna kung naubos ito bago ipagpalagay na sira ang screen.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 14 */
+    {
+        id: 'role-sales-rep-day',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'sales-rep',
+        kicker: 'Bahagi II · Sales Rep',
+        title: 'Isang araw bilang Sales Rep',
+        blocks: [
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Buksan ang Sales Management',
+                        text: 'Suriin ang mga order kahapon at ang anumang minarkahang Unpaid o Partially Paid pa.',
+                    },
+                    {
+                        title: 'Itala ang mga bagong order',
+                        text: 'Isang order bawat transaksyon ng customer. Idagdag ang bawat linya bago i-save.',
+                    },
+                    {
+                        title: 'Maglabas ng receipts',
+                        text: 'Itala ang bayad habang kinokolekta mo ito, para lumipat ang order sa Paid.',
+                    },
+                    {
+                        title: 'Mag-remit sa katapusan ng araw',
+                        text: 'Magsumite ng remittance na sasaklaw sa cash na nakolekta mo. Aaprubahan ito ng isang Administrator.',
+                    },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'tip',
+                title: 'Nagkamali?',
+                text: 'Ang naka-save nang order ay maaari pa ring iwasto gamit ang adjustment. Hindi mo na kailangang burahin ito at magsimula ulit.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 15 */
+    {
+        id: 'role-sales-manager',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'sales-manager',
+        kicker: 'Bahagi II · Tungkulin',
+        title: 'Sales Manager',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'May-ari ng listahan ng customer. Binubuksan ng tungkuling ito ang Customers menu, kung saan pinananatiling updated ang mga account at contact details.',
+            },
+            {
+                type: 'grid',
+                items: [
+                    { label: 'Menu access', value: 'Customers, Payroll' },
+                    { label: 'Pag-aari mo', value: 'Customer records' },
+                    { label: 'Binabantayan mo', value: 'Perang utang sa amin' },
+                    { label: 'Hindi mo magagawa', value: 'I-approve ang remittances' },
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Gumawa at alagaan ang mga customer record na pinipilian ng bawat sales order.',
+                    'Panatilihing updated ang mga address at contact number para dumating ang mga delivery at invoice.',
+                    'Bantayan kung sinong mga customer ang may pinakamalaking hindi bayad na balanse.',
+                    'Makipagtulungan sa mga Administrator tungkol sa incentives na binabayaran sa pamamagitan ng payroll.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Huwag kailanman gumawa ng duplicate na customer',
+                text: 'Maghanap muna. Ang dalawang record para sa isang customer ay naghahati sa kanilang payment history at halos imposible nang mangolekta.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 16 */
+    {
+        id: 'role-inventory-manager',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'inventory-manager',
+        kicker: 'Bahagi II · Tungkulin',
+        title: 'Inventory Manager',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Lahat ng dumarating at lahat ng nasa istante. Sinasaklaw ng tungkuling ito ang purchase orders, mga delivery, at stock levels.',
+            },
+            {
+                type: 'grid',
+                items: [
+                    { label: 'Menu access', value: 'Inventory Management' },
+                    { label: 'Ginagawa mo', value: 'POs, received stock' },
+                    { label: 'Inaalagaan mo', value: 'Stock levels, batches' },
+                    { label: 'Nakikipagtulungan ka sa', value: 'Suppliers' },
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Magpadala ng purchase order sa mga supplier at subaybayan kung nasaan na ang bawat isa.',
+                    'Tanggapin ang mga delivery sa batches, na itinatala kung ano ang aktwal na dumating.',
+                    'Mag-post ng adjustment kapag hindi tugma ang physical count sa sistema.',
+                    'I-update ang selling price na nakatakda sa stock.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Mahalaga ang batches',
+                text: 'Bawat delivery ay binibigyan ng batch code. Ang pagtanggap ng paninda sa maling batch ay nagpapahirap masubaybayan ang stock sa hinaharap.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 17 */
+    {
+        id: 'role-inventory-manager-day',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'inventory-manager',
+        kicker: 'Bahagi II · Inventory Manager',
+        title: 'Isang araw bilang Inventory Manager',
+        blocks: [
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Basahin ang low stock alert',
+                        text: 'Nakalista sa Inventory tab ng dashboard ang lahat ng nasa ibaba ng minimum nito, pinakamalala muna.',
+                    },
+                    {
+                        title: 'Gumawa ng purchase order',
+                        text: 'Awtomatikong nalalagay ang PO number. Piliin ang supplier, idagdag ang mga item, i-save.',
+                    },
+                    {
+                        title: 'Tanggapin ang mga delivery',
+                        text: 'Itugma ang delivery sa bukas nitong PO at itala ito sa ilalim ng batch code.',
+                    },
+                    {
+                        title: 'I-reconcile',
+                        text: 'Kapag iba ang count sa sistema, mag-post ng adjustment na may dahilan.',
+                    },
+                ],
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 18 */
+    {
+        id: 'role-hr-officer',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'hr-officer',
+        kicker: 'Bahagi II · Tungkulin',
+        title: 'Human Resource Officer',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Operasyon ukol sa mga tao. Binubuksan ng tungkuling ito ang mga menu na Employees at Loans, at inihahanda ang impormasyong pinagbabatayan ng payroll.',
+            },
+            {
+                type: 'grid',
+                items: [
+                    { label: 'Menu access', value: 'Employees, Loans, Accounts' },
+                    { label: 'Inaalagaan mo', value: 'Employee records' },
+                    { label: 'Pinoproseso mo', value: 'Loans, deductions' },
+                    { label: 'Hindi mo magagawa', value: 'I-edit ang inventory o sales' },
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Gumawa ng employee record at panatilihing tama ang positions, salaries, at locations.',
+                    'Itala ang mga loan at ang deduction schedule na magbabayad nito.',
+                    'Ihanda ang listahan ng mga empleyadong pinagbabatayan ng bawat payroll.',
+                    'Subaybayan ang attendance at leave.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Ang datos ng empleyado ang nagtatakda ng sahod',
+                text: 'Ang position at salary sa employee record ang nagtutulak sa mga figure ng payroll. Ayusin ang mga ito bago ang run, hindi pagkatapos.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 19 */
+    {
+        id: 'role-matrix',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        kicker: 'Bahagi II · Reference',
+        title: 'Access sa isang tingin',
+        blocks: [
+            {
+                type: 'p',
+                text: 'Lumalabas lang ang isang menu item kung nakalista ang iyong role dito. Kung mayroon kang higit sa isang role, makikita mo ang mga menu ng lahat ng ito na pinagsama.',
+            },
+            {
+                type: 'table',
+                head: ['Menu', 'Mga role na nakakakita nito'],
+                rows: [
+                    ['Dashboard', 'Lahat'],
+                    ['Employees', 'HR Officer, Administrator'],
+                    ['Accounts', 'HR Officer, Administrator'],
+                    ['Inventory Management', 'Inventory Manager, Administrator'],
+                    ['Sales Management', 'Sales Rep, Administrator'],
+                    ['Customers', 'Sales Manager, Administrator'],
+                    ['Suppliers', 'Administrator'],
+                    ['Expenses', 'Administrator'],
+                    ['Payroll', 'Sales Rep, Inventory Mgr, Administrator'],
+                    ['Loans', 'HR Officer, Administrator'],
+                    ['Guest Messages', 'Administrator'],
+                    ['Libraries', 'Administrator'],
+                ],
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 20 */
+    {
+        id: 'part-process',
+        kind: 'part',
+        part: PART_PROCESS_TL,
+        number: 'Bahagi III',
+        title: 'Mga Proseso ng Sistema',
+        blurb: 'Bawat gawain, nakasulat bilang mga hakbang na masusundan mo.',
+    },
+
+    /* --------------------------------------------------------------- 21 */
+    {
+        id: 'process-signin',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Mga Account at Seguridad',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Apat na bagay ang dapat totoo bago mabuksan ang anumang pahina: naka-sign in ka, na-verify ang iyong email, aktibo ang iyong account, at naipasa mo ang two-factor kung naka-on ito.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Mag-sign in', text: 'Username at password.' },
+                    { title: 'I-verify ang iyong email', text: 'Hangga\'t hindi mo na-click ang link na ipinadala sa email, ibabalik ka sa verification page.' },
+                    { title: 'Two-factor code', text: 'Kung naka-enable sa iyong account, ilagay ang code mula sa iyong authenticator app.' },
+                    { title: 'Itakda ang sarili mong password', text: 'Ang mga bagong account ay naka-flag para ma-prompt kang palitan ang pansamantalang password.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Naka-lock out',
+                text: 'Ang account na minarkahang inactive ay hindi talaga makaka-sign in, gaano man ka-tama ang password. Isang Administrator lang ang makaka-reactivate nito sa ilalim ng Accounts.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 22 */
+    {
+        id: 'process-sales',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pagtatala ng benta',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'sales-order',
+                caption: 'Isang sales order. Customer sa itaas, isang hilera bawat produkto, kabuuan sa ibaba.',
+                callouts: ['Piliin muna ang customer', 'Isang hilera bawat produkto'],
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Buksan ang Sales Management', text: 'Mula sa menu sa kaliwa, pagkatapos ay magsimula ng bagong order.' },
+                    { title: 'Piliin ang customer', text: 'Maghanap gamit ang pangalan. Kung wala sila, hilingin sa Sales Manager na idagdag sila — huwag gumawa ng peke.' },
+                    { title: 'Idagdag ang bawat produkto', text: 'Isang hilera bawat produkto, kasama ang quantity at price. Idagdag ang bawat item bago i-save.' },
+                    { title: 'Suriin ang kabuuan', text: 'Ikumpara ito sa aktwal na binabayaran ng customer.' },
+                    { title: 'I-save', text: 'Naitatala ang order bilang Unpaid at nababawasan ang stock.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Mga bentang ginawa sa labas ng karaniwang channel',
+                text: 'Napupunta ang mga ito sa ilalim ng Sales Orders External. Parehong hakbang, hiwalay na iniuulat.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 23 */
+    {
+        id: 'process-receipt',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pagtanggap ng bayad',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Sinasabi ng order kung ano ang binili. Sinasabi ng receipt kung magkano ang binayaran. Tapos lang ang benta kapag pareho itong umiiral at magkatugma.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Buksan ang order', text: 'Hanapin ito sa listahan ng Sales Management.' },
+                    { title: 'Itala ang receipt', text: 'Ilagay ang halagang ibinigay at kung paano ito binayaran — cash, card, o bank transfer.' },
+                    { title: 'Panoorin ang pagbabago ng status', text: 'Ang buong bayad ay lumilipat sa Paid. Ang bahagyang bayad ay lumilipat sa Partially Paid.' },
+                    { title: 'Iwanang outstanding ang natitira', text: 'Ang anumang hindi bayad ay mananatiling AR invoice hanggang makolekta ito.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Huwag kailanman mag-receipt ng perang hindi mo pa natatanggap',
+                text: 'Ang receipt ang talaan na umiiral ang cash. Kapag na-enter na, ikaw ang mananagot dito.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 24 */
+    {
+        id: 'process-ar',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pagsauli ng cash sa opisina',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'remittance',
+                caption: 'Kumpleto lang ang remittance kapag na-approve na ito ng isang Administrator.',
+                callouts: ['Ang naisumite ay hindi pareho sa naklir na'],
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Bilangin ang nakolekta mo', text: 'Total ang cash na nakuha mo sa loob ng panahong iyon.' },
+                    { title: 'Gumawa ng remittance', text: 'Ilagay ang halaga at ang panahong sinasaklaw nito.' },
+                    { title: 'Isumite ito', text: 'Naghihintay na ito ngayon sa isang Administrator.' },
+                    { title: 'Ipa-approve ito', text: 'Hangga\'t hindi ito nangyayari, nakatala pa rin ang pera laban sa iyo.' },
+                    { title: 'I-print ang kopya', text: 'Ang na-approve na remittance ay maaaring i-print bilang iyong patunay.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Habulin ang approval',
+                text: 'Ang naisumite ngunit hindi pa na-approve na remittance ay hindi nag-aalis ng iyong pananagutan. I-follow up ito sa parehong araw.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 25 */
+    {
+        id: 'process-customers',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pamamahala ng mga customer',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Bawat sales order ay dapat tumuro sa isang customer record. Ang pananatiling malinis ng listahang iyon ang gumagawang mapagkakatiwalaan ang mga figure ng receivables.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Maghanap muna', text: 'Palagi. Tingnan ang customer sa kahit anong spelling bago gumawa ng bago.' },
+                    { title: 'Gumawa ng record', text: 'Customers, pagkatapos new. Kunin ang business name, contact person, at address.' },
+                    { title: 'Panatilihing updated', text: 'I-update ang phone number at address sa sandaling magbago ang mga ito, o maliligaw ang mga delivery.' },
+                    { title: 'Bantayan ang mga balanse', text: 'Suriin kung sinong mga customer ang may pinakamalaking hindi bayad na halaga at i-follow up sila.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Mahal ang duplicates',
+                text: 'Ang dalawang record para sa parehong customer ay naghahati sa kanilang payment history. Wala sa dalawa ang nagpapakita ng tunay na balanse, at natitigil ang koleksyon.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 26 */
+    {
+        id: 'process-purchasing',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pag-order mula sa supplier',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'purchase-order',
+                caption: 'Isang purchase order at ang tatlong estado na dinadaanan nito.',
+                callouts: ['Awtomatikong nabubuo ang PO number'],
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Buksan ang Purchase Orders', text: 'Sa ilalim ng Inventory Management. Magsimula ng bago.' },
+                    { title: 'Piliin ang supplier', text: 'Mula sa Suppliers library. Awtomatikong napupunan ang PO number.' },
+                    { title: 'Ilista ang kailangan mo', text: 'Isang hilera bawat produkto, kasama ang dami na ini-order.' },
+                    { title: 'I-save at i-print', text: 'I-print ito para ipadala sa supplier.' },
+                    { title: 'Subaybayan ito', text: 'Lumilipat ito mula Pending papuntang Approved hanggang Completed habang umuusad ang mga bagay.' },
+                ],
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 26 */
+    {
+        id: 'process-receiving',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pagtanggap ng delivery',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Sinasabi ng purchase order kung ano ang hiniling mo. Sinasabi ng received stock kung ano ang aktwal na dumating. Kadalasan hindi sila magkapareho, at iyon mismo ang dahilan kung bakit umiiral ang dalawa.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Hanapin ang bukas na PO', text: 'Itugma ang delivery sa order na pinagmulan nito.' },
+                    { title: 'Gumawa ng received stock record', text: 'May nabubuong batch code para sa deliverying ito.' },
+                    { title: 'Bilangin ang dumating', text: 'Personal na bilangin ito. Huwag ipagpalagay na tama ang delivery note.' },
+                    { title: 'Ilagay ang totoong dami', text: 'Itala ang dumating, hindi ang ini-order, kahit kulang ito.' },
+                    { title: 'I-save', text: 'Tumataas ang stock levels ayon sa halagang inilagay mo.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Mga kulang na delivery',
+                text: 'Kung ilalagay mo ang dami na ini-order sa halip na ang dami na na-deliver, aakalain ng sistema na may stock na wala naman sa istante. May magbebenta nito.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 27 */
+    {
+        id: 'process-inventory',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pagbabantay sa stock levels',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'stock-alert',
+                caption: 'Ang low stock alert. Ipinapakita ng kulay kung gaano kaurgent ang bawat item.',
+            },
+            {
+                type: 'table',
+                head: ['Label', 'Ano ang gagawin'],
+                rows: [
+                    ['Good', 'Wala'],
+                    ['Low', 'Mag-order muli sa lalong madaling panahon'],
+                    ['Critical', 'Mag-order muli ngayon'],
+                    ['Out', 'Hindi na maibebenta — mag-order na ngayon'],
+                ],
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Bilangin', text: 'Ikumpara ang aktwal na istante sa figure ng sistema.' },
+                    { title: 'I-adjust', text: 'Mag-post ng adjustment para sa pagkakaiba.' },
+                    { title: 'Sabihin kung bakit', text: 'Pagkasira, pagkabasag, pagkakamali sa pagbilang. Ang adjustment na walang paliwanag ay mukhang pagnanakaw.' },
+                ],
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 28 */
+    {
+        id: 'process-employees',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pagdaragdag ng bagong empleyado',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'employee',
+                caption: 'Isang employee record. Ang position at salary dito ang nagtatakda kung magkano ang babayaran ng payroll.',
+                callouts: ['I-link dito ang sign-in account'],
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Gumawa ng employee', text: 'Employees, pagkatapos new. Punan ang personal details.' },
+                    { title: 'Itakda ang position at salary', text: 'Pinili mula sa libraries. Ito ang nagtutulak sa kanilang sahod.' },
+                    { title: 'Gumawa ng account nila', text: 'Sa ilalim ng Accounts, para makapag-sign in sila.' },
+                    { title: 'Bigyan sila ng role', text: 'Kung walang role, makikita lang nila ang dashboard at wala nang iba.' },
+                    { title: 'Kapag umalis sila', text: 'I-deactivate ang account. Huwag burahin ang empleyado — umaasa dito ang payroll history.' },
+                ],
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 29 */
+    {
+        id: 'process-payroll',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pagpapatakbo ng payroll',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'payroll',
+                caption: 'Isang payroll run, at ang mga estadong dinadaanan nito bago mabayaran ang sinuman.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Tingnan ang settings', text: 'Hawak ng Payroll Settings ang mga rate at deduction na ipinapatupad sa bawat run.' },
+                    { title: 'Buuin ang template', text: 'Gawin ito, pagkatapos idagdag ang mga empleyadong kabilang dito.' },
+                    { title: 'Gumawa ng run', text: 'Gumawa ng payroll para sa panahong iyon mula sa template na iyon.' },
+                    { title: 'Suriin ang bawat linya', text: 'Tingnan ang gross pay, deductions, bayad sa loan, at incentives bawat tao.' },
+                    { title: 'Ipagpatuloy ito', text: 'Draft, pagkatapos approval, pagkatapos For Release, pagkatapos Completed.' },
+                    { title: 'I-print ang payslips', text: 'Kapag na-release na.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Suriin bago mag-approve',
+                text: 'Mas mahirap ayusin ang na-approve nang payroll kaysa suriin ito ng maayos muna.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 30 */
+    {
+        id: 'process-loans',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Mga loan ng empleyado',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Itinatala ang loan nang isang beses, pagkatapos ay awtomatiko na itong nababayaran mula sa bawat payroll hanggang maging zero ang balanse.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Itala ang loan', text: 'Loans, pagkatapos new. Piliin ang empleyado at ilagay ang halaga.' },
+                    { title: 'Itakda ang deduction', text: 'Magkano ang babawasin sa bawat pay period.' },
+                    { title: 'Hayaang payroll ang bahala sa iba', text: 'Bawat run ay babawasin ito at pababababain ang balanse.' },
+                    { title: 'Isara ito', text: 'Kapag lubos nang nabayaran, magiging Closed o Liquidated ito.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Huwag kailanman burahin ang tumatakbong loan',
+                text: 'Nabubura nito ang repayment history at hindi na tumutugma ang mga nakaraang payroll. Isara na lang ito.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 31 */
+    {
+        id: 'process-libraries',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Libraries — ang mga master list',
+        blocks: [
+            {
+                type: 'figure',
+                art: 'libraries',
+                caption: 'Ang walong library. Ang lahat ng pinipili mo sa dropdown ay nanggagaling sa isa sa mga ito.',
+            },
+            {
+                type: 'p',
+                text: 'Kung may nawawalang produkto, supplier, o position sa dropdown, nawawala ito sa library nito — o na-set itong inactive.',
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'I-deactivate, huwag kailanman burahin',
+                text: 'Ang mga lumang order ay tumuturo pa rin sa mga entry na ito. Ang pag-set ng isa bilang inactive ay nagtatago nito sa mga bagong record habang buo pa rin ang history.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 32 */
+    {
+        id: 'process-expenses',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Expenses at guest messages',
+        blocks: [
+            {
+                type: 'p',
+                text: 'Dalawang mas maliit na lugar na para lang sa Administrator.',
+            },
+            {
+                type: 'list',
+                items: [
+                    'Itinatala ng Expenses ang mga tumatakbong gastos na hindi purchases o wages, para kumpleto ang larawan ng profit.',
+                    'Kinokolekta ng Guest Messages ang mga tanong na ipinadala sa pamamagitan ng contact form sa pampublikong website.',
+                    'Markahan ang mensahe bilang read kapag naasikaso na ito.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'tip',
+                title: 'Panatilihing malinis ang inbox',
+                text: 'Ang pagmarka ng mga mensahe bilang read ang tanging paraan para malaman kung alin ang naasikaso na sa mga bago.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 33 */
+    {
+        id: 'reference-statuses',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Reference',
+        title: 'Glossary ng status',
+        blocks: [
+            {
+                type: 'p',
+                text: 'Pareho ang kahulugan ng mga salitang ito kahit saan sila lumabas.',
+            },
+            {
+                type: 'table',
+                head: ['Status', 'Kahulugan'],
+                rows: [
+                    ['Draft', 'Sinimulan, hindi pa naisumite'],
+                    ['Pending', 'Naisumite, naghihintay'],
+                    ['Approval', 'Nasa kamay ng approver'],
+                    ['Approved', 'Pinayagang ipagpatuloy'],
+                    ['Disapproved', 'Tinanggihan, kailangan ayusin muli'],
+                    ['Open', 'Aktibo at ginagawa'],
+                    ['Unpaid', 'Wala pang nakolekta'],
+                    ['Partially Paid', 'May natitirang balanse'],
+                    ['Paid', 'Lubos nang nabayaran'],
+                    ['For Release', 'Pinayagan na, naghihintay ng payout'],
+                    ['For Payment', 'Nasa pila para sa disbursement'],
+                    ['Adjusted', 'Naiwasto pagkatapos i-save'],
+                    ['Sales Returned', 'Nabalik ang paninda'],
+                    ['Liquidated', 'Nabayaran na ang obligasyon'],
+                    ['Completed', 'Tapos na'],
+                    ['Closed', 'Naka-archive'],
+                    ['Cancelled', 'Nakansela bago matapos'],
+                ],
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 34 */
+    {
+        id: 'reference-help',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Reference',
+        title: 'Kapag may nagkamali',
+        blocks: [
+            {
+                type: 'table',
+                head: ['Ano ang nakikita mo', 'Ano karaniwang ibig sabihin nito'],
+                rows: [
+                    ['May nawawalang menu item', 'Hindi kasama ito sa iyong role'],
+                    ['Hindi makapag-sign in', 'Inactive ang account o hindi pa na-verify ang email'],
+                    ['Wala sa listahan ang produkto', 'Ubos na ang stock, o na-set na inactive'],
+                    ['Wala sa listahan ang customer', 'Hindi pa nagawa — tanungin ang Sales Manager'],
+                    ['Mukhang mali ang halaga ng payroll', 'Luma na ang salary o position ng empleyado'],
+                    ['Binabawas pa rin ang loan', 'Hindi pa na-close ang loan'],
+                    ['Hindi pa naklir ang remittance', 'Naghihintay ng approval ng Administrator'],
+                    ['Hindi tugma ang stock sa istante', 'Hindi pa na-post ang adjustment'],
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Paghingi ng tulong',
+                text: 'Sabihin sa Administrator ang tatlong bagay: ang pahinang kinaroroonan mo, ang na-click mo, at ang inaasahan mong mangyari. Karaniwan nang sapat na iyon para agad na maayos ito.',
+            },
+        ],
+    },
+
+    /* --------------------------------------------------------------- 35 */
+    {
+        id: 'back-cover',
+        kind: 'back',
+        title: 'Katapusan ng manwal',
+        subtitle: 'Panatilihing bukas ito habang natututo ka. Wala namang inaasahang maalala lahat nito.',
+    },
+];
+
+export const pagesEn = withAudience(rawPagesEn);
+export const pagesTl = withAudience(rawPagesTl);

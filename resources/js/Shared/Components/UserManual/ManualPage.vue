@@ -10,7 +10,7 @@
         <div class="cover-seal">
             <i class="ri-book-open-line"></i>
         </div>
-        <span class="cover-hint">Click the page edge to open</span>
+        <span class="cover-hint">{{ ui.openHint }}</span>
     </div>
 
     <!-- Back cover -->
@@ -51,7 +51,7 @@
 
     <!-- Blank filler -->
     <div v-else-if="page.kind === 'blank'" class="mp mp--blank">
-        <span class="blank-mark">This page intentionally left blank</span>
+        <span class="blank-mark">{{ ui.blankPage }}</span>
     </div>
 
     <!-- Standard content page -->
@@ -60,7 +60,7 @@
 
         <div class="mp-heading">
             <h2 class="mp-title">{{ page.title }}</h2>
-            <span v-if="isMyRole" class="mp-yours">Your role</span>
+            <span v-if="isMyRole" class="mp-yours">{{ ui.yourRole }}</span>
         </div>
 
         <div class="mp-body">
@@ -122,6 +122,7 @@
 
 <script>
 import ManualFigure from './ManualFigure.vue';
+import { UI_STRINGS } from './manualContent.js';
 
 export default {
     name: 'ManualPage',
@@ -132,9 +133,13 @@ export default {
         toc: { type: Array, default: () => [] },
         userRoles: { type: Array, default: () => [] },
         roles: { type: Array, default: () => [] },
+        lang: { type: String, default: 'en' },
     },
     emits: ['navigate'],
     computed: {
+        ui() {
+            return UI_STRINGS[this.lang];
+        },
         isMyRole() {
             if (!this.page.roleKey) return false;
             const role = this.roles.find((r) => r.key === this.page.roleKey);

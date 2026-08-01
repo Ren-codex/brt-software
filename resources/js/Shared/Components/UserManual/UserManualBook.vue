@@ -1,15 +1,15 @@
 <template>
     <Teleport to="body">
         <Transition name="um-fade">
-            <div v-if="modelValue" class="um-overlay" role="dialog" aria-modal="true" aria-label="User manual"
+            <div v-if="modelValue" class="um-overlay" role="dialog" aria-modal="true" :aria-label="ui.bookTitle"
                 @click.self="close">
                 <!-- ------------------------------------------------ top bar -->
                 <header class="um-bar">
                     <div class="um-bar-title">
                         <i class="ri-book-open-line"></i>
                         <div>
-                            <strong>User Manual</strong>
-                            <span>Roles &amp; system processes</span>
+                            <strong>{{ ui.bookTitle }}</strong>
+                            <span>{{ ui.bookSubtitle }}</span>
                         </div>
                     </div>
 
@@ -23,13 +23,18 @@
                         </button>
                     </div>
 
-                    <button v-if="canFilter" type="button" class="um-filter"
+                    <button v-if="canFilter && isAdmin" type="button" class="um-filter"
                         :class="{ 'is-on': roleFilter }" @click="toggleFilter">
                         <i :class="roleFilter ? 'ri-user-star-line' : 'ri-book-2-line'"></i>
-                        <span>{{ roleFilter ? 'My role' : 'Everything' }}</span>
+                        <span>{{ roleFilter ? ui.myRole : ui.everything }}</span>
                     </button>
 
-                    <button type="button" class="um-close" aria-label="Close manual" @click="close">
+                    <button type="button" class="um-lang" @click="toggleLang">
+                        <i class="ri-translate-2"></i>
+                        <span>{{ ui.switchTo }}</span>
+                    </button>
+
+                    <button type="button" class="um-close" :aria-label="ui.closeManual" @click="close">
                         <i class="ri-close-line"></i>
                     </button>
                 </header>
@@ -39,13 +44,13 @@
                     <aside class="um-rail" :class="{ 'is-open': railOpen }">
                         <button type="button" class="um-rail-toggle" @click="railOpen = !railOpen">
                             <i :class="railOpen ? 'ri-menu-fold-line' : 'ri-menu-unfold-line'"></i>
-                            <span>Contents</span>
+                            <span>{{ ui.contents }}</span>
                         </button>
 
                         <nav class="um-rail-body">
                             <button type="button" class="um-rail-item um-rail-item--top"
                                 :class="{ 'is-active': flipped === 0 }" @click="jumpToPage(0)">
-                                <i class="ri-bookmark-line"></i> Cover
+                                <i class="ri-bookmark-line"></i> {{ ui.cover }}
                             </button>
 
                             <div v-for="group in toc" :key="group.part" class="um-rail-group">
@@ -75,20 +80,20 @@
                                 :style="{ zIndex: sheetZ(i) }">
                                 <div class="um-face um-face--front">
                                     <ManualPage :page="sheet.front" :page-number="folio(sheet.frontIndex)" :toc="toc"
-                                        :roles="roles" :user-roles="userRoles" @navigate="jumpToPage" />
+                                        :roles="roles" :user-roles="userRoles" :lang="lang" @navigate="jumpToPage" />
                                     <span class="um-shade"></span>
                                 </div>
                                 <div class="um-face um-face--back">
                                     <ManualPage :page="sheet.back" :page-number="folio(sheet.backIndex)" :toc="toc"
-                                        :roles="roles" :user-roles="userRoles" @navigate="jumpToPage" />
+                                        :roles="roles" :user-roles="userRoles" :lang="lang" @navigate="jumpToPage" />
                                     <span class="um-shade"></span>
                                 </div>
                             </div>
 
                             <!-- edge hit areas for turning -->
-                            <button type="button" class="um-edge um-edge--left" aria-label="Previous page"
+                            <button type="button" class="um-edge um-edge--left" :aria-label="ui.previousPage"
                                 :disabled="flipped === 0" @click="prev"></button>
-                            <button type="button" class="um-edge um-edge--right" aria-label="Next page"
+                            <button type="button" class="um-edge um-edge--right" :aria-label="ui.nextPage"
                                 :disabled="flipped >= sheets.length" @click="next"></button>
                         </div>
                     </div>
@@ -97,7 +102,7 @@
                 <!-- ---------------------------------------------- bottom bar -->
                 <footer class="um-controls">
                     <button type="button" class="um-nav" :disabled="flipped === 0" @click="prev">
-                        <i class="ri-arrow-left-s-line"></i> Previous
+                        <i class="ri-arrow-left-s-line"></i> {{ ui.previous }}
                     </button>
 
                     <div class="um-progress">
@@ -108,7 +113,7 @@
                     </div>
 
                     <button type="button" class="um-nav" :disabled="flipped >= sheets.length" @click="next">
-                        Next <i class="ri-arrow-right-s-line"></i>
+                        {{ ui.next }} <i class="ri-arrow-right-s-line"></i>
                     </button>
                 </footer>
             </div>
@@ -118,7 +123,7 @@
 
 <script>
 import ManualPage from './ManualPage.vue';
-import { pages as sourcePages, roles } from './manualContent.js';
+import { pagesEn, pagesTl, roles, UI_STRINGS } from './manualContent.js';
 
 const SINGLE_FLIP_MS = 900;
 const RIFFLE_FLIP_MS = 420;
@@ -133,17 +138,28 @@ export default {
     data() {
         return {
             roles,
+            lang: 'en',
             flipped: 0,
             flipping: -1,
             flipMs: SINGLE_FLIP_MS,
             railOpen: true,
-            // Show only the pages written for the reader's role by default.
-            roleFilter: true,
+            // Only meaningful for admins (see `effectiveRoleFilter`); everyone
+            // else is always filtered to their own role. Admins default to
+            // seeing everything, since they oversee every role.
+            roleFilter: false,
             flipTimer: null,
             riffleTimer: null,
         };
     },
     computed: {
+        /** Static toolbar/nav text for the current language. */
+        ui() {
+            return UI_STRINGS[this.lang];
+        },
+        /** The page set for the current language; ids/kind/part/roleKey match across both. */
+        sourcePages() {
+            return this.lang === 'tl' ? pagesTl : pagesEn;
+        },
         /** Role keys held by the reader, matched against page audiences. */
         userRoleKeys() {
             return roles.filter((r) => this.userRoles.includes(r.name)).map((r) => r.key);
@@ -152,13 +168,25 @@ export default {
         canFilter() {
             return this.userRoleKeys.length > 0;
         },
+        /** Admins and super admins oversee every role, so they always get the full book. */
+        isAdmin() {
+            return this.userRoles.includes('Administrator') || this.userRoles.includes('Super Admin');
+        },
+        /**
+         * Non-admins only ever see their own role's chapters — there is no
+         * toggle for them. Admins default to "Everything" but can still flip
+         * `roleFilter` to preview a single role's view.
+         */
+        effectiveRoleFilter() {
+            return this.isAdmin ? this.roleFilter : true;
+        },
         /**
          * Role shortcuts in the toolbar. While filtered, only the reader's own
          * roles are offered, since the other roles' chapters are not in the book.
          * Switching to "Everything" brings the full set back.
          */
         visibleRoles() {
-            if (!this.roleFilter || !this.canFilter) return roles;
+            if (!this.effectiveRoleFilter || !this.canFilter) return roles;
             return roles.filter((role) => this.userRoleKeys.includes(role.key));
         },
         /**
@@ -166,9 +194,9 @@ export default {
          * always kept; a part divider is dropped if nothing under it survives.
          */
         visiblePages() {
-            if (!this.roleFilter || !this.canFilter) return sourcePages;
+            if (!this.effectiveRoleFilter || !this.canFilter) return this.sourcePages;
 
-            const kept = sourcePages.filter((page) => (
+            const kept = this.sourcePages.filter((page) => (
                 !page.audience || page.audience.some((key) => this.userRoleKeys.includes(key))
             ));
 
@@ -232,10 +260,10 @@ export default {
             return Math.round((this.flipped / this.sheets.length) * 100);
         },
         spreadLabel() {
-            if (this.flipped === 0) return 'Front cover';
-            if (this.flipped >= this.sheets.length) return 'Back cover';
+            if (this.flipped === 0) return this.ui.frontCover;
+            if (this.flipped >= this.sheets.length) return this.ui.backCover;
             const left = this.flipped * 2 - 1;
-            return `Pages ${left}–${left + 1} of ${this.paddedPages.length - 1}`;
+            return this.ui.pagesOf(left, left + 1, this.paddedPages.length - 1);
         },
     },
     watch: {
@@ -350,6 +378,12 @@ export default {
             this.roleFilter = !this.roleFilter;
             this.flipped = 0;
         },
+        /** Page count and content differ slightly between languages, so return to the cover. */
+        toggleLang() {
+            this.stopTimers();
+            this.lang = this.lang === 'en' ? 'tl' : 'en';
+            this.flipped = 0;
+        },
         jumpToRole(roleKey) {
             const index = this.paddedPages.findIndex((p) => p.roleKey === roleKey);
 
@@ -358,9 +392,10 @@ export default {
                 return;
             }
 
-            // That role's pages are filtered out. Show everything, then jump
-            // once the wider page list has rendered.
-            if (this.roleFilter) {
+            // That role's pages are filtered out. Only an admin can widen the
+            // view to find them - show everything, then jump once the wider
+            // page list has rendered.
+            if (this.isAdmin && this.roleFilter) {
                 this.toggleFilter();
                 this.$nextTick(() => {
                     const wider = this.paddedPages.findIndex((p) => p.roleKey === roleKey);
@@ -521,6 +556,31 @@ export default {
     border-color: #7fd4a8;
     background: rgba(127, 212, 168, 0.16);
     color: #fff;
+}
+
+.um-lang {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(232, 238, 240, 0.8);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.um-lang i {
+    font-size: 0.95rem;
+}
+
+.um-lang:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-color: #7fd4a8;
 }
 
 .um-close {
@@ -687,12 +747,9 @@ export default {
     animation: umBookIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
-.um-book.is-closed {
-    transform: translateX(-25%) rotateX(9deg);
-}
-
+.um-book.is-closed,
 .um-book.is-ended {
-    transform: translateX(25%) rotateX(9deg);
+    transform: rotateX(9deg);
 }
 
 /* paper stack visible beneath the turnable sheets */
