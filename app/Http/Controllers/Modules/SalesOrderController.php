@@ -8,6 +8,7 @@ use App\Services\DropdownClass;
 use App\Services\PrintClass;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Services\Modules\SalesOrderClass;
 use App\Http\Requests\Modules\SalesOrderRequest;
 
@@ -35,6 +36,9 @@ class SalesOrderController extends Controller
             case 'stock':
                 return $this->sales_order->stockAvailability();
             break;
+            case 'return-history':
+                return response()->json($this->sales_order->returnHistory($request));
+            break;
             default:
                 return inertia('Modules/Sales/Index', [
                     'dropdowns' => [
@@ -48,7 +52,7 @@ class SalesOrderController extends Controller
                         'sales_statuses' => $this->dropdown->sales_statuses(),
                     ],
                     'isExternal' => false,
-
+                    'return_grace_period' => (int) AppSetting::get('return_grace_period', 7),
                 ]);
             break;
         }
@@ -60,47 +64,84 @@ class SalesOrderController extends Controller
             return $this->sales_order->save($request);
         });
 
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'stock' => $result['info'] ?? 'Unable to save sales order.',
+            ]);
+        }
 
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'receipt_id' => $result['receipt_id'] ?? null,
         ]);
     }
 
 
     public function update(SalesOrderRequest $request, $id){
 
-        $result = $this->handleTransaction(function () use ($request) {
-                switch($request->action){
+        $result = $this->handleTransaction(function () use ($request, $id) {
+                $action = $request->action ?? 'update';
+                switch($action){
                     case 'update':
+                        $request->merge(['id' => $id]);
                         $request->merge(['is_external' => false]);
-                        return $this->sales_order->update($request->id);
+                        return $this->sales_order->update($request);
                     break;
                     case 'approve':
-                        return $this->sales_order->approve($request->id);
-                    break;
-                    case 'cancel':
-                        return $this->sales_order->cancel($request->id);
+                        $request->merge(['id' => $id]);
+                        return $this->sales_order->approve($request->id, $request->item_ids ?? [], $request->replacement_items ?? []);
                     break;
                     case 'adjustment':
+                        $request->merge(['id' => $id]);
                         return $this->sales_order->adjustment($request);
+                    break;
+                    default:
+                        $request->merge(['id' => $id]);
+                        $request->merge(['is_external' => false]);
+                        return $this->sales_order->update($request);
                     break;
                 }
             });
 
 
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'stock' => $result['info'] ?? 'Unable to update sales order.',
+            ]);
+        }
+
 
         return back()->with([
-            'data' => $result['data'],
-            'message' => $result['message'],
-            'info' => $result['info'],
-            'status' => $result['status'],
+            'data'       => $result['data'],
+            'message'    => $result['message'],
+            'info'       => $result['info'],
+            'status'     => $result['status'],
+            'receipt_id' => $result['receipt_id'] ?? null,
         ]);
 
     }
 
+
+    public function adjustment(SalesOrderRequest $request, $id){
+        $request->merge(['id' => $id]);
+        $result = $this->handleTransaction(fn() => $this->sales_order->adjustment($request));
+
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'adjustment' => $result['info'] ?? 'Unable to apply adjustment.',
+            ]);
+        }
+
+        return back()->with([
+            'data'    => $result['data'],
+            'message' => $result['message'],
+            'info'    => $result['info'],
+            'status'  => $result['status'],
+        ]);
+    }
 
     public function show($id , Request $request){
         return $this->print->print($id, $request);
@@ -110,6 +151,12 @@ class SalesOrderController extends Controller
         $result = $this->handleTransaction(function () use ($id) {
             return $this->sales_order->cancel($id);
         });
+
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'cancel' => $result['info'] ?? 'Unable to cancel sales order.',
+            ]);
+        }
 
         return back()->with([
             'data' => $result['data'],

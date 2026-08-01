@@ -16,8 +16,7 @@
                     <div class="mb-3 d-flex align-items-center gap-2">
                         <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt"
                             class="form-control" />
-                        <b-button size="sm" variant="outline-primary" @click="toggleSelectAll">{{ allSelected ?
-                            'Unselect All' : 'Select All' }}</b-button>
+                        <button type="button" class="acct-btn-secondary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</button>
                     </div>
 
                     <div class="table-responsive" style="max-height: 180px; overflow:auto;">
@@ -35,49 +34,54 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(order, idx) in filteredOrders" :key="order.id">
+                                <tr v-for="(order, idx) in pagedOrders" :key="order.id">
                                     <td><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
-                                    <td>{{ idx + 1 }}</td>
+                                    <td>{{ (currentPage - 1) * pageSize + idx + 1 }}</td>
                                     <td>{{ order.receipt_number || '-' }}</td>
-                                    <td>{{ order.customer?.name || '-' }}</td>
+                                    <td>{{ getCustomerName(order) }}</td>
                                     <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
-                                    <td>{{ order.payment_mode }}</td>
-                                    <td>{{ order.created_at }}</td>
+                                    <td>{{ getPaymentMode(order) || '-' }}</td>
+                                    <td>{{ formatDate(order.created_at) }}</td>
                                 </tr>
-                                <tr v-if="orders.length === 0">
+                                <tr v-if="filteredOrders.length === 0">
                                     <td colspan="7" class="text-center text-muted">No pending sales orders found.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-2 d-flex justify-content-end">
-                        <p>
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <small class="text-muted">
+                            Showing {{ filteredOrders.length ? (currentPage - 1) * pageSize + 1 : 0 }}–{{ Math.min(currentPage * pageSize, filteredOrders.length) }} of {{ filteredOrders.length }}
+                        </small>
+                        <div class="d-flex align-items-center gap-1">
+                            <button type="button" class="page-btn" :disabled="currentPage === 1" @click="currentPage--">←</button>
+                            <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+                            <button type="button" class="page-btn" :disabled="currentPage >= totalPages" @click="currentPage++">→</button>
+                        </div>
+                        <p class="mb-0">
                             <span class="text-primary"><b>{{ selectedIds.length }}</b></span> Selected
                         </p>
+                    </div>
+                    <div v-if="form.errors.receipts" class="text-danger mb-2">
+                        {{ form.errors.receipts }}
                     </div>
 
                     <div>
                         <h6 class="text-primary"><i class="ri-money-dollar-circle-line"></i> Summary</h6>
                         <div class="row g-2">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Cash</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.cash) }}</div>
+                                    <small class="text-muted">Cash Sales</small>
+                                    <div class="fw-bold">{{ formatAmount(totals.cash_sales) }}</div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Credit Card</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.credit_card) }}</div>
+                                    <small class="text-muted">Credit Sales</small>
+                                    <div class="fw-bold">{{ formatAmount(totals.credit_sales) }}</div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Debit Card</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.debit_card) }}</div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="p-2 bg-light rounded">
                                     <small class="text-muted">Bank Transfer</small>
                                     <div class="fw-bold">{{ formatAmount(totals.bank_transfer) }}</div>
@@ -88,6 +92,12 @@
                         <div class="my-4 text-end">
                             TOTAL<h2 class="mb-0"><strong> {{ formatAmount(totals.overall) }}</strong></h2>
                         </div>
+                    </div>
+
+                    <div v-if="Object.keys(form.errors).length > 0" class="alert alert-danger py-2 mt-3">
+                        <ul class="mb-0 ps-3">
+                            <li v-for="(error, field) in form.errors" :key="field" class="small">{{ error }}</li>
+                        </ul>
                     </div>
 
                     <div class="form-actions mt-3 d-flex justify-content-end gap-2">
@@ -119,6 +129,8 @@ export default {
             filteredOrders: [],
             selectedIds: [],
             keyword: '',
+            currentPage: 1,
+            pageSize: 3,
             submitting: false,
             debouncedFetch: null,
             form: useForm({
@@ -133,17 +145,22 @@ export default {
         allSelected() {
             return this.filteredOrders.length > 0 && this.selectedIds.length === this.filteredOrders.length;
         },
+        pagedOrders() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            return this.filteredOrders.slice(start, start + this.pageSize);
+        },
+        totalPages() {
+            return Math.max(1, Math.ceil(this.filteredOrders.length / this.pageSize));
+        },
         totals() {
-            const t = { cash: 0, credit_card: 0, debit_card: 0, bank_transfer: 0, overall: 0 };
+            const t = { cash_sales: 0, credit_sales: 0, bank_transfer: 0, overall: 0 };
             const selected = this.orders.filter(o => this.selectedIds.includes(o.id));
             selected.forEach(o => {
                 const amt = parseFloat(o.amount_paid) || 0;
-                const mode = (o.payment_mode || '').toLowerCase();
-                if (mode === 'cash') t.cash += amt;
-                else if (mode === 'credit card' || mode === 'credit_card' || mode === 'creditcard') t.credit_card += amt;
-                else if (mode === 'debit card' || mode === 'debit_card' || mode === 'debitcard') t.debit_card += amt;
-                else if (mode === 'bank transfer' || mode === 'bank_transfer' || mode === 'banktransfer') t.bank_transfer += amt;
-                else t.overall += amt; // if unknown mode, still add to overall below
+                const mode = this.normalizeSalesPaymentMode(o);
+                if (mode === 'credit' || mode === 'credit sales') t.credit_sales += amt;
+                else if (mode === 'bank transfer' || mode === 'bank_transfer') t.bank_transfer += amt;
+                else t.cash_sales += amt;
                 t.overall += amt;
             });
             return t;
@@ -157,6 +174,7 @@ export default {
             this.showModal = true;
             this.selectedIds = [];
             this.keyword = '';
+            this.currentPage = 1;
             this.fetchPending();
         },
         hide() {
@@ -165,9 +183,10 @@ export default {
         fetchPending() {
             axios.get('/receipts', {
                 params: {
-                    status_id: 1,
+                    status: "pending",
                     option: 'lists',
-                    count: 100
+                    count: 100,
+                    scope_to_rep: 1,
                 }
             })
                 .then(res => {
@@ -183,20 +202,53 @@ export default {
                 .catch(err => console.error(err));
         },
         applyFilter() {
+            this.currentPage = 1;
             if (!this.keyword) {
-                this.filteredOrders = this.orders;
+                this.filteredOrders = [...this.orders];
             } else {
                 const kw = this.keyword.toLowerCase();
-                this.filteredOrders = this.orders.filter(o => ((o.receipt_number || '') + ' ' + (o.customer?.name || '') + ' ' + (o.payment_mode || '')).toLowerCase().includes(kw));
+                this.filteredOrders = this.orders.filter(o =>
+                    (
+                        (o.receipt_number || '') + ' ' +
+                        (this.getCustomerName(o) || '') + ' ' +
+                        (this.getPaymentMode(o) || '')
+                    ).toLowerCase().includes(kw)
+                );
             }
         },
-
+        getCustomerName(order) {
+            return order?.customer?.name || order?.ar_invoice?.sales_order?.customer?.name || '-';
+        },
+        getPaymentMode(order) {
+            const raw = String(order?.payment_mode || order?.ar_invoice?.sales_order?.payment_mode || '').trim().toLowerCase();
+            if (raw === 'credit' || raw === 'credit sales') return 'Credit Sales';
+            return 'Cash Sales';
+        },
+        normalizeSalesPaymentMode(order) {
+            return String(this.getPaymentMode(order) || '').trim().toLowerCase();
+        },
         toggleSelectAll() {
             if (this.allSelected) {
                 this.selectedIds = [];
             } else {
                 this.selectedIds = this.filteredOrders.map(o => o.id);
             }
+        },
+        formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            if (Number.isNaN(date.getTime())) return '-';
+
+            const yyyy = date.getUTCFullYear();
+            const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(date.getUTCDate()).padStart(2, '0');
+            const hours24 = date.getUTCHours();
+            const hours12 = hours24 % 12 || 12;
+            const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+            const period = hours24 >= 12 ? 'PM' : 'AM';
+
+            return `${yyyy}-${mm}-${dd} ${hours12}:${minutes}:${seconds} ${period}`;
         },
         formatAmount(v) {
             if (!v) return '₱0.00';
@@ -225,6 +277,14 @@ export default {
                 onFinish: () => {
                     this.submitting = false;
                 },
+                onError: () => {
+                    this.submitting = false;
+                },
+                onFinish: () => {
+                    if (!this.saveSuccess) {
+                        this.submitting = false;
+                    }
+                }
             });
         }
     }
@@ -233,42 +293,42 @@ export default {
 
 <style scoped>
 .modal-overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 50
+    z-index: 50;
 }
 
 .modal-container {
-    background: #fff;
-    border-radius: 8px;
     overflow: hidden;
     width: 100%;
 }
 
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid #eee
-}
-
 .modal-body {
-    padding: 16px
-}
-
-.close-btn {
-    background: transparent;
-    border: 0
+    padding: 16px;
 }
 
 .form-actions .btn {
-    min-width: 140px
+    min-width: 140px;
 }
+
+.page-btn {
+    background: #fff;
+    border: 1px solid #c4d9d2;
+    border-radius: 6px;
+    color: #16322e;
+    padding: 2px 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    cursor: pointer;
+}
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+.page-info {
+    font-size: 12px;
+    color: #5f756d;
+    padding: 0 4px;
+}
+
 @media (max-width: 768px) {
     .modal-container {
         max-height: 85vh;

@@ -1,6 +1,7 @@
-/.phpunit.cache
+/.phpunit.cache/
+/_metadata.json
 /node_modules
-# /public/build
+/public/build
 /public/hot
 /public/storage
 /storage/*.key
@@ -18,3 +19,4 @@ yarn-error.log
 /.idea
 /.vscode
 nul
+/.claude/worktrees/

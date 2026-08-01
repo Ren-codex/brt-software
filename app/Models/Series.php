@@ -9,7 +9,12 @@ class Series extends Model
 {
     use HasFactory;
     
-    protected $fillable = [ 
-        'starting_value'
-    ]; 
+    protected $fillable = [
+        'name',
+        'slug',
+        'prefix',
+        'current_date',
+        'starting_value',
+        'max_digit',
+    ];
 }

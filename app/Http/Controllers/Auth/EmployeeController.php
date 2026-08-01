@@ -6,8 +6,8 @@ use App\Models\User;
 use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Services\Employee\ViewClass;
-use App\Services\Employee\SaveClass;
+use App\Services\Profile\ViewClass;
+use App\Services\Profile\SaveClass;
 use App\Http\Requests\EmployeeRequest;
 use Illuminate\Validation\Rules\Password;
 use App\Services\DropdownClass;
@@ -47,6 +47,27 @@ class EmployeeController extends Controller
         }
     }
 
+    public function profile(Request $request){
+        $options = $request->option;
+        switch($options){
+            case 'authentication-logs':
+                return $this->view->authenticationlogs($request);
+            break;
+            case 'activity-logs':
+                return $this->view->activitylogs($request);
+            break;
+            case 'statistics':
+                return $this->view->statistics($request);
+            break;
+            case 'sessions':
+                return $this->view->sessions($request);
+            break;
+            default:
+                return inertia('Auth/Profile/Index');
+            break;
+        }
+    }
+
     public function store(Request $request)
     {
         $result = $this->handleTransaction(function () use ($request) {
@@ -61,7 +82,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function update(EmloyeeRequest $request){
+    public function update(EmployeeRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->save->update($request);
         });
@@ -84,7 +105,9 @@ class EmployeeController extends Controller
     }
 
     public function activate(Request $request){
+        $id = \Auth::user()->id;
         $validated = $request->validate([
+            'username' => ['required', 'string', 'unique:users,username,' . $id],
             'password' => [
                 'required',
                 'confirmed',
@@ -96,10 +119,10 @@ class EmployeeController extends Controller
                     ->uncompromised() // checks against data leaks (optional)
             ],
         ]);
-        $id = \Auth::user()->id;
         $user = User::findOrFail($id);
         $user->is_active = 1;
         $user->must_change = 0;
+        $user->username = $validated['username'];
         $user->password = bcrypt($validated['password']);
         $user->password_changed_at = now();
         if($user->save()){

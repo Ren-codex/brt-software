@@ -22,6 +22,8 @@ class RemittanceRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'receipts' => 'required|array|min:1',
+            'receipts.*' => 'integer|exists:receipts,id',
             'summary' => 'required|array',
             // total_amount is accepted for backwards compatibility but the
             // stored value is recomputed from the receipts in RemittanceClass,

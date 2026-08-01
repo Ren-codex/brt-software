@@ -47,12 +47,12 @@ class RevenueReportService
             })
             ->select(
                 'rem.remittance_date',
-                DB::raw("CONCAT(lb.name, ' ', p.pack_size, ' ', lu.name) as product_name"),
+                DB::raw("CONCAT(lb.name, ' ', p.weight, ' ', lu.name) as product_name"),
                 DB::raw('SUM(soi.quantity * soi.price) as revenue'),
                 DB::raw('SUM(soi.quantity * ri.unit_cost) as total_unit_cost'),
                 DB::raw('SUM(soi.quantity * soi.price) - SUM(soi.quantity * ri.unit_cost) as profit')
             )
-            ->groupBy('rem.remittance_date', 'soi.product_id', 'lb.name', 'p.pack_size', 'lu.name');
+            ->groupBy('rem.remittance_date', 'soi.product_id', 'lb.name', 'p.weight', 'lu.name');
 
         // Apply filters (placeholder for future extensions, e.g. date ranges)
         // if (!empty($filters['from'])) { ... }

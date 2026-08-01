@@ -10,21 +10,26 @@ class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $employee = $this->employee;
+        $firstname = $employee?->firstname;
+        $lastname = $employee?->lastname;
+        $fullname = trim(collect([$firstname, $lastname])->filter()->implode(' '));
+
         return [
             'id' => $this->id,
             'username' => $this->username,
             'email' => $this->email,
-            'avatar' => ($this->employee && $this->employee->avatar && $this->employee->avatar !== 'noavatar.jpg')
-            ? asset('storage/' . $this->employee->avatar) 
+            'avatar' => ($employee && $employee->avatar && $employee->avatar !== 'noavatar.jpg')
+            ? asset('storage/' . $employee->avatar) 
             : asset('images/avatars/avatar.jpg'), 
-            'name' => $this->employee->firstname.' '.$this->employee->lastname,
-            'firstname' => $this->employee->firstname,
-            'lastname' => $this->employee->lastname,
-            'middlename' => $this->employee->middlename,
-            'gender' => $this->employee->gender,
-            'suffix' => $this->employee->suffix,
-            'mobile' => $this->employee->mobile,
-            'employee_id' => $this->employee->id,
+            'name' => $fullname !== '' ? $fullname : $this->username,
+            'firstname' => $firstname,
+            'lastname' => $lastname,
+            'middlename' => $employee?->middlename,
+            'gender' => $employee?->gender,
+            'suffix' => $employee?->suffix,
+            'mobile' => $employee?->mobile,
+            'employee_id' => $employee?->id,
             'is_active' => $this->is_active,
             'is_new' => $this->is_new,
             'two_factor_enabled' => ($this->two_factor_secret) ? true : false,

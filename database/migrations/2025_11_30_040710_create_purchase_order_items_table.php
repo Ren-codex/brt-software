@@ -20,7 +20,9 @@ return new class extends Migration
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             $table->integer('quantity');
             $table->decimal('unit_cost', 10, 2);
-            $table->decimal('total_cost', 10, 2);
+            $table->decimal('total_cost', 15, 2);
+            $table->string('status')->default('pending');
+            $table->integer('received_quantity')->default(0);
             $table->timestamps();
         });
     }

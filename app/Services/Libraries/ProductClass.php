@@ -10,12 +10,13 @@ class ProductClass
     public function lists($request)
     {
         $data = ProductResource::collection(
-            Product::with('unit', 'brand')
+            Product::with('unit', 'brand', 'packaging')
                 ->when($request->keyword, function ($query, $keyword) {
                     $query->where(function ($q) use ($keyword) {
                         $q->whereHas('brand', function ($qb) use ($keyword) {
                             $qb->where('name', 'LIKE', "%{$keyword}%");
-                        })->orWhere('pack_size', 'LIKE', "%{$keyword}%");
+                        })->orWhere('weight', 'LIKE', "%{$keyword}%")
+                          ->orWhere('code', 'LIKE', "%{$keyword}%");
                     });
                 })
                 ->orderBy('created_at', 'DESC')
@@ -27,10 +28,12 @@ class ProductClass
     public function save($request)
     {
         $data = Product::create([
-            'pack_size' => $request->pack_size,
-            'unit_id' => $request->unit_id,
-            'brand_id' => $request->brand_id,
-            // 'price' => $request->price,
+            'code'          => $request->code,
+            'weight'     => $request->weight,
+            'unit_id'       => $request->unit_id,
+            'brand_id'      => $request->brand_id,
+            'packaging_id'  => $request->packaging_id ?? null,
+            'minimum_stock' => $request->minimum_stock ?? 0,
         ]);
 
         return [
@@ -44,10 +47,12 @@ class ProductClass
     {
         $data = Product::findOrFail($request->id);
         $data->update([
-            'pack_size' => $request->pack_size,
-            'unit_id' => $request->unit_id,
-            'brand_id' => $request->brand_id,
-            // 'price' => $request->price,
+            'code'          => $request->code,
+            'weight'     => $request->weight,
+            'unit_id'       => $request->unit_id,
+            'brand_id'      => $request->brand_id,
+            'packaging_id'  => $request->packaging_id ?? null,
+            'minimum_stock' => $request->minimum_stock ?? $data->minimum_stock,
         ]);
 
         return [

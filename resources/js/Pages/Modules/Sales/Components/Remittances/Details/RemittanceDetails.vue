@@ -5,15 +5,15 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <b-button @click.stop="openApprovalModal()" size="sm" class="btn-success me-1" v-if="item.status.id == 11">
+                        <button @click.stop="openApprovalModal()" class="action-btn approve me-1" v-if="item.status?.slug === 'open'" title="Approve">
                             <i class="ri-check-line"></i>
-                        </b-button>
-                        <b-button @click.stop="onPrint(item.id)" size="sm" class="btn-default me-1">
+                        </button>
+                        <button @click.stop="onPrint(item.id)" class="action-btn info me-1" title="Print">
                             <i class="ri-printer-line"></i>
-                        </b-button>
-                        <b-button @click.stop="openDelete(item.id)" size="sm" class="btn-danger" v-if="item.status.id != 12">
+                        </button>
+                        <button @click.stop="openDelete(item.id)" class="action-btn delete" v-if="item.status?.slug == 'open'" title="Delete">
                             <i class="ri-delete-bin-line"></i>
-                        </b-button>
+                        </button>
                     </div>
                 </div>
                 <!-- Remittance Details -->
@@ -58,14 +58,23 @@
                                     <span class="me-3">
                                         <strong>Total Receipt:</strong> {{ item.receipts.length || '-' }}
                                     </span>
-                                    <b-button @click="showReceiptsModal" size="xs" variant="outline-primary" style="border: 1px solid green;">
-                                        <i class="ri-eye-line"></i> View Receipts
-                                    </b-button>
+                                    <button @click="showReceiptsModal" class="action-btn approve" title="View Receipts">
+                                        <i class="ri-eye-line"></i>
+                                    </button>
                                 </div><br>
-                                <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.username || '-' }}</p>
+                                <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.fullname || '-' }}</p>
                                 <p class="mb-1"><strong>Date Approved:</strong> {{ item.approved_at || '-' }}</p>
+                                <p class="mb-1" v-if="item.status?.slug === 'liquidated'">
+                                    <strong>Bank Deposit:</strong>
+                                    <span v-if="item.is_deposited" class="deposit-status-chip deposited ms-1">
+                                        <i class="ri-checkbox-circle-fill"></i> {{ item.bank_deposit?.deposit_no }} — {{ item.bank_deposit?.deposit_date }}
+                                    </span>
+                                    <span v-else class="deposit-status-chip pending ms-1">
+                                        <i class="ri-time-line"></i> Not yet deposited
+                                    </span>
+                                </p>
                                 <p class="mb-0"><strong>Remarks:</strong>
-                                    &nbsp;<b-badge variant="dark" style="font-size:12px">{{ item.remarks }}</b-badge></p><br>
+                                    &nbsp;<span style="font-size:12px; background:#343a40; color:#fff; padding:3px 8px; border-radius:4px;">{{ item.remarks }}</span></p><br>
                             </div>
                         </div>
                     </div>
@@ -97,8 +106,9 @@ export default {
     },
     data() {
         return {
-            showReceipts: false
-        }
+            showReceipts: false,
+            isRemitting: false,
+        };
     },
     methods: {
         showReceiptsModal() {
@@ -107,6 +117,31 @@ export default {
         openApprovalModal() {
             this.$refs.approvalModal.show();
         },
+        async markAsRemitted() {
+            const result = await Swal.fire({
+                title: 'Mark as Remitted?',
+                text: 'This confirms the cash has been physically submitted. The status will change to Remitted.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0ea5e9',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, mark as remitted',
+            });
+
+            if (!result.isConfirmed) return;
+
+            this.isRemitting = true;
+            try {
+                await axios.post(`/remittances/${this.item.id}/remit`);
+                Swal.fire('Submitted!', 'Remittance has been marked as remitted.', 'success');
+                this.reload();
+            } catch (error) {
+                const msg = error.response?.data?.info || error.response?.data?.message || 'Failed to mark as remitted.';
+                Swal.fire('Error!', msg, 'error');
+            } finally {
+                this.isRemitting = false;
+            }
+        },
         formatSummaryKey(key) {
             return String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         },
@@ -114,6 +149,9 @@ export default {
             const num = Number(val);
             if (!isFinite(num)) return val;
             return '\u20B1' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        formatRemittanceType(type) {
+            return String(type || '').toLowerCase() === 'credit' ? 'Credit Sales' : 'Cash Sales';
         },
         async openDelete(id){
             const result = await Swal.fire({
@@ -184,6 +222,14 @@ export default {
 </script>
 
 <style scoped>
+.deposit-status-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+}
+.deposit-status-chip.deposited { background: #dcfce7; color: #166534; }
+.deposit-status-chip.pending   { background: #fef3c7; color: #92400e; }
+
 .summary-table th {
     width: 40%;
     font-weight: 600;

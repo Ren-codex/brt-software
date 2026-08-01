@@ -3,7 +3,6 @@
     <div class="col-md-12">
     <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-shopping-cart-line"></i>
@@ -13,10 +12,25 @@
                 <p class="header-subtitle mb-0">Manage and organize your purchase order catalog</p>
               </div>
             </div>
-          </div>
         </div>
 
         <div class="library-card-body">
+          <div class="tabs-section">
+            <div class="filter-segment">
+              <button
+                v-for="tab in statusTabs"
+                :key="tab.value"
+                type="button"
+                class="filter-segment-btn"
+                :class="{ active: activeTab === tab.value }"
+                @click="setActiveTab(tab.value)"
+              >
+                <i :class="tab.icon"></i>
+                <span>{{ tab.label }}</span>
+              </button>
+            </div>
+          </div>
+
           <div class="search-section">
             <div class="search-wrapper">
               <i class="ri-search-line search-icon"></i>
@@ -28,7 +42,6 @@
                 class="search-input"
               >
             </div>
-          
           </div>
 
           <div class="table-section">
@@ -73,9 +86,9 @@
                     v-bind:key="list.id" 
                     @click="openView(list)" 
                     style="cursor: pointer;"
-                    :style="getRowStyle(list.status)"
+                   
                   >
-                    <td>{{ index + 1 }}</td>
+                    <td>{{ (meta?.from ?? 1) + index }}</td>
                     <td>
                       <strong>{{ list.po_number }}</strong>
                     </td>
@@ -90,7 +103,7 @@
                     </td>
                     <td>
                       <div class="amount-cell">
-                        <span class="amount-value">{{ list.approved_by?.name }}</span>
+                        <span class="amount-value">{{ list.approved_by?.fullname }}</span>
                       </div>
                     </td>
                     <td>
@@ -167,11 +180,26 @@ export default {
       selectedStatus: this.filter.status || '',
       sortBy: this.filter.sort_by || 'date',
       sortDirection: this.filter.sort_direction || 'desc',
+      activeTab: 'all',
+      statusTabs: [
+        { value: 'all',      label: 'All Orders', icon: 'ri-list-check' },
+        { value: 'partial',  label: 'Partial',    icon: 'ri-pie-chart-line' },
+        { value: 'complete', label: 'Complete',   icon: 'ri-checkbox-circle-line' },
+      ],
     };
   },
   computed: {
     filteredAndSortedList() {
       let filtered = this.listPurchaseOrders;
+
+      if (this.activeTab === 'partial') {
+        filtered = filtered.filter(order => {
+          const progress = this.getProgressPercentage(order);
+          return progress > 0 && progress < 100;
+        });
+      } else if (this.activeTab === 'complete') {
+        filtered = filtered.filter(order => this.getProgressPercentage(order) >= 100);
+      }
       
       if (this.selectedStatus) {
         filtered = filtered.filter(order => 
@@ -197,6 +225,10 @@ export default {
     }
   },
   methods: {
+    setActiveTab(tab) {
+      this.activeTab = tab;
+    },
+
     openView(purchaseOrder) {
       this.$emit('view-details', purchaseOrder);
     },
@@ -319,13 +351,7 @@ export default {
       };
     },
     
-    getRowStyle(status) {
-      if (!status || !status.bg_color) return {};
-
-      return {
-        '--hover-color': status.bg_color
-      };
-    },
+   
 
     hasPendingItems(list) {
       return list.items && list.items.some(item => item.status === 'pending');
@@ -351,6 +377,50 @@ export default {
 
 
 <style scoped>
+/* Tabs Section */
+.tabs-section {
+  margin-bottom: 1rem;
+}
+
+.filter-segment {
+  display: inline-flex;
+  background: #eaf2f0;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.filter-segment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: #4a7a70;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 8px;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filter-segment-btn i {
+  font-size: 0.95rem;
+}
+
+.filter-segment-btn:hover:not(.active) {
+  background: rgba(61, 141, 122, 0.1);
+  color: #3d8d7a;
+}
+
+.filter-segment-btn.active {
+  background: #3d8d7a;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+}
+
 /* Filter Section */
 .filter-section {
   display: flex;
@@ -635,6 +705,40 @@ tbody tr:hover {
 
 .text-center i {
   opacity: 0.5;
+}
+
+/* Card Header */
+.library-card-header {
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid #c4d9d2;
+  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+}
+
+.header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(61, 141, 122, 0.12);
+  border: 1px solid rgba(61, 141, 122, 0.16);
+  color: #3d8d7a;
+  font-size: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #16322e;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 0.76rem;
+  color: #6b8c85;
+  margin: 0;
 }
 
 /* Responsive Design */

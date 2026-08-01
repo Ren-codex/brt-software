@@ -108,82 +108,16 @@ export default {
 <style scoped>
 /* Modal Overlay */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
     z-index: 1050;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    padding: 15px;
-}
-
-.modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
 }
 
 /* Modal Container */
-.modal-container {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 500px;
-    overflow: hidden;
-    transform: translateY(25px) scale(0.95);
-    transition: all 0.3s ease;
-}
-
 .modal-container.modal-md {
     max-width: 600px;
 }
 
-.modal-overlay.active .modal-container {
-    transform: translateY(0) scale(1);
-}
-
-/* Modal Header */
-.modal-header {
-    background: #3a8674;
-    color: white;
-    padding: 0.875rem 1.25rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
 .modal-header h2 {
-    font-weight: 700;
     font-size: 1.1rem;
-    margin: 0;
-}
-
-.close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 1.1rem;
-}
-
-.close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
 }
 
 /* Modal Body */
@@ -309,10 +243,6 @@ export default {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .modal-header {
-        padding: 0.75rem 1rem;
-    }
-
     .modal-header h2 {
         font-size: 1rem;
     }
@@ -333,14 +263,6 @@ export default {
 }
 
 @media (max-width: 480px) {
-    .modal-overlay {
-        padding: 10px;
-    }
-
-    .modal-header {
-        padding: 0.625rem 0.875rem;
-    }
-
     .modal-header h2 {
         font-size: 0.95rem;
     }

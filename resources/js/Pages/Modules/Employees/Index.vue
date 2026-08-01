@@ -4,7 +4,6 @@
         <div class="col-md-12">
             <div class="library-card">
                 <div class="library-card-header" v-if="currentView === 'list'">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-shopping-cart-line fs-24"></i>
@@ -18,7 +17,6 @@
                             <i class="ri-add-line"></i>
                             <span>Employee</span>
                         </button>
-                    </div>
                 </div>
 
 
@@ -94,10 +92,12 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-xs me-2">
-                                                    <img v-if="list.avatar" :src="getAvatarUrl(list.avatar)" alt="Avatar" class="rounded-circle avatar-xs">
-                                                    <div v-else class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center">
-                                                        <i class="ri-user-line text-muted"></i>
-                                                    </div>
+                                                    <img
+                                                        :src="getAvatarSrc(list)"
+                                                        @error="handleAvatarError"
+                                                        alt="Avatar"
+                                                        class="rounded-circle avatar-xs"
+                                                    >
                                                 </div>
                                                 <span>{{ list.fullname }}</span>
                                             </div>
@@ -161,7 +161,7 @@
                 
 
                 <div v-if="currentView === 'details'">
-                    <Details @update="fetch()" :employee="selectedEmployee"   :backToList="backToList" ref="details" />
+                    <Details @update="fetch()" :employee="selectedEmployee" :dropdowns="dropdowns" :backToList="backToList" ref="details" />
                 </div>
             </div>
         </div>
@@ -199,6 +199,7 @@ export default {
             localKeyword: '',
             sortBy: 'created_at',
             sortDirection: 'desc',
+            defaultAvatar: '/images/default-avatar.png'
         }
     },
     computed: {
@@ -301,6 +302,14 @@ export default {
                         this.lists = response.data.data;
                         this.meta = response.data.meta;
                         this.links = response.data.links;
+
+                        // Keep details view in sync after edit/save.
+                        if (this.currentView === 'details' && this.selectedEmployee?.id) {
+                            const updatedEmployee = this.lists.find(item => item.id === this.selectedEmployee.id);
+                            if (updatedEmployee) {
+                                this.selectedEmployee = updatedEmployee;
+                            }
+                        }
                     }
                 })
                 .catch(err => console.log(err));
@@ -368,18 +377,18 @@ export default {
             this.fetch();
         },
 
-        getAvatarUrl(avatar) {
-            if (!avatar) return null;
-            // If avatar already has full URL or starts with storage/, return as-is
-            if (avatar.startsWith('http') || avatar.startsWith('storage/')) {
-                return '/' + avatar;
+        getAvatarSrc(employee) {
+            if (!employee?.avatar) {
+                return this.defaultAvatar;
             }
-            // If avatar already has avatars/ prefix
-            if (avatar.startsWith('avatars/')) {
-                return '/storage/' + avatar;
+            return `/storage/${employee.avatar}`;
+        },
+
+        handleAvatarError(event) {
+            if (event?.target) {
+                event.target.onerror = null;
+                event.target.src = this.defaultAvatar;
             }
-            // Otherwise add avatars/ prefix
-            return '/storage/avatars/' + avatar;
         }
     }
 }

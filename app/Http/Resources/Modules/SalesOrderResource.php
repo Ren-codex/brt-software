@@ -9,26 +9,84 @@ class SalesOrderResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        // Derived from eager-loaded items.salesReturnItems — no extra query
+        $returnItems = $this->items->flatMap->salesReturnItems;
+
+        // Derived from eager-loaded arInvoices.receipts — no extra query
+        $refundReceiptId = $this->arInvoices->first()?->receipts
+            ->whereIn('receipt_type', ['refund', 'updated'])
+            ->sortByDesc('id')
+            ->first()?->id;
+
         return [
             'id' => $this->id,
             'so_number' => $this->so_number,
             'customer' => $this->customer,
             'order_date' => $this->order_date->format('F d, Y'),
+            'order_date_raw' => $this->order_date->format('Y-m-d'),
             'status' => $this->status,
             'sub_status' => $this->sub_status,
             'total_amount' => $this->total_amount,
-            'added_by' => $this->created_by,
+            'added_by' => $this->created_by ? $this->created_by->employee : null,
             'sales_rep_id' => $this->sales_rep_id,
             'driver_id' => $this->driver_id,
             'payment_mode' => $this->payment_mode,
             'due_date' => $this->due_date?->format('M d, Y'),
+            'due_date_raw' => $this->due_date?->format('Y-m-d'),
             'transferred_to' => $this->transferred_to,
             'transferred_at' => $this->transferred_at,
-            'items' => $this->items,
-            'invoices' => $this->arInvoices,
+            'location' => $this->location ? ['id' => $this->location->id, 'name' => $this->location->name] : null,
+            'approved_by_user' => $this->approved_by ? ($this->approved_by->employee ? $this->approved_by->employee->full_name ?? $this->approved_by->name : $this->approved_by->name) : null,
+            'approved_at' => $this->approved_at?->format('M d, Y'),
+            'items' => $this->items->map(fn($item) => [
+                'id'                 => $item->id,
+                'product_id'         => $item->product_id,
+                'product_name'       => $item->product?->name,
+                'quantity'           => $item->quantity,
+                'returned_quantity'  => (int) ($item->returned_quantity ?? 0),
+                'price'              => $item->price,
+                'discount_per_unit'  => $item->discount_per_unit ?? 0,
+                'unit'               => $item->unit,
+                'batch_code'         => $item->batch_code,
+            ])->values(),
+            'return_item_ids' => $returnItems
+                ->pluck('sales_order_item_id')
+                ->map(fn ($id) => (int) $id)
+                ->values(),
+            'return_items' => $returnItems
+                ->mapWithKeys(fn ($item) => [(int) $item->sales_order_item_id => (int) ($item->return_quantity ?? 0)]),
+            'return_conditions' => $returnItems
+                ->mapWithKeys(fn ($item) => [(int) $item->sales_order_item_id => (string) ($item->return_condition ?? 'restockable')]),
+            'refund_receipt_id' => $refundReceiptId ? (int) $refundReceiptId : null,
+            'invoices' => $this->arInvoices->map(fn($inv) => [
+                'id'           => $inv->id,
+                'invoice_number' => $inv->invoice_number,
+                'amount_due'   => $inv->amount_due,
+                'amount_paid'  => $inv->amount_paid,
+                'balance_due'  => $inv->balance_due,
+                'status'       => $inv->status,
+                'receipts'     => $inv->receipts->map(fn($r) => [
+                    'id'             => $r->id,
+                    'receipt_number' => $r->receipt_number,
+                    'receipt_date'   => $r->receipt_date,
+                    'amount_paid'    => $r->amount_paid,
+                    'payment_mode'   => $r->payment_mode,
+                    'receipt_type'   => $r->receipt_type,
+                    'status'         => $r->status,
+                ])->values(),
+            ])->values(),
             'created_at' => $this->created_at->format('M d, Y'),
             'updated_at' => $this->updated_at?->format('M d, Y'),
             'approved_by' => $this->approved_by,
+            'return_replacements' => $this->returnReplacements->map(fn($r) => [
+                'id'          => $r->id,
+                'product_id'  => $r->product_id,
+                'product_name'=> $r->product?->name,
+                'quantity'    => $r->quantity,
+                'price'       => $r->price,
+                'total_value' => $r->total_value,
+                'replaced_at' => $r->replaced_at,
+            ])->values(),
         ];
     }
 }

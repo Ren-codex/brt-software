@@ -23,12 +23,21 @@
               </div>
               <div class="loan-info">
                 <label :for="'loan-' + loan.id" class="loan-label">
-                  <span class="loan-id">Loan #{{ loan.id }}</span>
+                  <span class="loan-id">{{ loan.loan_no }}</span>
                   <span class="loan-balance">Balance: ₱ {{ parseFloat(loan.remaining_balance).toFixed(2) }}</span>
                 </label>
               </div>
               <div class="loan-deduction">
-                ₱ {{ (loan.payroll_deduction || 0).toFixed(2) }}
+                <input
+                  type="number"
+                  class="loan-deduction-input"
+                  :value="getLoanDeductionAmount(loan.id)"
+                  min="0"
+                  :max="getLoanRemainingBalance(loan)"
+                  step="0.01"
+                  @input="updateLoanDeductionAmount(loan.id, $event.target.value)"
+                  @click.stop
+                />
               </div>
             </div>
           </div>
@@ -40,16 +49,24 @@
 
         <div class="form-group" v-if="!isEdit">
           <label class="form-label">Additional Manual Deduction</label>
-          <input 
-            type="text" 
+          <select
             v-model="localDeductionLabel" 
             class="form-control" 
             :class="{ 'is-invalid': existingManualDeduction }"
-            placeholder="Enter description (e.g. SSS, PhilHealth, etc.)">
-            <div v-if="existingManualDeduction" class="invalid-feedback">
-              Already exists
-            </div>
-            <br>
+          >
+            <option value="">Select deduction</option>
+            <option
+              v-for="item in manualDeductionOptions"
+              :key="item"
+              :value="item"
+            >
+              {{ item }}
+            </option>
+          </select>
+          <div v-if="existingManualDeduction" class="invalid-feedback">
+            Already exists
+          </div>
+          <br>
           <div class="input-wrapper mb-2">
             <i class="ri-cash-line input-icon"></i>
             <input 
@@ -98,12 +115,17 @@ props: {
     amount: { type: [Number, String], default: 0 },
     deduction: { type: [Number, String], default: 0 },
     existingDeductions: { type: Array, default: () => [] },
+    deductionDropdown: { type: Array, default: () => [] },
+    deductionsDropdown: { type: Array, default: () => [] },
+    payPeriodStart: { type: String, default: '' },
+    payPeriodEnd: { type: String, default: '' },
   },
-data() {
+  data() {
     return {
       localDeduction: Number(this.deduction || 0),
       localDeductionLabel: '',
       selectedLoans: [],
+      loanAmounts: {},
     }
   },
 watch: {
@@ -119,6 +141,7 @@ watch: {
           // Add mode
           this.localDeduction = Number(this.deduction || 0)
           this.localDeductionLabel = ''
+          this.initializeLoanAmounts()
           // Initialize selectedLoans with available loan IDs when modal opens
           if (this.availableLoans && this.availableLoans.length) {
             this.selectedLoans = this.availableLoans.map(loan => loan.id)
@@ -142,6 +165,7 @@ watch: {
     },
     employee: {
       handler() {
+        this.initializeLoanAmounts()
         // Update selectedLoans when employee changes (only in add mode)
         if (!this.isEdit && this.availableLoans && this.availableLoans.length) {
           this.selectedLoans = this.availableLoans.map(loan => loan.id)
@@ -153,6 +177,7 @@ watch: {
     },
     existingDeductions: {
       handler() {
+        this.initializeLoanAmounts()
         // Update selectedLoans when existingDeductions changes (only in add mode)
         if (!this.isEdit && this.show && this.availableLoans && this.availableLoans.length) {
           this.selectedLoans = this.availableLoans.map(loan => loan.id)
@@ -161,18 +186,70 @@ watch: {
       immediate: true
     }
   },
-computed: {
+  computed: {
+    manualDeductionOptions() {
+      const source = this.deductionDropdown.length ? this.deductionDropdown : this.deductionsDropdown
+      if (!Array.isArray(source) || !source.length) {
+        return []
+      }
+
+      return [...new Set(source
+        .map(item => item?.description || item?.name || '')
+        .filter(Boolean))]
+    },
+    normalizedEmployeeLoans() {
+      if (!this.employee || !Array.isArray(this.employee.loans)) {
+        return []
+      }
+      return this.employee.loans
+    },
+    currentPayrollPeriodKey() {
+      return this.buildPeriodKeyFromDates(this.payPeriodStart, this.payPeriodEnd)
+    },
+    currentPayrollPeriodLabels() {
+      if (!this.payPeriodStart || !this.payPeriodEnd) {
+        return []
+      }
+
+      const startDate = new Date(this.payPeriodStart)
+      const endDate = new Date(this.payPeriodEnd)
+
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+        return []
+      }
+
+      const fullEndLabel = endDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })
+      const compactEndLabel = endDate.toLocaleDateString('en-US', {
+        day: 'numeric',
+        year: 'numeric'
+      })
+      const startLabel = startDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric'
+      })
+
+      return [
+        this.normalizePeriodLabel(`${startLabel}-${fullEndLabel}`),
+        this.normalizePeriodLabel(`${startLabel}-${compactEndLabel}`)
+      ]
+    },
     availableLoans() {
-      if (!this.employee || !this.employee.loans || !this.employee.loans.length) {
+      if (!this.normalizedEmployeeLoans.length) {
         return []
       }
       // Filter out loans that are already added
-      return this.employee.loans.filter(loan => {
-        const loanDescription = `Loan #${loan.id}`
+      return this.normalizedEmployeeLoans.filter(loan => {
+        const loanDescription = `${loan.loan_no}`
         const isAlreadyAdded = this.existingDeductions.some(deduction => 
           deduction.description === loanDescription
         )
-        return !isAlreadyAdded
+        const isAlreadyPaidForPeriod = this.isLoanPaidForCurrentPeriod(loan)
+
+        return !isAlreadyAdded && !isAlreadyPaidForPeriod
       })
     },
     existingManualDeduction() {
@@ -182,7 +259,7 @@ computed: {
       // Check if the current label matches any existing manual deduction (not loan deductions)
       return this.existingDeductions.find(deduction => 
         deduction.description === this.localDeductionLabel && 
-        !deduction.description.startsWith('Loan #')
+        !(deduction.description || '').startsWith('LN')
       )
     },
     totalExistingDeductions() {
@@ -191,8 +268,8 @@ computed: {
       }
       return this.availableLoans.reduce((total, loan) => {
         // Only include loans that are selected
-        if (this.selectedLoans.includes(loan.id)) {
-          return total + (loan.payroll_deduction || 0)
+        if (this.sameLoanIdSelected(loan.id)) {
+          return total + this.getLoanDeductionAmount(loan.id)
         }
         return total
       }, 0)
@@ -201,17 +278,18 @@ computed: {
       return this.totalExistingDeductions + (this.localDeduction || 0)
     },
     selectedLoansData() {
-      if (!this.employee || !this.employee.loans || !this.employee.loans.length) {
+      if (!this.normalizedEmployeeLoans.length) {
         return []
       }
-      return this.employee.loans
-        .filter(loan => this.selectedLoans.includes(loan.id))
+      return this.normalizedEmployeeLoans
+        .filter(loan => this.sameLoanIdSelected(loan.id))
         .map(loan => {
           const divisor = loan.divisor || 2
-          const deduction = Number(loan.payroll_deduction || 0)
+          const deduction = this.getLoanDeductionAmount(loan.id)
 
           return {
             id: loan.id,
+            loan_no: loan.loan_no,
             remaining_balance: loan.remaining_balance,
             term_months: loan.term_months,
             interest_rate: loan.interest_rate,
@@ -223,6 +301,115 @@ computed: {
     }
   },
   methods: {
+    initializeLoanAmounts() {
+      const nextLoanAmounts = {}
+
+      this.availableLoans.forEach(loan => {
+        nextLoanAmounts[String(loan.id)] = Number(loan.payroll_deduction || 0)
+      })
+
+      this.loanAmounts = nextLoanAmounts
+    },
+    sameLoanIdSelected(loanId) {
+      const normalizedLoanId = String(loanId)
+      return this.selectedLoans.some(selectedId => String(selectedId) === normalizedLoanId)
+    },
+    getLoanDeductionAmount(loanId) {
+      const normalizedLoanId = String(loanId)
+      const amount = Number(this.loanAmounts[normalizedLoanId] ?? 0)
+      return Number.isFinite(amount) ? amount : 0
+    },
+    getLoanRemainingBalance(loan) {
+      const remainingBalance = Number(loan?.remaining_balance ?? 0)
+      return Number.isFinite(remainingBalance) && remainingBalance >= 0 ? remainingBalance : 0
+    },
+    updateLoanDeductionAmount(loanId, value) {
+      const normalizedLoanId = String(loanId)
+      const numericValue = Number(value)
+      const targetLoan = this.availableLoans.find(loan => String(loan.id) === normalizedLoanId)
+      const maxAmount = this.getLoanRemainingBalance(targetLoan)
+      const sanitizedAmount = Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : 0
+      const cappedAmount = Math.min(sanitizedAmount, maxAmount)
+
+      this.loanAmounts = {
+        ...this.loanAmounts,
+        [normalizedLoanId]: cappedAmount
+      }
+    },
+    normalizePeriodLabel(value) {
+      return String(value || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLowerCase()
+    },
+    getMonthIndex(monthName) {
+      const months = [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december'
+      ]
+
+      return months.indexOf(String(monthName || '').trim().toLowerCase())
+    },
+    formatDateKey(year, monthIndex, day) {
+      const safeMonth = String(monthIndex + 1).padStart(2, '0')
+      const safeDay = String(day).padStart(2, '0')
+      return `${year}-${safeMonth}-${safeDay}`
+    },
+    buildPeriodKeyFromDates(start, end) {
+      if (!start || !end) {
+        return ''
+      }
+
+      const startParts = String(start).split('-').map(Number)
+      const endParts = String(end).split('-').map(Number)
+
+      if (startParts.length !== 3 || endParts.length !== 3 || startParts.some(Number.isNaN) || endParts.some(Number.isNaN)) {
+        return ''
+      }
+
+      return `${this.formatDateKey(startParts[0], startParts[1] - 1, startParts[2])}|${this.formatDateKey(endParts[0], endParts[1] - 1, endParts[2])}`
+    },
+    buildPeriodKeyFromLabel(label) {
+      const normalizedLabel = this.normalizePeriodLabel(label)
+      if (!normalizedLabel) {
+        return ''
+      }
+
+      const match = normalizedLabel.match(/^([a-z]+)\s+(\d{1,2})\s*-\s*(?:(\w+)\s+)?(\d{1,2}),\s*(\d{4})$/)
+      if (!match) {
+        return ''
+      }
+
+      const [, startMonthName, startDayRaw, endMonthNameRaw, endDayRaw, endYearRaw] = match
+      const startMonthIndex = this.getMonthIndex(startMonthName)
+      const endMonthIndex = this.getMonthIndex(endMonthNameRaw || startMonthName)
+      const startDay = Number(startDayRaw)
+      const endDay = Number(endDayRaw)
+      const endYear = Number(endYearRaw)
+
+      if ([startMonthIndex, endMonthIndex, startDay, endDay, endYear].some(value => Number.isNaN(value) || value < 0)) {
+        return ''
+      }
+
+      const startYear = startMonthIndex > endMonthIndex ? endYear - 1 : endYear
+
+      return `${this.formatDateKey(startYear, startMonthIndex, startDay)}|${this.formatDateKey(endYear, endMonthIndex, endDay)}`
+    },
+    isLoanPaidForCurrentPeriod(loan) {
+      if ((!this.currentPayrollPeriodKey && !this.currentPayrollPeriodLabels.length) || !Array.isArray(loan?.payments) || !loan.payments.length) {
+        return false
+      }
+
+      return loan.payments.some(payment => {
+        const normalizedPaidDate = this.normalizePeriodLabel(payment?.paid_date)
+        if (normalizedPaidDate && this.currentPayrollPeriodLabels.includes(normalizedPaidDate)) {
+          return true
+        }
+
+        const paidDateKey = this.buildPeriodKeyFromLabel(payment?.paid_date)
+        return !!paidDateKey && paidDateKey === this.currentPayrollPeriodKey
+      })
+    },
     close() {
       this.$emit('close')
     },
@@ -322,6 +509,23 @@ computed: {
 .loan-deduction {
   font-weight: 600;
   color: #dc3545;
+}
+
+.loan-deduction-input {
+  width: 110px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #f1c0c7;
+  border-radius: 6px;
+  text-align: right;
+  color: #dc3545;
+  font-weight: 600;
+  background: white;
+}
+
+.loan-deduction-input:focus {
+  outline: none;
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
 }
 
 .total-existing {
@@ -425,36 +629,8 @@ computed: {
   border-color: #2d6d5e;
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.modal-overlay.active {
-  opacity: 1;
-  visibility: visible;
-}
-
 .modal-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .modal-sm {
@@ -462,39 +638,14 @@ computed: {
   max-width: 450px;
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
-  background: #f8f9fa;
-}
-
 .modal-header h3 {
-  margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #2c3e50;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  cursor: pointer;
-  color: #6c757d;
   padding: 0;
   line-height: 1;
-}
-
-.close-btn:hover {
-  color: #dc3545;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
 }
 
 .form-group {
@@ -547,4 +698,3 @@ computed: {
   margin-top: 0.25rem;
 }
 </style>
-

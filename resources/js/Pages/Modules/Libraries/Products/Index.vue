@@ -5,7 +5,6 @@
         <div class="col-md-12">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-shield-user-line"></i>
@@ -19,7 +18,6 @@
                             <i class="ri-add-line"></i>
                             <span>Add Product</span>
                         </button>
-                    </div>
                 </div>
 
                 <div class="library-card-body">
@@ -41,8 +39,10 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Code</th>
                                     <th>Name</th>
-                                    <th>Pack Size</th>
+                                    <th>Packaging</th>
+                                    <th>Weight</th>
                                     <th>Unit</th>
                                     <th>Active</th>
                                     <th>Actions</th>
@@ -55,8 +55,10 @@
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                                 }">
                                     <td>{{ index + 1}}</td>
+                                    <td>{{ list.code }}</td>
                                     <td>{{ list.brand?.name }}</td>
-                                    <td>{{ list.pack_size }}</td>
+                                    <td>{{ list.packaging?.name ?? '—' }}</td>
+                                    <td>{{ list.weight }}</td>
                                     <td>{{ list.unit.name }}</td>
                                     <td>
                                     <b-form-checkbox
@@ -177,13 +179,6 @@ export default {
             .catch(error => {
                 console.error('Error updating product active status:', error);
             });
-        },
-
-        formatCurrency(value) {
-            if (typeof value !== 'number') {
-                return value;
-            }
-            return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
         },
     }
 }

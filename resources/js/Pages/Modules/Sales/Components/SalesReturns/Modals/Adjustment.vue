@@ -8,7 +8,7 @@
     >
         <div class="modal-container modal-lg">
             <div class="modal-header">
-                <h2>{{ 'Sales Adjustment'}}</h2>
+                <h2>Sales Allowance</h2>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -20,20 +20,16 @@
                             <label for="type" class="form-label">Type</label>
                             <div class="input-wrapper">
                                 <i class="ri-refund-line input-icon"></i>
-                                <b-form-select
-                                class="form-control"
-                                v-model="form.type"
-                                :options="['Sales Return' , 'Sales Allowance']"
-                                :class="{ 'input-error': form.errors.type }"
-                                text-field="name"
-                                value-field="value"
+                                <select
+                                    class="form-control"
+                                    v-model="form.type"
+                                    :class="{ 'input-error': form.errors.type }"
                                 >
-                                 <template #first>
-                                    <b-form-select-option :value="null" disabled  >Select Type</b-form-select-option>
-                                </template>
-                                </b-form-select>    
+                                    <option :value="null" disabled>Select Type</option>
+                                    <option value="Sales Allowance">Sales Allowance</option>
+                                </select>    
                             </div>
-                            <span class="error-message" v-if="form.errors.brand_id">{{ form.errors.type }}</span>
+                            <span class="error-message" v-if="form.errors.type">{{ form.errors.type }}</span>
                         </div>
 
                     </div>
@@ -41,13 +37,14 @@
                     <div class="form-row">
                       <div class="form-group">
                             <label for="reason" class="form-label">Reason</label>
-                            <b-form-textarea
+                            <textarea
                                 id="textarea-rows"
+                                class="form-control"
                                 placeholder="Enter the reason"
                                 rows="8"
                                 v-model="form.reason"
                                 :class="{ 'input-error': form.errors.reason }"
-                            ></b-form-textarea>
+                            ></textarea>
                             <span class="error-message" v-if="form.errors.reason">{{ form.errors.reason }}</span>
                         </div>
                     </div>
@@ -90,6 +87,7 @@ export default {
             currentUrl: window.location.origin,
             form: useForm({
                 id: null,
+                action: 'adjustment',
                 type: null,
                 reason: null,
             }),
@@ -105,7 +103,7 @@ export default {
         },
 
         submit() {
-            this.form.post(`/sales-orders/adjustment/${this.form.id}`, {
+            this.form.post(`/sales-orders/${this.form.id}/adjustment`, {
                 onSuccess: () => {
                     this.saveSuccess = true;
                     this.$emit('update');

@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers\Modules;
+
+use App\Exports\SalesReportExport;
+use App\Http\Controllers\Controller;
+use App\Models\ListLocation;
+use App\Services\Modules\ReportClass;
+use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+
+class ReportsController extends Controller
+{
+    public function __construct(private ReportClass $reports)
+    {
+    }
+
+    public function index(Request $request)
+    {
+        $filters = $this->resolveFilters($request);
+        $reportData = $this->reports->summary($filters);
+
+        if ($request->option === 'summary') {
+            return response()->json($reportData);
+        }
+        if ($request->option === 'excel') {
+            $filename = 'sales-report-' . now()->format('Ymd_His') . '.xlsx';
+
+            return Excel::download(new SalesReportExport($filters, $reportData), $filename);
+        }
+        if ($request->option === 'pdf') {
+            $filename = 'sales-report-' . now()->format('Ymd_His') . '.pdf';
+            $pdf = \PDF::loadView('prints.sales-report', [
+                'filters' => $filters,
+                'reportData' => $reportData,
+            ])->setPaper('A4', 'portrait');
+
+            return $pdf->download($filename);
+        }
+
+        return inertia('Modules/Reports/Index', [
+            'filters' => $filters,
+            'reportData' => $reportData,
+            'locations' => ListLocation::query()
+                ->where('is_active', 1)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (ListLocation $location) => [
+                    'value' => $location->id,
+                    'name' => $location->name,
+                ])
+                ->values(),
+        ]);
+    }
+
+    private function resolveFilters(Request $request): array
+    {
+        $from = $request->input('from', now()->startOfMonth()->toDateString());
+        $to = $request->input('to', now()->toDateString());
+        $day = $request->input('day', now()->toDateString());
+        $limit = (int) $request->input('limit', 10);
+        $paymentMode = strtolower((string) $request->input('payment_mode', 'all'));
+        $reportType = strtolower((string) $request->input('report_type', 'sales-summary'));
+        $locationId = $request->filled('location_id') ? (int) $request->input('location_id') : null;
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'day' => $day,
+            'limit' => max(1, min($limit, 50)),
+            'location_id' => $locationId > 0 ? $locationId : null,
+            'payment_mode' => in_array($paymentMode, ['all', 'cash', 'credit'], true) ? $paymentMode : 'all',
+            'report_type' => in_array($reportType, [
+                'sales-summary',
+                'sales-by-item',
+                'sales-by-employee',
+                'sales-by-payment-type',
+                'receipt',
+                'discount',
+                'taxes',
+            ], true) ? $reportType : 'sales-summary',
+        ];
+    }
+}

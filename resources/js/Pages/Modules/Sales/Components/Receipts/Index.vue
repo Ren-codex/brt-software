@@ -1,9 +1,8 @@
 <template>
-    <BRow>
-        <div class="col-md-9 mb-4">
+    <div>
+        <div class="col-md-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-shopping-cart-line fs-24"></i>
@@ -14,17 +13,16 @@
                             </div>
                         </div>
                       
-                    </div>
 
                 </div>
-                <div class="card-body m-2 p-3">
+                <div class="library-card-body">
                     <div class="search-section">
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
-                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                        placeholder="Search purchase request..." class="search-input">
+                                    <input type="text" v-model="filter.keyword"
+                                        placeholder="Search receipt..." class="search-input">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -56,30 +54,38 @@
 
 
                     <div class="table-responsive table-card">
-                        <table class="table align-middle table-hover mb-0" style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                <tr class="fs-12 fw-bold text-muted">
-                                    <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 12%;" class="text-center border-none">OR Number</th>
-                                    <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment Date</th>
-                                    <th style="width: 12%;" class="text-center border-none">Amount Balance</th>
-                                    <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
-                                    <th style="width: 12%;" class="text-center border-none">Payment Mode</th>
-                                    <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 6%;" class="text-center border-none">Actions</th>
+                        <table class="table sales-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:3%">#</th>
+                                    <th class="text-center" style="width:12%">OR Number</th>
+                                    <th class="text-center" style="width:12%">Customer</th>
+                                    <th class="text-center" style="width:12%">Payment Date</th>
+                                    <th class="text-center" style="width:10%">Type</th>
+                                    <th class="text-center" style="width:12%">Amount Balance</th>
+                                    <th class="text-end" style="width:12%">Amount Paid</th>
+                                    <th class="text-center" style="width:12%">Payment Mode</th>
+                                    <th class="text-center" style="width:12%">Status</th>
+                                    <th class="text-center" style="width:6%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9" class="text-center text-muted py-4">
-                                        <i class="ri-shopping-cart-line fs-1 text-muted mb-2"></i>
-                                        <div>No receipts found.</div>
-                                        <small>Receipts will appear here once they are created.</small>
+                                    <td colspan="10">
+                                        <div class="sales-empty-state">
+                                            <i class="ri-shopping-cart-line"></i>
+                                            <p>No receipts found.</p>
+                                            <small>Receipts will appear here once they are created.</small>
+                                        </div>
                                     </td>
                                 </tr>
                                 <template v-for="(list,index) in lists" :key="index">
-                                    <tr @click="toggleRowExpansion(index)" class="cursor-pointer transition-all" style="transition: all 0.3s ease;">
+                                    <tr @click="toggleRowExpansion(index)"
+                                        :class="{
+                                            'main-table-row': true,
+                                            'unremitted-row': list.is_unremitted_past_day
+                                        }"
+                                        class="cursor-pointer transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
                                             <i v-if="expandedRows.includes(index)" class="ri-arrow-down-s-line text-primary"></i>
                                             <i v-else class="ri-arrow-right-s-line text-muted"></i>
@@ -88,7 +94,12 @@
                                         <td class="text-center fw-semibold">{{ list.receipt_number }}</td>
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.receipt_date }}</td>
-                                        <td class="text-center">{{ list.balance_due }}</td>
+                                        <td class="text-center">
+                                            <span class="badge" :class="getReceiptTypeClass(list.receipt_type)">
+                                                {{ getReceiptTypeLabel(list.receipt_type) }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">₱{{ list.balance_due }}</td>
                                         <td class="text-center">₱{{ list.amount_paid }}</td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">
@@ -96,17 +107,20 @@
                                                 :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
                                                 {{ list.status?.name || 'Unknown' }}
                                             </span>
+                                            <span v-if="list.is_unremitted_past_day" class="unremitted-badge ms-1">
+                                                Unremitted
+                                            </span>
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
+                                                <button @click.stop="onPrint(list.id)" class="action-btn info" title="Print">
                                                     <i class="ri-printer-line"></i>
-                                                </b-button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr v-if="expandedRows.includes(index)" class="bg-light">
-                                        <td colspan="8" class="p-0">
+                                        <td colspan="10" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Order Details
@@ -117,6 +131,8 @@
                                                             <div class="card-body">
                                                 <h6 class="card-title text-muted small mb-2">Receipt Information</h6>
                                                                 <p class="mb-1"><strong>Receipt Date:</strong> {{ list.receipt_date }}</p>
+                                                                <p class="mb-1"><strong>Receipt Type:</strong> {{ getReceiptTypeLabel(list.receipt_type) }}</p>
+                                                                <p v-if="list.source_receipt?.receipt_number" class="mb-1"><strong>Source Receipt:</strong> {{ list.source_receipt.receipt_number }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -140,51 +156,12 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
+                <div class="px-3 pb-3">
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length" :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card shadow-lg border-0 bg-light" >
-                <div class="card-header border-0  " >
-                    <h4 >
-                        <i class="ri-dashboard-line "></i> Quick Stats
-                        <hr class="mb-0">
-                    </h4>
-                </div>
-     
-                <div class="card-body">
-                    <div class="metric-card mb-3 p-3 e bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-shopping-cart-line  fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Total Receipts</p>
-                                <h4 class="mb-0 ">{{ metrics.total_receipts }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="metric-card mb-3 p-3 bg-opacity-10 rounded" style="backdrop-filter: blur(10px);">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title  bg-opacity-25 rounded">
-                                    <i class="ri-money-dollar-circle-line  fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class=" fw-semibold fs-12 mb-1">Total Amount Collected</p>
-                                <h4 class="mb-0 ">₱{{ metrics.total_amount_collected }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </BRow>
+    </div>
 
     
 </template>
@@ -255,14 +232,6 @@ export default {
         },
 
 
-        selectRow(index) {
-            if (this.selectedRow === index) {
-                this.selectedRow = null;
-            } else {
-                this.selectedRow = index;
-            }
-        },
-
         toggleRowExpansion(index) {
             if (this.expandedRows.includes(index)) {
                 this.expandedRows = this.expandedRows.filter(i => i !== index);
@@ -286,14 +255,49 @@ export default {
         },
 
         onPrint(id) {
-          console.log('Print receipt with ID:', id);
             window.open(`/receipts/${id}?option=print&type=receipt`);
         },
-
-         getCustomer(customer_id){
-            const customer = this.dropdowns.customers.find(u => u.value === customer_id);
-            return customer ? customer : [];
+        getReceiptTypeLabel(type) {
+            if (type === 'updated') return 'Adjusted Payment';
+            if (type === 'refund') return 'Return Refund';
+            return 'Payment';
         },
+        getReceiptTypeClass(type) {
+            if (type === 'updated') return 'bg-info text-dark';
+            if (type === 'refund') return 'bg-warning text-dark';
+            return 'bg-primary';
+        },
+
     }
 }
 </script>
+<style scoped>
+.main-table-row {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.main-table-row.unremitted-row {
+    background: rgba(239, 68, 68, 0.12);
+    border-left-color: #dc2626;
+}
+
+.main-table-row.unremitted-row:hover {
+    background: rgba(239, 68, 68, 0.18) !important;
+    border-left-color: #b91c1c;
+}
+
+.unremitted-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #991b1b;
+    background: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(220, 38, 38, 0.28);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+</style>

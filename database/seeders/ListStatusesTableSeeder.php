@@ -232,8 +232,90 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
-        ));
 
-        
+            18 =>
+            array (
+                'id' => 19,
+                'name' => 'Replaced',
+                'slug' => 'replaced',
+                'description' => 'For Replaced status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            18 =>
+            array (
+                'id' => 19,
+                'name' => 'loss',
+                'slug' => 'loss',
+                'description' => 'For Loss status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            19 =>
+            array (
+                'id' => 20,
+                'name' => 'Sales Return Approval',
+                'slug' => 'sales-return-approval',
+                'description' => 'For Loss status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            20 =>
+            array (
+                'id' => 21,
+                'name' => 'Received Status',
+                'slug' => 'receive',
+                'description' => 'Received status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            21 =>
+            array (
+                'id' => 22,
+                'name' => 'Released',
+                'slug' => 'released',
+                'description' => 'Released status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#0d6efd',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            22 =>
+            array (
+                'id' => 23,
+                'name' => 'Overdue',
+                'slug' => 'overdue',
+                'description' => 'Invoice is past its due date with an outstanding balance',
+                'text_color' => '#ffffff',
+                'bg_color' => '#dc3545',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            23 =>
+            array (
+                'id' => 24,
+                'name' => 'Partially Returned',
+                'slug' => 'partially-returned',
+                'description' => 'Sales order has had some items returned',
+                'text_color' => '#000000',
+                'bg_color' => '#fd7e14',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+        ));
     }
 }

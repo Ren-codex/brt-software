@@ -26,6 +26,21 @@ class PurchaseOrderItemResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'received_quantity' => $this->received_quantity,
+            'batches' => $this->receivedItems
+                ? $this->receivedItems
+                    ->flatMap(function ($receivedItem) {
+                        return $receivedItem->inventoryStocks->map(function ($stock) use ($receivedItem) {
+                            return [
+                                'batch_code' => $stock->batch_code,
+                                'quantity' => (int) $stock->quantity,
+                                'received_quantity' => (float) $receivedItem->quantity,
+                                'received_id' => $receivedItem->received_id,
+                                'received_date' => optional($receivedItem->receivedStock)->received_date,
+                            ];
+                        });
+                    })
+                    ->values()
+                : [],
         ];
     }
 }

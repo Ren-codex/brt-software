@@ -8,16 +8,16 @@
     max-width: 1400px;
     margin: 0 auto;
 
-    &::after {
-        content: '';
-        position: absolute;
-        width: 2px;
-        background: $timeline-color;
-        top: 57px;
-        bottom: 166px;
-        left: 50%;
-        margin-left: -1.5px;
-    }
+    // &::after {
+    //     content: '';
+    //     position: absolute;
+    //     width: 2px;
+    //     background: $timeline-color;
+    //     top: 57px;
+    //     bottom: 166px;
+    //     left: 50%;
+    //     margin-left: -1.5px;
+    // }
 }
 
 .timeline-item {
@@ -92,13 +92,12 @@
 }
 
 @media (max-width: 991.98px) {
-    .timeline {
-        &::after {
-            left: 24px;
-            bottom: 180px;
-        }
-    }
-
+    // .timeline {
+    //     &::after {
+    //         left: 24px;
+    //         bottom: 180px;
+    //     }
+    // }
     .timeline-item {
         width: 100%;
         padding-left: 48px;

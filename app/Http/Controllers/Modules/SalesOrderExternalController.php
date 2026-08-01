@@ -46,6 +46,7 @@ class SalesOrderExternalController extends Controller
                         'sales_reps' => $this->dropdown->sales_reps(),
                         'drivers' => $this->dropdown->drivers(),
                         'locations' => $this->dropdown->locations(),
+                        'sales_statuses' => $this->dropdown->sales_statuses(),
                     ],
                     'isExternal' => true,
 
@@ -60,36 +61,58 @@ class SalesOrderExternalController extends Controller
             return $this->sales_order->save($request);
         });
 
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'stock' => $result['info'] ?? 'Unable to save sales order.',
+            ]);
+        }
 
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'receipt_id' => $result['receipt_id'] ?? null,
         ]);
     }
 
 
     public function update(SalesOrderRequest $request, $id){
 
-        $result = $this->handleTransaction(function () use ($request) {
-                switch($request->action){
+        $result = $this->handleTransaction(function () use ($request, $id) {
+                $action = $request->action ?? 'update';
+                switch($action){
                     case 'update':
+                        $request->merge(['id' => $id]);
                         $request->merge(['is_external' => true]);
-                        return $this->sales_order->update($request->id);
+                        return $this->sales_order->update($request);
                     break;
                     case 'approve':
-                        return $this->sales_order->approve($request->id);
+                        $request->merge(['id' => $id]);
+                        return $this->sales_order->approve($request->id, $request->item_ids ?? []);
                     break;
                     case 'cancel':
+                        $request->merge(['id' => $id]);
                         return $this->sales_order->cancel($request->id);
                     break;
                     case 'adjustment':
+                        $request->merge(['id' => $id]);
                         return $this->sales_order->adjustment($request);
+                    break;
+                    default:
+                        $request->merge(['id' => $id]);
+                        $request->merge(['is_external' => true]);
+                        return $this->sales_order->update($request);
                     break;
                 }
             });
 
+
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'stock' => $result['info'] ?? 'Unable to update sales order.',
+            ]);
+        }
 
 
         return back()->with([
@@ -101,6 +124,24 @@ class SalesOrderExternalController extends Controller
 
     }
 
+
+    public function adjustment(SalesOrderRequest $request, $id){
+        $request->merge(['id' => $id]);
+        $result = $this->handleTransaction(fn() => $this->sales_order->adjustment($request));
+
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'adjustment' => $result['info'] ?? 'Unable to apply adjustment.',
+            ]);
+        }
+
+        return back()->with([
+            'data'    => $result['data'],
+            'message' => $result['message'],
+            'info'    => $result['info'],
+            'status'  => $result['status'],
+        ]);
+    }
 
     public function show($id , Request $request){
         return $this->print->print($id, $request);

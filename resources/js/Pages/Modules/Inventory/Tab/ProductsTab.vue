@@ -3,7 +3,6 @@
     <div class="col-md-12">
       <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-shopping-cart-line"></i>
@@ -17,7 +16,6 @@
               <i class="ri-add-line"></i>
               <span>Add Product</span>
             </button>
-          </div>
         </div>
 
         <div class="library-card-body">
@@ -40,10 +38,10 @@
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>Code</th>
                     <th>Name</th>
-                    <th>Pack Size</th>
+                    <th>Weight</th>
                     <th>Unit</th>
-                    <th>Price</th>
                     <th>Active</th>
                     <th>Actions</th>
                   </tr>
@@ -54,11 +52,11 @@
                     'bg-info-subtle': index === selectedRow,
                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
                   }">
-                    <td>{{ index + 1}}</td>
+                    <td>{{ (meta?.from ?? 1) + index }}</td>
+                    <td>{{ list.code }}</td>
                     <td>{{ list.brand?.name }}</td>
-                    <td>{{ list.pack_size }}</td>
+                    <td>{{ list.weight }}</td>
                     <td>{{ list.unit.name }}</td>
-                    <td>{{ formatCurrency(list.price) }}</td>
                     <td>
                       <b-form-checkbox
                         :checked="list.is_active === 1"
@@ -93,6 +91,42 @@
   <CreateProduct @add="$emit('fetch')" ref="createProduct" :dropdowns="dropdowns"/>
   <Delete ref="delete" @delete="handleDeleteSuccess"/>
 </template>
+
+<style scoped>
+/* Card Header */
+.library-card-header {
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid #c4d9d2;
+  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+}
+
+.header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(61, 141, 122, 0.12);
+  border: 1px solid rgba(61, 141, 122, 0.16);
+  color: #3d8d7a;
+  font-size: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #16322e;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 0.76rem;
+  color: #6b8c85;
+  margin: 0;
+}
+</style>
 
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
@@ -161,13 +195,6 @@ export default {
     handleDeleteSuccess() {
       this.$emit('toast', 'Product deleted successfully');
       this.$emit('fetch');
-    },
-
-    formatCurrency(value) {
-      if (typeof value !== 'number') {
-        return value;
-      }
-      return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
     },
   },
 };

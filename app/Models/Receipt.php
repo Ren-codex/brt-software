@@ -12,11 +12,14 @@ class Receipt extends Model
         'amount_paid',
         'balance_due',
         'payment_mode',
+        'receipt_type',
         'billing_account',
         'status_id',
         'customer_id',
         'ar_invoice_id',
+        'source_receipt_id',
         'remittance_id',
+        'notes',
     ];
 
     public function arInvoice()
@@ -32,6 +35,11 @@ class Receipt extends Model
     public function customer()
     {
         return $this->belongsTo('App\Models\Customer', 'customer_id');
+    }
+
+    public function sourceReceipt()
+    {
+        return $this->belongsTo(self::class, 'source_receipt_id');
     }
 
     public function remittance()
@@ -52,6 +60,6 @@ class Receipt extends Model
 
         $sequence = $lastReceipt ? intval(substr($lastReceipt->receipt_number, -4)) + 1 : 1;
 
-        return 'RCP-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return 'OR-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }

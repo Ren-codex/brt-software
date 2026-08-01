@@ -20,8 +20,7 @@ class LoginFailed
     public function handle(Lockout $event): void
     {   
         $email = $event->request->input('email');
-        $email_hash = hash('sha256', strtolower($email));
-        $user = User::where('kradworkz', $email_hash)->first();
+        $user = User::where('email', strtolower($email))->first();
         $userId = $user ? $user->id : null;
         $ip = $this->request->ip();
 

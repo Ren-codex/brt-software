@@ -21,16 +21,22 @@ class ListRolesTableSeeder extends Seeder
      */
     public function run()
     {
+        $timestamp = now();
+
         $roles = [
             [
                 'id' => 1,
                 'name' => 'Administrator',
-                'definition' => 'Has full system access, including managing users, roles, and all system configurations',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Manages day-to-day system administration, including users, role assignments, and operational setup.',
             ],
             [
                 'id' => 2,
                 'name' => 'Sales Rep',
-                'definition' => 'Records sales orders, issues receipts, and remits collections.',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Handles customer accounts, sales orders, field activity, and related sales transactions.',
             ],
             [
                 'id' => 3,
@@ -39,33 +45,62 @@ class ListRolesTableSeeder extends Seeder
             ],
             [
                 'id' => 4,
-                'name' => 'Inventory Manager',
-                'definition' => 'Maintains purchase orders, received stock, stock levels, and inventory adjustments.',
+                'name' => 'Warehouse Manager',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Supervises receiving, stock movement, inventory monitoring, and warehouse operations.',
             ],
             [
                 'id' => 5,
-                'name' => 'Sales Manager',
-                'definition' => 'Owns the customer book and monitors outstanding receivables.',
+                'name' => 'Area Business Manager',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Oversees regional sales performance, team execution, and business development activities.',
             ],
             [
                 'id' => 6,
-                'name' => 'Top Management',
-                'definition' => 'Executive oversight. Not referenced by any menu or route guard yet.',
+                'name' => 'Accountant',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Manages financial records, payables, receivables, disbursements, and accounting reports.',
             ],
+            [
+                'id' => 7,
+                'name' => 'Super Admin',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Has unrestricted access to all modules, settings, approvals, and master data across the system.',
+            ],
+
+            [
+                'id' => 8,
+                'name' => 'Mini Admin',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Has unrestricted access to all modules, settings, approvals, and master data across the system.',
+            ],
+            [
+                'id' => 9,
+                'name' => 'Logistic Coordinator',
+                'type' => 'Staff',
+                'is_active' => 1,
+                'definition' => 'Coordinates deliveries, shipment schedules, transport activity, and logistics-related documentation.',
+            ],
+
+        
         ];
 
-        foreach ($roles as $role) {
-            DB::table('list_roles')->updateOrInsert(
-                ['id' => $role['id']],
-                [
-                    'name' => $role['name'],
-                    'type' => 'Staff',
-                    'is_active' => 1,
-                    'definition' => $role['definition'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
-        }
+        $rows = array_map(function ($role) use ($timestamp) {
+            return array_merge($role, [
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ]);
+        }, $roles);
+
+        DB::table('list_roles')->upsert(
+            $rows,
+            ['id'],
+            ['name', 'type', 'is_active', 'definition', 'updated_at']
+        );
     }
 }

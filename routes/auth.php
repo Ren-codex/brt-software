@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\EmployeeController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -27,6 +28,10 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::resource('/employee', App\Http\Controllers\Auth\EmployeeController::class);
+    Route::get('/profile', [EmployeeController::class, 'profile'])->name('profile');
+    Route::post('/profile', [EmployeeController::class, 'store'])->name('profile.store');
+    Route::put('/profile/updated', [EmployeeController::class, 'update'])->name('profile.update');
+    Route::delete('/profile/{destroy}', [EmployeeController::class, 'destroy'])->name('profile.destroy');
     Route::get('installation', [WelcomeController::class, 'installation'])->name('installation');
     Route::post('install', [WelcomeController::class, 'install']);
     Route::get('/activation', [App\Http\Controllers\Auth\EmployeeController::class, 'activation'])->name('activation');

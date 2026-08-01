@@ -19,8 +19,12 @@
 
             </div>
             <div class="modal-footer m-3">
-                <button class="btn btn-secondary me-2" @click="hide">Close</button>
-                <button class="btn btn-primary" @click="submit">Yes, Approve</button>
+                <button class="btn btn-secondary me-2" @click="hide" :disabled="form.processing">Close</button>
+                <button class="btn btn-primary" @click="submit" :disabled="form.processing">
+                    <i class="ri-loader-4-line spinner me-1" v-if="form.processing"></i>
+                    <i class="ri-check-line me-1" v-else></i>
+                    {{ form.processing ? 'Approving...' : 'Yes, Approve' }}
+                </button>
             </div>
         </div>
     </div>
@@ -76,3 +80,23 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.modal-container {
+    max-height: calc(100vh - 2rem);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    flex-shrink: 0;
+    border-top: 1px solid #e9ecef;
+}
+</style>

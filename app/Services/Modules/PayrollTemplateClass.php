@@ -6,6 +6,7 @@ use App\Models\PayrollTemplate;
 use App\Models\PayrollTemplateEmployee;
 use App\Models\Payroll;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ListStatus;
 
 class PayrollTemplateClass
 {
@@ -38,8 +39,8 @@ class PayrollTemplateClass
 
         return [
             'data' => $payrollTemplate,
-            'message' => 'Payroll template saved successfully!',
-            'info' => "You've successfully saved the payroll template"
+            'message' => 'Payroll group saved successfully!',
+            'info' => "You've successfully saved the payroll group"
         ];
     }
 
@@ -52,8 +53,8 @@ class PayrollTemplateClass
 
         return [
             'data' => $payrollTemplate,
-            'message' => 'Payroll template updated successfully!',
-            'info' => "You've successfully updated the payroll template"
+            'message' => 'Payroll group updated successfully!',
+            'info' => "You've successfully updated the payroll group"
         ];
     }
 
@@ -62,14 +63,14 @@ class PayrollTemplateClass
         $payrollTemplate = PayrollTemplate::findOrFail($id);
         
         $hasOngoingPayroll = Payroll::where('payroll_template_id', $payrollTemplate->id)
-        ->where('status_id', '!=', 9)
+        ->where('status_id', '!=', ListStatus::getBySlug('completed')->id)
         ->exists();
 
         if ($hasOngoingPayroll) {
             return [
                 'data' => $payrollTemplate,
-                'message' => 'Payroll template cannot be deleted because template has ongoing/unpaid payrolls.',
-                'info' => "Please finalize or remove the payrolls covering the current period before deleting the template",
+                'message' => 'Payroll group cannot be deleted because the group has ongoing/unpaid payrolls.',
+                'info' => "Please finalize or remove the payrolls covering the current period before deleting the group",
                 'status' => false,
             ];
         }
@@ -78,8 +79,8 @@ class PayrollTemplateClass
 
         return [
             'data' => $payrollTemplate,
-            'message' => 'Payroll template deleted successfully!',
-            'info' => "You've successfully deleted the payroll template",
+            'message' => 'Payroll group deleted successfully!',
+            'info' => "You've successfully deleted the payroll group",
             'status' => true,
         ];
     }
@@ -92,14 +93,14 @@ class PayrollTemplateClass
         $hasOngoingPayroll = Payroll::whereHas('items', function($q) use ($employeeId) {
             $q->where('employee_id', $employeeId);
         })
-        ->where('status', '!=', 'paid')
+        ->where('status_id', '!=', ListStatus::getBySlug('completed')->id)
         ->exists();
 
         if ($hasOngoingPayroll) {
             return [
                 'data' => $payrollTemplate,
-                'message' => 'Employee has an ongoing payroll and cannot be removed from the template.',
-                'info' => "Please finalize or remove the payroll covering the current period before removing the employee from the template",
+                'message' => 'Employee has an ongoing payroll and cannot be removed from the group.',
+                'info' => "Please finalize or remove the payroll covering the current period before removing the employee from the group",
                 'status' => false,
             ];
         }
@@ -112,8 +113,8 @@ class PayrollTemplateClass
 
         return [
             'data' => $payrollTemplate,
-            'message' => 'Employee removed from payroll template successfully!',
-            'info' => "You've successfully removed the employee from the payroll template"
+            'message' => 'Employee removed from payroll group successfully!',
+            'info' => "You've successfully removed the employee from the payroll group"
         ];
     }
 
@@ -130,8 +131,8 @@ class PayrollTemplateClass
 
         return [
             'data' => $payrollTemplate,
-            'message' => 'Employees added to payroll template successfully!',
-            'info' => "You've successfully added employees to the payroll template"
+            'message' => 'Employees added to payroll group successfully!',
+            'info' => "You've successfully added employees to the payroll group"
         ];
     }
 }

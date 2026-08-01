@@ -3,7 +3,6 @@
         <div class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-money-dollar-circle-line fs-24"></i>
@@ -17,7 +16,6 @@
                             <i class="ri-add-line"></i>
                             <span>Add Payroll</span>
                         </button>
-                    </div>
                 </div>
                 <div class="card-body m-2 p-3">
                     <div class="search-section">
@@ -36,27 +34,29 @@
                                     <th style="width: 3%; border: none;">#</th>
                                     <th style="width: 15%;" class="text-center border-none">Pay Period</th>
                                     <th style="width: 20%;" class="text-center border-none">Payroll No.</th>
-                                    <th style="width: 20%;" class="text-center border-none">Payroll Name</th>
+                                    <th style="width: 20%;" class="text-center border-none">Payroll Group</th>
                                     <th style="width: 10%;" class="text-center border-none">Total Net Salary</th>
                                     <th style="width: 10%;" class="text-center border-none">Payroll Clerk</th>
+                                    <th style="width: 10%;" class="text-center border-none">Approved By</th>
                                     <th style="width: 10%;" class="text-center border-none">Status</th>
                                     <th style="width: 12%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
                                 <template v-for="(payroll, index) in payrolls" :key="payroll.id">
-                                    <tr @click="toggleRowExpansion(index)" :class="{
+                                    <tr @click="editPayroll(payroll)" :class="{
                                         'bg-primary bg-opacity-10 ': index === selectedRow,
                                         'cursor-pointer': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">{{ index + 1 }}</td>
-                                        <td class="text-center fw-semibold">{{ formatDate(payroll.pay_period_start) }} - {{ formatDate(payroll.pay_period_end) }}</td>
+                                        <td class="text-center fw-semibold">{{ payroll.payroll_period }}</td>
                                         <td class="text-center">
                                             {{ payroll.payroll_no }}
                                         </td>
                                         <td class="text-center">{{ payroll.payroll_name }}</td>
                                         <td class="text-center fw-bold">{{ formatCurrency(payroll.total_amount) }}</td>
                                         <td class="text-center">{{ payroll.created_by }}</td>
+                                        <td class="text-center">{{ payroll.approved_by }}</td>
                                         <td class="text-center">
                                             <span class="status-badge" 
                                               :style="{ color: payroll.status?.text_color, backgroundColor: payroll.status?.bg_color, padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }">

@@ -1,272 +1,279 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt - {{ $receipt->receipt_number }}</title>
+    <title>
+        {{ ($receipt->receipt_type ?? 'payment') === 'updated' ? 'Updated Receipt' : (($receipt->receipt_type ?? 'payment') === 'refund' ? 'Refund Receipt' : 'Receipt') }} - {{ $receipt->receipt_number ?? 'N/A' }}
+    </title>
     <style>
+        @page { size: A4 portrait; margin: 10mm; }
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            font-size: 14px;
-            line-height: 1.4;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11px;
             color: #333;
+            line-height: 1.4;
         }
 
-        .header {
+        /* Header */
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .logo-box {
+            width: 70px;
+            height: 70px;
+            border-radius: 4px;
             text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            vertical-align: middle;
         }
-
-        .company-name {
-            font-size: 24px;
+        .logo-img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+        .logo-fallback {
+            width: 70px;
+            height: 70px;
+            background-color: #C0392B;
+            border-radius: 4px;
+        }
+        .company-name { font-size: 20px; font-weight: bold; color: #1a1a1a; margin: 0; }
+        .order-title { font-size: 26px; font-weight: bold; text-align: right; margin: 0 0 8px 0; }
+        .order-info { text-align: right; font-size: 13px; }
+        .order-meta-table { width: 100%; border-collapse: collapse; }
+        .order-meta-label {
+            font-size: 10px;
             font-weight: bold;
+            text-align: right;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+        }
+        .order-meta-value { text-align: right; font-size: 13px; padding: 2px 0 8px 0; }
+
+        /* Address & Total Section */
+        .summary-container { width: 100%; display: table; margin-bottom: 15px; }
+        .address-block { display: table-cell; width: 33%; vertical-align: top; }
+        .total-block {
+            display: table-cell;
+            width: 34%;
+            background-color: #E5E7E9;
+            padding: 15px;
+            text-align: right;
+            vertical-align: middle;
+        }
+        .address-label {
+            font-weight: bold;
+            border-bottom: 1px solid #ccc;
             margin-bottom: 5px;
+            display: block;
+            width: 90%;
         }
 
-        .document-title {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .receipt-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .info-section {
-            flex: 1;
-        }
-
-        .info-section h3 {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-
-        .info-section p {
-            margin: 3px 0;
-        }
-
-        .amount-section {
-            text-align: center;
-            margin: 30px 0;
-            padding: 20px;
-            border: 2px solid #000;
-            background-color: #f9f9f9;
-        }
-
-        .amount-label {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .amount-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-        }
-
-        .signature-section {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-around;
-        }
-
-        .signature-box {
-            text-align: center;
-            width: 200px;
-        }
-
-        .signature-line {
-            border-bottom: 1px solid #000;
-            margin-bottom: 3px;
-            margin-top: 50px;
-        }
-
-        .order-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .items-table {
+        /* Metadata Bar */
+        .meta-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin-bottom: 15px;
+            background-color: #D5DBDB;
+            border: 1px solid #BDC3C7;
         }
+        .meta-table th { font-size: 10px; padding: 4px; text-align: center; width: 20%; }
+        .meta-table td { background-color: white; text-align: center; padding: 6px; border: 1px solid #BDC3C7; }
 
-        .items-table th,
-        .items-table td {
-            border: 1px solid #000;
-            padding: 8px;
-            text-align: left;
-        }
+        /* Items Table */
+        .items-table { width: 100%; border-collapse: collapse; }
+        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 8px; text-align: left; }
+        .items-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .text-right { text-align: right; }
 
-        .items-table th {
-            background-color: #000;
-            color: white;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 12px;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .total-section {
-            float: right;
-            width: 250px;
-            margin-top: 20px;
-        }
-
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .total-label {
-            font-weight: bold;
-        }
-
-        .total-amount {
-            font-weight: bold;
-        }
-
-        .grand-total {
-            border-top: 1px solid #000;
-            padding-top: 8px;
-            font-size: 16px;
+        /* Footer */
+        .footer-table { width: 100%; margin-top: 30px; }
+        .grand-total-box { background-color: #D5DBDB; padding: 10px; font-weight: bold; }
+        .sales-rep-box {
+            display: inline-block;
+            border: 1px solid #BDC3C7;
+            padding: 8px 12px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-name">BOUYANT RICE TRADING</div>
-        <div class="document-title">OFFICIAL RECEIPT</div>
+    @php
+        $customer = $receipt->customer ?? optional($sales_order)->customer;
+        $receiptNumber = $receipt->receipt_number ?? '---';
+        $receiptType = $receipt->receipt_type ?? 'payment';
+        $isRefundReceipt = $receiptType === 'refund';
+        $isUpdatedReceipt = $receiptType === 'updated';
+        $receiptDate = $receipt->receipt_date ? \Carbon\Carbon::parse($receipt->receipt_date)->format('m/d/Y') : '-';
+        $invoiceDate = optional($ar_invoice)->invoice_date ? \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('m/d/Y') : '-';
+        $orderDate = optional($sales_order)->order_date ? \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') : '-';
+        $dueDate = optional($sales_order)->due_date ? \Carbon\Carbon::parse($sales_order->due_date)->format('m/d/Y') : '-';
+        $balanceDue = (float) (optional($ar_invoice)->balance_due ?? ($receipt->balance_due ?? 0));
+        $displayAmount = (float) ($display_amount ?? $receipt->amount_paid ?? 0);
+        $itemsCollection = collect($items ?? []);
+        $logoPath = public_path('images/brt-logo.png');
+    @endphp
+
+    <table class="header-table">
+        <tr>
+            <td style="width: 80px;">
+                <div class="logo-box">
+                    @if(file_exists($logoPath))
+                        <img src="{{ $logoPath }}" alt="System Logo" class="logo-img">
+                    @else
+                        <div class="logo-fallback"></div>
+                    @endif
+                </div>
+            </td>
+            <td>
+                <h1 class="company-name">BOUYANT RICE TRADING</h1>
+                Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
+            </td>
+            <td class="order-info" style="width: 160px;">
+                <h2 class="order-title">{{ $isUpdatedReceipt ? 'Updated Receipt' : ($isRefundReceipt ? 'Refund Receipt' : 'Receipt') }}</h2>
+                <table class="order-meta-table">
+                    <tr>
+                        <td class="order-meta-label">Date</td>
+                    </tr>
+                    <tr>
+                        <td class="order-meta-value">{{ $receiptDate }}</td>
+                    </tr>
+                    <tr>
+                        <td class="order-meta-label">Receipt No.</td>
+                    </tr>
+                    <tr>
+                        <td class="order-meta-value">{{ $receiptNumber }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div class="summary-container">
+        <div class="address-block">
+            <div class="address-label">Bill To</div>
+            <strong>{{ optional($customer)->name ?? '---' }}</strong><br>
+            {!! nl2br(e(optional($customer)->address ?? '---')) !!}
+        </div>
+        <div class="address-block">
+            <div class="address-label">Ship To</div>
+            <strong>{{ optional($customer)->name ?? '---' }}</strong><br>
+            {!! nl2br(e(optional($customer)->address ?? '---')) !!}
+        </div>
+        <div class="total-block">
+            <div style="text-align: left; font-weight: bold; font-size: 14px;">
+                {{ $isUpdatedReceipt ? 'UPDATED AMOUNT PAID' : ($isRefundReceipt ? 'TOTAL REFUNDED' : 'TOTAL PAID') }}
+            </div>
+            <div style="font-size: 22px; font-weight: bold;">PHP {{ number_format($displayAmount, 2) }}</div>
+        </div>
     </div>
 
-    <div class="order-info">
-        <div class="info-section">
-            <h3>Receipt Details</h3>
-            <p>Receipt Number: {{ $receipt->receipt_number }}</p>
-            <p>Receipt Date: {{ \Carbon\Carbon::parse($receipt->receipt_date)->format('M d, Y') }}</p>
-            <p>Payment Mode: {{ $receipt->payment_mode }}</p>
-            <p>Status: {{ $receipt->status->name ?? 'N/A' }}</p>
-            @if(isset($ar_invoice))
-            <p>Invoice Number: {{ $ar_invoice->invoice_number }}</p>
-            @endif
-        </div>
-        <div class="info-section">
-            <h3>Customer</h3>
-            <p>Name: {{ $receipt->customer->name ?? 'N/A' }}</p>
-            <p>Address: {{ $receipt->customer->address ?? 'N/A' }}</p>
-            <p>Contact Number: {{ $receipt->customer->contact_number ?? 'N/A' }}</p>
-            <p>Email: {{ $receipt->customer->email ?? 'N/A' }}</p>
-        </div>
-    </div>
-
-    @if($items && count($items) > 0)
-    <table class="items-table">
+    <table class="meta-table">
         <thead>
             <tr>
-                <th width="5%">#</th>
-                <th width="45%">Product</th>
-                <th width="15%" class="text-center">Quantity</th>
-                <th width="17%" class="text-right">Unit Price</th>
-                <th width="18%" class="text-right">Total</th>
+                <th>AR Invoice #</th>
+                <th>Payment Terms</th>
+                <th>Sales Order #</th>
+                <th>Invoice Date</th>
+                <th>Due Date</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($items as $index => $item)
             <tr>
-                <td class="text-center">{{ $index + 1 }}</td>
-                <td>{{ $item->product->brand->name ?? '' }} {{ $item->product->pack_size ?? '' }} {{ $item->product->unit->name ?? '' }}</td>
-                <td class="text-center">{{ number_format($item->quantity) }}</td>
-                <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
-                <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>
+                <td>{{ optional($ar_invoice)->invoice_number ?? '---' }}</td>
+                <td>
+                    {{ $isUpdatedReceipt
+                        ? ($receipt->payment_mode ?? optional($voided_receipt)->payment_mode ?? 'Updated Receipt')
+                        : ($isRefundReceipt ? ($receipt->payment_mode ?? 'Refund') : (optional($sales_order)->payment_mode ?? $receipt->payment_mode ?? '---')) }}
+                </td>
+                <td>{{ optional($sales_order)->so_number ?? '---' }}</td>
+                <td>{{ $invoiceDate }}</td>
+                <td>{{ $dueDate }}</td>
             </tr>
-            @endforeach
         </tbody>
     </table>
 
-    <div class="total-section">
-        <div class="total-row">
-            <span class="total-label">Subtotal:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_amount + $sales_order->total_discount, 2) }}</span>
-        </div>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Quantity</th>
+                <th>Item</th>
+                <th>Description</th>
+                <th>UoM</th>
+                <th class="text-right">Unit Price</th>
+                <th class="text-right">Amount</th>
+                <th class="text-right">VAT</th>
+                <th class="text-right">Gross Amt</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if($itemsCollection->count() > 0)
+            @foreach($itemsCollection as $item)
+            @php
+                $lineTotal = ((float) $item->quantity * (float) $item->price) - ((float) ($item->discount_per_unit ?? 0) * (float) $item->quantity);
+            @endphp
+            <tr>
+                <td>{{ number_format($item->quantity) }}</td>
+                <td><strong>{{ trim((optional($item->product)->weight ?? '') . ' ' . (optional(optional($item->product)->unit)->name ?? '') . ' ' . (optional(optional($item->product)->brand)->name ?? '')) ?: '-' }}</strong></td>
+                <td>{{ optional($item->product)->description ?? '-' }}</td>
+                <td>{{ optional(optional($item->product)->unit)->name ?? '-' }}</td>
+                <td class="text-right">{{ number_format($item->price, 2) }}</td>
+                <td class="text-right">{{ number_format($lineTotal, 2) }}</td>
+                <td class="text-right">0.00</td>
+                <td class="text-right">{{ number_format($lineTotal, 2) }}</td>
+            </tr>
+            @endforeach
+            @else
+            <tr>
+                <td colspan="8" class="text-right">No items found.</td>
+            </tr>
+            @endif
+        </tbody>
+    </table>
 
-        <div class="total-row">
-            <span class="total-label">Discount:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_discount, 2) }}</span>
-        </div>
+    <table class="footer-table">
+        <tr>
+            <td style="vertical-align: top;">
+                <strong>Remarks:</strong><br>
+                {{ $isUpdatedReceipt ? 'Updated Receipt Date' : ($isRefundReceipt ? 'Refund Receipt Date' : 'Receipt Date') }}: {{ $receiptDate }}<br>
+                AR Invoice Date: {{ $invoiceDate }}<br>
+                Sales Order Date: {{ $orderDate }}<br><br>
+                @if(($isUpdatedReceipt || $isRefundReceipt) && $voided_receipt)
+                <strong>Voided Receipt:</strong> {{ $voided_receipt->receipt_number }}<br>
+                @endif
+                @if($isUpdatedReceipt && $receipt->sourceReceipt)
+                <strong>Connected Refund Receipt:</strong> {{ $receipt->sourceReceipt->receipt_number }}<br>
+                <strong>Refund Deducted:</strong> PHP {{ number_format((float) (($receipt->sourceReceipt->amount_paid ?? 0)), 2) }}<br><br>
+                @elseif($isRefundReceipt)
+                <strong>Refund Amount:</strong> PHP {{ number_format((float) ($receipt->amount_paid ?? 0), 2) }}<br><br>
+                @endif
+                <div class="sales-rep-box" style="margin-top: 8px;">
+                    <strong>Sales Rep:</strong> {{ optional($sales_order)->salesRep->fullname ?? '---' }}
+                </div>
+            </td>
+            <td style="width: 300px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    @php
+                        $subtotal = $itemsCollection->sum(function($item) {
+                            return ((float) $item->quantity * (float) $item->price) - ((float) ($item->discount_per_unit ?? 0) * (float) $item->quantity);
+                        });
+                    @endphp
+                    <tr>
+                        <td style="padding: 5px 0;">Total Sales Before VAT</td>
+                        <td class="text-right">PHP {{ number_format($subtotal, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0;">
+                            {{ $isUpdatedReceipt ? 'Updated Amount Paid' : ($isRefundReceipt ? 'Amount Refunded' : 'Amount Paid') }}
+                        </td>
+                        <td class="text-right">PHP {{ number_format($displayAmount, 2) }}</td>
+                    </tr>
+                    <tr class="grand-total-box">
+                        <td style="padding: 10px 5px;">
+                            {{ $isUpdatedReceipt ? 'Updated Amount Paid' : ($isRefundReceipt ? 'Total Refund Amount' : 'Total Amount Due') }}
+                        </td>
+                        <td class="text-right" style="padding: 10px 5px;">PHP {{ number_format(($isUpdatedReceipt || $isRefundReceipt) ? $displayAmount : $balanceDue, 2) }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 
-        <div class="total-row">
-            <span class="total-label">Total:</span>
-            <span class="total-amount">PHP {{ number_format($sales_order->total_amount, 2) }}</span>
-        </div>
-
-        <div class="total-row">
-            <span class="total-label">Amount Paid:</span>
-            <span class="total-amount">PHP {{ number_format($receipt->amount_paid, 2) }}</span>
-        </div>
-
-        <div class="total-row grand-total">
-            <span class="total-label">Balance Due:</span>
-            <span class="total-amount">PHP {{ number_format($receipt->balance_due, 2) }}</span>
-        </div>
-    </div>
-
-    <div style="clear: both;"></div>
-    @else
-    <div class="amount-section">
-        <div class="amount-label">Amount Paid</div>
-        <div class="amount-value">₱{{ number_format($receipt->amount_paid, 2) }}</div>
-    </div>
-
-    <div class="receipt-info">
-        <div class="info-section">
-            <p><strong>Balance Due:</strong> ₱{{ number_format($receipt->balance_due, 2) }}</p>
-        </div>
-        <div class="info-section">
-            <p><strong>Billing Account:</strong> {{ $receipt->billing_account ?? 'N/A' }}</p>
-        </div>
-    </div>
-    @endif
-
-    <div class="signature-section">
-        <div class="signature-box">
-            <div class="signature-line"></div>
-            <strong>Received By</strong>
-        </div>
-
-        <div class="signature-box">
-            <div class="signature-line"></div>
-            <strong>Customer Signature</strong>
-        </div>
-    </div>
-
-    <div class="footer">
-        <p><strong>Thank you for your payment!</strong></p>
-        <p>This is a computer-generated receipt.</p>
-        <p>Generated on {{ \Carbon\Carbon::now()->format('M d, Y H:i') }}</p>
-    </div>
 </body>
 </html>

@@ -3,7 +3,6 @@
     <div class="col-md-12">
       <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-archive-line"></i>
@@ -13,7 +12,6 @@
                 <p class="header-subtitle mb-0">Manage and organize your inventory stocks</p>
               </div>
             </div>
-          </div>
         </div>
 
         <div class="library-card-body">
@@ -48,30 +46,26 @@
                     </thead>
                     <tbody>
                       <tr 
-                        v-for="(list,index) in availableStocks" 
-                        v-bind:key="list.id" 
-                        @click="openView(list.id)" 
+                        v-for="(list,index) in availableStocks"
+                        v-bind:key="list.id"
+                        @click="openView(list)"
                         style="cursor: pointer;"
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
-                        <td>{{ index + 1 }}</td>
-                        <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
+                        <td>{{ (meta?.from ?? 1) + index }}</td>
+                        <td>{{ list.received_item ? formatDate(list.received_item.received_stock?.received_date) : formatDate(list.created_at) }}</td>
                         <td style="width: 20%">{{ list.batch_code }}
-                          <span 
-                            class="status-badge"
-                            v-if="list.expiration_date"
-                          >
-                            EXP: {{ formatDate(list.expiration_date) }}
-                          </span>
+                          <span class="status-badge" v-if="list.conversion">Converted</span>
+                          <span class="status-badge" v-if="list.expiration_date">EXP: {{ formatDate(list.expiration_date) }}</span>
                         </td>
-                        <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
+                        <td>{{ list.received_item?.received_stock?.supplier?.name ?? (list.conversion ? 'Converted Batch' : 'N/A') }}</td>
                         <td>
                           <div class="product-info">
-                            <strong>{{ list.received_item.product.name }}</strong>
-                            <small class="text-muted d-block">{{ list.received_item.product.code || 'No Code' }}</small>
+                            <strong>{{ list.received_item?.product?.name ?? list.product?.name ?? '—' }}</strong>
+                            <small class="text-muted d-block">{{ list.received_item?.product?.code ?? list.product?.code ?? 'No Code' }}</small>
                           </div>
                         </td>
-                        <td><b>{{ formatCurrency(list.received_item.unit_cost) }}</b>
+                        <td><b>{{ formatCurrency(list.received_item?.unit_cost ?? 0) }}</b>
                           <br>Retail Price: {{ formatCurrency(list.retail_price) }}
                           <br>Wholesale Price: {{ formatCurrency(list.wholesale_price) }}
                         </td>
@@ -112,23 +106,23 @@
                     </thead>
                     <tbody>
                       <tr 
-                        v-for="(list,index) in consumedStocks" 
-                        v-bind:key="list.id" 
-                        @click="openView(list.id)" 
+                        v-for="(list,index) in consumedStocks"
+                        v-bind:key="list.id"
+                        @click="openView(list)"
                         style="cursor: pointer;"
                         :class="{'bg-info-subtle': list.id === selectedRow}"
                       >
-                        <td>{{ index + 1 }}</td>
-                        <td>{{ formatDate(list.received_item.received_stock.received_date) }}</td>
-                        <td>{{ list.received_item.received_stock.batch_code }}</td>
-                        <td>{{ list.received_item.received_stock.supplier ? list.received_item.received_stock.supplier.name : 'N/A' }}</td>
+                        <td>{{ (meta?.from ?? 1) + index }}</td>
+                        <td>{{ list.received_item ? formatDate(list.received_item.received_stock?.received_date) : formatDate(list.created_at) }}</td>
+                        <td>{{ list.received_item?.received_stock?.batch_code ?? list.batch_code }}</td>
+                        <td>{{ list.received_item?.received_stock?.supplier?.name ?? (list.conversion ? 'Converted Batch' : 'N/A') }}</td>
                         <td>
                           <div class="product-info">
-                            <strong>{{ list.received_item.product.name }}</strong>
-                            <small class="text-muted d-block">{{ list.received_item.product.code || 'No Code' }}</small>
+                            <strong>{{ list.received_item?.product?.name ?? list.product?.name ?? '—' }}</strong>
+                            <small class="text-muted d-block">{{ list.received_item?.product?.code ?? list.product?.code ?? 'No Code' }}</small>
                           </div>
                         </td>
-                        <td>{{ formatCurrency(list.received_item.unit_cost) }}</td>
+                        <td>{{ formatCurrency(list.received_item?.unit_cost ?? 0) }}</td>
                         <td>
                           <span class="quantity-badge text-danger">
                             {{ list.quantity }}
@@ -136,7 +130,7 @@
                         </td>
                         <td>
                           <div class="action-buttons" @click.stop>
-                            <button @click.stop="openView(list.id)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                            <button @click.stop="openView(list)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
                               <i class="ri-eye-fill"></i>
                             </button>
                           </div>
@@ -186,7 +180,7 @@ export default {
     filter: Object,
     dropdowns: Object,
   },
-  emits: ['fetch', 'update-keyword', 'toast'],
+  emits: ['fetch', 'update-keyword', 'toast', 'view-details'],
   data() {
     return {
       selectedRow: null,
@@ -212,8 +206,8 @@ export default {
       this.selectedRow = this.selectedRow === id ? null : id;
     },
     
-    openView(id) {
-      this.$inertia.visit(`/inventory-stocks/${id}`);
+    openView(stock) {
+      this.$emit('view-details', stock);
     },
     
     adjustStock(stock) {
@@ -387,5 +381,39 @@ export default {
   cursor: default;
   background-color: #7a848e;
   color: white;
+}
+
+/* Card Header */
+.library-card-header {
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid #c4d9d2;
+  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+}
+
+.header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(61, 141, 122, 0.12);
+  border: 1px solid rgba(61, 141, 122, 0.16);
+  color: #3d8d7a;
+  font-size: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #16322e;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 0.76rem;
+  color: #6b8c85;
+  margin: 0;
 }
 </style>

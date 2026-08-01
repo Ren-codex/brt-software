@@ -13,13 +13,18 @@ trait HandlesTransaction
         $info = null;
         $message = 'Error occured';
         $status = false;
+        $errors = null;
+        $receiptId = null;
+        $password = null;
 
         try {
             $result = \DB::transaction($callback);
-            $data = $result['data'];
-            $info = $result['info'];
-            $message = $result['message'];
+            $data = $result['data'] ?? null;
+            $info = $result['info'] ?? null;
+            $message = $result['message'] ?? 'Success';
             $status = $result['status'] ?? true;
+            $receiptId = $result['receipt_id'] ?? null;
+            $password = $result['password'] ?? null;
         } catch (ValidationException $e) {
             // Let Laravel turn this into field-level errors on the form rather
             // than flattening it into a generic failure banner.
@@ -40,6 +45,9 @@ trait HandlesTransaction
             'message' => $message,
             'info' => $info,
             'status' => $status,
+            'errors' => $errors,
+            'receipt_id' => $receiptId,
+            'password' => $password,
         ];
     }
 }

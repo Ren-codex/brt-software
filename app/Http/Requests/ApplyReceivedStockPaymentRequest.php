@@ -1,0 +1,104 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\ReceivedStock;
+use App\Services\Accounting\CashManagementService;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
+
+class ApplyReceivedStockPaymentRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'payment_mode'       => 'required|in:Cash,Bank Transfer,Cash on Hand',
+            'payment_amount'     => 'required|numeric|min:0.01',
+            'bank_account_id'    => 'nullable|exists:bank_accounts,id',
+            'bank_name'          => 'nullable|string|max:255',
+            'reference_number'   => 'nullable|string|max:255',
+            'petty_cash_fund_id' => 'nullable|exists:petty_cash_funds,id',
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            /** @var ReceivedStock|null $receivedStock */
+            $receivedStock = $this->route('receivedStock');
+
+            if (!$receivedStock) {
+                $validator->errors()->add('payment_amount', 'Received stock record was not found.');
+                return;
+            }
+
+            $receivedStock->loadMissing('items');
+
+            $paymentMode = trim((string) $this->input('payment_mode'));
+            $paymentAmount = round((float) $this->input('payment_amount', 0), 2);
+            $bankName = trim((string) $this->input('bank_name', ''));
+            $referenceNumber = trim((string) $this->input('reference_number', ''));
+
+            $totalAmount = round((float) $receivedStock->items->sum('total_cost'), 2);
+            $currentPaid = round((float) ($receivedStock->amount_paid ?? 0), 2);
+            $remainingBalance = round(max($totalAmount - $currentPaid, 0), 2);
+            if ($remainingBalance <= 0) {
+                $validator->errors()->add('payment_amount', 'This payable has already been fully settled.');
+            }
+
+            if ($paymentAmount > $remainingBalance) {
+                $validator->errors()->add('payment_amount', 'Payment amount cannot exceed the remaining payable balance.');
+            }
+
+            if ($paymentMode === 'Cash') {
+                $fundId = $this->input('petty_cash_fund_id');
+                if (!$fundId) {
+                    $validator->errors()->add('petty_cash_fund_id', 'Please select a cash fund source.');
+                } else {
+                    $fund = \App\Models\PettyCashFund::find($fundId);
+                    if (!$fund || !$fund->is_active) {
+                        $validator->errors()->add('petty_cash_fund_id', 'Selected fund is inactive or not found.');
+                    } elseif ($fund->balance < $paymentAmount) {
+                        $validator->errors()->add('petty_cash_fund_id', "Insufficient fund balance. Available: ₱" . number_format($fund->balance, 2));
+                    }
+                }
+            }
+
+            if ($paymentMode === 'Cash on Hand') {
+                $cashOnHand = app(CashManagementService::class)->getCashOnHandBalance();
+                if ($paymentAmount > $cashOnHand) {
+                    $validator->errors()->add(
+                        'payment_amount',
+                        'Amount exceeds available Cash on Hand (₱' . number_format($cashOnHand, 2) . '). Reduce the amount or use Petty Cash Fund / Bank Transfer instead.'
+                    );
+                }
+            }
+
+            if ($paymentMode === 'Bank Transfer') {
+                if ($bankName === '') {
+                    $validator->errors()->add('bank_name', 'Bank name is required for bank transfer payments.');
+                }
+
+                if ($referenceNumber === '') {
+                    $validator->errors()->add('reference_number', 'Reference number is required for bank transfer payments.');
+                }
+
+                $bankAccountId = $this->input('bank_account_id');
+                if ($bankAccountId) {
+                    $bankBalance = app(CashManagementService::class)->getBankAccountBalance((int) $bankAccountId);
+                    if ($paymentAmount > $bankBalance) {
+                        $validator->errors()->add(
+                            'payment_amount',
+                            'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').'
+                        );
+                    }
+                }
+            }
+        });
+    }
+}

@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Services\Employee;
+namespace App\Services\Profile;
 
 use App\Models\User;
+use Illuminate\Http\Request;
 use App\Http\Resources\UserResource;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 

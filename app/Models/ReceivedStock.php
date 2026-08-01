@@ -11,7 +11,16 @@ class ReceivedStock extends Model
         'supplier_id',
         'received_date',
         'received_no',
+        'payment_mode',
+        'due_date',
+        'amount_paid',
+        'bank_name',
+        'reference_number',
         'received_by_id',
+    ];
+
+    protected $casts = [
+        'due_date' => 'date',
     ];
 
     public function purchaseOrder()
@@ -32,5 +41,12 @@ class ReceivedStock extends Model
     public function receivedBy()
     {
         return $this->belongsTo(User::class, 'received_by_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(ReceivedStockPayment::class)
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id');
     }
 }

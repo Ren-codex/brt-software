@@ -58,6 +58,14 @@
                   @fetch="fetchPayrolls"
                 />
               </div>
+              <div v-if="currentView === 'loanDetails' && selectedLoan" class="payroll-details-container">
+                <LoanView
+                  :loan="selectedLoan"
+                  :dropdowns="dropdowns"
+                  @back="backToLoanList"
+                  @view="openLoanDetails"
+                />
+              </div>
 
               <!-- Payroll Management List -->
               <div v-if="activeTab === 'payroll_management' && currentView === 'list'" class="shadow-sm p-3">
@@ -66,11 +74,14 @@
               <div v-if="activeTab === 'payroll_templates' && currentView === 'list'" class="shadow-sm p-3">
                 <PayrollTemplate :dropdowns="dropdowns" />
               </div>
-              <div v-if="activeTab === 'payroll_settings' && currentView === 'list'" class="shadow-sm p-3">
-                <PayrollSettings :dropdowns="dropdowns" />
+              <div v-if="activeTab === 'payroll_items' && currentView === 'list'" class="shadow-sm p-3">
+                <PayrollItems :dropdowns="dropdowns" />
               </div>
               <div v-if="activeTab === 'sales_incentives' && currentView === 'list'" class="shadow-sm p-3">
                 <SalesIncentives :dropdowns="dropdowns" />
+              </div>
+              <div v-if="activeTab === 'loan_management' && currentView === 'list'" class="shadow-sm p-3">
+                <LoanManagement ref="loanManagement" :dropdowns="dropdowns" @view="openLoanDetails" />
               </div>
             </div>
           </transition>
@@ -96,9 +107,12 @@ import PayrollView from './Components/Payrolls/View.vue';
 import PayrollSettings from './Components/Settings/Index.vue';
 import PayrollTemplate from './Components/Templates/Index.vue';
 import SalesIncentives from './Components/SalesIncentives/Index.vue';
+import LoanManagement from './Components/Loans/Index.vue';
+import LoanView from './Components/Loans/View.vue';
+import PayrollItems from './Components/Items/Index.vue';
 
 export default {
-  components: { PageHeader, PayrollManagement, PayrollView, PayrollSettings, PayrollTemplate, SalesIncentives },
+  components: { PageHeader, PayrollManagement, PayrollView, PayrollItems, PayrollTemplate, SalesIncentives, LoanManagement, LoanView },
   props: ['dropdowns'],
   data() {
     return {
@@ -116,6 +130,7 @@ export default {
       showCreateModal: false,
       showEditModal: false,
       selectedPayroll: null,
+      selectedLoan: null,
       isToastVisible: false,
       toastMessage: '',
       tabs: [
@@ -127,21 +142,27 @@ export default {
         },
         {
           id: 'payroll_templates',
-          label: 'Payroll Templates',
+          label: 'Payroll Groups',
           icon: 'ri-file-list-3-line',
-          description: 'Manage payroll templates'
+          description: 'Manage payroll groups'
         },
         {
-          id: 'payroll_settings',
-          label: 'Settings',
+          id: 'payroll_items',
+          label: 'Payroll Items',
           icon: 'ri-settings-2-line',
-          description: 'Manage payroll settings'
+          description: 'Manage payroll items'
         },
         {
           id: 'sales_incentives',
           label: 'Sales Incentives',
           icon: 'ri-trophy-line',
           description: 'Manage sales incentives'
+        },
+        {
+          id: 'loan_management',
+          label: 'Loans',
+          icon: 'ri-bank-card-line',
+          description: 'Manage employee loans'
         },
       ]
     }
@@ -155,17 +176,29 @@ export default {
       localStorage.setItem('payroll_active_tab', tab);
       this.currentView = 'list';
       this.selectedPayroll = null;
-      this.filter.keyword = '';
+      this.selectedLoan = null;
+      this.filters.search = '';
     },
     openPayrollDetails(payroll) {
       this.selectedPayroll = payroll;
       this.currentView = 'payrollDetails';
     },
+    openLoanDetails(loan) {
+      this.selectedLoan = loan;
+      this.currentView = 'loanDetails';
+    },
     backToList() {
       this.currentView = 'list';
       this.selectedPayroll = null;
+      this.selectedLoan = null;
       // Optionally fetch updated data
       // this.fetchPayrolls();
+    },
+    backToLoanList() {
+      this.currentView = 'list';
+      this.selectedLoan = null;
+      this.fetchLoans();
+      this.changeTab('loan_management');
     },
     showToast(message) {
       this.toastMessage = message;

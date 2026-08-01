@@ -24,7 +24,6 @@
         <div class="col-lg-12 mb-4">
           <div class="library-card">
             <div class="library-card-header">
-              <div class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-3">
                   <div class="header-icon">
                     <i class="ri-shopping-cart-line"></i>
@@ -59,7 +58,6 @@
                     <i class="ri-arrow-left-line"></i>
                   </button>
                 </div>
-              </div>
             </div>
             <div class="library-card-body" v-if="data">
               <div class="row">
@@ -260,7 +258,7 @@ export default {
     canApprove() {
       const roles = this.$page.props.roles;
       const userRoles = roles ? Object.values(roles) : [];
-      return userRoles.some(role => ['Inventory Manager', 'Top Management', 'Administrator'].includes(role));
+      return userRoles.some(role => ['Administrator', 'Warehouse Manager', 'Super Admin'].includes(role));
     }
   },
   methods: {

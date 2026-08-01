@@ -11,7 +11,11 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\InventoryStocks;
 use App\Models\PurchaseOrder;
+use App\Models\Employee;
+use App\Models\Loan;
+use App\Models\PayrollTemplate;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 
 class DashboardController extends Controller
@@ -24,59 +28,166 @@ class DashboardController extends Controller
     }
 
     public function index(Request $request){
-        // Sales Statistics
-        $totalSales = SalesOrder::sum('total_amount');
-        $totalReceipts = Receipt::count();
-        $totalOutstanding = ArInvoice::sum('balance_due');
-        $totalCustomers = SalesOrder::distinct('customer_id')->count('customer_id');
+        // Get filter from request, default to monthly
+        $filter = $request->get('filter', 'monthly');
+        $selectedDate = $request->get('selected_date');
+        
+        // Calculate date range based on filter
+        $dateRange = $this->getDateRange($filter, $selectedDate);
+        
+        // Sales dashboard uses liquidated remittances with realized margin-based revenue.
+        $successfulSalesOrders = DB::table('sales_orders as so')
+            ->join('ar_invoices as ai', 'so.id', '=', 'ai.sales_order_id')
+            ->join('receipts as r', 'ai.id', '=', 'r.ar_invoice_id')
+            ->join('remittances as rem', 'r.remittance_id', '=', 'rem.id')
+            ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+            ->where('rem_status.slug', 'liquidated')
+            ->whereBetween('rem.remittance_date', [$dateRange['start'], $dateRange['end']])
+            ->distinct()
+            ->select('so.id');
 
-        // Monthly sales data for chart (last 12 months)
+        $revenueBaseQuery = DB::table('sales_order_items as soi')
+            ->join('sales_orders as so', 'soi.sales_order_id', '=', 'so.id')
+            ->join('products as p', 'soi.product_id', '=', 'p.id')
+            ->join('list_brands as lb', 'p.brand_id', '=', 'lb.id')
+            ->join('list_units as lu', 'p.unit_id', '=', 'lu.id')
+            ->join('inventory_stocks as inv', 'soi.batch_code', '=', 'inv.batch_code')
+            ->join('received_items as ri', function ($join) {
+                $join->on('inv.received_item_id', '=', 'ri.id')
+                    ->on('soi.product_id', '=', 'ri.product_id');
+            })
+            ->whereIn('so.id', $successfulSalesOrders);
+
+        $totalSales = (float) (clone $revenueBaseQuery)
+            ->selectRaw('COALESCE(SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity), 0) as total_revenue')
+            ->value('total_revenue');
+
+        $totalReceipts = Receipt::query()
+            ->join('remittances as rem', 'receipts.remittance_id', '=', 'rem.id')
+            ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+            ->where('rem_status.slug', 'liquidated')
+            ->whereBetween('rem.remittance_date', [$dateRange['start'], $dateRange['end']])
+            ->distinct('receipts.id')
+            ->count('receipts.id');
+
+        $totalOutstanding = ArInvoice::sum('balance_due');
+        $totalCustomers = Receipt::query()
+            ->join('remittances as rem', 'receipts.remittance_id', '=', 'rem.id')
+            ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+            ->where('rem_status.slug', 'liquidated')
+            ->whereBetween('rem.remittance_date', [$dateRange['start'], $dateRange['end']])
+            ->whereNotNull('receipts.customer_id')
+            ->distinct('receipts.customer_id')
+            ->count('receipts.customer_id');
+        $avgOrderValue = $totalReceipts > 0 ? round($totalSales / $totalReceipts, 2) : 0;
+
+        // Monthly realized revenue for the last 12 months from liquidated remittances.
         $monthlySales = [];
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $month = $date->format('M Y');
-            $sales = SalesOrder::whereYear('order_date', $date->year)
-                              ->whereMonth('order_date', $date->month)
-                              ->sum('total_amount');
+            $monthlySuccessfulSalesOrders = DB::table('sales_orders as so')
+                ->join('ar_invoices as ai', 'so.id', '=', 'ai.sales_order_id')
+                ->join('receipts as r', 'ai.id', '=', 'r.ar_invoice_id')
+                ->join('remittances as rem', 'r.remittance_id', '=', 'rem.id')
+                ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+                ->where('rem_status.slug', 'liquidated')
+                ->whereYear('rem.remittance_date', $date->year)
+                ->whereMonth('rem.remittance_date', $date->month)
+                ->distinct()
+                ->select('so.id');
+
+            $sales = (float) (clone $revenueBaseQuery)
+                ->whereIn('so.id', $monthlySuccessfulSalesOrders)
+                ->selectRaw('COALESCE(SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity), 0) as total_revenue')
+                ->value('total_revenue');
             $monthlySales[] = [
                 'month' => $month,
                 'sales' => (float) $sales
             ];
         }
 
-        // Payment methods distribution
-        $paymentMethods = SalesOrder::selectRaw('payment_mode, SUM(total_amount) as total')
-                                ->groupBy('payment_mode')
-                                ->get()
-                                ->map(function ($item) {
-                                    return [
-                                        'method' => $item->payment_mode ?: 'Cash',
-                                        'total' => (float) $item->total
-                                    ];
-                                });
+        $paymentMethods = Receipt::query()
+            ->join('remittances as rem', 'receipts.remittance_id', '=', 'rem.id')
+            ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')
+            ->where('rem_status.slug', 'liquidated')
+            ->whereBetween('rem.remittance_date', [$dateRange['start'], $dateRange['end']])
+            ->selectRaw('COALESCE(receipts.payment_mode, "Cash") as method, SUM(receipts.amount_paid) as total')
+            ->groupBy('method')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'method' => $item->method ?: 'Cash',
+                    'total' => (float) $item->total
+                ];
+            });
 
-        // Recent Transactions
-        $recentTransactions = SalesOrder::with('customer')
-                                ->orderBy('order_date', 'desc')
-                                ->orderBy('id', 'desc')
-                                ->limit(5)
-                                ->get()
-                                ->map(function ($item) {
-                                    return [
-                                        'id' => $item->id,
-                                        'receipt_number' => 'SO-' . str_pad($item->id, 5, '0', STR_PAD_LEFT),
-                                        'customer_name' => $item->customer->name ?? 'Walk-in Customer',
-                                        'date' => $item->order_date,
-                                        'amount' => (float) $item->total_amount,
-                                        'payment_method' => $item->payment_mode ?: 'Cash',
-                                    ];
-                                });
+        $topProductsQuery = (clone $revenueBaseQuery)
+            ->select(
+                'p.id',
+                DB::raw('CONCAT(p.weight, " ", lu.name, " ", lb.name) as name'),
+                DB::raw('lb.name as brand'),
+                DB::raw('SUM(soi.quantity) as quantity_sold'),
+                DB::raw('SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity) as revenue')
+            )
+            ->groupBy('p.id', 'p.weight', 'lu.name', 'lb.name')
+            ->orderByDesc('quantity_sold')
+            ->limit(10)
+            ->get();
 
-        // Inventory Statistics
-        $totalProducts = Product::count();
-        $totalInventoryValue = InventoryStocks::sum(\DB::raw('retail_price * quantity'));
-        $lowStockItems = InventoryStocks::whereColumn('quantity', '<=', \DB::raw('10'))->count(); // Using 10 as default minimum
-        $outOfStock = InventoryStocks::where('quantity', '<=', 0)->count();
+        // Calculate percentage for each product
+        $maxQuantity = $topProductsQuery->max('quantity_sold');
+        $topProducts = $topProductsQuery->map(function ($item) use ($maxQuantity) {
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'brand' => $item->brand,
+                'quantity_sold' => (int) $item->quantity_sold,
+                'revenue' => (float) $item->revenue,
+                'percentage' => $maxQuantity > 0 ? round(($item->quantity_sold / $maxQuantity) * 100) : 0
+            ];
+        });
+
+        $recentTransactions = Receipt::with(['customer', 'status', 'remittance.status', 'arInvoice.sales_order.items'])
+            ->whereHas('remittance.status', function ($query) {
+                $query->where('slug', 'liquidated');
+            })
+            ->whereHas('remittance', function ($query) use ($dateRange) {
+                $query->whereBetween('remittance_date', [$dateRange['start'], $dateRange['end']]);
+            })
+            ->orderByDesc('receipt_date')
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                $salesOrder = optional($item->arInvoice)->sales_order;
+                $receiptDate = $item->receipt_date ? Carbon::parse($item->receipt_date)->format('Y-m-d') : optional($item->created_at)->format('Y-m-d');
+
+                return [
+                    'id' => $item->id,
+                    'receipt_number' => $item->receipt_number ?: ('RCP-' . str_pad($item->id, 5, '0', STR_PAD_LEFT)),
+                    'customer_name' => $item->customer->name ?? 'Walk-in Customer',
+                    'date' => $receiptDate,
+                    'items_count' => $salesOrder ? $salesOrder->items->count() : 0,
+                    'amount' => (float) $item->amount_paid,
+                    'payment_method' => $item->payment_mode ?: 'Cash',
+                    'status' => optional($item->status)->name ?: 'Liquidated',
+                ];
+            });
+
+        // Inventory Statistics (filtered by selected date range)
+        $inventoryStocksInRange = InventoryStocks::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        $totalProducts = Product::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
+        $totalInventoryValue = (clone $inventoryStocksInRange)->sum(\DB::raw('retail_price * quantity'));
+        $lowStockItems = \DB::table('inventory_stocks')
+            ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
+            ->join('products', 'received_items.product_id', '=', 'products.id')
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
+            ->count();
+        $outOfStock = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
 
         // Stock by Category for bar chart
         $stockByCategory = \DB::table('inventory_stocks')
@@ -84,6 +195,7 @@ class DashboardController extends Controller
             ->join('products', 'received_items.product_id', '=', 'products.id')
             ->join('list_brands', 'products.brand_id', '=', 'list_brands.id')
             ->select('list_brands.name as category', \DB::raw('SUM(inventory_stocks.quantity) as quantity'))
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
             ->groupBy('list_brands.name')
             ->get()
             ->map(function ($item) {
@@ -94,9 +206,22 @@ class DashboardController extends Controller
             });
 
         // Stock Distribution for donut chart
-        $inStockCount = InventoryStocks::where('quantity', '>', 10)->count();
-        $lowStockCount = InventoryStocks::whereColumn('quantity', '<=', \DB::raw('10'))->where('quantity', '>', 0)->count();
-        $outOfStockCount = InventoryStocks::where('quantity', '<=', 0)->count();
+        $stockDistBase = \DB::table('inventory_stocks')
+            ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
+            ->join('products', 'received_items.product_id', '=', 'products.id')
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']]);
+        $inStockCount = (clone $stockDistBase)
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where(function ($q) {
+                $q->where('products.minimum_stock', 0)
+                  ->orWhereColumn('inventory_stocks.quantity', '>', 'products.minimum_stock');
+            })->count();
+        $lowStockCount = (clone $stockDistBase)
+            ->where('inventory_stocks.quantity', '>', 0)
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
+            ->count();
+        $outOfStockCount = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
         
         $stockDistribution = [
             ['status' => 'In Stock', 'percentage' => $inStockCount],
@@ -106,22 +231,28 @@ class DashboardController extends Controller
 
         // Pending Purchase Orders
         $pendingPOs = PurchaseOrder::whereHas('status', function($q) {
-            $q->where('name', 'Pending');
-        })->count();
+                $q->where('name', 'Pending');
+            })
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->count();
 
         // Low Stock Items for table
         $lowStockItemsData = \DB::table('inventory_stocks')
             ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
             ->join('products', 'received_items.product_id', '=', 'products.id')
             ->join('list_brands', 'products.brand_id', '=', 'list_brands.id')
+            ->join('list_units', 'products.unit_id', '=', 'list_units.id')
             ->select(
                 'products.id',
                 'products.id as code',
                 'list_brands.name as category',
+                DB::raw('CONCAT(products.weight, " ", list_units.name, " ", list_brands.name) as product_name'),
                 'inventory_stocks.quantity as current_stock',
-                \DB::raw('10 as minimum_stock')
+                'products.minimum_stock'
             )
-            ->where('inventory_stocks.quantity', '<=', 10)
+            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
+            ->where('products.minimum_stock', '>', 0)
+            ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
             ->where('inventory_stocks.quantity', '>', 0)
             ->limit(10)
             ->get()
@@ -129,10 +260,66 @@ class DashboardController extends Controller
                 return [
                     'id' => $item->id,
                     'code' => 'PRD-' . str_pad($item->id, 3, '0', STR_PAD_LEFT),
-                    'name' => 'Product ' . $item->id, // Placeholder - would need product name field
+                    'name' => $item->product_name,
                     'category' => $item->category,
                     'current_stock' => (int) $item->current_stock,
                     'minimum_stock' => (int) $item->minimum_stock,
+                ];
+            });
+
+        $totalEmployees = Employee::count();
+        $activeEmployees = Employee::where('is_active', 1)->count();
+        $regularEmployees = Employee::where('is_regular', 1)->count();
+        $employeesWithAccounts = Employee::whereNotNull('user_id')->count();
+        $employeesWithLoans = Loan::where('remaining_balance', '>', 0)
+            ->distinct('employee_id')
+            ->count('employee_id');
+        $employeesInPayrollGroups = DB::table('payroll_template_employees')
+            ->distinct('employee_id')
+            ->count('employee_id');
+        $totalPositions = Employee::whereNotNull('position_id')
+            ->distinct('position_id')
+            ->count('position_id');
+
+        $employeesByPosition = Employee::query()
+            ->leftJoin('list_positions', 'employees.position_id', '=', 'list_positions.id')
+            ->selectRaw('COALESCE(list_positions.title, "Unassigned") as position, COUNT(employees.id) as count')
+            ->groupBy('list_positions.title')
+            ->orderByDesc('count')
+            ->limit(8)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'department' => $item->position,
+                    'count' => (int) $item->count,
+                ];
+            });
+
+        $recentEmployees = Employee::with('position')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($employee) {
+                return [
+                    'id' => $employee->id,
+                    'employee_name' => $employee->fullname,
+                    'department' => $employee->position->title ?? 'Unassigned',
+                    'joined_at' => optional($employee->created_at)->format('M d, Y'),
+                    'status' => $employee->is_active ? 'Active' : 'Inactive',
+                ];
+            });
+
+        $payrollGroups = PayrollTemplate::withCount('employees')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($template) {
+                return [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'employee_count' => (int) $template->employees_count,
+                    'created_at' => optional($template->created_at)->format('M d, Y'),
+                    'status' => $template->is_active ? 'Active' : 'Inactive',
                 ];
             });
 
@@ -143,10 +330,12 @@ class DashboardController extends Controller
                 'totalReceipts' => $totalReceipts,
                 'totalOutstanding' => $totalOutstanding,
                 'totalCustomers' => $totalCustomers,
+                'avgOrderValue' => $avgOrderValue,
             ],
             'charts' => [
                 'monthlySales' => $monthlySales,
                 'paymentMethods' => $paymentMethods,
+                'topProducts' => $topProducts,
             ],
             'recentTransactions' => $recentTransactions,
             'inventoryStats' => [
@@ -160,8 +349,68 @@ class DashboardController extends Controller
                 'stockByCategory' => $stockByCategory,
                 'stockDistribution' => $stockDistribution,
             ],
-            'lowStockItems' => $lowStockItemsData
+            'lowStockItems' => $lowStockItemsData,
+            'employeeStats' => [
+                'totalEmployees' => $totalEmployees,
+                'activeEmployees' => $activeEmployees,
+                'regularEmployees' => $regularEmployees,
+                'employeesWithAccounts' => $employeesWithAccounts,
+                'employeesWithLoans' => $employeesWithLoans,
+                'employeesInPayrollGroups' => $employeesInPayrollGroups,
+                'totalPositions' => $totalPositions,
+            ],
+            'employeeCharts' => [
+                'employeesByDepartment' => $employeesByPosition,
+            ],
+            'workforceSummary' => [
+                'active' => $activeEmployees,
+                'regular' => $regularEmployees,
+                'withAccounts' => $employeesWithAccounts,
+            ],
+            'recentEmployees' => $recentEmployees,
+            'payrollGroups' => $payrollGroups,
+            'filter' => $filter,
+            'selectedDate' => optional($dateRange['selectedDate'])->toDateString()
         ]);
 
+    }
+
+    private function getDateRange($filter, $selectedDate = null)
+    {
+        $now = Carbon::now();
+        $resolvedDate = $selectedDate ? Carbon::parse($selectedDate) : $now->copy();
+        
+        switch ($filter) {
+            case 'today':
+                return [
+                    'start' => $resolvedDate->copy()->startOfDay(),
+                    'end' => $resolvedDate->copy()->endOfDay(),
+                    'selectedDate' => $resolvedDate->copy()
+                ];
+            case 'weekly':
+                return [
+                    'start' => $now->copy()->startOfWeek(),
+                    'end' => $now->copy()->endOfWeek(),
+                    'selectedDate' => $resolvedDate->copy()
+                ];
+            case 'monthly':
+                return [
+                    'start' => $now->copy()->startOfMonth(),
+                    'end' => $now->copy()->endOfMonth(),
+                    'selectedDate' => $resolvedDate->copy()
+                ];
+            case 'annually':
+                return [
+                    'start' => $now->copy()->startOfYear(),
+                    'end' => $now->copy()->endOfYear(),
+                    'selectedDate' => $resolvedDate->copy()
+                ];
+            default:
+                return [
+                    'start' => $now->copy()->startOfMonth(),
+                    'end' => $now->copy()->endOfMonth(),
+                    'selectedDate' => $resolvedDate->copy()
+                ];
+        }
     }
 }

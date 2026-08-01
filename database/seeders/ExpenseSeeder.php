@@ -21,7 +21,7 @@ class ExpenseSeeder extends Seeder
                 'amount' => 5000.00,
                 'expense_date' => now()->subDays(5),
                 'description' => 'Office supplies and stationery',
-                'status' => 'paid',
+                'status' => 'released',
                 'added_by_id' => $user->id,
             ],
             [

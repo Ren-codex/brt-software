@@ -14,16 +14,37 @@ class SalesOrderRequest extends FormRequest
 
     public function rules(): array
     {
-        if($this->input('action') == 'adjustment'){
+        $action = $this->input('action');
+
+        if($action == 'adjustment'){
             return [
                 'type' => 'required|string',
                 'reason' => 'required|string',
+                'item_ids' => 'nullable|array',
+                'item_ids.*' => 'integer|exists:sales_order_items,id',
+                'receipt_id' => 'nullable|integer|exists:receipts,id',
+                'return_quantities' => 'nullable|array',
+                'return_quantities.*' => 'nullable|integer|min:0',
+                'return_conditions' => 'nullable|array',
+                'return_conditions.*' => 'nullable|string|in:restockable,damaged',
+            ];
+        }
+        else if($action == 'approve'){
+            return [
+                'id' => 'required|exists:sales_orders,id',
+                'item_ids' => 'nullable|array',
+                'item_ids.*' => 'integer|exists:sales_order_items,id',
+            ];
+        }
+        else if($action == 'cancel'){
+            return [
+                'id' => 'required|exists:sales_orders,id',
             ];
         }
         else{
              $rules = [
                 'order_date' => 'required|date',
-                'customer_id' => 'required|exists:customers,id',
+                'customer_id' => 'nullable|exists:customers,id',
                 'sales_rep_id' => 'nullable|exists:employees,id',
                 'driver_id' => 'nullable|exists:employees,id',
                 'payment_mode' => 'required|string',
@@ -52,7 +73,6 @@ class SalesOrderRequest extends FormRequest
     {
         return [
             'order_date.required' => 'This field is required',
-            'customer_id.required' => 'This field is required',
             'type' => 'This field is required',
             'reason' => 'This field is required',
         ];

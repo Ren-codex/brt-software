@@ -10,13 +10,20 @@
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Earning Description</label>
-          <input 
-            type="text" 
+          <select
             v-model="localDescription" 
             class="form-control" 
             :class="{ 'is-invalid': existingEarning }"
-            placeholder="Enter earning description"
-            @keyup.enter="save">
+          >
+            <option value="">Select earning</option>
+            <option
+              v-for="item in earningOptions"
+              :key="item"
+              :value="item"
+            >
+              {{ item }}
+            </option>
+          </select>
           <div v-if="existingEarning" class="invalid-feedback">
             Already exists
           </div>
@@ -55,6 +62,8 @@ export default {
     description: { type: String, default: '' },
     amount: { type: [Number, String] },
     existingEarnings: { type: Array, default: () => [] },
+    earningDropdown: { type: Array, default: () => [] },
+    earningsDropdown: { type: Array, default: () => [] },
   },
   data() {
     return {
@@ -63,6 +72,16 @@ export default {
     }
   },
   computed: {
+    earningOptions() {
+      const source = this.earningDropdown.length ? this.earningDropdown : this.earningsDropdown
+      if (!Array.isArray(source) || !source.length) {
+        return []
+      }
+
+      return [...new Set(source
+        .map(item => item?.description || item?.name || '')
+        .filter(Boolean))]
+    },
     existingEarning() {
       if (!this.localDescription || !this.existingEarnings || !this.existingEarnings.length) {
         return null
@@ -199,36 +218,8 @@ export default {
   border-color: #2d6d5e;
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.modal-overlay.active {
-  opacity: 1;
-  visibility: visible;
-}
-
 .modal-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .modal-sm {
@@ -236,39 +227,14 @@ export default {
   max-width: 450px;
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
-  background: #f8f9fa;
-}
-
 .modal-header h3 {
-  margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #2c3e50;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  cursor: pointer;
-  color: #6c757d;
   padding: 0;
   line-height: 1;
-}
-
-.close-btn:hover {
-  color: #dc3545;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
 }
 
 .form-group {

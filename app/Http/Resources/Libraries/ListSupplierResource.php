@@ -19,6 +19,8 @@ class ListSupplierResource extends JsonResource
             'tin' => $this->tin,
             'is_active' => $this->is_active,
             'is_blacklisted' => $this->is_blacklisted,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

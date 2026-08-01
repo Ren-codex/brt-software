@@ -9,80 +9,70 @@ use Illuminate\Support\Facades\Hash;
 class UsersTableSeeder extends Seeder
 {
     /**
-     * One sign-in-ready account per role in list_roles, plus the owner account.
+     * Seed one sample user for each seeded role.
      *
-     * User id 1 is hardcoded as added_by_id / created_by_id in
-     * CustomersTableSeeder and PurchaseOrdersTableSeeder, so rbt0213 must stay
-     * at id 1.
-     *
-     * Two companion seeders complete these accounts:
-     *   UserRolesTableSeeder  - assigns the role (runs next, truncates first)
-     *   EmployeesTableSeeder  - the employee row each account needs, because
-     *                           App\Http\Resources\UserResource dereferences
-     *                           $this->employee->firstname with no null check
-     *
-     * Uses updateOrInsert so the seeder can be re-run without deleting users
-     * that other tables already reference.
-     *
-     * @return void
+     * Uses updateOrInsert so the seeder can be re-run without wiping users
+     * that other tables already reference (customers, purchase orders, etc.
+     * hardcode added_by_id/created_by_id against these seeded ids).
      */
     public function run()
     {
-        $now = now();
-
-        // Password shared by every demo account below.
-        $demoPassword = 'password';
+        $timestamp = now();
 
         $users = [
             [
                 'id' => 1,
-                'username' => 'rbt0213',
-                'email' => 'ren.zeon0213@gmail.com',
-                'password' => 'b0uy4nt-4dm1n',
+                'username' => 'administrator01',
+                'email' => 'administrator@example.com',
+                'password' => Hash::make('password'),
             ],
             [
                 'id' => 2,
-                'username' => 'admin.demo',
-                'email' => 'admin.demo@example.com',
-                'password' => $demoPassword,
+                'username' => 'salesrep01',
+                'email' => 'salesrep@example.com',
+                'password' => Hash::make('password'),
             ],
             [
                 'id' => 3,
-                'username' => 'salesrep.demo',
-                'email' => 'salesrep.demo@example.com',
-                'password' => $demoPassword,
+                'username' => 'hrmanager01',
+                'email' => 'hrmanager@example.com',
+                'password' => Hash::make('password'),
             ],
             [
                 'id' => 4,
-                'username' => 'hrofficer.demo',
-                'email' => 'hrofficer.demo@example.com',
-                'password' => $demoPassword,
+                'username' => 'warehouse01',
+                'email' => 'warehouse.manager@example.com',
+                'password' => Hash::make('password'),
             ],
             [
                 'id' => 5,
-                'username' => 'inventory.demo',
-                'email' => 'inventory.demo@example.com',
-                'password' => $demoPassword,
+                'username' => 'areabusiness01',
+                'email' => 'area.business.manager@example.com',
+                'password' => Hash::make('password'),
             ],
             [
                 'id' => 6,
-                'username' => 'salesmanager.demo',
-                'email' => 'salesmanager.demo@example.com',
-                'password' => $demoPassword,
+                'username' => 'accountant01',
+                'email' => 'accountant@example.com',
+                'password' => Hash::make('password'),
             ],
             [
                 'id' => 7,
-                'username' => 'topmgmt.demo',
-                'email' => 'topmgmt.demo@example.com',
-                'password' => $demoPassword,
+                'username' => 'superadmin01',
+                'email' => 'super.admin@example.com',
+                'password' => Hash::make('password'),
             ],
-            // Super admin: UserRolesTableSeeder grants this account every role
-            // in list_roles, so every menu item and guarded route is reachable.
             [
                 'id' => 8,
-                'username' => 'superadmin',
-                'email' => 'superadmin@example.com',
-                'password' => $demoPassword,
+                'username' => 'miniadmin01',
+                'email' => 'mini.admin@example.com',
+                'password' => Hash::make('password'),
+            ],
+            [
+                'id' => 9,
+                'username' => 'logistics01',
+                'email' => 'logistic.coordinator@example.com',
+                'password' => Hash::make('password'),
             ],
         ];
 
@@ -92,19 +82,17 @@ class UsersTableSeeder extends Seeder
                 [
                     'username' => $user['username'],
                     'email' => $user['email'],
-                    'password' => Hash::make($user['password']),
-                    // is_active and email_verified_at must be set, or the
-                    // is_active and verified middleware reject the login.
+                    'password' => $user['password'],
                     'is_active' => 1,
                     'is_new' => 0,
                     'two_factor_secret' => null,
                     'two_factor_recovery_codes' => null,
                     'remember_token' => null,
-                    'email_verified_at' => $now,
-                    'password_changed_at' => $now,
+                    'email_verified_at' => $timestamp,
+                    'password_changed_at' => $timestamp,
                     'two_factor_confirmed_at' => null,
-                    'created_at' => $now,
-                    'updated_at' => $now,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
                 ]
             );
         }

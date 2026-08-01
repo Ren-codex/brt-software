@@ -3,7 +3,6 @@
     <div class="col-md-12">
     <div class="library-card">
         <div class="library-card-header">
-          <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div class="header-icon">
                 <i class="ri-shopping-cart-line"></i>
@@ -17,29 +16,21 @@
               <i class="ri-add-line"></i>
               <span>Add Purchase Request</span>
             </button>
-          </div>
         </div>
 
         <div class="library-card-body">
           <div class="tabs-section">
-            <div class="tabs-wrapper">
+            <div class="filter-segment">
               <button
-                :class="['tab-btn', { active: activeTab === 'pending' }]"
-                @click="setActiveTab('pending')"
+                v-for="tab in statusTabs"
+                :key="tab.value"
+                type="button"
+                class="filter-segment-btn"
+                :class="{ active: activeTab === tab.value }"
+                @click="setActiveTab(tab.value)"
               >
-                Pending
-              </button>
-              <button
-                :class="['tab-btn', { active: activeTab === 'approved' }]"
-                @click="setActiveTab('approved')"
-              >
-                Approved
-              </button>
-              <button
-                :class="['tab-btn', { active: activeTab === 'disapproved' }]"
-                @click="setActiveTab('disapproved')"
-              >
-                Disapproved
+                <i :class="tab.icon"></i>
+                <span>{{ tab.label }}</span>
               </button>
             </div>
           </div>
@@ -107,9 +98,8 @@
                     v-bind:key="list.id" 
                     @click="openView(list)" 
                     style="cursor: pointer;"
-                    :style="getRowStyle(list.status)"
                   >
-                    <td>{{ index + 1 }}</td>
+                    <td>{{ (meta?.from ?? 1) + index }}</td>
                     <td>
                       <strong>{{ list.pr_number }}</strong>
                     </td>
@@ -200,17 +190,32 @@ export default {
       selectedStatus: this.filter.status || '',
       sortBy: this.filter.sort_by || 'date',
       sortDirection: this.filter.sort_direction || 'desc',
-      activeTab: 'pending',
+      activeTab: 'all',
+      statusTabs: [
+        { value: 'all',          label: 'All',          icon: 'ri-layout-grid-line' },
+        { value: 'pending',      label: 'Pending',      icon: 'ri-time-line' },
+        { value: 'approved',     label: 'Approved',     icon: 'ri-check-line' },
+        { value: 'completed',    label: 'Completed',    icon: 'ri-checkbox-circle-line' },
+        { value: 'disapproved',  label: 'Disapproved',  icon: 'ri-close-circle-line' },
+      ],
     };
   },
   computed: {
     filteredAndSortedList() {
       let filtered = [];
       // Filter by active tab
-      if (this.activeTab === 'pending') {
+      if (this.activeTab === 'all') {
+        filtered = [
+          ...this.listPurchaseRequests,
+          ...this.listPurchaseOrders,
+          ...this.listPRDisapproved,
+        ];
+      } else if (this.activeTab === 'pending') {
         filtered = this.listPurchaseRequests;
       } else if (this.activeTab === 'approved') {
-        filtered = this.listPurchaseOrders;
+        filtered = this.listPurchaseOrders.filter(order => order.status?.name === 'Approved');
+      } else if (this.activeTab === 'completed') {
+        filtered = this.listPurchaseOrders.filter(order => order.status?.name === 'Completed');
       } else if (this.activeTab === 'disapproved') {
         filtered = this.listPRDisapproved;
       }
@@ -366,6 +371,8 @@ export default {
           return 'No pending purchase request found';
         case 'approved':
           return 'No approved purchase request found';
+        case 'completed':
+          return 'No completed purchase request found';
         case 'disapproved':
           return 'No disapproved purchase request found';
         default:
@@ -383,31 +390,43 @@ export default {
   margin-bottom: 1rem;
 }
 
-.tabs-wrapper {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid #e9ecef;
+.filter-segment {
+  display: inline-flex;
+  background: #eaf2f0;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
 }
 
-.tab-btn {
-  padding: 8px 16px;
-  background: none;
+.filter-segment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
-  border-bottom: 2px solid transparent;
-  color: #6c757d;
-  font-weight: 500;
+  background: transparent;
+  color: #4a7a70;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 8px;
+  transition: all 0.18s ease;
+  white-space: nowrap;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
 }
 
-.tab-btn:hover {
-  color: #2e8b57;
+.filter-segment-btn i {
+  font-size: 0.95rem;
 }
 
-.tab-btn.active {
-  color: #2e8b57;
-  border-bottom-color: #2e8b57;
+.filter-segment-btn:hover:not(.active) {
+  background: rgba(61, 141, 122, 0.1);
+  color: #3d8d7a;
+}
+
+.filter-segment-btn.active {
+  background: #3d8d7a;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
 }
 
 /* Filter Section */
@@ -652,6 +671,40 @@ tbody tr:hover {
 
 .text-center i {
   opacity: 0.5;
+}
+
+/* Card Header */
+.library-card-header {
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid #c4d9d2;
+  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+}
+
+.header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(61, 141, 122, 0.12);
+  border: 1px solid rgba(61, 141, 122, 0.16);
+  color: #3d8d7a;
+  font-size: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #16322e;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 0.76rem;
+  color: #6b8c85;
+  margin: 0;
 }
 
 /* Responsive Design */

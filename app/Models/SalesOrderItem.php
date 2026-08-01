@@ -10,6 +10,7 @@ class SalesOrderItem extends Model
         't',
         'product_id',
         'quantity',
+        'returned_quantity',
         'price',
         'price_type',
         'batch_code',
@@ -29,5 +30,10 @@ class SalesOrderItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function salesReturnItems()
+    {
+        return $this->hasMany(SalesReturnItem::class, 'sales_order_item_id');
     }
 }

@@ -11,6 +11,8 @@ use App\Models\ListSalary;
 use App\Models\ListStatus;
 use App\Models\ListUnit;
 use App\Models\ListBrand;
+use App\Models\ListPackaging;
+use App\Models\ArInvoice;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\ListSupplier;
@@ -19,6 +21,7 @@ use App\Models\InventoryStocks;
 use App\Models\PayrollSetting;
 use App\Models\PayrollTemplate;
 use App\Models\ListLocation;
+use App\Models\ListPayrollItem;
 
 class DropdownClass
 {  
@@ -62,18 +65,39 @@ class DropdownClass
                 'name' => $item->name
             ];
         });
-      
+
         return  $data;
+    }
+
+    public function packagings(){
+        $data = ListPackaging::orderBy('name')->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name'  => $item->name,
+            ];
+        });
+
+        return $data;
     }
 
     public function customers(){
         $data = Customer::get()->map(function ($item) {
+            $outstandingBalance = (float) ArInvoice::query()
+                ->whereHas('sales_order', function ($query) use ($item) {
+                    $query->where('customer_id', $item->id)
+                        ->whereDoesntHave('status', function ($statusQuery) {
+                            $statusQuery->where('slug', 'cancelled');
+                        });
+                })
+                ->sum('balance_due');
+
             return [
                 'value' => $item->id,
                 'name' => $item->name,
                 'address' => $item->address,
                 'contact_number' => $item->contact_number,
                 'email' => $item->email,
+                'outstanding_balance' => round($outstandingBalance, 2),
             ];
         });
         return  $data;
@@ -110,40 +134,75 @@ class DropdownClass
     }
 
     public function products(){
-        $data = Product::with(['brand', 'unit', 'receivedItems.inventoryStocks', 'receivedItems.receivedStock'])->get()->map(function ($item) {
-            $available_quantity = $item->receivedItems->sum(function ($receivedItem) {
-                return $receivedItem->inventoryStocks->sum('quantity');
+        $data = Product::with(['brand', 'unit'])->get()->map(function ($item) {
+            $batchStocks = InventoryStocks::query()
+                ->with('receivedItem')
+                ->where('quantity', '>', 0)
+                ->where(function ($q) use ($item) {
+                    // Received stocks (linked via received_item)
+                    $q->whereHas('receivedItem', function ($sub) use ($item) {
+                        $sub->where('product_id', $item->id);
+                    })
+                    // Converted stocks (product_id set directly on the row)
+                    ->orWhere(function ($sub) use ($item) {
+                        $sub->where('product_id', $item->id)
+                            ->whereNotNull('conversion_id');
+                    });
+                })
+                ->orderBy('created_at')
+                ->get();
+
+            $batchStocksByCode = $batchStocks->groupBy('batch_code');
+
+            $available_quantity = (int) $batchStocksByCode->sum(function ($stocks) {
+                return $stocks->sum('quantity');
             });
+
+            $batch_stocks = $batchStocksByCode->map(function ($stocks, $batchCode) {
+                $firstStock = $stocks->sortBy('created_at')->first();
+
+                return [
+                    'batch_code' => $batchCode,
+                    'quantity' => (int) $stocks->sum('quantity'),
+                    'unit_cost' => $firstStock?->receivedItem?->unit_cost ?? $firstStock?->unit_cost,
+                    'retail_price' => $firstStock?->retail_price,
+                    'wholesale_price' => $firstStock?->wholesale_price,
+                ];
+            })->values()->sortBy('batch_code')->values()->all();
+
             $batch_code = null;
-            if ($available_quantity > 0) {
-                $firstReceivedItemWithStock = $item->receivedItems->first(function ($receivedItem) {
-                    return $receivedItem->inventoryStocks->sum('quantity') > 0;
-                });
-                if ($firstReceivedItemWithStock) {
-                    $firstInventoryStock = $firstReceivedItemWithStock->inventoryStocks->first();
-                    if ($firstInventoryStock) {
-                        $batch_code = $firstInventoryStock->batch_code;
-                    }
-                }
+            $batch_available = 0;
+            $firstInventoryStock = null;
+            if ($available_quantity > 0 && count($batch_stocks) > 0) {
+                $batch_code = $batch_stocks[0]['batch_code'];
+                $batch_available = $batch_stocks[0]['quantity'];
+                $firstInventoryStock = InventoryStocks::query()
+                    ->where('batch_code', $batch_code)
+                    ->where('quantity', '>', 0)
+                    ->where(function ($q) use ($item) {
+                        $q->whereHas('receivedItem', function ($sub) use ($item) {
+                            $sub->where('product_id', $item->id);
+                        })
+                        ->orWhere(function ($sub) use ($item) {
+                            $sub->where('product_id', $item->id)
+                                ->whereNotNull('conversion_id');
+                        });
+                    })
+                    ->orderBy('created_at')
+                    ->first();
             }
             $retail_price = null;
             $wholesale_price = null;
-            if ($available_quantity > 0) {
-                $firstReceivedItemWithStock = $item->receivedItems->first(function ($receivedItem) {
-                    return $receivedItem->inventoryStocks->sum('quantity') > 0;
-                });
-                if ($firstReceivedItemWithStock) {
-                    $firstInventoryStock = $firstReceivedItemWithStock->inventoryStocks->first();
-                    if ($firstInventoryStock) {
-                        $retail_price = $firstInventoryStock->retail_price;
-                        $wholesale_price = $firstInventoryStock->wholesale_price;
-                    }
-                }
+            if ($firstInventoryStock) {
+                $retail_price = $firstInventoryStock->retail_price;
+                $wholesale_price = $firstInventoryStock->wholesale_price;
             }
             return [
                 'value' => $item->id,
-                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->pack_size ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
+                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->weight ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
                 'batch_code' => $batch_code,
+                'batch_available' => $batch_available,
+                'batch_stocks' => $batch_stocks,
                 'available_quantity' => $available_quantity,
                 'retail_price' => $retail_price,
                 'wholesale_price' => $wholesale_price,
@@ -165,15 +224,44 @@ class DropdownClass
     }
 
     public function employees(){
-        $data = Employee::with('position')->get()->map(function ($item) {
+        $data = Employee::with(['position', 'loans'])->get()->map(function ($item) {
+            $totalUnpaidLoan = $item->loans
+                ->where('status', 'active')
+                ->sum(function ($loan) {
+                    return (float) $loan->remaining_balance;
+                });
+
             return [
                 'value' => $item->id,
                 'name' => $item->lastname . ', ' . $item->firstname . ' ' . ($item->middlename ? strtoupper($item->middlename[0]) . '.' : ''),
                 'position_name' => $item->position ? $item->position->title : null,
                 'basic_salary' => $item->position ? $item->position->rate_per_day : null,
+                'total_loan_count' => $item->loans->where('status', 'active')->count(),
+                'total_unpaid_loan' => $totalUnpaidLoan,
             ];
         });
         return  $data;
+    }
+
+    public function employeesWithoutAccount(){
+        $userService = new \App\Services\System\User\UserClass();
+
+        return Employee::whereNull('user_id')
+            ->with('position')
+            ->orderBy('lastname')
+            ->get()
+            ->map(function ($item) use ($userService) {
+                $label = $item->fullname;
+                if ($item->position) {
+                    $label .= ' — ' . $item->position->title;
+                }
+                return [
+                    'value' => $item->id,
+                    'name'  => $label,
+                    'email' => $item->email,
+                    'username' => $item->birthdate ? $userService->generateUsername($item) : null,
+                ];
+            });
     }
 
     public function sales_reps(){
@@ -207,20 +295,8 @@ class DropdownClass
     }
 
     public function sales_statuses(){
-        // Get sales order related statuses
-        $data = ListStatus::whereIn('slug', [
-            'pending',
-            'approved',
-            'disapproved',
-            'cancelled',
-            'for-delivery',
-            'delivered',
-            'paid',
-            'unpaid',
-            'partially-paid',
-            'for-payment',
-            'liquidated'
-        ])->get()->map(function ($item) {
+        // Return all statuses so tab filters show the full list
+        $data = ListStatus::orderBy('name')->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->name,
@@ -256,6 +332,17 @@ class DropdownClass
                         'basic_salary' => $emp->position ? $emp->position->rate_per_day : null,
                     ];
                 }),
+            ];
+        });
+        return  $data;
+    }
+
+    public function payroll_items(){
+        $data = ListPayrollItem::where('is_active',1)->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+                'type' => $item->type,
             ];
         });
         return  $data;

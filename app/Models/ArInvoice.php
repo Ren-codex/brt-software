@@ -14,6 +14,8 @@ class ArInvoice extends Model
         'status_id',
         'invoice_number',
         'invoice_date',
+        'due_date',
+        'amount_due',
         'amount_paid',
         'balance_due',
         'total_discount',
@@ -22,6 +24,8 @@ class ArInvoice extends Model
 
     protected $casts = [
         'invoice_date' => 'date',
+        'due_date' => 'date',
+        'amount_due'  => 'decimal:2',
         'amount_paid' => 'decimal:2',
         'balance_due' => 'decimal:2',
         'total_discount' => 'decimal:2',
@@ -35,6 +39,11 @@ class ArInvoice extends Model
     public function status()
     {
         return $this->belongsTo(ListStatus::class);
+    }
+
+    public function receipts()
+    {
+        return $this->hasMany(Receipt::class, 'ar_invoice_id');
     }
 
     public static function generateInvoiceNumber($date = null)

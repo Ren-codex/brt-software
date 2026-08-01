@@ -12,18 +12,20 @@ use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
+use App\Http\Resources\Libraries\ReceiptResource;
+use App\Services\PrintClass;
 
 class ReceiptController extends Controller
 {
     use HandlesTransaction;
+    public $receipt,$dropdown, $print;
 
-    public $dropdown, $receipt;
-
-    public function __construct(DropdownClass $dropdown, ReceiptClass $receipt){
+    public function __construct(ReceiptClass $receipt, DropdownClass $dropdown, PrintClass $print){
         $this->dropdown = $dropdown;
         $this->receipt = $receipt;
+        $this->print = $print;
     }
+
 
     public function index(Request $request){
         switch($request->option){
@@ -58,9 +60,14 @@ class ReceiptController extends Controller
         ]);
     }
 
-    public function show($id){
-        return $this->receipt->show($id);
+    public function show($id, Request $request)
+    {
+        if ($request->option === 'detail') {
+            return new ReceiptResource($this->receipt->show($id));
+        }
+        return $this->print->print($id, $request);
     }
+
 
     public function update(Request $request, $id){
         $request->merge(['id' => $id]);

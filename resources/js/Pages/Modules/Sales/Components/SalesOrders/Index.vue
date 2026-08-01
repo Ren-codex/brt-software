@@ -1,26 +1,21 @@
 <template>
-    <BRow>
-        <div class="col-lg-9 mb-4">
-            <div class="library-card">
-                <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="header-icon">
-                                <i class="ri-shopping-cart-line fs-24"></i>
-                            </div>
-                            <div>
-                                <h4 class="header-title mb-1">Sales Orders</h4>
-                                <p class="header-subtitle mb-0">A comprehensive list of Sales Orders</p>
-                            </div>
+    <div>
+        <div class="library-card">
+            <div class="library-card-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="header-icon">
+                            <i class="ri-shopping-cart-line"></i>
                         </div>
-                        <button class="create-btn" @click="openCreate">
-                            <i class="ri-add-line"></i>
-                            <span>Create Order</span>
-                        </button>
+                        <div>
+                            <h4 class="header-title mb-0">Sales Orders</h4>
+                            <p class="header-subtitle mb-0">Manage and track all sales orders.</p>
+                        </div>
                     </div>
-
-                </div>
-                <div class="card-body m-2 p-3">
+                    <button class="acct-btn-primary" @click="openCreate">
+                        <i class="ri-add-line me-1"></i>Create Order
+                    </button>
+            </div>
+            <div class="library-card-body">
                    
                     <div class="search-section">
                         <div class="row">
@@ -57,95 +52,35 @@
 
                     </div>
 
-                    <div class="mb-2">
-                        <b-button @click="showStock = !showStock" variant="outline-primary" size="sm" class="mb-3">
-                            <i class="ri-eye-line me-1"></i> Stock Availability
-                        </b-button>
-                        <b-collapse v-model="showStock">
-                            <div class="card border-primary shadow-sm" style="border-radius: 10px;">
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">Total KG Left</p>
-                                                <h5 class="text-primary mb-0">{{ stock.total_kg_left || 0 }} kg</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">5kg Sacks Left</p>
-                                                <h5 class="text-success mb-0">{{ stock.five_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">10kg Sacks Left</p>
-                                                <h5 class="text-info mb-0">{{ stock.ten_kg_sacks_left || 0 }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="p-3 bg-light rounded">
-                                                <p class="mb-1 text-muted small">25kg Sacks Left</p>
-                                                <h5 class="text-warning mb-0">{{ stock.twenty_five_kg_sacks_left || 0 }}
-                                                </h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div v-if="stock.products && stock.products.length > 0" class="mt-3">
-                                        <h6 class="text-muted">Product Details by Brand:</h6>
-                                        <div v-for="(brandGroup, brandIndex) in groupedProducts" :key="brandIndex"
-                                            class="mb-4">
-                                            <h6 class="text-primary mb-2">
-                                                <i class="ri-building-line me-2"></i>{{ brandGroup.brand || 'No Brand'
-                                                }}
-                                            </h6>
-                                            <div class="row">
-                                                <div v-for="product in brandGroup.products" :key="product.product_name"
-                                                    class="col-md-6 mb-2">
-                                                    <div
-                                                        class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                                        <span class="small">{{ product.product_name }}</span>
-                                                        <span class="badge bg-secondary">{{ product.total_quantity }} x
-                                                            {{ product.pack_size }} {{ product.unit }} ({{
-                                                                product.total_kg }} kg)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </b-collapse>
-                    </div>
-
-                    <div class="table-responsive table-card">
-                        <table class="table align-middle table-hover mb-0"
-                            style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                <tr class="fs-12 fw-bold text-muted">
-                                    <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 10%;" class="text-center border-none">Order Number</th>
-                                    <th style="width: 10%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 10%;" class="text-center border-none">Date</th>
-                                    <th style="width: 8%;" class="text-center border-none">Status</th>
-                                     <!-- <th style="width: 8%;" class="text-center border-none">SubStatus</th> -->
-                                    <th style="width: 10%;" class="text-center border-none">Total Amount</th>
-                                    <th style="width: 10%;" class="text-center border-none">Due Date</th>
-                                    <th style="width: 8%;" class="text-center border-none">Paid %</th>
-                                    <th style="width: 6%;" class="text-center border-none">Actions</th>
+                    <div class="table-responsive">
+                        <table class="table sales-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Order Number</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Total Amount</th>
+                                    <th>Due Date</th>
+                                    <th class="text-center">Paid %</th>
+                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <template v-for="(list, index) in lists" :key="index">
-                                    <tr @click="toggleRowExpansion(index)" :class="{
-                                        'bg-primary bg-opacity-10 ': index === selectedRow,
-                                        'bg-danger bg-opacity-25': isDueSoon(list),
-                                        'cursor-pointer': true
-                                    }" class="transition-all" style="transition: all 0.3s ease;">
+                                <template v-for="(list, index) in lists" :key="list.id">
+                                    <tr @click="toggleRowExpansion(index)"
+                                        :class="{
+                                            'expanded-row': expandedRow === index,
+                                            'bg-danger bg-opacity-25': isDueSoon(list),
+                                            'cursor-pointer': true
+                                        }" 
+                                        class="main-table-row transition-all"
+                                        style="transition: all 0.3s ease;">
                                         <td class="text-center">
-                                            <i v-if="expandedRows.includes(index)"
-                                                class="ri-arrow-down-s-line text-primary"></i>
-                                            <i v-else class="ri-arrow-right-s-line text-muted"></i>
+                                            <div class="expand-icon" :class="{ 'rotated': expandedRow === index }">
+                                                <i class="ri-arrow-right-s-line"></i>
+                                            </div>
                                             {{ index + 1 }}
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.so_number }}</td>
@@ -164,7 +99,7 @@
                                                 {{ list.sub_status?.name  }}
                                             </span>
                                         </td> -->
-                                        <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
+                                        <td class="text-end fw-semibold">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
                                             {{ list.due_date }}
                                             <span v-if="isDueSoon(list)" class="badge bg-danger ms-1">Due Soon</span>
@@ -182,37 +117,40 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button v-if="list.status?.slug == 'for-payment'"
-                                                    @click.stop="onSalesAdjustment(list.id)" variant="outline-secondary"
-                                                    v-b-tooltip.hover title="Sales Adjustment" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                <button v-if="canApprove && list.status?.slug == 'for-payment'"
+                                                    @click.stop="onApproval(list.id)"
+                                                    class="action-btn success" title="Approve Order">
+                                                    <i class="ri-check-line"></i>
+                                                </button>
+                                                <button v-if="list.status?.slug == 'for-payment'"
+                                                    @click.stop="onSalesAdjustment(list)"
+                                                    class="action-btn warn" title="Sales Adjustment">
                                                     <i class="ri-refund-line"></i>
-                                                </b-button>
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info"
-                                                    v-b-tooltip.hover title="Print Invoice" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                </button>
+                                                <button @click.stop="onPrint(list.id)"
+                                                    class="action-btn info" title="Print Invoice">
                                                     <i class="ri-printer-line"></i>
-                                                </b-button>
-                                                <b-button v-if="list.status?.slug == 'for-payment'"
-                                                    @click.stop="openEdit(list, index)" variant="outline-primary"
-                                                    v-b-tooltip.hover title="Edit" size="sm"
-                                                    class="btn-icon rounded-circle">
+                                                </button>
+                                                <button v-if="list.status?.slug == 'for-payment'"
+                                                    @click.stop="openEdit(list, index)"
+                                                    class="action-btn edit" title="Edit">
                                                     <i class="ri-pencil-fill"></i>
-                                                </b-button>
-
-                                                <b-button v-if="list.status?.slug !== 'cancelled' && list.status?.slug !== 'sales-returned'" @click.stop="onCancel(list.id)" variant="outline-danger" v-b-tooltip.hover title="Cancel" size="sm" class="btn-icon rounded-circle">
+                                                </button>
+                                                <button v-if="list.status?.slug !== 'cancelled'"
+                                                    @click.stop="onCancel(list)"
+                                                    class="action-btn delete" title="Cancel Order">
                                                     <i class="ri-close-line"></i>
-                                                </b-button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRows.includes(index)" style="background-color: #c4dad2e0;">
-                                        <td colspan="12" class="p-0">
-                                            <div class="p-4">
-                                                <h6 class="text-primary mb-3">
-                                                    <i class="ri-file-list-line me-2"></i>Order Details
-                                                </h6>
-                                                <div class="row g-3">
+                                    <!-- Expanded Details Row -->
+                                <Transition name="details-row">
+                                <tr v-if="expandedRow === index" class="details-row">
+                                    <td colspan="9" class="p-0">
+                                        <div class="details-container">
+                                            <div class="details-content">
+                                                <div class="row g-4">
                                                     <div class="col-md-6">
                                                         <div class="card border-0 shadow-sm ">
                                                             <div class="card-body">
@@ -221,42 +159,35 @@
                                                                 <p class="mb-1"><strong>Order Date:</strong> {{
                                                                     list.order_date }}</p>
                                                                 <p class="mb-1"><strong>Added By:</strong> {{
-                                                                    list.added_by?.name || '-' }}</p>
+                                                                    list.added_by?.fullname || '-' }}</p>
                                                                 <p class="mb-0"><strong>Transferred To:</strong> {{
                                                                     list.transferred_to || '-' }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm ">
-
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Items</h6>
+                                                        <div class="info-card items-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-shopping-bag-line"></i>
+                                                                <h6>Items</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
                                                                 <div v-if="list.items && list.items.length > 0">
                                                                     <table class="table table-sm table-borderless mb-0">
                                                                         <thead>
                                                                             <tr>
-                                                                                <th class="fw-semibold">Product Name
-                                                                                </th>
-                                                                                <th class=" fw-semibold">Quantity</th>
-                                                                                <th class=" fw-semibold">
-                                                                                    Price
-                                                                                </th>
+                                                                                <th class="fw-semibold">Product Name</th>
+                                                                                <th class="fw-semibold">Quantity</th>
+                                                                                <th class="fw-semibold">Price</th>
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody>
-                                                                            <tr v-for="item in list.items"
-                                                                                :key="item.id">
-                                                                                <td>{{ getProduct(item.product_id).name
-                                                                                    || 'Unknown Product' }}</td>
+                                                                            <tr v-for="item in list.items" :key="item.id">
+                                                                                <td>{{ getProduct(item.product_id).name || 'Unknown Product' }}</td>
                                                                                 <td>
-                                                                                    <span class="badge bg-primary">{{
-                                                                                        item.quantity }} {{ item.unit
-                                                                                        }}</span>
+                                                                                    <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
                                                                                 </td>
-                                                                                <td>
-                                                                                    ₱{{ item.price }}
-                                                                                </td>
+                                                                                <td>₱{{ item.price }}</td>
                                                                             </tr>
                                                                         </tbody>
                                                                     </table>
@@ -265,114 +196,79 @@
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    <div class="col-12" v-if="list.invoices && list.invoices.some(inv => inv.receipts && inv.receipts.length > 0)">
+                                                        <div class="info-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-receipt-line"></i>
+                                                                <h6>Payment History</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
+                                                                <table class="table table-sm table-borderless mb-0">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th class="fw-semibold">OR Number</th>
+                                                                            <th class="fw-semibold">Date</th>
+                                                                            <th class="fw-semibold">Amount Paid</th>
+                                                                            <th class="fw-semibold">Mode</th>
+                                                                            <th class="fw-semibold">Type</th>
+                                                                            <th class="fw-semibold">Status</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <template v-for="inv in list.invoices" :key="inv.id">
+                                                                            <tr v-for="receipt in inv.receipts" :key="receipt.id">
+                                                                                <td class="fw-semibold">{{ receipt.receipt_number }}</td>
+                                                                                <td>{{ receipt.receipt_date }}</td>
+                                                                                <td>₱{{ receipt.amount_paid }}</td>
+                                                                                <td>{{ receipt.payment_mode || '-' }}</td>
+                                                                                <td>
+                                                                                    <span class="badge" :class="getReceiptTypeBadge(receipt.receipt_type)">
+                                                                                        {{ getReceiptTypeLabel(receipt.receipt_type) }}
+                                                                                    </span>
+                                                                                </td>
+                                                                                <td>
+                                                                                    <span v-if="receipt.status" class="badge" :style="{ backgroundColor: receipt.status.bg_color, color: receipt.status.text_color }">
+                                                                                        {{ receipt.status.name }}
+                                                                                    </span>
+                                                                                </td>
+                                                                            </tr>
+                                                                        </template>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </td>
-                                    </tr>
+                                        </div>
+                                    </td>
+                                </tr>
+                                </Transition>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9" class="text-center py-4">
-                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                                        <p class="mt-2 mb-0">No sales order found</p>
-                                        <small class="text-muted">Try changing your search or filter criteria</small>
+                                    <td colspan="9">
+                                        <div class="sales-empty-state">
+                                            <i class="ri-shopping-cart-line"></i>
+                                            <p class="mb-1">No sales orders found</p>
+                                            <small>Try adjusting your search or filter.</small>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0 m-3">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length"
+                <div class="px-3 pb-3">
+                    <Pagination v-if="meta" @fetch="fetch" :lists="lists.length"
                         :links="links" :pagination="meta" />
                 </div>
             </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card shadow-lg border-0" >
-                <div class="card-header border-0  ">
-                    <h4>
-                        <i class="ri-dashboard-line "></i> Quick Stats
-                        <hr class="mb-0">
-                    </h4>
-                </div>
-
-                <div class="card-body">
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-primary text-white rounded">
-                                    <i class="ri-shopping-cart-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Total Sales Orders</p>
-                                <h4 class="mb-0">{{ metrics.total_sales_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-info text-white rounded">
-                                    <i class="ri-calendar-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Today's Orders</p>
-                                <h4 class="mb-0">{{ metrics.today_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-warning text-white rounded">
-                                    <i class="ri-time-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Pending Orders</p>
-                                <h4 class="mb-0">{{ metrics.pending_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-danger text-white rounded">
-                                    <i class="ri-close-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Cancelled Orders</p>
-                                <h4 class="mb-0">{{ metrics.cancelled_orders }}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-success text-white rounded">
-                                    <i class="ri-money-dollar-circle-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Total Revenue</p>
-                                <h4 class="mb-0">₱{{ metrics.total_revenue }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </BRow>
+    </div>
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
      <Approval @approve="fetch()" ref="approval"/>
-    <Adjustment @update="fetch()"  ref="adjustment"/>
+    <Adjustment @update="fetch()" :dropdowns="dropdowns" ref="adjustment"/>
 
     
 </template>
@@ -389,7 +285,7 @@ import Approval from './Modals/Approval.vue';
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
-    props: ['dropdowns' , 'invoices' , 'user', 'isExternal'],
+    props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
@@ -411,33 +307,14 @@ export default {
                 pending_orders: 0,
                 total_cancelled_orders: 0
             },
-            stock: {
-                products: []
-            },
-            showStock: false,
-            expandedRows: []
+            expandedRow: null
         }
     },
     computed: {
-        groupedProducts() {
-            if (!this.stock.products || this.stock.products.length === 0) {
-                return [];
-            }
-
-            const grouped = {};
-            this.stock.products.forEach(product => {
-                const brand = product.brand_name || 'No Brand';
-                if (!grouped[brand]) {
-                    grouped[brand] = {
-                        brand: brand,
-                        products: []
-                    };
-                }
-                grouped[brand].products.push(product);
-            });
-
-            return Object.values(grouped);
-        }
+        canApprove() {
+            const roles = this.$page?.props?.roles || [];
+            return ['Administrator', 'Area Business Manager', 'Super Admin'].some(r => roles.includes(r));
+        },
     },
     watch: {
         "filter.keyword"(newVal) {
@@ -447,9 +324,18 @@ export default {
     created() {
         this.fetch();
         this.fetchMetrics();
-        this.fetchStock();
     },
     methods: {
+        getReceiptTypeLabel(type) {
+            if (type === 'updated') return 'Adjusted Payment';
+            if (type === 'refund') return 'Return Refund';
+            return 'Payment';
+        },
+        getReceiptTypeBadge(type) {
+            if (type === 'updated') return 'bg-info text-dark';
+            if (type === 'refund') return 'bg-warning text-dark';
+            return 'bg-primary';
+        },
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
@@ -470,6 +356,7 @@ export default {
                         this.lists = response.data.data;
                         this.meta = response.data.meta;
                         this.links = response.data.links;
+                        this.expandedRow = null; // Reset expanded row when data changes
                     }
                 })
                 .catch(err => console.log(err));
@@ -483,26 +370,26 @@ export default {
             this.$refs.create.edit(data, index);
         },
 
-        onCancel(id) {
+        onCancel(list) {
             let title = "Sales Order";
-            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
-            this.$refs.cancel.show(id, title, url);
+            let url = '/sales-orders';
+            const hasPayments = (list.invoices || []).some(inv => inv.amount_paid > 0);
+            this.$refs.cancel.show(list.id, title, url, hasPayments);
         },
 
         onApproval(id) {
             let title = "Sales Order";
-            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            let url = '/sales-orders';
             this.$refs.approval.show(id, title, url);
         },
         onPrint(id) {
-            let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            let url =  '/sales-orders';
             window.open(`${url}/${id}?option=print&type=sales_order`);
         },
     
 
-        onSalesAdjustment(id) {
-            let title = "Sales Order";
-            this.$refs.adjustment.show(id, this.isExternal);
+        onSalesAdjustment(data) {
+            this.$refs.adjustment.show(data?.id, this.isExternal, data?.items || []);
         },
 
         selectRow(index) {
@@ -514,10 +401,11 @@ export default {
         },
 
         toggleRowExpansion(index) {
-            if (this.expandedRows.includes(index)) {
-                this.expandedRows = this.expandedRows.filter(i => i !== index);
+            // Toggle between opening and closing, only one row open at a time
+            if (this.expandedRow === index) {
+                this.expandedRow = null; // Close if clicking the same row
             } else {
-                this.expandedRows.push(index);
+                this.expandedRow = index; // Open new row, closing any previously opened one
             }
         },
 
@@ -544,19 +432,6 @@ export default {
                 boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
             };
         },
-        fetchStock() {
-            axios.get('/sales-orders', {
-                params: {
-                    option: 'stock'
-                }
-            })
-                .then(response => {
-                    if (response) {
-                        this.stock = response.data;
-                    }
-                })
-                .catch(err => console.log(err));
-        },
 
         formatCurrency(value) {
             if (!value) return '₱0.00';
@@ -566,12 +441,6 @@ export default {
             });
         },
 
-        getStockPercentage(quantity) {
-            // Calculate percentage based on total stock - this is a simple implementation
-            // You might want to adjust this based on your business logic
-            const maxStock = Math.max(...this.stock.products.map(p => p.total_quantity));
-            return Math.min((quantity / maxStock) * 100, 100);
-        },
 
         getProduct(product_id) {
             const product = this.dropdowns.products.find(u => u.value === product_id);
@@ -588,6 +457,8 @@ export default {
 
         isDueSoon(list) {
             if (!list.due_date) return false;
+            const balanceDue = list.invoices && list.invoices.length > 0 ? Number(list.invoices[0].balance_due || 0) : Number(list.total_amount || 0);
+            if (balanceDue <= 0) return false;
             const dueDate = new Date(list.due_date);
             const today = new Date();
             const diffTime = dueDate - today;
@@ -608,5 +479,176 @@ export default {
         letter-spacing: 0.5px;
         transition: all 0.3s ease;
         cursor: default;
+    }
+
+    /* Modern Collapsible Row Styles */
+    .main-table-row {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+
+    .main-table-row:hover {
+        background-color: rgba(61, 141, 122, 0.05) !important;
+        border-left-color: #3D8D7A;
+    }
+
+    .main-table-row.expanded-row {
+        background: linear-gradient(90deg, rgba(61, 141, 122, 0.08) 0%, rgba(61, 141, 122, 0.02) 100%);
+        border-left-color: #3D8D7A;
+    }
+
+    .expand-icon {
+        display: inline-block;
+        margin-right: 8px;
+        transition: transform 0.3s ease;
+        color: #6c757d;
+    }
+
+    .expand-icon i {
+        font-size: 18px;
+        vertical-align: middle;
+    }
+
+    .expand-icon.rotated {
+        transform: rotate(90deg);
+        color: #3D8D7A;
+    }
+
+    /* Details Row Styles */
+    .details-row {
+        background-color: #f8fafd;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .details-content {
+        padding: 1.5rem 2rem;
+    }
+
+    /* Expand / collapse transitions */
+    .details-row-enter-active,
+    .details-row-leave-active {
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .details-row-enter-from,
+    .details-row-leave-to {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    .details-row-enter-to,
+    .details-row-leave-from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Info Card Styles */
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 0;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .info-card:hover {
+        box-shadow: 0 8px 25px rgba(61, 141, 122, 0.15);
+        transform: translateY(-2px);
+        border-color: #3D8D7A;
+    }
+
+    .info-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e9ecef;
+        background: #f9fafb;
+    }
+
+    .info-card-header i {
+        font-size: 1.25rem;
+        color: #3D8D7A;
+        background: rgba(61, 141, 122, 0.1);
+        padding: 0.5rem;
+        border-radius: 8px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .info-card-header h6 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #267A4C;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        padding: 0.5rem 1.25rem 1.25rem;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px dashed #e9ecef;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-label::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #C4DAD2;
+        border-radius: 50%;
+    }
+
+    .info-value {
+        color: #2b3459;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .details-content {
+            padding: 1rem;
+        }
+        
+        .info-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        
+        .info-value {
+            width: 100%;
+        }
     }
 </style>

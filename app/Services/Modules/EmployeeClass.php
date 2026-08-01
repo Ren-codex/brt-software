@@ -19,7 +19,7 @@ class EmployeeClass
 
     public function lists($request){
         $data = EmployeeResource::collection(
-            Employee::with(['user', 'position', 'added_by'])
+            Employee::with(['user.roles', 'user.myroles.role', 'position', 'added_by', 'loans.payments'])
                 ->when($request->keyword, function ($query,$keyword) {
                     $keyword = strtolower($keyword);
                     $query->where(function($q) use ($keyword) {
@@ -45,18 +45,19 @@ class EmployeeClass
     }
 
     public function save($request, $userId = null){
-        $avatarPath = null;
+        $avatarPath = 'noavatar.jpg';
         if ($request->hasFile('avatar')) {
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
 
         $user = null;
         if ($request->filled('username') && $request->filled('password')) {
+            $roleIds = is_array($request->role_ids) ? $request->role_ids : [];
             $userRequest = new \Illuminate\Http\Request([
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => $request->password,
-                'role_ids' => [] // No roles for employees by default
+                'role_ids' => $roleIds
             ]);
             $userResult = $this->userClass->save($userRequest);
             $user = User::find($userResult['data']['id']);
@@ -71,7 +72,7 @@ class EmployeeClass
             'mobile' => $request->mobile,
             'birthdate' => $request->birthdate,
             'sex' => $request->sex,
-            'religion' => $request->religion,
+            'religion' => $request->religion ?? '',
             'address' => $request->address,
             'position_id' => $request->position_id,
             'avatar' => $avatarPath,
@@ -92,7 +93,7 @@ class EmployeeClass
     public function update($request){
         $data = Employee::findOrFail($request->id);
 
-        $avatarPath = $data->avatar;
+        $avatarPath = $data->avatar ?: 'noavatar.jpg';
         if ($request->hasFile('avatar')) {
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
@@ -100,13 +101,14 @@ class EmployeeClass
         // Handle user account
         $user = $data->user;
         if ($request->filled('username')) {
+            $roleIds = is_array($request->role_ids) ? $request->role_ids : [];
             if ($user) {
                 // Update existing user
                 $updateRequest = new \Illuminate\Http\Request([
                     'id' => $user->id,
                     'username' => $request->username,
                     'email' => $request->email,
-                    'role_ids' => [] // Keep existing roles or empty
+                    'role_ids' => $roleIds
                 ]);
                 if ($request->filled('password')) {
                     $updateRequest->merge(['password' => $request->password]);
@@ -118,7 +120,7 @@ class EmployeeClass
                     'username' => $request->username,
                     'email' => $request->email,
                     'password' => $request->password,
-                    'role_ids' => []
+                    'role_ids' => $roleIds
                 ]);
                 $userResult = $this->userClass->save($userRequest);
                 $user = User::find($userResult['data']['id']);
@@ -134,7 +136,7 @@ class EmployeeClass
             'mobile' => $request->mobile,
             'birthdate' => $request->birthdate,
             'sex' => $request->sex,
-            'religion' => $request->religion,
+            'religion' => $request->religion ?? '',
             'address' => $request->address,
             'position_id' => $request->position_id,
             'avatar' => $avatarPath,

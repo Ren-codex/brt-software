@@ -75,6 +75,27 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function orderSummary(Request $request, $id)
+    {
+        return response()->json([
+            'data' => $this->customer->orderSummary($id, $request),
+        ]);
+    }
+
+    public function purchaseHistory(Request $request, $id)
+    {
+        return response()->json(
+            $this->customer->purchaseHistory($id, $request)
+        );
+    }
+
+    public function details($id)
+    {
+        return response()->json([
+            'data' => $this->customer->details($id),
+        ]);
+    }
+
    public function destroy($id){
         $result = $this->handleTransaction(function () use ($id) {
             return $this->customer->delete($id);

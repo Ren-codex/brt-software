@@ -10,7 +10,7 @@
             <div class="modal-body modal-body-lg">
 
                 <form @submit.prevent="submit">
-                    <BRow>
+                    <div class="row">
                         <div class="col-md-9">
                             <div class="form-row">
                                 <div class="form-group form-group-half">
@@ -31,14 +31,14 @@
                                             class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="form.customer_id" :options="dropdowns.customers"
-                                            text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.customer_id }" class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select
-                                                    Customer</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
+                                        <select
+                                            v-model="form.customer_id"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors.customer_id }"
+                                        >
+                                            <option :value="null" disabled>Select Customer</option>
+                                            <option v-for="c in dropdowns.customers" :key="c.value" :value="c.value">{{ c.name }}</option>
+                                        </select>
 
                                     </div>
 
@@ -66,14 +66,14 @@
                                         class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="form.sales_rep_id" :options="dropdowns.sales_reps"
-                                            text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.sales_rep_id }" class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select
-                                                    Sales Rep</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
+                                        <select
+                                            v-model="form.sales_rep_id"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors.sales_rep_id }"
+                                        >
+                                            <option :value="null" disabled>Select Sales Rep</option>
+                                            <option v-for="r in dropdowns.sales_reps" :key="r.value" :value="r.value">{{ r.name }}</option>
+                                        </select>
 
                                     </div>
 
@@ -87,14 +87,14 @@
                                         class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <b-form-select v-model="form.driver_id" :options="dropdowns.drivers"
-                                            text-field="name" value-field="value"
-                                            :class="{ 'input-error': form.errors.customer_id }" class="form-control">
-                                            <template #first>
-                                                <b-form-select-option :value="null" disabled>Select
-                                                    Driver</b-form-select-option>
-                                            </template>
-                                        </b-form-select>
+                                        <select
+                                            v-model="form.driver_id"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors.driver_id }"
+                                        >
+                                            <option :value="null" disabled>Select Driver</option>
+                                            <option v-for="d in dropdowns.drivers" :key="d.value" :value="d.value">{{ d.name }}</option>
+                                        </select>
 
                                     </div>
 
@@ -107,11 +107,10 @@
 
                              
                             <div class="mb-2">
-                                <b-button :disabled="!form.customer_id || !form.order_date" @click="addItem()"
-                                    size="sm" variant="primary">
-                                    <i class="ri-add-line" v-if="!form.processing"></i>
+                                <button type="button" class="acct-btn-primary" :disabled="!form.customer_id || !form.order_date" @click="addItem()">
+                                    <i class="ri-add-line"></i>
                                     Add Item
-                                </b-button>
+                                </button>
                             </div>
                             
                             <div class="form-row">
@@ -176,12 +175,12 @@
                                             <td class="text-center">{{ formatCurrency(calculateDiscountedTotal(list)) }}</td>
                                               <td class="text-center">
                                                   <div class="d-flex justify-content-center gap-1">
-                                                      <b-button @click="editItem(list, index)" variant="primary" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
+                                                      <button type="button" @click="editItem(list, index)" class="action-btn edit" title="Edit">
                                                           <i class="ri-edit-line"></i>
-                                                      </b-button>
-                                                      <b-button @click="removeItem(list.id)" variant="danger" v-b-tooltip.hover title="Delete" size="sm" class="btn-icon">
+                                                      </button>
+                                                      <button type="button" @click="removeItem(list.id)" class="action-btn delete" title="Delete">
                                                           <i class="ri-delete-bin-line"></i>
-                                                      </b-button>
+                                                      </button>
                                                   </div>
                                               </td>
                                           </tr>
@@ -284,7 +283,7 @@
                                 </div>
                             </b-card>
                         </div>
-                    </BRow>
+                    </div>
 
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>

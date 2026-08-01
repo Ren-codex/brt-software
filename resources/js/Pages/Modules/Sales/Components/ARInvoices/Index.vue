@@ -1,9 +1,8 @@
 <template>
-    <BRow>
-        <div class="col-lg-9 mb-4">
+    <div>
+        <div class="col-lg-12 mb-4">
             <div class="library-card">
                 <div class="library-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-shopping-cart-line fs-24"></i>
@@ -13,19 +12,16 @@
                                 <p class="header-subtitle mb-0">A comprehensive Account Receivable Invoices</p>
                             </div>
                         </div>
-                    </div>
-
                 </div>
 
-      
-                <div class="card-body bg-white m-2 p-3">
+                <div class="library-card-body">
                     <div class="search-section">
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
-                                    <input type="text" v-model="filter.keyword" @input="debouncedSearch"
-                                        placeholder="Search purchase request..." class="search-input">
+                                    <input type="text" v-model="filter.keyword"
+                                        placeholder="Search AR invoice..." class="search-input">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -33,7 +29,8 @@
                                     <i class="ri-map-pin-line search-icon"></i>
                                     <select v-model="filter.location_id" @change="fetch()" class="search-input">
                                         <option :value="null">All Locations</option>
-                                        <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
+                                        <option v-for="location in dropdowns.locations" :key="location.value"
+                                            :value="location.value">
                                             {{ location.name }}
                                         </option>
                                     </select>
@@ -44,7 +41,8 @@
                                     <i class="ri-flag-line search-icon"></i>
                                     <select v-model="filter.status" @change="fetch()" class="search-input">
                                         <option :value="null">All Status</option>
-                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug">
+                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value"
+                                            :value="status.slug">
                                             {{ status.name }}
                                         </option>
                                     </select>
@@ -52,35 +50,37 @@
                             </div>
                         </div>
                     </div>
-                    
-
 
                     <div class="table-responsive table-card">
-                        <table class="table align-middle table-hover mb-0"
-                            style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                                <tr class="fs-12 fw-bold text-muted">
-                                    <th style="width: 3%; border: none;">#</th>
-                                    <th style="width: 12%;" class="text-center border-none">Invoice Number</th>
-                                    <th style="width: 12%;" class="text-center border-none">Sales Order</th>
-                                    <th style="width: 12%;" class="text-center border-none">Customer</th>
-                                    <th style="width: 12%;" class="text-center border-none">Invoice Date</th>
-                                    <th style="width: 12%;" class="text-center border-none">Status</th>
-                                    <th style="width: 12%;" class="text-center border-none">Balance Due</th>
-                                    <th style="width: 12%;" class="text-center border-none">Amount Paid</th>
-                                    <th style="width: 6%;" class="text-center border-none">Actions</th>
+                        <table class="table sales-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:3%">#</th>
+                                    <th class="text-center" style="width:12%">Invoice Number</th>
+                                    <th class="text-center" style="width:12%">Sales Order</th>
+                                    <th class="text-center" style="width:12%">Customer</th>
+                                    <th class="text-center" style="width:12%">Invoice Date</th>
+                                    <th class="text-center" style="width:12%">Status</th>
+                                    <th class="text-end" style="width:12%">Balance Due</th>
+                                    <th class="text-end" style="width:12%">Amount Paid</th>
+                                    <th class="text-center" style="width:12%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
                                 <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" :class="{
-                                        'bg-primary bg-opacity-10': index === selectedRow,
-                                        'cursor-pointer': true
+                                        'expanded-row': expandedRow === index,
+                                        'overdue-row': isOverdue(list),
+                                        'due-soon-row': isDueSoon(list),
+                                        'main-table-row': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
                                         <td class="text-center">
-                                            <i v-if="expandedRows.includes(index)"
-                                                class="ri-arrow-down-s-line text-primary"></i>
-                                            <i v-else class="ri-arrow-right-s-line text-muted"></i>
+                                            <button type="button" class="collapse-btn"
+                                                @click.stop="toggleRowExpansion(index)">
+                                                <div class="expand-icon" :class="{ rotated: expandedRow === index }">
+                                                    <i class="ri-arrow-right-s-line"></i>
+                                                </div>
+                                            </button>
                                             {{ index + 1 }}
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
@@ -88,168 +88,163 @@
                                         <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.invoice_date }}</td>
                                         <td class="text-center">
-                                            <b-badge
-                                                :style="{ 'background-color': list.status?.bg_color, color: '#fff' }"
-                                                class="px-3 py-2 rounded-pill">
-                                                {{ list.status?.name }}
-                                            </b-badge>
+                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                                {{ list.status?.name || '-' }}
+                                            </span>
+                                            <span v-if="isOverdue(list)" class="overdue-badge ms-1">
+                                                Past Due
+                                            </span>
+                                            <span v-if="isDueSoon(list)" class="due-soon-badge ms-1">
+                                                Due Soon
+                                            </span>
                                         </td>
                                         <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
                                         <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="onPrint(list.id)" variant="outline-info" v-b-tooltip.hover title="Print" size="sm" class="btn-icon rounded-circle">
+                                                <button @click.stop="onViewReceipts(list)" class="action-btn approve" title="View Receipts">
+                                                    <i class="ri-file-3-line"></i>
+                                                </button>
+                                                <button @click.stop="onPrint(list.id)" class="action-btn info" title="Print">
                                                     <i class="ri-printer-line"></i>
-                                                </b-button>
-                                                <b-button v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially_paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')" @click.stop="onPayment(list)" variant="outline-primary" v-b-tooltip.hover title="Payment" size="sm" class="btn-icon rounded-circle">
+                                                </button>
+                                                <button
+                                                    v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
+                                                    @click.stop="onPayment(list)" class="action-btn edit" title="Record Payment">
                                                     <i class="ri-money-dollar-circle-fill"></i>
-                                                </b-button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRows.includes(index)" class="bg-light">
-                                        <td colspan="8" class="p-0">
-                                            <div class="p-4">
+                                    <tr v-if="expandedRow === index" class="details-row">
+                                        <td colspan="12">
+                                            <div class="details-container">
+                                                <div class="details-content">
+                                                    <div class="collapse-actions">
+                                                        <button @click.stop="onViewReceipts(list)" class="acct-btn-secondary">
+                                                            <i class="ri-file-3-line"></i>
+                                                            View Receipts
+                                                        </button>
+                                                        <button @click.stop="onPrint(list.id)" class="acct-btn-secondary">
+                                                            <i class="ri-printer-line"></i>
+                                                            Print Invoice
+                                                        </button>
+                                                        <button
+                                                            v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
+                                                            @click.stop="onPayment(list)" class="acct-btn-primary">
+                                                            <i class="ri-money-dollar-circle-fill"></i>
+                                                            Record Payment
+                                                        </button>
+                                                    </div>
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Invoice Details
                                                 </h6>
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm bg-white">
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Invoice Information</h6>
-                                                                <p class="mb-1"><strong>Invoice Date:</strong> {{ list.invoice_date }}</p>
-                                                                <p class="mb-1"><strong>Amount Balance:</strong> ₱{{ list.balance_due?.toFixed(2) }}</p>
-                                                                <p class="mb-1"><strong>Amount Paid:</strong> ₱{{ list.amount_paid?.toFixed(2) }}</p>
-                                                                <p class="mb-0"><strong>Balance Due:</strong> ₱{{ list.balance_due?.toFixed(2) }}</p>
+                                                        <div class="info-card invoice-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-file-list-line"></i>
+                                                                <h6>Invoice Information</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Invoice Date:</span>
+                                                                    <span class="info-value">{{ list.invoice_date
+                                                                        }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Amount Balance:</span>
+                                                                    <span class="info-value amount">₱{{
+                                                                        list.balance_due?.toFixed(2) }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Amount Paid:</span>
+                                                                    <span class="info-value amount paid">₱{{
+                                                                        list.amount_paid?.toFixed(2) }}</span>
+                                                                </div>
+                                                                <div class="info-item highlight">
+                                                                    <span class="info-label">Balance Due:</span>
+                                                                    <span class="info-value amount due">₱{{
+                                                                        list.balance_due?.toFixed(2) }}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm bg-white">
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Sales Order
-                                                                    Details</h6>
-                                                                <p class="mb-1"><strong>Sales Order:</strong> {{
-                                                                    list.sales_order?.so_number || '-' }}</p>
-                                                                <p class="mb-1"><strong>Customer:</strong> {{
-                                                                    list.sales_order?.customer?.name || '-' }}</p>
-                                                                <p class="mb-0"><strong>Order Date:</strong> {{
-                                                                    list.sales_order?.order_date || '-' }}</p>
+                                                        <div class="info-card order-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-shopping-bag-line"></i>
+                                                                <h6>Sales Order Details</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Sales Order:</span>
+                                                                    <span class="info-value">{{
+                                                                        list.sales_order?.so_number || '-' }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Customer:</span>
+                                                                    <span class="info-value">{{
+                                                                        list.sales_order?.customer?.name || '-'
+                                                                        }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Order Date:</span>
+                                                                    <span class="info-value">{{
+                                                                        list.sales_order?.order_date || '-' }}</span>
+                                                                </div>
+                                                                <div v-if="list.sales_order?.status" class="info-item">
+                                                                    <span class="info-label">Order Status:</span>
+                                                                    <span class="info-value">
+                                                                        <span class="status-badge"
+                                                                            :style="getStatusStyle(list.sales_order.status)">
+                                                                            {{ list.sales_order.status?.name }}
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9" class="text-center py-4">
-                                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                                        <p class="mt-2 mb-0">No invoice found</p>
-                                        <small class="text-muted">Try changing your search or filter criteria</small>
+                                    <td colspan="9">
+                                        <div class="sales-empty-state">
+                                            <i class="ri-inbox-line"></i>
+                                            <p>No invoices found.</p>
+                                            <small>Try changing your search or filter criteria.</small>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-light border-0 mt-3">
-                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch()" :lists="lists.length" :links="links" :pagination="meta" />
+                <div class="px-3 pb-3">
+                    <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length"
+                        :links="links" :pagination="meta" />
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 ">
-            <div class="card shadow-lg border-0 bg-primary">
-                <div class="card-header border-0  bg-primary">
-                    <h4 class="text-white">
-                        <i class="ri-dashboard-line "></i> Quick Stats
-                        <hr class="mb-0">
-                    </h4>
-                </div>
-
-                <div class="card-body">
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-primary text-white rounded">
-                                    <i class="ri-file-list-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Total Invoices</p>
-                                <h4 class="mb-0">{{ metrics.total_invoices }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-info text-white rounded">
-                                    <i class="ri-calendar-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Today's Invoices</p>
-                                <h4 class="mb-0">{{ metrics.today_invoices }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-success text-white rounded">
-                                    <i class="ri-money-dollar-circle-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Outstanding Balance</p>
-                                <h4 class="mb-0">₱{{ metrics.outstanding_balance?.toFixed(2) }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="metric-card mb-3 p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-warning text-white rounded">
-                                    <i class="ri-time-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Pending Invoices</p>
-                                <h4 class="mb-0">{{ metrics.pending_invoices }}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card p-3 bg-light rounded">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-success text-white rounded">
-                                    <i class="ri-check-circle-line fs-18"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="fw-semibold fs-12 mb-1">Paid Invoices</p>
-                                <h4 class="mb-0">{{ metrics.paid_invoices }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </BRow>
-    <Payment @approve="fetch()"  ref="payment"/>
+    </div>
+    <Payment @approve="fetch()" ref="payment" />
+    <ReceiptsList ref="receiptsList" />
 </template>
+
 <script>
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Payment from '../ARInvoices/Modals/Payment.vue';
+import ReceiptsList from '../ARInvoices/Modals/ReceiptsList.vue';
+
 export default {
-    components: { PageHeader, Pagination, Multiselect, Payment },
+    components: { PageHeader, Pagination, Multiselect, Payment, ReceiptsList },
     props: ['dropdowns', 'isExternal'],
     data() {
         return {
@@ -263,7 +258,7 @@ export default {
                 status: null
             },
             index: null,
-            selectedRow: null,
+            expandedRow: null, // Changed from expandedRows array to single value
             units: [],
             metrics: {
                 total_invoices: 0,
@@ -272,32 +267,6 @@ export default {
                 pending_invoices: 0,
                 today_invoices: 0
             },
-            stock: {
-                products: []
-            },
-            showStock: false,
-            expandedRows: []
-        }
-    },
-    computed: {
-        groupedProducts() {
-            if (!this.stock.products || this.stock.products.length === 0) {
-                return [];
-            }
-
-            const grouped = {};
-            this.stock.products.forEach(product => {
-                const brand = product.brand_name || 'No Brand';
-                if (!grouped[brand]) {
-                    grouped[brand] = {
-                        brand: brand,
-                        products: []
-                    };
-                }
-                grouped[brand].products.push(product);
-            });
-
-            return Object.values(grouped);
         }
     },
     watch: {
@@ -308,16 +277,16 @@ export default {
     created() {
         this.fetch();
         this.fetchMetrics();
-        this.fetchStock();
     },
     methods: {
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
+
         fetch(page_url) {
             page_url = page_url || '/ar-invoices';
-            axios.get(page_url,{
-                params : {
+            axios.get(page_url, {
+                params: {
                     option: 'lists',
                     keyword: this.filter.keyword,
                     location_id: this.filter.location_id,
@@ -331,32 +300,30 @@ export default {
                         this.lists = response.data.data;
                         this.meta = response.data.meta;
                         this.links = response.data.links;
+                        this.expandedRow = null; // Reset expanded row when data changes
                     }
                 })
                 .catch(err => console.log(err));
         },
-        onPayment(data){
+
+        onPayment(data) {
             let title = "Record Payment";
             this.$refs.payment.show(data, title, '/ar-invoices');
         },
+        onViewReceipts(invoice){
+            this.$refs.receiptsList.show(invoice);
+        },
 
-        onPrint(id){
+        onPrint(id) {
             window.open(`/ar-invoices/${id}?option=print&type=ar_invoice`);
         },
 
-        selectRow(index) {
-            if (this.selectedRow === index) {
-                this.selectedRow = null;
-            } else {
-                this.selectedRow = index;
-            }
-        },
-
         toggleRowExpansion(index) {
-            if (this.expandedRows.includes(index)) {
-                this.expandedRows = this.expandedRows.filter(i => i !== index);
+            // Toggle between opening and closing, only one row open at a time
+            if (this.expandedRow === index) {
+                this.expandedRow = null; // Close if clicking the same row
             } else {
-                this.expandedRows.push(index);
+                this.expandedRow = index; // Open new row, closing any previously opened one
             }
         },
 
@@ -374,24 +341,361 @@ export default {
                 .catch(err => console.log(err));
         },
 
-        fetchStock() {
-            axios.get('/ar-invoices', {
-                params: {
-                    option: 'stock'
-                }
-            })
-                .then(response => {
-                    if (response) {
-                        this.stock = response.data;
-                    }
-                })
-                .catch(err => console.log(err));
+        isDueSoon(list) {
+            const dueDateValue = list?.due_date ?? list?.sales_order?.due_date;
+            if (!dueDateValue || Number(list?.balance_due || 0) <= 0) return false;
+
+            const dueDate = new Date(dueDateValue);
+            if (Number.isNaN(dueDate.getTime())) return false;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            dueDate.setHours(0, 0, 0, 0);
+
+            const diffTime = dueDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays <= 2 && diffDays >= 0;
         },
 
-        getStockPercentage(quantity) {
-            const maxStock = Math.max(...this.stock.products.map(p => p.total_quantity));
-            return Math.min((quantity / maxStock) * 100, 100);
+        isOverdue(list) {
+            const dueDateValue = list?.due_date ?? list?.sales_order?.due_date;
+            if (!dueDateValue || Number(list?.balance_due || 0) <= 0) return false;
+
+            const dueDate = new Date(dueDateValue);
+            if (Number.isNaN(dueDate.getTime())) return false;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            dueDate.setHours(0, 0, 0, 0);
+
+            return dueDate.getTime() < today.getTime();
+        },
+
+        getStatusStyle(status) {
+            if (!status) {
+                return {
+                    color: '#6c757d',
+                    backgroundColor: '#e2e3e5',
+                    border: '1px solid #cccccc'
+                };
+            }
+
+            return {
+                color: status.text_color || '#000000',
+                backgroundColor: status.bg_color || '#ffffff',
+                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
+                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
+            };
         }
     }
 }
 </script>
+
+<style scoped>
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+/* Modern Collapsible Row Styles */
+.main-table-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.main-table-row td {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    vertical-align: middle;
+}
+
+.main-table-row:hover {
+    background-color: rgba(61, 141, 122, 0.05) !important;
+    border-left-color: #3D8D7A;
+}
+
+.main-table-row.expanded-row {
+    background: linear-gradient(90deg, rgba(61, 141, 122, 0.08) 0%, rgba(61, 141, 122, 0.02) 100%);
+    border-left-color: #3D8D7A;
+}
+
+.main-table-row.overdue-row {
+    background: rgba(239, 68, 68, 0.14);
+    border-left-color: #dc2626;
+}
+
+.main-table-row.overdue-row:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-left-color: #b91c1c;
+}
+
+.main-table-row.due-soon-row {
+    background: rgba(244, 114, 182, 0.12);
+    border-left-color: #ec4899;
+}
+
+.main-table-row.due-soon-row:hover {
+    background: rgba(244, 114, 182, 0.18) !important;
+    border-left-color: #db2777;
+}
+
+.collapse-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #2e8b57;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.collapse-btn:hover {
+    background: rgba(61, 141, 122, 0.08);
+}
+
+.expand-icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
+    color: #6c757d;
+}
+
+.expand-icon i {
+    font-size: 15px;
+    vertical-align: middle;
+}
+
+.expand-icon.rotated {
+    transform: rotate(90deg);
+    color: #3D8D7A;
+}
+
+/* Details Row Styles */
+.details-row {
+    background-color: #f8fafd;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.details-row td {
+    padding: 0 !important;
+    border-top: none !important;
+}
+
+.details-container {
+    animation: slideDown 0.3s ease-out;
+}
+
+.details-content {
+    padding: 1.5rem 2rem;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Payment Modal Design - Matching Styles */
+.info-card {
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    height: 100%;
+    overflow: hidden;
+}
+
+.info-card:hover {
+    box-shadow: 0 8px 25px rgba(61, 141, 122, 0.15);
+    transform: translateY(-2px);
+    border-color: #3D8D7A;
+}
+
+.info-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+    background: #f9fafb;
+}
+
+.info-card-header i {
+    font-size: 1.25rem;
+    color: #3D8D7A;
+    background: rgba(61, 141, 122, 0.1);
+    padding: 0.5rem;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-card-header h6 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #267A4C;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.5rem 1.25rem 1.25rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px dashed #e9ecef;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item.highlight {
+    background: linear-gradient(135deg, rgba(61, 141, 122, 0.08) 0%, rgba(38, 122, 76, 0.05) 100%);
+    padding: 1rem;
+    border-radius: 10px;
+    margin-top: 0.5rem;
+    border: none;
+    box-shadow: 0 2px 8px rgba(61, 141, 122, 0.1);
+}
+
+.info-label {
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-label::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: #C4DAD2;
+    border-radius: 50%;
+}
+
+.info-value {
+    color: #2b3459;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.info-value.amount {
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.info-value.amount.paid {
+    color: #2e8b57;
+}
+
+.info-value.amount.due {
+    color: #e74c3c;
+    font-size: 1rem;
+}
+
+/* Custom badge styles */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.collapse-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+
+
+.due-soon-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9d174d;
+    background: rgba(244, 114, 182, 0.16);
+    border: 1px solid rgba(236, 72, 153, 0.28);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.overdue-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #991b1b;
+    background: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(220, 38, 38, 0.28);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .details-content {
+        padding: 1rem;
+    }
+
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .info-value {
+        width: 100%;
+    }
+
+    .collapse-actions {
+        justify-content: stretch;
+    }
+
+    .system-action-btn {
+        width: 100%;
+    }
+}
+</style>

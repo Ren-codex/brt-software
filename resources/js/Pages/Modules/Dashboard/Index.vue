@@ -1,12 +1,23 @@
 <template>
     <Head title="Dashboard"/>
-    
-  
 
-    <!-- Modern Tab Design -->
-    <div class="tab-container">
-        <div v-if="visibleTabs.length" class="tab-buttons">
-            <button v-for="tab in visibleTabs" :key="tab.value"
+    <div class="dashboard-hero">
+        <div class="dashboard-hero-copy">
+            <span class="dashboard-kicker">
+                <span class="live-dot"></span>
+                {{ dashboardConfig.kicker }}
+            </span>
+            <h1 class="dashboard-title">{{ dashboardConfig.title }}</h1>
+            <p class="dashboard-subtitle">{{ dashboardConfig.subtitle }}</p>
+        </div>
+        <div class="dashboard-badges">
+            <span v-for="badge in dashboardConfig.badges" :key="badge" class="dashboard-badge">{{ badge }}</span>
+        </div>
+    </div>
+
+    <div v-if="showTabs" class="tab-container">
+        <div class="tab-buttons">
+            <button v-for="tab in availableTabs" :key="tab.value"
                     @click="activeTab = tab.value"
                     :class="['tab-btn', { active: activeTab === tab.value }]">
                 <i :class="tab.icon"></i>
@@ -28,338 +39,138 @@
 
     <UserManualBook v-model="showManual" />
 
-    <!-- No dashboard section is available for this user's role -->
-    <div v-if="!visibleTabs.length" class="dashboard-empty">
-        <i class="ri-lock-2-line"></i>
-        <h3>No dashboard sections for your role</h3>
-        <p>Your account does not have access to the Sales, Inventory or Team summaries.
-           Open the User Manual above to see what your role covers, or ask an Administrator
-           if you think this is wrong.</p>
+    <div class="filter-container">
+        <div class="filter-buttons">
+            <button
+                v-for="filter in dateFilters"
+                :key="filter.value"
+                @click="selectedFilter = filter.value"
+                :class="['filter-btn', { active: selectedFilter === filter.value }]"
+            >
+                {{ filter.label }}
+            </button>
+        </div>
+        <div v-if="selectedFilter === 'today'" class="selected-date-input">
+            <input
+                v-model="selectedDateValue"
+                type="date"
+                class="date-input"
+            >
+        </div>
     </div>
 
     <!-- Sales Dashboard - Modern Design -->
-    <div v-if="activeTab === 'sales'" class="dashboard-content">
-        <!-- Stats Grid -->
-        <div class="stats-grid">
-            <div v-for="stat in salesStats" :key="stat.label" class="stat-card">
-                <div class="stat-icon" :style="{ background: stat.iconBg }">
-                    <i :class="stat.icon" :style="{ color: stat.iconColor }"></i>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-label">{{ stat.label }}</span>
-                    <div class="stat-value-wrapper">
-                        <span class="stat-value">{{ stat.showCurrency ? '₱' : '' }}{{ formatNumber(stat.value) }}</span>
-                        <span class="stat-trend" :class="stat.trendClass">
-                            <i :class="stat.trendIcon"></i> {{ stat.trend }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Row - Modern Cards -->
-        <div class="charts-row">
-            <div class="chart-card large">
-                <div class="card-header-modern">
-                    <div>
-                        <h3>Revenue Overview</h3>
-                        <p class="text-muted-600">Monthly sales performance</p>
-                    </div>
-                    <!-- <div class="chart-actions">
-                        <select class="chart-select">
-                            <option>Last 6 months</option>
-                            <option>Last year</option>
-                        </select>
-                    </div> -->
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="salesChart.series.length" 
-                        type="area" height="320"
-                        :options="salesChart.options" 
-                        :series="salesChart.series">
-                    </apexchart>
-                </div>
-            </div>
-
-            <div class="chart-card">
-                <div class="card-header-modern">
-                    <h3>Payment Methods</h3>
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="paymentChart.series.length" 
-                        type="donut" height="280"
-                        :options="paymentChart.options" 
-                        :series="paymentChart.series">
-                    </apexchart>
-                    
-                    <!-- Payment Legend -->
-                    <div class="payment-legend">
-                        <div v-for="(item, i) in paymentBreakdown" :key="i" class="legend-item">
-                            <span class="color-dot" :style="{ background: item.color }"></span>
-                            <span class="flex-grow-1">{{ item.method }}</span>
-                            <span class="fw-semibold">₱{{ formatNumber(item.amount) }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Transactions Table - Modern Design -->
-        <div class="modern-card">
-            <div class="card-header-modern">
-                <div>
-                    <h3>Recent Transactions</h3>
-                    <p class="text-muted-600">Latest sales activities</p>
-                </div>
-                <!-- <button class="btn-outline-modern">
-                    View All <i class="bx bx-right-arrow-alt ms-2"></i>
-                </button> -->
-            </div>
-            <div class="table-container">
-                <table class="modern-table">
-                    <thead>
-                        <tr>
-                            <th>Receipt #</th>
-                            <th>Customer</th>
-                            <th>Date</th>
-                            <th>Items</th>
-                            <th>Amount</th>
-                            <th>Payment</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="t in recentTransactions" :key="t.id">
-                            <td><span class="receipt-num">#{{ t.receipt_number }}</span></td>
-                            <td>{{ t.customer_name }}</td>
-                            <td>{{ t.date }}</td>
-                            <td>{{ t.items_count || 3 }} items</td>
-                            <td class="fw-semibold">₱{{ formatNumber(t.amount) }}</td>
-                            <td><span class="payment-badge">{{ t.payment_method }}</span></td>
-                            <td><span class="status-badge completed">Completed</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <SalesDashboard
+        v-if="activeTab === 'sales'"
+        :sales-stats="salesStatCards"
+        :top-products="topProducts"
+        :sales-chart="salesChart"
+        :payment-chart="paymentChart"
+        :payment-breakdown="paymentBreakdown"
+        :recent-transactions="recentTransactions"
+    />
 
     <!-- Inventory Dashboard - Modern Design -->
-    <div v-else-if="activeTab === 'inventory'" class="dashboard-content">
-        <!-- Stock Health Overview -->
-        <div class="health-cards">
-            <div v-for="stat in inventoryStats" :key="stat.label" class="health-card" :class="stat.cardClass">
-                <div class="health-icon" :style="{ background: stat.iconBg }">
-                    <i :class="stat.icon"></i>
-                </div>
-                <div class="health-info">
-                    <span class="health-label">{{ stat.label }}</span>
-                    <div class="health-value-wrapper">
-                        <span class="health-value">{{ stat.value }}</span>
-                        <span class="health-unit">{{ stat.unit }}</span>
-                    </div>
-                    <span class="health-trend" :class="stat.trendClass">
-                        <i :class="stat.trendIcon"></i> {{ stat.trend }} from last month
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Inventory Charts -->
-        <div class="charts-row">
-            <div class="chart-card large">
-                <div class="card-header-modern">
-                    <h3>Stock Distribution by Category</h3>
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="stockChart.series.length" 
-                        type="bar" height="300"
-                        :options="stockChart.options" 
-                        :series="stockChart.series">
-                    </apexchart>
-                </div>
-            </div>
-
-            <div class="chart-card">
-                <div class="card-header-modern">
-                    <h3>Stock Health</h3>
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="healthChart.series.length" 
-                        type="radialBar" height="280"
-                        :options="healthChart.options" 
-                        :series="healthChart.series">
-                    </apexchart>
-                    
-                    <!-- Stock Health Legend -->
-                    <div class="health-legend">
-                        <div class="legend-item" v-for="(item, i) in healthData" :key="i">
-                            <span class="color-dot" :style="{ background: item.color }"></span>
-                            <span>{{ item.label }}</span>
-                            <span class="ms-auto fw-semibold">{{ item.value }}%</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Low Stock Alert - Modern Grid -->
-        <div class="modern-card">
-            <div class="card-header-modern">
-                <div class="d-flex align-items-center gap-3">
-                    <h3>Low Stock Alert</h3>
-                    <span class="alert-badge">{{ lowStockItems.length }} items need attention</span>
-                </div>
-                <div class="d-flex gap-2">
-                    <input type="text" class="search-input" placeholder="Search products...">
-                    <button class="btn-outline-modern">Filter</button>
-                </div>
-            </div>
-            <div class="alert-grid">
-                <div v-for="item in lowStockItems" :key="item.id" class="alert-item-card" 
-                     :class="getAlertClass(item)">
-                    <div class="alert-item-header">
-                        <span class="product-code">{{ item.code }}</span>
-                        <span class="stock-badge" :class="getStockBadge(item)">{{ getStockStatus(item) }}</span>
-                    </div>
-                    <h4 class="product-name">{{ item.name }}</h4>
-                    <div class="product-category">{{ item.category }}</div>
-                    <div class="stock-levels">
-                        <div class="stock-info">
-                            <span class="label">Current</span>
-                            <span class="value current">{{ item.current_stock }}</span>
-                        </div>
-                        <div class="stock-info">
-                            <span class="label">Minimum</span>
-                            <span class="value min">{{ item.minimum_stock }}</span>
-                        </div>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" :style="{ width: getStockPercentage(item) + '%' }"></div>
-                    </div>
-                    <button class="reorder-btn">
-                        <i class="bx bx-cart me-2"></i>Reorder Now
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <InventoryDashboard
+        v-else-if="activeTab === 'inventory'"
+        :inventory-stats="inventoryStatCards"
+        :stock-chart="stockChart"
+        :health-chart="healthChart"
+        :health-data="healthData"
+        :low-stock-items="lowStockItems"
+    />
 
     <!-- Employee Dashboard - Modern Design -->
-    <div v-else-if="activeTab === 'employee'" class="dashboard-content">
-        <!-- Team Stats -->
-        <div class="team-stats">
-            <div v-for="stat in employeeStats" :key="stat.label" class="team-stat-card">
-                <div class="stat-main">
-                    <span class="stat-main-label">{{ stat.label }}</span>
-                    <span class="stat-main-value">{{ stat.value }}</span>
-                </div>
-                <div class="stat-footer">
-                    <span :class="stat.trendClass">
-                        <i :class="stat.trendIcon"></i> {{ stat.trend }}
-                    </span>
-                    <span class="text-muted-600">vs last month</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Employee Charts -->
-        <div class="charts-row">
-            <div class="chart-card">
-                <div class="card-header-modern">
-                    <h3>Department Distribution</h3>
-                </div>
-                <div class="chart-body">
-                    <apexchart 
-                        v-if="deptChart.series.length" 
-                        type="bar" height="280"
-                        :options="deptChart.options" 
-                        :series="deptChart.series">
-                    </apexchart>
-                </div>
-            </div>
-            <div class="chart-card">
-                <div class="card-header-modern">
-                    <h3>Attendance Overview</h3>
-                </div>
-                <div class="chart-body">
-                    <div class="attendance-stats">
-                        <div class="attendance-circle">
-                            <div class="circle-item present">
-                                <span class="number">{{ attendanceStats.present }}</span>
-                                <span class="label">Present</span>
-                            </div>
-                            <div class="circle-item late">
-                                <span class="number">{{ attendanceStats.late }}</span>
-                                <span class="label">Late</span>
-                            </div>
-                            <div class="circle-item absent">
-                                <span class="number">{{ attendanceStats.absent }}</span>
-                                <span class="label">Absent</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Attendance & Leave - Modern Split View -->
-        <div class="split-view">
-            <div class="modern-card">
-                <div class="card-header-modern">
-                    <h3>Today's Attendance</h3>
-                    <span class="badge-new">{{ recentAttendance.length }} records</span>
-                </div>
-                <div class="attendance-list">
-                    <div v-for="a in recentAttendance" :key="a.id" class="attendance-item">
-                        <div class="employee-avatar">
-                            {{ getInitials(a.employee_name) }}
-                        </div>
-                        <div class="employee-info">
-                            <h4>{{ a.employee_name }}</h4>
-                            <span>{{ a.department }}</span>
-                        </div>
-                        <div class="attendance-time">{{ a.time_in }}</div>
-                        <span class="status-pill" :class="a.status === 'On Time' ? 'ontime' : 'late'">
-                            {{ a.status }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modern-card">
-                <div class="card-header-modern">
-                    <h3>Upcoming Leaves</h3>
-                    <span class="badge-new">{{ upcomingLeaves.length }} pending</span>
-                </div>
-                <div class="leaves-list">
-                    <div v-for="l in upcomingLeaves" :key="l.id" class="leave-item">
-                        <div class="leave-date">
-                            <span class="month">{{ formatMonth(l.start_date) }}</span>
-                            <span class="day">{{ formatDay(l.start_date) }}</span>
-                        </div>
-                        <div class="leave-info">
-                            <h4>{{ l.employee_name }}</h4>
-                            <span>{{ l.leave_type }}</span>
-                        </div>
-                        <span class="status-pill" :class="l.status.toLowerCase()">
-                            {{ l.status }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <EmployeeDashboard
+        v-else-if="activeTab === 'employee'"
+        :employee-stats="teamStatCards"
+        :dept-chart="deptChart"
+        :workforce-summary="workforceSummary"
+        :recent-employees="recentEmployees"
+        :payroll-groups="payrollGroups"
+    />
 </template>
 
 <script>
-import PageHeader from '@/Shared/Components/PageHeader.vue';
 import UserManualBook from '@/Shared/Components/UserManual/UserManualBook.vue';
-import VueApexCharts from 'vue3-apexcharts';
+import SalesDashboard from '@/Pages/Modules/Dashboard/Partials/SalesDashboard.vue';
+import InventoryDashboard from '@/Pages/Modules/Dashboard/Partials/InventoryDashboard.vue';
+import EmployeeDashboard from '@/Pages/Modules/Dashboard/Partials/EmployeeDashboard.vue';
+
+const ROLE_DASHBOARD_MAP = {
+    'Super Admin': {
+        tabs: ['sales', 'inventory', 'employee'],
+        defaultTab: 'sales',
+        kicker: 'Executive Command Center',
+        title: 'Business Performance Dashboard',
+        subtitle: 'A full cross-functional view of sales, inventory, and workforce activity.',
+        badges: ['Full access', 'Operations', 'Financial visibility']
+    },
+    'Administrator': {
+        tabs: ['sales', 'inventory', 'employee'],
+        defaultTab: 'sales',
+        kicker: 'Administrative Overview',
+        title: 'Operations Dashboard',
+        subtitle: 'Monitor the core business lines and manage daily operations from one place.',
+        badges: ['System admin', 'Cross-module access', 'Monitoring']
+    },
+    'Mini Admin': {
+        tabs: ['sales', 'inventory'],
+        defaultTab: 'sales',
+        kicker: 'Operations Overview',
+        title: 'Mini Admin Dashboard',
+        subtitle: 'Track business flow across sales and stock movement with a lighter admin view.',
+        badges: ['Operations', 'Sales', 'Inventory']
+    },
+    'Sales Rep': {
+        tabs: ['sales'],
+        defaultTab: 'sales',
+        kicker: 'Sales Workspace',
+        title: 'Sales Dashboard',
+        subtitle: 'Stay focused on revenue, collections, and recent customer transactions.',
+        badges: ['Sales', 'Collections', 'Performance']
+    },
+    'Area Business Manager': {
+        tabs: ['sales'],
+        defaultTab: 'sales',
+        kicker: 'Regional Performance',
+        title: 'Area Business Dashboard',
+        subtitle: 'Review sales output, customer activity, and revenue trends across the territory.',
+        badges: ['Area performance', 'Revenue', 'Growth']
+    },
+    'Warehouse Manager': {
+        tabs: ['inventory'],
+        defaultTab: 'inventory',
+        kicker: 'Warehouse Control',
+        title: 'Inventory Dashboard',
+        subtitle: 'Focus on stock health, low-stock alerts, and inventory value in one view.',
+        badges: ['Stock control', 'Warehouse', 'Replenishment']
+    },
+    'Logistic Coordinator': {
+        tabs: ['inventory'],
+        defaultTab: 'inventory',
+        kicker: 'Logistics Overview',
+        title: 'Logistics Dashboard',
+        subtitle: 'Monitor inventory pressure points and stock availability that affect delivery flow.',
+        badges: ['Logistics', 'Movement', 'Coordination']
+    },
+    'HR Manager': {
+        tabs: ['employee'],
+        defaultTab: 'employee',
+        kicker: 'People Operations',
+        title: 'HR Dashboard',
+        subtitle: 'Track team health, attendance, and upcoming leave activity in a focused HR view.',
+        badges: ['Employees', 'Attendance', 'Leave']
+    },
+    'Accountant': {
+        tabs: ['sales'],
+        defaultTab: 'sales',
+        kicker: 'Financial Overview',
+        title: 'Accounting Dashboard',
+        subtitle: 'Review revenue flow, receipts, and outstanding balances from an accounting lens.',
+        badges: ['Accounting', 'Receivables', 'Revenue']
+    }
+};
 
 export default {
     props: {
@@ -370,105 +181,114 @@ export default {
         lowStockItems: Array,
         employeeStats: Object,
         employeeCharts: Object,
-        recentTransactions: Array
+        workforceSummary: Object,
+        recentTransactions: Array,
+        recentEmployees: Array,
+        payrollGroups: Array,
+        filter: {
+            type: String,
+            default: 'today'
+        },
+        selectedDate: {
+            type: String,
+            default: ''
+        }
     },
     components: {
-        PageHeader,
         UserManualBook,
-        apexchart: VueApexCharts
+        SalesDashboard,
+        InventoryDashboard,
+        EmployeeDashboard
     },
+    mounted() {},
     data() {
+        const today = new Date().toISOString().slice(0, 10);
         return {
             activeTab: 'sales',
             showManual: false,
-            // `roles` mirrors the guards in Shared/Layouts/Components/Menu.vue so a
-            // dashboard tab is only offered to whoever can open the matching module.
+            selectedFilter: this.filter || 'monthly',
+            selectedDateValue: this.selectedDate || today,
+            dateFilters: [
+                { label: 'Date', value: 'today' },
+                { label: 'Weekly', value: 'weekly' },
+                { label: 'Monthly', value: 'monthly' },
+                { label: 'Annually', value: 'annually' }
+            ],
             tabs: [
-                {
-                    label: 'Sales', value: 'sales', icon: 'bx bx-store',
-                    roles: ['Administrator', 'Sales Rep', 'Sales Manager']
-                },
-                {
-                    label: 'Inventory', value: 'inventory', icon: 'bx bx-package',
-                    roles: ['Administrator', 'Inventory Manager']
-                },
-                {
-                    label: 'Team', value: 'employee', icon: 'bx bx-user',
-                    roles: ['Administrator', 'Human Resource Officer']
-                }
-            ],
-            // Demo data
-            recentAttendance: [
-                { id: 1, employee_name: 'John Smith', department: 'Sales', time_in: '08:45 AM', status: 'On Time' },
-                { id: 2, employee_name: 'Maria Garcia', department: 'IT', time_in: '08:50 AM', status: 'On Time' },
-                { id: 3, employee_name: 'David Lee', department: 'Sales', time_in: '09:15 AM', status: 'Late' },
-                { id: 4, employee_name: 'Sarah Johnson', department: 'HR', time_in: '08:55 AM', status: 'On Time' }
-            ],
-            upcomingLeaves: [
-                { id: 1, employee_name: 'Emily Davis', leave_type: 'Vacation', start_date: '2024-01-20', status: 'Approved' },
-                { id: 2, employee_name: 'James Wilson', leave_type: 'Sick', start_date: '2024-01-18', status: 'Pending' },
-                { id: 3, employee_name: 'Lisa Anderson', leave_type: 'Personal', start_date: '2024-01-22', status: 'Pending' }
+                { label: 'Sales', value: 'sales', icon: 'bx bx-store' },
+                { label: 'Inventory', value: 'inventory', icon: 'bx bx-package' },
+                { label: 'Team', value: 'employee', icon: 'bx bx-user' }
             ]
         };
     },
-    created() {
-        // Without this the default 'sales' tab would still render its content for
-        // a user whose role hides the Sales button.
-        if (!this.visibleTabs.some(tab => tab.value === this.activeTab)) {
-            this.activeTab = this.visibleTabs.length ? this.visibleTabs[0].value : null;
-        }
-    },
     computed: {
         userRoles() {
-            const shared = this.$page?.props?.roles;
-            return Array.isArray(shared) ? shared : [];
+            return this.$page?.props?.roles || [];
         },
-        visibleTabs() {
-            return this.tabs.filter(tab => tab.roles.some(role => this.userRoles.includes(role)));
-        },
-        salesStats() {
-            const s = this.stats || {};
-            return [
-                { label: 'Total Revenue', value: s.totalSales || 0, icon: 'bx bx-dollar', iconBg: '#E6F9ED', iconColor: '#10b981', trend: '+12.5%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', showCurrency: true },
-                { label: 'Total Orders', value: s.totalReceipts || 0, icon: 'bx bx-receipt', iconBg: '#E5F0FF', iconColor: '#3b82f6', trend: '+8.2%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', showCurrency: false },
-                { label: 'Outstanding', value: s.totalOutstanding || 0, icon: 'bx bx-credit-card', iconBg: '#FFF0E5', iconColor: '#f97316', trend: '-2.1%', trendClass: 'trend-down', trendIcon: 'bx bx-down-arrow-alt', showCurrency: true },
-                { label: 'Avg Order', value: s.avgOrderValue || 0, icon: 'bx bx-calculator', iconBg: '#F3E8FF', iconColor: '#8b5cf6', trend: '+5.8%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', showCurrency: false }
+        primaryRole() {
+            const rolePriority = [
+                'Super Admin',
+                'Administrator',
+                'Mini Admin',
+                'Area Business Manager',
+                'Accountant',
+                'HR Manager',
+                'Warehouse Manager',
+                'Logistic Coordinator',
+                'Sales Rep'
             ];
+
+            return rolePriority.find(role => this.userRoles.includes(role)) || this.userRoles[0] || 'User';
         },
-        inventoryStats() {
-            const i = this.inventoryStats || {};
-            return [
-                { label: 'Total Products', value: i.totalProducts || 0, unit: 'items', icon: 'bx bx-package', iconBg: '#E5F0FF', trend: '+5.2%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', cardClass: 'health-blue' },
-                { label: 'Low Stock', value: i.lowStockItems || 0, unit: 'items', icon: 'bx bx-error', iconBg: '#FFF0E5', trend: '+12%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', cardClass: 'health-orange' },
-                { label: 'Out of Stock', value: i.outOfStock || 0, unit: 'items', icon: 'bx bx-block', iconBg: '#FFE5E5', trend: '+3%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', cardClass: 'health-red' },
-                { label: 'Inventory Value', value: i.totalValue || 0, unit: '', icon: 'bx bx-dollar', iconBg: '#E6F9ED', trend: '+8.1%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt', cardClass: 'health-green' }
-            ];
-        },
-        employeeStats() {
-            const e = this.employeeStats || {};
-            return [
-                { label: 'Total Team', value: e.totalEmployees || 48, trend: '+4.5%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt' },
-                { label: 'Present Today', value: e.presentToday || 38, total: e.totalEmployees || 48, trend: '+2.1%', trendClass: 'trend-up', trendIcon: 'bx bx-up-arrow-alt' },
-                { label: 'On Leave', value: e.onLeave || 5, trend: '-1.2%', trendClass: 'trend-down', trendIcon: 'bx bx-down-arrow-alt' },
-                { label: 'Departments', value: e.totalDepartments || 6, trend: '0%', trendClass: 'trend-neutral', trendIcon: 'bx bx-minus' }
-            ];
-        },
-        attendanceStats() {
-            return {
-                present: 38,
-                late: 4,
-                absent: 6
+        dashboardConfig() {
+            return ROLE_DASHBOARD_MAP[this.primaryRole] || {
+                tabs: ['sales'],
+                defaultTab: 'sales',
+                kicker: 'Workspace Overview',
+                title: 'Dashboard',
+                subtitle: 'A quick snapshot of the data available to your current role.',
+                badges: ['Overview']
             };
         },
-        salesChart() {
-            const data = this.charts?.monthlySales || [
-                { month: 'Jan', sales: 45000 },
-                { month: 'Feb', sales: 52000 },
-                { month: 'Mar', sales: 48000 },
-                { month: 'Apr', sales: 60000 },
-                { month: 'May', sales: 55000 },
-                { month: 'Jun', sales: 68000 }
+        availableTabs() {
+            const allowedTabs = this.dashboardConfig.tabs || ['sales'];
+            return this.tabs.filter(tab => allowedTabs.includes(tab.value));
+        },
+        showTabs() {
+            return this.availableTabs.length > 1;
+        },
+        topProducts() {
+            return this.charts?.topProducts || [];
+        },
+        salesStatCards() {
+            const s = this.stats || {};
+            return [
+                { label: 'Total Revenue', value: s.totalSales || 0, icon: 'bx bx-dollar', iconBg: '#E6F9ED', iconColor: '#10b981', trend: `${s.totalReceipts || 0} receipts`, trendClass: 'trend-up', trendIcon: 'bx bx-receipt', showCurrency: true },
+                { label: 'Customers Served', value: s.totalCustomers || 0, icon: 'bx bx-group', iconBg: '#E5F0FF', iconColor: '#3b82f6', trend: null, trendClass: '', trendIcon: '', showCurrency: false },
+                { label: 'Outstanding Balance', value: s.totalOutstanding || 0, icon: 'bx bx-credit-card', iconBg: '#FFF0E5', iconColor: '#f97316', trend: 'total unpaid AR', trendClass: 'trend-down', trendIcon: 'bx bx-error-circle', showCurrency: true },
+                { label: 'Avg. Receipt Value', value: s.avgOrderValue || 0, icon: 'bx bx-calculator', iconBg: '#F3E8FF', iconColor: '#8b5cf6', trend: 'per transaction', trendClass: 'trend-neutral', trendIcon: 'bx bx-trending-up', showCurrency: true }
             ];
+        },
+        inventoryStatCards() {
+            const i = this.inventoryStats || {};
+            return [
+                { label: 'Pending POs', value: i.pendingPOs || 0, unit: '', icon: 'bx bx-time-five', iconBg: '#E5F0FF', trend: 'awaiting fulfillment', trendClass: 'trend-neutral', trendIcon: '', cardClass: 'health-blue' },
+                { label: 'Low Stock Items', value: i.lowStockItems || 0, unit: 'items', icon: 'bx bx-error', iconBg: '#FFF0E5', trend: 'need replenishment', trendClass: 'trend-down', trendIcon: '', cardClass: 'health-orange' },
+                { label: 'Out of Stock', value: i.outOfStock || 0, unit: 'items', icon: 'bx bx-block', iconBg: '#FFE5E5', trend: 'unavailable', trendClass: 'trend-down', trendIcon: '', cardClass: 'health-red' },
+                { label: 'Inventory Value', value: i.totalValue || 0, unit: '', icon: 'bx bx-dollar', iconBg: '#E6F9ED', trend: 'retail price × qty', trendClass: 'trend-up', trendIcon: '', cardClass: 'health-green' }
+            ];
+        },
+        teamStatCards() {
+            const e = this.employeeStats || {};
+            return [
+                { label: 'Total Team', value: e.totalEmployees || 0, trend: `${e.activeEmployees || 0} active`, trendClass: 'trend-up', trendIcon: 'bx bx-group' },
+                { label: 'Payroll Groups', value: e.employeesInPayrollGroups || 0, trend: 'employees assigned', trendClass: 'trend-neutral', trendIcon: 'bx bx-layer' },
+                { label: 'Active Loans', value: e.employeesWithLoans || 0, trend: 'employees with balance', trendClass: 'trend-down', trendIcon: 'bx bx-wallet' },
+                { label: 'Positions', value: e.totalPositions || 0, trend: `${e.employeesWithAccounts || 0} with accounts`, trendClass: 'trend-neutral', trendIcon: 'bx bx-briefcase' }
+            ];
+        },
+        salesChart() {
+            const data = this.charts?.monthlySales || [];
             return {
                 series: [{ name: 'Revenue', data: data.map(d => d.sales) }],
                 options: {
@@ -477,21 +297,13 @@ export default {
                     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.2 } },
                     stroke: { curve: 'smooth', width: 3 },
                     xaxis: { categories: data.map(d => d.month), labels: { style: { colors: '#64748b' } } },
-                    yaxis: { labels: { formatter: (v) => '₱' + v.toLocaleString() } },
+                    yaxis: { labels: { formatter: (v) => 'P' + v.toLocaleString() } },
                     grid: { borderColor: '#e2e8f0', strokeDashArray: 5 }
                 }
             };
         },
         paymentChart() {
-            const data = this.charts?.paymentMethods || [
-                { method: 'Cash', total: 45000 },
-                { method: 'Card', total: 38000 },
-                { method: 'Bank Transfer', total: 22000 }
-            ];
-            this.paymentBreakdown = data.map((d, i) => ({
-                ...d,
-                color: ['#3b82f6', '#10b981', '#f97316'][i]
-            }));
+            const data = this.charts?.paymentMethods || [];
             return {
                 series: data.map(d => d.total),
                 options: {
@@ -503,6 +315,14 @@ export default {
                     dataLabels: { enabled: false }
                 }
             };
+        },
+        paymentBreakdown() {
+            const data = this.charts?.paymentMethods || [];
+            return data.map((d, i) => ({
+                method: d.method,
+                amount: d.total,
+                color: ['#3b82f6', '#10b981', '#f97316'][i]
+            }));
         },
         stockChart() {
             const data = this.inventoryCharts?.stockByCategory || [
@@ -521,19 +341,27 @@ export default {
                 }
             };
         },
-        healthChart() {
-            const data = this.inventoryCharts?.stockDistribution || [
-                { status: 'Healthy', percentage: 65 },
-                { status: 'Low', percentage: 20 },
-                { status: 'Critical', percentage: 10 },
-                { status: 'Out', percentage: 5 }
-            ];
-            this.healthData = data.map((d, i) => ({
+        healthData() {
+            const data = this.inventoryCharts?.stockDistribution || [];
+            return data.map((d, i) => ({
                 ...d,
+                label: d.status,
+                value: d.percentage,
                 color: ['#10b981', '#f97316', '#ef4444', '#6b7280'][i]
             }));
+        },
+        healthChart() {
+            const data = this.inventoryCharts?.stockDistribution || [];
+            const total = data.reduce((sum, item) => sum + (item.percentage || 0), 0);
+            const inStock = data.find(item => item.status === 'In Stock')?.percentage || 0;
+            const lowStock = data.find(item => item.status === 'Low Stock')?.percentage || 0;
+            const outOfStock = data.find(item => item.status === 'Out of Stock')?.percentage || 0;
+            const healthScore = total > 0
+                ? Math.max(0, Math.min(100, Math.round(((inStock * 1) + (lowStock * 0.45) + (outOfStock * 0)) / total * 100)))
+                : 0;
+
             return {
-                series: [75], // Overall health score
+                series: [healthScore],
                 options: {
                     chart: { type: 'radialBar' },
                     plotOptions: {
@@ -552,13 +380,7 @@ export default {
             };
         },
         deptChart() {
-            const data = this.employeeCharts?.employeesByDepartment || [
-                { department: 'Sales', count: 15 },
-                { department: 'IT', count: 8 },
-                { department: 'HR', count: 5 },
-                { department: 'Ops', count: 12 },
-                { department: 'Finance', count: 8 }
-            ];
+            const data = this.employeeCharts?.employeesByDepartment || [];
             return {
                 series: [{ name: 'Employees', data: data.map(d => d.count) }],
                 options: {
@@ -570,39 +392,39 @@ export default {
             };
         }
     },
+    watch: {
+        selectedFilter() {
+            this.loadDashboardData();
+        },
+        selectedDateValue() {
+            if (this.selectedFilter === 'today') {
+                this.loadDashboardData();
+            }
+        },
+        availableTabs: {
+            immediate: true,
+            handler(tabs) {
+                if (!tabs.length) {
+                    this.activeTab = 'sales';
+                    return;
+                }
+
+                const currentTabStillAllowed = tabs.some(tab => tab.value === this.activeTab);
+                if (!currentTabStillAllowed) {
+                    this.activeTab = this.dashboardConfig.defaultTab || tabs[0].value;
+                }
+            }
+        }
+    },
     methods: {
-        formatNumber(val) {
-            if (!val && val !== 0) return '0';
-            return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        },
-        getInitials(name) {
-            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-        },
-        formatMonth(date) {
-            return new Date(date).toLocaleString('default', { month: 'short' });
-        },
-        formatDay(date) {
-            return new Date(date).getDate();
-        },
-        getStockStatus(item) {
-            if (item.current_stock <= 0) return 'Out';
-            if (item.current_stock <= item.minimum_stock * 0.5) return 'Critical';
-            if (item.current_stock <= item.minimum_stock) return 'Low';
-            return 'Good';
-        },
-        getStockBadge(item) {
-            if (item.current_stock <= 0) return 'badge-out';
-            if (item.current_stock <= item.minimum_stock * 0.5) return 'badge-critical';
-            if (item.current_stock <= item.minimum_stock) return 'badge-low';
-            return 'badge-good';
-        },
-        getAlertClass(item) {
-            if (item.current_stock <= 0) return 'alert-out';
-            if (item.current_stock <= item.minimum_stock * 0.5) return 'alert-critical';
-            return 'alert-low';
-        },
-        getStockPercentage(item) {
-            return Math.min((item.current_stock / item.minimum_stock) * 100, 100);
+        loadDashboardData() {
+            this.$inertia.get('/', {
+                filter: this.selectedFilter,
+                selected_date: this.selectedDateValue
+            }, {
+                preserveState: true,
+                replace: true
+            });
         }
     }
 };
@@ -610,6 +432,176 @@ export default {
 
 <style scoped>
 /* Modern Dashboard Styles */
+.dashboard-hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) auto;
+    gap: 2.5rem;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1.6rem 2rem;
+    overflow: hidden;
+    border-radius: 28px;
+    background-color: #2e7a6c;
+    background-image:
+        radial-gradient(ellipse 70% 100% at 105% -5%, rgba(180, 255, 230, 0.22) 0%, transparent 52%),
+        radial-gradient(ellipse 45% 65% at -2% 105%, rgba(30, 90, 80, 0.35) 0%, transparent 48%),
+        radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
+        linear-gradient(135deg, #2a7165 0%, #3d8d7a 38%, #4a9a89 68%, #56a897 100%);
+    background-size: 100% 100%, 100% 100%, 26px 26px, 100% 100%;
+    box-shadow:
+        0 16px 48px rgba(45, 113, 101, 0.28),
+        0 4px 16px rgba(45, 113, 101, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* Large decorative orb — bottom-right */
+.dashboard-hero::before {
+    content: '';
+    position: absolute;
+    bottom: -28%;
+    right: -7%;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.02) 50%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Top shimmer line */
+.dashboard-hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 5%;
+    right: 5%;
+    height: 1.5px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(94, 255, 200, 0.45) 25%,
+        rgba(255, 255, 255, 0.75) 50%,
+        rgba(94, 255, 200, 0.45) 75%,
+        transparent 100%
+    );
+    pointer-events: none;
+}
+
+.dashboard-hero-copy,
+.dashboard-badges {
+    position: relative;
+    z-index: 1;
+}
+
+.dashboard-hero-copy {
+    max-width: 760px;
+}
+
+.dashboard-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.75rem;
+    padding: 0.35rem 0.85rem 0.35rem 0.65rem;
+    border-radius: 999px;
+    background: rgba(94, 255, 200, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(94, 255, 200, 0.28);
+    color: #c6fff0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        0 4px 14px rgba(0, 0, 0, 0.14);
+}
+
+.live-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #5effc8;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(94, 255, 200, 0.55);
+    animation: live-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(94, 255, 200, 0.55); }
+    55%       { box-shadow: 0 0 0 8px rgba(94, 255, 200, 0); }
+}
+
+.dashboard-title {
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(1.55rem, 2.6vw, 2.2rem);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+    text-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.22),
+        0 10px 30px rgba(5, 28, 26, 0.28);
+}
+
+.dashboard-subtitle {
+    max-width: 680px;
+    margin: 0.5rem 0 0;
+    color: rgba(210, 248, 238, 0.80);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    text-wrap: pretty;
+}
+
+.dashboard-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    flex-shrink: 0;
+    min-width: 165px;
+    padding-left: 1.75rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dashboard-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #e6fff8;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 6px 18px rgba(0, 0, 0, 0.14);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-badge::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #5effc8;
+    flex-shrink: 0;
+    opacity: 0.9;
+}
+
+.dashboard-badge:hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(94, 255, 200, 0.3);
+    transform: translateX(3px);
+}
+
 .dashboard-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 2rem 2rem;
@@ -752,6 +744,58 @@ export default {
     background: white;
     color: #2e8b57;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Filter Container */
+.filter-container {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 10px;
+    width: fit-content;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: #64748b;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    color: #3b82f6;
+}
+
+.filter-btn.active {
+    background: white;
+    color: #3b82f6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.selected-date-input {
+    display: flex;
+    align-items: center;
+}
+
+.date-input {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    color: #1e293b;
+    background: #fff;
 }
 
 /* Stats Grid */
@@ -1221,6 +1265,141 @@ export default {
     font-size: 0.875rem;
 }
 
+/* Top Selling Products */
+.top-products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.top-product-card {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 1.25rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.top-product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.rank-badge {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.rank-gold { background: linear-gradient(135deg, #FFD700, #FFA500); }
+.rank-silver { background: linear-gradient(135deg, #C0C0C0, #A8A8A8); }
+.rank-bronze { background: linear-gradient(135deg, #CD7F32, #B87333); }
+.rank-default { background: #64748b; }
+
+.product-info {
+    padding-top: 0.5rem;
+}
+
+.product-info .product-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 0.25rem 0;
+}
+
+.product-info .product-brand {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.product-stats {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.product-stats .stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.product-stats .stat-label {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.product-stats .stat-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.product-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.product-progress .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0;
+}
+
+.product-progress .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.product-progress .percentage-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    min-width: 35px;
+    text-align: right;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #64748b;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+}
+
+.empty-state p {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
 /* Payment Legend */
 .payment-legend {
     padding: 1rem;
@@ -1326,6 +1505,25 @@ export default {
 }
 
 @media (max-width: 768px) {
+    .dashboard-hero {
+        grid-template-columns: 1fr;
+        padding: 1.5rem 1.25rem;
+    }
+
+    .dashboard-title {
+        font-size: 1.9rem;
+    }
+
+    .dashboard-badges {
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        padding-top: 1.25rem;
+        min-width: unset;
+    }
+
     .stats-grid, .health-cards, .team-stats {
         grid-template-columns: 1fr;
     }

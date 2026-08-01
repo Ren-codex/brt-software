@@ -1,8 +1,8 @@
 <template>
+  <Teleport to="body">
   <div
     v-if="showModal"
-    class="modal-overlay"
-    :class="{ active: showModal }"
+    class="modal-overlay active"
     @click.self="hide"
   >
     <div class="modal-container" @click.stop>
@@ -19,25 +19,6 @@
         </div>
         <form @submit.prevent="savePrices">
           <div class="form-group">
-            <label for="retail_price" class="form-label">Retail Price</label>
-            <div class="input-wrapper">
-              <i class="ri-price-tag-line input-icon"></i>
-              <input
-                type="number"
-                id="retail_price"
-                v-model="form.retail_price"
-                class="form-control"
-                min="0"
-                step="0.01"
-                placeholder="Enter retail price"
-                :class="{ 'input-error': form.errors.retail_price }"
-                @change="handleInput('retail_price')"
-              />
-            </div>
-            <span class="error-message" v-if="form.errors.retail_price">{{ form.errors.retail_price }}</span>
-          </div>
-
-          <div class="form-group">
             <label for="wholesale_price" class="form-label">Wholesale Price</label>
             <div class="input-wrapper">
               <i class="ri-stack-line input-icon"></i>
@@ -49,11 +30,28 @@
                 min="0"
                 step="0.01"
                 placeholder="Enter wholesale price"
-                :class="{ 'input-error': form.errors.wholesale_price }"
-                @change="handleInput('wholesale_price')"
+                :class="{ 'input-error': wholesalePriceError }"
               />
             </div>
-            <span class="error-message" v-if="form.errors.wholesale_price">{{ form.errors.wholesale_price }}</span>
+            <span class="error-message" v-if="wholesalePriceError">{{ wholesalePriceError }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="retail_price" class="form-label">Retail Price</label>
+            <div class="input-wrapper">
+              <i class="ri-price-tag-line input-icon"></i>
+              <input
+                type="number"
+                id="retail_price"
+                v-model="form.retail_price"
+                class="form-control"
+                min="0"
+                step="0.01"
+                placeholder="Enter retail price"
+                :class="{ 'input-error': retailPriceError }"
+              />
+            </div>
+            <span class="error-message" v-if="retailPriceError">{{ retailPriceError }}</span>
           </div>
 
           <div class="form-group">
@@ -72,20 +70,21 @@
             <span class="error-message" v-if="form.errors.reason">{{ form.errors.reason }}</span>
           </div>
 
-          <div class="form-actions">
-            <button type="button" class="btn btn-cancel" @click="hide">
-              <i class="ri-close-line"></i>
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-save" :disabled="isUnchanged">
-              <i class="ri-save-line"></i>
-              Save
-            </button>
-          </div>
         </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" @click="hide">
+          <i class="ri-close-line"></i>
+          Cancel
+        </button>
+        <button type="button" class="btn btn-save" :disabled="isUnchanged || wholesalePriceError || retailPriceError" @click="savePrices">
+          <i class="ri-save-line"></i>
+          Save
+        </button>
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script>
@@ -112,6 +111,29 @@ export default {
     };
   },
   computed: {
+    unitCost() {
+      return parseFloat(this.inventoryStock?.unit_cost || this.inventoryStock?.received_item?.unit_cost || 0);
+    },
+    wholesalePriceError() {
+      const wholesale = parseFloat(this.form.wholesale_price);
+      const retail    = parseFloat(this.form.retail_price);
+      if (isNaN(wholesale) || wholesale < 0) return 'Must be 0 or greater';
+      if (this.unitCost > 0 && wholesale <= this.unitCost)
+        return `Must be greater than unit cost (₱${this.unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })})`;
+      if (!isNaN(retail) && retail > 0 && wholesale >= retail)
+        return `Must be less than retail price (₱${retail.toLocaleString('en-PH', { minimumFractionDigits: 2 })})`;
+      return null;
+    },
+    retailPriceError() {
+      const retail    = parseFloat(this.form.retail_price);
+      const wholesale = parseFloat(this.form.wholesale_price);
+      if (isNaN(retail) || retail < 0) return 'Must be 0 or greater';
+      if (this.unitCost > 0 && retail <= this.unitCost)
+        return `Must be greater than unit cost (₱${this.unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })})`;
+      if (!isNaN(wholesale) && wholesale > 0 && retail <= wholesale)
+        return `Must be greater than wholesale price (₱${wholesale.toLocaleString('en-PH', { minimumFractionDigits: 2 })})`;
+      return null;
+    },
     isUnchanged() {
       const pricesUnchanged = (
         parseFloat(this.form.retail_price) === parseFloat(this.form.previous_retail_price) &&
@@ -121,7 +143,16 @@ export default {
       return pricesUnchanged && reasonUnchanged;
     },
   },
+  mounted() {
+    document.addEventListener('keydown', this._onEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._onEscape);
+  },
   methods: {
+    _onEscape(e) {
+      if (e.key === 'Escape' && this.showModal) this.hide();
+    },
     show() {
       this.form.reset();
       this.saveSuccess = false;
@@ -135,18 +166,20 @@ export default {
       this.form.previous_reason = this.form.reason;
     },
     savePrices() {
-      // Basic validation: non-negative
-      if (this.form.retail_price < 0 || this.form.wholesale_price < 0) {
-        alert('Prices cannot be negative.');
-        return;
-      }
+      if (this.wholesalePriceError || this.retailPriceError) return;
       this.form.patch(`/inventory-stocks/${this.form.inventory_stocks_id}`, {
         preserveScroll: true,
         onSuccess: (response) => {
           this.saveSuccess = true;
+          const payload = {
+            inventory_stocks_id: this.form.inventory_stocks_id,
+            retail_price: parseFloat(this.form.retail_price) || 0,
+            wholesale_price: parseFloat(this.form.wholesale_price) || 0,
+            reason: this.form.reason || '',
+          };
           this.form.reset();
           setTimeout(() => {
-            this.$emit('saved', true);
+            this.$emit('saved', payload);
             this.hide();
           }, 1000);
         },

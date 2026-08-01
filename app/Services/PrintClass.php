@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ListAcademic;
 use Carbon\Carbon;
 use App\Models\SalesOrder;
+use Illuminate\Support\Facades\DB;
 
 class PrintClass
 {  
@@ -34,7 +35,7 @@ class PrintClass
     }
 
     public function printSalesOrder($id){
-        $sales_order = SalesOrder::with('status' , 'items.product.brand' , 'items.product.unit', 'created_by' )->findOrFail($id);
+        $sales_order = SalesOrder::with('status' , 'customer', 'location', 'salesRep', 'items.product.brand' , 'items.product.unit', 'created_by' )->findOrFail($id);
         $items = $sales_order->items;
 
         $array = [
@@ -77,7 +78,7 @@ class PrintClass
     }
 
     public function printArInvoice($id){
-        $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.created_by', 'sales_order.approved_by')->findOrFail($id);
+        $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.approved_by')->findOrFail($id);
         $sales_order = $ar_invoice->sales_order;
         $items = $sales_order->items;
 
@@ -87,26 +88,77 @@ class PrintClass
             'items' => $items,
         ];
 
-        $pdf = \PDF::loadView('prints.sales_order',$array)->setPaper('A4', 'portrait');
+        $pdf = \PDF::loadView('prints.ar_invoice',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($ar_invoice->invoice_number.'.pdf');
 
     }
 
     public function printReceipt($id){
-        $receipt = \App\Models\Receipt::with('status', 'customer', 'arInvoice.sales_order.items.product.brand', 'arInvoice.sales_order.items.product.unit', 'arInvoice.sales_order.customer')->findOrFail($id);
+        $receipt = \App\Models\Receipt::with('status', 'customer', 'sourceReceipt.sourceReceipt', 'arInvoice.sales_order.items.product.brand', 'arInvoice.sales_order.items.product.unit', 'arInvoice.sales_order.customer' , 'arInvoice.sales_order.salesRep')->findOrFail($id);
 
         $ar_invoice = $receipt->arInvoice;
         $sales_order = $ar_invoice ? $ar_invoice->sales_order : null;
-        $items = $sales_order ? $sales_order->items : [];
+        $items = $sales_order ? $sales_order->items : collect();
+        $displayAmount = (float) ($receipt->amount_paid ?? 0);
+        $voidedReceipt = null;
+
+        if (($receipt->receipt_type ?? 'payment') === 'refund' && $sales_order) {
+            $sourceReceiptId = $receipt->source_receipt_id;
+            $voidedReceipt = $receipt->sourceReceipt;
+
+            $returnedItems = DB::table('sales_return_items as sri')
+                ->join('sales_order_items as soi', 'soi.id', '=', 'sri.sales_order_item_id')
+                ->where('soi.sales_order_id', $sales_order->id)
+                ->when($sourceReceiptId, function ($query, $sourceReceiptId) {
+                    $query->where('sri.source_receipt_id', $sourceReceiptId);
+                })
+                ->select('sri.sales_order_item_id', 'sri.return_quantity')
+                ->pluck('return_quantity', 'sales_order_item_id');
+
+            $items = $sales_order->items
+                ->whereIn('id', $returnedItems->keys())
+                ->map(function ($item) use ($returnedItems) {
+                    $item->quantity = (int) ($returnedItems[$item->id] ?? $item->quantity);
+                    return $item;
+                })
+                ->filter(fn ($item) => (int) $item->quantity > 0)
+                ->values();
+        }
+
+        if (($receipt->receipt_type ?? 'payment') === 'updated' && $sales_order) {
+            $refundReceipt = $receipt->sourceReceipt;
+            $originalReceipt = optional($refundReceipt)->sourceReceipt;
+            $sourceReceiptId = $originalReceipt?->id;
+            $voidedReceipt = $originalReceipt;
+
+            $returnedItems = DB::table('sales_return_items as sri')
+                ->join('sales_order_items as soi', 'soi.id', '=', 'sri.sales_order_item_id')
+                ->where('soi.sales_order_id', $sales_order->id)
+                ->when($sourceReceiptId, function ($query, $sourceReceiptId) {
+                    $query->where('sri.source_receipt_id', $sourceReceiptId);
+                })
+                ->select('sri.sales_order_item_id', 'sri.return_quantity')
+                ->pluck('return_quantity', 'sales_order_item_id');
+
+            $items = $sales_order->items
+                ->map(function ($item) use ($returnedItems) {
+                    $returnedQuantity = (int) ($returnedItems[$item->id] ?? 0);
+                    $item->quantity = max(0, (int) $item->quantity - $returnedQuantity);
+                    return $item;
+                })
+                ->filter(fn ($item) => (int) $item->quantity > 0)
+                ->values();
+        }
 
         $array = [
             'receipt' => $receipt,
             'ar_invoice' => $ar_invoice,
             'sales_order' => $sales_order,
             'items' => $items,
+            'display_amount' => $displayAmount,
+            'voided_receipt' => $voidedReceipt,
         ];
 
-        dd('hey');
 
         $pdf = \PDF::loadView('prints.receipt',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($receipt->receipt_number.'.pdf');
@@ -114,7 +166,7 @@ class PrintClass
     }
 
     public function printPayroll($id){
-        $payroll = \App\Models\Payroll::with('items.employee', 'template', 'creator')->findOrFail($id);
+        $payroll = \App\Models\Payroll::with('items.employee', 'template', 'creator', 'approvedBy.employee')->findOrFail($id);
         $items = $payroll->items;
 
         $array = [
@@ -125,6 +177,39 @@ class PrintClass
         $pdf = \PDF::loadView('prints.payroll',$array)->setPaper('A4', 'portrait');
         return $pdf->stream($payroll->payroll_no.'.pdf');
 
+    }
+
+    public function queryExpensesForPrint(\Illuminate\Http\Request $request): \Illuminate\Database\Eloquent\Collection
+    {
+        return \App\Models\Expense::with(['added_by', 'fund'])
+            ->when($request->date_from, fn($q) => $q->whereDate('expense_date', '>=', $request->date_from))
+            ->when($request->date_to,   fn($q) => $q->whereDate('expense_date', '<=', $request->date_to))
+            ->when($request->status,       fn($q, $s) => $q->where('status',       $s))
+            ->when($request->fund_id,      fn($q, $id) => $q->where('fund_id',     $id))
+            ->when($request->expense_type, fn($q, $t) => $q->where('expense_type', $t))
+            ->orderBy('expense_date', 'ASC')
+            ->get();
+    }
+
+    public function printExpenseList(\Illuminate\Http\Request $request)
+    {
+        $expenses = $this->queryExpensesForPrint($request);
+        $total    = $expenses->sum('amount');
+
+        $filters = [
+            'date_from'    => $request->date_from,
+            'date_to'      => $request->date_to,
+            'status'       => $request->status,
+            'fund_name'    => $request->fund_id
+                ? ($expenses->first()?->fund?->name ?? \App\Models\PettyCashFund::find($request->fund_id)?->name)
+                : null,
+            'expense_type' => $request->expense_type,
+        ];
+
+        $pdf = \PDF::loadView('prints.expense-list', compact('expenses', 'total', 'filters'))
+            ->setPaper('A4', 'landscape');
+
+        return $pdf->stream('expense-list-' . now()->format('Ymd') . '.pdf');
     }
 
 }

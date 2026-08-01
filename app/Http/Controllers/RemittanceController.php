@@ -29,6 +29,15 @@ class RemittanceController extends Controller
             case 'dashboard':
                 return $this->getDashboardMetrics();
             break;
+            case 'summary':
+                return $this->remittance->summary($request);
+            break;
+            case 'my_holdings':
+                return $this->remittance->myHoldings();
+            break;
+            case 'undeposited_summary':
+                return $this->remittance->undepositedSummary($request);
+            break;
             default:
                 return inertia('Modules/Sales/Components/Remittances/Index');
             break;
@@ -84,6 +93,19 @@ class RemittanceController extends Controller
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+        ]);
+    }
+
+    public function remit($id){
+        $result = $this->handleTransaction(function () use ($id) {
+            return $this->remittance->remit($id);
+        });
+
+        return response()->json([
+            'data'    => $result['data'],
+            'message' => $result['message'],
+            'info'    => $result['info'],
+            'status'  => $result['status'] ?? 'success',
         ]);
     }
 
