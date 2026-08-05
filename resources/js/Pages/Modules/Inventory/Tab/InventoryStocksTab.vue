@@ -45,44 +45,47 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr 
-                        v-for="(list,index) in availableStocks"
-                        v-bind:key="list.id"
-                        @click="openView(list)"
-                        style="cursor: pointer;"
-                        :class="{'bg-info-subtle': list.id === selectedRow}"
-                      >
-                        <td>{{ (meta?.from ?? 1) + index }}</td>
-                        <td>{{ list.received_item ? formatDate(list.received_item.received_stock?.received_date) : formatDate(list.created_at) }}</td>
-                        <td style="width: 20%">{{ list.batch_code }}
-                          <span class="status-badge" v-if="list.conversion">Converted</span>
-                          <span class="status-badge" v-if="list.expiration_date">EXP: {{ formatDate(list.expiration_date) }}</span>
-                        </td>
-                        <td>{{ list.received_item?.received_stock?.supplier?.name ?? (list.conversion ? 'Converted Batch' : 'N/A') }}</td>
-                        <td>
-                          <div class="product-info">
-                            <strong>{{ list.received_item?.product?.name ?? list.product?.name ?? '—' }}</strong>
-                            <small class="text-muted d-block">{{ list.received_item?.product?.code ?? list.product?.code ?? 'No Code' }}</small>
-                          </div>
-                        </td>
-                        <td><b>{{ formatCurrency(list.received_item?.unit_cost ?? 0) }}</b>
-                          <br>Retail Price: {{ formatCurrency(list.retail_price) }}
-                          <br>Wholesale Price: {{ formatCurrency(list.wholesale_price) }}
-                        </td>
-                        <td>
-                          <span class="quantity-badge" :class="getQuantityClass(list.quantity)">
-                            {{ list.quantity }}
-                          </span>
-                        </td>                       
-                      </tr>
-                      <tr v-if="availableStocks.length === 0">
-                        <td colspan="9" class="text-center py-4">
-                          <div class="empty-state">
-                            <i class="ri-inbox-line empty-icon"></i>
-                            <p class="mb-0">No available stocks found</p>
-                          </div>
-                        </td>
-                      </tr>
+                      <TableLoadingRow v-if="loading" :colspan="7" message="Loading available stocks..." />
+                      <template v-else>
+                        <tr
+                          v-for="(list,index) in availableStocks"
+                          v-bind:key="list.id"
+                          @click="openView(list)"
+                          style="cursor: pointer;"
+                          :class="{'bg-info-subtle': list.id === selectedRow}"
+                        >
+                          <td>{{ (meta?.from ?? 1) + index }}</td>
+                          <td>{{ list.received_item ? formatDate(list.received_item.received_stock?.received_date) : formatDate(list.created_at) }}</td>
+                          <td style="width: 20%">{{ list.batch_code }}
+                            <span class="status-badge" v-if="list.conversion">Converted</span>
+                            <span class="status-badge" v-if="list.expiration_date">EXP: {{ formatDate(list.expiration_date) }}</span>
+                          </td>
+                          <td>{{ list.received_item?.received_stock?.supplier?.name ?? (list.conversion ? 'Converted Batch' : 'N/A') }}</td>
+                          <td>
+                            <div class="product-info">
+                              <strong>{{ list.received_item?.product?.name ?? list.product?.name ?? '—' }}</strong>
+                              <small class="text-muted d-block">{{ list.received_item?.product?.code ?? list.product?.code ?? 'No Code' }}</small>
+                            </div>
+                          </td>
+                          <td><b>{{ formatCurrency(list.received_item?.unit_cost ?? 0) }}</b>
+                            <br>Retail Price: {{ formatCurrency(list.retail_price) }}
+                            <br>Wholesale Price: {{ formatCurrency(list.wholesale_price) }}
+                          </td>
+                          <td>
+                            <span class="quantity-badge" :class="getQuantityClass(list.quantity)">
+                              {{ list.quantity }}
+                            </span>
+                          </td>
+                        </tr>
+                        <tr v-if="availableStocks.length === 0">
+                          <td colspan="9" class="text-center py-4">
+                            <div class="empty-state">
+                              <i class="ri-inbox-line empty-icon"></i>
+                              <p class="mb-0">No available stocks found</p>
+                            </div>
+                          </td>
+                        </tr>
+                      </template>
                     </tbody>
                   </table>
                 </div>
@@ -105,45 +108,48 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr 
-                        v-for="(list,index) in consumedStocks"
-                        v-bind:key="list.id"
-                        @click="openView(list)"
-                        style="cursor: pointer;"
-                        :class="{'bg-info-subtle': list.id === selectedRow}"
-                      >
-                        <td>{{ (meta?.from ?? 1) + index }}</td>
-                        <td>{{ list.received_item ? formatDate(list.received_item.received_stock?.received_date) : formatDate(list.created_at) }}</td>
-                        <td>{{ list.received_item?.received_stock?.batch_code ?? list.batch_code }}</td>
-                        <td>{{ list.received_item?.received_stock?.supplier?.name ?? (list.conversion ? 'Converted Batch' : 'N/A') }}</td>
-                        <td>
-                          <div class="product-info">
-                            <strong>{{ list.received_item?.product?.name ?? list.product?.name ?? '—' }}</strong>
-                            <small class="text-muted d-block">{{ list.received_item?.product?.code ?? list.product?.code ?? 'No Code' }}</small>
-                          </div>
-                        </td>
-                        <td>{{ formatCurrency(list.received_item?.unit_cost ?? 0) }}</td>
-                        <td>
-                          <span class="quantity-badge text-danger">
-                            {{ list.quantity }}
-                          </span>
-                        </td>
-                        <td>
-                          <div class="action-buttons" @click.stop>
-                            <button @click.stop="openView(list)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
-                              <i class="ri-eye-fill"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr v-if="consumedStocks.length === 0">
-                        <td colspan="8" class="text-center py-4">
-                          <div class="empty-state">
-                            <i class="ri-check-double-line empty-icon"></i>
-                            <p class="mb-0">No consumed stocks found</p>
-                          </div>
-                        </td>
-                      </tr>
+                      <TableLoadingRow v-if="loading" :colspan="8" message="Loading consumed stocks..." />
+                      <template v-else>
+                        <tr
+                          v-for="(list,index) in consumedStocks"
+                          v-bind:key="list.id"
+                          @click="openView(list)"
+                          style="cursor: pointer;"
+                          :class="{'bg-info-subtle': list.id === selectedRow}"
+                        >
+                          <td>{{ (meta?.from ?? 1) + index }}</td>
+                          <td>{{ list.received_item ? formatDate(list.received_item.received_stock?.received_date) : formatDate(list.created_at) }}</td>
+                          <td>{{ list.received_item?.received_stock?.batch_code ?? list.batch_code }}</td>
+                          <td>{{ list.received_item?.received_stock?.supplier?.name ?? (list.conversion ? 'Converted Batch' : 'N/A') }}</td>
+                          <td>
+                            <div class="product-info">
+                              <strong>{{ list.received_item?.product?.name ?? list.product?.name ?? '—' }}</strong>
+                              <small class="text-muted d-block">{{ list.received_item?.product?.code ?? list.product?.code ?? 'No Code' }}</small>
+                            </div>
+                          </td>
+                          <td>{{ formatCurrency(list.received_item?.unit_cost ?? 0) }}</td>
+                          <td>
+                            <span class="quantity-badge text-danger">
+                              {{ list.quantity }}
+                            </span>
+                          </td>
+                          <td>
+                            <div class="action-buttons" @click.stop>
+                              <button @click.stop="openView(list)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                                <i class="ri-eye-fill"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr v-if="consumedStocks.length === 0">
+                          <td colspan="8" class="text-center py-4">
+                            <div class="empty-state">
+                              <i class="ri-check-double-line empty-icon"></i>
+                              <p class="mb-0">No consumed stocks found</p>
+                            </div>
+                          </td>
+                        </tr>
+                      </template>
                     </tbody>
                   </table>
                 </div>
@@ -169,16 +175,21 @@
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
 import UpdatePriceModal from '../Modal/UpdatePriceModal.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
   name: "InventoryStocksTab",
-  components: { Pagination, UpdatePriceModal },
+  components: { Pagination, UpdatePriceModal, TableLoadingRow },
   props: {
     listInventoryStocks: Array,
     meta: Object,
     links: Object,
     filter: Object,
     dropdowns: Object,
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['fetch', 'update-keyword', 'toast', 'view-details'],
   data() {

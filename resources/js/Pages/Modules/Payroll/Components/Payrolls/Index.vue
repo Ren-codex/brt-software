@@ -43,52 +43,55 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <template v-for="(payroll, index) in payrolls" :key="payroll.id">
-                                    <tr @click="editPayroll(payroll)" :class="{
-                                        'bg-primary bg-opacity-10 ': index === selectedRow,
-                                        'cursor-pointer': true
-                                    }" class="transition-all" style="transition: all 0.3s ease;">
-                                        <td class="text-center">{{ index + 1 }}</td>
-                                        <td class="text-center fw-semibold">{{ payroll.payroll_period }}</td>
-                                        <td class="text-center">
-                                            {{ payroll.payroll_no }}
-                                        </td>
-                                        <td class="text-center">{{ payroll.payroll_name }}</td>
-                                        <td class="text-center fw-bold">{{ formatCurrency(payroll.total_amount) }}</td>
-                                        <td class="text-center">{{ payroll.created_by }}</td>
-                                        <td class="text-center">{{ payroll.approved_by }}</td>
-                                        <td class="text-center">
-                                            <span class="status-badge" 
-                                              :style="{ color: payroll.status?.text_color, backgroundColor: payroll.status?.bg_color, padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }">
-                                                {{ payroll.status.name }}
-                                            </span>
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-1">
-                                                <b-button @click.stop="editPayroll(payroll)" variant="outline-primary"
-                                                  v-b-tooltip.hover title="Edit" size="sm"
-                                                  class="btn-icon rounded-circle">
-                                                  <i class="ri-eye-line"></i>
-                                                </b-button>
-                                                <b-button @click.stop="printPayroll(payroll)" variant="outline-info"
-                                                    v-b-tooltip.hover title="Print" size="sm"
-                                                    class="btn-icon rounded-circle"
-                                                    v-if="payroll.status != 'draft'">
-                                                    <i class="ri-printer-line"></i>
-                                                </b-button>
-                                                <b-button @click.stop="confirmDelete(payroll)" variant="outline-danger"
-                                                    v-b-tooltip.hover title="Delete" size="sm"
-                                                    class="btn-icon rounded-circle"
-                                                    v-if="payroll.status == 'draft'">
-                                                    <i class="ri-delete-bin-line"></i>
-                                                </b-button>
-                                            </div>
-                                        </td>
+                                <TableLoadingRow v-if="loading" :colspan="9" message="Loading payrolls..." />
+                                <template v-else>
+                                    <template v-for="(payroll, index) in payrolls" :key="payroll.id">
+                                        <tr @click="editPayroll(payroll)" :class="{
+                                            'bg-primary bg-opacity-10 ': index === selectedRow,
+                                            'cursor-pointer': true
+                                        }" class="transition-all" style="transition: all 0.3s ease;">
+                                            <td class="text-center">{{ index + 1 }}</td>
+                                            <td class="text-center fw-semibold">{{ payroll.payroll_period }}</td>
+                                            <td class="text-center">
+                                                {{ payroll.payroll_no }}
+                                            </td>
+                                            <td class="text-center">{{ payroll.payroll_name }}</td>
+                                            <td class="text-center fw-bold">{{ formatCurrency(payroll.total_amount) }}</td>
+                                            <td class="text-center">{{ payroll.created_by }}</td>
+                                            <td class="text-center">{{ payroll.approved_by }}</td>
+                                            <td class="text-center">
+                                                <span class="status-badge"
+                                                  :style="{ color: payroll.status?.text_color, backgroundColor: payroll.status?.bg_color, padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }">
+                                                    {{ payroll.status.name }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="d-flex justify-content-center gap-1">
+                                                    <b-button @click.stop="editPayroll(payroll)" variant="outline-primary"
+                                                      v-b-tooltip.hover title="Edit" size="sm"
+                                                      class="btn-icon rounded-circle">
+                                                      <i class="ri-eye-line"></i>
+                                                    </b-button>
+                                                    <b-button @click.stop="printPayroll(payroll)" variant="outline-info"
+                                                        v-b-tooltip.hover title="Print" size="sm"
+                                                        class="btn-icon rounded-circle"
+                                                        v-if="payroll.status != 'draft'">
+                                                        <i class="ri-printer-line"></i>
+                                                    </b-button>
+                                                    <b-button @click.stop="confirmDelete(payroll)" variant="outline-danger"
+                                                        v-b-tooltip.hover title="Delete" size="sm"
+                                                        class="btn-icon rounded-circle"
+                                                        v-if="payroll.status == 'draft'">
+                                                        <i class="ri-delete-bin-line"></i>
+                                                    </b-button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                    <tr v-if="!payrolls.length">
+                                        <td colspan="8" class="text-center">No data available</td>
                                     </tr>
                                 </template>
-                                <tr v-if="!payrolls.length">
-                                    <td colspan="8" class="text-center">No data available</td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -114,10 +117,11 @@ import _ from 'lodash';
 import axios from 'axios'
 import PayrollModal from './Modal.vue'
 import Pagination from "@/Shared/Components/Pagination.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Swal from 'sweetalert2';
 
 export default {
-  components: { PayrollModal, Pagination },
+  components: { PayrollModal, Pagination, TableLoadingRow },
   props: ['dropdowns'],
   data() {
     return {
@@ -131,6 +135,7 @@ export default {
       showCreateModal: false,
       selectedPayroll: null,
       selectedRow: null,
+      loading: false,
     }
   },
   watch: {
@@ -145,6 +150,7 @@ export default {
     checkSearchStr: _.debounce(function (string) {
     }, 300),
     async fetchPayrolls() {
+      this.loading = true;
       axios.get('/payrolls', {
         params: {
           keyword: this.filter.keyword,
@@ -155,12 +161,15 @@ export default {
         .then(response => {
           if (response.data) {
             this.payrolls = response.data;
-            
+
             this.meta = response.data.meta;
             this.links = response.data.links;
           }
         })
-        .catch(err => console.log(err));
+        .catch(err => console.log(err))
+        .finally(() => {
+          this.loading = false;
+        });
     },
     updateKeyword(value) {
       this.filter.keyword = value;

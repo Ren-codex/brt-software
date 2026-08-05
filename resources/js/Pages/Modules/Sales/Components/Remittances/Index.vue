@@ -107,6 +107,8 @@
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <TableLoadingRow v-if="loading" :colspan="7" message="Loading remittances..." />
+                                            <template v-else>
                                             <tr v-if="openRemittance.length === 0">
                                                 <td colspan="7">
                                                     <div class="sales-empty-state">
@@ -137,6 +139,7 @@
                                                     </button>
                                                 </td>
                                             </tr>
+                                            </template>
                                         </tbody>
                                     </table>
                                 </div>
@@ -156,6 +159,8 @@
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <TableLoadingRow v-if="loading" :colspan="7" message="Loading remittances..." />
+                                            <template v-else>
                                             <tr v-if="liquidatedRemittance.length === 0">
                                                 <td colspan="7">
                                                     <div class="sales-empty-state">
@@ -189,6 +194,7 @@
                                                     </button>
                                                 </td>
                                             </tr>
+                                            </template>
                                         </tbody>
                                     </table>
                                 </div>
@@ -206,6 +212,8 @@
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <TableLoadingRow v-if="loading" :colspan="6" message="Loading remittances..." />
+                                            <template v-else>
                                             <tr v-if="disapprovedRemittance.length === 0">
                                                 <td colspan="6">
                                                     <div class="sales-empty-state">
@@ -231,6 +239,7 @@
                                                     </button>
                                                 </td>
                                             </tr>
+                                            </template>
                                         </tbody>
                                     </table>
                                 </div>
@@ -248,6 +257,8 @@
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <TableLoadingRow v-if="loading" :colspan="6" message="Loading remittances..." />
+                                            <template v-else>
                                             <tr v-if="undepositedRemittance.length === 0">
                                                 <td colspan="6">
                                                     <div class="sales-empty-state">
@@ -273,6 +284,7 @@
                                                     </button>
                                                 </td>
                                             </tr>
+                                            </template>
                                         </tbody>
                                     </table>
                                 </div>
@@ -308,12 +320,14 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
 import View from './View.vue';
 import SummaryView from './SummaryView.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { Pagination, Create, View, SummaryView },
+    components: { Pagination, Create, View, SummaryView, TableLoadingRow },
     props: ['dropdowns', 'isExternal'],
     data() {
         return {
+            loading: false,
             lists: [],
             meta: {},
             links: {},
@@ -372,6 +386,7 @@ export default {
             return '\u20B1' + Number(value).toFixed(2);
         },
         fetch() {
+            this.loading = true;
             return axios.get('/remittances', {
                 params: {
                     keyword: this.filter.keyword,
@@ -389,7 +404,8 @@ export default {
                     this.links = response.data.links;
                 }
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err))
+            .finally(() => { this.loading = false; });
         },
         openCreate() {
             this.$refs.create.show();

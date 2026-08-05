@@ -68,6 +68,8 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
+                                <TableLoadingRow v-if="loading" :colspan="9" message="Loading sales orders..." />
+                                <template v-else>
                                 <template v-for="(list, index) in lists" :key="list.id">
                                     <tr @click="toggleRowExpansion(index)"
                                         :class="{
@@ -255,6 +257,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -281,14 +284,16 @@ import Cancel from './Modals/Cancel.vue';
 import Create from './Modals/Create.vue';
 import Adjustment from './Modals/Adjustment.vue';
 import Approval from './Modals/Approval.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval },
+    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval, TableLoadingRow },
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
+            loading: false,
             lists: [],
             meta: {},
             links: {},
@@ -342,6 +347,7 @@ export default {
         fetch(page_url) {
             let baseUrl = this.isExternal ? '/sales-orders-external' : '/sales-orders';
             page_url = page_url || baseUrl;
+            this.loading = true;
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -359,7 +365,8 @@ export default {
                         this.expandedRow = null; // Reset expanded row when data changes
                     }
                 })
-                .catch(err => console.log(err));
+                .catch(err => console.log(err))
+                .finally(() => { this.loading = false; });
         },
         openCreate() {
             this.$refs.create.show();

@@ -113,6 +113,8 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        <TableLoadingRow v-if="listLoading" :colspan="7" message="Loading journal entries..." />
+                                        <template v-else>
                                         <tr v-if="lists.length === 0">
                                             <td colspan="7" class="empty-cell">
                                                 <div class="empty-state">
@@ -229,6 +231,7 @@
                                                     </div>
                                                 </td>
                                             </tr>
+                                        </template>
                                         </template>
                                     </tbody>
                                 </table>
@@ -433,10 +436,11 @@ import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
 import Pagination from "@/Shared/Components/Pagination.vue";
 import DrawerDateRangePicker from "@/Pages/Modules/Accounting/Components/DrawerDateRangePicker.vue";
+import TableLoadingRow from "@/Shared/Components/TableLoadingRow.vue";
 
 export default {
     layout: [MainLayout, AccountingLayout],
-    components: { Pagination, DrawerDateRangePicker },
+    components: { Pagination, DrawerDateRangePicker, TableLoadingRow },
     props: {
         stats: {
             type: Object,
@@ -461,6 +465,7 @@ export default {
             lists: [],
             meta: {},
             links: {},
+            listLoading: false,
             expandedRows: [],
             filter: {
                 keyword: null,
@@ -539,6 +544,7 @@ export default {
     methods: {
         fetch(pageUrl) {
             pageUrl = pageUrl || '/accounting/journal-entries';
+            this.listLoading = true;
             axios.get(pageUrl, {
                 params: {
                     option: 'lists',
@@ -553,6 +559,8 @@ export default {
                 this.lists = response.data.data || [];
                 this.meta  = response.data.meta  || {};
                 this.links = response.data.links  || {};
+            }).finally(() => {
+                this.listLoading = false;
             });
         },
         clearFilters() {

@@ -80,33 +80,36 @@
                             </tr>
                           </thead>
                           <tbody>
-                            <tr
-                              v-for="(item, index) in filteredItems"
-                              :key="item.id"
-                              class="item-row"
-                            >
-                              <td class="ps-4 fw-semibold text-muted">{{ index + 1 }}</td>
-                              <td class="fw-semibold">{{ item.name }}</td>
-                              <td>{{ item.description || '-' }}</td>
-                              <td>
-                                <b-form-checkbox
-                                    :checked="item.is_active === true"
-                                    @change="toggleActive(item)"
-                                    switch
-                                    size="md"
-                                />
-                              </td>
-                              <td>
-                                <div class="d-flex justify-content-center align-items-center gap-2">
-                                  <b-button variant="outline-secondary" size="sm" @click="editItem(item)" class="btn-icon rounded-circle">
-                                    <i class="ri-edit-line"></i>
-                                  </b-button>
-                                  <!-- <b-button variant="outline-danger" size="sm" @click.stop="deleteItem(item)" class="btn-icon rounded-circle">
-                                    <i class="ri-delete-bin-line"></i>
-                                  </b-button> -->
-                                </div>
-                              </td>
-                            </tr>
+                            <TableLoadingRow v-if="loading" :colspan="5" message="Loading payroll items..." />
+                            <template v-else>
+                              <tr
+                                v-for="(item, index) in filteredItems"
+                                :key="item.id"
+                                class="item-row"
+                              >
+                                <td class="ps-4 fw-semibold text-muted">{{ index + 1 }}</td>
+                                <td class="fw-semibold">{{ item.name }}</td>
+                                <td>{{ item.description || '-' }}</td>
+                                <td>
+                                  <b-form-checkbox
+                                      :checked="item.is_active === true"
+                                      @change="toggleActive(item)"
+                                      switch
+                                      size="md"
+                                  />
+                                </td>
+                                <td>
+                                  <div class="d-flex justify-content-center align-items-center gap-2">
+                                    <b-button variant="outline-secondary" size="sm" @click="editItem(item)" class="btn-icon rounded-circle">
+                                      <i class="ri-edit-line"></i>
+                                    </b-button>
+                                    <!-- <b-button variant="outline-danger" size="sm" @click.stop="deleteItem(item)" class="btn-icon rounded-circle">
+                                      <i class="ri-delete-bin-line"></i>
+                                    </b-button> -->
+                                  </div>
+                                </td>
+                              </tr>
+                            </template>
                           </tbody>
                         </table>
 
@@ -153,9 +156,10 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import ItemModal from './Modal.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-  components: { ItemModal },
+  components: { ItemModal, TableLoadingRow },
   props: ['dropdowns'],
   data() {
     return {
@@ -166,6 +170,7 @@ export default {
       isSavingItem: false,
       editingItemId: null,
       formErrors: {},
+      loading: false,
       form: {
         name: '',
         slug: '',
@@ -216,6 +221,7 @@ export default {
   },
   methods: {
     async fetchPayrollItems() {
+      this.loading = true;
       try {
         const response = await axios.get('/libraries/payroll-items', {
           params: {
@@ -228,6 +234,8 @@ export default {
       } catch (error) {
         console.log(error);
         this.payrollItems = [];
+      } finally {
+        this.loading = false;
       }
     },
     selectGroup(group) {

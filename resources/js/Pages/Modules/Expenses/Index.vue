@@ -73,6 +73,8 @@
                                         </tr>
                                     </thead>
                                     <tbody class="table-white fs-12">
+                                        <TableLoadingRow v-if="loading" :colspan="10" message="Loading expenses..." />
+                                        <template v-else>
                                         <template v-for="(list, index) in lists" :key="list.id">
                                             <tr @click="toggleExpanded(index)"
                                                 :class="{ 'bg-info-subtle': selectedRow === index, 'expanded-row': isExpanded(index), 'main-table-row': true }">
@@ -237,6 +239,7 @@
                                         <tr v-if="lists.length === 0">
                                             <td colspan="10" class="text-center text-muted py-4">No expenses found.</td>
                                         </tr>
+                                        </template>
                                     </tbody>
                                 </table>
                             </div>
@@ -555,11 +558,12 @@ import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Create from './Modals/Create.vue';
 import PrintReport from './Modals/PrintReport.vue';
 
 export default {
-    components: { PageHeader, Pagination, Create, DeleteModal, PrintReport },
+    components: { PageHeader, Pagination, Create, DeleteModal, PrintReport, TableLoadingRow },
     props: ['dropdowns'],
     computed: {
         pendingCount() {
@@ -590,6 +594,7 @@ export default {
             filter: { keyword: '', fund_id: '', status: '' },
             selectedRow:  null,
             expandedRow:  null,
+            loading: false,
             // Replenishment list
             replenishments: [],
             repFilter: { status: '', fund_id: '' },
@@ -627,13 +632,17 @@ export default {
         // ── Expense list ──────────────────────────────────────────
         checkSearchStr: _.debounce(function () { this.fetch(); }, 300),
         fetch(page_url) {
+            this.loading = true;
             axios.get(page_url || '/expenses', {
                 params: { keyword: this.filter.keyword, fund_id: this.filter.fund_id, status: this.filter.status, count: 15, option: 'lists' }
             }).then(res => {
                 this.lists = res.data.data;
                 this.meta  = res.data.meta;
                 this.links = res.data.links;
-            }).catch(console.error);
+            }).catch(console.error)
+            .finally(() => {
+                this.loading = false;
+            });
         },
         openCreate() { this.$refs.create.show(); },
         openEdit(data, index) { this.selectedRow = index; this.$refs.create.edit(data); },

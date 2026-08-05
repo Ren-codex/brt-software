@@ -88,6 +88,8 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
+                                <TableLoadingRow v-if="loading" :colspan="9" message="Loading sales returns..." />
+                                <template v-else>
                                 <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" 
                                     :class="{
@@ -306,6 +308,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -363,10 +366,11 @@ import CreateFromReceipt from './Modals/CreateFromReceipt.vue';
 import Adjustment from './Modals/Adjustment.vue';
 import Approval from './Modals/Approval.vue';
 import ReturnHistory from './ReturnHistory.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, CreateFromReceipt, Cancel, Adjustment, Approval, ReturnHistory },
+    components: { PageHeader, Pagination, Multiselect, CreateFromReceipt, Cancel, Adjustment, Approval, ReturnHistory, TableLoadingRow },
     props: ['dropdowns', 'invoices', 'user', 'isExternal', 'returnGracePeriod'],
     data(){
         return {
@@ -376,6 +380,7 @@ export default {
             settingsSaving: false,
             settingsForm: { gracePeriod: this.returnGracePeriod || 7 },
             currentUrl: window.location.origin,
+            loading: false,
             lists: [],
             meta: {},
             links: {},
@@ -422,6 +427,7 @@ export default {
         }, 300),
         fetch(page_url) {
             page_url = page_url || (this.isExternal ? '/sales-orders-external' : '/sales-orders');
+            this.loading = true;
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -438,7 +444,8 @@ export default {
                         this.links = response.data.links;
                     }
                 })
-                .catch(err => console.log(err));
+                .catch(err => console.log(err))
+                .finally(() => { this.loading = false; });
         },
         openCreate() {
             this.$refs.create.show();

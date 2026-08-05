@@ -80,9 +80,11 @@
                                 </thead>
 
                                 <tbody class="fs-12">
-                                    <tr 
-                                        v-for="(list,index) in filteredAndSortedList" 
-                                        v-bind:key="list.id" 
+                                    <TableLoadingRow v-if="loading" :colspan="14" message="Loading employees..." />
+                                    <template v-else>
+                                    <tr
+                                        v-for="(list,index) in filteredAndSortedList"
+                                        v-bind:key="list.id"
                                         @click="openView(list)"
                                         style="cursor: pointer;"
                                         :style="getRowStyle(list)"
@@ -148,6 +150,7 @@
                                             <small class="text-muted">Try changing your search or filter criteria</small>
                                         </td>
                                     </tr>
+                                    </template>
                                 </tbody>
                             </table>
                         </div>
@@ -174,11 +177,12 @@ import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Create from './Modals/Create.vue';
 import Details from './Details.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, Create, Details, DeleteModal },
+    components: { PageHeader, Pagination, Multiselect, Create, Details, DeleteModal, TableLoadingRow },
     props: ['dropdowns'],
     data() {
         return {
@@ -199,7 +203,8 @@ export default {
             localKeyword: '',
             sortBy: 'created_at',
             sortDirection: 'desc',
-            defaultAvatar: '/images/default-avatar.png'
+            defaultAvatar: '/images/default-avatar.png',
+            loading: false
         }
     },
     computed: {
@@ -290,6 +295,7 @@ export default {
         
         fetch(page_url) {
             page_url = page_url || '/employees';
+            this.loading = true;
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -312,7 +318,10 @@ export default {
                         }
                     }
                 })
-                .catch(err => console.log(err));
+                .catch(err => console.log(err))
+                .finally(() => {
+                    this.loading = false;
+                });
         },
         openCreate() {
             this.$refs.create.show();

@@ -40,38 +40,41 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(list, index) in lists" :key="list.id"
-                                    @click="selectRow(index)"
-                                    :class="{
-                                        'bg-info-subtle': index === selectedRow,
-                                        'bg-danger-subtle': !list.is_active && index !== selectedRow
-                                    }">
-                                    <td>{{ index + 1 }}</td>
-                                    <td>{{ list.name }}</td>
-                                    <td><code>{{ list.gl_code }}</code></td>
-                                    <td>₱{{ Number(list.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</td>
-                                    <td>
-                                        <span class="badge" :class="list.is_active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
-                                            {{ list.is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button @click.stop="openTopUp(list)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Top-up">
-                                                <i class="ri-add-circle-line"></i>
-                                            </button>
-                                            <button @click.stop="openAdjust(list)" class="action-btn" style="color:#6c757d;background:#f8f9fa;border:1px solid #dee2e6" v-b-tooltip.hover title="Adjust Balance">
-                                                <i class="ri-scales-line"></i>
-                                            </button>
-                                            <button @click.stop="openEdit(list)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
-                                                <i class="ri-pencil-line"></i>
-                                            </button>
-                                            <button @click.stop="toggleActive(list)" class="action-btn" :class="list.is_active ? 'action-btn-delete' : 'action-btn-edit'" v-b-tooltip.hover :title="list.is_active ? 'Deactivate' : 'Activate'">
-                                                <i :class="list.is_active ? 'ri-forbid-line' : 'ri-check-line'"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                <TableLoadingRow v-if="loading" :colspan="6" message="Loading funds..." />
+                                <template v-else>
+                                    <tr v-for="(list, index) in lists" :key="list.id"
+                                        @click="selectRow(index)"
+                                        :class="{
+                                            'bg-info-subtle': index === selectedRow,
+                                            'bg-danger-subtle': !list.is_active && index !== selectedRow
+                                        }">
+                                        <td>{{ index + 1 }}</td>
+                                        <td>{{ list.name }}</td>
+                                        <td><code>{{ list.gl_code }}</code></td>
+                                        <td>₱{{ Number(list.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</td>
+                                        <td>
+                                            <span class="badge" :class="list.is_active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
+                                                {{ list.is_active ? 'Active' : 'Inactive' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button @click.stop="openTopUp(list)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Top-up">
+                                                    <i class="ri-add-circle-line"></i>
+                                                </button>
+                                                <button @click.stop="openAdjust(list)" class="action-btn" style="color:#6c757d;background:#f8f9fa;border:1px solid #dee2e6" v-b-tooltip.hover title="Adjust Balance">
+                                                    <i class="ri-scales-line"></i>
+                                                </button>
+                                                <button @click.stop="openEdit(list)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                                                    <i class="ri-pencil-line"></i>
+                                                </button>
+                                                <button @click.stop="toggleActive(list)" class="action-btn" :class="list.is_active ? 'action-btn-delete' : 'action-btn-edit'" v-b-tooltip.hover :title="list.is_active ? 'Deactivate' : 'Activate'">
+                                                    <i :class="list.is_active ? 'ri-forbid-line' : 'ri-check-line'"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -96,10 +99,11 @@ import Pagination from '@/Shared/Components/Pagination.vue';
 import Create from '@/Pages/Modules/Libraries/Funds/Modals/Create.vue';
 import TopUp from '@/Pages/Modules/Libraries/Funds/Modals/TopUp.vue';
 import AdjustBalance from '@/Pages/Modules/Libraries/Funds/Modals/AdjustBalance.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Swal from 'sweetalert2';
 
 export default {
-    components: { AccountingLayout, Pagination, Create, TopUp, AdjustBalance },
+    components: { AccountingLayout, Pagination, Create, TopUp, AdjustBalance, TableLoadingRow },
     props: {
         bankAccounts: { type: Array, default: () => [] },
     },
@@ -110,6 +114,7 @@ export default {
             links: {},
             filter: { keyword: null },
             selectedRow: null,
+            loading: false,
         };
     },
     watch: {
@@ -120,6 +125,7 @@ export default {
         checkSearchStr: _.debounce(function() { this.fetch(); }, 300),
         fetch(page_url) {
             page_url = page_url || '/accounting/funds';
+            this.loading = true;
             axios.get(page_url, {
                 params: { option: 'lists', keyword: this.filter.keyword, count: 10 }
             })
@@ -128,7 +134,8 @@ export default {
                 this.meta  = res.data.meta;
                 this.links = res.data.links;
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err))
+            .finally(() => { this.loading = false; });
         },
         selectRow(index) {
             this.selectedRow = this.selectedRow === index ? null : index;

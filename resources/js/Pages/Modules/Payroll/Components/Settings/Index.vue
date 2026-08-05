@@ -40,32 +40,35 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <tr v-for="(setting, index) in payrollSettings" :key="setting.id"
-                                    class="transition-all" style="transition: all 0.3s ease;">
-                                    <td class="text-center">{{ index + 1 }}</td>
-                                    <td class="text-center fw-semibold">{{ setting.field_name }}</td>
-                                    <td class="text-center">{{ setting.formula }}</td>
-                                    <td class="text-center">{{ setting.value }}</td>
-                                    <!-- <td class="text-center">
-                                        <span class="status-badge" :style="getStatusStyle(setting.is_active ? 'active' : 'inactive')">
-                                            {{ setting.is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                    </td> -->
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <b-button @click.stop="viewSetting(setting)" variant="outline-info"
-                                                v-b-tooltip.hover title="View" size="sm"
-                                                class="btn-icon rounded-circle">
-                                                <i class="ri-eye-line"></i>
-                                            </b-button>
-                                            <b-button @click.stop="editSetting(setting)" variant="outline-primary"
-                                                v-b-tooltip.hover title="Edit" size="sm"
-                                                class="btn-icon rounded-circle">
-                                                <i class="ri-pencil-fill"></i>
-                                            </b-button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                <TableLoadingRow v-if="loading" :colspan="5" message="Loading payroll settings..." />
+                                <template v-else>
+                                    <tr v-for="(setting, index) in payrollSettings" :key="setting.id"
+                                        class="transition-all" style="transition: all 0.3s ease;">
+                                        <td class="text-center">{{ index + 1 }}</td>
+                                        <td class="text-center fw-semibold">{{ setting.field_name }}</td>
+                                        <td class="text-center">{{ setting.formula }}</td>
+                                        <td class="text-center">{{ setting.value }}</td>
+                                        <!-- <td class="text-center">
+                                            <span class="status-badge" :style="getStatusStyle(setting.is_active ? 'active' : 'inactive')">
+                                                {{ setting.is_active ? 'Active' : 'Inactive' }}
+                                            </span>
+                                        </td> -->
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-1">
+                                                <b-button @click.stop="viewSetting(setting)" variant="outline-info"
+                                                    v-b-tooltip.hover title="View" size="sm"
+                                                    class="btn-icon rounded-circle">
+                                                    <i class="ri-eye-line"></i>
+                                                </b-button>
+                                                <b-button @click.stop="editSetting(setting)" variant="outline-primary"
+                                                    v-b-tooltip.hover title="Edit" size="sm"
+                                                    class="btn-icon rounded-circle">
+                                                    <i class="ri-pencil-fill"></i>
+                                                </b-button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -102,9 +105,10 @@ import axios from 'axios'
 import PayrollSettingModal from './Modal.vue'
 import Logs from './Logs.vue'
 import Pagination from "@/Shared/Components/Pagination.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-  components: { PayrollSettingModal, Logs, Pagination },
+  components: { PayrollSettingModal, Logs, Pagination, TableLoadingRow },
   props: ['dropdown'],
   data() {
     return {
@@ -121,6 +125,7 @@ export default {
       showLogsModal: false,
       isToastVisible: false,
       toastMessage: '',
+      loading: false,
     }
   },
   watch: {
@@ -137,6 +142,7 @@ export default {
     }, 300),
     async fetchPayrollSettings(page_url) {
       page_url = page_url || '/payroll-settings';
+      this.loading = true;
       axios.get(page_url, {
         params: {
           keyword: this.filter.keyword,
@@ -150,7 +156,10 @@ export default {
             this.links = response.data.links;
           }
         })
-        .catch(err => console.log(err));
+        .catch(err => console.log(err))
+        .finally(() => {
+          this.loading = false;
+        });
     },
     updateKeyword(value) {
       this.filter.keyword = value;

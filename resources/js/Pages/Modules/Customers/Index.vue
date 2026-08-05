@@ -69,9 +69,11 @@
                                 </thead>
 
                                 <tbody class="fs-12">
-                                    <tr 
-                                        v-for="(list, index) in filteredAndSortedList" 
-                                        v-bind:key="list.id" 
+                                    <TableLoadingRow v-if="loading" :colspan="10" message="Loading customers..." />
+                                    <template v-else>
+                                    <tr
+                                        v-for="(list, index) in filteredAndSortedList"
+                                        v-bind:key="list.id"
                                         @click="openView(list)"
                                         style="cursor: pointer;"
                                         :style="getRowStyle(list)"
@@ -121,6 +123,7 @@
                                             <small class="text-muted">Try changing your search or filter criteria</small>
                                         </td>
                                     </tr>
+                                    </template>
                                 </tbody>
                             </table>
                         </div>
@@ -144,11 +147,12 @@ import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Create from './Modals/Create.vue';
 import Details from './Details.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, Create, Details },
+    components: { PageHeader, Pagination, Multiselect, Create, Details, TableLoadingRow },
     props: ['dropdowns'],
     data() {
         return {
@@ -167,6 +171,7 @@ export default {
             units: [],
             sortBy: 'created_at',
             sortDirection: 'desc',
+            loading: false,
         }
     },
     computed: {
@@ -253,6 +258,7 @@ export default {
         
         fetch(page_url) {
             page_url = page_url || '/customers';
+            this.loading = true;
             return axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -267,7 +273,10 @@ export default {
                         this.links = response.data.links;
                     }
                 })
-                .catch(err => console.log(err));
+                .catch(err => console.log(err))
+                .finally(() => {
+                    this.loading = false;
+                });
         },
         
         loadCustomerDetails(customer) {

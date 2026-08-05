@@ -134,42 +134,45 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="line in llLines" :key="line.id">
-                                <td class="font-monospace entry-id">{{ line.journal_number }}</td>
-                                <td class="text-nowrap">{{ line.entry_date }}</td>
-                                <td class="text-nowrap text-muted">{{ line.post_date }}</td>
-                                <td>
-                                    <div class="account-cell">
-                                        <span class="acc-code font-monospace">{{ line.account_code }}</span>
-                                        <span class="acc-name">{{ line.account_name }}</span>
-                                        <span class="type-chip" :class="line.account_type">{{ formatLabel(line.account_type) }}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span v-if="line.reference" class="ref-chip">{{ line.reference }}</span>
-                                    <span v-else class="text-muted">—</span>
-                                </td>
-                                <td class="desc-cell text-muted">{{ line.description }}</td>
-                                <td class="text-center">
-                                    <span class="source-badge" :class="'src-' + line.source_label.toLowerCase()">
-                                        {{ line.source_label }}
-                                    </span>
-                                </td>
-                                <td class="text-end fw-semibold debit-color">{{ line.debit || '—' }}</td>
-                                <td class="text-end fw-semibold credit-color">{{ line.credit || '—' }}</td>
-                                <td class="text-end">
-                                    <div v-if="line.running_balance !== null" class="running-bal">
-                                        <span :class="line.running_balance_dr ? 'debit-color' : 'credit-color'" class="fw-semibold">
-                                            {{ line.running_balance }}
+                            <TableLoadingRow v-if="llLoading" :colspan="11" message="Loading ledger lines..." />
+                            <template v-else>
+                                <tr v-for="line in llLines" :key="line.id">
+                                    <td class="font-monospace entry-id">{{ line.journal_number }}</td>
+                                    <td class="text-nowrap">{{ line.entry_date }}</td>
+                                    <td class="text-nowrap text-muted">{{ line.post_date }}</td>
+                                    <td>
+                                        <div class="account-cell">
+                                            <span class="acc-code font-monospace">{{ line.account_code }}</span>
+                                            <span class="acc-name">{{ line.account_name }}</span>
+                                            <span class="type-chip" :class="line.account_type">{{ formatLabel(line.account_type) }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span v-if="line.reference" class="ref-chip">{{ line.reference }}</span>
+                                        <span v-else class="text-muted">—</span>
+                                    </td>
+                                    <td class="desc-cell text-muted">{{ line.description }}</td>
+                                    <td class="text-center">
+                                        <span class="source-badge" :class="'src-' + line.source_label.toLowerCase()">
+                                            {{ line.source_label }}
                                         </span>
-                                        <small class="bal-label" :class="line.running_balance_dr ? 'debit-color' : 'credit-color'">
-                                            {{ line.running_balance_dr ? 'DR' : 'CR' }}
-                                        </small>
-                                    </div>
-                                    <span v-else class="text-muted">—</span>
-                                </td>
-                                <td class="text-muted small">{{ line.posted_by }}</td>
-                            </tr>
+                                    </td>
+                                    <td class="text-end fw-semibold debit-color">{{ line.debit || '—' }}</td>
+                                    <td class="text-end fw-semibold credit-color">{{ line.credit || '—' }}</td>
+                                    <td class="text-end">
+                                        <div v-if="line.running_balance !== null" class="running-bal">
+                                            <span :class="line.running_balance_dr ? 'debit-color' : 'credit-color'" class="fw-semibold">
+                                                {{ line.running_balance }}
+                                            </span>
+                                            <small class="bal-label" :class="line.running_balance_dr ? 'debit-color' : 'credit-color'">
+                                                {{ line.running_balance_dr ? 'DR' : 'CR' }}
+                                            </small>
+                                        </div>
+                                        <span v-else class="text-muted">—</span>
+                                    </td>
+                                    <td class="text-muted small">{{ line.posted_by }}</td>
+                                </tr>
+                            </template>
                         </tbody>
                         <tfoot>
                             <tr class="ll-totals-row">
@@ -205,10 +208,11 @@ import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
 import Pagination from "@/Shared/Components/Pagination.vue";
 import DrawerDateRangePicker from "@/Pages/Modules/Accounting/Components/DrawerDateRangePicker.vue";
+import TableLoadingRow from "@/Shared/Components/TableLoadingRow.vue";
 
 export default {
     layout: [MainLayout, AccountingLayout],
-    components: { Pagination, DrawerDateRangePicker },
+    components: { Pagination, DrawerDateRangePicker, TableLoadingRow },
     props: {
         stats:         { type: Object, default: () => ({}) },
         dataReady:     { type: Boolean, default: false },

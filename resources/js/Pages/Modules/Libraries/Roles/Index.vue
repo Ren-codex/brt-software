@@ -47,6 +47,8 @@
                             </thead>
 
                             <tbody>
+                                <TableLoadingRow v-if="loading" :colspan="5" message="Loading roles..." />
+                                <template v-else>
                                 <tr v-for="(list,index) in lists" v-bind:key="index" @click="selectRow(index)" :class="{
                                     'bg-info-subtle': index === selectedRow,
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
@@ -66,6 +68,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                </template>
                             </tbody>
                         </table>
                         </div>
@@ -88,9 +91,10 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create ,Delete },
+    components: { PageHeader, Pagination, Multiselect , Create ,Delete, TableLoadingRow },
     props: [],
     data(){
         return {
@@ -103,7 +107,8 @@ export default {
             },
             index: null,
             selectedRow: null,
-            units: []
+            units: [],
+            loading: false
         }
     },
     watch: {
@@ -120,10 +125,11 @@ export default {
         }, 300),
         fetch(page_url){
             page_url = page_url || '/libraries/roles';
+            this.loading = true;
             axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
-                    count: 10, 
+                    count: 10,
                     option: 'lists'
                 }
             })
@@ -131,10 +137,13 @@ export default {
                 if(response){
                     this.lists = response.data.data;
                     this.meta = response.data.meta;
-                    this.links = response.data.links;          
+                    this.links = response.data.links;
                 }
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err))
+            .finally(() => {
+                this.loading = false;
+            });
         },
         openCreate(){
             this.$refs.create.show();

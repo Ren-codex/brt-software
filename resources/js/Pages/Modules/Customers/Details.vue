@@ -266,14 +266,7 @@
                                         </td>
                                     </tr>
 
-                                    <tr v-if="purchaseHistoryLoading">
-                                        <td colspan="7">
-                                            <div class="loading-state">
-                                                <i class="ri-loader-4-line ri-spin"></i>
-                                                <p>Loading purchase history...</p>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    <TableLoadingRow v-if="purchaseHistoryLoading" :colspan="7" message="Loading purchase history..." />
                                 </tbody>
                             </table>
                         </div>
@@ -428,9 +421,10 @@
 
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { Pagination },
+    components: { Pagination, TableLoadingRow },
     props: ['customer', 'backToList', 'openEdit', 'selectedCustomer', 'selectedRow'],
     name: 'CustomerDetails',
     data() {

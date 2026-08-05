@@ -19,51 +19,47 @@
         </div>
 
         <div class="card-body bg-white m-2 p-3">
-          <div v-if="isLoading" class="state-panel loading-panel">
-            <i class="ri-loader-4-line rotating-icon"></i>
-            <span>Loading accounts payable records...</span>
+          <div v-if="!isLoading && !dataReady" class="state-panel info-panel">
+            <i class="ri-information-line"></i>
+            <span>Accounting sync is not ready yet. Showing live open supplier balances from receiving records.</span>
           </div>
 
-          <template v-else>
-            <div v-if="!dataReady" class="state-panel info-panel">
-              <i class="ri-information-line"></i>
-              <span>Accounting sync is not ready yet. Showing live open supplier balances from receiving records.</span>
-            </div>
-
-            <div class="search-section">
-              <div class="row">
-                <div class="col-md-5">
-                  <div class="search-wrapper">
-                    <i class="ri-search-line search-icon"></i>
-                    <input
-                      v-model.trim="localKeyword"
-                      type="text"
-                      placeholder="Search payable no., supplier, PR, PO, or payment reference..."
-                      class="search-input"
-                    >
-                  </div>
+          <div class="search-section">
+            <div class="row">
+              <div class="col-md-5">
+                <div class="search-wrapper">
+                  <i class="ri-search-line search-icon"></i>
+                  <input
+                    v-model.trim="localKeyword"
+                    type="text"
+                    placeholder="Search payable no., supplier, PR, PO, or payment reference..."
+                    class="search-input"
+                  >
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="table-responsive table-card">
-              <table class="table align-middle table-hover mb-0">
-                <thead class="table-head">
-                  <tr class="fs-12 fw-bold text-muted">
-                    <th style="width: 5%;">#</th>
-                    <th class="text-center">Payable No.</th>
-                    <th class="text-center">Purchase Order</th>
-                    <th class="text-center">Supplier</th>
-                    <th class="text-center">Received Date</th>
-                    <th class="text-center">Due Date</th>
-                    <th class="text-center">Status</th>
-                    <th class="text-center">Total Payable</th>
-                    <th class="text-center">Total Paid</th>
-                    <th class="text-center">Balance Due</th>
-                    <th class="text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody class="fs-12">
+          <div class="table-responsive table-card">
+            <table class="table align-middle table-hover mb-0">
+              <thead class="table-head">
+                <tr class="fs-12 fw-bold text-muted">
+                  <th style="width: 5%;">#</th>
+                  <th class="text-center">Payable No.</th>
+                  <th class="text-center">Purchase Order</th>
+                  <th class="text-center">Supplier</th>
+                  <th class="text-center">Received Date</th>
+                  <th class="text-center">Due Date</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center">Total Payable</th>
+                  <th class="text-center">Total Paid</th>
+                  <th class="text-center">Balance Due</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="fs-12">
+                <TableLoadingRow v-if="isLoading" :colspan="11" message="Loading accounts payable records..." />
+                <template v-else>
                   <template v-for="(record, index) in paginatedPayables" :key="record.id">
                     <tr :class="['main-table-row', rowStateClass(record)]">
                       <td class="text-center">
@@ -129,31 +125,30 @@
                       <small class="text-muted">Supplier balances with remaining unpaid credit will appear here automatically.</small>
                     </td>
                   </tr>
-                </tbody>
-              </table>
-            </div>
+                </template>
+              </tbody>
+            </table>
+          </div>
 
-            <div v-if="totalPages > 1" class="ap-pagination">
-              <button
-                type="button"
-                class="ap-page-btn"
-                :disabled="currentPage === 1"
-                @click="currentPage--"
-              >
-                <i class="ri-arrow-left-s-line"></i> Prev
-              </button>
-              <span class="ap-page-info">Page {{ currentPage }} of {{ totalPages }}</span>
-              <button
-                type="button"
-                class="ap-page-btn"
-                :disabled="currentPage === totalPages"
-                @click="currentPage++"
-              >
-                Next <i class="ri-arrow-right-s-line"></i>
-              </button>
-            </div>
-
-          </template>
+          <div v-if="!isLoading && totalPages > 1" class="ap-pagination">
+            <button
+              type="button"
+              class="ap-page-btn"
+              :disabled="currentPage === 1"
+              @click="currentPage--"
+            >
+              <i class="ri-arrow-left-s-line"></i> Prev
+            </button>
+            <span class="ap-page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+            <button
+              type="button"
+              class="ap-page-btn"
+              :disabled="currentPage === totalPages"
+              @click="currentPage++"
+            >
+              Next <i class="ri-arrow-right-s-line"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -172,6 +167,7 @@
 <script>
 import PayAccountsPayableModal from '../Modal/PayAccountsPayableModal.vue';
 import ViewAccountsPayableModal from '../Modal/ViewAccountsPayableModal.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import { formatCurrency, formatDate } from '@/Shared/utils/formatters.js';
 
 export default {
@@ -179,6 +175,7 @@ export default {
   components: {
     PayAccountsPayableModal,
     ViewAccountsPayableModal,
+    TableLoadingRow,
   },
   emits: ['refresh', 'toast'],
   props: {

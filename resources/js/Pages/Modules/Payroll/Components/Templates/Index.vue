@@ -128,47 +128,50 @@
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    <tr 
-                                      v-for="(employee, index) in filteredEmployees" 
-                                      :key="employee.id"
-                                      class="employee-row"
-                                    >
-                                      <td class="ps-4 fw-semibold text-muted">{{ index + 1 }}</td>
-                                      <td>
-                                        <div class="d-flex align-items-center">
-                                          <div class="avatar-sm me-3">
-                                            <div class="avatar-title bg-light rounded-circle">
-                                              <i class="ri-user-line text-primary"></i>
+                                    <TableLoadingRow v-if="loading" :colspan="5" message="Loading employees..." />
+                                    <template v-else>
+                                      <tr
+                                        v-for="(employee, index) in filteredEmployees"
+                                        :key="employee.id"
+                                        class="employee-row"
+                                      >
+                                        <td class="ps-4 fw-semibold text-muted">{{ index + 1 }}</td>
+                                        <td>
+                                          <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3">
+                                              <div class="avatar-title bg-light rounded-circle">
+                                                <i class="ri-user-line text-primary"></i>
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <h6 class="mb-0">{{ employee.fullname }}</h6>
                                             </div>
                                           </div>
-                                          <div>
-                                            <h6 class="mb-0">{{ employee.fullname }}</h6>
-                                          </div>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <span class="badge bg-light text-dark">
-                                          {{ employee.position ? employee.position.title : 'N/A' }}
-                                        </span>
-                                      </td>
-                                      <td class="text-center">
-                                        <span class="badge bg-success-subtle text-success">
-                                          <i class="ri-checkbox-circle-line me-1"></i>
-                                          {{ employee.is_active == 1 ? 'Active' : 'Inactive' }}
-                                        </span>
-                                      </td>
-                                      <td class="text-end pe-4">
-                                        <b-button 
-                                          @click.stop="removeEmployee(employee)" 
-                                          variant="outline-danger"
-                                          v-b-tooltip.hover title="Remove from group"
-                                          size="sm"
-                                          class="btn-icon rounded-circle"
-                                        >
-                                          <i class="ri-close-line"></i>
-                                        </b-button>
-                                      </td>
-                                    </tr>
+                                        </td>
+                                        <td>
+                                          <span class="badge bg-light text-dark">
+                                            {{ employee.position ? employee.position.title : 'N/A' }}
+                                          </span>
+                                        </td>
+                                        <td class="text-center">
+                                          <span class="badge bg-success-subtle text-success">
+                                            <i class="ri-checkbox-circle-line me-1"></i>
+                                            {{ employee.is_active == 1 ? 'Active' : 'Inactive' }}
+                                          </span>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                          <b-button
+                                            @click.stop="removeEmployee(employee)"
+                                            variant="outline-danger"
+                                            v-b-tooltip.hover title="Remove from group"
+                                            size="sm"
+                                            class="btn-icon rounded-circle"
+                                          >
+                                            <i class="ri-close-line"></i>
+                                          </b-button>
+                                        </td>
+                                      </tr>
+                                    </template>
                                   </tbody>
                                 </table>
                                 
@@ -233,10 +236,11 @@ import _ from 'lodash';
 import axios from 'axios'
 import PayrollTemplateModal from './Modal.vue'
 import Pagination from "@/Shared/Components/Pagination.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Swal from 'sweetalert2';
 
 export default {
-  components: { PayrollTemplateModal, Pagination },
+  components: { PayrollTemplateModal, Pagination, TableLoadingRow },
   props: ['dropdowns'],
   data() {
     return {
@@ -255,6 +259,7 @@ export default {
       toastMessage: '',
       employeeSortOrder: 'asc',
       selectedEmployee: null,
+      loading: false,
     }
   },
   computed: {
@@ -291,6 +296,7 @@ export default {
       if (typeof page_url !== 'string' || !page_url) {
         page_url = '/payroll-templates';
       }
+      this.loading = true;
       axios.get(page_url, {
         params: {
           keyword: this.filter.keyword,
@@ -304,7 +310,10 @@ export default {
             this.links = response.data.links;
           }
         })
-        .catch(err => console.log(err));
+        .catch(err => console.log(err))
+        .finally(() => {
+          this.loading = false;
+        });
     },
     updateKeyword(value) {
       this.filter.keyword = value;

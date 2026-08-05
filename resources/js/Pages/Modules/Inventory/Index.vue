@@ -110,7 +110,7 @@
 
               <div class="row" v-if="activeTab === 'receiving' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
-                  <ReceivingTab :listReceivedStocks="listReceivedStocks" />
+                  <ReceivingTab :listReceivedStocks="listReceivedStocks" :loading="isReceivingLoading" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
@@ -124,7 +124,7 @@
               <div class="row" v-if="activeTab === 'products'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <ProductsTab :listProducts="listProducts" :meta="meta" :links="links" :filter="filter"
-                    :dropdowns="dropdowns" @fetch="fetchProducts" @update-keyword="updateKeyword" @toast="showToast" />
+                    :dropdowns="dropdowns" :loading="isProductsLoading" @fetch="fetchProducts" @update-keyword="updateKeyword" @toast="showToast" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
@@ -138,7 +138,7 @@
               <div class="row" v-if="activeTab === 'inventoryStocks' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <InventoryStocksTab :listInventoryStocks="listInventoryStocks" :meta="meta" :links="links"
-                    :filter="filter" :dropdowns="dropdowns" @fetch="fetchInventoryStocks"
+                    :filter="filter" :dropdowns="dropdowns" :loading="isInventoryStocksLoading" @fetch="fetchInventoryStocks"
                     @update-keyword="updateKeyword" @toast="showToast" @view-details="openInventoryStockDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -172,7 +172,7 @@
               <div class="row" v-if="activeTab === 'stockReturns' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <StockReturnsTab :listStockReturns="listStockReturns" :meta="meta" :links="links" :filter="filter"
-                    :dropdowns="dropdowns" @fetch="fetchStockReturns" @update-keyword="updateKeyword"
+                    :dropdowns="dropdowns" :loading="isStockReturnsLoading" @fetch="fetchStockReturns" @update-keyword="updateKeyword"
                     @toast="showToast" @view-details="openStockReturnDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -282,6 +282,10 @@ export default {
       accountsPayableRows: [],
       isAccountsPayableLoading: false,
       isPurchaseOrdersLoading: false,
+      isProductsLoading: false,
+      isInventoryStocksLoading: false,
+      isReceivingLoading: false,
+      isStockReturnsLoading: false,
       isToastVisible: false,
       toastMessage: '',
       selectedPurchaseOrder: null,
@@ -427,6 +431,7 @@ export default {
     fetchProducts(page_url) {
       if (this.activeTab === 'products') {
         page_url = page_url || '/libraries/products';
+        this.isProductsLoading = true;
         axios
           .get(page_url, {
             params: {
@@ -442,7 +447,10 @@ export default {
               this.links = response.data.links;
             }
           })
-          .catch((err) => console.error(err));
+          .catch((err) => console.error(err))
+          .finally(() => {
+            this.isProductsLoading = false;
+          });
       }
     },
 
@@ -479,6 +487,7 @@ export default {
     fetchInventoryStocks(page_url) {
       if (this.activeTab === 'inventoryStocks') {
         page_url = page_url || '/inventory-stocks';
+        this.isInventoryStocksLoading = true;
         axios
           .get(page_url, {
             params: {
@@ -495,7 +504,10 @@ export default {
               this.links = response.data.links;
             }
           })
-          .catch((err) => console.error(err));
+          .catch((err) => console.error(err))
+          .finally(() => {
+            this.isInventoryStocksLoading = false;
+          });
       }
     },
 
@@ -510,15 +522,21 @@ export default {
         return;
       }
 
-      this.loadReceivedStocks().catch((err) => {
-        console.error(err);
-        this.showToast('Failed to load receiving records');
-      });
+      this.isReceivingLoading = true;
+      this.loadReceivedStocks()
+        .catch((err) => {
+          console.error(err);
+          this.showToast('Failed to load receiving records');
+        })
+        .finally(() => {
+          this.isReceivingLoading = false;
+        });
     },
 
     fetchStockReturns(page_url) {
       if (this.activeTab === 'stockReturns') {
         page_url = page_url || '/stock-returns';
+        this.isStockReturnsLoading = true;
         axios
           .get(page_url, {
             params: {
@@ -533,7 +551,10 @@ export default {
               this.links = response.data.links;
             }
           })
-          .catch((err) => console.error(err));
+          .catch((err) => console.error(err))
+          .finally(() => {
+            this.isStockReturnsLoading = false;
+          });
       }
     },
 

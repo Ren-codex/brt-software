@@ -67,6 +67,8 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
+                                <TableLoadingRow v-if="loading" :colspan="9" message="Loading AR invoices..." />
+                                <template v-else>
                                 <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" :class="{
                                         'expanded-row': expandedRow === index,
@@ -220,6 +222,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -242,13 +245,15 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Payment from '../ARInvoices/Modals/Payment.vue';
 import ReceiptsList from '../ARInvoices/Modals/ReceiptsList.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, Payment, ReceiptsList },
+    components: { PageHeader, Pagination, Multiselect, Payment, ReceiptsList, TableLoadingRow },
     props: ['dropdowns', 'isExternal'],
     data() {
         return {
             currentUrl: window.location.origin,
+            loading: false,
             lists: [],
             meta: {},
             links: {},
@@ -285,6 +290,7 @@ export default {
 
         fetch(page_url) {
             page_url = page_url || '/ar-invoices';
+            this.loading = true;
             axios.get(page_url, {
                 params: {
                     option: 'lists',
@@ -303,7 +309,8 @@ export default {
                         this.expandedRow = null; // Reset expanded row when data changes
                     }
                 })
-                .catch(err => console.log(err));
+                .catch(err => console.log(err))
+                .finally(() => { this.loading = false; });
         },
 
         onPayment(data) {

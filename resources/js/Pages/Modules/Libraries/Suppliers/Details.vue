@@ -204,14 +204,7 @@
                                         </tr>
                                         
                                         <!-- Loading State -->
-                                        <tr v-if="stockReturnsLoading">
-                                            <td colspan="6">
-                                                <div class="loading-state">
-                                                    <i class="ri-loader-4-line ri-spin"></i>
-                                                    <p>Loading stock return records...</p>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        <TableLoadingRow v-if="stockReturnsLoading" :colspan="6" message="Loading stock return records..." />
                                     </tbody>
                                 </table>
                             </div>
@@ -271,9 +264,10 @@
 <script>
 import Create from './Modals/Create.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { Create, Pagination },
+    components: { Create, Pagination, TableLoadingRow },
     props: ['supplier', 'backToList', 'dropdowns'],
     name: 'SupplierDetails',
     data() {

@@ -65,55 +65,58 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr
-                    v-for="row in filteredStockReturns"
-                    :key="row.id"
-                    @click="openView(row)"
-                    :style="[{ cursor: 'pointer' }]"
-                  >
-                    <td>{{ row.stock_return_no || `SR-${row.id}` }}</td>
-                    <td>{{ row.purchase_order?.po_number || 'N/A' }}</td>
-                    <td>{{ row.purchase_order?.supplier?.name || 'N/A' }}</td>
-                    <td>
-                      <div class="items-list">
-                        <span v-for="(item, itemIndex) in row.items || []" :key="item.id || itemIndex" class="item-chip">
-                          {{ item.purchase_order_item?.product?.name || 'Item' }} ({{ item.quantity || 0 }})
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <span :style="getStatusStyle(row.status)" class="status-badge">
-                        {{ row.status?.name || 'Pending' }}
-                      </span>
-                    </td>
-                    <td>{{ row.created_by?.fullname || 'N/A' }}</td>
-                    <td>{{ formatDate(row.created_at) }}</td>
-                    <td>
-                      <div class="return-progress-wrap">
-                        <div class="return-progress-bar">
-                          <div
-                            class="return-progress-fill"
-                            :style="{ width: `${calculateReturnProgress(row).percent}%` }"
-                          ></div>
+                  <TableLoadingRow v-if="loading" :colspan="9" message="Loading stock returns..." />
+                  <template v-else>
+                    <tr
+                      v-for="row in filteredStockReturns"
+                      :key="row.id"
+                      @click="openView(row)"
+                      :style="[{ cursor: 'pointer' }]"
+                    >
+                      <td>{{ row.stock_return_no || `SR-${row.id}` }}</td>
+                      <td>{{ row.purchase_order?.po_number || 'N/A' }}</td>
+                      <td>{{ row.purchase_order?.supplier?.name || 'N/A' }}</td>
+                      <td>
+                        <div class="items-list">
+                          <span v-for="(item, itemIndex) in row.items || []" :key="item.id || itemIndex" class="item-chip">
+                            {{ item.purchase_order_item?.product?.name || 'Item' }} ({{ item.quantity || 0 }})
+                          </span>
                         </div>
-                        <small class="return-progress-text">
-                          {{ calculateReturnProgress(row).returned }} / {{ calculateReturnProgress(row).total }}
-                          ({{ calculateReturnProgress(row).percent }}%)
-                        </small>
-                      </div>
-                    </td>
-                    <td>
-                      <button class="btn btn-sm btn-outline-primary" @click.stop="openView(row)">
-                        <i class="ri-eye-line"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr v-if="filteredStockReturns.length === 0">
-                    <td colspan="9" class="text-center py-4">
-                      <i class="ri-inbox-line text-muted" style="font-size: 2rem;"></i>
-                      <p class="mt-2 mb-0">No stock returns found</p>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <span :style="getStatusStyle(row.status)" class="status-badge">
+                          {{ row.status?.name || 'Pending' }}
+                        </span>
+                      </td>
+                      <td>{{ row.created_by?.fullname || 'N/A' }}</td>
+                      <td>{{ formatDate(row.created_at) }}</td>
+                      <td>
+                        <div class="return-progress-wrap">
+                          <div class="return-progress-bar">
+                            <div
+                              class="return-progress-fill"
+                              :style="{ width: `${calculateReturnProgress(row).percent}%` }"
+                            ></div>
+                          </div>
+                          <small class="return-progress-text">
+                            {{ calculateReturnProgress(row).returned }} / {{ calculateReturnProgress(row).total }}
+                            ({{ calculateReturnProgress(row).percent }}%)
+                          </small>
+                        </div>
+                      </td>
+                      <td>
+                        <button class="btn btn-sm btn-outline-primary" @click.stop="openView(row)">
+                          <i class="ri-eye-line"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr v-if="filteredStockReturns.length === 0">
+                      <td colspan="9" class="text-center py-4">
+                        <i class="ri-inbox-line text-muted" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">No stock returns found</p>
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -145,10 +148,11 @@
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
 import ReturnPurchaseOrderModal from '../Modal/ReturnPurchaseOrderModal.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
   name: 'StockReturnsTab',
-  components: { Pagination, ReturnPurchaseOrderModal },
+  components: { Pagination, ReturnPurchaseOrderModal, TableLoadingRow },
   props: {
     listStockReturns: {
       type: Array,
@@ -169,6 +173,10 @@ export default {
     dropdowns: {
       type: Object,
       default: () => ({}),
+    },
+    loading: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ['fetch', 'update-keyword', 'toast', 'view-details'],

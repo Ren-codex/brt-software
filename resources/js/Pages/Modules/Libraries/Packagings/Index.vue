@@ -45,6 +45,8 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <TableLoadingRow v-if="loading" :colspan="4" message="Loading packagings..." />
+                                    <template v-else>
                                     <tr
                                         v-for="(list, index) in lists"
                                         :key="index"
@@ -65,6 +67,7 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    </template>
                                 </tbody>
                             </table>
                         </div>
@@ -86,9 +89,10 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import Create from './Modals/Create.vue';
 import Swal from 'sweetalert2';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { PageHeader, Pagination, Create },
+    components: { PageHeader, Pagination, Create, TableLoadingRow },
     data() {
         return {
             currentUrl: window.location.origin,
@@ -97,6 +101,7 @@ export default {
             links: {},
             filter: { keyword: null },
             selectedRow: null,
+            loading: false,
         };
     },
     watch: {
@@ -114,6 +119,7 @@ export default {
 
         fetch(page_url) {
             page_url = page_url || '/libraries/packagings';
+            this.loading = true;
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -128,7 +134,10 @@ export default {
                     this.links = response.data.links;
                 }
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err))
+            .finally(() => {
+                this.loading = false;
+            });
         },
 
         openCreate() {

@@ -44,6 +44,8 @@
                                 </tr>
                             </thead>
                             <tbody class="table-white fs-12">
+                                <TableLoadingRow v-if="loading" :colspan="7" message="Loading users..." />
+                                <template v-else>
                                 <tr v-for="(list, index) in lists" v-bind:key="index" @click="selectRow(index)" :class="{
                                     'bg-info-subtle': index === selectedRow,
                                     'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
@@ -98,6 +100,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -124,11 +127,12 @@ import Deactivate from './Modals/Deactivate.vue';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Create from './Modals/Create.vue';
 
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, Update, Role, Create, Reset, Deactivate },
+    components: { PageHeader, Pagination, Multiselect, Update, Role, Create, Reset, Deactivate, TableLoadingRow },
     props: ['dropdowns'],
     data() {
         return {
@@ -141,7 +145,8 @@ export default {
             },
             index: null,
             selectedRow: null,
-            units: []
+            units: [],
+            loading: false
         }
     },
     watch: {
@@ -158,6 +163,7 @@ export default {
         }, 300),
         fetch(page_url) {
             page_url = page_url || '/users';
+            this.loading = true;
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
@@ -172,7 +178,10 @@ export default {
                         this.links = response.data.links;
                     }
                 })
-                .catch(err => console.log(err));
+                .catch(err => console.log(err))
+                .finally(() => {
+                    this.loading = false;
+                });
         },
         openCreate() {
             this.$refs.create.show();

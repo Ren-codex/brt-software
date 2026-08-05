@@ -50,9 +50,11 @@
                                 </thead>
 
                                 <tbody class="fs-12">
-                                    <tr 
-                                        v-for="(list,index) in lists" 
-                                        v-bind:key="list.id" 
+                                    <TableLoadingRow v-if="loading" :colspan="9" message="Loading suppliers..." />
+                                    <template v-else>
+                                    <tr
+                                        v-for="(list,index) in lists"
+                                        v-bind:key="list.id"
                                         @click="openView(list)"
                                         style="cursor: pointer;"
                                         :style="getRowStyle(list)"
@@ -97,6 +99,7 @@
                                             <small class="text-muted">Try changing your search or filter criteria</small>
                                         </td>
                                     </tr>
+                                    </template>
                                 </tbody>
                             </table>
                         </div>
@@ -122,9 +125,10 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
 import Details from './Details.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect, Create, Details },
+    components: { PageHeader, Pagination, Multiselect, Create, Details, TableLoadingRow },
     props: ['dropdowns'],
     data(){
         return {
@@ -139,7 +143,8 @@ export default {
             selectedRow: null,
             selectedSupplier: {},
             currentView: 'list',
-            units: []
+            units: [],
+            loading: false
         }
     },
     watch: {
@@ -156,10 +161,11 @@ export default {
         }, 300),
         fetch(page_url){
             page_url = page_url || '/suppliers';
+            this.loading = true;
             axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
-                    count: 10, 
+                    count: 10,
                     option: 'lists'
                 }
             })
@@ -167,10 +173,13 @@ export default {
                 if(response){
                     this.lists = response.data.data;
                     this.meta = response.data.meta;
-                    this.links = response.data.links;          
+                    this.links = response.data.links;
                 }
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err))
+            .finally(() => {
+                this.loading = false;
+            });
         },
         openCreate(){
             this.$refs.create.show();

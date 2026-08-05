@@ -23,7 +23,10 @@
                     <th style="width: 20%;" class="text-center">Date</th>
                 </tr>
             </thead>
-            <tbody v-if="lists.length > 0">
+            <tbody v-if="loading">
+                <TableLoadingRow :colspan="4" message="Loading activity logs..." />
+            </tbody>
+            <tbody v-else-if="lists.length > 0">
                 <tr v-for="(list,index) in lists" v-bind:key="index">
                     <td>
                         <div class="flex-shrink-0 avatar-xs">
@@ -56,14 +59,16 @@
 </template>
 <script>
 import Pagination from "@/Shared/Components/Pagination.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 export default {
-    components: { Pagination },
+    components: { Pagination, TableLoadingRow },
     props: ['code'],
     data(){
         return {
             lists: [],
             meta: {},
             links: {},
+            loading: false,
         }
    },
     created(){
@@ -72,6 +77,7 @@ export default {
     methods : {
         fetch(page_url){
             page_url = page_url || '/users';
+            this.loading = true;
             return axios.get(page_url,{
                 params : {
                     code: this.code,
@@ -82,7 +88,10 @@ export default {
             .then(response => {
                 this.lists = response.data.data;
                 this.meta = response.data.meta;
-                this.links = response.data.links;      
+                this.links = response.data.links;
+            })
+            .finally(() => {
+                this.loading = false;
             });
         }
     }

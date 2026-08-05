@@ -70,6 +70,8 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
+                                <TableLoadingRow v-if="loading" :colspan="10" message="Loading receipts..." />
+                                <template v-else>
                                 <tr v-if="lists.length === 0">
                                     <td colspan="10">
                                         <div class="sales-empty-state">
@@ -152,6 +154,7 @@
                                         </td>
                                     </tr>
                                 </template>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -163,21 +166,23 @@
         </div>
     </div>
 
-    
+
 </template>
 <script>
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 
 
 export default {
-    components: { PageHeader, Pagination },
+    components: { PageHeader, Pagination, TableLoadingRow },
     props: ['dropdowns', 'isExternal'],
     data(){
         return {
 
+            loading: false,
             lists: [],
             meta: {},
             links: {},
@@ -211,6 +216,7 @@ export default {
         }, 300),
         fetch(page_url){
             page_url = page_url || '/receipts';
+            this.loading = true;
             axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
@@ -228,7 +234,8 @@ export default {
                     this.links = response.data.links;
                 }
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err))
+            .finally(() => { this.loading = false; });
         },
 
 

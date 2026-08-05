@@ -48,34 +48,37 @@
                 </thead>
 
                 <tbody>
-                  <tr v-for="(list,index) in listProducts" v-bind:key="index" @click="selectRow(index)" :class="{
-                    'bg-info-subtle': index === selectedRow,
-                    'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
-                  }">
-                    <td>{{ (meta?.from ?? 1) + index }}</td>
-                    <td>{{ list.code }}</td>
-                    <td>{{ list.brand?.name }}</td>
-                    <td>{{ list.weight }}</td>
-                    <td>{{ list.unit.name }}</td>
-                    <td>
-                      <b-form-checkbox
-                        :checked="list.is_active === 1"
-                        @change="toggleActive(list)"
-                        switch
-                        size="md"
-                      />
-                    </td>
-                    <td>
-                      <div class="action-buttons">
-                        <button @click="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
-                          <i class="ri-pencil-line"></i>
-                        </button>
-                        <!-- <button @click="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
-                          <i class="ri-delete-bin-line"></i>
-                        </button> -->
-                      </div>
-                    </td>
-                  </tr>
+                  <TableLoadingRow v-if="loading" :colspan="7" message="Loading products..." />
+                  <template v-else>
+                    <tr v-for="(list,index) in listProducts" v-bind:key="index" @click="selectRow(index)" :class="{
+                      'bg-info-subtle': index === selectedRow,
+                      'bg-danger-subtle': list.is_active === 0 && index !== selectedRow
+                    }">
+                      <td>{{ (meta?.from ?? 1) + index }}</td>
+                      <td>{{ list.code }}</td>
+                      <td>{{ list.brand?.name }}</td>
+                      <td>{{ list.weight }}</td>
+                      <td>{{ list.unit.name }}</td>
+                      <td>
+                        <b-form-checkbox
+                          :checked="list.is_active === 1"
+                          @change="toggleActive(list)"
+                          switch
+                          size="md"
+                        />
+                      </td>
+                      <td>
+                        <div class="action-buttons">
+                          <button @click="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                            <i class="ri-pencil-line"></i>
+                          </button>
+                          <!-- <button @click="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                            <i class="ri-delete-bin-line"></i>
+                          </button> -->
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -132,16 +135,21 @@
 import Pagination from '@/Shared/Components/Pagination.vue';
 import CreateProduct from '../Modal/CreateProductModal.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
   name: "ProductsTab",
-  components: { Pagination, CreateProduct, Delete },
+  components: { Pagination, CreateProduct, Delete, TableLoadingRow },
   props: {
     listProducts: Array,
     meta: Object,
     links: Object,
     filter: Object,
     dropdowns: Object,
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['fetch', 'update-keyword', 'toast'],
   data() {

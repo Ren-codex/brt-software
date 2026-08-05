@@ -47,55 +47,58 @@
           </thead>
 
           <tbody class="table-white fs-12">
-            <tr
-              v-for="(loan, index) in loans"
-              :key="index"
-              @click="viewLoan(loan)"
-              class="loan-row"
-              :class="{
-                'bg-info-subtle': index === selectedRow,
-                'bg-danger-subtle': loan.status === 'overdue'
-              }"
-              style="cursor: pointer;"
-            >
-              <td class="text-center">
-                {{ index + 1 }}
-              </td>
-              <td>{{ loan.loan_no || '-' }}</td>
-              <td>
-                <div class="d-flex align-items-center">
-                  <div class="avatar-xs me-2">
-                    <img
-                      :src="getAvatarSrc(loan)"
-                      @error="handleAvatarError"
-                      alt="Avatar"
-                      class="rounded-circle avatar-xs"
-                    >
+            <TableLoadingRow v-if="loading" :colspan="10" message="Loading loans..." />
+            <template v-else>
+              <tr
+                v-for="(loan, index) in loans"
+                :key="index"
+                @click="viewLoan(loan)"
+                class="loan-row"
+                :class="{
+                  'bg-info-subtle': index === selectedRow,
+                  'bg-danger-subtle': loan.status === 'overdue'
+                }"
+                style="cursor: pointer;"
+              >
+                <td class="text-center">
+                  {{ index + 1 }}
+                </td>
+                <td>{{ loan.loan_no || '-' }}</td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-xs me-2">
+                      <img
+                        :src="getAvatarSrc(loan)"
+                        @error="handleAvatarError"
+                        alt="Avatar"
+                        class="rounded-circle avatar-xs"
+                      >
+                    </div>
+                    <span>{{ loan.employee ? loan.employee.fullname : '-' }}</span>
                   </div>
-                  <span>{{ loan.employee ? loan.employee.fullname : '-' }}</span>
-                </div>
-              </td>
-              <td>{{ loan.loan_type || '-' }}</td>
-              <td>{{ formatAmount(loan.amount) }}</td>
-              <td>{{ loan.interest_rate ? loan.interest_rate + '%' : '-' }}</td>
-              <td>{{ loan.term_months || '-' }}</td>
-              <td>
-                <span :class="getStatusClass(loan.status)">
-                  {{ loan.status || '-' }}
-                </span>
-              </td>
-              <td>{{ loan.created_at }}</td>
+                </td>
+                <td>{{ loan.loan_type || '-' }}</td>
+                <td>{{ formatAmount(loan.amount) }}</td>
+                <td>{{ loan.interest_rate ? loan.interest_rate + '%' : '-' }}</td>
+                <td>{{ loan.term_months || '-' }}</td>
+                <td>
+                  <span :class="getStatusClass(loan.status)">
+                    {{ loan.status || '-' }}
+                  </span>
+                </td>
+                <td>{{ loan.created_at }}</td>
 
-              <td class="text-center">
-                <div class="d-flex justify-content-center gap-1">
-                  <b-button @click.stop="viewLoan(loan)" variant="outline-primary"
-                    v-b-tooltip.hover title="View" size="sm"
-                    class="btn-icon rounded-circle">
-                    <i class="ri-eye-line"></i>
-                  </b-button>
-                </div>
-              </td>
-            </tr>
+                <td class="text-center">
+                  <div class="d-flex justify-content-center gap-1">
+                    <b-button @click.stop="viewLoan(loan)" variant="outline-primary"
+                      v-b-tooltip.hover title="View" size="sm"
+                      class="btn-icon rounded-circle">
+                      <i class="ri-eye-line"></i>
+                    </b-button>
+                  </div>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -121,10 +124,11 @@
 import _ from 'lodash';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Create from './Create.vue';
 
 export default {
-  components: { Pagination, Create, DeleteModal },
+  components: { Pagination, Create, DeleteModal, TableLoadingRow },
   props: ['dropdowns'],
   emits: ['view'],
   data() {
@@ -136,7 +140,8 @@ export default {
         keyword: ''
       },
       selectedRow: null,
-      defaultAvatar: '/images/default-avatar.png'
+      defaultAvatar: '/images/default-avatar.png',
+      loading: false
     };
   },
   watch: {
@@ -150,6 +155,7 @@ export default {
   methods: {
     fetch(page_url) {
       const url = page_url || '/loans';
+      this.loading = true;
       axios.get(url, {
         params: {
           keyword: this.filter.keyword,
@@ -162,7 +168,10 @@ export default {
         this.meta = response?.data?.meta || {};
         this.links = response?.data?.links || {};
       })
-      .catch(err => console.log(err));
+      .catch(err => console.log(err))
+      .finally(() => {
+        this.loading = false;
+      });
     },
     getAvatarSrc(list) {
       if (!list?.employee?.avatar) {

@@ -54,64 +54,67 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <template v-for="(incentive, index) in incentives" :key="incentive.employee_id">
-                                    <tr class="transition-all incentive-row"
-                                        style="transition: all 0.3s ease;"
-                                        @click="toggleExpanded(incentive.employee_id)">
-                                        <td class="text-center">
-                                            <div class="d-flex align-items-center justify-content-center gap-2">
-                                                <span>{{ index + 1 }}</span>
-                                                <i class="ri-arrow-down-s-line expand-icon"
-                                                    :class="{ open: expandedEmployeeId === incentive.employee_id }"></i>
-                                            </div>
-                                        </td>
-                                        <td class="text-center fw-semibold">{{ incentive.employee?.fullname }}</td>
-                                        <td class="text-center">{{ incentive.total_sold_quantity || 0 }}</td>
-                                        <td class="text-center">{{ incentive.total_product_total_kg || 0 }}</td>
-                                        <td class="text-center">{{ incentive.total_amount }}</td>
-                                    </tr>
-                                    <tr v-if="expandedEmployeeId === incentive.employee_id" class="details-row">
-                                        <td colspan="5" class="p-0">
-                                            <div class="details-panel p-3">
-                                                <div class="details-title mb-2">
-                                                    Sales incentive details for {{ incentive.employee?.fullname }}
+                                <TableLoadingRow v-if="loading" :colspan="5" message="Loading sales incentives..." />
+                                <template v-else>
+                                    <template v-for="(incentive, index) in incentives" :key="incentive.employee_id">
+                                        <tr class="transition-all incentive-row"
+                                            style="transition: all 0.3s ease;"
+                                            @click="toggleExpanded(incentive.employee_id)">
+                                            <td class="text-center">
+                                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                                    <span>{{ index + 1 }}</span>
+                                                    <i class="ri-arrow-down-s-line expand-icon"
+                                                        :class="{ open: expandedEmployeeId === incentive.employee_id }"></i>
                                                 </div>
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm align-middle mb-0 details-table">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>SO #</th>
-                                                                <th>Order Date</th>
-                                                                <th>Sold Quantity</th>
-                                                                <th>Total KG</th>
-                                                                <th>Points</th>
-                                                                <th>Created</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr v-for="detail in incentive.details || []" :key="detail.id">
-                                                                <td>{{ detail.sales_order?.so_number || `SO #${detail.sales_order_id}` }}</td>
-                                                                <td>{{ formatDate(detail.sales_order?.order_date) }}</td>
-                                                                <td>{{ detail.sold_quantity || 0 }}</td>
-                                                                <td>{{ detail.product_total_kg || 0 }}</td>
-                                                                <td>{{ detail.amount || 0 }}</td>
-                                                                <td>{{ formatDateTime(detail.created_at) }}</td>
-                                                            </tr>
-                                                            <tr v-if="!(incentive.details || []).length">
-                                                                <td colspan="7" class="text-center text-muted py-3">
-                                                                    No sales incentive details found.
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+                                            </td>
+                                            <td class="text-center fw-semibold">{{ incentive.employee?.fullname }}</td>
+                                            <td class="text-center">{{ incentive.total_sold_quantity || 0 }}</td>
+                                            <td class="text-center">{{ incentive.total_product_total_kg || 0 }}</td>
+                                            <td class="text-center">{{ incentive.total_amount }}</td>
+                                        </tr>
+                                        <tr v-if="expandedEmployeeId === incentive.employee_id" class="details-row">
+                                            <td colspan="5" class="p-0">
+                                                <div class="details-panel p-3">
+                                                    <div class="details-title mb-2">
+                                                        Sales incentive details for {{ incentive.employee?.fullname }}
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm align-middle mb-0 details-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>SO #</th>
+                                                                    <th>Order Date</th>
+                                                                    <th>Sold Quantity</th>
+                                                                    <th>Total KG</th>
+                                                                    <th>Points</th>
+                                                                    <th>Created</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <tr v-for="detail in incentive.details || []" :key="detail.id">
+                                                                    <td>{{ detail.sales_order?.so_number || `SO #${detail.sales_order_id}` }}</td>
+                                                                    <td>{{ formatDate(detail.sales_order?.order_date) }}</td>
+                                                                    <td>{{ detail.sold_quantity || 0 }}</td>
+                                                                    <td>{{ detail.product_total_kg || 0 }}</td>
+                                                                    <td>{{ detail.amount || 0 }}</td>
+                                                                    <td>{{ formatDateTime(detail.created_at) }}</td>
+                                                                </tr>
+                                                                <tr v-if="!(incentive.details || []).length">
+                                                                    <td colspan="7" class="text-center text-muted py-3">
+                                                                        No sales incentive details found.
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                    <tr v-if="incentives.length === 0">
+                                        <td colspan="5" class="text-center text-muted py-3">No incentives found</td>
                                     </tr>
                                 </template>
-                                <tr v-if="incentives.length === 0">
-                                    <td colspan="5" class="text-center text-muted py-3">No incentives found</td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -197,9 +200,10 @@
 import _ from 'lodash';
 import axios from 'axios'
 import Pagination from "@/Shared/Components/Pagination.vue";
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-  components: { Pagination },
+  components: { Pagination, TableLoadingRow },
   props: ['dropdowns'],
   data() {
     return {
@@ -213,6 +217,7 @@ export default {
       },
       localKeyword: '',
       expandedEmployeeId: null,
+      loading: false,
       showModal: false,
       selectedIncentive: null,
       form: {
@@ -275,6 +280,7 @@ export default {
       this.fetchIncentives();
     },
     async fetchIncentives() {
+      this.loading = true;
       try {
         const params = {
           ...this.filter,
@@ -314,6 +320,8 @@ export default {
         this.incentives = []
         this.meta = {}
         this.links = {}
+      } finally {
+        this.loading = false;
       }
     },
     closeModal() {

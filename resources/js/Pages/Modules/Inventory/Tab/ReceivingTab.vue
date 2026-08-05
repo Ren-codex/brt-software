@@ -56,40 +56,43 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(record, index) in filteredRecords" :key="record.id">
-                <td>{{ index + 1 }}</td>
-                <td>
-                  <strong>{{ record.purchase_order?.pr_number || 'N/A' }}</strong>
-                </td>
-                <td>{{ record.purchase_order?.po_number || 'N/A' }}</td>
-                <td>{{ record.received_no || `RCV-${record.id}` }}</td>
-                <td>
-                  <div class="supplier-cell">
-                    <strong>{{ record.supplier?.name || 'Unknown Supplier' }}</strong>
-                    <small v-if="record.supplier?.contact_person">{{ record.supplier.contact_person }}</small>
-                  </div>
-                </td>
-                <td>{{ formatDate(record.received_date) }}</td>
-                <td>
-                  <span class="payment-badge" :class="paymentModeClass(record.payment_mode)">
-                    {{ record.payment_mode || 'N/A' }}
-                  </span>
-                </td>
-                <td>{{ formatCurrency(record.amount_paid) }}</td>
-                <td>
-                  <span v-if="record.payment_mode === 'Bank Transfer'" class="bank-details">
-                    {{ formatBankDetails(record) }}
-                  </span>
-                  <span v-else class="bank-details muted">Cash payment</span>
-                </td>
-              </tr>
-              <tr v-if="filteredRecords.length === 0">
-                <td colspan="9" class="empty-state">
-                  <i class="ri-inbox-line"></i>
-                  <p>No paid purchase requests found</p>
-                  <small>Paid receiving records will appear here after stock is fully settled.</small>
-                </td>
-              </tr>
+              <TableLoadingRow v-if="loading" :colspan="9" message="Loading received stocks..." />
+              <template v-else>
+                <tr v-for="(record, index) in filteredRecords" :key="record.id">
+                  <td>{{ index + 1 }}</td>
+                  <td>
+                    <strong>{{ record.purchase_order?.pr_number || 'N/A' }}</strong>
+                  </td>
+                  <td>{{ record.purchase_order?.po_number || 'N/A' }}</td>
+                  <td>{{ record.received_no || `RCV-${record.id}` }}</td>
+                  <td>
+                    <div class="supplier-cell">
+                      <strong>{{ record.supplier?.name || 'Unknown Supplier' }}</strong>
+                      <small v-if="record.supplier?.contact_person">{{ record.supplier.contact_person }}</small>
+                    </div>
+                  </td>
+                  <td>{{ formatDate(record.received_date) }}</td>
+                  <td>
+                    <span class="payment-badge" :class="paymentModeClass(record.payment_mode)">
+                      {{ record.payment_mode || 'N/A' }}
+                    </span>
+                  </td>
+                  <td>{{ formatCurrency(record.amount_paid) }}</td>
+                  <td>
+                    <span v-if="record.payment_mode === 'Bank Transfer'" class="bank-details">
+                      {{ formatBankDetails(record) }}
+                    </span>
+                    <span v-else class="bank-details muted">Cash payment</span>
+                  </td>
+                </tr>
+                <tr v-if="filteredRecords.length === 0">
+                  <td colspan="9" class="empty-state">
+                    <i class="ri-inbox-line"></i>
+                    <p>No paid purchase requests found</p>
+                    <small>Paid receiving records will appear here after stock is fully settled.</small>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -99,12 +102,19 @@
 </template>
 
 <script>
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+
 export default {
   name: 'ReceivingTab',
+  components: { TableLoadingRow },
   props: {
     listReceivedStocks: {
       type: Array,
       default: () => [],
+    },
+    loading: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {

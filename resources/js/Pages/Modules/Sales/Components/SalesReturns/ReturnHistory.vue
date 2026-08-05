@@ -90,6 +90,8 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
+                                <TableLoadingRow v-if="loading" :colspan="10" message="Loading return history..." />
+                                <template v-else>
                                 <tr v-for="(row, i) in rows" :key="row.id">
                                     <td>{{ i + 1 }}</td>
                                     <td class="fw-semibold">{{ row.so_number }}</td>
@@ -115,6 +117,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -125,13 +128,17 @@
 </template>
 
 <script>
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+
 export default {
+    components: { TableLoadingRow },
     props: ['isExternal'],
     data() {
         const today = new Date();
         const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
         const todayStr = today.toISOString().split('T')[0];
         return {
+            loading: false,
             filter: {
                 from: firstOfMonth,
                 to: todayStr,
@@ -147,6 +154,7 @@ export default {
     methods: {
         fetch() {
             const url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
+            this.loading = true;
             axios.get(url, {
                 params: {
                     option: 'return-history',
@@ -157,7 +165,8 @@ export default {
             }).then(res => {
                 this.rows = res.data.rows || [];
                 this.summary = res.data.summary || null;
-            }).catch(err => console.error(err));
+            }).catch(err => console.error(err))
+            .finally(() => { this.loading = false; });
         },
         formatCurrency(value) {
             return '₱' + Number(value || 0).toLocaleString('en-PH', {

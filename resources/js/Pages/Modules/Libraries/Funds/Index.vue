@@ -42,6 +42,8 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <TableLoadingRow v-if="loading" :colspan="6" message="Loading funds..." />
+                                    <template v-else>
                                     <tr v-for="(list, index) in lists" :key="list.id"
                                         @click="selectRow(index)"
                                         :class="{
@@ -74,6 +76,7 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    </template>
                                 </tbody>
                             </table>
                         </div>
@@ -100,9 +103,10 @@ import Create from './Modals/Create.vue';
 import TopUp from './Modals/TopUp.vue';
 import AdjustBalance from './Modals/AdjustBalance.vue';
 import Swal from 'sweetalert2';
+import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { PageHeader, Pagination, Create, TopUp, AdjustBalance },
+    components: { PageHeader, Pagination, Create, TopUp, AdjustBalance, TableLoadingRow },
     data() {
         return {
             lists: [],
@@ -110,6 +114,7 @@ export default {
             links: {},
             filter: { keyword: null },
             selectedRow: null,
+            loading: false,
         };
     },
     watch: {
@@ -120,6 +125,7 @@ export default {
         checkSearchStr: _.debounce(function() { this.fetch(); }, 300),
         fetch(page_url) {
             page_url = page_url || '/accounting/funds';
+            this.loading = true;
             axios.get(page_url, {
                 params: { option: 'lists', keyword: this.filter.keyword, count: 10 }
             })
@@ -128,7 +134,10 @@ export default {
                 this.meta  = res.data.meta;
                 this.links = res.data.links;
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err))
+            .finally(() => {
+                this.loading = false;
+            });
         },
         selectRow(index) {
             if (this.selectedRow === index) {
