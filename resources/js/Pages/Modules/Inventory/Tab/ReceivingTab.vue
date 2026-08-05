@@ -82,6 +82,9 @@
                     <span v-if="record.payment_mode === 'Bank Transfer'" class="bank-details">
                       {{ formatBankDetails(record) }}
                     </span>
+                    <span v-else-if="record.payment_mode === 'Check'" class="bank-details">
+                      {{ formatCheckDetails(record) }}
+                    </span>
                     <span v-else class="bank-details muted">Cash payment</span>
                   </td>
                 </tr>
@@ -125,6 +128,7 @@ export default {
         { value: 'all',           label: 'All Paid',      icon: 'ri-check-double-line' },
         { value: 'Cash',          label: 'Cash',          icon: 'ri-cash-line' },
         { value: 'Bank Transfer', label: 'Bank Transfer', icon: 'ri-bank-line' },
+        { value: 'Check',         label: 'Check',         icon: 'ri-file-text-line' },
       ],
     };
   },
@@ -198,6 +202,13 @@ export default {
       const referenceNumber = latestBankPayment?.reference_number || record?.reference_number || 'No reference';
 
       return `${bankName} • ${referenceNumber}`;
+    },
+    formatCheckDetails(record) {
+      const latestCheckPayment = (record?.payments || [])
+        .find(p => String(p.payment_mode).toLowerCase() === 'check');
+      const referenceNumber = latestCheckPayment?.reference_number || record?.reference_number || 'No reference';
+
+      return `Ref#: ${referenceNumber}`;
     },
   },
 };
@@ -385,6 +396,11 @@ export default {
 .payment-badge.bank-transfer {
   color: #1d4ed8;
   background: #dbeafe;
+}
+
+.payment-badge.check {
+  color: #92400e;
+  background: #fef3c7;
 }
 
 .bank-details {

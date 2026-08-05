@@ -208,7 +208,7 @@
             </button>
           </div>
           <div class="payment-suboption-note">
-            Select <strong>Cash</strong> or <strong>Bank Transfer</strong> to open the amount-paid modal.
+            Select <strong>Cash</strong>, <strong>Bank Transfer</strong>, or <strong>Check</strong> to open the amount-paid modal.
           </div>
         </div>
 
@@ -273,7 +273,7 @@
   <div v-if="showAmountPaidModal" class="modal-overlay active payment-method-overlay" @click.self="backToPaymentMethodModal">
     <div class="modal-container modal-md payment-method-modal amount-paid-modal">
       <div class="modal-header">
-        <h2>{{ isBankTransferMode ? 'Bank Transfer Details' : 'Total Amount Paid' }}</h2>
+        <h2>{{ isBankTransferMode ? 'Bank Transfer Details' : (isCheckMode ? 'Check Details' : 'Total Amount Paid') }}</h2>
         <button type="button" class="close-btn" @click="backToPaymentMethodModal" :disabled="isSubmitting"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
@@ -285,12 +285,20 @@
         <div class="payment-suboption-panel payment-amount-dialog">
           <div class="payment-panel-heading">
             <span class="payment-panel-kicker">{{ selectedCashPaymentMode }}</span>
-            <h5>{{ isBankTransferMode ? 'Enter the bank transfer details' : 'Enter the total amount already paid' }}</h5>
+            <h5>
+              {{
+                isBankTransferMode
+                  ? 'Enter the bank transfer details'
+                  : (isCheckMode ? 'Enter the check details' : 'Enter the total amount already paid')
+              }}
+            </h5>
             <p>
               {{
                 isBankTransferMode
                   ? 'Provide the bank information together with the amount already transferred.'
-                  : 'Any remaining balance after this payment will stay under accounts payable.'
+                  : (isCheckMode
+                    ? 'Provide the check reference number together with the amount paid.'
+                    : 'Any remaining balance after this payment will stay under accounts payable.')
               }}
             </p>
           </div>
@@ -331,9 +339,25 @@
             </div>
           </div>
 
+          <div v-if="isCheckMode" class="payment-detail-grid">
+            <div class="payment-detail-field">
+              <label for="received_stock_check_reference_number" class="payment-detail-label">
+                Reference No.
+              </label>
+              <input
+                id="received_stock_check_reference_number"
+                v-model.trim="form.reference_number"
+                type="text"
+                class="form-control payment-detail-input"
+                placeholder="Enter check reference number"
+                @input="paymentMethodError = ''"
+              />
+            </div>
+          </div>
+
           <div class="payment-amount-panel">
             <label for="received_stock_amount_paid" class="payment-amount-label">
-              {{ isBankTransferMode ? 'Amount Paid' : 'Total Amount Paid' }}
+              {{ isBankTransferMode || isCheckMode ? 'Amount Paid' : 'Total Amount Paid' }}
             </label>
             <div class="payment-amount-input-wrap">
               <span class="payment-amount-symbol">₱</span>
@@ -360,7 +384,7 @@
               </strong>
             </div>
 
-            <div v-if="!isBankTransferMode" class="payment-cash-on-hand-note">
+            <div v-if="!isBankTransferMode && !isCheckMode" class="payment-cash-on-hand-note">
               <i class="ri-wallet-3-line"></i>
               <span v-if="cashOnHandLoaded">Available Cash on Hand: <strong>{{ formatCurrency(cashOnHand) }}</strong></span>
               <span v-else>Loading current Cash on Hand balance…</span>
@@ -454,6 +478,12 @@ export default {
           description: 'Immediate payment through bank transfer',
           icon: 'ri-exchange-funds-line',
         },
+        {
+          value: 'Check',
+          label: 'Check',
+          description: 'Immediate payment by check',
+          icon: 'ri-file-text-line',
+        },
       ],
     };
   },
@@ -472,6 +502,9 @@ export default {
     },
     isBankTransferMode() {
       return this.selectedPaymentType === 'Cash' && this.selectedCashPaymentMode === 'Bank Transfer';
+    },
+    isCheckMode() {
+      return this.selectedPaymentType === 'Cash' && this.selectedCashPaymentMode === 'Check';
     },
     selectedBankAccount() {
       return this.bankAccounts.find(b => Number(b.id) === Number(this.form.bank_account_id)) || null;
@@ -744,8 +777,11 @@ export default {
       this.selectedCashPaymentMode = mode;
       this.paymentMethodError = '';
 
-      if (mode !== 'Bank Transfer') {
+      if (mode === 'Cash') {
         this.clearBankTransferDetails();
+      } else if (mode === 'Check') {
+        this.form.bank_account_id = '';
+        this.form.bank_name = '';
       }
 
       if (this.form.amount_paid === null || this.form.amount_paid === '' || Number(this.form.amount_paid) <= 0) {
@@ -816,7 +852,7 @@ export default {
           return;
         }
 
-        if (!this.isBankTransferMode && amountPaid > this.cashOnHand) {
+        if (this.selectedCashPaymentMode === 'Cash' && amountPaid > this.cashOnHand) {
           this.paymentMethodError = `Amount exceeds available Cash on Hand (${this.formatCurrency(this.cashOnHand)}). Reduce the amount, use Bank Transfer, or record this as Credit.`;
           return;
         }
@@ -834,6 +870,11 @@ export default {
 
           if (this.selectedBankAccount && amountPaid > Number(this.selectedBankAccount.balance)) {
             this.paymentMethodError = `Amount exceeds this bank account's available balance (${this.formatCurrency(this.selectedBankAccount.balance)}).`;
+            return;
+          }
+        } else if (this.isCheckMode) {
+          if (!String(this.form.reference_number || '').trim()) {
+            this.paymentMethodError = 'Please enter the check reference number.';
             return;
           }
         } else {

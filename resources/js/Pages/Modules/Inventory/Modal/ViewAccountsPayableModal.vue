@@ -240,10 +240,16 @@ export default {
         .replace(/\s+/g, '-');
     },
     paymentReferenceLabel(payment) {
-      if (String(payment?.payment_mode || '').toLowerCase() === 'bank transfer') {
+      const mode = String(payment?.payment_mode || '').toLowerCase();
+
+      if (mode === 'bank transfer') {
         const bank = payment?.bank_name || 'Bank not provided';
         const reference = payment?.reference_number || 'Reference missing';
         return `${bank} • ${reference}`;
+      }
+
+      if (mode === 'check') {
+        return payment?.reference_number || 'Reference missing';
       }
 
       return 'Cash payment';
@@ -516,6 +522,18 @@ export default {
   color: #0c5460;
   background: #d1ecf1;
   border: 1px solid #bee5eb;
+}
+
+.ap-payment-method-chip.check {
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+}
+
+.ap-payment-method-chip.cash-on-hand {
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
 }
 
 .ap-payment-method-chip.payment {

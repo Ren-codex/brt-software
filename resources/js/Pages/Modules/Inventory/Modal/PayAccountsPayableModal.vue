@@ -65,28 +65,24 @@
             <div class="info-banner" style="margin-bottom: 0; grid-column: 1 / -1;">
               <i class="ri-information-line"></i>
               <span>
-                Paid directly from Cash on Hand (general cash, not a petty cash fund).
+                Paid directly from Cash on Hand (general cash).
                 <strong v-if="cashOnHandLoaded">Available balance: {{ formatCurrency(cashOnHand) }}</strong>
                 <span v-else>Loading current balance…</span>
               </span>
             </div>
           </template>
 
-          <template v-if="form.payment_mode === 'Cash'">
+          <template v-if="form.payment_mode === 'Check'">
             <div>
-              <label class="form-label" for="petty_cash_fund_id">Cash Fund Source</label>
-              <select
-                id="petty_cash_fund_id"
-                v-model="form.petty_cash_fund_id"
+              <label class="form-label" for="check_reference_number">Reference No.</label>
+              <input
+                id="check_reference_number"
+                v-model.trim="form.reference_number"
+                type="text"
                 class="form-input"
+                placeholder="Enter check reference number"
               >
-                <option value="">— Select fund —</option>
-                <option v-for="fund in cashFunds" :key="fund.id" :value="fund.id">
-                  {{ fund.name }} (₱{{ Number(fund.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }})
-                </option>
-              </select>
-              <small v-if="cashFunds.length === 0" class="form-help text-muted">No active cash funds found.</small>
-              <small v-if="errors.petty_cash_fund_id" class="field-error">{{ errors.petty_cash_fund_id }}</small>
+              <small v-if="errors.reference_number" class="field-error">{{ errors.reference_number }}</small>
             </div>
             <div></div>
           </template>
@@ -150,21 +146,19 @@ export default {
       isSubmitting: false,
       record: null,
       bankAccounts: [],
-      cashFunds: [],
       cashOnHand: 0,
       cashOnHandLoaded: false,
       form: {
-        payment_mode: 'Cash',
+        payment_mode: 'Cash on Hand',
         payment_amount: '',
         bank_account_id: '',
         bank_name: '',
         reference_number: '',
-        petty_cash_fund_id: '',
       },
       errors: {},
       paymentOptions: [
-        { value: 'Cash', label: 'Petty Cash Fund' },
         { value: 'Cash on Hand', label: 'Cash on Hand' },
+        { value: 'Check', label: 'Check' },
         { value: 'Bank Transfer', label: 'Bank Transfer' },
       ],
     };
@@ -191,13 +185,12 @@ export default {
       this.record = record;
       this.showModal = true;
       this.errors = {};
-      this.form.payment_mode = 'Cash';
+      this.form.payment_mode = 'Cash on Hand';
       this.form.payment_amount = '';
       this.form.bank_account_id = '';
       this.form.bank_name = '';
       this.form.reference_number = '';
       this.loadBankAccounts();
-      this.loadCashFunds();
       this.loadCashOnHand();
     },
     hide(force = false) {
@@ -207,12 +200,11 @@ export default {
       this.record = null;
       this.errors = {};
       this.form = {
-        payment_mode: 'Cash',
+        payment_mode: 'Cash on Hand',
         payment_amount: '',
         bank_account_id: '',
         bank_name: '',
         reference_number: '',
-        petty_cash_fund_id: '',
       };
     },
     async loadBankAccounts() {
@@ -234,17 +226,6 @@ export default {
         this.cashOnHandLoaded = true;
       }
     },
-    async loadCashFunds() {
-      try {
-        const res = await axios.get('/accounting/funds', { params: { option: 'lists', count: 100 } });
-        this.cashFunds = (res.data?.data || []).filter(f => f.is_active);
-        if (this.cashFunds.length === 1) {
-          this.form.petty_cash_fund_id = this.cashFunds[0].id;
-        }
-      } catch {
-        this.cashFunds = [];
-      }
-    },
     onBankAccountChange() {
       const selected = this.bankAccounts.find(b => Number(b.id) === Number(this.form.bank_account_id));
       this.form.bank_name = selected ? selected.bank_name : '';
@@ -256,13 +237,11 @@ export default {
       if (mode !== 'Bank Transfer') {
         this.form.bank_account_id = '';
         this.form.bank_name = '';
-        this.form.reference_number = '';
         this.errors.bank_account_id = null;
-        this.errors.reference_number = null;
       }
-      if (mode !== 'Cash') {
-        this.form.petty_cash_fund_id = '';
-        this.errors.petty_cash_fund_id = null;
+      if (mode !== 'Bank Transfer' && mode !== 'Check') {
+        this.form.reference_number = '';
+        this.errors.reference_number = null;
       }
     },
     formatCurrency,
@@ -284,17 +263,17 @@ export default {
         errors.payment_amount = `Amount exceeds this bank account's available balance (${this.formatCurrency(this.selectedBankAccount.balance)}).`;
       }
 
-      if (this.form.payment_mode === 'Cash') {
-        if (!this.form.petty_cash_fund_id) {
-          errors.petty_cash_fund_id = 'Please select a cash fund source.';
-        }
-      }
-
       if (this.form.payment_mode === 'Bank Transfer') {
         if (!this.form.bank_account_id) {
           errors.bank_account_id = 'Please select a bank account.';
         }
 
+        if (!this.form.reference_number) {
+          errors.reference_number = 'Reference number is required.';
+        }
+      }
+
+      if (this.form.payment_mode === 'Check') {
         if (!this.form.reference_number) {
           errors.reference_number = 'Reference number is required.';
         }
@@ -314,10 +293,11 @@ export default {
         const response = await axios.post(`/received-stocks/${this.record.id}/pay`, {
           payment_mode: this.form.payment_mode,
           payment_amount: Number(this.form.payment_amount),
-          petty_cash_fund_id: this.form.payment_mode === 'Cash' ? (this.form.petty_cash_fund_id || null) : null,
           bank_account_id: this.form.payment_mode === 'Bank Transfer' ? (this.form.bank_account_id || null) : null,
           bank_name: this.form.payment_mode === 'Bank Transfer' ? this.form.bank_name : null,
-          reference_number: this.form.payment_mode === 'Bank Transfer' ? this.form.reference_number : null,
+          reference_number: (this.form.payment_mode === 'Bank Transfer' || this.form.payment_mode === 'Check')
+            ? this.form.reference_number
+            : null,
         });
 
         const isFullySettled = Number(response.data?.data?.remaining_balance || 0) <= 0;

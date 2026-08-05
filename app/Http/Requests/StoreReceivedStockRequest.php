@@ -26,7 +26,7 @@ class StoreReceivedStockRequest extends FormRequest
         return [
             'po_id' => 'required|exists:purchase_orders,id',
             'supplier_id' => 'required|exists:list_suppliers,id',
-            'payment_mode' => 'required|in:Cash,Bank Transfer,Credit',
+            'payment_mode' => 'required|in:Cash,Bank Transfer,Check,Credit',
             'due_date' => 'nullable|date|required_if:payment_mode,Credit',
             'amount_paid' => 'nullable|numeric|min:0',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
@@ -112,6 +112,12 @@ class StoreReceivedStockRequest extends FormRequest
                             'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').'
                         );
                     }
+                }
+            }
+
+            if ($paymentMode === 'Check') {
+                if ($referenceNumber === '') {
+                    $validator->errors()->add('reference_number', 'Reference number is required for check payments.');
                 }
             }
         });

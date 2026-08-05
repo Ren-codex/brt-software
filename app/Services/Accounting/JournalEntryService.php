@@ -531,6 +531,9 @@ class JournalEntryService
                 $memo .= ' ' . implode(', ', $bankDetails) . '.';
             }
         }
+        if (strtolower($paymentMode) === 'check' && $receivedStock->reference_number) {
+            $memo .= ' Ref#: ' . $receivedStock->reference_number . '.';
+        }
         $lines = [
             [
                 'account_id' => $inventoryAccount->id,
@@ -581,20 +584,7 @@ class JournalEntryService
 
         $payableAccount = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
 
-        if (strtolower((string) $payment->payment_mode) === 'cash' && $payment->petty_cash_fund_id) {
-            $fund = \App\Models\PettyCashFund::find($payment->petty_cash_fund_id);
-            $cashAccount = $fund
-                ? $this->ensureAccount(
-                    $fund->gl_code ?: ('1050.' . $fund->id),
-                    'petty_cash_' . strtolower($fund->gl_code ?: $fund->id),
-                    $fund->name,
-                    'asset',
-                    'cash'
-                )
-                : $this->resolveCashAccountByPaymentMode($payment->payment_mode, null);
-        } else {
-            $cashAccount = $this->resolveCashAccountByPaymentMode($payment->payment_mode, $payment->bank_account_id ?? null);
-        }
+        $cashAccount = $this->resolveCashAccountByPaymentMode($payment->payment_mode, $payment->bank_account_id ?? null);
         $purchaseOrder = $receivedStock->purchaseOrder;
         $memo = 'Supplier payment recorded for received stock ' . $receivedStock->received_no . ' via ' . $payment->payment_mode . '.';
 
@@ -607,6 +597,10 @@ class JournalEntryService
             if (!empty($bankDetails)) {
                 $memo .= ' ' . implode(', ', $bankDetails) . '.';
             }
+        }
+
+        if (strtolower((string) $payment->payment_mode) === 'check' && $payment->reference_number) {
+            $memo .= ' Ref#: ' . $payment->reference_number . '.';
         }
 
         return $this->createEntry(
@@ -1258,7 +1252,7 @@ class JournalEntryService
         }
 
         return match (strtolower((string) $paymentMode)) {
-            'bank transfer' => $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash'),
+            'bank transfer', 'check' => $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash'),
             'credit card', 'debit card' => $this->ensureAccount('1090', 'card_clearing', 'Card Clearing', 'asset', 'current_asset'),
             default => $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset'),
         };

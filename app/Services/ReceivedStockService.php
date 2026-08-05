@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Models\InventoryStocks;
-use App\Models\PettyCashFund;
-use App\Models\PettyCashTransaction;
 use App\Models\PurchaseOrderItem;
 use App\Models\ReceivedStock;
 use App\Models\ReceivedItem;
@@ -48,9 +46,10 @@ class ReceivedStockService
                 ? 0
                 : round((float) ($data['amount_paid'] ?? 0), 2);
             $isBankTransfer  = $paymentMode === 'Bank Transfer';
+            $isCheck         = $paymentMode === 'Check';
             $bankAccountId   = $isBankTransfer ? (int) ($data['bank_account_id'] ?? 0) ?: null : null;
             $bankName        = $isBankTransfer ? trim((string) ($data['bank_name'] ?? '')) : null;
-            $referenceNumber = $isBankTransfer ? trim((string) ($data['reference_number'] ?? '')) : null;
+            $referenceNumber = ($isBankTransfer || $isCheck) ? trim((string) ($data['reference_number'] ?? '')) : null;
             $dueDate         = $paymentMode === 'Credit' ? ($data['due_date'] ?? null) : null;
 
             $receivedStock = ReceivedStock::create([
@@ -86,7 +85,7 @@ class ReceivedStockService
             if ($paymentMode === 'Bank Transfer' && $bankName) {
                 $paymentDetailParts[] = 'bank: ' . $bankName;
             }
-            if ($paymentMode === 'Bank Transfer' && $referenceNumber) {
+            if (($paymentMode === 'Bank Transfer' || $paymentMode === 'Check') && $referenceNumber) {
                 $paymentDetailParts[] = 'reference: ' . $referenceNumber;
             }
             $paymentDetailSuffix = empty($paymentDetailParts)
@@ -191,6 +190,11 @@ class ReceivedStockService
                 $data['reference_number'] = isset($data['reference_number']) && trim((string) $data['reference_number']) !== ''
                     ? trim((string) $data['reference_number'])
                     : (($receivedStock->payment_mode ?? null) === 'Bank Transfer' ? $receivedStock->reference_number : null);
+            } elseif ($data['payment_mode'] === 'Check') {
+                $data['bank_name'] = null;
+                $data['reference_number'] = isset($data['reference_number']) && trim((string) $data['reference_number']) !== ''
+                    ? trim((string) $data['reference_number'])
+                    : (($receivedStock->payment_mode ?? null) === 'Check' ? $receivedStock->reference_number : null);
             } elseif ($data['payment_mode'] !== 'Credit') {
                 $data['bank_name'] = null;
                 $data['reference_number'] = null;
@@ -230,10 +234,9 @@ class ReceivedStockService
             $paymentAmount = round((float) ($data['payment_amount'] ?? 0), 2);
             $newAmountPaid = min(round($currentPaid + $paymentAmount, 2), $totalAmount);
 
-            $payMode  = $data['payment_mode'] ?? 'Cash';
+            $payMode  = $data['payment_mode'] ?? 'Cash on Hand';
             $isBT     = $payMode === 'Bank Transfer';
-            $isCash   = $payMode === 'Cash';
-            $fundId   = $isCash ? ((int) ($data['petty_cash_fund_id'] ?? 0) ?: null) : null;
+            $isCheck  = $payMode === 'Check';
 
             $payment = $receivedStock->payments()->create([
                 'payment_date'       => Carbon::now()->toDateString(),
@@ -241,28 +244,9 @@ class ReceivedStockService
                 'amount_paid'        => $paymentAmount,
                 'bank_account_id'    => $isBT ? ((int) ($data['bank_account_id'] ?? 0) ?: null) : null,
                 'bank_name'          => $isBT ? trim((string) ($data['bank_name'] ?? '')) : null,
-                'reference_number'   => $isBT ? trim((string) ($data['reference_number'] ?? '')) : null,
-                'petty_cash_fund_id' => $fundId,
+                'reference_number'   => ($isBT || $isCheck) ? trim((string) ($data['reference_number'] ?? '')) : null,
                 'created_by_id'      => Auth::id(),
             ]);
-
-            if ($isCash && $fundId) {
-                PettyCashFund::where('id', $fundId)->decrement('balance', $paymentAmount);
-
-                PettyCashTransaction::create([
-                    'transaction_no'   => $this->series_service->get('petty_cash_txn_no'),
-                    'fund_id'          => $fundId,
-                    'type'             => 'disbursement',
-                    'amount'           => $paymentAmount,
-                    'category'         => 'Inventory Payment',
-                    'description'      => 'Supplier payment for ' . $receivedStock->received_no
-                                         . ' (' . ($receivedStock->supplier?->name ?? 'Supplier') . ')',
-                    'transaction_date' => Carbon::now()->toDateString(),
-                    'reference_number' => $receivedStock->received_no,
-                    'source_type'      => ReceivedStock::class,
-                    'created_by_id'    => Auth::id(),
-                ]);
-            }
 
             $isFullySettled = $newAmountPaid >= $totalAmount;
             $receivedStock->update([
