@@ -8,7 +8,14 @@ use Illuminate\Support\Facades\DB;
 class ListRolesTableSeeder extends Seeder
 {
     /**
-     * Auto generated seeder file.
+     * Role names must match exactly what the application checks for: the
+     * `roles.includes(...)` guards in Shared/Layouts/Components/Menu.vue and the
+     * `role:` route middleware in routes/web.php. A role that is not checked
+     * anywhere grants nothing beyond the dashboard.
+     *
+     * Uses updateOrInsert rather than delete+insert because user_roles.role_id
+     * is a restrictOnDelete foreign key, so deleting seeded roles fails as soon
+     * as a single user has been assigned one.
      *
      * @return void
      */
@@ -33,9 +40,7 @@ class ListRolesTableSeeder extends Seeder
             ],
             [
                 'id' => 3,
-                'name' => 'HR Manager',
-                'type' => 'Staff',
-                'is_active' => 1,
+                'name' => 'Human Resource Officer',
                 'definition' => 'Oversees HR operations such as employee management, leave approvals, and record verification.',
             ],
             [

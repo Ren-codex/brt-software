@@ -47,10 +47,19 @@ class RemittanceController extends Controller
     private function getDashboardMetrics()
     {
         $totalRemittances = \App\Models\Remittance::count();
-        $totalAmountRemitted = \App\Models\Remittance::sum('total_amount');
         $todayRemittances = \App\Models\Remittance::whereDate('created_at', today())->count();
-        $openRemittances = \App\Models\Remittance::whereHas('status', function($q) {
-            $q->where('slug', '!=', 'liquidated');
+
+        // Only approved remittances represent cash actually turned over.
+        $totalAmountRemitted = \App\Models\Remittance::whereHas('status', function ($q) {
+            $q->where('slug', 'approved');
+        })->sum('total_amount');
+
+        // "Open" means still awaiting a decision. Matched on slug, since the
+        // previous comparison against the name 'liquidated' only worked by
+        // accident of MySQL's case-insensitive collation, and nothing ever set
+        // that status anyway - so this counted every remittance ever created.
+        $openRemittances = \App\Models\Remittance::whereHas('status', function ($q) {
+            $q->where('slug', 'pending');
         })->count();
 
         return response()->json([
@@ -101,6 +110,13 @@ class RemittanceController extends Controller
     }
 
     public function approve(Request $request, $id){
+        // remarks is a string(255) column, so cap it here rather than letting
+        // the database truncate or reject a long note.
+        $request->validate([
+            'status' => 'required|in:Approve,Disapprove',
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
         $result = $this->handleTransaction(function () use ($request, $id) {
             return $this->remittance->approve($request, $id);
         });
@@ -113,13 +129,17 @@ class RemittanceController extends Controller
         ]);
     }
 
-    public function printRemittance($id)
-    {
-        return $this->print->printRemittance($id);
-    }
-
     public function show($id, Request $request)
     {
         return $this->print->print($id, $request);
+    }
+
+    /**
+     * Target of GET /remittances/{id}/print. The route has always pointed here
+     * but the method did not exist, so that URL threw BadMethodCallException.
+     */
+    public function printRemittance($id)
+    {
+        return $this->print->printRemittance($id);
     }
 }

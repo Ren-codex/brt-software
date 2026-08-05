@@ -24,7 +24,20 @@
                 <span>{{ tab.label }}</span>
             </button>
         </div>
+
+        <button type="button" class="manual-btn" @click="showManual = true">
+            <span class="manual-btn-book">
+                <i class="ri-book-open-line"></i>
+            </span>
+            <span class="manual-btn-text">
+                <strong>User Manual</strong>
+                <small>Roles &amp; system processes</small>
+            </span>
+            <i class="ri-arrow-right-up-line manual-btn-arrow"></i>
+        </button>
     </div>
+
+    <UserManualBook v-model="showManual" />
 
     <div class="filter-container">
         <div class="filter-buttons">
@@ -79,6 +92,7 @@
 </template>
 
 <script>
+import UserManualBook from '@/Shared/Components/UserManual/UserManualBook.vue';
 import SalesDashboard from '@/Pages/Modules/Dashboard/Partials/SalesDashboard.vue';
 import InventoryDashboard from '@/Pages/Modules/Dashboard/Partials/InventoryDashboard.vue';
 import EmployeeDashboard from '@/Pages/Modules/Dashboard/Partials/EmployeeDashboard.vue';
@@ -181,6 +195,7 @@ export default {
         }
     },
     components: {
+        UserManualBook,
         SalesDashboard,
         InventoryDashboard,
         EmployeeDashboard
@@ -190,6 +205,7 @@ export default {
         const today = new Date().toISOString().slice(0, 10);
         return {
             activeTab: 'sales',
+            showManual: false,
             selectedFilter: this.filter || 'monthly',
             selectedDateValue: this.selectedDate || today,
             dateFilters: [
@@ -596,6 +612,11 @@ export default {
 
 .tab-container {
     margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .tab-buttons {
@@ -605,6 +626,102 @@ export default {
     padding: 0.5rem;
     border-radius: 16px;
     max-width: 500px;
+    flex: 1 1 auto;
+}
+
+/* Empty state when no tab is permitted */
+.dashboard-empty {
+    background: white;
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.dashboard-empty i {
+    font-size: 2.5rem;
+    color: #94a3b8;
+}
+
+.dashboard-empty h3 {
+    margin: 1rem 0 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.dashboard-empty p {
+    max-width: 460px;
+    margin: 0 auto;
+    color: #64748b;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* User Manual launcher */
+.manual-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 1.15rem;
+    border: 1px solid rgba(46, 139, 87, 0.22);
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #f4fbf7 100%);
+    color: #1e293b;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 4px 14px rgba(46, 139, 87, 0.08);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.manual-btn:hover {
+    transform: translateY(-2px);
+    border-color: rgba(46, 139, 87, 0.5);
+    box-shadow: 0 10px 26px rgba(46, 139, 87, 0.18);
+}
+
+.manual-btn-book {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #f3ead9;
+    background: linear-gradient(150deg, #2f6d4f 0%, #1d4835 100%);
+    box-shadow: inset -3px 0 6px -3px rgba(0, 0, 0, 0.6);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.manual-btn:hover .manual-btn-book {
+    transform: rotateY(-22deg) scale(1.05);
+}
+
+.manual-btn-text strong {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.manual-btn-text small {
+    display: block;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.manual-btn-arrow {
+    color: #2e8b57;
+    font-size: 1.05rem;
+    opacity: 0.6;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.manual-btn:hover .manual-btn-arrow {
+    opacity: 1;
+    transform: translate(2px, -2px);
 }
 
 .tab-btn {
@@ -1412,6 +1529,13 @@ export default {
     }
     .tab-buttons {
         flex-direction: column;
+    }
+    .tab-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .manual-btn {
+        width: 100%;
     }
 }
 </style>

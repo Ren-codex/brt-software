@@ -81,7 +81,7 @@ class DropdownClass
     }
 
     public function customers(){
-        $data = Customer::get()->map(function ($item) {
+        $data = Customer::where('is_active', 1)->get()->map(function ($item) {
             $outstandingBalance = (float) ArInvoice::query()
                 ->whereHas('sales_order', function ($query) use ($item) {
                     $query->where('customer_id', $item->id)
