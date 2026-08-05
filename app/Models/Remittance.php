@@ -19,6 +19,8 @@ class Remittance extends Model
         'approved_by_id',
         'approved_at',
         'remarks',
+        'received_via',
+        'reference_no',
     ];
 
     protected $casts = [

@@ -344,6 +344,18 @@
                             <td class="label">Total Receipts:</td>
                             <td>{{ count($receipts) }}</td>
                         </tr>
+                        @if($remittance->received_via)
+                        <tr>
+                            <td class="label">Received Via:</td>
+                            <td>{{ $remittance->received_via === 'check' ? 'Check' : 'Cash' }}</td>
+                        </tr>
+                        @endif
+                        @if($remittance->received_via === 'check' && $remittance->reference_no)
+                        <tr>
+                            <td class="label">Reference No.:</td>
+                            <td>{{ $remittance->reference_no }}</td>
+                        </tr>
+                        @endif
                         @if($remittance->remarks)
                         <tr>
                             <td class="label">Remarks:</td>

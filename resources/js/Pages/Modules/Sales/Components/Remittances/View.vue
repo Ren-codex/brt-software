@@ -119,6 +119,20 @@
                                     </div>
                                 </div>
                             </template>
+                            <div class="profile-info-item" v-if="item.received_via">
+                                <div class="profile-label">Received Via</div>
+                                <div class="profile-value">
+                                    <i class="ri-bank-card-line"></i>
+                                    {{ item.received_via === 'check' ? 'Check' : 'Cash' }}
+                                </div>
+                            </div>
+                            <div class="profile-info-item" v-if="item.received_via === 'check' && item.reference_no">
+                                <div class="profile-label">Reference No.</div>
+                                <div class="profile-value">
+                                    <i class="ri-hashtag"></i>
+                                    {{ item.reference_no }}
+                                </div>
+                            </div>
                         </div>
 
                         <div class="profile-subcard">

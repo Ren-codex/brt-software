@@ -82,6 +82,33 @@
                                 </template>
                             </span>
                         </div>
+
+                        <!-- Received via -->
+                        <div class="mb-3">
+                            <label class="form-label">Received Via <span class="text-danger">*</span></label>
+                            <div class="d-flex gap-3" style="font-size:14px">
+                                <label class="d-flex align-items-center gap-1">
+                                    <input type="radio" v-model="form.received_via" value="cash"> Cash
+                                </label>
+                                <label class="d-flex align-items-center gap-1">
+                                    <input type="radio" v-model="form.received_via" value="check"> Check
+                                </label>
+                            </div>
+                            <span class="error-message" v-if="form.errors.received_via">{{ form.errors.received_via }}</span>
+                        </div>
+
+                        <!-- Reference no. — only when Check -->
+                        <div class="mb-3" v-if="form.received_via === 'check'">
+                            <label class="form-label">Reference No. <span class="text-danger">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                :class="{ 'input-error': form.errors.reference_no }"
+                                placeholder="Enter check reference no..."
+                                v-model="form.reference_no"
+                            >
+                            <span class="error-message" v-if="form.errors.reference_no">{{ form.errors.reference_no }}</span>
+                        </div>
                     </template>
 
                     <!-- Remarks -->
@@ -129,6 +156,8 @@ export default {
             form: useForm({
                 status: 'Approve',
                 received_amount: null,
+                received_via: null,
+                reference_no: null,
                 remarks: null,
             }),
             showModal: false,
@@ -156,6 +185,14 @@ export default {
         submit() {
             if (this.form.status === 'Approve' && this.variance !== 0 && !this.form.remarks?.trim()) {
                 this.form.setError('remarks', 'Remarks are required when there is a variance.');
+                return;
+            }
+            if (this.form.status === 'Approve' && !this.form.received_via) {
+                this.form.setError('received_via', 'Select how this was received.');
+                return;
+            }
+            if (this.form.received_via === 'check' && !this.form.reference_no?.trim()) {
+                this.form.setError('reference_no', 'Reference no. is required for check payments.');
                 return;
             }
             // Absolute path: the relative form resolved against the current URL

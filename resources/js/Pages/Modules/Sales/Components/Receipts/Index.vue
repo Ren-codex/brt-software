@@ -106,7 +106,7 @@
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">
                                             <span
-                                                :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
+                                                :style="{ backgroundColor: list.status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px', whiteSpace: 'nowrap', display: 'inline-block' }">
                                                 {{ list.status?.name || 'Unknown' }}
                                             </span>
                                             <span v-if="list.is_unremitted_past_day" class="unremitted-badge ms-1">

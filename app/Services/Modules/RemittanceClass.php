@@ -251,6 +251,11 @@ class RemittanceClass
             $data->variance        = round((float) $request->received_amount - (float) $data->total_amount, 2);
         }
 
+        if ($isApprove) {
+            $data->received_via = $request->received_via;
+            $data->reference_no = $request->received_via === 'check' ? $request->reference_no : null;
+        }
+
         $data->save();
 
         $receiptStatusId = $isApprove ? $this->statusId('liquidated') : $this->statusId('pending');

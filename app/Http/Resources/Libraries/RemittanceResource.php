@@ -34,6 +34,8 @@ class RemittanceResource extends JsonResource
                 ? Carbon::parse($this->approved_at)->format('Y-m-d H:i:s')
                 : null,
             'remarks' => $this->remarks,
+            'received_via' => $this->received_via,
+            'reference_no' => $this->reference_no,
             'is_deposited' => !is_null($this->bank_deposit_id),
             'bank_deposit' => $this->bankDeposit ? [
                 'id'           => $this->bankDeposit->id,

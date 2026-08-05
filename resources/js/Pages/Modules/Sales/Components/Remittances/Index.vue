@@ -72,8 +72,8 @@
                             <div class="mt-3">
                                 <div class="filter-segment">
                                     <button :class="['filter-segment-btn', activeTab === 'open' ? 'active' : '']" @click="switchTab('open')">
-                                        <i class="ri-folder-open-line"></i>
-                                        <span>Open</span>
+                                        <i class="ri-shield-check-line"></i>
+                                        <span>For Verification</span>
                                         <span v-if="activeTab === 'open'" class="seg-count">{{ meta.total ?? 0 }}</span>
                                     </button>
                                     <button :class="['filter-segment-btn', activeTab === 'liquidated' ? 'active' : '']" @click="switchTab('liquidated')">
@@ -128,7 +128,7 @@
                                                 <td class="text-center">{{ item.date || item.remittance_date }}</td>
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">
-                                                    <span :style="{ backgroundColor: item.status?.bg_color || '#6c757d', color: '#fff', padding: '3px 10px', borderRadius: '12px', fontSize: '11px' }">
+                                                    <span :style="{ backgroundColor: item.status?.bg_color || '#6c757d', color: '#fff', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-block' }">
                                                         {{ item.status?.name }}
                                                     </span>
                                                 </td>

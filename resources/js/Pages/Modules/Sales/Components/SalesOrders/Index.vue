@@ -97,7 +97,7 @@
                                           <!-- <td class="text-center">
                                             <span
                                                 v-if="list.sub_status?.name"
-                                                :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px' }">
+                                                :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px', whiteSpace: 'nowrap', display: 'inline-block' }">
                                                 {{ list.sub_status?.name  }}
                                             </span>
                                         </td> -->

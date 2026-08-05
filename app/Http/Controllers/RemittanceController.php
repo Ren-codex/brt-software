@@ -115,6 +115,8 @@ class RemittanceController extends Controller
         $request->validate([
             'status' => 'required|in:Approve,Disapprove',
             'remarks' => 'nullable|string|max:255',
+            'received_via' => 'required_if:status,Approve|nullable|in:cash,check',
+            'reference_no' => 'required_if:received_via,check|nullable|string|max:255',
         ]);
 
         $result = $this->handleTransaction(function () use ($request, $id) {
