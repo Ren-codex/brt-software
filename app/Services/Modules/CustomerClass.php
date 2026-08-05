@@ -10,6 +10,7 @@ use App\Models\Receipt;
 use App\Http\Resources\Modules\CustomerResource;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 
 class CustomerClass
@@ -85,6 +86,16 @@ class CustomerClass
 
     public function delete($id){
         $data = Customer::findOrFail($id);
+
+        // sales_orders cascades to ar_invoices and receipts on delete, so a
+        // customer with any order history must be deactivated instead -
+        // deleting one would silently wipe their entire financial trail.
+        if (SalesOrder::where('customer_id', $id)->exists()) {
+            throw ValidationException::withMessages([
+                'customer' => 'This customer has sales order history and cannot be deleted. Deactivate the customer instead.',
+            ]);
+        }
+
         $data->delete();
 
         return [

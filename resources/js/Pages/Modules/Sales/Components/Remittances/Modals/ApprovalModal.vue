@@ -158,7 +158,9 @@ export default {
                 this.form.setError('remarks', 'Remarks are required when there is a variance.');
                 return;
             }
-            this.form.post(`remittances/${this.item.id}/approve`, {
+            // Absolute path: the relative form resolved against the current URL
+            // and broke on any route deeper than /remittances.
+            this.form.post(`/remittances/${this.item.id}/approve`, {
                 onSuccess: () => {
                     this.saveSuccess = true;
                     setTimeout(() => {

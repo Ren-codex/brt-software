@@ -270,9 +270,12 @@ export default {
                         this.form.reset();
                         this.hide();
                         this.saveSuccess = false;
-                        this.submitting = false;
                     }, 1500);
-
+                },
+                // Without this the Save button stayed disabled forever after a
+                // validation error, since submitting was only cleared on success.
+                onFinish: () => {
+                    this.submitting = false;
                 },
                 onError: () => {
                     this.submitting = false;

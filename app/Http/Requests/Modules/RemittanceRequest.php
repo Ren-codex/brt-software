@@ -25,7 +25,12 @@ class RemittanceRequest extends FormRequest
             'receipts' => 'required|array|min:1',
             'receipts.*' => 'integer|exists:receipts,id',
             'summary' => 'required|array',
+            // total_amount is accepted for backwards compatibility but the
+            // stored value is recomputed from the receipts in RemittanceClass,
+            // so a tampered payload cannot change what is banked.
             'total_amount' => 'required|numeric|min:0',
+            'receipts' => 'required|array|min:1',
+            'receipts.*' => 'required|integer|distinct|exists:receipts,id',
         ];
     }
 }

@@ -10,12 +10,14 @@ class UsersTableSeeder extends Seeder
 {
     /**
      * Seed one sample user for each seeded role.
+     *
+     * Uses updateOrInsert so the seeder can be re-run without wiping users
+     * that other tables already reference (customers, purchase orders, etc.
+     * hardcode added_by_id/created_by_id against these seeded ids).
      */
     public function run()
     {
         $timestamp = now();
-
-        DB::table('users')->delete();
 
         $users = [
             [
@@ -74,21 +76,25 @@ class UsersTableSeeder extends Seeder
             ],
         ];
 
-        $rows = array_map(function ($user) use ($timestamp) {
-            return array_merge($user, [
-                'is_active' => 1,
-                'is_new' => 0,
-                'two_factor_secret' => null,
-                'two_factor_recovery_codes' => null,
-                'remember_token' => null,
-                'email_verified_at' => $timestamp,
-                'password_changed_at' => $timestamp,
-                'two_factor_confirmed_at' => null,
-                'created_at' => $timestamp,
-                'updated_at' => $timestamp,
-            ]);
-        }, $users);
-
-        DB::table('users')->insert($rows);
+        foreach ($users as $user) {
+            DB::table('users')->updateOrInsert(
+                ['id' => $user['id']],
+                [
+                    'username' => $user['username'],
+                    'email' => $user['email'],
+                    'password' => $user['password'],
+                    'is_active' => 1,
+                    'is_new' => 0,
+                    'two_factor_secret' => null,
+                    'two_factor_recovery_codes' => null,
+                    'remember_token' => null,
+                    'email_verified_at' => $timestamp,
+                    'password_changed_at' => $timestamp,
+                    'two_factor_confirmed_at' => null,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ]
+            );
+        }
     }
 }

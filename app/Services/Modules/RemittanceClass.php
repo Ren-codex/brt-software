@@ -5,16 +5,19 @@ namespace App\Services\Modules;
 
 use App\Models\Remittance;
 use App\Models\Receipt;
+use App\Models\ListLocation;
+use App\Models\ListStatus;
 use App\Http\Resources\Libraries\RemittanceResource;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Services\SeriesService;
-use Illuminate\Support\Facades\DB;
-use App\Models\ListStatus;
 use Illuminate\Validation\ValidationException;
 
 class RemittanceClass
 {
+    /** Sales orders at this location (or with none set) are treated as internal. */
+    private const INTERNAL_LOCATION = 'Zamboanga City';
+
     protected $series_service;
 
     public function __construct(
@@ -23,20 +26,37 @@ class RemittanceClass
         $this->series_service = $series_service;
     }
 
-    public function lists($request){
-        $data = RemittanceResource::collection(
-            Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount'])
-            ->when($request->location_id, function ($query, $location_id) {
-                $query->whereHas('receipts', function ($q) use ($location_id) {
-                    $q->where(function ($inner) use ($location_id) {
-                        $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($location_id) {
-                            $soQ->where('location_id', $location_id)
+    /**
+     * Statuses are resolved by slug rather than hardcoded ids, matching
+     * ArInvoiceClass. The previous hardcoded ids pointed at the wrong rows.
+     */
+    private function statusId(string $slug): int
+    {
+        $status = ListStatus::getBySlug($slug);
+
+        if (! $status) {
+            throw ValidationException::withMessages([
+                'status' => "The '{$slug}' status is missing from list_statuses.",
+            ]);
+        }
+
+        return $status->id;
+    }
+
+    public function lists($request)
+    {
+        $query = Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount'])
+            ->when($request->location_id, function ($query, $locationId) {
+                $query->whereHas('receipts', function ($q) use ($locationId) {
+                    $q->where(function ($inner) use ($locationId) {
+                        $inner->whereHas('arInvoice.sales_order', function ($soQ) use ($locationId) {
+                            $soQ->where('location_id', $locationId)
                                 ->orWhereNull('location_id');
                         })->orWhereDoesntHave('arInvoice');
                     });
                 });
             })
-            ->when($request->keyword, function ($query,$keyword) {
+            ->when($request->keyword, function ($query, $keyword) {
                 $query->where('remittance_no', 'LIKE', "%{$keyword}%");
             })
             ->when($request->status === 'undeposited', function ($query) {
@@ -47,11 +67,27 @@ class RemittanceClass
                 $query->whereHas('status', function ($q) use ($request) {
                     $q->where('slug', $request->status);
                 });
-            })
-            ->orderBy('created_at', 'DESC')
-            ->paginate($request->count)
+            });
+
+        // Internal is expressed as "has no external receipt" rather than
+        // "has an internal receipt", so a remittance is never hidden merely
+        // because a receipt is not yet linked to a sales order.
+        $externalLocationIds = ListLocation::where('name', '!=', self::INTERNAL_LOCATION)->pluck('id');
+
+        if ($request->is_external) {
+            $query->whereHas('receipts.arInvoice.sales_order', function ($q) use ($externalLocationIds) {
+                $q->whereIn('location_id', $externalLocationIds);
+            });
+        } else {
+            $query->whereDoesntHave('receipts.arInvoice.sales_order', function ($q) use ($externalLocationIds) {
+                $q->whereIn('location_id', $externalLocationIds);
+            });
+        }
+
+        return RemittanceResource::collection(
+            $query->orderBy('created_at', 'DESC')
+                  ->paginate($request->count ?: 10)
         );
-        return $data;
     }
 
     public function undepositedSummary($request)
@@ -75,173 +111,167 @@ class RemittanceClass
         ]);
     }
 
+    /**
+     * Exceptions are allowed to propagate so the DB::transaction wrapper in
+     * HandlesTransaction rolls back. Catching them here previously committed
+     * partial writes while reporting failure.
+     */
     public function save($request)
     {
-        try {
-            $receiptIds = collect($request->receipts ?? [])->unique()->values();
-            $pendingStatusId = ListStatus::getBySlug('pending')?->id;
+        $receiptIds = collect($request->receipts ?? [])
+            ->filter()
+            ->unique()
+            ->values();
 
-            $receipts = Receipt::whereIn('id', $receiptIds)->get();
-
-            if ($receipts->count() !== $receiptIds->count()) {
-                throw ValidationException::withMessages([
-                    'receipts' => 'Some selected receipts are invalid.',
-                ]);
-            }
-
-            $hasUnavailableReceipt = $receipts->contains(function ($receipt) use ($pendingStatusId) {
-                return (int) $receipt->status_id !== (int) $pendingStatusId || !is_null($receipt->remittance_id);
-            });
-
-            if ($hasUnavailableReceipt) {
-                throw ValidationException::withMessages([
-                    'receipts' => 'One or more selected receipts are no longer pending.',
-                ]);
-            }
-
-            $data = Remittance::create([
-                'remittance_no'   => $this->series_service->get('remittance'),
-                'remittance_date' => Carbon::now(),
-                'summary'         => $request->summary,
-                'total_amount'    => $request->total_amount,
-                'status_id'       => ListStatus::getBySlug('open')?->id,
-                'created_by_id'   => Auth::user()->id,
+        if ($receiptIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'receipts' => 'Select at least one receipt to remit.',
             ]);
-
-            foreach ($receiptIds as $receiptId) {
-                Receipt::where('id', $receiptId)->update([
-                    'status_id'    => ListStatus::getBySlug('open')?->id,
-                    'remittance_id' => $data->id,
-                ]);
-            }
-
-            return [
-                'data'    => new RemittanceResource($data),
-                'message' => 'Remittance saved was successful!',
-                'info'    => "You've successfully saved the remittance",
-            ];
-        } catch (ValidationException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            return [
-                'data'    => null,
-                'message' => 'Remittance save failed!',
-                'info'    => $e->getMessage(),
-                'status'  => false,
-            ];
         }
+
+        // Locked for the duration of the transaction so two remittances cannot
+        // claim the same receipt concurrently.
+        $receipts = Receipt::whereIn('id', $receiptIds)->lockForUpdate()->get();
+
+        if ($receipts->count() !== $receiptIds->count()) {
+            throw ValidationException::withMessages([
+                'receipts' => 'One or more of the selected receipts no longer exist.',
+            ]);
+        }
+
+        $pendingStatusId = $this->statusId('pending');
+
+        $hasUnavailableReceipt = $receipts->contains(function ($receipt) use ($pendingStatusId) {
+            return (int) $receipt->status_id !== $pendingStatusId || ! is_null($receipt->remittance_id);
+        });
+
+        if ($hasUnavailableReceipt) {
+            throw ValidationException::withMessages([
+                'receipts' => 'One or more selected receipts are no longer pending.',
+            ]);
+        }
+
+        // Authoritative total, computed from the receipts rather than trusted
+        // from the client payload.
+        $totalAmount = $receipts->sum('amount_paid');
+
+        $openStatusId = $this->statusId('open');
+
+        $data = Remittance::create([
+            'remittance_no'   => $this->series_service->get('remittance'),
+            'remittance_date' => Carbon::now(),
+            'summary'         => $request->summary,
+            'total_amount'    => $totalAmount,
+            'status_id'       => $openStatusId,
+            'created_by_id'   => Auth::id(),
+        ]);
+
+        Receipt::whereIn('id', $receiptIds)->update([
+            'status_id'     => $openStatusId,
+            'remittance_id' => $data->id,
+        ]);
+
+        return [
+            'data'    => new RemittanceResource($data->fresh('receipts')),
+            'status'  => true,
+            'message' => 'Remittance saved was successful!',
+            'info'    => "You've successfully saved the remittance",
+        ];
     }
 
     public function delete($id)
     {
-        try {
-            $data = Remittance::with('status')->findOrFail($id);
+        $data = Remittance::with('status')->findOrFail($id);
 
-            if ($data->status?->slug !== 'open') {
-                throw new \Exception('Only open remittances can be deleted.');
-            }
-
-            $receipts = Receipt::where('remittance_id', $id)->get();
-            foreach ($receipts as $receipt) {
-                $receipt->status_id   = ListStatus::getBySlug('pending')?->id;
-                $receipt->remittance_id = null;
-                $receipt->save();
-            }
-
-            $data->delete();
-
-            return [
-                'data'    => $data,
-                'message' => 'Remittance deleted was successful!',
-                'info'    => "You've successfully deleted the remittance",
-            ];
-        } catch (\Exception $e) {
-            return [
-                'data'    => null,
-                'message' => 'Remittance delete failed!',
-                'info'    => $e->getMessage(),
-                'status'  => false,
-            ];
+        if ($data->status?->slug !== 'open') {
+            throw ValidationException::withMessages([
+                'remittance' => 'Only open remittances can be deleted.',
+            ]);
         }
+
+        Receipt::where('remittance_id', $id)->update([
+            'status_id'     => $this->statusId('pending'),
+            'remittance_id' => null,
+        ]);
+
+        $data->delete();
+
+        return [
+            'data'    => $data,
+            'status'  => true,
+            'message' => 'Remittance deleted was successful!',
+            'info'    => "You've successfully deleted the remittance",
+        ];
     }
 
     public function remit($id)
     {
-        try {
-            $data = Remittance::with('status')->findOrFail($id);
+        $data = Remittance::with('status')->findOrFail($id);
 
-            if (!in_array($data->status?->slug, ['open'])) {
-                throw new \Exception('Only open remittances can be marked as remitted.');
-            }
-
-            $remittedStatusId = ListStatus::getBySlug('remitted')?->id;
-            $data->status_id = $remittedStatusId;
-            $data->save();
-
-            Receipt::where('remittance_id', $data->id)->update(['status_id' => $remittedStatusId]);
-
-            return [
-                'data'    => new RemittanceResource($data),
-                'message' => 'Remittance marked as remitted!',
-                'info'    => "The remittance has been submitted for approval.",
-            ];
-        } catch (\Exception $e) {
-            return [
-                'data'    => null,
-                'message' => 'Failed to mark as remitted.',
-                'info'    => $e->getMessage(),
-                'status'  => false,
-            ];
+        if ($data->status?->slug !== 'open') {
+            throw ValidationException::withMessages([
+                'remittance' => 'Only open remittances can be marked as remitted.',
+            ]);
         }
+
+        $remittedStatusId = $this->statusId('remitted');
+        $data->status_id = $remittedStatusId;
+        $data->save();
+
+        Receipt::where('remittance_id', $data->id)->update(['status_id' => $remittedStatusId]);
+
+        return [
+            'data'    => new RemittanceResource($data->fresh('receipts')),
+            'status'  => true,
+            'message' => 'Remittance marked as remitted!',
+            'info'    => "The remittance has been submitted for approval.",
+        ];
     }
 
     public function approve($request, $id)
     {
-        try {
-            $data = Remittance::with('status')->findOrFail($id);
+        $data = Remittance::with('status')->findOrFail($id);
 
-            if (!in_array($data->status?->slug, ['open', 'remitted'])) {
-                throw new \Exception('Only open remittances can be approved or disapproved.');
-            }
-
-            $isApprove = $request->status === 'Approve';
-
-            $data->status_id      = $isApprove ? ListStatus::getBySlug('liquidated')?->id : ListStatus::getBySlug('disapproved')?->id;
-            $data->approved_by_id = Auth::user()->id;
-            $data->approved_at    = Carbon::now();
-            $data->remarks        = $request->remarks;
-
-            if ($isApprove && $request->received_amount !== null) {
-                $data->received_amount = $request->received_amount;
-                $data->variance        = round((float) $request->received_amount - (float) $data->total_amount, 2);
-            }
-
-            $data->save();
-
-            $receipts = Receipt::where('remittance_id', $data->id)->get();
-            foreach ($receipts as $receipt) {
-                $receipt->status_id = $isApprove
-                    ? ListStatus::getBySlug('liquidated')?->id
-                    : ListStatus::getBySlug('pending')?->id;
-                if (!$isApprove) {
-                    $receipt->remittance_id = null;
-                }
-                $receipt->save();
-            }
-
-            return [
-                'data'    => new RemittanceResource($data),
-                'message' => 'Remittance approval was successful!',
-                'info'    => "You've successfully approved the remittance",
-            ];
-        } catch (\Exception $e) {
-            return [
-                'data'    => null,
-                'message' => 'Remittance approval failed!',
-                'info'    => $e->getMessage(),
-                'status'  => false,
-            ];
+        // A remittance may only be decided once, from the open or remitted state.
+        if (! in_array($data->status?->slug, ['open', 'remitted'])) {
+            throw ValidationException::withMessages([
+                'status' => 'Only open or remitted remittances can be approved or disapproved.',
+            ]);
         }
+
+        $isApprove = $request->status === 'Approve';
+
+        $data->status_id      = $isApprove ? $this->statusId('liquidated') : $this->statusId('disapproved');
+        $data->approved_by_id = Auth::id();
+        $data->approved_at    = Carbon::now();
+        $data->remarks        = $request->remarks;
+
+        if ($isApprove && $request->received_amount !== null) {
+            $data->received_amount = $request->received_amount;
+            $data->variance        = round((float) $request->received_amount - (float) $data->total_amount, 2);
+        }
+
+        $data->save();
+
+        $receiptStatusId = $isApprove ? $this->statusId('liquidated') : $this->statusId('pending');
+
+        $receipts = Receipt::where('remittance_id', $data->id)->get();
+        foreach ($receipts as $receipt) {
+            $receipt->status_id = $receiptStatusId;
+            if (! $isApprove) {
+                $receipt->remittance_id = null;
+            }
+            $receipt->save();
+        }
+
+        return [
+            'data'    => new RemittanceResource($data->fresh('receipts')),
+            'status'  => true,
+            'message' => $isApprove ? 'Remittance approval was successful!' : 'Remittance was disapproved.',
+            'info'    => $isApprove
+                ? "You've successfully approved the remittance"
+                : "You've disapproved the remittance",
+        ];
     }
 
     public function myHoldings()

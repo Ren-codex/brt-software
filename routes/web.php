@@ -102,7 +102,10 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
     Route::middleware(['role:Administrator'])->group(function () {
         // Route::get('/receipts', [App\Http\Controllers\Libraries\ReceiptController::class, 'index']);
         // Route::get('/receipts/{id}/print', [App\Http\Controllers\Libraries\ReceiptController::class, 'print']);
-        Route::resource('/remittances', App\Http\Controllers\RemittanceController::class);
+        // only(): the controller implements no create/edit/update, so the full
+        // resource registered three routes that threw on any request.
+        Route::resource('/remittances', App\Http\Controllers\RemittanceController::class)
+            ->only(['index', 'store', 'show', 'destroy']);
         Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
         Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
         Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])->name('remittances.remit');

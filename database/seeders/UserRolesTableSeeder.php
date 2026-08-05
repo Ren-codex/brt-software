@@ -9,12 +9,15 @@ class UserRolesTableSeeder extends Seeder
 {
     /**
      * Assign seeded roles to users.
+     *
+     * Uses updateOrInsert on (user_id, role_id) so the seeder can be re-run
+     * without wiping any roles assigned through the UI.
+     *
+     * @return void
      */
     public function run()
     {
         $timestamp = now();
-
-        DB::table('user_roles')->truncate();
 
         $userRoles = [
             [
@@ -55,18 +58,18 @@ class UserRolesTableSeeder extends Seeder
             ],
         ];
 
-        $rows = array_map(function ($userRole, $index) use ($timestamp) {
-            return array_merge($userRole, [
-                'id' => $index + 1,
-                'is_active' => 1,
-                'added_by_id' => 1,
-                'removed_by_id' => null,
-                'removed_at' => null,
-                'created_at' => $timestamp,
-                'updated_at' => $timestamp,
-            ]);
-        }, $userRoles, array_keys($userRoles));
-
-        DB::table('user_roles')->insert($rows);
+        foreach ($userRoles as $userRole) {
+            DB::table('user_roles')->updateOrInsert(
+                ['user_id' => $userRole['user_id'], 'role_id' => $userRole['role_id']],
+                [
+                    'is_active' => 1,
+                    'added_by_id' => 1,
+                    'removed_by_id' => null,
+                    'removed_at' => null,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ]
+            );
+        }
     }
 }

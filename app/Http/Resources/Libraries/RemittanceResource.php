@@ -28,7 +28,11 @@ class RemittanceResource extends JsonResource
             'created_by' => $this->createdBy ? $this->createdBy->employee : null,
             'status' => $this->status,
             'approved_by' => $this->approvedBy ? $this->approvedBy->employee : null,
-            'approved_at' => $this->approved_at ? Carbon::parse($this->approved_at)->format('Y-m-d H:i:s') : null,
+            // Carbon::parse(null) returns now(), which made every unapproved
+            // remittance report the current time as its approval time.
+            'approved_at' => $this->approved_at
+                ? Carbon::parse($this->approved_at)->format('Y-m-d H:i:s')
+                : null,
             'remarks' => $this->remarks,
             'is_deposited' => !is_null($this->bank_deposit_id),
             'bank_deposit' => $this->bankDeposit ? [

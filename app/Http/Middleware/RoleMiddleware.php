@@ -15,11 +15,11 @@ class RoleMiddleware
             abort(403, 'Unauthorized');
         }
 
-        if (Auth::user()->roles()->where('name', 'Super Admin')->exists()) {
+        if (Auth::user()->roles()->where('user_roles.is_active', 1)->where('name', 'Super Admin')->exists()) {
             return $next($request);
         }
 
-        if (!Auth::user()->roles()->whereIn('name', $roles)->exists()) {
+        if (!Auth::user()->roles()->where('user_roles.is_active', 1)->whereIn('name', $roles)->exists()) {
             abort(403, 'Unauthorized');
         }
 
