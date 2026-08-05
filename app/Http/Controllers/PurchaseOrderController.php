@@ -81,6 +81,28 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
+    public function void(Request $request, $id)
+    {
+        $request->merge(['id' => $id]);
+
+        $result = $this->handleTransaction(function () use ($request) {
+            return $this->purchaseOrder->void($request);
+        });
+
+        if (!$result['status']) {
+            return back()->withErrors($result['errors'] ?? [
+                'void' => $result['info'] ?? 'Unable to void purchase order.',
+            ]);
+        }
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
+
     public function show($id)
     {
         return inertia('Modules/Inventory/Components/PurchaseOrders/View', [

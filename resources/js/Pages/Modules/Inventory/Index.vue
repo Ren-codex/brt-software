@@ -79,7 +79,7 @@
               <div class="row" v-if="activeTab === 'purchaseOrders' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <PurchaseOrdersTab :listPurchaseOrders="listPurchaseOrders" :meta="meta" :links="links"
-                    :filter="filter" :dropdowns="dropdowns" @fetch="fetchPurchaseOrders" @update-keyword="updateKeyword"
+                    :filter="filter" :dropdowns="dropdowns" :loading="isPurchaseOrdersLoading" @fetch="fetchPurchaseOrders" @update-keyword="updateKeyword"
                     @toast="showToast" @view-details="openPurchaseOrderDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -96,7 +96,7 @@
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <PurchaseRequestsTab :listPurchaseRequests="listPurchaseRequests"
                     :listPurchaseOrders="listPurchaseOrders" :listPRDisapproved="listPRDisapproved" :meta="meta"
-                    :links="links" :filter="filter" :dropdowns="dropdowns" @fetch="fetchPurchaseOrders"
+                    :links="links" :filter="filter" :dropdowns="dropdowns" :loading="isPurchaseOrdersLoading" @fetch="fetchPurchaseOrders"
                     @update-keyword="updateKeyword" @toast="showToast" @view-details="openPurchaseOrderDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -281,6 +281,7 @@ export default {
       accountsPayableSummaryCards: [],
       accountsPayableRows: [],
       isAccountsPayableLoading: false,
+      isPurchaseOrdersLoading: false,
       isToastVisible: false,
       toastMessage: '',
       selectedPurchaseOrder: null,
@@ -448,6 +449,7 @@ export default {
     fetchPurchaseOrders(page_url) {
       if ((this.activeTab === 'purchaseOrders' || this.activeTab === 'purchaseRequests') && this.currentView === 'list') {
         page_url = page_url || '/purchase-orders';
+        this.isPurchaseOrdersLoading = true;
         axios
           .get(page_url, {
             params: {
@@ -461,13 +463,16 @@ export default {
               const allPurchaseOrders = response.data.data;
               // Separate based on status
               this.listPurchaseRequests = allPurchaseOrders.filter(order => order.status?.name === 'Pending');
-              this.listPurchaseOrders = allPurchaseOrders.filter(order => order.status?.name === 'Approved' || order.status?.name === 'Completed');
+              this.listPurchaseOrders = allPurchaseOrders.filter(order => ['Approved', 'Completed', 'Voided'].includes(order.status?.name));
               this.listPRDisapproved = allPurchaseOrders.filter(order => order.status?.name === 'Disapproved');
               this.meta = response.data.meta;
               this.links = response.data.links;
             }
           })
-          .catch((err) => console.error(err));
+          .catch((err) => console.error(err))
+          .finally(() => {
+            this.isPurchaseOrdersLoading = false;
+          });
       }
     },
 

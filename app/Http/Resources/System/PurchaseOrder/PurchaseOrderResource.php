@@ -29,6 +29,7 @@ class PurchaseOrderResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'approved_by' => $this->approved_by ? new ViewResource($this->approved_by) : null,
+            'approved_by_id' => $this->approved_by_id,
             'approved_date' => $this->approved_date,
         ];
     }

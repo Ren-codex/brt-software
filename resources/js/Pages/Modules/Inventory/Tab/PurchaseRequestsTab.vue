@@ -93,60 +93,68 @@
                 </thead>
 
                 <tbody>
-                  <tr 
-                    v-for="(list,index) in filteredAndSortedList" 
-                    v-bind:key="list.id" 
-                    @click="openView(list)" 
-                    style="cursor: pointer;"
-                  >
-                    <td>{{ (meta?.from ?? 1) + index }}</td>
-                    <td>
-                      <strong>{{ list.pr_number }}</strong>
-                    </td>
-                    <td>{{ formatDate(list.po_date) }}</td>
-                    <td>
-                      <div class="supplier-info">
-                        <div class="supplier-name">{{ list.supplier ? list.supplier.name : '' }}</div>
-                        <small class="text-muted" v-if="list.supplier?.contact_person">
-                          {{ list.supplier.contact_person }}
-                        </small>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="amount-cell">
-                        <span class="amount-value">{{ formatCurrency(list.total_amount) }}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span 
-                        class="status-badge" 
-                        :style="getStatusStyle(list.status)"
-                      >
-                        <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
-                        {{ list.status ? list.status.name : '' }}
-                      </span>
-                    </td>
-                    <td>
-                      <div class="action-buttons" @click.stop>
-                        <button @click.stop="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
-                          <i class="ri-pencil-line"></i>
-                        </button>
-                        <button @click.stop="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
-                          <i class="ri-delete-bin-line"></i>
-                        </button>
-                        <button @click.stop="printPurchaseOrder(list.id)" class="action-btn action-btn-print" v-b-tooltip.hover title="Print">
-                          <i class="ri-printer-line"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="filteredAndSortedList.length === 0">
+                  <tr v-if="loading">
                     <td colspan="7" class="text-center py-4">
-                      <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                      <p class="mt-2 mb-0">{{ getEmptyStateMessage() }}</p>
-                      <small class="text-muted">Try changing your search or filter criteria</small>
+                      <div class="spinner"></div>
+                      <p class="mt-2 mb-0 text-muted">Loading purchase requests...</p>
                     </td>
                   </tr>
+                  <template v-else>
+                    <tr
+                      v-for="(list,index) in filteredAndSortedList"
+                      v-bind:key="list.id"
+                      @click="openView(list)"
+                      style="cursor: pointer;"
+                    >
+                      <td>{{ (meta?.from ?? 1) + index }}</td>
+                      <td>
+                        <strong>{{ list.pr_number }}</strong>
+                      </td>
+                      <td>{{ formatDate(list.po_date) }}</td>
+                      <td>
+                        <div class="supplier-info">
+                          <div class="supplier-name">{{ list.supplier ? list.supplier.name : '' }}</div>
+                          <small class="text-muted" v-if="list.supplier?.contact_person">
+                            {{ list.supplier.contact_person }}
+                          </small>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="amount-cell">
+                          <span class="amount-value">{{ formatCurrency(list.total_amount) }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          class="status-badge"
+                          :style="getStatusStyle(list.status)"
+                        >
+                          <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
+                          {{ list.status ? list.status.name : '' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="action-buttons" @click.stop>
+                          <button @click.stop="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                            <i class="ri-pencil-line"></i>
+                          </button>
+                          <button @click.stop="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                            <i class="ri-delete-bin-line"></i>
+                          </button>
+                          <button @click.stop="printPurchaseOrder(list.id)" class="action-btn action-btn-print" v-b-tooltip.hover title="Print">
+                            <i class="ri-printer-line"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr v-if="filteredAndSortedList.length === 0">
+                      <td colspan="7" class="text-center py-4">
+                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
+                        <p class="mt-2 mb-0">{{ getEmptyStateMessage() }}</p>
+                        <small class="text-muted">Try changing your search or filter criteria</small>
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -181,6 +189,10 @@ export default {
     links: Object,
     filter: Object,
     dropdowns: Object,
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['fetch', 'update-keyword', 'toast', 'update-filter', 'view-details'],
   data() {
@@ -671,6 +683,21 @@ tbody tr:hover {
 
 .text-center i {
   opacity: 0.5;
+}
+
+/* Loading State */
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #d7e5de;
+  border-top-color: #3d8d7a;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Card Header */

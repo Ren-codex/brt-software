@@ -76,67 +76,84 @@
                       </div>
                     </th>
                     <th>Progress</th>
+                    <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  <tr 
-                    v-for="(list,index) in filteredAndSortedList" 
-                    v-bind:key="list.id" 
-                    @click="openView(list)" 
-                    style="cursor: pointer;"
-                   
-                  >
-                    <td>{{ (meta?.from ?? 1) + index }}</td>
-                    <td>
-                      <strong>{{ list.po_number }}</strong>
+                  <tr v-if="loading">
+                    <td colspan="8" class="text-center py-4">
+                      <div class="spinner"></div>
+                      <p class="mt-2 mb-0 text-muted">Loading purchase orders...</p>
                     </td>
-                    <td>{{ formatDate(list.approved_date) }}</td>
-                    <td>
-                      <div class="supplier-info">
-                        <div class="supplier-name">{{ list.supplier ? list.supplier.name : '' }}</div>
-                        <small class="text-muted" v-if="list.supplier?.contact_person">
-                          {{ list.supplier.contact_person }}
-                        </small>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="amount-cell">
-                        <span class="amount-value">{{ list.approved_by?.fullname }}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="progress-bar-container">
-                        <div class="progress-bar">
-                          <div
-                            class="progress-fill"
-                            :style="{ width: getProgressPercentage(list) + '%' }"
-                          ></div>
+                  </tr>
+                  <template v-else>
+                    <tr
+                      v-for="(list,index) in filteredAndSortedList"
+                      v-bind:key="list.id"
+                      @click="openView(list)"
+                      style="cursor: pointer;"
+
+                    >
+                      <td>{{ (meta?.from ?? 1) + index }}</td>
+                      <td>
+                        <strong>{{ list.po_number }}</strong>
+                      </td>
+                      <td>{{ formatDate(list.approved_date) }}</td>
+                      <td>
+                        <div class="supplier-info">
+                          <div class="supplier-name">{{ list.supplier ? list.supplier.name : '' }}</div>
+                          <small class="text-muted" v-if="list.supplier?.contact_person">
+                            {{ list.supplier.contact_person }}
+                          </small>
                         </div>
-                        <small class="progress-text">{{ getProgressPercentage(list) }}% Received</small>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="action-buttons" @click.stop>
-                        <button
-                          v-if="hasPendingItems(list)"
-                          class="action-btn action-btn-receive"
-                          @click="openReceiveStock(list)"
-                          title="Receive Stock"
+                      </td>
+                      <td>
+                        <div class="amount-cell">
+                          <span class="amount-value">{{ list.approved_by?.fullname }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="progress-bar-container">
+                          <div class="progress-bar">
+                            <div
+                              class="progress-fill"
+                              :style="{ width: getProgressPercentage(list) + '%' }"
+                            ></div>
+                          </div>
+                          <small class="progress-text">{{ getProgressPercentage(list) }}% Received</small>
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          class="status-badge"
+                          :style="getStatusStyle(list.status)"
                         >
-                          Receive Stock
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="filteredAndSortedList.length === 0">
-                    <td colspan="7" class="text-center py-4">
-                      <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
-                      <p class="mt-2 mb-0">No purchase orders found</p>
-                      <small class="text-muted">Try changing your search or filter criteria</small>
-                    </td>
-                  </tr>
+                          {{ list.status ? list.status.name : '' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="action-buttons" @click.stop>
+                          <button
+                            v-if="hasPendingItems(list) && list.status?.name !== 'Voided'"
+                            class="action-btn action-btn-receive"
+                            @click="openReceiveStock(list)"
+                            title="Receive Stock"
+                          >
+                            Receive Stock
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr v-if="filteredAndSortedList.length === 0">
+                      <td colspan="8" class="text-center py-4">
+                        <i class="ri-inbox-line text-muted" style="font-size: 3rem;"></i>
+                        <p class="mt-2 mb-0">No purchase orders found</p>
+                        <small class="text-muted">Try changing your search or filter criteria</small>
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -171,6 +188,10 @@ export default {
     links: Object,
     filter: Object,
     dropdowns: Object,
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['fetch', 'update-keyword', 'toast', 'update-filter', 'view-details'],
   data() {
@@ -185,6 +206,7 @@ export default {
         { value: 'all',      label: 'All Orders', icon: 'ri-list-check' },
         { value: 'partial',  label: 'Partial',    icon: 'ri-pie-chart-line' },
         { value: 'complete', label: 'Complete',   icon: 'ri-checkbox-circle-line' },
+        { value: 'voided',   label: 'Voided',     icon: 'ri-close-circle-line' },
       ],
     };
   },
@@ -195,10 +217,12 @@ export default {
       if (this.activeTab === 'partial') {
         filtered = filtered.filter(order => {
           const progress = this.getProgressPercentage(order);
-          return progress > 0 && progress < 100;
+          return progress > 0 && progress < 100 && order.status?.name !== 'Voided';
         });
       } else if (this.activeTab === 'complete') {
-        filtered = filtered.filter(order => this.getProgressPercentage(order) >= 100);
+        filtered = filtered.filter(order => this.getProgressPercentage(order) >= 100 && order.status?.name !== 'Voided');
+      } else if (this.activeTab === 'voided') {
+        filtered = filtered.filter(order => order.status?.name === 'Voided');
       }
       
       if (this.selectedStatus) {
@@ -705,6 +729,21 @@ tbody tr:hover {
 
 .text-center i {
   opacity: 0.5;
+}
+
+/* Loading State */
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #d7e5de;
+  border-top-color: #3d8d7a;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Card Header */

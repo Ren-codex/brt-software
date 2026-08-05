@@ -137,6 +137,51 @@ class PurchaseOrderClass
         ];
     }
 
+    public function void($request)
+    {
+        $data = DB::transaction(function () use ($request) {
+            $purchaseOrder = PurchaseOrder::with(['status', 'items.receivedItems'])->findOrFail($request->id);
+            $voidedStatusId = ListStatus::getBySlug('voided')?->id;
+
+            if (optional($purchaseOrder->status)->slug === 'voided') {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'void' => ['This Purchase Order has already been voided.'],
+                ]);
+            }
+
+            if (!$purchaseOrder->approved_by_id || $purchaseOrder->approved_by_id !== Auth::id()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'void' => ['Only the approver who approved this purchase order can void it.'],
+                ]);
+            }
+
+            $hasReceivedItems = $purchaseOrder->items->contains(fn($item) => $item->receivedItems->isNotEmpty());
+            if ($hasReceivedItems) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'void' => ['This Purchase Order already has received stock and cannot be voided. Process a stock return instead.'],
+                ]);
+            }
+
+            $purchaseOrder->status_id = $voidedStatusId;
+            $purchaseOrder->save();
+
+            PurchaseOrderLog::create([
+                'po_id' => $purchaseOrder->id,
+                'user_id' => Auth::id(),
+                'action' => 'Voided',
+                'remarks' => $request->remarks,
+            ]);
+
+            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'logs']);
+        });
+
+        return [
+            'data' => new PurchaseOrderResource($data),
+            'message' => 'Purchase order voided successfully!',
+            'info' => "You've successfully voided the purchase order."
+        ];
+    }
+
     public function update($request)
     {
         $data = DB::transaction(function () use ($request) {

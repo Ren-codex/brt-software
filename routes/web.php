@@ -78,6 +78,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
         Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
         Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus']);
+        Route::patch('/purchase-orders/{id}/void', [App\Http\Controllers\PurchaseOrderController::class, 'void']);
         Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class);
         Route::post('/stock-returns/{id}/approve', [App\Http\Controllers\StockReturnController::class, 'approve']);
         Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);

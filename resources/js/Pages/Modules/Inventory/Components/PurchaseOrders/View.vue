@@ -29,6 +29,10 @@
                         <i class="ri-delete-bin-line"></i>
                       </button>
                     </template>
+                    <button v-if="canVoid" class="create-btn" v-b-tooltip.hover title="Void" @click="voidPurchaseOrder">
+                      <i class="ri-close-circle-line"></i>
+                      <span>Void</span>
+                    </button>
                     <button @click="printPurchaseOrder" class="create-btn" v-b-tooltip.hover title="Print">
                       <i class="ri-printer-line"></i>
                     </button>
@@ -72,6 +76,17 @@
                         <div class="mb-3">
                           <label class="form-label">Created By</label>
                           <p class="text-muted">{{ purchaseOrder.created_by?.name || 'N/A' }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Approved By</label>
+                          <p class="text-muted">
+                            {{ purchaseOrder.approved_by?.name || 'N/A' }}
+                            <span v-if="purchaseOrder.approved_by && purchaseOrder.approved_date">
+                              ({{ formatDate(purchaseOrder.approved_date) }})
+                            </span>
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -210,7 +225,44 @@
       
     </div>
   </div>
-  
+
+  <div v-if="showVoidModal" class="modal-overlay active" @click.self="onCancelVoid">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h2>Void Purchase Order</h2>
+        <button class="close-btn" @click="onCancelVoid">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="void-warning">
+          <div class="void-warning-icon">
+            <i class="ri-alert-fill"></i>
+          </div>
+          <div>
+            <h5>You're about to void PO #{{ purchaseOrder?.po_number || purchaseOrder?.pr_number }}</h5>
+            <p>This action cannot be undone. The purchase order will be cancelled and can no longer be approved or received against.</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="void-remarks">Reason for voiding</label>
+          <textarea
+            id="void-remarks"
+            v-model="voidRemarks"
+            class="form-control textarea-control"
+            rows="4"
+            placeholder="Enter the reason for voiding this purchase order..."
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" @click="onCancelVoid">Keep Order</button>
+        <button class="btn btn-void" @click="confirmVoid">
+          <i class="ri-close-circle-line"></i>
+          Void Purchase Order
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div v-if="isToastVisible" class="toast-notification">
     <div class="toast-content">
@@ -239,6 +291,8 @@ export default {
     return {
       showModal: false,
       remarks: '',
+      showVoidModal: false,
+      voidRemarks: '',
       isToastVisible: false,
       toastMessage: '',
     };
@@ -248,6 +302,15 @@ export default {
       const roles = this.$page.props.roles;
       const userRoles = roles ? Object.values(roles) : [];
       return userRoles.some(role => ['Administrator', 'Warehouse Manager', 'Super Admin'].includes(role));
+    },
+    canVoid() {
+      if (!this.purchaseOrder) return false;
+      const statusName = this.purchaseOrder.status?.name;
+      if (['Voided', 'Disapproved'].includes(statusName)) return false;
+      const hasReceivedItems = (this.purchaseOrder.items || []).some(item => Number(item.received_quantity || 0) > 0);
+      if (hasReceivedItems) return false;
+      if (!this.purchaseOrder.approved_by_id) return false;
+      return this.purchaseOrder.approved_by_id === this.$page.props.user.data.id;
     },
     batchRows() {
       if (!this.purchaseOrder?.items?.length) return [];
@@ -319,7 +382,9 @@ export default {
           this.showToast('Purchase order updated successfully');
           this.showModal = false;
           this.remarks = '';
-          this.$inertia.visit('/inventory');
+          setTimeout(() => {
+            this.$inertia.visit('/inventory');
+          }, 1200);
         },
         onError: () => {
           this.showToast('Failed to approve purchase order');
@@ -329,6 +394,33 @@ export default {
     onCancel() {
       this.showModal = false;
       this.remarks = '';
+    },
+
+    voidPurchaseOrder() {
+      this.showVoidModal = true;
+    },
+
+    confirmVoid() {
+      this.$inertia.patch(`/purchase-orders/${this.purchaseOrder.id}/void`, {
+        remarks: this.voidRemarks,
+      }, {
+        onSuccess: () => {
+          this.showVoidModal = false;
+          this.voidRemarks = '';
+          this.showToast('Purchase order voided successfully');
+          setTimeout(() => {
+            this.$inertia.visit('/inventory');
+          }, 1200);
+        },
+        onError: (errors) => {
+          this.showToast(errors.void || 'Failed to void purchase order');
+        }
+      });
+    },
+
+    onCancelVoid() {
+      this.showVoidModal = false;
+      this.voidRemarks = '';
     },
     showToast(message) {
       this.toastMessage = message;
@@ -342,6 +434,58 @@ export default {
 </script>
 
 <style scoped>
+.void-warning {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  background: rgba(220, 53, 69, 0.06);
+}
+
+.void-warning-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(220, 53, 69, 0.12);
+  color: #dc3545;
+  font-size: 1.1rem;
+}
+
+.void-warning h5 {
+  margin: 0 0 0.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #58151c;
+}
+
+.void-warning p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #7a3c42;
+}
+
+.btn-void {
+  background: linear-gradient(135deg, #dc3545 0%, #b91c1c 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
+}
+
+.btn-void:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(185, 28, 28, 0.4);
+}
+
+.btn-void:active {
+  transform: translateY(0);
+}
+
 .toast-notification {
   position: fixed;
   top: 20px;

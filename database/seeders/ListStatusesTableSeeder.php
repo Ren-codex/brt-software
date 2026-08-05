@@ -316,6 +316,18 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            24 =>
+            array (
+                'id' => 25,
+                'name' => 'Voided',
+                'slug' => 'voided',
+                'description' => 'Voided status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#dc3545',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
     }
 }
