@@ -16,6 +16,7 @@ use App\Models\PettyCashTransaction;
 use App\Models\Receipt;
 use App\Models\ReceivedStock;
 use App\Models\ReceivedStockPayment;
+use App\Models\Remittance;
 use App\Models\SalesOrder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -1071,6 +1072,70 @@ class JournalEntryService
             $txn->transaction_date,
             'petty_cash_adjustment',
             'Petty cash balance adjustment ' . $txn->transaction_no . ($txn->description ? ' — ' . $txn->description : '') . '.',
+            $lines
+        );
+    }
+
+    /**
+     * Each underlying Receipt already booked Dr Cash/Cr AR when the sales rep
+     * collected it from the customer, so approving a remittance is not a new
+     * sale or collection — it's a cash-count verification of money already on
+     * the books. Two things can actually change the ledger here:
+     *  - a check turnover reclassifies the pooled Cash (1000) into Cash in
+     *    Bank (1011), since the rep is handing over a check rather than cash;
+     *  - a variance between total_amount (expected) and received_amount
+     *    (counted) is a real overage/shortage, booked to Cash Over/Short
+     *    (5900), same pattern as recordPettyCashAdjustment().
+     */
+    public function recordRemittanceApprovalEntry(Remittance $remittance): ?JournalEntry
+    {
+        $expectedAmount = round((float) $remittance->total_amount, 2);
+        $receivedAmount = round((float) ($remittance->received_amount ?? $remittance->total_amount), 2);
+        $variance       = round($receivedAmount - $expectedAmount, 2);
+
+        $fieldCashAccount = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
+        $turnoverAccount  = $this->resolveCashAccountByPaymentMode($remittance->received_via);
+        $isReclass        = $turnoverAccount->id !== $fieldCashAccount->id;
+
+        if (!$isReclass && $variance === 0.0) {
+            return null;
+        }
+
+        $lines = [];
+        $memo  = 'Remittance ' . $remittance->remittance_no . ' verified, turned over via ' . strtoupper((string) $remittance->received_via) . '.';
+
+        if ($isReclass) {
+            if ($receivedAmount > 0) {
+                $lines[] = ['account_id' => $turnoverAccount->id, 'line_type' => 'debit', 'amount' => $receivedAmount, 'description' => 'Record verified remittance turnover.'];
+            }
+            if ($expectedAmount > 0) {
+                $lines[] = ['account_id' => $fieldCashAccount->id, 'line_type' => 'credit', 'amount' => $expectedAmount, 'description' => 'Release field collections cleared by this remittance.'];
+            }
+        } elseif ($variance !== 0.0) {
+            $lines[] = [
+                'account_id' => $fieldCashAccount->id,
+                'line_type' => $variance > 0 ? 'debit' : 'credit',
+                'amount' => abs($variance),
+                'description' => $variance > 0 ? 'Record cash overage found during remittance verification.' : 'Record cash shortage found during remittance verification.',
+            ];
+        }
+
+        if ($variance !== 0.0) {
+            $overShortAccount = $this->ensureAccount('5900', 'cash_over_short', 'Cash Over/Short', 'expense', 'operating_expense');
+            $lines[] = $variance > 0
+                ? ['account_id' => $overShortAccount->id, 'line_type' => 'credit', 'amount' => $variance, 'description' => 'Record cash overage discovered during remittance verification.']
+                : ['account_id' => $overShortAccount->id, 'line_type' => 'debit', 'amount' => abs($variance), 'description' => 'Record cash shortage discovered during remittance verification.'];
+        }
+
+        if (empty($lines)) {
+            return null;
+        }
+
+        return $this->createEntry(
+            $remittance,
+            $remittance->approved_at ?? now()->toDateString(),
+            'remittance_verification',
+            $memo,
             $lines
         );
     }

@@ -11,6 +11,7 @@ use App\Http\Resources\Libraries\RemittanceResource;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Services\SeriesService;
+use App\Services\Accounting\JournalEntryService;
 use Illuminate\Validation\ValidationException;
 
 class RemittanceClass
@@ -19,11 +20,14 @@ class RemittanceClass
     private const INTERNAL_LOCATION = 'Zamboanga City';
 
     protected $series_service;
+    protected $journalEntryService;
 
     public function __construct(
         SeriesService $series_service,
+        JournalEntryService $journalEntryService,
     ) {
         $this->series_service = $series_service;
+        $this->journalEntryService = $journalEntryService;
     }
 
     /**
@@ -257,6 +261,10 @@ class RemittanceClass
         }
 
         $data->save();
+
+        if ($isApprove) {
+            $this->journalEntryService->recordRemittanceApprovalEntry($data);
+        }
 
         $receiptStatusId = $isApprove ? $this->statusId('liquidated') : $this->statusId('pending');
 
