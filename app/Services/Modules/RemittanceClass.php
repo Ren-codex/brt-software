@@ -5,7 +5,6 @@ namespace App\Services\Modules;
 
 use App\Models\Remittance;
 use App\Models\Receipt;
-use App\Models\ListLocation;
 use App\Models\ListStatus;
 use App\Http\Resources\Libraries\RemittanceResource;
 use Carbon\Carbon;
@@ -16,9 +15,6 @@ use Illuminate\Validation\ValidationException;
 
 class RemittanceClass
 {
-    /** Sales orders at this location (or with none set) are treated as internal. */
-    private const INTERNAL_LOCATION = 'Zamboanga City';
-
     protected $series_service;
     protected $journalEntryService;
 
@@ -72,21 +68,6 @@ class RemittanceClass
                     $q->where('slug', $request->status);
                 });
             });
-
-        // Internal is expressed as "has no external receipt" rather than
-        // "has an internal receipt", so a remittance is never hidden merely
-        // because a receipt is not yet linked to a sales order.
-        $externalLocationIds = ListLocation::where('name', '!=', self::INTERNAL_LOCATION)->pluck('id');
-
-        if ($request->is_external) {
-            $query->whereHas('receipts.arInvoice.sales_order', function ($q) use ($externalLocationIds) {
-                $q->whereIn('location_id', $externalLocationIds);
-            });
-        } else {
-            $query->whereDoesntHave('receipts.arInvoice.sales_order', function ($q) use ($externalLocationIds) {
-                $q->whereIn('location_id', $externalLocationIds);
-            });
-        }
 
         return RemittanceResource::collection(
             $query->orderBy('created_at', 'DESC')

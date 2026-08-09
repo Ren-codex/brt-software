@@ -177,17 +177,17 @@
     "file": "assets/logo-light-ClxrPO4r.png",
     "src": "public/images/logo-light.png"
   },
-  "public/images/logo-sm.png": {
-    "file": "assets/logo-sm-C9p9en_o.png",
-    "src": "public/images/logo-sm.png"
+  "public/images/official-logo-mini.png": {
+    "file": "assets/official-logo-mini-McOd_6ZP.png",
+    "src": "public/images/official-logo-mini.png"
   },
-  "public/images/sidebar-logo-light.png": {
-    "file": "assets/sidebar-logo-light-Dt7rNc0_.png",
-    "src": "public/images/sidebar-logo-light.png"
+  "public/images/official-logo.png": {
+    "file": "assets/official-logo-D8VPb1Z4.png",
+    "src": "public/images/official-logo.png"
   },
-  "public/images/sidebar-logo-sm.png": {
-    "file": "assets/sidebar-logo-sm-iwktxZUp.png",
-    "src": "public/images/sidebar-logo-sm.png"
+  "public/images/sidebar-official-logo.png": {
+    "file": "assets/sidebar-official-logo-hWw7n3Kk.png",
+    "src": "public/images/sidebar-official-logo.png"
   },
   "public/images/sidebar/img-1.jpg": {
     "file": "assets/img-1-C6VsSbnm.jpg",
@@ -206,7 +206,7 @@
     "src": "public/images/sidebar/img-4.jpg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-WybemTlF.js",
+    "file": "assets/app-iWjK0YVk.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -215,18 +215,18 @@
       "node_modules/vue3-apexcharts/dist/apexcharts.ssr.esm-fe46cd2d.js"
     ],
     "css": [
-      "assets/app-DDofYe5a.css"
+      "assets/app-DdFsL-ka.css"
     ],
     "assets": [
-      "assets/logo-sm-C9p9en_o.png",
+      "assets/official-logo-D8VPb1Z4.png",
       "assets/logo-dark-DsEUmtME.png",
       "assets/logo-light-ClxrPO4r.png",
       "assets/img-1-C6VsSbnm.jpg",
       "assets/img-2-B0ULeiCa.jpg",
       "assets/img-3-h1U1KdmN.jpg",
       "assets/img-4-iSVl4_tu.jpg",
-      "assets/sidebar-logo-sm-iwktxZUp.png",
-      "assets/sidebar-logo-light-Dt7rNc0_.png",
+      "assets/official-logo-mini-McOd_6ZP.png",
+      "assets/sidebar-official-logo-hWw7n3Kk.png",
       "assets/hkgrotesk-light-CFOlwwJU.eot",
       "assets/hkgrotesk-light-Bch7Jc8H.woff",
       "assets/hkgrotesk-regular-C5FQFgYW.eot",

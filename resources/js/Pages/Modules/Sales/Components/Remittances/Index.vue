@@ -324,7 +324,7 @@ import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
     components: { Pagination, Create, View, SummaryView, TableLoadingRow },
-    props: ['dropdowns', 'isExternal'],
+    props: ['dropdowns'],
     data() {
         return {
             loading: false,
@@ -393,8 +393,7 @@ export default {
                     location_id: this.filter.location_id === null || this.filter.location_id === '' ? null : Number(this.filter.location_id),
                     status: this.filter.status,
                     count: 10,
-                    option: 'lists',
-                    is_external: this.isExternal ? 1 : 0
+                    option: 'lists'
                 }
             })
             .then(response => {
