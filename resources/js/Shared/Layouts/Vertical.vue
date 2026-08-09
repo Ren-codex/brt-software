@@ -98,7 +98,7 @@ export default {
           <!-- Dark Logo-->
           <Link href="/" class="logo logo-dark">
           <span class="logo-sm">
-            <img src="@assets/images/logo-sm.png" alt="" height="28" />
+            <img src="@assets/images/official-logo.png" alt="" height="28" />
           </span>
           <span class="logo-lg">
             <img src="@assets/images/logo-dark.png" alt="" height="30" />
@@ -107,10 +107,10 @@ export default {
           <!-- Light Logo-->
           <Link href="/" class="logo logo-light ">
           <span class="logo-sm">
-            <img src="@assets/images/sidebar-logo-sm.png" alt="" height="50" />
+            <img src="@assets/images/official-logo-mini.png" alt="" height="50" />
           </span>
            <span class="logo-lg">
-            <img src="@assets/images/sidebar-logo-light.png" alt="" height="90" />
+            <img src="@assets/images/sidebar-official-logo.png" alt="" height="50" />
           </span>
           <!-- <span class="logo-lg">
             <div style="
@@ -125,7 +125,7 @@ export default {
                 overflow: hidden;
                 padding: 2px;">
 
-              <img class="img-fluid" src="@assets/images/brt-logo.png" alt="Bouyant Rice Trading Logo" style="
+              <img class="img-fluid" src="@assets/images/official-logo-mini.png" alt="Bouyant Rice Trading Logo" style="
                 max-width: 100%;
                 max-height: 100%;
                 object-fit: contain;

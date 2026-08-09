@@ -10,8 +10,9 @@ class LoanSeeder extends Seeder
 {
     public function run(): void
     {
-        // Clear existing loans
-        DB::table('loans')->truncate();
+        // Clear existing loans (delete, not truncate — loan_logs has an FK to loans,
+        // and InnoDB refuses TRUNCATE on a table referenced by another table's FK)
+        DB::table('loans')->delete();
 
         // Get first employee and user
         $employee = DB::table('employees')->first();

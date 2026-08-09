@@ -41,6 +41,8 @@ class ListRolesTableSeeder extends Seeder
             [
                 'id' => 3,
                 'name' => 'Human Resource Officer',
+                'type' => 'Staff',
+                'is_active' => 1,
                 'definition' => 'Oversees HR operations such as employee management, leave approvals, and record verification.',
             ],
             [

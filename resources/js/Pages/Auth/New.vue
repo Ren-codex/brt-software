@@ -3,7 +3,7 @@
     <div class="d-flex flex-column min-vh-100 justify-content-center align-items-center">
         <div class="text-center mb-2">
             <a to="/" class="d-block auth-logo">
-                <img src="/images/logo-sm.png" alt="" height="50" class="auth-logo-dark mx-auto" />
+                <img src="/images/official-logo.png" alt="" height="50" class="auth-logo-dark mx-auto" />
             </a>
             <p class="font-size-11 mt-3"> <br> BRT Accountitng Software</p>
           

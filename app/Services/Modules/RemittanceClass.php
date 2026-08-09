@@ -159,19 +159,19 @@ class RemittanceClass
         // from the client payload.
         $totalAmount = $receipts->sum('amount_paid');
 
-        $openStatusId = $this->statusId('open');
+        $forVerificationStatusId = $this->statusId('for-verification');
 
         $data = Remittance::create([
             'remittance_no'   => $this->series_service->get('remittance'),
             'remittance_date' => Carbon::now(),
             'summary'         => $request->summary,
             'total_amount'    => $totalAmount,
-            'status_id'       => $openStatusId,
+            'status_id'       => $forVerificationStatusId,
             'created_by_id'   => Auth::id(),
         ]);
 
         Receipt::whereIn('id', $receiptIds)->update([
-            'status_id'     => $openStatusId,
+            'status_id'     => $forVerificationStatusId,
             'remittance_id' => $data->id,
         ]);
 
@@ -187,7 +187,7 @@ class RemittanceClass
     {
         $data = Remittance::with('status')->findOrFail($id);
 
-        if ($data->status?->slug !== 'open') {
+        if ($data->status?->slug !== 'for-verification') {
             throw ValidationException::withMessages([
                 'remittance' => 'Only open remittances can be deleted.',
             ]);
@@ -212,7 +212,7 @@ class RemittanceClass
     {
         $data = Remittance::with('status')->findOrFail($id);
 
-        if ($data->status?->slug !== 'open') {
+        if ($data->status?->slug !== 'for-verification') {
             throw ValidationException::withMessages([
                 'remittance' => 'Only open remittances can be marked as remitted.',
             ]);
@@ -237,7 +237,7 @@ class RemittanceClass
         $data = Remittance::with('status')->findOrFail($id);
 
         // A remittance may only be decided once, from the open or remitted state.
-        if (! in_array($data->status?->slug, ['open', 'remitted'])) {
+        if (! in_array($data->status?->slug, ['for-verification', 'remitted'])) {
             throw ValidationException::withMessages([
                 'status' => 'Only open or remitted remittances can be approved or disapproved.',
             ]);

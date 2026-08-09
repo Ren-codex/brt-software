@@ -153,7 +153,7 @@ class ListStatusesTableSeeder extends Seeder
             array (
                 'id' => 12,
                 'name' => 'For Verification',
-                'slug' => 'open',
+                'slug' => 'for-verification',
                 'description' => 'For Verification status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#000000',

@@ -9,7 +9,7 @@
             <!-- Branding -->
             <div class="brand">
                 <div class="logo-wrap">
-                    <img src="@assets/images/logo-sm.png" alt="BRT Logo">
+                    <img src="@assets/images/official-logo.png" alt="BRT Logo">
                 </div>
                 <div class="brand-name">BRT Accounting Software</div>
                 <div class="brand-tag">Business Information Management System</div>
@@ -174,7 +174,7 @@ export default {
 }
 
 .logo-wrap img {
-    width: 80px;
+    width: 115px;
     height: 80px;
     object-fit: contain;
 }

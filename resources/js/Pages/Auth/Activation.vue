@@ -10,7 +10,7 @@
             <!-- Branding -->
             <div class="brand">
                 <div class="logo-wrap">
-                    <img src="@assets/images/logo-sm.png" alt="BRT Logo">
+                    <img src="@assets/images/official-logo.png" alt="BRT Logo">
                 </div>
                 <div class="brand-name">BRT Accounting Software</div>
                 <div class="brand-tag">Set up your account to continue</div>

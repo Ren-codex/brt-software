@@ -13,11 +13,11 @@
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-                        <button v-if="canApprove && item.status?.slug === 'open'" class="create-btn" @click="openApprovalModal">
+                        <button v-if="canApprove && item.status?.slug === 'for-verification'" class="create-btn" @click="openApprovalModal">
                             <i class="ri-check-line"></i>
                             <span>Approval</span>
                         </button>
-                        <button v-if="item.status?.slug === 'open'" class="create-btn" @click="openDelete(item.id)">
+                        <button v-if="item.status?.slug === 'for-verification'" class="create-btn" @click="openDelete(item.id)">
                             <i class="ri-delete-bin-line"></i>
                         </button>
                         <button class="create-btn" @click="onPrint(item.id)">
@@ -335,7 +335,7 @@ export default {
 
             if (['approved', 'completed', 'liquidated'].includes(value)) return 'emp-status-success';
             if (['rejected', 'disapproved', 'cancelled'].includes(value)) return 'emp-status-danger';
-            if (['open', 'pending'].includes(value)) return 'emp-status-warning';
+            if (['for-verification', 'pending'].includes(value)) return 'emp-status-warning';
 
             return 'profile-badge-neutral';
         },

@@ -262,7 +262,7 @@ export default {
           <!-- Dark Logo-->
           <Link href="/" class="logo logo-dark">
           <span class="logo-sm">
-            <img src="@assets/images/logo-sm.png" alt="" height="22" />
+            <img src="@assets/images/official-logo.png" alt="" height="22" />
           </span>
           <span class="logo-lg">
             <img src="@assets/images/logo-dark.png" alt="" height="17" />
@@ -271,7 +271,7 @@ export default {
           <!-- Light Logo-->
           <Link href="/" class="logo logo-light">
           <span class="logo-sm">
-            <img src="@assets/images/logo-sm.png" alt="" height="22" />
+            <img src="@assets/images/official-logo.png" alt="" height="22" />
           </span>
           <span class="logo-lg">
             <img src="@assets/images/logo-light.png" alt="" height="17" />
@@ -286,7 +286,7 @@ export default {
           <BContainer fluid>
             <div id="two-column-menu">
               <simplebar class="twocolumn-iconview list-unstyled">
-                <a class="logo"><img src="@assets/images/logo-sm.png" alt="Logo" height="22" /></a>
+                <a class="logo"><img src="@assets/images/official-logo.png" alt="Logo" height="22" /></a>
                 <li>
                   <a href="#sidebarDashboards" class="nav-icon" role="button" @click.prevent="updateMenu('sidebarDashboards', $event)">
                     <i class="ri-dashboard-2-line"></i>
