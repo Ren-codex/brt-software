@@ -208,11 +208,11 @@ class DataRecordingTest extends TestCase
         $this->assertEquals(2000.00, (float) $history->total_value);
         $this->assertEquals($this->user->id, $history->approved_by_id);
 
-        // inventory_adjustments — restockable returns ADD stock (type=1)
+        // inventory_adjustments — restockable returns ADD stock (type='addition')
         $adj = InventoryAdjustment::where('inventory_stocks_id', $stock->id)
             ->orderByDesc('id')->first();
         $this->assertNotNull($adj);
-        $this->assertEquals(1, $adj->type);
+        $this->assertEquals('addition', $adj->type);
         $this->assertEquals($stockBefore + 2, (int) $adj->new_quantity);
         $this->assertEquals($stockBefore, (int) $adj->previous_quantity);
 
@@ -305,11 +305,11 @@ class DataRecordingTest extends TestCase
         // inventory_adjustments — 2 rows: +2 for return (restockable), -2 for replacement
         $addAdj = InventoryAdjustment::where('inventory_stocks_id', $stock->id)->first();
         $this->assertNotNull($addAdj);
-        $this->assertEquals(1, $addAdj->type); // addition
+        $this->assertEquals('addition', $addAdj->type); // addition
 
         $deductAdj = InventoryAdjustment::where('inventory_stocks_id', $repStock->id)->first();
         $this->assertNotNull($deductAdj);
-        $this->assertEquals(2, $deductAdj->type); // subtraction (deductStock type=2)
+        $this->assertEquals('deduction', $deductAdj->type); // subtraction (deductStock)
 
         // journal_entries — replacement_inventory_out but NO extra receipt JE
         $this->assertDatabaseHas('journal_entries', ['entry_type' => 'replacement_inventory_out']);
@@ -502,7 +502,7 @@ class DataRecordingTest extends TestCase
         $this->assertEquals(2, $history->quantity);
 
         // inventory_adjustments — only 1 stock restoration (for itemA product only)
-        $addedAdj = InventoryAdjustment::where('type', 1)->get();
+        $addedAdj = InventoryAdjustment::where('type', 'addition')->get();
         $this->assertCount(1, $addedAdj);
     }
 
@@ -704,10 +704,10 @@ class DataRecordingTest extends TestCase
         $this->assertContains('restockable', $conditions);
         $this->assertContains('damaged', $conditions);
 
-        // inventory_adjustments — type=1 (addition) for restockable, type='damage' for damaged
-        $addAdj    = InventoryAdjustment::where('type', 1)->first();
+        // inventory_adjustments — type='addition' for restockable, type='damage' for damaged
+        $addAdj    = InventoryAdjustment::where('type', 'addition')->first();
         $damageAdj = InventoryAdjustment::where('type', 'damage')->first();
-        $this->assertNotNull($addAdj,    'Restockable return must create type=1 inventory adjustment');
+        $this->assertNotNull($addAdj,    'Restockable return must create an addition inventory adjustment');
         $this->assertNotNull($damageAdj, 'Damaged return must create type=damage inventory adjustment');
 
         // journal_entries — both inventory and damage writeoff
@@ -743,7 +743,7 @@ class DataRecordingTest extends TestCase
         $this->assertEquals(3000.00, (float) $history->total_value); // 3 × ₱1,000
 
         // Inventory adjustment adds 3 units back
-        $adj = InventoryAdjustment::where('type', 1)->first();
+        $adj = InventoryAdjustment::where('type', 'addition')->first();
         $this->assertNotNull($adj);
         $this->assertEquals(3, $adj->new_quantity - $adj->previous_quantity);
     }

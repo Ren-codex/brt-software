@@ -28,7 +28,7 @@
                 :class="{ 'input-error': form.errors.type }"
               >
                 <option value="received items">Received Items</option>
-                <option value="inventory count">Inventory Count</option>
+                <option value="inventory count">Add to Count</option>
                 <option value="loss">Loss</option>
                 <option value="damage">Damage</option>
               </select>
@@ -167,7 +167,7 @@ export default {
         this.form.type = 'inventory count';
     },
     saveQuantity() {
-      if (this.new_quantity < 0) {
+      if ((parseFloat(this.form.new_quantity) || 0) < 0) {
         alert('Quantity cannot be negative.');
         return;
       }

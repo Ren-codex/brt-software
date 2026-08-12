@@ -21,6 +21,9 @@ class InventoryAdjustmentClass
             DB::beginTransaction();
 
             $inventoryStock = InventoryStocks::findOrFail($request->inventory_stocks_id);
+            // Use the authoritative current quantity from the DB for the audit
+            // trail rather than trusting the client-supplied previous_quantity.
+            $previousQuantity = (int) $inventoryStock->quantity;
             if (in_array($request->type, ['received items', 'inventory count'])) {
                 $inventoryStock->quantity += $request->new_quantity;
             } elseif (in_array($request->type, ['loss', 'damage'])) {
@@ -36,7 +39,7 @@ class InventoryAdjustmentClass
             $data = InventoryAdjustment::create([
                 'inventory_stocks_id' =>  $request->inventory_stocks_id,
                 'new_quantity' =>  $inventoryStock->quantity,
-                'previous_quantity' =>  $request->previous_quantity,
+                'previous_quantity' =>  $previousQuantity,
                 'reason' =>  $request->reason,
                 'type' =>  $request->type,
                 'adjustment_date' =>  now(),

@@ -103,7 +103,7 @@ class InventoryService
                 'reason' => $reason,
                 'adjustment_date' => now()->toDateString(),
                 'adjusted_by_id' => auth()->id(),
-                'type' => 2, // Subtraction
+                'type' => 'deduction', // Subtraction
             ]);
 
             $remainingQuantity -= $deductAmount;
@@ -144,11 +144,14 @@ class InventoryService
                 'reason' => $reason,
                 'adjustment_date' => now()->toDateString(),
                 'adjusted_by_id' => auth()->id(),
-                'type' => 1, // Addition
+                'type' => 'addition', // Addition
             ]);
         } else {
-            // If no stock exists, this might be an error, but for now, we'll skip
-            // In a real scenario, you might need to create a new stock entry
+            // No stock row exists for this product/batch. Rather than silently
+            // dropping the quantity (which would lose real, returned inventory),
+            // fail loudly so the surrounding transaction rolls back and the
+            // problem surfaces instead of vanishing.
+            throw new \Exception('Cannot restore stock: no inventory batch found for product #' . $productId . ($batchCode ? ' (batch ' . $batchCode . ')' : '') . '.');
         }
     }
 

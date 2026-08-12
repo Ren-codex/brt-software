@@ -11,6 +11,7 @@ use App\Models\ListStatus;
 use App\Models\PurchaseOrderLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use App\Services\Accounting\JournalEntryService;
 use App\Services\SeriesService;
 use Carbon\Carbon;
@@ -266,29 +267,37 @@ class ReceivedStockService
 
     public function delete($id)
     {
-        $receivedStock = ReceivedStock::with('payments')->findOrFail($id);
-        foreach ($receivedStock->payments as $payment) {
-            $this->journalEntryService->reverseEntriesForSource($payment, 'Supplier payment deleted along with received stock.', now()->toDateString());
-        }
-        $this->journalEntryService->reverseEntriesForSource($receivedStock, 'Received stock deleted. Purchase receipt entry reversed.', now()->toDateString());
-        $receivedStock->delete();
+        return DB::transaction(function () use ($id) {
+            $receivedStock = ReceivedStock::with(['payments', 'items.inventoryStocks'])->findOrFail($id);
+
+            // Block deletion once any of this receipt's stock has been consumed
+            // (sold, converted, or adjusted down). Deleting then would leave
+            // inventory and accounting inconsistent — those movements must be
+            // reversed first.
+            foreach ($receivedStock->items as $item) {
+                foreach ($item->inventoryStocks as $stock) {
+                    if ((int) $stock->quantity < (int) $item->quantity) {
+                        throw ValidationException::withMessages([
+                            'received_stock' => 'This received stock cannot be deleted because some of its stock has already been sold, converted, or adjusted. Reverse those movements first.',
+                        ]);
+                    }
+                }
+            }
+
+            foreach ($receivedStock->payments as $payment) {
+                $this->journalEntryService->reverseEntriesForSource($payment, 'Supplier payment deleted along with received stock.', now()->toDateString());
+            }
+            $this->journalEntryService->reverseEntriesForSource($receivedStock, 'Received stock deleted. Purchase receipt entry reversed.', now()->toDateString());
+            $receivedStock->delete();
+        });
     }
 
     public function getNextBatchCode()
     {
-        $latestBatchCode = InventoryStocks::orderBy('batch_code', 'desc')->value('batch_code');
-
-        if (!$latestBatchCode) {
-            return 'BATCH-001';
-        }
-
-        $parts = explode('-', $latestBatchCode);
-        if (count($parts) == 2 && $parts[0] == 'BATCH') {
-            $number = (int) $parts[1];
-            $nextNumber = $number + 1;
-            return 'BATCH-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-        }
-
-        return 'BATCH-001';
+        // Preview the exact code the batch_code series will assign next, without
+        // consuming it — so the receiving screen shows the same code that
+        // create() actually saves. (Previously this used a separate BATCH-###
+        // scheme that diverged from the real series value.)
+        return $this->series_service->peek('batch_code');
     }
 }
