@@ -328,6 +328,18 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            25 =>
+            array (
+                'id' => 26,
+                'name' => 'Remitted',
+                'slug' => 'remitted',
+                'description' => 'Remitted status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#3d8d7a',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
     }
 }
