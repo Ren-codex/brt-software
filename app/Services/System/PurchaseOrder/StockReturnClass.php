@@ -3,6 +3,7 @@
 namespace App\Services\System\PurchaseOrder;
 
 use App\Http\Resources\System\PurchaseOrder\StockReturnResource;
+use App\Models\InventoryAdjustment;
 use App\Models\InventoryStocks;
 use App\Models\ListStatus;
 use App\Models\PurchaseOrder;
@@ -11,6 +12,7 @@ use App\Models\PurchaseOrderLog;
 use App\Models\StockReturn;
 use App\Models\StockReturnItem;
 use App\Models\StockReturnLog;
+use App\Services\Accounting\JournalEntryService;
 use App\Services\Modules\InventoryService;
 use App\Services\NotificationService;
 use App\Services\SeriesService;
@@ -26,14 +28,18 @@ class StockReturnClass
 
     protected $inventoryService;
 
+    protected $journalEntryService;
+
     public function __construct(
         SeriesService $series_service,
         NotificationService $notificationService,
         InventoryService $inventoryService,
+        JournalEntryService $journalEntryService,
     ) {
         $this->series_service = $series_service;
         $this->notificationService = $notificationService;
         $this->inventoryService = $inventoryService;
+        $this->journalEntryService = $journalEntryService;
     }
 
     public function list($request)
@@ -259,7 +265,20 @@ class StockReturnClass
 
                         $deductQty = min((int) $inventoryStock->quantity, $remainingQty);
                         if ($deductQty > 0) {
+                            $prevQty = (int) $inventoryStock->quantity;
                             $inventoryStock->decrement('quantity', $deductQty);
+
+                            // Audit trail for the returned-to-supplier deduction.
+                            InventoryAdjustment::create([
+                                'inventory_stocks_id' => $inventoryStock->id,
+                                'previous_quantity'   => $prevQty,
+                                'new_quantity'        => $prevQty - $deductQty,
+                                'reason'              => 'Returned to supplier (Stock Return #' . $stockReturn->id . ')',
+                                'type'                => 'return_out',
+                                'adjustment_date'     => now()->format('Y-m-d'),
+                                'adjusted_by_id'      => Auth::id(),
+                            ]);
+
                             $remainingQty -= $deductQty;
                         }
                     }
@@ -287,6 +306,11 @@ class StockReturnClass
             ]);
 
             if ($targetStatus === 'approved') {
+                // Post the accounting reversal: Dr Accounts Payable / Cr Inventory,
+                // so returning stock to the supplier reduces both the inventory
+                // asset and the payable on the books.
+                $this->journalEntryService->recordStockReturnEntry($stockReturn);
+
                 PurchaseOrderLog::create([
                     'po_id' => $stockReturn->po_id,
                     'user_id' => Auth::id(),
@@ -342,6 +366,12 @@ class StockReturnClass
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            // Prevent re-processing an item that was already received (would
+            // otherwise re-add replacement stock on every submission).
+            if (in_array(optional($stockReturnItem->status)->slug, ['replaced', 'loss'], true)) {
+                $this->fail('This return item has already been received and cannot be processed again.');
+            }
+
             $replacedQty = (int) $request->replaced_quantity;
             $lossQty = (int) $request->loss_quantity;
             $actualReceivedQty = $replacedQty + $lossQty;
@@ -394,8 +424,20 @@ class StockReturnClass
                     $this->fail('No inventory stock record found for this purchase order item.');
                 }
 
-                $inventoryStock->quantity = (int) $inventoryStock->quantity + $replacedQty;
+                $prevInvQty = (int) $inventoryStock->quantity;
+                $inventoryStock->quantity = $prevInvQty + $replacedQty;
                 $inventoryStock->save();
+
+                // Audit trail for the replacement stock added back.
+                InventoryAdjustment::create([
+                    'inventory_stocks_id' => $inventoryStock->id,
+                    'previous_quantity'   => $prevInvQty,
+                    'new_quantity'        => $prevInvQty + $replacedQty,
+                    'reason'              => 'Replacement received from supplier (Stock Return #' . $stockReturn->id . ', Item #' . $stockReturnItem->id . ')',
+                    'type'                => 'return_replacement',
+                    'adjustment_date'     => now()->format('Y-m-d'),
+                    'adjusted_by_id'      => Auth::id(),
+                ]);
 
                 PurchaseOrderLog::create([
                     'po_id' => $stockReturn->po_id,
@@ -403,6 +445,13 @@ class StockReturnClass
                     'action' => 'Replacement Received',
                     'remarks' => "Returned stocks received for replacement (Stock Return #{$stockReturn->id}, Item #{$stockReturnItem->id}) qty: {$replacedQty}.",
                 ]);
+
+                // Post the accounting mirror: Dr Inventory / Cr Accounts Payable
+                // for the replacement value, restoring both sides of the books.
+                $this->journalEntryService->recordStockReplacementEntry(
+                    $stockReturn,
+                    (float) $replacedQty * (float) $poItem->unit_cost
+                );
             }
 
             $stockReturnItem->save();

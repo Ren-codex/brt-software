@@ -185,7 +185,17 @@ class PurchaseOrderClass
     public function update($request)
     {
         $data = DB::transaction(function () use ($request) {
-            $purchaseOrder = PurchaseOrder::findOrFail($request->id);
+            $purchaseOrder = PurchaseOrder::with('items.receivedItems')->findOrFail($request->id);
+
+            // Editing rebuilds the item list (delete + recreate), which would
+            // orphan any received stock and its inventory links. Block once
+            // anything has been received.
+            $hasReceivedItems = $purchaseOrder->items->contains(fn ($item) => $item->receivedItems->isNotEmpty());
+            if ($hasReceivedItems) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'items' => ['This purchase order already has received stock and can no longer be edited. Process a stock return instead.'],
+                ]);
+            }
 
             $poData = [
                 'total_amount' => $request->total_amount,
@@ -226,20 +236,32 @@ class PurchaseOrderClass
 
     public function delete($id)
     {
-        $purchaseOrder = PurchaseOrder::findOrFail($id);
-        $purchaseOrder->delete();
+        return DB::transaction(function () use ($id) {
+            $purchaseOrder = PurchaseOrder::with('items.receivedItems')->findOrFail($id);
 
-        return [
-            'message' => 'Purchase order deleted successfully!',
-            'info' => "You've successfully deleted the purchase order."
-        ];
+            // Deleting a PO with received stock would orphan the received
+            // records and inventory. Steer to void / stock-return instead.
+            $hasReceivedItems = $purchaseOrder->items->contains(fn ($item) => $item->receivedItems->isNotEmpty());
+            if ($hasReceivedItems) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'delete' => ['This purchase order has received stock and cannot be deleted. Void it or process a stock return instead.'],
+                ]);
+            }
+
+            $purchaseOrder->delete();
+
+            return [
+                'message' => 'Purchase order deleted successfully!',
+                'info' => "You've successfully deleted the purchase order."
+            ];
+        });
     }
 
     public function generatePoNumber()
     {
-        $year = date('Y');
-        $lastPo = PurchaseOrder::whereYear('po_date', $year)->orderBy('id', 'desc')->first();
-        $nextNumber = $lastPo ? intval(substr($lastPo->po_number, -4)) + 1 : 1;
-        return 'PO-' . $year . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        // Preview the exact number the 'purchase_order' series will assign on
+        // approval, without consuming it — so the preview matches what is saved
+        // (previously this string-parsed po_number and diverged from the series).
+        return $this->series_service->peek('purchase_order');
     }
 }

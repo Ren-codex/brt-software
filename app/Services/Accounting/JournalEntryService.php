@@ -18,6 +18,7 @@ use App\Models\ReceivedStock;
 use App\Models\ReceivedStockPayment;
 use App\Models\Remittance;
 use App\Models\SalesOrder;
+use App\Models\StockReturn;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -621,6 +622,90 @@ class JournalEntryService
                     'line_type' => 'credit',
                     'amount' => $amount,
                     'description' => 'Record supplier payment via ' . strtolower((string) $payment->payment_mode) . '.',
+                ],
+            ],
+            $purchaseOrder ? ('PO#' . ($purchaseOrder->po_number ?: $purchaseOrder->pr_number) . ' - ' . $memo) : $memo
+        );
+    }
+
+    public function recordStockReturnEntry(StockReturn $stockReturn): ?JournalEntry
+    {
+        $stockReturn->loadMissing(['items.purchaseOrderItem', 'purchaseOrder']);
+
+        // Value the return at each item's purchase unit cost.
+        $amount = round((float) $stockReturn->items->sum(function ($item) {
+            return (float) $item->quantity * (float) optional($item->purchaseOrderItem)->unit_cost;
+        }), 2);
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
+        $payableAccount   = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
+
+        $purchaseOrder = $stockReturn->purchaseOrder;
+        $reference     = $stockReturn->stock_return_no ?: ('#' . $stockReturn->id);
+        $memo = 'Stock return ' . $reference . ' to supplier — inventory returned and supplier payable reduced.';
+
+        // Mirror the received-stock entry: Dr Accounts Payable / Cr Inventory.
+        return $this->createEntry(
+            $stockReturn,
+            $stockReturn->approved_at ?: now()->toDateString(),
+            'stock_return',
+            $memo,
+            [
+                [
+                    'account_id'  => $payableAccount->id,
+                    'line_type'   => 'debit',
+                    'amount'      => $amount,
+                    'description' => 'Reduce supplier payable for goods returned.',
+                ],
+                [
+                    'account_id'  => $inventoryAccount->id,
+                    'line_type'   => 'credit',
+                    'amount'      => $amount,
+                    'description' => 'Reduce inventory for goods returned to supplier.',
+                ],
+            ],
+            $purchaseOrder ? ('PO#' . ($purchaseOrder->po_number ?: $purchaseOrder->pr_number) . ' - ' . $memo) : $memo
+        );
+    }
+
+    public function recordStockReplacementEntry(StockReturn $stockReturn, float $amount, ?string $reference = null): ?JournalEntry
+    {
+        $amount = round($amount, 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $stockReturn->loadMissing('purchaseOrder');
+
+        $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
+        $payableAccount   = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
+
+        $purchaseOrder = $stockReturn->purchaseOrder;
+        $ref  = $reference ?: ($stockReturn->stock_return_no ?: ('#' . $stockReturn->id));
+        $memo = 'Replacement received for stock return ' . $ref . ' — inventory restored and supplier payable restored.';
+
+        // Mirror of the return reversal: Dr Inventory / Cr Accounts Payable.
+        return $this->createEntry(
+            $stockReturn,
+            now()->toDateString(),
+            'stock_return_replacement',
+            $memo,
+            [
+                [
+                    'account_id'  => $inventoryAccount->id,
+                    'line_type'   => 'debit',
+                    'amount'      => $amount,
+                    'description' => 'Restore inventory for replacement goods received.',
+                ],
+                [
+                    'account_id'  => $payableAccount->id,
+                    'line_type'   => 'credit',
+                    'amount'      => $amount,
+                    'description' => 'Restore supplier payable for replacement goods.',
                 ],
             ],
             $purchaseOrder ? ('PO#' . ($purchaseOrder->po_number ?: $purchaseOrder->pr_number) . ' - ' . $memo) : $memo
