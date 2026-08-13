@@ -220,7 +220,7 @@ class JournalEntryService
                 ->where('batch_code', $item->batch_code)
                 ->first();
 
-            return $effectiveQuantity * (float) optional($inventoryStock?->receivedItem)->unit_cost;
+            return $effectiveQuantity * (float) (optional($inventoryStock?->receivedItem)->unit_cost ?? $inventoryStock?->unit_cost ?? 0);
         }), 2);
 
         if ($restockedCost > 0) {
@@ -262,7 +262,7 @@ class JournalEntryService
                 ->where('batch_code', $item->batch_code)
                 ->first();
 
-            return $effectiveQuantity * (float) optional($inventoryStock?->receivedItem)->unit_cost;
+            return $effectiveQuantity * (float) (optional($inventoryStock?->receivedItem)->unit_cost ?? $inventoryStock?->unit_cost ?? 0);
         }), 2);
 
         if ($damagedCost > 0) {
@@ -717,7 +717,7 @@ class JournalEntryService
         $adjustment->loadMissing(['inventoryStock.receivedItem']);
 
         $inventoryStock = $adjustment->inventoryStock;
-        $unitCost = (float) optional($inventoryStock?->receivedItem)->unit_cost;
+        $unitCost = (float) (optional($inventoryStock?->receivedItem)->unit_cost ?? $inventoryStock?->unit_cost ?? 0);
         if ($unitCost <= 0) {
             return null;
         }
@@ -785,7 +785,7 @@ class JournalEntryService
         $loss->loadMissing(['inventoryStock.receivedItem', 'inventoryStock.product']);
 
         $inventoryStock = $loss->inventoryStock;
-        $unitCost = (float) optional($inventoryStock?->receivedItem)->unit_cost;
+        $unitCost = (float) (optional($inventoryStock?->receivedItem)->unit_cost ?? $inventoryStock?->unit_cost ?? 0);
         if ($unitCost <= 0) {
             return null;
         }
@@ -1251,6 +1251,29 @@ class JournalEntryService
     {
         $entryDate = $entryDate ?: now()->toDateString();
 
+        // Defensive integrity check: every posted entry should balance. We log
+        // (rather than throw) so a latent imbalance surfaces for review without
+        // breaking a live posting path.
+        $debitSum = 0.0;
+        $creditSum = 0.0;
+        foreach ($lines as $line) {
+            if (($line['line_type'] ?? null) === 'debit') {
+                $debitSum += (float) ($line['amount'] ?? 0);
+            } elseif (($line['line_type'] ?? null) === 'credit') {
+                $creditSum += (float) ($line['amount'] ?? 0);
+            }
+        }
+        if (abs(round($debitSum - $creditSum, 2)) > 0.01) {
+            \Illuminate\Support\Facades\Log::warning('Unbalanced journal entry posted', [
+                'entry_type'   => $entryType,
+                'source_type'  => $source::class,
+                'source_id'    => $source->id ?? null,
+                'debit_total'  => round($debitSum, 2),
+                'credit_total' => round($creditSum, 2),
+                'memo'         => $memo,
+            ]);
+        }
+
         $payload = [
             'journal_number' => JournalEntry::generateJournalNumber(),
             'entry_date' => $entryDate,
@@ -1367,7 +1390,7 @@ class JournalEntryService
                 ->where('batch_code', $item->batch_code)
                 ->first();
 
-            $unitCost = (float) optional($inventoryStock?->receivedItem)->unit_cost;
+            $unitCost = (float) (optional($inventoryStock?->receivedItem)->unit_cost ?? $inventoryStock?->unit_cost ?? 0);
             $cost += $unitCost * (float) $item->quantity;
         }
 
