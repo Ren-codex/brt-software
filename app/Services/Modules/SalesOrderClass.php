@@ -614,13 +614,17 @@ class SalesOrderClass
             ];
         }
 
-        // Bug 18 fix: block only when non-cancelled receipts exist, not just amount_paid > 0
-        $hasActiveReceipts = $data->arInvoices->contains(function ($inv) {
-            return $inv->receipts->contains(fn($r) => optional($r->status)->slug !== 'cancelled');
+        // Block only if a receipt has already been remitted/banked — that cash
+        // has moved up the chain and must not be silently reversed here. Otherwise
+        // cancel proceeds and auto-reverses the sale's own (unremitted) receipts.
+        $hasRemittedReceipt = $data->arInvoices->contains(function ($inv) {
+            return $inv->receipts->contains(function ($r) {
+                return !is_null($r->remittance_id) && optional($r->status)->slug !== 'cancelled';
+            });
         });
-        if ($hasActiveReceipts) {
+        if ($hasRemittedReceipt) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'cancel' => ['This Sales Order has active receipts. Void or refund all receipts before cancelling.'],
+                'cancel' => ['This Sales Order has a receipt that is part of a remittance. Remove it from the remittance (or process a return/refund) before cancelling.'],
             ]);
         }
 
@@ -632,6 +636,9 @@ class SalesOrderClass
 
         foreach ($data->arInvoices as $invoice) {
             foreach ($invoice->receipts as $receipt) {
+                if (optional($receipt->status)->slug === 'cancelled') {
+                    continue; // already reversed/cancelled — don't double-reverse
+                }
                 $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt reversed because related sales order was cancelled.', now()->toDateString());
                 $receipt->update([
                     'status_id' => $cancelledStatusId,
