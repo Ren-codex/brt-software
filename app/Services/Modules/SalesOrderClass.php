@@ -341,7 +341,10 @@ class SalesOrderClass
                     'balance_due' => 0,
                 ]);
             } else {
-                // Credit → Cash: no receipt existed yet — create one now
+                // Credit → Cash: no receipt existed yet — create the receipt
+                // document only. Do NOT post a receipt journal entry here: the
+                // cash side is already recorded by recordSaleEntries() below
+                // (Dr Cash / Cr Revenue). Posting it here too double-counted cash.
                 $paymentReceipt = Receipt::create([
                     'ar_invoice_id'  => $invoice->id,
                     'customer_id'    => $data->customer_id,
@@ -353,7 +356,6 @@ class SalesOrderClass
                     'balance_due'    => 0,
                     'payment_mode'   => $data->payment_mode,
                 ]);
-                $this->journalEntryService->recordReceiptEntry($paymentReceipt);
             }
         }
 

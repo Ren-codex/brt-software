@@ -158,8 +158,25 @@ class ReceiptClass
 
     public function update($request){
         $receipt = Receipt::findOrFail($request->id);
-        $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt updated. Previous receipt entry reversed.', $request->receipt_date);
         $oldAmount = $receipt->amount_paid;
+
+        // Overpayment guard: the new amount can't exceed the invoice's current
+        // balance plus this receipt's own old amount (which is being replaced).
+        $guardInvoice = ArInvoice::find($receipt->ar_invoice_id);
+        if ($guardInvoice) {
+            $newAmount = round((float) $request->amount_paid, 2);
+            $available = round((float) $guardInvoice->balance_due + (float) $oldAmount, 2);
+            if ($newAmount <= 0) {
+                throw ValidationException::withMessages(['amount_paid' => 'Payment amount must be greater than zero.']);
+            }
+            if ($newAmount > $available) {
+                throw ValidationException::withMessages([
+                    'amount_paid' => 'Payment of ₱' . number_format($newAmount, 2) . ' exceeds the invoice balance of ₱' . number_format($available, 2) . '.',
+                ]);
+            }
+        }
+
+        $this->journalEntryService->reverseEntriesForSource($receipt, 'Receipt updated. Previous receipt entry reversed.', $request->receipt_date);
 
         $receipt->update($request->only([
             'ar_invoice_id', 'receipt_date', 'amount_paid', 'payment_mode'

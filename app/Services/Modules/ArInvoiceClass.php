@@ -3,6 +3,7 @@
 namespace App\Services\Modules;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 use App\Models\ArInvoice;
 use App\Models\SalesOrder;
@@ -90,6 +91,18 @@ class ArInvoiceClass
 
     public function payment($request, $id = null){
         $ar_invoice = ArInvoice::findOrFail($request->id);
+
+        // Server-authoritative overpayment guard (mirrors ReceiptClass::save):
+        // validate the payment against the invoice's actual DB balance, not any
+        // client-supplied value.
+        if ((float) $request->amount_paid <= 0) {
+            throw ValidationException::withMessages(['amount_paid' => 'Payment amount must be greater than zero.']);
+        }
+        if ((float) $request->amount_paid > (float) $ar_invoice->balance_due) {
+            throw ValidationException::withMessages([
+                'amount_paid' => 'Payment of ₱' . number_format((float) $request->amount_paid, 2) . ' exceeds the outstanding balance of ₱' . number_format((float) $ar_invoice->balance_due, 2) . '.',
+            ]);
+        }
 
         // Update AR Invoice balances first so balance_due is correct when receipt is created
         $ar_invoice->amount_paid = $ar_invoice->amount_paid + $request->amount_paid;

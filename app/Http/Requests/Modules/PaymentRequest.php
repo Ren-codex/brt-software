@@ -21,17 +21,21 @@ class PaymentRequest extends FormRequest
                 'numeric',
                 'min:1',
                 function ($attribute, $value, $fail) {
-                    if ($value > $this->input('balance_due')) {
-                        $fail('Amount paid cannot exceed the outstanding balance of PHP ' . number_format($this->input('balance_due'), 2));
+                    // Validate against the invoice's ACTUAL balance in the DB, not
+                    // the client-supplied balance_due (which could be stale/tampered).
+                    $invoiceId = $this->input('id');
+                    $invoice = $invoiceId ? ArInvoice::with('sales_order')->find($invoiceId) : null;
+                    $balanceDue = $invoice ? (float) $invoice->balance_due : (float) $this->input('balance_due');
+
+                    if ($value > $balanceDue) {
+                        $fail('Amount paid cannot exceed the outstanding balance of PHP ' . number_format($balanceDue, 2));
                         return;
                     }
 
-                    $invoiceId = $this->input('id');
-                    $invoice = $invoiceId ? ArInvoice::with('sales_order')->find($invoiceId) : null;
                     $paymentMode = strtolower(trim((string) optional($invoice?->sales_order)->payment_mode));
                     $isCredit = in_array($paymentMode, ['credit', 'credit sales'], true);
 
-                    if (!$isCredit && abs((float) $value - (float) $this->input('balance_due')) > 0.00001) {
+                    if (!$isCredit && abs((float) $value - $balanceDue) > 0.00001) {
                         $fail('Partial payment is only allowed for credit sales. Cash sales must be paid in full.');
                     }
                 },
