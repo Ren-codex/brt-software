@@ -23,20 +23,6 @@ class ProductConversionService
     {
         $source = InventoryStocks::with('receivedItem.product', 'product')->findOrFail($request->source_stock_id);
 
-        // Validate quantity
-        if ($source->quantity < $request->source_qty_used) {
-            throw ValidationException::withMessages([
-                'source_qty_used' => ['Not enough stock. Available: ' . $source->quantity . ' units.'],
-            ]);
-        }
-
-        // Validate conversion ratio
-        if (empty($request->conversion_ratio) || floatval($request->conversion_ratio) <= 0) {
-            throw ValidationException::withMessages([
-                'conversion_ratio' => ['Conversion ratio must be greater than zero.'],
-            ]);
-        }
-
         // Validate target product exists and is active
         $targetProduct = Product::find($request->product_id);
         if (!$targetProduct || !$targetProduct->is_active) {
@@ -45,11 +31,63 @@ class ProductConversionService
             ]);
         }
 
-        $outputQty = (int) round($request->source_qty_used * $request->conversion_ratio);
+        $sourceWeight = floatval($source->receivedItem?->product?->weight ?? $source->product?->weight ?? 0);
+        $targetWeight = floatval($targetProduct->weight ?? 0);
+
+        $selectedLossIds     = $request->weight_loss_ids ?? [];
+        $isShortWeightMode   = !empty($selectedLossIds) && $sourceWeight > 0 && $targetWeight > 0;
+        $computedRemainderKg = 0.0;
+
+        if ($isShortWeightMode) {
+            // Short-weight mode: derive the output count, source sacks used, ratio
+            // and remainder ENTIRELY from the selected weight-loss records, so a
+            // hand-crafted conversion_ratio (e.g. a direct API call) cannot make
+            // the output quantity and the returned partial sack disagree.
+            $selectedLosses = InventoryWeightLoss::whereIn('id', $selectedLossIds)
+                ->where('inventory_stock_id', $source->id)
+                ->get();
+
+            if ($selectedLosses->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'weight_loss_ids' => ['The selected short-weight groups are invalid for this batch.'],
+                ]);
+            }
+
+            $selectedTotalKg     = (float) $selectedLosses->sum(
+                fn ($wl) => ($wl->affected_sacks ?? 0) * ($sourceWeight - ($wl->loss_per_sack ?? 0))
+            );
+            $sourceQtyUsed       = (int) $selectedLosses->sum(fn ($wl) => (int) ($wl->affected_sacks ?? 0));
+            $outputQty           = (int) floor($selectedTotalKg / $targetWeight);
+            $conversionRatio     = $sourceQtyUsed > 0 ? round($outputQty / $sourceQtyUsed, 6) : 0;
+            $computedRemainderKg = fmod($selectedTotalKg, $targetWeight);
+        } else {
+            // Normal mode: convert a whole number of source sacks by the ratio.
+            if (empty($request->conversion_ratio) || floatval($request->conversion_ratio) <= 0) {
+                throw ValidationException::withMessages([
+                    'conversion_ratio' => ['Conversion ratio must be greater than zero.'],
+                ]);
+            }
+            $sourceQtyUsed   = (int) $request->source_qty_used;
+            $conversionRatio = floatval($request->conversion_ratio);
+            $outputQty       = (int) round($sourceQtyUsed * $conversionRatio);
+        }
+
+        if ($sourceQtyUsed < 1) {
+            throw ValidationException::withMessages([
+                'source_qty_used' => ['Please select at least one sack to convert.'],
+            ]);
+        }
+
+        // Validate available quantity
+        if ($source->quantity < $sourceQtyUsed) {
+            throw ValidationException::withMessages([
+                'source_qty_used' => ['Not enough stock. Available: ' . $source->quantity . ' units.'],
+            ]);
+        }
 
         if ($outputQty < 1) {
             throw ValidationException::withMessages([
-                'conversion_ratio' => ['Conversion ratio results in zero output units.'],
+                'conversion_ratio' => ['Conversion results in zero output units.'],
             ]);
         }
 
@@ -57,33 +95,17 @@ class ProductConversionService
 
         // Use frontend-computed unit cost if provided, otherwise derive from source
         $sourceUnitCost = floatval($source->receivedItem?->unit_cost ?? $source->unit_cost ?? 0);
-        $sourceWeight   = floatval($source->receivedItem?->product?->weight ?? $source->product?->weight ?? 0);
-        $targetWeight   = floatval($targetProduct->weight ?? 0);
         $unitCostPerKg  = $sourceWeight > 0 ? $sourceUnitCost / $sourceWeight : 0;
         $derivedCost    = $unitCostPerKg * $targetWeight;
         $outputUnitCost = floatval($request->unit_cost ?? 0) > 0
             ? floatval($request->unit_cost)
             : $derivedCost;
 
-        // In short weight mode: compute remainder from selected weight losses server-side
-        $computedRemainderKg = 0.0;
-        $selectedLossIds     = $request->weight_loss_ids ?? [];
-
-        if (!empty($selectedLossIds) && $sourceWeight > 0 && $targetWeight > 0) {
-            $selectedLosses  = InventoryWeightLoss::whereIn('id', $selectedLossIds)
-                ->where('inventory_stock_id', $source->id)
-                ->get();
-            $selectedTotalKg = $selectedLosses->sum(
-                fn ($wl) => ($wl->affected_sacks ?? 0) * ($sourceWeight - ($wl->loss_per_sack ?? 0))
-            );
-            $computedRemainderKg = fmod($selectedTotalKg, $targetWeight);
-        }
-
         $conversion = ProductConversion::create([
             'source_stock_id'  => $source->id,
             'output_stock_id'  => null,
-            'source_qty_used'  => $request->source_qty_used,
-            'conversion_ratio' => $request->conversion_ratio,
+            'source_qty_used'  => $sourceQtyUsed,
+            'conversion_ratio' => $conversionRatio,
             'output_quantity'  => $outputQty,
             'reason'           => $request->reason,
             'converted_by_id'  => Auth::id(),
@@ -122,7 +144,7 @@ class ProductConversionService
 
         // Decrement source
         $prevQty = $source->quantity;
-        $source->decrement('quantity', $request->source_qty_used);
+        $source->decrement('quantity', $sourceQtyUsed);
 
         InventoryAdjustment::create([
             'inventory_stocks_id' => $source->id,
