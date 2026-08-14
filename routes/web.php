@@ -101,12 +101,19 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middlewareFor(['index', 'show'], 'permission:inventory,receiving,view')
             ->middlewareFor(['store', 'update'], 'permission:inventory,receiving,encoder')
             ->middlewareFor('destroy', 'permission:inventory,receiving,admin');
-        Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class);
-        Route::post('inventory-stocks/adjustment/{id}', [App\Http\Controllers\InventoryAdjustmentController::class, 'store']);
-        Route::post('/inventory-stocks/{id}/update-price', [App\Http\Controllers\InventoryStockController::class, 'update']);
-        Route::post('/inventory-stocks/conversions', [App\Http\Controllers\ProductConversionController::class, 'store']);
-        Route::post('/inventory-stocks/{id}/weight-loss', [App\Http\Controllers\WeightLossController::class, 'store']);
-        Route::post('/inventory-stocks/{id}/settings', [App\Http\Controllers\InventoryStockController::class, 'settings']);
+        Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class)
+            ->middlewareFor(['index', 'show'], 'permission:inventory,inventory_stocks,view')
+            ->middlewareFor('update', 'permission:inventory,inventory_stocks,encoder');
+        Route::post('inventory-stocks/adjustment/{id}', [App\Http\Controllers\InventoryAdjustmentController::class, 'store'])
+            ->middleware('permission:inventory,inventory_stocks,encoder');
+        Route::post('/inventory-stocks/{id}/update-price', [App\Http\Controllers\InventoryStockController::class, 'update'])
+            ->middleware('permission:inventory,inventory_stocks,encoder');
+        Route::post('/inventory-stocks/conversions', [App\Http\Controllers\ProductConversionController::class, 'store'])
+            ->middleware('permission:inventory,inventory_stocks,encoder');
+        Route::post('/inventory-stocks/{id}/weight-loss', [App\Http\Controllers\WeightLossController::class, 'store'])
+            ->middleware('permission:inventory,inventory_stocks,encoder');
+        Route::post('/inventory-stocks/{id}/settings', [App\Http\Controllers\InventoryStockController::class, 'settings'])
+            ->middleware('permission:inventory,inventory_stocks,admin');
     });
 
     Route::middleware(['role:Administrator,Super Admin'])->group(function () {
