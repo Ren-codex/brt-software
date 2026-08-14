@@ -16,6 +16,7 @@ use App\Http\Requests\Modules\SalesOrderRequest;
 class SalesOrderController extends Controller
 {
     use HandlesTransaction;
+    use \App\Traits\AuthorizesPermission;
 
     public $sales_order,$dropdown , $print;
 
@@ -26,6 +27,8 @@ class SalesOrderController extends Controller
     }
 
     public function index(Request $request){
+        $this->authorizePermission('sales', 'sales_orders', 'view');
+
         switch($request->option){
             case 'lists':
                 return $this->sales_order->lists($request);
@@ -144,10 +147,14 @@ class SalesOrderController extends Controller
     }
 
     public function show($id , Request $request){
+        $this->authorizePermission('sales', 'sales_orders', 'view');
+
         return $this->print->print($id, $request);
     }
 
     public function destroy($id){
+        $this->authorizePermission('sales', 'sales_orders', 'approver');
+
         $result = $this->handleTransaction(function () use ($id) {
             return $this->sales_order->cancel($id);
         });
