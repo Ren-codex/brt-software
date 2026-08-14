@@ -55,4 +55,18 @@ class ModulesAndSubmodulesSeederTest extends TestCase
             $payroll->submodules->pluck('key')->all()
         );
     }
+
+    public function test_seeds_accounting_submodules(): void
+    {
+        $this->seed(ModulesAndSubmodulesSeeder::class);
+
+        $accounting = Module::where('key', 'accounting')->firstOrFail();
+        $this->assertEquals(
+            [
+                'financial_reports', 'journal_entries', 'chart_of_accounts', 'cash_management',
+                'petty_cash', 'expenses', 'bank_reconciliation', 'remittances',
+            ],
+            $accounting->submodules->pluck('key')->all()
+        );
+    }
 }

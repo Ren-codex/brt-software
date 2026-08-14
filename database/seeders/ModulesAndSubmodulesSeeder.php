@@ -31,7 +31,16 @@ class ModulesAndSubmodulesSeeder extends Seeder
             ]],
             ['key' => 'employees', 'name' => 'Employee Profiling', 'sort_order' => 4, 'submodules' => []],
             ['key' => 'customers', 'name' => 'Customers & Contacts', 'sort_order' => 5, 'submodules' => []],
-            ['key' => 'accounting', 'name' => 'Accounting', 'sort_order' => 6, 'submodules' => []],
+            ['key' => 'accounting', 'name' => 'Accounting', 'sort_order' => 6, 'submodules' => [
+                ['key' => 'financial_reports', 'name' => 'Financial Reports', 'sort_order' => 1],
+                ['key' => 'journal_entries', 'name' => 'Journal Entries', 'sort_order' => 2],
+                ['key' => 'chart_of_accounts', 'name' => 'Chart of Accounts', 'sort_order' => 3],
+                ['key' => 'cash_management', 'name' => 'Cash Management', 'sort_order' => 4],
+                ['key' => 'petty_cash', 'name' => 'Petty Cash', 'sort_order' => 5],
+                ['key' => 'expenses', 'name' => 'Expenses', 'sort_order' => 6],
+                ['key' => 'bank_reconciliation', 'name' => 'Bank Reconciliation', 'sort_order' => 7],
+                ['key' => 'remittances', 'name' => 'Remittances', 'sort_order' => 8],
+            ]],
             ['key' => 'user_management', 'name' => 'User Management', 'sort_order' => 7, 'submodules' => []],
             ['key' => 'dashboard', 'name' => 'Dashboard', 'sort_order' => 8, 'submodules' => []],
         ];
