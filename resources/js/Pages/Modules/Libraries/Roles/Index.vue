@@ -62,6 +62,9 @@
                                             <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                                                 <i class="ri-pencil-line"></i>
                                             </button>
+                                            <button @click="openPermissions(list)" class="action-btn action-btn-permissions" v-b-tooltip.hover title="Manage Permissions">
+                                                <i class="ri-shield-keyhole-line"></i>
+                                            </button>
                                             <!-- <button @click="openDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button> -->
@@ -83,6 +86,7 @@
     </BRow>
     <Create @add="fetch()" ref="create"/>
     <Delete @delete="fetch()" ref="delete"/>
+    <Permissions ref="permissions"/>
 </template>
 <script>
 import _ from 'lodash';
@@ -91,10 +95,11 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
+import Permissions from './Modals/Permissions.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create ,Delete, TableLoadingRow },
+    components: { PageHeader, Pagination, Multiselect , Create ,Delete, Permissions, TableLoadingRow },
     props: [],
     data(){
         return {
@@ -157,6 +162,10 @@ export default {
         openDelete(id){
             let title = "Role";
             this.$refs.delete.show(id , title, '/libraries/roles');
+        },
+
+        openPermissions(role) {
+            this.$refs.permissions.show(role);
         },
 
         selectRow(index) {
