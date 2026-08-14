@@ -215,7 +215,8 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:accounting,journal_entries,view');
         Route::post('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'storeManualJournal'])
             ->middleware('permission:accounting,journal_entries,encoder');
-        Route::get('/accounting/cash-management', [App\Http\Controllers\Modules\CashManagementController::class, 'index']);
+        Route::get('/accounting/cash-management', [App\Http\Controllers\Modules\CashManagementController::class, 'index'])
+            ->middleware('permission:accounting,cash_management,view');
         Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index']);
         Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher']);
         Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher']);
@@ -231,14 +232,22 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::post('/accounting/bank-reconciliation/{id}/toggle-clear', [App\Http\Controllers\Modules\BankReconciliationController::class, 'toggleClear']);
         Route::post('/accounting/bank-reconciliation/{id}/finalize', [App\Http\Controllers\Modules\BankReconciliationController::class, 'finalize']);
         Route::delete('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'destroy']);
-        Route::post('/accounting/fund-transfers', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFundTransfer']);
-        Route::delete('/accounting/fund-transfers/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyFundTransfer']);
-        Route::post('/accounting/petty-cash/transactions', [App\Http\Controllers\Modules\CashManagementController::class, 'storePettyCashTransaction']);
-        Route::delete('/accounting/petty-cash/transactions/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyPettyCashTransaction']);
-        Route::post('/accounting/bank-deposits', [App\Http\Controllers\Modules\CashManagementController::class, 'storeDeposit']);
-        Route::delete('/accounting/bank-deposits/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyDeposit']);
-        Route::post('/accounting/bank-withdrawals', [App\Http\Controllers\Modules\CashManagementController::class, 'storeWithdrawal']);
-        Route::delete('/accounting/bank-withdrawals/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyWithdrawal']);
+        Route::post('/accounting/fund-transfers', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFundTransfer'])
+            ->middleware('permission:accounting,cash_management,encoder');
+        Route::delete('/accounting/fund-transfers/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyFundTransfer'])
+            ->middleware('permission:accounting,cash_management,admin');
+        Route::post('/accounting/petty-cash/transactions', [App\Http\Controllers\Modules\CashManagementController::class, 'storePettyCashTransaction'])
+            ->middleware('permission:accounting,petty_cash,encoder');
+        Route::delete('/accounting/petty-cash/transactions/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyPettyCashTransaction'])
+            ->middleware('permission:accounting,petty_cash,admin');
+        Route::post('/accounting/bank-deposits', [App\Http\Controllers\Modules\CashManagementController::class, 'storeDeposit'])
+            ->middleware('permission:accounting,cash_management,encoder');
+        Route::delete('/accounting/bank-deposits/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyDeposit'])
+            ->middleware('permission:accounting,cash_management,admin');
+        Route::post('/accounting/bank-withdrawals', [App\Http\Controllers\Modules\CashManagementController::class, 'storeWithdrawal'])
+            ->middleware('permission:accounting,cash_management,encoder');
+        Route::delete('/accounting/bank-withdrawals/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyWithdrawal'])
+            ->middleware('permission:accounting,cash_management,admin');
         Route::get('/accounting/bank-accounts/list', [App\Http\Controllers\Modules\BankAccountController::class, 'list'])
             ->middleware('permission:accounting,chart_of_accounts,view');
         Route::post('/accounting/bank-accounts', [App\Http\Controllers\Modules\BankAccountController::class, 'store'])
