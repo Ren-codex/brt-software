@@ -398,7 +398,7 @@ export default {
     computed: {
         employeeAvatarSrc() {
             if (!this.employee?.avatar || this.employee.avatar === 'noavatar.jpg') {
-                return this.defaultAvatar;
+                return this.genderAvatar(this.employee?.sex);
             }
 
             return `/storage/${this.employee.avatar}`;
@@ -803,9 +803,15 @@ export default {
                 .reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
             return palette[seed % palette.length];
         },
+        genderAvatar(sex) {
+            if (sex === 'Male')   return '/images/male-profile.png';
+            if (sex === 'Female') return '/images/female-profile.png';
+            return this.defaultAvatar;
+        },
         onAvatarError(event) {
-            if (event?.target && event.target.src !== `${window.location.origin}${this.defaultAvatar}`) {
-                event.target.src = this.defaultAvatar;
+            const fallback = this.genderAvatar(this.employee?.sex);
+            if (event?.target && event.target.src !== `${window.location.origin}${fallback}`) {
+                event.target.src = fallback;
             }
         },
         getAccountRoles(user) {

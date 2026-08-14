@@ -96,7 +96,7 @@
                                                 <div class="avatar-xs me-2">
                                                     <img
                                                         :src="getAvatarSrc(list)"
-                                                        @error="handleAvatarError"
+                                                        @error="handleAvatarError($event, list)"
                                                         alt="Avatar"
                                                         class="rounded-circle avatar-xs"
                                                     >
@@ -386,17 +386,23 @@ export default {
             this.fetch();
         },
 
+        genderAvatar(sex) {
+            if (sex === 'Male')   return '/images/male-profile.png';
+            if (sex === 'Female') return '/images/female-profile.png';
+            return this.defaultAvatar;
+        },
+
         getAvatarSrc(employee) {
-            if (!employee?.avatar) {
-                return this.defaultAvatar;
+            if (!employee?.avatar || employee.avatar === 'noavatar.jpg') {
+                return this.genderAvatar(employee?.sex);
             }
             return `/storage/${employee.avatar}`;
         },
 
-        handleAvatarError(event) {
+        handleAvatarError(event, employee) {
             if (event?.target) {
                 event.target.onerror = null;
-                event.target.src = this.defaultAvatar;
+                event.target.src = this.genderAvatar(employee?.sex);
             }
         }
     }
