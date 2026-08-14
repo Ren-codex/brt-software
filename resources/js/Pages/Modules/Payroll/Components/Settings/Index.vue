@@ -60,7 +60,7 @@
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-eye-line"></i>
                                                 </b-button>
-                                                <b-button @click.stop="editSetting(setting)" variant="outline-primary"
+                                                <b-button v-if="can('payroll', 'payroll_settings', 'encoder')" @click.stop="editSetting(setting)" variant="outline-primary"
                                                     v-b-tooltip.hover title="Edit" size="sm"
                                                     class="btn-icon rounded-circle">
                                                     <i class="ri-pencil-fill"></i>

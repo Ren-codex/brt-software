@@ -60,7 +60,7 @@
                           class="search-input"
                         >
                       </div>
-                      <b-button variant="primary" size="sm" @click="openItemModal(selectedGroup)" class="ms-1">
+                      <b-button v-if="can('payroll', 'payroll_settings', 'encoder')" variant="primary" size="sm" @click="openItemModal(selectedGroup)" class="ms-1">
                         <i class="ri-add-line me-1"></i>
                       </b-button>
                     </div>
@@ -93,6 +93,7 @@
                                 <td>
                                   <b-form-checkbox
                                       :checked="item.is_active === true"
+                                      :disabled="!can('payroll', 'payroll_settings', 'encoder')"
                                       @change="toggleActive(item)"
                                       switch
                                       size="md"
@@ -100,7 +101,7 @@
                                 </td>
                                 <td>
                                   <div class="d-flex justify-content-center align-items-center gap-2">
-                                    <b-button variant="outline-secondary" size="sm" @click="editItem(item)" class="btn-icon rounded-circle">
+                                    <b-button v-if="can('payroll', 'payroll_settings', 'encoder')" variant="outline-secondary" size="sm" @click="editItem(item)" class="btn-icon rounded-circle">
                                       <i class="ri-edit-line"></i>
                                     </b-button>
                                     <!-- <b-button variant="outline-danger" size="sm" @click.stop="deleteItem(item)" class="btn-icon rounded-circle">

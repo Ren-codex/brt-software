@@ -12,7 +12,7 @@
                                 <p class="header-subtitle mb-0">A comprehensive list of Payrolls</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="showCreateModal = true">
+                        <button v-if="can('payroll', 'payroll_processing', 'encoder')" class="create-btn" @click="showCreateModal = true">
                             <i class="ri-add-line"></i>
                             <span>Add Payroll</span>
                         </button>
@@ -67,7 +67,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center gap-1">
-                                                    <b-button @click.stop="editPayroll(payroll)" variant="outline-primary"
+                                                    <b-button v-if="can('payroll', 'payroll_processing', 'encoder')" @click.stop="editPayroll(payroll)" variant="outline-primary"
                                                       v-b-tooltip.hover title="Edit" size="sm"
                                                       class="btn-icon rounded-circle">
                                                       <i class="ri-eye-line"></i>
@@ -78,10 +78,9 @@
                                                         v-if="payroll.status != 'draft'">
                                                         <i class="ri-printer-line"></i>
                                                     </b-button>
-                                                    <b-button @click.stop="confirmDelete(payroll)" variant="outline-danger"
+                                                    <b-button v-if="payroll.status == 'draft' && can('payroll', 'payroll_processing', 'admin')" @click.stop="confirmDelete(payroll)" variant="outline-danger"
                                                         v-b-tooltip.hover title="Delete" size="sm"
-                                                        class="btn-icon rounded-circle"
-                                                        v-if="payroll.status == 'draft'">
+                                                        class="btn-icon rounded-circle">
                                                         <i class="ri-delete-bin-line"></i>
                                                     </b-button>
                                                 </div>

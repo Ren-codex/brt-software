@@ -10,7 +10,7 @@
             <p class="header-subtitle mb-0">A comprehensive list of employee loans</p>
           </div>
         </div>
-        <button class="create-btn" @click="openCreate">
+        <button v-if="can('payroll', 'loans', 'encoder')" class="create-btn" @click="openCreate">
           <i class="ri-add-line"></i>
           <span>Loan</span>
         </button>

@@ -12,7 +12,7 @@
                                 <p class="header-subtitle mb-0">Manage payroll groups</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="showCreateModal = true">
+                        <button v-if="can('payroll', 'payroll_templates', 'encoder')" class="create-btn" @click="showCreateModal = true">
                             <i class="ri-add-line"></i>
                             <span>Add Group</span>
                         </button>
@@ -43,8 +43,9 @@
                                     </span>
                                   </div>
                                   <div class="template-actions">
-                                    <b-button 
-                                      @click.stop="editTemplate(template)" 
+                                    <b-button
+                                      v-if="can('payroll', 'payroll_templates', 'encoder')"
+                                      @click.stop="editTemplate(template)"
                                       variant="outline-primary"
                                       v-b-tooltip.hover title="Edit Group"
                                       size="sm"
@@ -52,8 +53,9 @@
                                     >
                                       <i class="ri-pencil-fill"></i>
                                     </b-button>
-                                    <b-button 
-                                      @click.stop="confirmDelete(template)" 
+                                    <b-button
+                                      v-if="can('payroll', 'payroll_templates', 'admin')"
+                                      @click.stop="confirmDelete(template)"
                                       variant="outline-danger"
                                       v-b-tooltip.hover title="Delete Group"
                                       size="sm"
@@ -108,7 +110,7 @@
                                   class="search-input"
                                 >
                               </div>
-                              <b-button variant="primary" size="sm" @click="addEmployee(selectedTemplate)" class="ms-1">
+                              <b-button v-if="can('payroll', 'payroll_templates', 'encoder')" variant="primary" size="sm" @click="addEmployee(selectedTemplate)" class="ms-1">
                                 <i class="ri-add-line me-1"></i>
                               </b-button>
                             </div>
@@ -161,6 +163,7 @@
                                         </td>
                                         <td class="text-end pe-4">
                                           <b-button
+                                            v-if="can('payroll', 'payroll_templates', 'encoder')"
                                             @click.stop="removeEmployee(employee)"
                                             variant="outline-danger"
                                             v-b-tooltip.hover title="Remove from group"
