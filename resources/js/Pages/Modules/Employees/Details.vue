@@ -804,9 +804,8 @@ export default {
             return palette[seed % palette.length];
         },
         genderAvatar(sex) {
-            if (sex === 'Male')   return '/images/male-profile.png';
-            if (sex === 'Female') return '/images/female-profile.png';
-            return this.defaultAvatar;
+            // Male is the default whenever sex is unknown/blank.
+            return sex === 'Female' ? '/images/female-profile.png' : '/images/male-profile.png';
         },
         onAvatarError(event) {
             const fallback = this.genderAvatar(this.employee?.sex);

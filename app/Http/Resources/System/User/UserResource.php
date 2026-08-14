@@ -16,10 +16,9 @@ class UserResource extends JsonResource
             && $this->employee->avatar !== 'noavatar.jpg'
             && Storage::disk('public')->exists($this->employee->avatar);
 
+        // Male is the default whenever sex is unknown/blank.
         $sex = $this->employee?->sex;
-        $defaultAvatar = $sex === 'Male'
-            ? asset('images/male-profile.png')
-            : ($sex === 'Female' ? asset('images/female-profile.png') : asset('images/avatars/avatar.jpg'));
+        $defaultAvatar = $sex === 'Female' ? asset('images/female-profile.png') : asset('images/male-profile.png');
 
         return [
             'id' => $this->id,

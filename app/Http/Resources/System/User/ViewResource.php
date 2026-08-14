@@ -16,10 +16,9 @@ class ViewResource extends JsonResource
             ?: $this->username
             ?: $this->email;
 
+        // Male is the default whenever sex is unknown/blank.
         $sex = $employee?->sex;
-        $defaultAvatar = $sex === 'Male'
-            ? asset('images/male-profile.png')
-            : ($sex === 'Female' ? asset('images/female-profile.png') : asset('images/avatars/avatar.jpg'));
+        $defaultAvatar = $sex === 'Female' ? asset('images/female-profile.png') : asset('images/male-profile.png');
 
         return [
             'avatar' => ($employee && $employee->avatar && $employee->avatar !== 'noavatar.jpg')
