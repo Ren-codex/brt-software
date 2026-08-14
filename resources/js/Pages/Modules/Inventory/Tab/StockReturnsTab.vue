@@ -12,7 +12,7 @@
                 <p class="header-subtitle mb-0">Track purchase order stock return requests</p>
               </div>
             </div>
-            <button class="create-btn" @click="openReturnStockModal" :disabled="loadingOrders">
+            <button v-if="can('inventory', 'stock_returns', 'encoder')" class="create-btn" @click="openReturnStockModal" :disabled="loadingOrders">
               <i :class="loadingOrders ? 'ri-loader-4-line rotating-icon' : 'ri-add-line'"></i>
               <span>{{ loadingOrders ? 'Loading...' : 'Return Stock' }}</span>
             </button>

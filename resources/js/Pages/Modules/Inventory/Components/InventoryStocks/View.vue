@@ -25,20 +25,20 @@
                   <i class="ri-more-2-fill"></i>
                 </button>
                 <div class="action-dropdown-menu" v-if="showActions">
-                  <button class="action-dropdown-item" @click="updatePrice(); showActions = false">
+                  <button v-if="can('inventory', 'inventory_stocks', 'encoder')" class="action-dropdown-item" @click="updatePrice(); showActions = false">
                     <i class="ri-price-tag-3-line"></i> Update Price
                   </button>
-                  <button v-if="data.quantity > 0" class="action-dropdown-item" @click="adjustStock(); showActions = false">
+                  <button v-if="data.quantity > 0 && can('inventory', 'inventory_stocks', 'encoder')" class="action-dropdown-item" @click="adjustStock(); showActions = false">
                     <i class="ri-edit-line"></i> Adjust Stocks
                   </button>
-                  <button v-if="data.quantity > 0" class="action-dropdown-item" @click="convertStock(); showActions = false">
+                  <button v-if="data.quantity > 0 && can('inventory', 'inventory_stocks', 'encoder')" class="action-dropdown-item" @click="convertStock(); showActions = false">
                     <i class="ri-recycle-line"></i> Convert / Repack
                   </button>
-                  <button class="action-dropdown-item" @click="recordLoss(); showActions = false">
+                  <button v-if="can('inventory', 'inventory_stocks', 'encoder')" class="action-dropdown-item" @click="recordLoss(); showActions = false">
                     <i class="ri-scales-3-line"></i> Record Loss
                   </button>
-                  <div class="action-dropdown-divider"></div>
-                  <button class="action-dropdown-item" @click="openSettings(); showActions = false">
+                  <div class="action-dropdown-divider" v-if="can('inventory', 'inventory_stocks', 'admin')"></div>
+                  <button v-if="can('inventory', 'inventory_stocks', 'admin')" class="action-dropdown-item" @click="openSettings(); showActions = false">
                     <i class="ri-settings-3-line"></i> Settings
                   </button>
                 </div>

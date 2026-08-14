@@ -237,9 +237,7 @@ export default {
       return (this.data?.items || []).reduce((total, item) => total + Number(item.returned_quantity || 0), 0);
     },
     canApprove() {
-      const roles = this.$page.props.roles;
-      const userRoles = roles ? Object.values(roles) : [];
-      return userRoles.some(role => ['Administrator', 'Warehouse Manager', 'Super Admin'].includes(role));
+      return this.can('inventory', 'stock_returns', 'approver');
     },
     stockReturnLogs() {
       return this.data?.stock_return_logs || [];

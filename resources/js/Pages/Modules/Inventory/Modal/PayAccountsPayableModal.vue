@@ -124,7 +124,7 @@
 
       <div class="modal-footer">
         <button type="button" class="footer-btn secondary" @click="hide" :disabled="isSubmitting">Cancel</button>
-        <button type="button" class="footer-btn primary" @click="submit" :disabled="isSubmitting">
+        <button type="button" class="footer-btn primary" @click="submit" :disabled="isSubmitting || !can('inventory', 'receiving', 'encoder')">
           <i v-if="isSubmitting" class="ri-loader-4-line rotating-icon me-1"></i>
           <span>{{ isSubmitting ? 'Processing...' : 'Pay' }}</span>
         </button>

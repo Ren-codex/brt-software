@@ -299,11 +299,10 @@ export default {
   },
   computed: {
     canApprove() {
-      const roles = this.$page.props.roles;
-      const userRoles = roles ? Object.values(roles) : [];
-      return userRoles.some(role => ['Administrator', 'Warehouse Manager', 'Super Admin'].includes(role));
+      return this.can('inventory', 'purchase_orders', 'approver');
     },
     canVoid() {
+      if (!this.can('inventory', 'purchase_orders', 'approver')) return false;
       if (!this.purchaseOrder) return false;
       const statusName = this.purchaseOrder.status?.name;
       if (['Voided', 'Disapproved'].includes(statusName)) return false;

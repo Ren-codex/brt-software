@@ -136,7 +136,7 @@
                       <td>
                         <div class="action-buttons" @click.stop>
                           <button
-                            v-if="hasPendingItems(list) && list.status?.name !== 'Voided'"
+                            v-if="hasPendingItems(list) && list.status?.name !== 'Voided' && can('inventory', 'receiving', 'encoder')"
                             class="action-btn action-btn-receive"
                             @click="openReceiveStock(list)"
                             title="Receive Stock"
