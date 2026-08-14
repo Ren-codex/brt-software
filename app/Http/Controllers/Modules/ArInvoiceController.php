@@ -11,10 +11,12 @@ use App\Services\PrintClass;
 use App\Services\Modules\ArInvoiceClass;
 use App\Http\Requests\Modules\PaymentRequest;
 use App\Traits\HandlesTransaction;
+use App\Traits\AuthorizesPermission;
 
 class ArInvoiceController extends Controller
 {
     use HandlesTransaction;
+    use AuthorizesPermission;
 
     public $print, $invoice ;
 
@@ -24,6 +26,8 @@ class ArInvoiceController extends Controller
         $this->invoice = $invoice;
     }
     public function index(Request $request){
+        $this->authorizePermission('sales', 'ar_invoices', 'view');
+
         switch($request->option){
             case 'lists':
                 return $this->invoice->lists($request);
@@ -79,6 +83,8 @@ class ArInvoiceController extends Controller
 
     
     public function show($id , Request $request){
+        $this->authorizePermission('sales', 'ar_invoices', 'view');
+
         return $this->print->print($id, $request);
     }
 

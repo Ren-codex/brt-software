@@ -9,7 +9,10 @@ class PaymentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = auth()->user();
+
+        return $user !== null && app(\App\Services\System\Permission\PermissionService::class)
+            ->userHasAccess($user, 'sales', 'ar_invoices', 'encoder');
     }
 
     public function rules(): array
