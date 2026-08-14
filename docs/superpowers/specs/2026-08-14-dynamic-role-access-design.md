@@ -173,3 +173,20 @@ Payroll is next per §13's sequencing. Unlike §13's three modules, Payroll has 
 | `payroll_settings` | `PayrollSettingController` + `PayrollItemController` (`/libraries/payroll-items`, grouped here to match the frontend's own tab, not its historical route grouping) | Update settings, Create/Edit/toggle items | — | List | Delete items |
 
 All four routes already sit behind `role:Administrator` today (unlike Employees/Customers, which had none) — the new permission layer is a second gate, mirroring Inventory/User Management, not Sales. `sales-incentives` (a `Payroll/Index.vue` tab, backed by a separate `SalesIncentivesController`) is out of scope, same treatment as Sales' `remittance`/`sales-reports` tabs — left unfiltered.
+
+## 15. Addendum (2026-08-15): Accounting submodule taxonomy
+
+Accounting is the last module in the original pilot's deferred list — and by far the largest (~40 routes across `AccountingController`, `CashManagementController`, `PettyCashController`, `GeneralExpenseController`, `BankReconciliationController`, `BankAccountController`, `FundController`, and `RemittanceController`). Reviewed and confirmed with the user before writing an implementation plan, it gets **eight submodules**:
+
+| Submodule key | Covers | Encoder | Approver | View | Admin |
+|---|---|---|---|---|---|
+| `financial_reports` | `AccountingController`'s read-only reports (GL, trial balance, P&L, balance sheet, cash flow, AR, AP) + dashboard | — | — | List/view all reports | — |
+| `journal_entries` | `AccountingController::journalEntries`/`storeManualJournal` | Create manual journal | — | List | — |
+| `chart_of_accounts` | `AccountingController`'s account CRUD + settings + `BankAccountController` (bank accounts redirect into the same Settings screen) | Create/edit accounts & bank accounts, toggle | — | List/settings | Delete accounts |
+| `cash_management` | `CashManagementController` (fund transfers, bank deposits/withdrawals — **not** petty-cash transactions, see below) | Create transfers/deposits/withdrawals | — | List/cash-on-hand | Delete transfers/deposits/withdrawals |
+| `petty_cash` | `PettyCashController` + `CashManagementController`'s petty-cash-transaction methods + `FundController` (Petty Cash Funds) | Create fund, top-up, voucher, transaction | Void voucher, adjust fund balance | List | Delete transaction |
+| `expenses` | `GeneralExpenseController` | Create/edit | Approve, Void | List | Delete |
+| `bank_reconciliation` | `BankReconciliationController` | Start, toggle-clear | Finalize | List/show | Delete |
+| `remittances` | `RemittanceController` (routed at `/remittances`, not `/accounting/*`, but classified here — same UI-grouping-not-route-grouping precedent as Payroll's `payroll_settings`) | Create | Approve, Remit | List/show/print | Delete |
+
+All routes already sit behind `role:Administrator` today (the same large route-group Payroll and Remittances share) — the new permission layer is a second gate throughout, mirroring Inventory/User Management/Payroll, not Sales. `sales-incentives` is not part of Accounting at all (it's Payroll's, per §14) and is untouched by this work.
