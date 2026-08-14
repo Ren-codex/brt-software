@@ -92,10 +92,15 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive'])
             ->middleware('permission:payroll,payroll_settings,encoder');
 
-        Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
-        Route::post('/accounting/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp']);
-        Route::patch('/accounting/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance']);
-        Route::patch('/accounting/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive']);
+        Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update'])
+            ->middlewareFor('index', 'permission:accounting,petty_cash,view')
+            ->middlewareFor(['store', 'update'], 'permission:accounting,petty_cash,encoder');
+        Route::post('/accounting/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp'])
+            ->middleware('permission:accounting,petty_cash,encoder');
+        Route::patch('/accounting/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance'])
+            ->middleware('permission:accounting,petty_cash,approver');
+        Route::patch('/accounting/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive'])
+            ->middleware('permission:accounting,petty_cash,encoder');
     });
 
     Route::middleware(['role:Administrator,Warehouse Manager'])->group(function () {
@@ -217,9 +222,12 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:accounting,journal_entries,encoder');
         Route::get('/accounting/cash-management', [App\Http\Controllers\Modules\CashManagementController::class, 'index'])
             ->middleware('permission:accounting,cash_management,view');
-        Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index']);
-        Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher']);
-        Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher']);
+        Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index'])
+            ->middleware('permission:accounting,petty_cash,view');
+        Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher'])
+            ->middleware('permission:accounting,petty_cash,encoder');
+        Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher'])
+            ->middleware('permission:accounting,petty_cash,approver');
         Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index']);
         Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store']);
         Route::put('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'update']);
