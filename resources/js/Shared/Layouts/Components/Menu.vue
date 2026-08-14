@@ -48,7 +48,7 @@
                 </li>
 
                 <li class="nav-item"
-                    v-if="$page.props.roles.includes('Warehouse Manager')  || $page.props.roles.includes('Super Admin')">
+                    v-if="canAny('inventory')">
                     <Link href="/inventory" class="nav-link menu-link"
                         :class="{ 'active': $page.component.startsWith('Modules/Inventory/Index') }">
                     <i class="ri-survey-fill"></i>

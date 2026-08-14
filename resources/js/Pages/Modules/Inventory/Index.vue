@@ -16,7 +16,7 @@
         </div>
 
         <div class="inventory-sidebar-tabs">
-          <button v-for="tab in tabs" :key="tab.id" type="button" class="inventory-sidebar-tab"
+          <button v-for="tab in visibleTabs" :key="tab.id" type="button" class="inventory-sidebar-tab"
             :class="{ 'inventory-tab-active': activeTab === tab.id }" @click="changeTab(tab.id)">
             <div class="inventory-tab-icon">
               <i :class="tab.icon"></i>
@@ -336,6 +336,27 @@ export default {
         },
       ]
     };
+  },
+  computed: {
+    visibleTabs() {
+      // purchaseRequests and accountsPayable are outside this pilot's
+      // submodule catalog (spec §9/§12) — they stay visible to anyone who
+      // can see the Inventory module at all, unfiltered, same as today.
+      // Tab ids don't match submodule keys 1:1 — map them explicitly.
+      const tabToSubmodule = {
+        purchaseOrders: 'purchase_orders',
+        receiving: 'receiving',
+        productSummary: 'inventory_stocks',
+        stockReturns: 'stock_returns',
+      };
+      return this.tabs.filter((tab) => {
+        const submoduleKey = tabToSubmodule[tab.id];
+        if (!submoduleKey) {
+          return true;
+        }
+        return this.canAny('inventory', submoduleKey);
+      });
+    },
   },
   watch: {
     activeTab(newVal) {
