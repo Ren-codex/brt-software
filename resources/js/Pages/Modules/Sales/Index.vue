@@ -253,12 +253,18 @@ export default {
   },
   computed: {
     visibleTabs() {
-      // remittance and sales-reports are outside this pilot's submodule
-      // catalog (spec §9/§12) — they stay visible to anyone who can see
-      // the Sales module at all, unfiltered, same as today.
-      const gatedTabIds = ['sales_orders', 'sales_returns', 'ar_invoices', 'receipts'];
+      // sales-reports is outside this pilot's submodule catalog (spec
+      // §9/§12) — it stays visible to anyone who can see the Sales module
+      // at all, unfiltered, same as today. remittance is classified under
+      // Accounting's own submodule catalog (spec §15), not Sales — same
+      // UI-grouping-not-route-grouping precedent as Payroll's
+      // payroll_settings and Accounting's own remittances submodule.
+      const salesGatedTabIds = ['sales_orders', 'sales_returns', 'ar_invoices', 'receipts'];
       return this.tabs.filter((tab) => {
-        if (!gatedTabIds.includes(tab.id)) {
+        if (tab.id === 'remittance') {
+          return this.canAny('accounting', 'remittances');
+        }
+        if (!salesGatedTabIds.includes(tab.id)) {
           return true;
         }
         return this.canAny('sales', tab.id);

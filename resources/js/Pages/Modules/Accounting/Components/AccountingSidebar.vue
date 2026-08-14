@@ -9,7 +9,7 @@
         </div>
 
         <div class="inventory-sidebar-tabs">
-            <template v-for="group in groups" :key="group.label">
+            <template v-for="group in visibleGroups" :key="group.label">
 
                 <button v-if="!isSidebarCollapsed"
                     class="sidebar-group-label"
@@ -204,8 +204,35 @@ export default {
         };
     },
     computed: {
+        visibleGroups() {
+            // financial_reports covers the whole Reports and Receivables &
+            // Payables groups (spec §15) — every other tab id here maps
+            // 1:1 to its own submodule.
+            const tabToSubmodule = {
+                dashboard: 'financial_reports',
+                general_ledger: 'financial_reports',
+                trial_balance: 'financial_reports',
+                profit_loss: 'financial_reports',
+                balance_sheet: 'financial_reports',
+                cash_flow: 'financial_reports',
+                accounts_receivable: 'financial_reports',
+                accounts_payable: 'financial_reports',
+                cash_management: 'cash_management',
+                petty_cash: 'petty_cash',
+                expenses: 'expenses',
+                bank_reconciliation: 'bank_reconciliation',
+                settings: 'chart_of_accounts',
+                journal_entries: 'journal_entries',
+            };
+            return this.groups
+                .map((group) => ({
+                    ...group,
+                    tabs: group.tabs.filter((tab) => this.canAny('accounting', tabToSubmodule[tab.id])),
+                }))
+                .filter((group) => group.tabs.length > 0);
+        },
         totalTabs() {
-            return this.groups.reduce((sum, g) => sum + g.tabs.length, 0);
+            return this.visibleGroups.reduce((sum, g) => sum + g.tabs.length, 0);
         },
     },
     watch: {

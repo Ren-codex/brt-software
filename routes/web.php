@@ -116,10 +116,15 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive'])
             ->middleware('permission:payroll,payroll_settings,encoder');
 
-        Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
-        Route::post('/accounting/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp']);
-        Route::patch('/accounting/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance']);
-        Route::patch('/accounting/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive']);
+        Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update'])
+            ->middlewareFor('index', 'permission:accounting,petty_cash,view')
+            ->middlewareFor(['store', 'update'], 'permission:accounting,petty_cash,encoder');
+        Route::post('/accounting/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp'])
+            ->middleware('permission:accounting,petty_cash,encoder');
+        Route::patch('/accounting/funds/{id}/balance', [App\Http\Controllers\Libraries\FundController::class, 'adjustBalance'])
+            ->middleware('permission:accounting,petty_cash,approver');
+        Route::patch('/accounting/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive'])
+            ->middleware('permission:accounting,petty_cash,encoder');
     });
 
     Route::middleware(['role:Administrator,Warehouse Manager'])->group(function () {
@@ -177,10 +182,16 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         // only(): the controller implements no create/edit/update, so the full
         // resource registered three routes that threw on any request.
         Route::resource('/remittances', App\Http\Controllers\RemittanceController::class)
-            ->only(['index', 'store', 'show', 'destroy']);
-        Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
-        Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
-        Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])->name('remittances.remit');
+            ->only(['index', 'store', 'show', 'destroy'])
+            ->middlewareFor(['index', 'show'], 'permission:accounting,remittances,view')
+            ->middlewareFor('store', 'permission:accounting,remittances,encoder')
+            ->middlewareFor('destroy', 'permission:accounting,remittances,admin');
+        Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])
+            ->middleware('permission:accounting,remittances,approver')->name('remittances.approve');
+        Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance'])
+            ->middleware('permission:accounting,remittances,view');
+        Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])
+            ->middleware('permission:accounting,remittances,approver')->name('remittances.remit');
         
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class)
             ->middlewareFor('index', 'permission:payroll,payroll_settings,view')
@@ -241,21 +252,36 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:accounting,journal_entries,encoder');
         Route::get('/accounting/cash-management', [App\Http\Controllers\Modules\CashManagementController::class, 'index'])
             ->middleware('permission:accounting,cash_management,view');
-        Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index']);
-        Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher']);
-        Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher']);
-        Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index']);
-        Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store']);
-        Route::put('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'update']);
-        Route::patch('/accounting/expenses/{id}/approve', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'approve']);
-        Route::patch('/accounting/expenses/{id}/void', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'void']);
-        Route::delete('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'destroy']);
-        Route::get('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'index']);
-        Route::post('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'start']);
-        Route::get('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'show']);
-        Route::post('/accounting/bank-reconciliation/{id}/toggle-clear', [App\Http\Controllers\Modules\BankReconciliationController::class, 'toggleClear']);
-        Route::post('/accounting/bank-reconciliation/{id}/finalize', [App\Http\Controllers\Modules\BankReconciliationController::class, 'finalize']);
-        Route::delete('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'destroy']);
+        Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index'])
+            ->middleware('permission:accounting,petty_cash,view');
+        Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher'])
+            ->middleware('permission:accounting,petty_cash,encoder');
+        Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher'])
+            ->middleware('permission:accounting,petty_cash,approver');
+        Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index'])
+            ->middleware('permission:accounting,expenses,view');
+        Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store'])
+            ->middleware('permission:accounting,expenses,encoder');
+        Route::put('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'update'])
+            ->middleware('permission:accounting,expenses,encoder');
+        Route::patch('/accounting/expenses/{id}/approve', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'approve'])
+            ->middleware('permission:accounting,expenses,approver');
+        Route::patch('/accounting/expenses/{id}/void', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'void'])
+            ->middleware('permission:accounting,expenses,approver');
+        Route::delete('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'destroy'])
+            ->middleware('permission:accounting,expenses,admin');
+        Route::get('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'index'])
+            ->middleware('permission:accounting,bank_reconciliation,view');
+        Route::post('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'start'])
+            ->middleware('permission:accounting,bank_reconciliation,encoder');
+        Route::get('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'show'])
+            ->middleware('permission:accounting,bank_reconciliation,view');
+        Route::post('/accounting/bank-reconciliation/{id}/toggle-clear', [App\Http\Controllers\Modules\BankReconciliationController::class, 'toggleClear'])
+            ->middleware('permission:accounting,bank_reconciliation,encoder');
+        Route::post('/accounting/bank-reconciliation/{id}/finalize', [App\Http\Controllers\Modules\BankReconciliationController::class, 'finalize'])
+            ->middleware('permission:accounting,bank_reconciliation,approver');
+        Route::delete('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'destroy'])
+            ->middleware('permission:accounting,bank_reconciliation,admin');
         Route::post('/accounting/fund-transfers', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFundTransfer'])
             ->middleware('permission:accounting,cash_management,encoder');
         Route::delete('/accounting/fund-transfers/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyFundTransfer'])

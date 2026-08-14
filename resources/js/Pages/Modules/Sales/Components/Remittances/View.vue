@@ -17,7 +17,7 @@
                             <i class="ri-check-line"></i>
                             <span>Approval</span>
                         </button>
-                        <button v-if="item.status?.slug === 'for-verification'" class="create-btn" @click="openDelete(item.id)">
+                        <button v-if="item.status?.slug === 'for-verification' && can('accounting', 'remittances', 'admin')" class="create-btn" @click="openDelete(item.id)">
                             <i class="ri-delete-bin-line"></i>
                         </button>
                         <button class="create-btn" @click="onPrint(item.id)">
@@ -258,8 +258,7 @@ export default {
     emits: ['back', 'reload'],
     computed: {
         canApprove() {
-            const roles = this.$page.props.roles ?? [];
-            return ['Administrator', 'Super Admin'].some(r => roles.includes(r));
+            return this.can('accounting', 'remittances', 'approver');
         },
         receiptCount() {
             return Array.isArray(this.item?.receipts) ? this.item.receipts.length : 0;

@@ -94,7 +94,7 @@
                                         <p class="header-subtitle mb-0">Auto-generated postings, source transactions, and reversal links.</p>
                                     </div>
                                 </div>
-                                <button type="button" class="create-btn" @click="openNewEntry">
+                                <button v-if="can('accounting', 'journal_entries', 'encoder')" type="button" class="create-btn" @click="openNewEntry">
                                     <i class="ri-add-line"></i> New Manual Entry
                                 </button>
                         </div>

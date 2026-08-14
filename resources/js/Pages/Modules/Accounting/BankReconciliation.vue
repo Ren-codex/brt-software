@@ -44,7 +44,7 @@
                 <div class="recon-summary-sep"></div>
                 <div class="recon-summary-item">
                     <button
-                        v-if="activeReconciliation.status === 'open'"
+                        v-if="activeReconciliation.status === 'open' && can('accounting', 'bank_reconciliation', 'approver')"
                         class="acct-btn-primary"
                         :disabled="!summary.is_reconciled || finalizing"
                         @click="finalize"
@@ -88,7 +88,7 @@
                             <thead>
                                 <tr>
                                     <th class="text-center" style="width:44px">
-                                        <input type="checkbox" class="form-check-input" @change="toggleAll($event)" :disabled="activeReconciliation.status === 'finalized'" />
+                                        <input type="checkbox" class="form-check-input" @change="toggleAll($event)" :disabled="activeReconciliation.status === 'finalized' || !can('accounting', 'bank_reconciliation', 'encoder')" />
                                     </th>
                                     <th>Journal No</th>
                                     <th>Date</th>
@@ -106,7 +106,7 @@
                                             type="checkbox"
                                             class="form-check-input"
                                             :checked="line.is_cleared"
-                                            :disabled="activeReconciliation.status === 'finalized' || toggling === line.id"
+                                            :disabled="activeReconciliation.status === 'finalized' || toggling === line.id || !can('accounting', 'bank_reconciliation', 'encoder')"
                                             @change="toggleLine(line)"
                                         />
                                     </td>
@@ -148,7 +148,7 @@
                                 <p class="header-subtitle mb-0">Match your books against bank statements to find discrepancies.</p>
                             </div>
                         </div>
-                        <button class="acct-btn-primary" @click="openStartModal">
+                        <button v-if="can('accounting', 'bank_reconciliation', 'encoder')" class="acct-btn-primary" @click="openStartModal">
                             <i class="ri-add-line"></i> Start Reconciliation
                         </button>
                 </div>
@@ -186,7 +186,7 @@
                                             <button class="action-btn open" @click="openReconciliation(r)" title="Open">
                                                 <i class="ri-eye-line"></i>
                                             </button>
-                                            <button v-if="r.status === 'open'" class="action-btn delete" @click="confirmDelete(r)" title="Delete">
+                                            <button v-if="r.status === 'open' && can('accounting', 'bank_reconciliation', 'admin')" class="action-btn delete" @click="confirmDelete(r)" title="Delete">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </div>

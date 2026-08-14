@@ -11,7 +11,7 @@
                         <p class="header-subtitle mb-0">Record, approve, and release direct business expenses with GL posting</p>
                     </div>
                 </div>
-                <button class="acct-btn-primary" @click="openCreate">
+                <button v-if="can('accounting', 'expenses', 'encoder')" class="acct-btn-primary" @click="openCreate">
                     <i class="ri-add-line"></i> New Expense
                 </button>
             </div>
@@ -93,16 +93,16 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1">
-                                        <button v-if="e.status === 'draft'" class="ge-action-btn edit" @click="openEdit(e)" title="Edit">
+                                        <button v-if="e.status === 'draft' && can('accounting', 'expenses', 'encoder')" class="ge-action-btn edit" @click="openEdit(e)" title="Edit">
                                             <i class="ri-pencil-line"></i>
                                         </button>
-                                        <button v-if="e.status === 'draft'" class="ge-action-btn approve" @click="doApprove(e)" title="Approve & post GL">
+                                        <button v-if="e.status === 'draft' && can('accounting', 'expenses', 'approver')" class="ge-action-btn approve" @click="doApprove(e)" title="Approve & post GL">
                                             <i class="ri-check-double-line"></i>
                                         </button>
-                                        <button v-if="e.status === 'draft'" class="ge-action-btn delete" @click="doDelete(e)" title="Delete">
+                                        <button v-if="e.status === 'draft' && can('accounting', 'expenses', 'admin')" class="ge-action-btn delete" @click="doDelete(e)" title="Delete">
                                             <i class="ri-delete-bin-line"></i>
                                         </button>
-                                        <button v-if="e.status === 'approved'" class="ge-action-btn void" @click="doVoid(e)" title="Void">
+                                        <button v-if="e.status === 'approved' && can('accounting', 'expenses', 'approver')" class="ge-action-btn void" @click="doVoid(e)" title="Void">
                                             <i class="ri-close-circle-line"></i>
                                         </button>
                                         <span v-if="e.status === 'voided'" class="text-muted" style="font-size:0.78rem">—</span>

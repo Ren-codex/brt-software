@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+#
+# Blocks pushing frontend-source changes (resources/js, resources/scss)
+# unless public/build/ was rebuilt and committed in the same push.
+#
+# Why: production (Hostinger) has no Node.js. The deploy script only copies
+# whatever's already committed in public/build/ — it never runs `npm run
+# build` itself. Skipping the rebuild step means the push and the deploy
+# both succeed with no error anywhere, but the live site silently keeps
+# serving the old JS/CSS bundle.
+#
+# Activated automatically via package.json's `prepare` script (git config
+# core.hooksPath .githooks) whenever anyone runs `npm install`.
+#
+# Bypass (not recommended): git push --no-verify
+
+empty_tree=$(git hash-object -t tree /dev/null)
+blocked=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    # Branch deletion — nothing to check.
+    [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+
+    # New branch with no upstream yet — diff against the empty tree instead.
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        base="$empty_tree"
+    else
+        base="$remote_sha"
+    fi
+
+    changed=$(git diff --name-only "$base" "$local_sha" -- resources/js resources/scss public/build)
+
+    touches_source=$(echo "$changed" | grep -E '^resources/(js|scss)/' || true)
+    touches_build=$(echo "$changed" | grep -E '^public/build/' || true)
+
+    if [ -n "$touches_source" ] && [ -z "$touches_build" ]; then
+        blocked=1
+        echo ""
+        echo "✗ pre-push blocked: frontend source changed without rebuilding public/build/"
+        echo ""
+        echo "  Changed files include:"
+        echo "$touches_source" | sed 's/^/    /'
+        echo ""
+        echo "  Production has no Node.js — it only copies whatever's already"
+        echo "  committed in public/build/. Without a rebuild, this change will"
+        echo "  push and deploy with no error, but won't show up on the live site."
+        echo ""
+        echo "  Fix:"
+        echo "    npm run build"
+        echo "    git add public/build"
+        echo "    git commit -m 'rebuild assets'"
+        echo "    git push"
+        echo ""
+        echo "  Bypass (not recommended): git push --no-verify"
+        echo ""
+    fi
+done
+
+exit $blocked

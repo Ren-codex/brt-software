@@ -170,7 +170,7 @@
                                 <p class="header-subtitle mb-0">Move funds between bank accounts with automatic journal entries.</p>
                             </div>
                         </div>
-                        <button class="acct-btn-primary" @click="openCreateTransfer">
+                        <button v-if="can('accounting', 'cash_management', 'encoder')" class="acct-btn-primary" @click="openCreateTransfer">
                             <i class="ri-add-line"></i> New Transfer
                         </button>
                 </div>
@@ -204,7 +204,7 @@
                                     <td class="text-muted">{{ t.reference_number || '—' }}</td>
                                     <td class="text-muted small">{{ t.notes || '—' }}</td>
                                     <td class="text-center">
-                                        <button class="action-btn delete" @click="confirmDeleteTransfer(t)" title="Delete & Reverse">
+                                        <button v-if="can('accounting', 'cash_management', 'admin')" class="action-btn delete" @click="confirmDeleteTransfer(t)" title="Delete & Reverse">
                                             <i class="ri-delete-bin-line"></i>
                                         </button>
                                     </td>
@@ -286,7 +286,7 @@
                                 <p class="header-subtitle mb-0">Record cash deposited to bank. Posts DR Bank / CR Cash on Hand automatically.</p>
                             </div>
                         </div>
-                        <button class="acct-btn-primary" @click="openCreateDeposit">
+                        <button v-if="can('accounting', 'cash_management', 'encoder')" class="acct-btn-primary" @click="openCreateDeposit">
                             <i class="ri-add-line"></i> New Deposit
                         </button>
                 </div>
@@ -327,7 +327,7 @@
                                     </td>
                                     <td class="text-muted small">{{ d.created_by }}</td>
                                     <td class="text-center">
-                                        <button class="action-btn delete" @click="confirmDeleteDeposit(d)" title="Delete & Reverse">
+                                        <button v-if="can('accounting', 'cash_management', 'admin')" class="action-btn delete" @click="confirmDeleteDeposit(d)" title="Delete & Reverse">
                                             <i class="ri-delete-bin-line"></i>
                                         </button>
                                     </td>
@@ -433,7 +433,7 @@
                                 <p class="header-subtitle mb-0">Withdraw cash from a bank back to cash on hand. Posts DR Cash / CR Bank automatically.</p>
                             </div>
                         </div>
-                        <button class="acct-btn-primary" @click="openCreateWithdrawal">
+                        <button v-if="can('accounting', 'cash_management', 'encoder')" class="acct-btn-primary" @click="openCreateWithdrawal">
                             <i class="ri-add-line"></i> New Withdrawal
                         </button>
                 </div>
@@ -467,7 +467,7 @@
                                     <td class="text-muted">{{ w.reference || '—' }}</td>
                                     <td class="text-muted small">{{ w.created_by }}</td>
                                     <td class="text-center">
-                                        <button class="action-btn delete" @click="confirmDeleteWithdrawal(w)" title="Delete & Reverse">
+                                        <button v-if="can('accounting', 'cash_management', 'admin')" class="action-btn delete" @click="confirmDeleteWithdrawal(w)" title="Delete & Reverse">
                                             <i class="ri-delete-bin-line"></i>
                                         </button>
                                     </td>
@@ -636,7 +636,7 @@
                                                 <a v-if="t.receipt_path" :href="'/storage/' + t.receipt_path" target="_blank" class="action-btn view" title="View Receipt">
                                                     <i class="ri-attachment-2"></i>
                                                 </a>
-                                                <button class="action-btn delete" @click="confirmDeleteTransaction(t)" title="Delete & Reverse">
+                                                <button v-if="can('accounting', 'petty_cash', 'admin')" class="action-btn delete" @click="confirmDeleteTransaction(t)" title="Delete & Reverse">
                                                     <i class="ri-delete-bin-line"></i>
                                                 </button>
                                             </div>
