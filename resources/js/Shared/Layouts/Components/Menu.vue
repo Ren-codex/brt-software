@@ -95,7 +95,7 @@
                     Finance
                 </li>
 
-                <li class="nav-item" v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('Accountant')">
+                <li class="nav-item" v-if="canAny('accounting')">
                     <Link href="/accounting" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/accounting') }">
                     <i class="ri-bank-card-fill"></i>
