@@ -36,6 +36,8 @@
                                 class="form-control"
                                 :class="{ 'input-error': form.errors.code }"
                                 placeholder="Fill Brand, Packaging & Weight to generate"
+                                :readonly="editable"
+                                :disabled="editable"
                                 @input="form.code = form.code.toUpperCase(); codeManuallyEdited = true; handleInput('code')"
                             >
                             <button

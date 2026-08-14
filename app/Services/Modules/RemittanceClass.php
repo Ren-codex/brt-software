@@ -277,6 +277,13 @@ class RemittanceClass
         }
 
         $receipts = Receipt::whereNull('remittance_id')
+            ->whereHas('status', function ($q) {
+                $q->where('slug', 'pending');
+            })
+            ->where(function ($query) {
+                $query->whereNull('receipt_type')
+                    ->orWhere('receipt_type', '!=', 'refund');
+            })
             ->whereHas('arInvoice.sales_order', function ($q) use ($employee) {
                 $q->where('sales_rep_id', $employee->id);
             })

@@ -48,7 +48,7 @@ class EmployeeRequest extends FormRequest
             'birthdate' => 'required|date',
             'sex' => 'required|string|max:10',
             'religion' => 'nullable|string|max:100',
-            'address' => 'required|string|max:500',
+            'address' => 'nullable|string|max:500',
             'position_id' => 'required|exists:list_positions,id',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_regular' => 'required|boolean',

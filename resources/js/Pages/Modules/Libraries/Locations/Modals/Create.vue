@@ -31,17 +31,6 @@
                         <span class="error-message" v-if="form.errors.name">{{ form.errors.name }}</span>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Status</label>
-                        <div class="toggle-wrapper">
-                            <label class="toggle-switch">
-                                <input type="checkbox" v-model="form.is_active">
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <span class="toggle-label">{{ form.is_active ? 'Active' : 'Inactive' }}</span>
-                        </div>
-                    </div>
-
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Your information has been saved successfully!</span>

@@ -134,7 +134,7 @@ class DropdownClass
     }
 
     public function products(){
-        $data = Product::with(['brand', 'unit'])->get()->map(function ($item) {
+        $data = Product::with(['brand', 'unit', 'packaging'])->get()->map(function ($item) {
             $batchStocks = InventoryStocks::query()
                 ->with('receivedItem')
                 ->where('quantity', '>', 0)
@@ -199,7 +199,7 @@ class DropdownClass
             }
             return [
                 'value' => $item->id,
-                'name' => ($item->brand ? $item->brand->name : '') . ' ' . ($item->weight ?? '') . ' ' . ($item->unit ? $item->unit->name : '') ,
+                'name' => trim(($item->brand ? $item->brand->name : '') . ' ' . ($item->weight ?? '') . ' ' . ($item->unit ? $item->unit->name : '')) . ($item->packaging ? ' (' . $item->packaging->name . ')' : ''),
                 'batch_code' => $batch_code,
                 'batch_available' => $batch_available,
                 'batch_stocks' => $batch_stocks,

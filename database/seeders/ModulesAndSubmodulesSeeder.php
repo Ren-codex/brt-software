@@ -43,6 +43,15 @@ class ModulesAndSubmodulesSeeder extends Seeder
             ]],
             ['key' => 'user_management', 'name' => 'User Management', 'sort_order' => 7, 'submodules' => []],
             ['key' => 'dashboard', 'name' => 'Dashboard', 'sort_order' => 8, 'submodules' => []],
+            ['key' => 'libraries', 'name' => 'Libraries', 'sort_order' => 9, 'submodules' => [
+                ['key' => 'roles', 'name' => 'Roles', 'sort_order' => 1],
+                ['key' => 'brands', 'name' => 'Brands', 'sort_order' => 2],
+                ['key' => 'units', 'name' => 'Units', 'sort_order' => 3],
+                ['key' => 'products', 'name' => 'Products', 'sort_order' => 4],
+                ['key' => 'statuses', 'name' => 'Statuses', 'sort_order' => 5],
+                ['key' => 'locations', 'name' => 'Locations', 'sort_order' => 6],
+                ['key' => 'packagings', 'name' => 'Packagings', 'sort_order' => 7],
+            ]],
         ];
 
         foreach ($catalog as $entry) {

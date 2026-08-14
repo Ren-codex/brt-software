@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         $this->call(EmployeesCustomersUsersDefaultPermissionsSeeder::class);
         $this->call(PayrollDefaultPermissionsSeeder::class);
         $this->call(AccountingDefaultPermissionsSeeder::class);
+        $this->call(LibrariesDefaultPermissionsSeeder::class);
         $this->call(ListSalariesTableSeeder::class);
         $this->call(ListPositionsTableSeeder::class);
         $this->call(UsersTableSeeder::class);
