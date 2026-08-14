@@ -32,7 +32,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end mb-2">
-                    <button type="button" class="acct-btn-primary" @click="openCreateFund">
+                    <button v-if="can('accounting', 'petty_cash', 'encoder')" type="button" class="acct-btn-primary" @click="openCreateFund">
                         <i class="ri-add-line"></i> Add Fund
                     </button>
                 </div>
@@ -54,16 +54,16 @@
                                 {{ fund.is_active ? 'Active' : 'Inactive' }}
                             </span>
                             <div class="pc-fund-actions">
-                                <button type="button" class="pc-action-btn" title="Top-up" @click="openTopUpFund(fund)">
+                                <button v-if="can('accounting', 'petty_cash', 'encoder')" type="button" class="pc-action-btn" title="Top-up" @click="openTopUpFund(fund)">
                                     <i class="ri-add-circle-line"></i>
                                 </button>
-                                <button type="button" class="pc-action-btn" title="Adjust Balance" @click="openAdjustFund(fund)">
+                                <button v-if="can('accounting', 'petty_cash', 'approver')" type="button" class="pc-action-btn" title="Adjust Balance" @click="openAdjustFund(fund)">
                                     <i class="ri-scales-line"></i>
                                 </button>
-                                <button type="button" class="pc-action-btn" title="Edit" @click="openEditFund(fund)">
+                                <button v-if="can('accounting', 'petty_cash', 'encoder')" type="button" class="pc-action-btn" title="Edit" @click="openEditFund(fund)">
                                     <i class="ri-pencil-line"></i>
                                 </button>
-                                <button type="button" class="pc-action-btn" :title="fund.is_active ? 'Deactivate' : 'Activate'" @click="toggleFundActive(fund)">
+                                <button v-if="can('accounting', 'petty_cash', 'encoder')" type="button" class="pc-action-btn" :title="fund.is_active ? 'Deactivate' : 'Activate'" @click="toggleFundActive(fund)">
                                     <i :class="fund.is_active ? 'ri-forbid-line' : 'ri-check-line'"></i>
                                 </button>
                             </div>
@@ -113,7 +113,7 @@
                                 <p class="header-subtitle mb-0">Record every disbursement from the fund. One voucher per expense.</p>
                             </div>
                         </div>
-                        <button class="acct-btn-primary" @click="openVoucherModal">
+                        <button v-if="can('accounting', 'petty_cash', 'encoder')" class="acct-btn-primary" @click="openVoucherModal">
                             <i class="ri-add-line"></i> New Voucher
                         </button>
                     </div>
@@ -180,7 +180,7 @@
                                         </td>
                                         <td class="text-center">
                                             <button
-                                                v-if="v.status === 'recorded'"
+                                                v-if="v.status === 'recorded' && can('accounting', 'petty_cash', 'approver')"
                                                 class="pc-void-btn"
                                                 @click="confirmVoid(v)"
                                                 title="Void voucher"

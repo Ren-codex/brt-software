@@ -49,7 +49,7 @@
                                 <p class="header-subtitle mb-0">Configured accounts available for posting and reporting.</p>
                             </div>
                         </div>
-                        <button type="button" class="acct-btn-primary" @click="openCreateAccount">
+                        <button v-if="can('accounting', 'chart_of_accounts', 'encoder')" type="button" class="acct-btn-primary" @click="openCreateAccount">
                             <i class="ri-add-line"></i> New Account
                         </button>
                 </div>
@@ -87,10 +87,11 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="action-group">
-                                            <button type="button" class="action-btn edit" @click="openEditAccount(row)" title="Edit">
+                                            <button v-if="can('accounting', 'chart_of_accounts', 'encoder')" type="button" class="action-btn edit" @click="openEditAccount(row)" title="Edit">
                                                 <i class="ri-pencil-line"></i>
                                             </button>
                                             <button
+                                                v-if="can('accounting', 'chart_of_accounts', 'encoder')"
                                                 type="button"
                                                 class="action-btn"
                                                 :class="row.is_active ? 'deactivate' : 'activate'"
@@ -99,7 +100,7 @@
                                             >
                                                 <i :class="row.is_active ? 'ri-toggle-fill' : 'ri-toggle-line'"></i>
                                             </button>
-                                            <button type="button" class="action-btn delete" @click="deleteAccount(row)" title="Delete">
+                                            <button v-if="can('accounting', 'chart_of_accounts', 'admin')" type="button" class="action-btn delete" @click="deleteAccount(row)" title="Delete">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </div>
@@ -227,7 +228,7 @@
                                 <p class="header-subtitle mb-0">Configure bank accounts used for payment recording and GL mapping.</p>
                             </div>
                         </div>
-                        <button class="acct-btn-primary" @click="openCreateBank">
+                        <button v-if="can('accounting', 'chart_of_accounts', 'encoder')" class="acct-btn-primary" @click="openCreateBank">
                             <i class="ri-add-line"></i> Add Bank Account
                         </button>
                 </div>
@@ -262,10 +263,11 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="action-group">
-                                            <button class="action-btn edit" @click="openEditBank(acct)" title="Edit">
+                                            <button v-if="can('accounting', 'chart_of_accounts', 'encoder')" class="action-btn edit" @click="openEditBank(acct)" title="Edit">
                                                 <i class="ri-edit-line"></i>
                                             </button>
                                             <button
+                                                v-if="can('accounting', 'chart_of_accounts', 'encoder')"
                                                 class="action-btn"
                                                 :class="acct.is_active ? 'deactivate' : 'activate'"
                                                 @click="toggleBankAccount(acct)"
