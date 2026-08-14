@@ -252,12 +252,18 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:accounting,petty_cash,encoder');
         Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher'])
             ->middleware('permission:accounting,petty_cash,approver');
-        Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index']);
-        Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store']);
-        Route::put('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'update']);
-        Route::patch('/accounting/expenses/{id}/approve', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'approve']);
-        Route::patch('/accounting/expenses/{id}/void', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'void']);
-        Route::delete('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'destroy']);
+        Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index'])
+            ->middleware('permission:accounting,expenses,view');
+        Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store'])
+            ->middleware('permission:accounting,expenses,encoder');
+        Route::put('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'update'])
+            ->middleware('permission:accounting,expenses,encoder');
+        Route::patch('/accounting/expenses/{id}/approve', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'approve'])
+            ->middleware('permission:accounting,expenses,approver');
+        Route::patch('/accounting/expenses/{id}/void', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'void'])
+            ->middleware('permission:accounting,expenses,approver');
+        Route::delete('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'destroy'])
+            ->middleware('permission:accounting,expenses,admin');
         Route::get('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'index']);
         Route::post('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'start']);
         Route::get('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'show']);
