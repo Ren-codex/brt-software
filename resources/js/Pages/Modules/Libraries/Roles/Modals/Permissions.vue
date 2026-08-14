@@ -30,21 +30,27 @@
                 <tr class="module-row">
                   <td><strong>{{ mod.name }}</strong></td>
                   <td class="text-center" v-for="lvl in levels" :key="lvl">
-                    <input
-                      type="checkbox"
-                      :checked="mod.levels.includes(lvl)"
-                      @change="toggle(mod.id, null, lvl, $event.target.checked)"
-                    >
+                    <label class="perm-checkbox" :class="{ checked: mod.levels.includes(lvl) }">
+                      <input
+                        type="checkbox"
+                        :checked="mod.levels.includes(lvl)"
+                        @change="toggle(mod.id, null, lvl, $event.target.checked)"
+                      >
+                      <span class="perm-checkbox-box"><i class="ri-check-line"></i></span>
+                    </label>
                   </td>
                 </tr>
                 <tr v-for="sub in mod.submodules" :key="'s' + sub.id" class="submodule-row">
                   <td class="submodule-name">{{ sub.name }}</td>
                   <td class="text-center" v-for="lvl in levels" :key="lvl">
-                    <input
-                      type="checkbox"
-                      :checked="sub.levels.includes(lvl)"
-                      @change="toggle(mod.id, sub.id, lvl, $event.target.checked)"
-                    >
+                    <label class="perm-checkbox" :class="{ checked: sub.levels.includes(lvl) }">
+                      <input
+                        type="checkbox"
+                        :checked="sub.levels.includes(lvl)"
+                        @change="toggle(mod.id, sub.id, lvl, $event.target.checked)"
+                      >
+                      <span class="perm-checkbox-box"><i class="ri-check-line"></i></span>
+                    </label>
                   </td>
                 </tr>
               </template>
@@ -133,8 +139,8 @@ export default {
         this.saveSuccess = true;
         this.$emit('saved');
         setTimeout(() => {
-          this.saveSuccess = false;
-        }, 2000);
+          this.hide();
+        }, 900);
       } finally {
         this.saving = false;
       }
@@ -145,8 +151,54 @@ export default {
 
 <style scoped>
 .permissions-table { width: 100%; }
+.permissions-table td, .permissions-table th { vertical-align: middle; }
 .module-row td { background: #f7fbf9; font-weight: 600; }
 .submodule-row .submodule-name { padding-left: 2rem; color: #5a7a73; }
 .permissions-loading { display: flex; align-items: center; gap: .5rem; padding: 2rem; justify-content: center; color: #6b8c85; }
 .modal-subtitle { font-size: .8rem; color: #6b8c85; margin: 0; }
+
+.perm-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0.6rem 0.4rem;
+  margin: 0;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+.perm-checkbox:hover { background-color: rgba(61, 141, 122, 0.08); }
+.perm-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.perm-checkbox-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #c4d9d2;
+  border-radius: 7px;
+  background: #fff;
+  color: transparent;
+  font-size: 16px;
+  line-height: 1;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+.perm-checkbox:hover .perm-checkbox-box { border-color: #3d8d7a; }
+.perm-checkbox.checked .perm-checkbox-box {
+  background-color: #3d8d7a;
+  border-color: #3d8d7a;
+  color: #fff;
+}
+.perm-checkbox input[type="checkbox"]:focus-visible ~ .perm-checkbox-box {
+  outline: 2px solid #3d8d7a;
+  outline-offset: 2px;
+}
+.perm-checkbox:active .perm-checkbox-box { transform: scale(0.9); }
 </style>
