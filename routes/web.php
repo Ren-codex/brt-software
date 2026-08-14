@@ -199,13 +199,18 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:accounting,financial_reports,view');
         Route::get('/accounting/accounts-payable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsPayable'])
             ->middleware('permission:accounting,financial_reports,view');
-        Route::get('/accounting/settings', [App\Http\Controllers\Modules\AccountingController::class, 'settings']);
+        Route::get('/accounting/settings', [App\Http\Controllers\Modules\AccountingController::class, 'settings'])
+            ->middleware('permission:accounting,chart_of_accounts,view');
         Route::get('/accounting/chart-of-accounts', fn() => redirect('/accounting/settings'));
         Route::get('/accounting/bank-accounts', fn() => redirect('/accounting/settings'));
-        Route::post('/accounting/accounts', [App\Http\Controllers\Modules\AccountingController::class, 'storeAccount']);
-        Route::put('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'updateAccount']);
-        Route::patch('/accounting/accounts/{id}/toggle', [App\Http\Controllers\Modules\AccountingController::class, 'toggleAccount']);
-        Route::delete('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'destroyAccount']);
+        Route::post('/accounting/accounts', [App\Http\Controllers\Modules\AccountingController::class, 'storeAccount'])
+            ->middleware('permission:accounting,chart_of_accounts,encoder');
+        Route::put('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'updateAccount'])
+            ->middleware('permission:accounting,chart_of_accounts,encoder');
+        Route::patch('/accounting/accounts/{id}/toggle', [App\Http\Controllers\Modules\AccountingController::class, 'toggleAccount'])
+            ->middleware('permission:accounting,chart_of_accounts,encoder');
+        Route::delete('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'destroyAccount'])
+            ->middleware('permission:accounting,chart_of_accounts,admin');
         Route::get('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'journalEntries'])
             ->middleware('permission:accounting,journal_entries,view');
         Route::post('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'storeManualJournal'])
@@ -234,10 +239,14 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::delete('/accounting/bank-deposits/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyDeposit']);
         Route::post('/accounting/bank-withdrawals', [App\Http\Controllers\Modules\CashManagementController::class, 'storeWithdrawal']);
         Route::delete('/accounting/bank-withdrawals/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyWithdrawal']);
-        Route::get('/accounting/bank-accounts/list', [App\Http\Controllers\Modules\BankAccountController::class, 'list']);
-        Route::post('/accounting/bank-accounts', [App\Http\Controllers\Modules\BankAccountController::class, 'store']);
-        Route::put('/accounting/bank-accounts/{id}', [App\Http\Controllers\Modules\BankAccountController::class, 'update']);
-        Route::patch('/accounting/bank-accounts/{id}/toggle', [App\Http\Controllers\Modules\BankAccountController::class, 'toggle']);
+        Route::get('/accounting/bank-accounts/list', [App\Http\Controllers\Modules\BankAccountController::class, 'list'])
+            ->middleware('permission:accounting,chart_of_accounts,view');
+        Route::post('/accounting/bank-accounts', [App\Http\Controllers\Modules\BankAccountController::class, 'store'])
+            ->middleware('permission:accounting,chart_of_accounts,encoder');
+        Route::put('/accounting/bank-accounts/{id}', [App\Http\Controllers\Modules\BankAccountController::class, 'update'])
+            ->middleware('permission:accounting,chart_of_accounts,encoder');
+        Route::patch('/accounting/bank-accounts/{id}/toggle', [App\Http\Controllers\Modules\BankAccountController::class, 'toggle'])
+            ->middleware('permission:accounting,chart_of_accounts,encoder');
 
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll'])
             ->middleware('permission:payroll,payroll_processing,view');
