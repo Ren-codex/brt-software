@@ -182,10 +182,16 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         // only(): the controller implements no create/edit/update, so the full
         // resource registered three routes that threw on any request.
         Route::resource('/remittances', App\Http\Controllers\RemittanceController::class)
-            ->only(['index', 'store', 'show', 'destroy']);
-        Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])->name('remittances.approve');
-        Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
-        Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])->name('remittances.remit');
+            ->only(['index', 'store', 'show', 'destroy'])
+            ->middlewareFor(['index', 'show'], 'permission:accounting,remittances,view')
+            ->middlewareFor('store', 'permission:accounting,remittances,encoder')
+            ->middlewareFor('destroy', 'permission:accounting,remittances,admin');
+        Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])
+            ->middleware('permission:accounting,remittances,approver')->name('remittances.approve');
+        Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance'])
+            ->middleware('permission:accounting,remittances,view');
+        Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])
+            ->middleware('permission:accounting,remittances,approver')->name('remittances.remit');
         
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class)
             ->middlewareFor('index', 'permission:payroll,payroll_settings,view')
