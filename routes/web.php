@@ -87,9 +87,13 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:inventory,purchase_orders,approver');
         Route::patch('/purchase-orders/{id}/void', [App\Http\Controllers\PurchaseOrderController::class, 'void'])
             ->middleware('permission:inventory,purchase_orders,approver');
-        Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class);
-        Route::post('/stock-returns/{id}/approve', [App\Http\Controllers\StockReturnController::class, 'approve']);
-        Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);
+        Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class)
+            ->middlewareFor(['index', 'show'], 'permission:inventory,stock_returns,view')
+            ->middlewareFor('store', 'permission:inventory,stock_returns,encoder');
+        Route::post('/stock-returns/{id}/approve', [App\Http\Controllers\StockReturnController::class, 'approve'])
+            ->middleware('permission:inventory,stock_returns,approver');
+        Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem'])
+            ->middleware('permission:inventory,stock_returns,approver');
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO'])
             ->middleware('permission:inventory,purchase_orders,view');
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode'])
