@@ -264,12 +264,18 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:accounting,expenses,approver');
         Route::delete('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'destroy'])
             ->middleware('permission:accounting,expenses,admin');
-        Route::get('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'index']);
-        Route::post('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'start']);
-        Route::get('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'show']);
-        Route::post('/accounting/bank-reconciliation/{id}/toggle-clear', [App\Http\Controllers\Modules\BankReconciliationController::class, 'toggleClear']);
-        Route::post('/accounting/bank-reconciliation/{id}/finalize', [App\Http\Controllers\Modules\BankReconciliationController::class, 'finalize']);
-        Route::delete('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'destroy']);
+        Route::get('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'index'])
+            ->middleware('permission:accounting,bank_reconciliation,view');
+        Route::post('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'start'])
+            ->middleware('permission:accounting,bank_reconciliation,encoder');
+        Route::get('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'show'])
+            ->middleware('permission:accounting,bank_reconciliation,view');
+        Route::post('/accounting/bank-reconciliation/{id}/toggle-clear', [App\Http\Controllers\Modules\BankReconciliationController::class, 'toggleClear'])
+            ->middleware('permission:accounting,bank_reconciliation,encoder');
+        Route::post('/accounting/bank-reconciliation/{id}/finalize', [App\Http\Controllers\Modules\BankReconciliationController::class, 'finalize'])
+            ->middleware('permission:accounting,bank_reconciliation,approver');
+        Route::delete('/accounting/bank-reconciliation/{id}', [App\Http\Controllers\Modules\BankReconciliationController::class, 'destroy'])
+            ->middleware('permission:accounting,bank_reconciliation,admin');
         Route::post('/accounting/fund-transfers', [App\Http\Controllers\Modules\CashManagementController::class, 'storeFundTransfer'])
             ->middleware('permission:accounting,cash_management,encoder');
         Route::delete('/accounting/fund-transfers/{id}', [App\Http\Controllers\Modules\CashManagementController::class, 'destroyFundTransfer'])
