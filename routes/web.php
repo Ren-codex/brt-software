@@ -18,8 +18,12 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
     Route::resource('/sales-orders-external', App\Http\Controllers\Modules\SalesOrderExternalController::class);
     Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class);
-    Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class);
-    Route::get('/employees/{id}/incentives-summary', [App\Http\Controllers\Modules\EmployeeController::class, 'incentivesSummary']);
+    Route::resource('/employees', App\Http\Controllers\Modules\EmployeeController::class)
+        ->middlewareFor(['index', 'show'], 'permission:employees,view')
+        ->middlewareFor(['store', 'update'], 'permission:employees,encoder')
+        ->middlewareFor('destroy', 'permission:employees,admin');
+    Route::get('/employees/{id}/incentives-summary', [App\Http\Controllers\Modules\EmployeeController::class, 'incentivesSummary'])
+        ->middleware('permission:employees,view');
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
     Route::get('/customers/{id}/details', [App\Http\Controllers\Modules\CustomerController::class, 'details']);
     Route::get('/customers/{id}/order-summary', [App\Http\Controllers\Modules\CustomerController::class, 'orderSummary']);
@@ -59,14 +63,21 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
         Route::resource('/libraries/products', App\Http\Controllers\Libraries\ProductController::class);
         Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
-        Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class);
-        Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class);
+        Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class)
+            ->middlewareFor(['index', 'show'], 'permission:employees,view')
+            ->middlewareFor(['store', 'update'], 'permission:employees,encoder')
+            ->middlewareFor('destroy', 'permission:employees,admin');
+        Route::resource('/libraries/salaries', App\Http\Controllers\Libraries\SalaryController::class)
+            ->middlewareFor(['index', 'show'], 'permission:employees,view')
+            ->middlewareFor(['store', 'update'], 'permission:employees,encoder')
+            ->middlewareFor('destroy', 'permission:employees,admin');
         Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
         Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class);
         Route::resource('/libraries/packagings', App\Http\Controllers\Libraries\PackagingController::class);
 
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
-        Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive']);
+        Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive'])
+            ->middleware('permission:employees,encoder');
         Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
 
         Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
