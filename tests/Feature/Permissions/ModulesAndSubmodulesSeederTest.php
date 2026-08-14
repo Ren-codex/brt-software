@@ -41,7 +41,7 @@ class ModulesAndSubmodulesSeederTest extends TestCase
         $this->seed(ModulesAndSubmodulesSeeder::class);
         $this->seed(ModulesAndSubmodulesSeeder::class);
 
-        $this->assertEquals(8, Module::count());
+        $this->assertEquals(9, Module::count());
         $this->assertEquals(4, Module::where('key', 'sales')->firstOrFail()->submodules()->count());
     }
 
