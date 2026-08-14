@@ -13,7 +13,7 @@
                                 <p class="header-subtitle mb-0">A comprehensive list of customers</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
+                        <button v-if="can('customers', 'encoder')" class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
                             <span>Customer</span>
                         </button>
@@ -110,7 +110,7 @@
 
                                         <td>
                                             <div class="action-buttons" @click.stop>
-                                                <b-button @click="openEdit(list, index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
+                                                <b-button v-if="can('customers', 'encoder')" @click="openEdit(list, index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
                                             </div>

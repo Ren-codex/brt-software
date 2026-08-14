@@ -15,7 +15,7 @@
                                 <p class="header-subtitle mb-0">Manage user accounts and permissions</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
+                        <button v-if="can('user_management', 'encoder')" class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
                             <span>Create User</span>
                         </button>
@@ -79,7 +79,7 @@
                                                 v-b-tooltip.hover title="View">
                                                 <i class="ri-eye-fill"></i>
                                             </button> -->
-                                            <button @click="openUpdate(list, index)" class="action-btn action-btn-edit"
+                                            <button v-if="can('user_management', 'encoder')" @click="openUpdate(list, index)" class="action-btn action-btn-edit"
                                                 v-b-tooltip.hover title="Update">
                                                 <i class="ri-edit-2-fill"></i>
                                             </button>
@@ -87,13 +87,13 @@
                                                 v-b-tooltip.hover title="Set Roles">
                                                 <i class="ri-group-2-line"></i>
                                             </button>
-                                            <button @click="openDeactivate(list)"
+                                            <button v-if="can('user_management', 'encoder')" @click="openDeactivate(list)"
                                                 :class="['action-btn', list.is_active ? 'action-btn-deactivate' : 'action-btn-activate']"
                                                 v-b-tooltip.hover :title="list.is_active ? 'Deactivate' : 'Activate'">
                                                 <i
                                                     :class="list.is_active ? 'ri-lock-2-fill' : 'ri-lock-unlock-line'"></i>
                                             </button>
-                                            <button @click="openReset(list)" class="action-btn action-btn-reset"
+                                            <button v-if="can('user_management', 'encoder')" @click="openReset(list)" class="action-btn action-btn-reset"
                                                 v-b-tooltip.hover title="Reset Password">
                                                 <i class="ri-lock-password-line"></i>
                                             </button>

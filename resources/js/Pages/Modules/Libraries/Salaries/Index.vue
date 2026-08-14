@@ -14,7 +14,7 @@
                                 <p class="header-subtitle mb-0">Manage salaries and permissions</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
+                        <button v-if="can('employees', 'encoder')" class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
                             <span>Add Salary</span>
                         </button>
@@ -55,10 +55,10 @@
                                     <td>{{ list.amount }}</td>
                                     <td>
                                         <div class="action-buttons">
-                                            <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                                            <button v-if="can('employees', 'encoder')" @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                                                 <i class="ri-pencil-line"></i>
                                             </button>
-                                            <button @click="openDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                                            <button v-if="can('employees', 'admin')" @click="openDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </div>

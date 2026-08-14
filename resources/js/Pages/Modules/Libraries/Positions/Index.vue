@@ -14,7 +14,7 @@
                                 <p class="header-subtitle mb-0">Manage and organize your position catalog</p>
                             </div>
                         </div>
-                        <button class="create-btn" @click="openCreate">
+                        <button v-if="can('employees', 'encoder')" class="create-btn" @click="openCreate">
                             <i class="ri-add-line"></i>
                             <span>Add Position</span>
                         </button>
@@ -59,6 +59,7 @@
                                     <td>
                                         <b-form-checkbox
                                             :checked="list.is_active === 1"
+                                            :disabled="!can('employees', 'encoder')"
                                             @change="toggleActive(list)"
                                             switch
                                             size="md"
@@ -66,7 +67,7 @@
                                     </td>
                                     <td>
                                         <div class="action-buttons">
-                                            <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                                            <button v-if="can('employees', 'encoder')" @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                                                 <i class="ri-pencil-line"></i>
                                             </button>
                                         </div>
