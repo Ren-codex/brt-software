@@ -21,8 +21,8 @@
           </p>
         </div>
 
-        <div class="cd-footer">
-          <button type="button" class="cd-btn cd-btn-cancel" @click="cancel">
+        <div class="cd-footer" :class="{ 'cd-footer--single': hideCancel }">
+          <button v-if="!hideCancel" type="button" class="cd-btn cd-btn-cancel" @click="cancel">
             {{ cancelText }}
           </button>
           <button type="button" class="cd-btn" :class="confirmBtnClass" @click="confirm">
@@ -44,7 +44,9 @@ export default {
     note:        { type: String, default: '' },
     confirmText: { type: String, default: 'Confirm' },
     cancelText:  { type: String, default: 'Cancel' },
-    variant:     { type: String, default: 'danger' }, // danger | warning | info
+    variant:     { type: String, default: 'danger' }, // danger | warning | info | success
+    hideCancel:  { type: Boolean, default: false }, // acknowledge-only dialogs (e.g. success)
+    autoCloseMs: { type: Number, default: 0 }, // if set, auto-confirms after this many ms
   },
   emits: ['confirm', 'cancel'],
   computed: {
@@ -53,6 +55,7 @@ export default {
         danger:  'ri-error-warning-line',
         warning: 'ri-alert-line',
         info:    'ri-question-line',
+        success: 'ri-checkbox-circle-fill',
       }[this.variant] || 'ri-error-warning-line';
     },
     iconClass() {
@@ -64,9 +67,13 @@ export default {
   },
   mounted() {
     document.addEventListener('keydown', this._onKey);
+    if (this.autoCloseMs > 0) {
+      this._autoCloseTimer = setTimeout(() => this.confirm(), this.autoCloseMs);
+    }
   },
   beforeUnmount() {
     document.removeEventListener('keydown', this._onKey);
+    clearTimeout(this._autoCloseTimer);
   },
   methods: {
     _onKey(e) {
@@ -74,7 +81,7 @@ export default {
       if (e.key === 'Enter')  this.confirm();
     },
     confirm() { this.$emit('confirm'); },
-    cancel()  { this.$emit('cancel'); },
+    cancel()  { this.$emit(this.hideCancel ? 'confirm' : 'cancel'); },
   },
 };
 </script>
@@ -158,6 +165,12 @@ export default {
   background: rgba(61, 141, 122, 0.12);
   border: 1px solid rgba(61, 141, 122, 0.16);
   color: #3d8d7a;
+}
+
+.cd-icon--success {
+  background: rgba(40, 167, 69, 0.12);
+  border: 1px solid rgba(40, 167, 69, 0.2);
+  color: #155724;
 }
 
 /* Body */
@@ -246,5 +259,18 @@ export default {
 
 .cd-btn-confirm--info:hover {
   background: #2f7464;
+}
+
+.cd-btn-confirm--success {
+  background: #28a745;
+  color: #fff;
+}
+
+.cd-btn-confirm--success:hover {
+  background: #218838;
+}
+
+.cd-footer--single {
+  justify-content: center;
 }
 </style>

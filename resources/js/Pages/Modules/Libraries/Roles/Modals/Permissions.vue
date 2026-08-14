@@ -71,10 +71,6 @@
             </tbody>
           </table>
           </template>
-          <div class="success-alert" v-if="saveSuccess">
-            <i class="ri-checkbox-circle-fill"></i>
-            <span>Permissions saved successfully!</span>
-          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-cancel" @click="hide">
@@ -103,7 +99,6 @@ export default {
       showModal: false,
       loading: false,
       saving: false,
-      saveSuccess: false,
       role: null,
       modules: [],
       levels: ['encoder', 'approver', 'view', 'admin'],
@@ -113,7 +108,6 @@ export default {
     show(role) {
       this.role = role;
       this.showModal = true;
-      this.saveSuccess = false;
       this.fetch();
     },
     hide() {
@@ -161,11 +155,16 @@ export default {
 
       try {
         await axios.post(`/libraries/roles/${this.role.id}/permissions`, { grants });
-        this.saveSuccess = true;
         this.$emit('saved');
-        setTimeout(() => {
-          this.hide();
-        }, 900);
+        this.hide();
+        this.$confirm({
+          title: 'Success',
+          message: 'Permissions saved successfully!',
+          variant: 'success',
+          confirmText: 'OK',
+          hideCancel: true,
+          autoCloseMs: 1800,
+        });
       } finally {
         this.saving = false;
       }
