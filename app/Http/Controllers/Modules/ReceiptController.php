@@ -18,6 +18,7 @@ use App\Services\PrintClass;
 class ReceiptController extends Controller
 {
     use HandlesTransaction;
+    use \App\Traits\AuthorizesPermission;
     public $receipt,$dropdown, $print;
 
     public function __construct(ReceiptClass $receipt, DropdownClass $dropdown, PrintClass $print){
@@ -28,6 +29,8 @@ class ReceiptController extends Controller
 
 
     public function index(Request $request){
+        $this->authorizePermission('sales', 'receipts', 'view');
+
         switch($request->option){
             case 'lists':
                 return $this->receipt->lists($request);
@@ -48,6 +51,8 @@ class ReceiptController extends Controller
     }
 
     public function store(Request $request){
+        $this->authorizePermission('sales', 'receipts', 'encoder');
+
         $result = $this->handleTransaction(function () use ($request) {
             return $this->receipt->save($request);
         });
@@ -62,6 +67,8 @@ class ReceiptController extends Controller
 
     public function show($id, Request $request)
     {
+        $this->authorizePermission('sales', 'receipts', 'view');
+
         if ($request->option === 'detail') {
             return new ReceiptResource($this->receipt->show($id));
         }
@@ -70,6 +77,8 @@ class ReceiptController extends Controller
 
 
     public function update(Request $request, $id){
+        $this->authorizePermission('sales', 'receipts', 'encoder');
+
         $request->merge(['id' => $id]);
         $result = $this->handleTransaction(function () use ($request) {
             return $this->receipt->update($request);
@@ -84,6 +93,8 @@ class ReceiptController extends Controller
     }
 
     public function destroy($id){
+        $this->authorizePermission('sales', 'receipts', 'admin');
+
         $result = $this->handleTransaction(function () use ($id) {
             return $this->receipt->delete($id);
         });
