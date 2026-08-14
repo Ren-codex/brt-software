@@ -245,23 +245,11 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
 
-            18 =>
-            array (
-                'id' => 19,
-                'name' => 'loss',
-                'slug' => 'loss',
-                'description' => 'For Loss status',
-                'text_color' => '#ffffff',
-                'bg_color' => '#9b2acf',
-                'created_at' => '2025-01-01 00:00:00',
-                'updated_at' => '2025-01-01 00:00:00',
-            ),
-
             19 =>
             array (
                 'id' => 20,
-                'name' => 'Sales Return Approval',
-                'slug' => 'sales-return-approval',
+                'name' => 'Loss',
+                'slug' => 'loss',
                 'description' => 'For Loss status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#9b2acf',
@@ -272,9 +260,9 @@ class ListStatusesTableSeeder extends Seeder
             20 =>
             array (
                 'id' => 21,
-                'name' => 'Received Status',
-                'slug' => 'receive',
-                'description' => 'Received status',
+                'name' => 'Sales Return Approval',
+                'slug' => 'sales-return-approval',
+                'description' => 'For Loss status',
                 'text_color' => '#ffffff',
                 'bg_color' => '#9b2acf',
                 'created_at' => '2025-01-01 00:00:00',
@@ -284,6 +272,18 @@ class ListStatusesTableSeeder extends Seeder
             21 =>
             array (
                 'id' => 22,
+                'name' => 'Received Status',
+                'slug' => 'receive',
+                'description' => 'Received status',
+                'text_color' => '#ffffff',
+                'bg_color' => '#9b2acf',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
+
+            22 =>
+            array (
+                'id' => 23,
                 'name' => 'Released',
                 'slug' => 'released',
                 'description' => 'Released status',
@@ -293,9 +293,9 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
 
-            22 =>
+            23 =>
             array (
-                'id' => 23,
+                'id' => 24,
                 'name' => 'Overdue',
                 'slug' => 'overdue',
                 'description' => 'Invoice is past its due date with an outstanding balance',
@@ -305,9 +305,9 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
 
-            23 =>
+            24 =>
             array (
-                'id' => 24,
+                'id' => 25,
                 'name' => 'Partially Returned',
                 'slug' => 'partially-returned',
                 'description' => 'Sales order has had some items returned',
@@ -317,9 +317,9 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
 
-            24 =>
+            25 =>
             array (
-                'id' => 25,
+                'id' => 26,
                 'name' => 'Voided',
                 'slug' => 'voided',
                 'description' => 'Voided status',
@@ -329,9 +329,9 @@ class ListStatusesTableSeeder extends Seeder
                 'updated_at' => '2025-01-01 00:00:00',
             ),
 
-            25 =>
+            26 =>
             array (
-                'id' => 26,
+                'id' => 27,
                 'name' => 'Remitted',
                 'slug' => 'remitted',
                 'description' => 'Remitted status',

@@ -47,7 +47,6 @@ class ProductClass
     {
         $data = Product::findOrFail($request->id);
         $data->update([
-            'code'          => $request->code,
             'weight'     => $request->weight,
             'unit_id'       => $request->unit_id,
             'brand_id'      => $request->brand_id,
