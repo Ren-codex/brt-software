@@ -206,8 +206,10 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::put('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'updateAccount']);
         Route::patch('/accounting/accounts/{id}/toggle', [App\Http\Controllers\Modules\AccountingController::class, 'toggleAccount']);
         Route::delete('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'destroyAccount']);
-        Route::get('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'journalEntries']);
-        Route::post('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'storeManualJournal']);
+        Route::get('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'journalEntries'])
+            ->middleware('permission:accounting,journal_entries,view');
+        Route::post('/accounting/journal-entries', [App\Http\Controllers\Modules\AccountingController::class, 'storeManualJournal'])
+            ->middleware('permission:accounting,journal_entries,encoder');
         Route::get('/accounting/cash-management', [App\Http\Controllers\Modules\CashManagementController::class, 'index']);
         Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index']);
         Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher']);
