@@ -183,14 +183,22 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middlewareFor('index', 'permission:payroll,loans,view')
             ->middlewareFor(['store', 'update'], 'permission:payroll,loans,encoder')
             ->middlewareFor('destroy', 'permission:payroll,loans,admin');
-        Route::get('/accounting', [App\Http\Controllers\Modules\AccountingController::class, 'index']);
-        Route::get('/accounting/general-ledger', [App\Http\Controllers\Modules\AccountingController::class, 'generalLedger']);
-        Route::get('/accounting/trial-balance', [App\Http\Controllers\Modules\AccountingController::class, 'trialBalance']);
-        Route::get('/accounting/profit-loss', [App\Http\Controllers\Modules\AccountingController::class, 'profitLoss']);
-        Route::get('/accounting/balance-sheet', [App\Http\Controllers\Modules\AccountingController::class, 'balanceSheet']);
-        Route::get('/accounting/cash-flow', [App\Http\Controllers\Modules\AccountingController::class, 'cashFlowStatement']);
-        Route::get('/accounting/accounts-receivable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsReceivable']);
-        Route::get('/accounting/accounts-payable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsPayable']);
+        Route::get('/accounting', [App\Http\Controllers\Modules\AccountingController::class, 'index'])
+            ->middleware('permission:accounting,financial_reports,view');
+        Route::get('/accounting/general-ledger', [App\Http\Controllers\Modules\AccountingController::class, 'generalLedger'])
+            ->middleware('permission:accounting,financial_reports,view');
+        Route::get('/accounting/trial-balance', [App\Http\Controllers\Modules\AccountingController::class, 'trialBalance'])
+            ->middleware('permission:accounting,financial_reports,view');
+        Route::get('/accounting/profit-loss', [App\Http\Controllers\Modules\AccountingController::class, 'profitLoss'])
+            ->middleware('permission:accounting,financial_reports,view');
+        Route::get('/accounting/balance-sheet', [App\Http\Controllers\Modules\AccountingController::class, 'balanceSheet'])
+            ->middleware('permission:accounting,financial_reports,view');
+        Route::get('/accounting/cash-flow', [App\Http\Controllers\Modules\AccountingController::class, 'cashFlowStatement'])
+            ->middleware('permission:accounting,financial_reports,view');
+        Route::get('/accounting/accounts-receivable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsReceivable'])
+            ->middleware('permission:accounting,financial_reports,view');
+        Route::get('/accounting/accounts-payable', [App\Http\Controllers\Modules\AccountingController::class, 'accountsPayable'])
+            ->middleware('permission:accounting,financial_reports,view');
         Route::get('/accounting/settings', [App\Http\Controllers\Modules\AccountingController::class, 'settings']);
         Route::get('/accounting/chart-of-accounts', fn() => redirect('/accounting/settings'));
         Route::get('/accounting/bank-accounts', fn() => redirect('/accounting/settings'));
