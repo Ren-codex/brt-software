@@ -53,6 +53,8 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::resource('/users', App\Http\Controllers\System\UserController::class);
         // Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
         Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
+        Route::get('/libraries/roles/{id}/permissions', [App\Http\Controllers\Libraries\RolePermissionController::class, 'show']);
+        Route::post('/libraries/roles/{id}/permissions', [App\Http\Controllers\Libraries\RolePermissionController::class, 'update']);
         Route::resource('/libraries/brands', App\Http\Controllers\Libraries\BrandController::class);
         Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
         Route::resource('/libraries/products', App\Http\Controllers\Libraries\ProductController::class);
