@@ -92,10 +92,15 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO'])
             ->middleware('permission:inventory,purchase_orders,view');
-        Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
+        Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode'])
+            ->middleware('permission:inventory,receiving,encoder');
         Route::get('/accounting/cash-on-hand', [App\Http\Controllers\Modules\CashManagementController::class, 'cashOnHand']);
-        Route::post('/received-stocks/{receivedStock}/pay', [App\Http\Controllers\ReceivedStockController::class, 'pay']);
-        Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class);
+        Route::post('/received-stocks/{receivedStock}/pay', [App\Http\Controllers\ReceivedStockController::class, 'pay'])
+            ->middleware('permission:inventory,receiving,encoder');
+        Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class)
+            ->middlewareFor(['index', 'show'], 'permission:inventory,receiving,view')
+            ->middlewareFor(['store', 'update'], 'permission:inventory,receiving,encoder')
+            ->middlewareFor('destroy', 'permission:inventory,receiving,admin');
         Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class);
         Route::post('inventory-stocks/adjustment/{id}', [App\Http\Controllers\InventoryAdjustmentController::class, 'store']);
         Route::post('/inventory-stocks/{id}/update-price', [App\Http\Controllers\InventoryStockController::class, 'update']);
