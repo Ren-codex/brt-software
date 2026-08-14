@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ChartOfAccountsSeeder::class);
         $this->call(ModulesAndSubmodulesSeeder::class);
         $this->call(SalesDefaultPermissionsSeeder::class);
+        $this->call(InventoryDefaultPermissionsSeeder::class);
         $this->call(ListSalariesTableSeeder::class);
         $this->call(ListPositionsTableSeeder::class);
         $this->call(UsersTableSeeder::class);
