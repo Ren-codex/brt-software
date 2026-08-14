@@ -159,7 +159,10 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::resource('/payroll-templates', App\Http\Controllers\Modules\PayrollTemplateController::class);
         Route::post('/payroll-templates/{templateId}/add-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'addEmployees']);
         Route::delete('/payroll-templates/{templateId}/employees/{employeeId}', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'removeEmployee']);
-        Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class);
+        Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class)
+            ->middlewareFor(['index', 'show'], 'permission:payroll,payroll_processing,view')
+            ->middlewareFor(['store', 'update'], 'permission:payroll,payroll_processing,encoder')
+            ->middlewareFor('destroy', 'permission:payroll,payroll_processing,admin');
         Route::resource('/loans', App\Http\Controllers\Modules\LoanController::class);
         Route::resource('/loan-payments', App\Http\Controllers\Modules\LoanPaymentController::class);
         Route::get('/accounting', [App\Http\Controllers\Modules\AccountingController::class, 'index']);
@@ -208,9 +211,11 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::put('/accounting/bank-accounts/{id}', [App\Http\Controllers\Modules\BankAccountController::class, 'update']);
         Route::patch('/accounting/bank-accounts/{id}/toggle', [App\Http\Controllers\Modules\BankAccountController::class, 'toggle']);
 
-        Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll']);
+        Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll'])
+            ->middleware('permission:payroll,payroll_processing,view');
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
-        Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus']);
+        Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus'])
+            ->middleware('permission:payroll,payroll_processing,approver');
         Route::put('/loans/{id}/status', [App\Http\Controllers\Modules\LoanController::class, 'updateStatus']);
         
         // Contact Management
