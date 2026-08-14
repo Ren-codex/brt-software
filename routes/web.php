@@ -64,13 +64,30 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middlewareFor(['index', 'show'], 'permission:user_management,view')
             ->middlewareFor(['store', 'update'], 'permission:user_management,encoder');
         // Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
-        Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
-        Route::get('/libraries/roles/{id}/permissions', [App\Http\Controllers\Libraries\RolePermissionController::class, 'show']);
-        Route::post('/libraries/roles/{id}/permissions', [App\Http\Controllers\Libraries\RolePermissionController::class, 'update']);
-        Route::resource('/libraries/brands', App\Http\Controllers\Libraries\BrandController::class);
-        Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class);
-        Route::resource('/libraries/products', App\Http\Controllers\Libraries\ProductController::class);
-        Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class);
+        Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class)
+            ->middlewareFor(['index', 'show'], 'permission:libraries,roles,view')
+            ->middlewareFor(['store', 'update'], 'permission:libraries,roles,encoder')
+            ->middlewareFor('destroy', 'permission:libraries,roles,admin');
+        Route::get('/libraries/roles/{id}/permissions', [App\Http\Controllers\Libraries\RolePermissionController::class, 'show'])
+            ->middleware('permission:libraries,roles,view');
+        Route::post('/libraries/roles/{id}/permissions', [App\Http\Controllers\Libraries\RolePermissionController::class, 'update'])
+            ->middleware('permission:libraries,roles,admin');
+        Route::resource('/libraries/brands', App\Http\Controllers\Libraries\BrandController::class)
+            ->middlewareFor(['index', 'show'], 'permission:libraries,brands,view')
+            ->middlewareFor(['store', 'update'], 'permission:libraries,brands,encoder')
+            ->middlewareFor('destroy', 'permission:libraries,brands,admin');
+        Route::resource('/libraries/units', App\Http\Controllers\Libraries\UnitController::class)
+            ->middlewareFor(['index', 'show'], 'permission:libraries,units,view')
+            ->middlewareFor(['store', 'update'], 'permission:libraries,units,encoder')
+            ->middlewareFor('destroy', 'permission:libraries,units,admin');
+        Route::resource('/libraries/products', App\Http\Controllers\Libraries\ProductController::class)
+            ->middlewareFor(['index', 'show'], 'permission:libraries,products,view')
+            ->middlewareFor(['store', 'update'], 'permission:libraries,products,encoder')
+            ->middlewareFor('destroy', 'permission:libraries,products,admin');
+        Route::resource('/libraries/statuses', App\Http\Controllers\Libraries\StatusController::class)
+            ->middlewareFor(['index', 'show'], 'permission:libraries,statuses,view')
+            ->middlewareFor(['store', 'update'], 'permission:libraries,statuses,encoder')
+            ->middlewareFor('destroy', 'permission:libraries,statuses,admin');
         Route::resource('/libraries/positions', App\Http\Controllers\Libraries\PositionController::class)
             ->middlewareFor(['index', 'show'], 'permission:employees,view')
             ->middlewareFor(['store', 'update'], 'permission:employees,encoder')
@@ -79,14 +96,21 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middlewareFor(['index', 'show'], 'permission:employees,view')
             ->middlewareFor(['store', 'update'], 'permission:employees,encoder')
             ->middlewareFor('destroy', 'permission:employees,admin');
-        Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
+        Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class)
+            ->middlewareFor(['index', 'show'], 'permission:libraries,locations,view')
+            ->middlewareFor(['store', 'update'], 'permission:libraries,locations,encoder')
+            ->middlewareFor('destroy', 'permission:libraries,locations,admin');
         Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class)
             ->middlewareFor('index', 'permission:payroll,payroll_settings,view')
             ->middlewareFor(['store', 'update'], 'permission:payroll,payroll_settings,encoder')
             ->middlewareFor('destroy', 'permission:payroll,payroll_settings,admin');
-        Route::resource('/libraries/packagings', App\Http\Controllers\Libraries\PackagingController::class);
+        Route::resource('/libraries/packagings', App\Http\Controllers\Libraries\PackagingController::class)
+            ->middlewareFor(['index', 'show'], 'permission:libraries,packagings,view')
+            ->middlewareFor(['store', 'update'], 'permission:libraries,packagings,encoder')
+            ->middlewareFor('destroy', 'permission:libraries,packagings,admin');
 
-        Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
+        Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive'])
+            ->middleware('permission:libraries,products,encoder');
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive'])
             ->middleware('permission:employees,encoder');
         Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive'])

@@ -351,8 +351,8 @@ export default {
     --ms-px: 0.75rem;
     --ms-font-size: 0.95rem;
     --ms-ring-width: 0px;
-    --ms-tag-bg: #e6f7ed;
-    --ms-tag-color: #2e8b57;
+    --ms-tag-bg: #2e8b57;
+    --ms-tag-color: #ffffff;
     --ms-option-bg-selected: #2e8b57;
     --ms-option-color-selected: #ffffff;
 }
