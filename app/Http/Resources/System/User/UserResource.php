@@ -16,11 +16,16 @@ class UserResource extends JsonResource
             && $this->employee->avatar !== 'noavatar.jpg'
             && Storage::disk('public')->exists($this->employee->avatar);
 
+        $sex = $this->employee?->sex;
+        $defaultAvatar = $sex === 'Male'
+            ? asset('images/male-profile.png')
+            : ($sex === 'Female' ? asset('images/female-profile.png') : asset('images/avatars/avatar.jpg'));
+
         return [
             'id' => $this->id,
             'avatar' => $hasUploadedAvatar
             ? asset('storage/' . $this->employee->avatar)
-            : asset('images/avatars/avatar.jpg'),
+            : $defaultAvatar,
             'name' => $this->employee ? $this->employee->fullname : $this->username,
             'fullname' => $this->employee ? $this->employee->fullname : $this->username,
             'mobile' => $this->employee ? $this->employee->mobile : null,

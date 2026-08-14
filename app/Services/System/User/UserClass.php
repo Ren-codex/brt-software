@@ -22,7 +22,7 @@ class UserClass
     public function view($code){
         $data = new ViewResource(
             User::query()
-            ->with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+            ->with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile,sex')
             ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.employee:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.employee:user_id,firstname,middlename,lastname,suffix')
             ->where('id',$code)->first()
         );
@@ -140,7 +140,7 @@ class UserClass
     }
 
     public function list($request){
-        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile,sex')
         ->with('roles')
         ->with('myroles:role_id,id,user_id,added_by_id,removed_by_id,removed_at,created_at,is_active','myroles.role:id,name','myroles.added:id','myroles.added.employee:user_id,firstname,middlename,lastname,suffix','myroles.removed:id','myroles.removed.employee:user_id,firstname,middlename,lastname,suffix')
         ->when($request->keyword, function ($query, $keyword) {
@@ -159,7 +159,7 @@ class UserClass
     }
 
     public function status($request){
-        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile,sex')
         ->with('myroles:role_id,id,user_id','myroles.role:id,name')
         ->where('id',$request->user_id)->first();
         $data->is_active = $request->is_active;
@@ -183,7 +183,7 @@ class UserClass
             $data->employee->mobile = $request->mobile;
             $data->employee->save();
         }
-        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile')
+        $data = User::with('employee:user_id,firstname,middlename,lastname,suffix,avatar,mobile,sex')
         ->with('myroles:role_id,id,user_id','myroles.role:id,name')
         ->where('id',$request->user_id)->first();
         return [

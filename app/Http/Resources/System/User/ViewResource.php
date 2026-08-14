@@ -16,10 +16,15 @@ class ViewResource extends JsonResource
             ?: $this->username
             ?: $this->email;
 
+        $sex = $employee?->sex;
+        $defaultAvatar = $sex === 'Male'
+            ? asset('images/male-profile.png')
+            : ($sex === 'Female' ? asset('images/female-profile.png') : asset('images/avatars/avatar.jpg'));
+
         return [
             'avatar' => ($employee && $employee->avatar && $employee->avatar !== 'noavatar.jpg')
                 ? asset('storage/' . $employee->avatar)
-                : asset('images/avatars/avatar.jpg'),
+                : $defaultAvatar,
             'name' => $displayName,
             'fullname' => $employee?->fullname ?: $displayName,
             'mobile' => $employee?->mobile,
