@@ -20,15 +20,18 @@
                             <label for="product_id" class="form-label">Product</label>
                             <div class="input-wrapper">
                                 <i class="ri-bar-chart-2-line input-icon"></i>
-                                <select
+                                <Multiselect
                                     class="form-control"
                                     v-model="form.product_id"
+                                    :options="availableProducts"
+                                    label="name"
+                                    value-prop="value"
+                                    track-by="name"
+                                    :searchable="true"
+                                    placeholder="Select Product"
                                     :class="{ 'input-error': form.errors.product_id }"
                                     @change="onProductChange"
-                                >
-                                    <option :value="null" disabled>Select Product</option>
-                                    <option v-for="p in availableProducts" :key="p.value" :value="p.value">{{ p.name }}</option>
-                                </select>
+                                />
                             </div>
                             <span class="error-message" v-if="form.errors.product_id">{{ form.errors.product_id }}</span>
                         </div>
@@ -206,7 +209,7 @@
 import { useForm } from '@inertiajs/vue3';
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
-import Multiselect from '@/Shared/Components/Forms/Multiselect.vue';
+import Multiselect from '@vueform/multiselect';
 import Amount from '@/Shared/Components/Forms/Amount.vue';
 import UpdatePriceModal from '@/Pages/Modules/Inventory/Modal/UpdatePriceModal.vue';
 
