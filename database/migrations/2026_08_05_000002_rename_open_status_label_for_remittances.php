@@ -13,6 +13,19 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Superseded by 2026_08_12_055828_add_remittance_statuses_to_list_statuses,
+        // which creates a dedicated 'for-verification' status via firstOrCreate.
+        // Renaming the 'open' row's name here would now collide with that row's
+        // unique name constraint. Skip if that already happened.
+        $alreadyHandled = DB::table('list_statuses')
+            ->where('name', 'For Verification')
+            ->where('slug', '!=', 'open')
+            ->exists();
+
+        if ($alreadyHandled) {
+            return;
+        }
+
         DB::table('list_statuses')
             ->where('slug', 'open')
             ->update([
@@ -24,12 +37,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('list_statuses')
-            ->where('slug', 'open')
-            ->update([
-                'name' => 'Open',
-                'description' => 'Open status',
-                'updated_at' => now(),
-            ]);
+        // Intentionally a no-op: the 'for-verification' status is now owned by
+        // 2026_08_12_055828_add_remittance_statuses_to_list_statuses. Reverting
+        // here could corrupt that row. Roll back that migration instead if the
+        // remittance status setup needs to be undone.
     }
 };

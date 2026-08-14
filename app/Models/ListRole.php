@@ -12,4 +12,9 @@ class ListRole extends Model
     protected $fillable = [
         'name','type','definition','is_active'
     ];
+
+    public function permissions()
+    {
+        return $this->hasMany(RolePermission::class, 'role_id');
+    }
 }
