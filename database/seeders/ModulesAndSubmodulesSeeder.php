@@ -23,7 +23,12 @@ class ModulesAndSubmodulesSeeder extends Seeder
                 ['key' => 'inventory_stocks', 'name' => 'Inventory Stocks', 'sort_order' => 3],
                 ['key' => 'stock_returns', 'name' => 'Stock Returns', 'sort_order' => 4],
             ]],
-            ['key' => 'payroll', 'name' => 'Payroll', 'sort_order' => 3, 'submodules' => []],
+            ['key' => 'payroll', 'name' => 'Payroll', 'sort_order' => 3, 'submodules' => [
+                ['key' => 'payroll_processing', 'name' => 'Payroll Processing', 'sort_order' => 1],
+                ['key' => 'payroll_templates', 'name' => 'Payroll Templates', 'sort_order' => 2],
+                ['key' => 'loans', 'name' => 'Loans', 'sort_order' => 3],
+                ['key' => 'payroll_settings', 'name' => 'Payroll Settings', 'sort_order' => 4],
+            ]],
             ['key' => 'employees', 'name' => 'Employee Profiling', 'sort_order' => 4, 'submodules' => []],
             ['key' => 'customers', 'name' => 'Customers & Contacts', 'sort_order' => 5, 'submodules' => []],
             ['key' => 'accounting', 'name' => 'Accounting', 'sort_order' => 6, 'submodules' => []],

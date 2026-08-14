@@ -44,4 +44,15 @@ class ModulesAndSubmodulesSeederTest extends TestCase
         $this->assertEquals(8, Module::count());
         $this->assertEquals(4, Module::where('key', 'sales')->firstOrFail()->submodules()->count());
     }
+
+    public function test_seeds_payroll_submodules(): void
+    {
+        $this->seed(ModulesAndSubmodulesSeeder::class);
+
+        $payroll = Module::where('key', 'payroll')->firstOrFail();
+        $this->assertEquals(
+            ['payroll_processing', 'payroll_templates', 'loans', 'payroll_settings'],
+            $payroll->submodules->pluck('key')->all()
+        );
+    }
 }
