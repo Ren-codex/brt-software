@@ -155,10 +155,16 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])->name('remittances.remit');
         
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class);
-        Route::get('/payroll-templates/available-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'getAvailableEmployees']);
-        Route::resource('/payroll-templates', App\Http\Controllers\Modules\PayrollTemplateController::class);
-        Route::post('/payroll-templates/{templateId}/add-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'addEmployees']);
-        Route::delete('/payroll-templates/{templateId}/employees/{employeeId}', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'removeEmployee']);
+        Route::get('/payroll-templates/available-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'getAvailableEmployees'])
+            ->middleware('permission:payroll,payroll_templates,view');
+        Route::resource('/payroll-templates', App\Http\Controllers\Modules\PayrollTemplateController::class)
+            ->middlewareFor('index', 'permission:payroll,payroll_templates,view')
+            ->middlewareFor(['store', 'update'], 'permission:payroll,payroll_templates,encoder')
+            ->middlewareFor('destroy', 'permission:payroll,payroll_templates,admin');
+        Route::post('/payroll-templates/{templateId}/add-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'addEmployees'])
+            ->middleware('permission:payroll,payroll_templates,encoder');
+        Route::delete('/payroll-templates/{templateId}/employees/{employeeId}', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'removeEmployee'])
+            ->middleware('permission:payroll,payroll_templates,encoder');
         Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class)
             ->middlewareFor(['index', 'show'], 'permission:payroll,payroll_processing,view')
             ->middlewareFor(['store', 'update'], 'permission:payroll,payroll_processing,encoder')
