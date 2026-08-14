@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Survey;
 use App\Models\SurveyAnswer;
 use App\Models\SurveyQuestion;
+use App\Services\System\Permission\PermissionService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Http\Resources\UserResource;
@@ -26,6 +27,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'user' => (\Auth::check()) ? new UserResource(User::with('employee')->where('id',\Auth::user()->id)->first()) : '',
             'roles' => (\Auth::check()) ? \Auth::user()->roles()->where('user_roles.is_active', 1)->pluck('name') : '',
+            'permissions' => (\Auth::check()) ? app(PermissionService::class)->userPermissionMap(\Auth::user()) : [],
             'flash' => [
                 'data' => session('data'),
                 'receipt_id' => session('receipt_id'),
