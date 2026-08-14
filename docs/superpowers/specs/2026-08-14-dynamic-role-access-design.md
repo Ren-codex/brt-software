@@ -146,3 +146,17 @@ Sales is currently open to any authenticated user, and Inventory is gated only a
 - Per-field permissions (e.g., "can edit price but not quantity") — only whole-action granularity.
 - Time-bound or conditional grants (e.g., "Approver only for orders under ₱10,000").
 - Removing/renaming the existing `ListRole`/`UserRole`/`RoleMiddleware` system — it stays as the coarse first gate.
+
+## 13. Addendum (2026-08-15): extending past the pilot — Employees, Customers, User Management
+
+The pilot (Sales + Inventory) is complete. This addendum settles the design questions needed to extend enforcement to three more of the originally-deferred modules, decided with the user before writing their implementation plan:
+
+**Scope order:** Employees, Customers, and User Management first (this addendum) — small, flat, single-purpose CRUD areas, two of which (Employees, Customers) currently have **no role gate at all**, unlike Payroll/Accounting which already sit behind `role:Administrator`. Payroll (has real submodule structure: Processing, Templates, Loans, Settings) and Accounting (~35-40 routes — reports, journal entries, cash management, petty cash, expenses, bank reconciliation, remittances, sales incentives) are deferred to their own later plans given their size and the product decisions their submodule taxonomies still need.
+
+**No submodules for these three.** Unlike Sales/Inventory, Employees/Customers/User Management have no natural sub-sections in the actual codebase — each is one flat CRUD screen. They stay **module-only** (the catalog rows already exist from Plan A; `submodule_id` is always `null` for grants against them). Access levels: Encoder (create/edit), View (list/detail/summary views), Admin (delete). No Approver tier — none of the three have an approval workflow today.
+
+**Salaries and Positions (`/libraries/salaries`, `/libraries/positions`) are classified under Employees**, not Payroll — they're employee attributes/reference data, not payroll transactions, even though they currently sit in the same `role:Administrator` route group as Payroll's settings. This is a UI/admin-grouping classification for the Manage Permissions screen only — it does **not** grant HR Manager (or anyone) any access they don't already have today. Rollout-safety seeding for Salaries/Positions only covers `Administrator` (the role that already satisfies the existing `role:Administrator` gate on those two routes), matching current real access exactly.
+
+**The Roles/Permissions management screen (`/libraries/roles`, `RolePermissionController`) stays `role:Administrator`-only, unchanged.** It is the tool that grants access — adding a new permission layer on top of it risks an administrator locking themselves out of the one screen that fixes permission problems. User Management's new permission layer applies only to `/users` (actual user account CRUD), never to role/permission management itself.
+
+**Mixed gating, same as Inventory's pattern:** Employees and Customers have no existing route-level role check, so the new `permission:...` middleware becomes their *only* gate (mirrors Sales — rollout-safety seeding is the thing standing between shipping this and a lockout). Users, Salaries, and Positions already sit behind `role:Administrator`; the new middleware layers on top of that, unchanged (mirrors Inventory).
