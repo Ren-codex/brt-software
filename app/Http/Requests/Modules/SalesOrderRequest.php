@@ -9,7 +9,33 @@ class SalesOrderRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        // sales-orders-external shares this FormRequest but is a distinct,
+        // unexplored flow not covered by the pilot's design spec (§9/§12)
+        // — leave it unrestricted, unchanged, until explicitly wired later.
+        if (str_starts_with((string) $this->path(), 'sales-orders-external')) {
+            return true;
+        }
+
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        $permissions = app(\App\Services\System\Permission\PermissionService::class);
+        $action = $this->input('action');
+        $orderId = $this->route('sales_order') ?? $this->route('id');
+
+        if ($action === 'approve' && $orderId) {
+            $order = \App\Models\SalesOrder::with('status')->find($orderId);
+            $isReturnApproval = $order && optional($order->status)->slug === 'sales-return-approval';
+            $submodule = $isReturnApproval ? 'sales_returns' : 'sales_orders';
+
+            return $permissions->userHasAccess($user, 'sales', $submodule, 'approver');
+        }
+
+        // Plain create (POST /sales-orders), plain edit (PUT with no/'update'
+        // action), and 'adjustment' are all Encoder-level per spec §9.
+        return $permissions->userHasAccess($user, 'sales', 'sales_orders', 'encoder');
     }
 
     public function rules(): array
