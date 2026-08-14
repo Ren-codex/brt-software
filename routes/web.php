@@ -24,10 +24,16 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         ->middlewareFor('destroy', 'permission:employees,admin');
     Route::get('/employees/{id}/incentives-summary', [App\Http\Controllers\Modules\EmployeeController::class, 'incentivesSummary'])
         ->middleware('permission:employees,view');
-    Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class);
-    Route::get('/customers/{id}/details', [App\Http\Controllers\Modules\CustomerController::class, 'details']);
-    Route::get('/customers/{id}/order-summary', [App\Http\Controllers\Modules\CustomerController::class, 'orderSummary']);
-    Route::get('/customers/{id}/purchase-history', [App\Http\Controllers\Modules\CustomerController::class, 'purchaseHistory']);
+    Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class)
+        ->middlewareFor(['index', 'show'], 'permission:customers,view')
+        ->middlewareFor(['store', 'update'], 'permission:customers,encoder')
+        ->middlewareFor('destroy', 'permission:customers,admin');
+    Route::get('/customers/{id}/details', [App\Http\Controllers\Modules\CustomerController::class, 'details'])
+        ->middleware('permission:customers,view');
+    Route::get('/customers/{id}/order-summary', [App\Http\Controllers\Modules\CustomerController::class, 'orderSummary'])
+        ->middleware('permission:customers,view');
+    Route::get('/customers/{id}/purchase-history', [App\Http\Controllers\Modules\CustomerController::class, 'purchaseHistory'])
+        ->middleware('permission:customers,view');
      Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
     Route::patch('/suppliers/{id}/toggle-active', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleActive']);
     Route::patch('/suppliers/{id}/toggle-blacklist', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleBlacklist']);
