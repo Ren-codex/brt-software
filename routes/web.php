@@ -80,13 +80,17 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middlewareFor(['store', 'update'], 'permission:employees,encoder')
             ->middlewareFor('destroy', 'permission:employees,admin');
         Route::resource('/libraries/locations', App\Http\Controllers\Libraries\LocationController::class);
-        Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class);
+        Route::resource('/libraries/payroll-items', App\Http\Controllers\Libraries\PayrollItemController::class)
+            ->middlewareFor('index', 'permission:payroll,payroll_settings,view')
+            ->middlewareFor(['store', 'update'], 'permission:payroll,payroll_settings,encoder')
+            ->middlewareFor('destroy', 'permission:payroll,payroll_settings,admin');
         Route::resource('/libraries/packagings', App\Http\Controllers\Libraries\PackagingController::class);
 
         Route::patch('/libraries/products/{id}/toggle-active', [App\Http\Controllers\Libraries\ProductController::class, 'toggleActive']);
         Route::patch('/libraries/positions/{id}/toggle-active', [App\Http\Controllers\Libraries\PositionController::class, 'toggleActive'])
             ->middleware('permission:employees,encoder');
-        Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive']);
+        Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive'])
+            ->middleware('permission:payroll,payroll_settings,encoder');
 
         Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update']);
         Route::post('/accounting/funds/{id}/top-up', [App\Http\Controllers\Libraries\FundController::class, 'topUp']);
@@ -154,7 +158,9 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance']);
         Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])->name('remittances.remit');
         
-        Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class);
+        Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class)
+            ->middlewareFor('index', 'permission:payroll,payroll_settings,view')
+            ->middlewareFor('update', 'permission:payroll,payroll_settings,encoder');
         Route::get('/payroll-templates/available-employees', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'getAvailableEmployees'])
             ->middleware('permission:payroll,payroll_templates,view');
         Route::resource('/payroll-templates', App\Http\Controllers\Modules\PayrollTemplateController::class)
