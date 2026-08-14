@@ -160,3 +160,16 @@ The pilot (Sales + Inventory) is complete. This addendum settles the design ques
 **The Roles/Permissions management screen (`/libraries/roles`, `RolePermissionController`) stays `role:Administrator`-only, unchanged.** It is the tool that grants access — adding a new permission layer on top of it risks an administrator locking themselves out of the one screen that fixes permission problems. User Management's new permission layer applies only to `/users` (actual user account CRUD), never to role/permission management itself.
 
 **Mixed gating, same as Inventory's pattern:** Employees and Customers have no existing route-level role check, so the new `permission:...` middleware becomes their *only* gate (mirrors Sales — rollout-safety seeding is the thing standing between shipping this and a lockout). Users, Salaries, and Positions already sit behind `role:Administrator`; the new middleware layers on top of that, unchanged (mirrors Inventory).
+
+## 14. Addendum (2026-08-15): Payroll submodule taxonomy
+
+Payroll is next per §13's sequencing. Unlike §13's three modules, Payroll has real internal structure — confirmed against the actual controllers/routes/Vue components (all single-purpose, no action-multiplexing, same clean shape as Inventory) — so it gets four submodules, matching both the controller boundaries and the existing frontend's own tab grouping in `Payroll/Index.vue` (`payroll_management`, `payroll_templates`, `payroll_items` + `Settings`, `loan_management` tabs):
+
+| Submodule key | Covers | Encoder | Approver | View | Admin |
+|---|---|---|---|---|---|
+| `payroll_processing` | `PayrollController` (payroll runs) | Create, Edit | Update status | List, Show, Print | Delete |
+| `payroll_templates` | `PayrollTemplateController` | Create, Edit, Add/Remove employees | — | List, Available employees | Delete |
+| `loans` | `LoanController` + `LoanPaymentController` | Create/Edit loans, Create/Edit payments | Update loan status | List | Delete |
+| `payroll_settings` | `PayrollSettingController` + `PayrollItemController` (`/libraries/payroll-items`, grouped here to match the frontend's own tab, not its historical route grouping) | Update settings, Create/Edit/toggle items | — | List | Delete items |
+
+All four routes already sit behind `role:Administrator` today (unlike Employees/Customers, which had none) — the new permission layer is a second gate, mirroring Inventory/User Management, not Sales. `sales-incentives` (a `Payroll/Index.vue` tab, backed by a separate `SalesIncentivesController`) is out of scope, same treatment as Sales' `remittance`/`sales-reports` tabs — left unfiltered.
