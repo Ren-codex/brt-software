@@ -18,7 +18,7 @@
 
         <div class="inventory-sidebar-tabs">
           <button
-            v-for="tab in tabs"
+            v-for="tab in visibleTabs"
             :key="tab.id"
             class="inventory-sidebar-tab"
             :class="{ 'inventory-tab-active': activeTab === tab.id }"
@@ -250,6 +250,20 @@ export default {
         },
       ]
     };
+  },
+  computed: {
+    visibleTabs() {
+      // remittance and sales-reports are outside this pilot's submodule
+      // catalog (spec §9/§12) — they stay visible to anyone who can see
+      // the Sales module at all, unfiltered, same as today.
+      const gatedTabIds = ['sales_orders', 'sales_returns', 'ar_invoices', 'receipts'];
+      return this.tabs.filter((tab) => {
+        if (!gatedTabIds.includes(tab.id)) {
+          return true;
+        }
+        return this.canAny('sales', tab.id);
+      });
+    },
   },
   watch: {
     activeTab() {

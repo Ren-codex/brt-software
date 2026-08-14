@@ -59,7 +59,7 @@
                 </li>
 
                 <li class="nav-item"
-                    v-if="$page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Super Admin')">
+                    v-if="canAny('sales')">
                     <Link href="/sales-orders" class="nav-link menu-link"
                     :class="{'active': $page.url.startsWith('/sales-orders') && !$page.url.startsWith('/sales-orders-external') }">
                     <i class="ri-shopping-cart-fill"></i>
