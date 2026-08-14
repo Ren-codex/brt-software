@@ -9,6 +9,7 @@ import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
 import Layout from '@/Shared/Layouts/Main.vue'
 import store from "@/Shared/State/store";
+import { permissionsMixin } from '@/Shared/permissions';
 import AOS from 'aos';
 
 AOS.init({
@@ -35,6 +36,7 @@ createInertiaApp({
         return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(store)
+            .mixin(permissionsMixin)
             .use(BootstrapVueNext)
             .use(VueApexCharts)
             .use(Toast)
