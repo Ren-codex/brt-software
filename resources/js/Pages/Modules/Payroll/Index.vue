@@ -16,7 +16,7 @@
 
         <div class="inventory-sidebar-tabs">
           <button
-            v-for="tab in tabs"
+            v-for="tab in visibleTabs"
             :key="tab.id"
             class="inventory-sidebar-tab"
             :class="{ 'inventory-tab-active': activeTab === tab.id }"
@@ -166,6 +166,25 @@ export default {
         },
       ]
     }
+  },
+  computed: {
+    visibleTabs() {
+      // sales_incentives is outside this pilot's submodule catalog (spec
+      // §14) — stays visible to anyone who can see Payroll at all.
+      const tabToSubmodule = {
+        payroll_management: 'payroll_processing',
+        payroll_templates: 'payroll_templates',
+        loan_management: 'loans',
+        payroll_items: 'payroll_settings',
+      };
+      return this.tabs.filter((tab) => {
+        const submoduleKey = tabToSubmodule[tab.id];
+        if (!submoduleKey) {
+          return true;
+        }
+        return this.canAny('payroll', submoduleKey);
+      });
+    },
   },
   methods: {
     toggleSidebar() {
