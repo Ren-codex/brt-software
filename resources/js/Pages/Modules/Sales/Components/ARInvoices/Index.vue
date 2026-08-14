@@ -111,7 +111,7 @@
                                                     <i class="ri-printer-line"></i>
                                                 </button>
                                                 <button
-                                                    v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
+                                                    v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned') && can('sales', 'ar_invoices', 'encoder')"
                                                     @click.stop="onPayment(list)" class="action-btn edit" title="Record Payment">
                                                     <i class="ri-money-dollar-circle-fill"></i>
                                                 </button>
@@ -132,7 +132,7 @@
                                                             Print Invoice
                                                         </button>
                                                         <button
-                                                            v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned')"
+                                                            v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned') && can('sales', 'ar_invoices', 'encoder')"
                                                             @click.stop="onPayment(list)" class="acct-btn-primary">
                                                             <i class="ri-money-dollar-circle-fill"></i>
                                                             Record Payment

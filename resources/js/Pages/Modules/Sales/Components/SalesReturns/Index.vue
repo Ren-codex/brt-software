@@ -28,7 +28,7 @@
                             <button v-if="isAdmin" class="btn btn-sm btn-outline-secondary" @click="openSettings" title="Return Settings">
                                 <i class="ri-settings-3-line"></i>
                             </button>
-                            <button class="acct-btn-primary" @click="openCreate">
+                            <button v-if="can('sales', 'sales_returns', 'encoder')" class="acct-btn-primary" @click="openCreate">
                                 <i class="ri-add-line"></i>
                                 <span>Sales Return</span>
                             </button>
@@ -409,12 +409,10 @@ export default {
     },
     computed: {
         canApprove() {
-            const roles = this.$page?.props?.roles || [];
-            return ['Administrator', 'Area Business Manager', 'Super Admin'].some(r => roles.includes(r));
+            return this.can('sales', 'sales_returns', 'approver');
         },
         isAdmin() {
-            const roles = this.$page?.props?.roles || [];
-            return ['Administrator', 'Super Admin'].some(r => roles.includes(r));
+            return this.can('sales', 'sales_returns', 'admin');
         },
     },
     created() {

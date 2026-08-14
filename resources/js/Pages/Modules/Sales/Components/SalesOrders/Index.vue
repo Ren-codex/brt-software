@@ -11,7 +11,7 @@
                             <p class="header-subtitle mb-0">Manage and track all sales orders.</p>
                         </div>
                     </div>
-                    <button class="acct-btn-primary" @click="openCreate">
+                    <button v-if="can('sales', 'sales_orders', 'encoder')" class="acct-btn-primary" @click="openCreate">
                         <i class="ri-add-line me-1"></i>Create Order
                     </button>
             </div>
@@ -124,7 +124,7 @@
                                                     class="action-btn success" title="Approve Order">
                                                     <i class="ri-check-line"></i>
                                                 </button>
-                                                <button v-if="list.status?.slug == 'for-payment'"
+                                                <button v-if="list.status?.slug == 'for-payment' && can('sales', 'sales_orders', 'encoder')"
                                                     @click.stop="onSalesAdjustment(list)"
                                                     class="action-btn warn" title="Sales Adjustment">
                                                     <i class="ri-refund-line"></i>
@@ -133,12 +133,12 @@
                                                     class="action-btn info" title="Print Invoice">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
-                                                <button v-if="list.status?.slug == 'for-payment'"
+                                                <button v-if="list.status?.slug == 'for-payment' && can('sales', 'sales_orders', 'encoder')"
                                                     @click.stop="openEdit(list, index)"
                                                     class="action-btn edit" title="Edit">
                                                     <i class="ri-pencil-fill"></i>
                                                 </button>
-                                                <button v-if="list.status?.slug !== 'cancelled'"
+                                                <button v-if="list.status?.slug !== 'cancelled' && can('sales', 'sales_orders', 'approver')"
                                                     @click.stop="onCancel(list)"
                                                     class="action-btn delete" title="Cancel Order">
                                                     <i class="ri-close-line"></i>
@@ -317,8 +317,7 @@ export default {
     },
     computed: {
         canApprove() {
-            const roles = this.$page?.props?.roles || [];
-            return ['Administrator', 'Area Business Manager', 'Super Admin'].some(r => roles.includes(r));
+            return this.can('sales', 'sales_orders', 'approver');
         },
     },
     watch: {
