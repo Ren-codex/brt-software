@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ListRolesTableSeeder::class);
         $this->call(ListStatusesTableSeeder::class);
         $this->call(ChartOfAccountsSeeder::class);
+        $this->call(ModulesAndSubmodulesSeeder::class);
         $this->call(ListSalariesTableSeeder::class);
         $this->call(ListPositionsTableSeeder::class);
         $this->call(UsersTableSeeder::class);
