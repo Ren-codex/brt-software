@@ -22,7 +22,7 @@
             </li>
 
             <template
-                v-if="$page.props.roles.includes('HR Manager') || $page.props.roles.includes('Super Admin')">
+                v-if="canAny('employees')">
                 <li class="nav-item">
                     <Link href="/employees" class="nav-link menu-link"
                         :class="{ 'active': $page.component.startsWith('Modules/Employees/') }">
@@ -37,7 +37,7 @@
             <template
                 v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Warehouse Manager') || $page.props.roles.includes('HR Manager') || $page.props.roles.includes('Accountant') || $page.props.roles.includes('Super Admin')">
                 <li class="nav-item"
-                    v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('Human Resource Officer')">
+                    v-if="canAny('user_management')">
                     <Link href="/users" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/users') }">
                     <i class="ri-team-fill"></i>
@@ -69,7 +69,7 @@
                     </Link>
                 </li>
 
-                <li class="nav-item" v-if="$page.props.roles.includes('Mini Admin') || $page.props.roles.includes('Administrator') || $page.props.roles.includes('Super Admin')">
+                <li class="nav-item" v-if="canAny('customers')">
                     <Link href="/customers" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/customers') }">
                     <i class="ri-team-fill"></i>
@@ -202,7 +202,7 @@
                             </li>
 
                     
-                            <li class="nav-item submenu-item">
+                            <li class="nav-item submenu-item" v-if="canAny('employees')">
                                 <Link href="/libraries/positions" class="nav-link submenu-link"
                                     :class="{ 'active': $page.url === '/libraries/positions' }" data-key="t-basic">
                                 <span class="submenu-dot"></span>
