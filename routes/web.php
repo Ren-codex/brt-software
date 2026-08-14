@@ -77,14 +77,21 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
 
     Route::middleware(['role:Administrator,Warehouse Manager'])->group(function () {
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
-        Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber']);
-        Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
-        Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus']);
-        Route::patch('/purchase-orders/{id}/void', [App\Http\Controllers\PurchaseOrderController::class, 'void']);
+        Route::get('/purchase-orders/next-po-number', [App\Http\Controllers\PurchaseOrderController::class, 'getNextPoNumber'])
+            ->middleware('permission:inventory,purchase_orders,encoder');
+        Route::resource('/purchase-orders', App\Http\Controllers\PurchaseOrderController::class)
+            ->middlewareFor(['index', 'show'], 'permission:inventory,purchase_orders,view')
+            ->middlewareFor(['store', 'update'], 'permission:inventory,purchase_orders,encoder')
+            ->middlewareFor('destroy', 'permission:inventory,purchase_orders,admin');
+        Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus'])
+            ->middleware('permission:inventory,purchase_orders,approver');
+        Route::patch('/purchase-orders/{id}/void', [App\Http\Controllers\PurchaseOrderController::class, 'void'])
+            ->middleware('permission:inventory,purchase_orders,approver');
         Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class);
         Route::post('/stock-returns/{id}/approve', [App\Http\Controllers\StockReturnController::class, 'approve']);
         Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem']);
-        Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO']);
+        Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO'])
+            ->middleware('permission:inventory,purchase_orders,view');
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode']);
         Route::get('/accounting/cash-on-hand', [App\Http\Controllers\Modules\CashManagementController::class, 'cashOnHand']);
         Route::post('/received-stocks/{receivedStock}/pay', [App\Http\Controllers\ReceivedStockController::class, 'pay']);
