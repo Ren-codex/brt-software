@@ -60,7 +60,9 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
     });
 
     Route::middleware(['role:Administrator'])->group(function () {
-        Route::resource('/users', App\Http\Controllers\System\UserController::class);
+        Route::resource('/users', App\Http\Controllers\System\UserController::class)
+            ->middlewareFor(['index', 'show'], 'permission:user_management,view')
+            ->middlewareFor(['store', 'update'], 'permission:user_management,encoder');
         // Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
         Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class);
         Route::get('/libraries/roles/{id}/permissions', [App\Http\Controllers\Libraries\RolePermissionController::class, 'show']);
