@@ -831,7 +831,7 @@ class JournalEntryService
         );
     }
 
-    public function recordStockConversionEntry(ProductConversion $conversion): ?JournalEntry
+    public function recordStockConversionEntry(ProductConversion $conversion, float $returnedValue = 0.0): ?JournalEntry
     {
         $conversion->loadMissing([
             'sourceStock.receivedItem.product',
@@ -849,10 +849,11 @@ class JournalEntryService
         $outputUnitCost = floatval($output->unit_cost ?? 0);
         $outputQty      = (int) $conversion->output_quantity;
 
-        $sourceValue = round($sourceQtyUsed * $sourceUnitCost, 2);
-        $outputValue = round($outputQty * $outputUnitCost, 2);
+        $sourceValue   = round($sourceQtyUsed * $sourceUnitCost, 2);
+        $outputValue   = round($outputQty * $outputUnitCost, 2);
+        $returnedValue = round($returnedValue, 2);
 
-        if ($sourceValue <= 0 && $outputValue <= 0) return null;
+        if ($sourceValue <= 0 && $outputValue <= 0 && $returnedValue <= 0) return null;
 
         $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
 
@@ -861,77 +862,52 @@ class JournalEntryService
         $sourceProd  = $source->receivedItem?->product?->name ?? $source->product?->name ?? 'Source';
         $outputProd  = $output->product?->name ?? 'Output';
 
-        $diff = round($outputValue - $sourceValue, 2);
+        // Some source material can go into the output unit(s), and the rest
+        // — if any — goes back into the source batch's own quantity instead
+        // of being consumed (see ProductConversionService). Both legs debit
+        // Rice Inventory; only whatever's genuinely unaccounted for after
+        // that becomes a variance line.
+        $diff = round(($outputValue + $returnedValue) - $sourceValue, 2);
 
-        if (abs($diff) < 0.01) {
-            // Balanced: simple reclassification
-            $amount = $outputValue ?: $sourceValue;
-            $lines = [
-                [
-                    'account_id'  => $inventoryAccount->id,
-                    'line_type'   => 'debit',
-                    'amount'      => $amount,
-                    'description' => "Conversion in — {$outputBatch} ({$outputProd}): {$outputQty} units",
-                ],
-                [
-                    'account_id'  => $inventoryAccount->id,
-                    'line_type'   => 'credit',
-                    'amount'      => $amount,
-                    'description' => "Conversion out — {$sourceBatch} ({$sourceProd}): {$sourceQtyUsed} units",
-                ],
+        $lines = [
+            [
+                'account_id'  => $inventoryAccount->id,
+                'line_type'   => 'debit',
+                'amount'      => $outputValue,
+                'description' => "Conversion in — {$outputBatch} ({$outputProd}): {$outputQty} units",
+            ],
+        ];
+
+        if ($returnedValue > 0) {
+            $lines[] = [
+                'account_id'  => $inventoryAccount->id,
+                'line_type'   => 'debit',
+                'amount'      => $returnedValue,
+                'description' => "Excess material returned to source — {$sourceBatch} ({$sourceProd})",
             ];
-        } else {
-            // Cost variance — use the larger side as the base and add variance line
+        }
+
+        if (abs($diff) >= 0.01) {
             $varianceAccount = $this->ensureAccount(
                 '5202', 'conversion_variance', 'Inventory Conversion Variance', 'expense', 'inventory_variance'
             );
 
-            if ($diff > 0) {
-                // Output worth more than source consumed — credit variance (gain)
-                $lines = [
-                    [
-                        'account_id'  => $inventoryAccount->id,
-                        'line_type'   => 'debit',
-                        'amount'      => $outputValue,
-                        'description' => "Conversion in — {$outputBatch} ({$outputProd}): {$outputQty} units",
-                    ],
-                    [
-                        'account_id'  => $inventoryAccount->id,
-                        'line_type'   => 'credit',
-                        'amount'      => $sourceValue,
-                        'description' => "Conversion out — {$sourceBatch} ({$sourceProd}): {$sourceQtyUsed} units",
-                    ],
-                    [
-                        'account_id'  => $varianceAccount->id,
-                        'line_type'   => 'credit',
-                        'amount'      => abs($diff),
-                        'description' => 'Conversion cost variance (gain)',
-                    ],
-                ];
-            } else {
-                // Source worth more than output — debit variance (loss)
-                $lines = [
-                    [
-                        'account_id'  => $inventoryAccount->id,
-                        'line_type'   => 'debit',
-                        'amount'      => $outputValue,
-                        'description' => "Conversion in — {$outputBatch} ({$outputProd}): {$outputQty} units",
-                    ],
-                    [
-                        'account_id'  => $varianceAccount->id,
-                        'line_type'   => 'debit',
-                        'amount'      => abs($diff),
-                        'description' => 'Conversion cost variance (loss)',
-                    ],
-                    [
-                        'account_id'  => $inventoryAccount->id,
-                        'line_type'   => 'credit',
-                        'amount'      => $sourceValue,
-                        'description' => "Conversion out — {$sourceBatch} ({$sourceProd}): {$sourceQtyUsed} units",
-                    ],
-                ];
-            }
+            $lines[] = [
+                'account_id'  => $varianceAccount->id,
+                'line_type'   => $diff > 0 ? 'credit' : 'debit',
+                'amount'      => abs($diff),
+                'description' => $diff > 0 ? 'Conversion cost variance (gain)' : 'Conversion cost variance (loss)',
+            ];
         }
+
+        $lines[] = [
+            'account_id'  => $inventoryAccount->id,
+            'line_type'   => 'credit',
+            'amount'      => $sourceValue,
+            'description' => "Conversion out — {$sourceBatch} ({$sourceProd}): {$sourceQtyUsed} units",
+        ];
+
+        $lines = array_values(array_filter($lines, fn ($line) => $line['amount'] > 0));
 
         return $this->createEntry(
             $conversion,

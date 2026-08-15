@@ -5,6 +5,7 @@ namespace Tests\Feature\Inventory;
 use App\Models\InventoryAdjustment;
 use App\Models\InventoryStocks;
 use App\Models\InventoryWeightLoss;
+use App\Models\JournalEntry;
 use App\Models\ListBrand;
 use App\Models\ListPackaging;
 use App\Models\ListUnit;
@@ -93,5 +94,23 @@ class ProductConversionRemainderTest extends TestCase
         $this->assertNotNull($adjustment);
         $this->assertStringContainsString('2 full sack(s)', $adjustment->reason);
         $this->assertStringContainsString('2.5 kg partial sack', $adjustment->reason);
+
+        // Accounting: 5 sacks consumed at 500 each = 2500 credited from
+        // inventory. Output (1 unit @ 1250) + returned (22.5kg @ 50/kg =
+        // 1125) = 2375 debited back to inventory. The only genuine variance
+        // left is the original 2.5kg measurement shortage's value (125),
+        // not the full 1250 the old code would have booked as a loss.
+        $entry = JournalEntry::where('entry_type', 'stock_conversion')->latest('id')->first();
+        $this->assertNotNull($entry);
+        $lines = $entry->lines()->with('account')->get();
+
+        $inventoryDebits = $lines->where('account.slug', 'rice_inventory')->where('line_type', 'debit')->sum('amount');
+        $inventoryCredits = $lines->where('account.slug', 'rice_inventory')->where('line_type', 'credit')->sum('amount');
+        $varianceDebit = $lines->where('account.slug', 'conversion_variance')->where('line_type', 'debit')->sum('amount');
+
+        $this->assertEqualsWithDelta(2375.00, (float) $inventoryDebits, 0.01);
+        $this->assertEqualsWithDelta(2500.00, (float) $inventoryCredits, 0.01);
+        $this->assertEqualsWithDelta(125.00, (float) $varianceDebit, 0.01);
+        $this->assertTrue($lines->contains(fn ($l) => str_contains($l->description, 'Excess material returned to source')));
     }
 }

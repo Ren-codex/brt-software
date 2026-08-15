@@ -125,11 +125,16 @@ class ProductConversionService
 
         $conversion->update(['output_stock_id' => $outputStock->id]);
 
+        // Value of any leftover source material that gets returned to the
+        // source batch below rather than consumed — must be re-debited to
+        // inventory in the journal entry, or it reads as a real loss.
+        $returnedValue = $computedRemainderKg > 0.001 ? round($computedRemainderKg * $unitCostPerKg, 2) : 0.0;
+
         $this->journalEntryService->recordStockConversionEntry($conversion->fresh([
             'sourceStock.receivedItem.product',
             'sourceStock.product',
             'outputStock.product',
-        ]));
+        ]), $returnedValue);
 
         // Soft-mark selected weight losses as converted
         if (!empty($selectedLossIds)) {
