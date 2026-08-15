@@ -351,6 +351,7 @@ export default {
             this.editable = false;
             this.saveSuccess = false;
             this.showModal = true;
+            this.refreshProducts();
             this.$nextTick(() => {
             this.$refs.discountComponent.emitValue(0.00);
             });
@@ -370,6 +371,46 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
             this.validateQuantity(); // Validate quantity against current stock
+            this.refreshProducts();
+        },
+
+        // The `dropdowns.products` Inertia prop is fetched once when the Sales
+        // page loads and never refreshes on its own — so product batches,
+        // quantities and prices go stale the moment anything else changes
+        // inventory while this page stays open. Pull a fresh snapshot every
+        // time this modal opens and merge it in place (same pattern as
+        // handlePriceAdjustmentSaved below), so a re-selected product always
+        // reflects current stock instead of whatever was true on page load.
+        async refreshProducts() {
+            try {
+                const { data } = await axios.get('/sales-orders', { params: { option: 'products' } });
+                if (!Array.isArray(data)) return;
+
+                data.forEach((fresh) => {
+                    const product = this.dropdowns.products.find((p) => p.value === fresh.value);
+                    if (!product) return;
+                    product.batch_code = fresh.batch_code;
+                    product.batch_available = fresh.batch_available;
+                    product.batch_stocks = fresh.batch_stocks;
+                    product.available_quantity = fresh.available_quantity;
+                    product.available = fresh.available;
+                    product.retail_price = fresh.retail_price;
+                    product.wholesale_price = fresh.wholesale_price;
+                    product.price = fresh.price;
+                });
+
+                // Re-derive batch/price for whatever's currently selected, in
+                // case the refreshed data changed what's actually available.
+                // Only for a fresh Add — edit() deliberately keeps an existing
+                // line item pinned to the batch it was originally allocated
+                // from, so it must not get silently reassigned here.
+                if (!this.editable && this.form.product_id) {
+                    this.onProductChange();
+                }
+            } catch (err) {
+                // Keep whatever data is already loaded rather than blocking the modal.
+                console.error('Failed to refresh product stock/pricing', err);
+            }
         },
 
         submit() {
