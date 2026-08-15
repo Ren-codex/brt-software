@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Messages — Redesign Options</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f3; padding: 24px; color: #1a2e2a; }
+h1 { font-size: 18px; font-weight: 700; color: #16322e; margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: #6b8c85; margin-bottom: 28px; }
+
+.layouts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+.layout-card {
+  background: #fff; border-radius: 14px; overflow: hidden;
+  border: 2px solid transparent; cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  position: relative;
+}
+.layout-card:hover { box-shadow: 0 4px 18px rgba(61,141,122,0.18); }
+.layout-card.selected { border-color: #3d8d7a; box-shadow: 0 4px 18px rgba(61,141,122,0.28); }
+.layout-card.selected::after {
+  content: '✓ Selected'; position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(61,141,122,0.1); color: #3d8d7a; font-size: 10px; font-weight: 700;
+  text-align: center; padding: 6px; border-top: 1px solid #c4d9d2;
+}
+.badge { display:none; position:absolute; top:10px; right:10px; background:#3d8d7a; color:#fff; border-radius:20px; font-size:11px; font-weight:600; padding:2px 10px; }
+.layout-card.selected .badge { display:block; }
+
+.card-label { padding: 12px 14px 18px; }
+.card-label h3 { font-size: 13px; font-weight: 700; color: #16322e; margin-bottom: 3px; }
+.card-label p { font-size: 11px; color: #6b8c85; line-height: 1.4; }
+
+/* ── SHARED TOKENS ── */
+.teal { color: #3d8d7a; }
+.amber { color: #c47f00; }
+.green { color: #1a7e5a; }
+.red { color: #c44040; }
+.muted { color: #6b8c85; }
+
+/* ══════════════════════════
+   DESIGN A — Inbox Style
+══════════════════════════ */
+.da { font-size: 11px; background: #f5f7f7; border-radius: 10px 10px 0 0; overflow: hidden; }
+.da-header { background: linear-gradient(to right, #cfe0d9, #edf6f2); padding: 10px 14px; border-bottom: 1px solid #c4d9d2; display: flex; align-items: center; justify-content: space-between; }
+.da-header-left { display: flex; align-items: center; gap: 8px; }
+.da-header-icon { width: 28px; height: 28px; border-radius: 8px; background: rgba(61,141,122,0.12); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.da-header h2 { font-size: 12px; font-weight: 700; color: #16322e; }
+.da-header p { font-size: 9px; color: #6b8c85; }
+.da-refresh { background: #3d8d7a; color: #fff; border: none; border-radius: 6px; font-size: 9px; font-weight: 600; padding: 4px 10px; cursor: pointer; }
+
+.da-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 8px 10px; }
+.da-stat { background: #fff; border-radius: 8px; padding: 7px 10px; border: 1px solid #e4eeeb; display: flex; align-items: center; gap: 7px; }
+.da-stat-icon { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.da-stat-icon.total { background: #e8f5f1; }
+.da-stat-icon.unread { background: #fff3cd; }
+.da-stat-icon.read { background: #d4edda; }
+.da-stat-num { font-size: 14px; font-weight: 800; color: #16322e; }
+.da-stat-lbl { font-size: 8px; color: #6b8c85; font-weight: 600; text-transform: uppercase; }
+
+.da-search { margin: 0 10px 8px; background: #fff; border: 1px solid #dce8e4; border-radius: 7px; padding: 5px 9px; display: flex; align-items: center; gap: 6px; }
+.da-search span { font-size: 10px; color: #6b8c85; }
+
+.da-list { margin: 0 10px 10px; display: flex; flex-direction: column; gap: 4px; }
+.da-item { background: #fff; border-radius: 8px; padding: 8px 10px; border: 1px solid #e4eeeb; display: flex; align-items: center; gap: 8px; position: relative; }
+.da-item.unread { border-left: 3px solid #c47f00; background: #fffdf5; }
+.da-item.read { border-left: 3px solid #3d8d7a; }
+.da-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.da-info { flex: 1; min-width: 0; }
+.da-name { font-size: 10px; font-weight: 700; color: #16322e; }
+.da-email { font-size: 8px; color: #6b8c85; }
+.da-msg { font-size: 9px; color: #4a6560; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+.da-meta { text-align: right; flex-shrink: 0; }
+.da-date { font-size: 8px; color: #6b8c85; }
+.da-badge { display: inline-block; border-radius: 20px; font-size: 8px; font-weight: 700; padding: 1px 6px; margin-top: 3px; }
+.da-badge.unread { background: #fff3cd; color: #856404; }
+.da-badge.read { background: #d4edda; color: #155724; }
+.da-del { font-size: 10px; color: #c0c0c0; cursor: pointer; }
+
+/* ══════════════════════════
+   DESIGN B — Card Grid
+══════════════════════════ */
+.db { font-size: 11px; background: #f5f7f7; border-radius: 10px 10px 0 0; overflow: hidden; }
+.db-header { background: linear-gradient(to right, #cfe0d9, #edf6f2); padding: 10px 14px; border-bottom: 1px solid #c4d9d2; display: flex; align-items: center; justify-content: space-between; }
+.db-header-left { display: flex; align-items: center; gap: 8px; }
+.db-header-icon { width: 28px; height: 28px; border-radius: 8px; background: rgba(61,141,122,0.12); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.db-header h2 { font-size: 12px; font-weight: 700; color: #16322e; }
+.db-header p { font-size: 9px; color: #6b8c85; }
+.db-refresh { background: #3d8d7a; color: #fff; border: none; border-radius: 6px; font-size: 9px; font-weight: 600; padding: 4px 10px; }
+
+.db-toolbar { display: flex; align-items: center; gap: 6px; padding: 8px 10px; }
+.db-search { flex: 1; background: #fff; border: 1px solid #dce8e4; border-radius: 6px; padding: 4px 8px; display: flex; align-items: center; gap: 5px; }
+.db-search span { font-size: 9px; color: #6b8c85; }
+.db-filter { background: #fff; border: 1px solid #dce8e4; border-radius: 6px; padding: 4px 8px; font-size: 9px; color: #6b8c85; }
+
+.db-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 0 10px 8px; }
+.db-stat { background: #fff; border-radius: 8px; padding: 8px; border: 1px solid #e4eeeb; text-align: center; }
+.db-stat-num { font-size: 18px; font-weight: 800; color: #16322e; }
+.db-stat-lbl { font-size: 8px; color: #6b8c85; font-weight: 600; text-transform: uppercase; }
+.db-stat-dot { width: 6px; height: 6px; border-radius: 50%; margin: 0 auto 3px; }
+.db-stat-dot.total { background: #3d8d7a; }
+.db-stat-dot.unread { background: #c47f00; }
+.db-stat-dot.read { background: #28a745; }
+
+.db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px 10px; }
+.db-card { background: #fff; border-radius: 8px; padding: 9px; border: 1px solid #e4eeeb; position: relative; overflow: hidden; }
+.db-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.db-card.unread::before { background: #c47f00; }
+.db-card.read::before { background: #3d8d7a; }
+.db-card-top { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.db-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.db-card-name { font-size: 10px; font-weight: 700; color: #16322e; }
+.db-card-email { font-size: 8px; color: #6b8c85; }
+.db-card-msg { font-size: 9px; color: #4a6560; line-height: 1.3; margin-bottom: 6px; }
+.db-card-footer { display: flex; justify-content: space-between; align-items: center; }
+.db-card-date { font-size: 8px; color: #6b8c85; }
+.db-card-badge { border-radius: 20px; font-size: 8px; font-weight: 700; padding: 1px 6px; }
+.db-card-badge.unread { background: #fff3cd; color: #856404; }
+.db-card-badge.read { background: #d4edda; color: #155724; }
+
+/* ══════════════════════════
+   DESIGN C — Split Inbox
+══════════════════════════ */
+.dc { font-size: 11px; background: #f5f7f7; border-radius: 10px 10px 0 0; overflow: hidden; display: flex; flex-direction: column; }
+.dc-header { background: linear-gradient(to right, #cfe0d9, #edf6f2); padding: 10px 14px; border-bottom: 1px solid #c4d9d2; display: flex; align-items: center; justify-content: space-between; }
+.dc-header-left { display: flex; align-items: center; gap: 8px; }
+.dc-header-icon { width: 28px; height: 28px; border-radius: 8px; background: rgba(61,141,122,0.12); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.dc-header h2 { font-size: 12px; font-weight: 700; color: #16322e; }
+.dc-header p { font-size: 9px; color: #6b8c85; }
+.dc-refresh { background: #3d8d7a; color: #fff; border: none; border-radius: 6px; font-size: 9px; font-weight: 600; padding: 4px 10px; }
+
+.dc-body { display: flex; flex: 1; }
+.dc-list { width: 140px; flex-shrink: 0; border-right: 1px solid #e0ece8; background: #fff; }
+.dc-list-search { padding: 6px 8px; border-bottom: 1px solid #e4eeeb; }
+.dc-list-search div { background: #f5f7f7; border-radius: 5px; padding: 3px 7px; font-size: 8px; color: #6b8c85; }
+.dc-list-item { padding: 7px 8px; border-bottom: 1px solid #f0f4f3; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.dc-list-item.active { background: #f0faf7; border-left: 2px solid #3d8d7a; }
+.dc-list-item.unread { border-left: 2px solid #c47f00; background: #fffdf5; }
+.dc-list-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.dc-list-info { flex: 1; min-width: 0; }
+.dc-list-name { font-size: 9px; font-weight: 700; color: #16322e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-list-preview { font-size: 7px; color: #6b8c85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-unread-dot { width: 5px; height: 5px; border-radius: 50%; background: #c47f00; flex-shrink: 0; }
+
+.dc-detail { flex: 1; padding: 10px; background: #fafcfb; }
+.dc-detail-from { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e4eeeb; }
+.dc-detail-avatar { width: 30px; height: 30px; border-radius: 50%; background: #3d8d7a; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+.dc-detail-name { font-size: 11px; font-weight: 700; color: #16322e; }
+.dc-detail-email { font-size: 8px; color: #6b8c85; }
+.dc-detail-date { font-size: 8px; color: #6b8c85; margin-left: auto; }
+.dc-detail-msg { font-size: 9px; color: #3a5550; line-height: 1.5; background: #fff; border-radius: 8px; padding: 8px; border: 1px solid #e4eeeb; }
+.dc-detail-actions { display: flex; gap: 5px; margin-top: 7px; }
+.dc-btn { border-radius: 5px; font-size: 8px; font-weight: 600; padding: 3px 8px; border: 1px solid; cursor: pointer; }
+.dc-btn-primary { background: #3d8d7a; color: #fff; border-color: #3d8d7a; }
+.dc-btn-outline { background: #fff; color: #3d8d7a; border-color: #c4d9d2; }
+.dc-btn-danger { background: #fff; color: #c44040; border-color: #f5c0c0; }
+
+.dc-stats { display: flex; gap: 6px; padding: 6px 10px; background: #fff; border-bottom: 1px solid #e4eeeb; }
+.dc-stat { display: flex; align-items: center; gap: 4px; }
+.dc-stat-dot { width: 5px; height: 5px; border-radius: 50%; }
+.dc-stat-lbl { font-size: 8px; color: #6b8c85; }
+.dc-stat-num { font-size: 9px; font-weight: 700; color: #16322e; }
+</style>
+</head>
+<body>
+<h1>Contact Messages — Redesign Options</h1>
+<p class="subtitle">Three redesign directions. Click one to select, then let me know what you think.</p>
+
+<div class="layouts">
+
+  <!-- ── DESIGN A: Clean Inbox List ── -->
+  <div class="layout-card" data-choice="A" onclick="selectCard(this)">
+    <span class="badge">Selected</span>
+    <div class="da">
+      <!-- Header -->
+      <div class="da-header">
+        <div class="da-header-left">
+          <div class="da-header-icon">✉️</div>
+          <div>
+            <h2>Contact Messages</h2>
+            <p>Manage and respond to contact form submissions</p>
+          </div>
+        </div>
+        <button class="da-refresh">↺ Refresh</button>
+      </div>
+      <!-- Stats -->
+      <div class="da-stats">
+        <div class="da-stat">
+          <div class="da-stat-icon total">✉️</div>
+          <div><div class="da-stat-num">10</div><div class="da-stat-lbl">Total</div></div>
+        </div>
+        <div class="da-stat">
+          <div class="da-stat-icon unread">📩</div>
+          <div><div class="da-stat-num" style="color:#c47f00">6</div><div class="da-stat-lbl">Unread</div></div>
+        </div>
+        <div class="da-stat">
+          <div class="da-stat-icon read">✅</div>
+          <div><div class="da-stat-num" style="color:#1a7e5a">4</div><div class="da-stat-lbl">Read</div></div>
+        </div>
+      </div>
+      <!-- Search -->
+      <div class="da-search">
+        <span>🔍</span><span style="color:#bbb">Search by name, email, or message...</span>
+      </div>
+      <!-- List -->
+      <div class="da-list">
+        <div class="da-item unread">
+          <div class="da-avatar" style="background:#e67e22">A</div>
+          <div class="da-info">
+            <div class="da-name">Anna Kowalski</div>
+            <div class="da-email">anna.k@warsaw-foods.pl</div>
+            <div class="da-msg">Good afternoon! We are looking for...</div>
+          </div>
+          <div class="da-meta">
+            <div class="da-date">Feb 22, 2026</div>
+            <div class="da-badge unread">Unread</div>
+          </div>
+          <span class="da-del">🗑</span>
+        </div>
+        <div class="da-item unread">
+          <div class="da-avatar" style="background:#e74c3c">R</div>
+          <div class="da-info">
+            <div class="da-name">Ricardo Gomez</div>
+            <div class="da-email">rgomez@santiago-dist.cl</div>
+            <div class="da-msg">We are interested in importing med...</div>
+          </div>
+          <div class="da-meta">
+            <div class="da-date">Feb 20, 2026</div>
+            <div class="da-badge unread">Unread</div>
+          </div>
+          <span class="da-del">🗑</span>
+        </div>
+        <div class="da-item read">
+          <div class="da-avatar" style="background:#27ae60">S</div>
+          <div class="da-info">
+            <div class="da-name">Sophie Martin</div>
+            <div class="da-email">sophie.m@paris-gastronomie.fr</div>
+            <div class="da-msg">Hello! I run a French restaurant and...</div>
+          </div>
+          <div class="da-meta">
+            <div class="da-date">Feb 18, 2026</div>
+            <div class="da-badge read">Read</div>
+          </div>
+          <span class="da-del">🗑</span>
+        </div>
+        <div class="da-item unread">
+          <div class="da-avatar" style="background:#8e44ad">D</div>
+          <div class="da-info">
+            <div class="da-name">David Okonkwo</div>
+            <div class="da-email">d.okonkwo@lagosrice.ng</div>
+            <div class="da-msg">Good day! We are a Nigerian rice di...</div>
+          </div>
+          <div class="da-meta">
+            <div class="da-date">Feb 15, 2026</div>
+            <div class="da-badge unread">Unread</div>
+          </div>
+          <span class="da-del">🗑</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-label">
+      <h3>A — Clean Inbox List</h3>
+      <p>Compact rows with color-coded left border for read/unread. Stats at top, search below.</p>
+    </div>
+  </div>
+
+  <!-- ── DESIGN B: Card Grid ── -->
+  <div class="layout-card" data-choice="B" onclick="selectCard(this)">
+    <span class="badge">Selected</span>
+    <div class="db">
+      <div class="db-header">
+        <div class="db-header-left">
+          <div class="db-header-icon">✉️</div>
+          <div>
+            <h2>Contact Messages</h2>
+            <p>Manage and respond to contact form submissions</p>
+          </div>
+        </div>
+        <button class="db-refresh">↺ Refresh</button>
+      </div>
+      <div class="db-toolbar">
+        <div class="db-search" style="flex:1">
+          <span>🔍</span><span style="color:#bbb;font-size:9px">Search...</span>
+        </div>
+        <div class="db-filter">All ▾</div>
+        <div class="db-filter">Date ▾</div>
+      </div>
+      <div class="db-stats">
+        <div class="db-stat">
+          <div class="db-stat-dot total"></div>
+          <div class="db-stat-num">10</div>
+          <div class="db-stat-lbl">Total</div>
+        </div>
+        <div class="db-stat">
+          <div class="db-stat-dot unread"></div>
+          <div class="db-stat-num" style="color:#c47f00">6</div>
+          <div class="db-stat-lbl">Unread</div>
+        </div>
+        <div class="db-stat">
+          <div class="db-stat-dot read"></div>
+          <div class="db-stat-num" style="color:#1a7e5a">4</div>
+          <div class="db-stat-lbl">Read</div>
+        </div>
+      </div>
+      <div class="db-grid">
+        <div class="db-card unread">
+          <div class="db-card-top">
+            <div class="db-avatar" style="background:#e67e22">A</div>
+            <div><div class="db-card-name">Anna Kowalski</div><div class="db-card-email">anna.k@warsaw-foods.pl</div></div>
+          </div>
+          <div class="db-card-msg">Good afternoon! We are looking for a reliable supplier of premium rice...</div>
+          <div class="db-card-footer">
+            <div class="db-card-date">Feb 22, 2026</div>
+            <div class="db-card-badge unread">Unread</div>
+          </div>
+        </div>
+        <div class="db-card unread">
+          <div class="db-card-top">
+            <div class="db-avatar" style="background:#e74c3c">R</div>
+            <div><div class="db-card-name">Ricardo Gomez</div><div class="db-card-email">rgomez@santiago-dist.cl</div></div>
+          </div>
+          <div class="db-card-msg">We are interested in importing medium grain rice for distribution...</div>
+          <div class="db-card-footer">
+            <div class="db-card-date">Feb 20, 2026</div>
+            <div class="db-card-badge unread">Unread</div>
+          </div>
+        </div>
+        <div class="db-card read">
+          <div class="db-card-top">
+            <div class="db-avatar" style="background:#27ae60">S</div>
+            <div><div class="db-card-name">Sophie Martin</div><div class="db-card-email">sophie.m@paris...</div></div>
+          </div>
+          <div class="db-card-msg">Hello! I run a French restaurant and would like to source quality rice...</div>
+          <div class="db-card-footer">
+            <div class="db-card-date">Feb 18, 2026</div>
+            <div class="db-card-badge read">Read</div>
+          </div>
+        </div>
+        <div class="db-card unread">
+          <div class="db-card-top">
+            <div class="db-avatar" style="background:#8e44ad">D</div>
+            <div><div class="db-card-name">David Okonkwo</div><div class="db-card-email">d.okonkwo@lagos...</div></div>
+          </div>
+          <div class="db-card-msg">Good day! We are a Nigerian rice distributor looking for bulk orders...</div>
+          <div class="db-card-footer">
+            <div class="db-card-date">Feb 15, 2026</div>
+            <div class="db-card-badge unread">Unread</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-label">
+      <h3>B — Card Grid</h3>
+      <p>Each message as a card. Color-coded top border. Filter dropdown added. Shows more of each message.</p>
+    </div>
+  </div>
+
+  <!-- ── DESIGN C: Split Inbox ── -->
+  <div class="layout-card" data-choice="C" onclick="selectCard(this)">
+    <span class="badge">Selected</span>
+    <div class="dc">
+      <div class="dc-header">
+        <div class="dc-header-left">
+          <div class="dc-header-icon">✉️</div>
+          <div>
+            <h2>Contact Messages</h2>
+            <p>Manage and respond to contact form submissions</p>
+          </div>
+        </div>
+        <button class="dc-refresh">↺ Refresh</button>
+      </div>
+      <div class="dc-stats">
+        <div class="dc-stat"><div class="dc-stat-dot" style="background:#3d8d7a"></div><div class="dc-stat-lbl">Total</div><div class="dc-stat-num">10</div></div>
+        <div class="dc-stat" style="margin-left:8px"><div class="dc-stat-dot" style="background:#c47f00"></div><div class="dc-stat-lbl">Unread</div><div class="dc-stat-num" style="color:#c47f00">6</div></div>
+        <div class="dc-stat" style="margin-left:8px"><div class="dc-stat-dot" style="background:#1a7e5a"></div><div class="dc-stat-lbl">Read</div><div class="dc-stat-num" style="color:#1a7e5a">4</div></div>
+      </div>
+      <div class="dc-body">
+        <!-- Left: list -->
+        <div class="dc-list">
+          <div class="dc-list-search"><div>🔍 Search...</div></div>
+          <div class="dc-list-item active">
+            <div class="dc-list-avatar" style="background:#e67e22">A</div>
+            <div class="dc-list-info"><div class="dc-list-name">Anna Kowalski</div><div class="dc-list-preview">Good afternoon! We are...</div></div>
+            <div class="dc-unread-dot"></div>
+          </div>
+          <div class="dc-list-item unread">
+            <div class="dc-list-avatar" style="background:#e74c3c">R</div>
+            <div class="dc-list-info"><div class="dc-list-name">Ricardo Gomez</div><div class="dc-list-preview">We are interested in...</div></div>
+            <div class="dc-unread-dot"></div>
+          </div>
+          <div class="dc-list-item">
+            <div class="dc-list-avatar" style="background:#27ae60">S</div>
+            <div class="dc-list-info"><div class="dc-list-name">Sophie Martin</div><div class="dc-list-preview">Hello! I run a French...</div></div>
+          </div>
+          <div class="dc-list-item unread">
+            <div class="dc-list-avatar" style="background:#8e44ad">D</div>
+            <div class="dc-list-info"><div class="dc-list-name">David Okonkwo</div><div class="dc-list-preview">Good day! We are a...</div></div>
+            <div class="dc-unread-dot"></div>
+          </div>
+          <div class="dc-list-item unread">
+            <div class="dc-list-avatar" style="background:#2980b9">P</div>
+            <div class="dc-list-info"><div class="dc-list-name">Priya Sharma</div><div class="dc-list-preview">Hello! We are an Indian...</div></div>
+            <div class="dc-unread-dot"></div>
+          </div>
+        </div>
+        <!-- Right: detail -->
+        <div class="dc-detail">
+          <div class="dc-detail-from">
+            <div class="dc-detail-avatar">A</div>
+            <div>
+              <div class="dc-detail-name">Anna Kowalski</div>
+              <div class="dc-detail-email">anna.k@warsaw-foods.pl · +48 123 456 789</div>
+            </div>
+            <div class="dc-detail-date">Feb 22, 2026 02:25 PM</div>
+          </div>
+          <div class="dc-detail-msg">
+            Good afternoon! We are looking for a reliable supplier of premium rice products for our food distribution network across Eastern Europe. We would love to discuss potential partnership opportunities...
+          </div>
+          <div class="dc-detail-actions">
+            <button class="dc-btn dc-btn-primary">✓ Mark as Read</button>
+            <button class="dc-btn dc-btn-outline">Reply</button>
+            <button class="dc-btn dc-btn-danger">🗑 Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-label">
+      <h3>C — Split Inbox</h3>
+      <p>Left panel lists contacts, right panel shows full message. Email-client feel. Best for reading and responding.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function selectCard(el) {
+  document.querySelectorAll('.layout-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.recordChoice) window.recordChoice(el.dataset.choice, el.querySelector('h3').textContent);
+}
+</script>
+</body>
+</html>

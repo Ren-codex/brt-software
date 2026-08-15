@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Profile — Layout Options</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f3; padding: 24px; color: #1a2e2a; }
+  h1 { font-size: 18px; font-weight: 700; color: #16322e; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #6b8c85; margin-bottom: 28px; }
+
+  .layouts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  .layout-card {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  }
+  .layout-card:hover { box-shadow: 0 4px 18px rgba(61,141,122,0.15); }
+  .layout-card.selected { border-color: #3d8d7a; box-shadow: 0 4px 18px rgba(61,141,122,0.25); }
+  .layout-card .badge {
+    display: none;
+    position: absolute;
+    top: 10px; right: 10px;
+    background: #3d8d7a; color: #fff;
+    border-radius: 20px; font-size: 11px; font-weight: 600;
+    padding: 2px 10px;
+  }
+  .layout-card { position: relative; }
+  .layout-card.selected .badge { display: block; }
+
+  .card-label { padding: 14px 16px 10px; }
+  .card-label h3 { font-size: 14px; font-weight: 700; color: #16322e; margin-bottom: 3px; }
+  .card-label p { font-size: 12px; color: #6b8c85; line-height: 1.4; }
+
+  /* ── SHARED MINI-UI TOKENS ── */
+  .mu { font-family: -apple-system, sans-serif; }
+  .mu-badge { display:inline-block; border-radius:20px; font-size:10px; font-weight:600; padding:2px 8px; }
+  .mu-green { background:#d4edda; color:#155724; }
+  .mu-teal  { background:#d0ece7; color:#1a5e52; }
+  .mu-amber { background:#fff3cd; color:#856404; }
+  .mu-gray  { background:#e9ecef; color:#495057; }
+
+  /* ══════════════════════════════════════
+     LAYOUT A — Hero Header + Tabs
+  ══════════════════════════════════════ */
+  .la { font-size: 11px; background: #f5f7f7; }
+  .la-topbar { background: #2d6a5e; display:flex; align-items:center; justify-content:space-between; padding:6px 12px; }
+  .la-topbar span { color: rgba(255,255,255,0.7); font-size:10px; }
+  .la-topbar strong { color:#fff; font-size:11px; }
+  .la-page-title { padding:8px 12px 0; font-size:10px; color:#6b8c85; font-weight:600; letter-spacing:.4px; text-transform:uppercase; }
+
+  .la-hero {
+    margin:8px 12px;
+    background: linear-gradient(135deg, #2d6a5e 0%, #3d8d7a 60%, #5aaa97 100%);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+    position: relative;
+  }
+  .la-avatar {
+    width:52px; height:52px; border-radius:50%;
+    background:rgba(255,255,255,0.25); border:2px solid rgba(255,255,255,0.5);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:700; color:#fff;
+    flex-shrink:0;
+  }
+  .la-hero-info { flex:1; }
+  .la-hero-info h2 { font-size:15px; font-weight:700; color:#fff; margin-bottom:3px; }
+  .la-hero-info .tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:4px; }
+  .la-hero-info .tag { background:rgba(255,255,255,0.2); color:#fff; border-radius:20px; font-size:9px; font-weight:600; padding:1px 7px; }
+  .la-hero-info .meta { display:flex; gap:10px; }
+  .la-hero-info .meta span { color:rgba(255,255,255,0.8); font-size:9px; }
+  .la-hero-actions { display:flex; flex-direction:column; gap:4px; }
+  .la-btn { border-radius:6px; font-size:9px; font-weight:600; padding:4px 9px; border:none; cursor:pointer; }
+  .la-btn-outline { background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.4); }
+  .la-btn-solid { background:#fff; color:#2d6a5e; }
+
+  .la-tabs { display:flex; gap:0; padding:0 12px; border-bottom:1px solid #e0e8e6; margin-top:8px; }
+  .la-tab { padding:6px 10px; font-size:10px; font-weight:600; color:#6b8c85; border-bottom:2px solid transparent; cursor:pointer; }
+  .la-tab.active { color:#3d8d7a; border-color:#3d8d7a; }
+
+  .la-body { padding:10px 12px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .la-card { background:#fff; border-radius:8px; padding:10px; border:1px solid #e8f0ee; }
+  .la-card h4 { font-size:10px; font-weight:700; color:#3d8d7a; text-transform:uppercase; letter-spacing:.4px; margin-bottom:7px; padding-bottom:5px; border-bottom:1px solid #edf6f2; }
+  .la-row { display:flex; justify-content:space-between; align-items:center; padding:3px 0; }
+  .la-row .lbl { color:#6b8c85; font-size:9px; }
+  .la-row .val { color:#16322e; font-size:9px; font-weight:500; }
+  .la-stat-row { display:flex; gap:6px; }
+  .la-stat { flex:1; background:#f5faf9; border-radius:6px; padding:6px; text-align:center; }
+  .la-stat .num { font-size:13px; font-weight:700; color:#16322e; }
+  .la-stat .lbl { font-size:8px; color:#6b8c85; margin-top:1px; }
+  .la-stat .chg { font-size:8px; color:#28a745; font-weight:600; }
+
+
+  /* ══════════════════════════════════════
+     LAYOUT B — Side Profile + Content
+  ══════════════════════════════════════ */
+  .lb { font-size:11px; background:#f5f7f7; display:flex; gap:0; min-height:320px; }
+
+  .lb-sidebar {
+    width:140px; flex-shrink:0;
+    background: linear-gradient(180deg, #2d6a5e 0%, #3d8d7a 100%);
+    display:flex; flex-direction:column; align-items:center;
+    padding:16px 10px 12px;
+    border-radius:10px 0 0 10px;
+  }
+  .lb-avatar {
+    width:54px; height:54px; border-radius:50%;
+    background:rgba(255,255,255,0.2); border:2px solid rgba(255,255,255,0.5);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:700; color:#fff; margin-bottom:8px;
+  }
+  .lb-sidebar h3 { font-size:11px; font-weight:700; color:#fff; text-align:center; margin-bottom:4px; }
+  .lb-sidebar .tags { display:flex; flex-direction:column; align-items:center; gap:3px; margin-bottom:10px; }
+  .lb-sidebar .tag { background:rgba(255,255,255,0.2); color:#fff; border-radius:20px; font-size:8px; font-weight:600; padding:1px 7px; }
+  .lb-divider { width:80%; height:1px; background:rgba(255,255,255,0.2); margin:8px 0; }
+  .lb-info-row { width:100%; display:flex; align-items:center; gap:5px; margin-bottom:4px; }
+  .lb-info-row .ico { font-size:9px; color:rgba(255,255,255,0.6); }
+  .lb-info-row span { font-size:9px; color:rgba(255,255,255,0.85); line-height:1.3; }
+  .lb-sidebar .status-chip { margin-top:auto; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:#fff; border-radius:20px; font-size:8px; font-weight:600; padding:2px 9px; }
+
+  .lb-content { flex:1; background:#fff; border-radius:0 10px 10px 0; display:flex; flex-direction:column; overflow:hidden; }
+  .lb-header { display:flex; align-items:center; justify-content:space-between; padding:10px 12px 0; border-bottom:1px solid #e8f0ee; padding-bottom:0; }
+  .lb-tabs { display:flex; gap:0; }
+  .lb-tab { padding:6px 9px; font-size:9px; font-weight:600; color:#6b8c85; border-bottom:2px solid transparent; cursor:pointer; }
+  .lb-tab.active { color:#3d8d7a; border-color:#3d8d7a; }
+  .lb-header-actions { display:flex; gap:5px; }
+  .lb-btn { border-radius:5px; font-size:9px; font-weight:600; padding:3px 8px; border:none; cursor:pointer; }
+  .lb-btn-outline { background:#f0f8f6; color:#3d8d7a; border:1px solid #c4d9d2; }
+  .lb-btn-solid { background:#3d8d7a; color:#fff; }
+
+  .lb-body { padding:10px 12px; flex:1; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .lb-card { background:#f9fdfb; border-radius:8px; padding:9px; border:1px solid #e8f0ee; }
+  .lb-card h4 { font-size:9px; font-weight:700; color:#3d8d7a; text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px; }
+  .lb-row { display:flex; justify-content:space-between; padding:2px 0; }
+  .lb-row .lbl { color:#6b8c85; font-size:9px; }
+  .lb-row .val { color:#16322e; font-size:9px; font-weight:500; }
+  .lb-stat-row { display:flex; gap:5px; margin-top:6px; }
+  .lb-stat { flex:1; background:#fff; border-radius:5px; padding:5px; text-align:center; border:1px solid #e8f0ee; }
+  .lb-stat .num { font-size:12px; font-weight:700; color:#16322e; }
+  .lb-stat .lbl { font-size:7px; color:#6b8c85; }
+  .lb-stat .chg { font-size:8px; color:#28a745; font-weight:600; }
+
+
+  /* ══════════════════════════════════════
+     LAYOUT C — Compact Header + Card Grid
+  ══════════════════════════════════════ */
+  .lc { font-size:11px; background:#f5f7f7; border-radius:10px; overflow:hidden; }
+  .lc-topbar { background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%); padding:10px 14px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #c4d9d2; }
+  .lc-avatar { width:42px; height:42px; border-radius:50%; background: linear-gradient(135deg,#3d8d7a,#5aaa97); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:#fff; flex-shrink:0; }
+  .lc-topbar-info { flex:1; }
+  .lc-topbar-info h2 { font-size:13px; font-weight:700; color:#16322e; margin-bottom:2px; }
+  .lc-topbar-info .tags { display:flex; gap:4px; }
+  .lc-topbar-info .tag { border-radius:20px; font-size:8px; font-weight:600; padding:1px 6px; background:#d0ece7; color:#1a5e52; }
+  .lc-topbar-info .tag.stat { background:#d4edda; color:#155724; }
+  .lc-actions { display:flex; gap:5px; }
+  .lc-btn { border-radius:6px; font-size:9px; font-weight:600; padding:4px 9px; border:none; cursor:pointer; }
+  .lc-btn-outline { background:#fff; color:#3d8d7a; border:1px solid #c4d9d2; }
+  .lc-btn-solid { background:#3d8d7a; color:#fff; }
+
+  .lc-body { padding:10px 14px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .lc-card { background:#fff; border-radius:8px; border:1px solid #e8f0ee; overflow:hidden; }
+  .lc-card-head { background:linear-gradient(to right,#cfe0d9,#edf6f2); padding:6px 10px; border-bottom:1px solid #c4d9d2; }
+  .lc-card-head h4 { font-size:9px; font-weight:700; color:#16322e; text-transform:uppercase; letter-spacing:.4px; }
+  .lc-card-body { padding:8px 10px; }
+  .lc-row { display:flex; justify-content:space-between; padding:2px 0; }
+  .lc-row .lbl { color:#6b8c85; font-size:9px; }
+  .lc-row .val { color:#16322e; font-size:9px; font-weight:500; }
+  .lc-stat-block { text-align:center; padding:4px 0; }
+  .lc-stat-block .num { font-size:14px; font-weight:700; color:#16322e; }
+  .lc-stat-block .lbl { font-size:8px; color:#6b8c85; }
+  .lc-stat-block .chg { font-size:8px; color:#28a745; font-weight:600; display:block; }
+  .lc-account-row { display:flex; flex-direction:column; gap:5px; }
+  .lc-account-item { display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #f0f4f3; }
+  .lc-account-item:last-child { border-bottom:none; }
+
+  /* ── SELECT OVERLAY ── */
+  .layout-card.selected::after {
+    content:'✓ Selected';
+    position:absolute; bottom:0; left:0; right:0;
+    background:rgba(61,141,122,0.1); color:#3d8d7a;
+    font-size:10px; font-weight:700;
+    text-align:center; padding:6px;
+    border-top:1px solid #c4d9d2;
+  }
+
+  .tag-row { display:flex; gap:5px; margin-top:6px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<h1>Employee Profile — Layout Options</h1>
+<p class="subtitle">Three design directions for the employee details page. Click a layout to select it, then let me know what you think.</p>
+
+<div class="layouts">
+
+  <!-- ─── LAYOUT A ─── -->
+  <div class="layout-card" data-choice="A" onclick="select(this)">
+    <span class="badge">Selected</span>
+    <div style="border-radius:10px; overflow:hidden;">
+      <div class="la">
+        <!-- Topbar -->
+        <div class="la-topbar">
+          <strong>BRT Accounting</strong>
+          <span>superadmin01 ▾</span>
+        </div>
+        <div class="la-page-title">Employee Details</div>
+
+        <!-- Hero Banner -->
+        <div class="la-hero">
+          <div class="la-avatar">RA</div>
+          <div class="la-hero-info">
+            <h2>Radzmil I. Alvarez</h2>
+            <div class="tags">
+              <span class="tag">Cashier</span>
+              <span class="tag">Regular</span>
+              <span class="tag">Active</span>
+            </div>
+            <div class="meta">
+              <span>📧 babaalvarez@gmail.com</span>
+              <span>📱 09972963331</span>
+            </div>
+          </div>
+          <div class="la-hero-actions">
+            <button class="la-btn la-btn-outline">← Back</button>
+            <button class="la-btn la-btn-solid">✏ Edit</button>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="la-tabs">
+          <div class="la-tab active">Personal Info</div>
+          <div class="la-tab">Account</div>
+          <div class="la-tab">Payroll</div>
+          <div class="la-tab">Loans</div>
+        </div>
+
+        <!-- Tab Body -->
+        <div class="la-body">
+          <div class="la-card">
+            <h4>Personal Details</h4>
+            <div class="la-row"><span class="lbl">Gender</span><span class="val">Male</span></div>
+            <div class="la-row"><span class="lbl">Religion</span><span class="val">Islam</span></div>
+            <div class="la-row"><span class="lbl">Birthdate</span><span class="val">1995-09-27</span></div>
+            <div class="la-row"><span class="lbl">Address</span><span class="val">Santican Drive</span></div>
+          </div>
+          <div class="la-card">
+            <h4>Incentives — June 2026</h4>
+            <div class="la-stat-row">
+              <div class="la-stat"><div class="num">₱1,250</div><div class="chg">+5%</div><div class="lbl">Earned</div></div>
+              <div class="la-stat"><div class="num">1250</div><div class="chg">+15%</div><div class="lbl">kg Rice</div></div>
+              <div class="la-stat"><div class="num">50</div><div class="chg">+10%</div><div class="lbl">Points</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-label">
+      <h3>A — Hero Banner + Tabs</h3>
+      <p>Full-width gradient header. Tabs unlock Personal Info, Account, Payroll, Loans sections separately.</p>
+    </div>
+  </div>
+
+  <!-- ─── LAYOUT B ─── -->
+  <div class="layout-card" data-choice="B" onclick="select(this)">
+    <span class="badge">Selected</span>
+    <div style="border-radius:10px; overflow:hidden; padding:8px; background:#f5f7f7;">
+      <div class="lb">
+        <!-- Sidebar -->
+        <div class="lb-sidebar">
+          <div class="lb-avatar">RA</div>
+          <h3>Radzmil I. Alvarez</h3>
+          <div class="tags">
+            <span class="tag">Cashier</span>
+            <span class="tag">Regular</span>
+          </div>
+          <div class="lb-divider"></div>
+          <div class="lb-info-row"><span class="ico">📧</span><span>babaalvarez<br>@gmail.com</span></div>
+          <div class="lb-info-row"><span class="ico">📱</span><span>09972963331</span></div>
+          <div class="lb-info-row"><span class="ico">📍</span><span>Santican Drive</span></div>
+          <div class="lb-info-row"><span class="ico">🎂</span><span>1995-09-27</span></div>
+          <div class="lb-info-row"><span class="ico">🕌</span><span>Islam · Male</span></div>
+          <div class="lb-divider"></div>
+          <span class="status-chip">● Active</span>
+        </div>
+
+        <!-- Content -->
+        <div class="lb-content">
+          <div class="lb-header">
+            <div class="lb-tabs">
+              <div class="lb-tab active">Account</div>
+              <div class="lb-tab">Payroll</div>
+              <div class="lb-tab">Loans</div>
+            </div>
+            <div class="lb-header-actions">
+              <button class="lb-btn lb-btn-outline">← Back</button>
+              <button class="lb-btn lb-btn-solid">✏ Edit</button>
+            </div>
+          </div>
+          <div class="lb-body">
+            <div class="lb-card">
+              <h4>Account Details</h4>
+              <div class="lb-row"><span class="lbl">Username</span><span class="val">baba27</span></div>
+              <div class="lb-row"><span class="lbl">Status</span><span class="val" style="color:#28a745">● Active</span></div>
+              <div class="lb-row"><span class="lbl">Roles</span><span class="val">Admin · Super Admin</span></div>
+            </div>
+            <div class="lb-card">
+              <h4>Incentives — June 2026</h4>
+              <div class="lb-stat-row">
+                <div class="lb-stat"><div class="num">₱1,250</div><div class="chg">+5%</div><div class="lbl">Earned</div></div>
+                <div class="lb-stat"><div class="num">1250</div><div class="chg">+15%</div><div class="lbl">kg Rice</div></div>
+                <div class="lb-stat"><div class="num">50</div><div class="chg">+10%</div><div class="lbl">Points</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-label">
+      <h3>B — Fixed Side Profile</h3>
+      <p>Green sidebar always shows personal info. Right panel has tabs for Account, Payroll, Loans.</p>
+    </div>
+  </div>
+
+  <!-- ─── LAYOUT C ─── -->
+  <div class="layout-card" data-choice="C" onclick="select(this)">
+    <span class="badge">Selected</span>
+    <div style="padding:8px; background:#f5f7f7; border-radius:10px;">
+      <div class="lc">
+        <!-- Compact topbar -->
+        <div class="lc-topbar">
+          <div class="lc-avatar">RA</div>
+          <div class="lc-topbar-info">
+            <h2>Radzmil I. Alvarez</h2>
+            <div class="tags">
+              <span class="tag">Cashier</span>
+              <span class="tag">Regular</span>
+              <span class="tag stat">Active</span>
+            </div>
+          </div>
+          <div class="lc-actions">
+            <button class="lc-btn lc-btn-outline">← Back</button>
+            <button class="lc-btn lc-btn-solid">✏ Edit</button>
+          </div>
+        </div>
+
+        <!-- Card Grid -->
+        <div class="lc-body">
+          <!-- Personal -->
+          <div class="lc-card">
+            <div class="lc-card-head"><h4>Personal Info</h4></div>
+            <div class="lc-card-body">
+              <div class="lc-row"><span class="lbl">Email</span><span class="val">babaalvarez@...</span></div>
+              <div class="lc-row"><span class="lbl">Phone</span><span class="val">09972963331</span></div>
+              <div class="lc-row"><span class="lbl">Gender</span><span class="val">Male</span></div>
+              <div class="lc-row"><span class="lbl">Religion</span><span class="val">Islam</span></div>
+              <div class="lc-row"><span class="lbl">Birthdate</span><span class="val">1995-09-27</span></div>
+              <div class="lc-row"><span class="lbl">Address</span><span class="val">Santican Drive</span></div>
+            </div>
+          </div>
+          <!-- Account -->
+          <div class="lc-card">
+            <div class="lc-card-head"><h4>Account Details</h4></div>
+            <div class="lc-card-body">
+              <div class="lc-account-row">
+                <div class="lc-account-item"><span class="lbl">Username</span><span class="val">baba27</span></div>
+                <div class="lc-account-item"><span class="lbl">Status</span><span style="font-size:9px;font-weight:600;color:#28a745;">● Active</span></div>
+                <div class="lc-account-item"><span class="lbl">Roles</span><div style="display:flex;gap:3px;flex-wrap:wrap;"><span class="mu-badge mu-teal">Admin</span><span class="mu-badge mu-amber">Super Admin</span></div></div>
+              </div>
+            </div>
+          </div>
+          <!-- Incentives -->
+          <div class="lc-card">
+            <div class="lc-card-head"><h4>Incentives · June 2026</h4></div>
+            <div class="lc-card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding-top:10px;">
+              <div class="lc-stat-block"><div class="num">₱1,250</div><span class="chg">+5%</span><div class="lbl">Earned</div></div>
+              <div class="lc-stat-block"><div class="num">1250</div><span class="chg">+15%</span><div class="lbl">kg Rice</div></div>
+              <div class="lc-stat-block"><div class="num">50</div><span class="chg">+10%</span><div class="lbl">Points</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-label">
+      <h3>C — Compact Header + Card Grid</h3>
+      <p>Slim top bar with avatar and name. All data in equal-width cards below — no sidebar, no tabs.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function select(el) {
+  document.querySelectorAll('.layout-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.recordChoice) window.recordChoice(el.dataset.choice, el.querySelector('h3').textContent);
+}
+</script>
+</body>
+</html>
