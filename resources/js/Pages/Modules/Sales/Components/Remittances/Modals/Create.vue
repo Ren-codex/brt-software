@@ -142,6 +142,14 @@ export default {
         };
     },
     computed: {
+        // A Sales Rep only prepares remittances from their own receipts; anyone
+        // else (Admin, Manager, etc.) opening this on behalf of the business
+        // needs to see every pending receipt, not just ones tied to their own
+        // (likely nonexistent) sales_rep_id — see isSalesRep in Remittances/Index.vue.
+        isSalesRep() {
+            const roles = this.$page.props.roles ?? [];
+            return roles.includes('Sales Rep') && !!this.$page.props.user?.employee_id;
+        },
         allSelected() {
             return this.filteredOrders.length > 0 && this.selectedIds.length === this.filteredOrders.length;
         },
@@ -186,7 +194,7 @@ export default {
                     status: "pending",
                     option: 'lists',
                     count: 100,
-                    scope_to_rep: 1,
+                    ...(this.isSalesRep ? { scope_to_rep: 1 } : {}),
                 }
             })
                 .then(res => {
