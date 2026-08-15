@@ -385,13 +385,22 @@ class StockReturnClass
             $stockReturnItem->replaced_quantity = $replacedQty;
             $stockReturnItem->loss_quantity = $lossQty;
             $pendingStatusId = $this->getStatusIdBySlug('pending');
+            $partialStatusId = $this->getStatusIdBySlug('partial');
             $replacedStatusId = $this->getStatusIdBySlug('replaced');
             $lossStatusId = $this->getStatusIdBySlug('loss');
-            if (! $pendingStatusId || ! $replacedStatusId || ! $lossStatusId) {
+            if (! $pendingStatusId || ! $partialStatusId || ! $replacedStatusId || ! $lossStatusId) {
                 $this->fail('Receive statuses are not configured.');
             }
+            // A submission that doesn't yet cover the full requested quantity
+            // is only partially resolved — it must NOT reuse the 'replaced'
+            // status, which downstream (see $hasUnprocessedItems below) means
+            // "this item is done" and would prematurely mark the whole stock
+            // return 'completed', hiding the Receive Stock button before the
+            // remaining quantity has actually been received.
             if ($actualReceivedQty === 0) {
                 $stockReturnItem->status_id = $pendingStatusId;
+            } elseif ($actualReceivedQty < $requestedQty) {
+                $stockReturnItem->status_id = $partialStatusId;
             } elseif ($replacedQty > 0) {
                 $stockReturnItem->status_id = $replacedStatusId;
             } else {
