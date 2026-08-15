@@ -383,7 +383,7 @@
         <div class="summary-panel weight-panel" v-if="totalWeightLoss > 0 || grossWeight > 0">
           <p class="section-label mb-3" style="color:#b91c1c;">Weight Summary</p>
 
-          <template v-if="totalAffectedSacks > 0">
+          <template v-if="currentAffectedSacks > 0">
             <div class="sack-breakdown mb-3">
               <div class="sack-breakdown-row normal">
                 <span class="sack-dot normal-dot"></span>
@@ -393,7 +393,7 @@
               <div class="sack-breakdown-row short">
                 <span class="sack-dot short-dot"></span>
                 <span class="sack-label">Short weight</span>
-                <span class="sack-val text-danger">{{ totalAffectedSacks }} pcs</span>
+                <span class="sack-val text-danger">{{ currentAffectedSacks }} pcs</span>
               </div>
               <div class="sack-breakdown-divider"></div>
               <div class="sack-breakdown-row total">
@@ -410,7 +410,7 @@
           </div>
           <div class="d-flex justify-content-between align-items-center mb-2">
             <label class="form-label mb-0" style="color:#b91c1c;">Total Loss</label>
-            <span class="text-danger fw-bold">- {{ formatKg(totalWeightLoss) }}</span>
+            <span class="text-danger fw-bold">- {{ formatKg(currentWeightLoss) }}</span>
           </div>
           <div class="adjusted-weight-box">
             <span class="adjusted-weight-label">Adjusted Weight</span>
@@ -562,14 +562,32 @@ export default {
         return dateDiff !== 0 ? dateDiff : b.id - a.id;
       });
     },
+    // Full historical total across every weight-loss event ever recorded for
+    // this stock, including ones already converted out into a different
+    // batch/product — used only by the Weight Loss tab's own "Total" badge,
+    // which is an audit trail, not a statement about current composition.
     totalWeightLoss() {
       return this.weightLosses.reduce((sum, wl) => sum + parseFloat(wl.loss_kg || 0), 0);
     },
     totalAffectedSacks() {
       return this.weightLosses.reduce((sum, wl) => sum + (parseInt(wl.affected_sacks) || 0), 0);
     },
+    // Weight-loss records still physically present in this batch — a
+    // converted group's sacks and kg already left via the backend's quantity
+    // decrement (ProductConversionService), so counting them again here would
+    // double-subtract the same deduction. This is what the Weight Summary
+    // panel (current composition, not history) needs.
+    currentWeightLosses() {
+      return this.weightLosses.filter((wl) => !wl.converted_at);
+    },
+    currentWeightLoss() {
+      return this.currentWeightLosses.reduce((sum, wl) => sum + parseFloat(wl.loss_kg || 0), 0);
+    },
+    currentAffectedSacks() {
+      return this.currentWeightLosses.reduce((sum, wl) => sum + (parseInt(wl.affected_sacks) || 0), 0);
+    },
     normalSacks() {
-      return Math.max(0, (this.data?.quantity || 0) - this.totalAffectedSacks);
+      return Math.max(0, (this.data?.quantity || 0) - this.currentAffectedSacks);
     },
     grossWeight() {
       const qty = this.data?.quantity || 0;
@@ -581,7 +599,7 @@ export default {
       return qty * weight;
     },
     adjustedWeight() {
-      return Math.max(0, this.grossWeight - this.totalWeightLoss);
+      return Math.max(0, this.grossWeight - this.currentWeightLoss);
     },
     shortWeightSacks() {
       const packSize = parseFloat(
