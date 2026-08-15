@@ -38,15 +38,18 @@
                                     <label for="customer_id" class="form-label">Customer<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <select
+                                        <Multiselect
                                             v-model="customerSelection"
+                                            :options="customerOptions"
+                                            label="name"
+                                            value-prop="value"
+                                            track-by="name"
+                                            :searchable="true"
+                                            placeholder="Select Customer"
                                             class="form-control"
                                             :class="{ 'input-error': form.errors.customer_id }"
                                             @change="handleCustomerSelectionChange"
-                                        >
-                                            <option :value="null" disabled>Select Customer Type</option>
-                                            <option v-for="c in customerOptions" :key="c.value" :value="c.value">{{ c.name }}</option>
-                                        </select>
+                                        />
                                     </div>
                                     <span class="error-message" v-if="form.errors.customer_id">{{ form.errors.customer_id }}</span>
                                 </div>
@@ -65,14 +68,17 @@
                                     <label for="sales_rep_id" class="form-label">Assigned To (Sales Rep)<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <select
+                                        <Multiselect
                                             v-model="form.sales_rep_id"
+                                            :options="salesRepOptions"
+                                            label="name"
+                                            value-prop="value"
+                                            track-by="name"
+                                            :searchable="true"
+                                            placeholder="Select Sales Rep"
                                             class="form-control"
                                             :class="{ 'input-error': form.errors.sales_rep_id }"
-                                        >
-                                            <option :value="null" disabled>Select Sales Rep</option>
-                                            <option v-for="r in salesRepOptions" :key="r.value" :value="r.value">{{ r.name }}</option>
-                                        </select>
+                                        />
                                     </div>
                                     <span class="error-message" v-if="form.errors.sales_rep_id">{{ form.errors.sales_rep_id }}</span>
                                 </div>
@@ -81,14 +87,17 @@
                                     <label for="driver_id" class="form-label">Assigned To (Driver)<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
-                                        <select
+                                        <Multiselect
                                             v-model="form.driver_id"
+                                            :options="dropdowns.drivers"
+                                            label="name"
+                                            value-prop="value"
+                                            track-by="name"
+                                            :searchable="true"
+                                            placeholder="Select Driver"
                                             class="form-control"
                                             :class="{ 'input-error': form.errors.driver_id }"
-                                        >
-                                            <option :value="null" disabled>Select Driver</option>
-                                            <option v-for="d in dropdowns.drivers" :key="d.value" :value="d.value">{{ d.name }}</option>
-                                        </select>
+                                        />
                                     </div>
                                     <span class="error-message" v-if="form.errors.driver_id">{{ form.errors.driver_id }}</span>
                                 </div>
@@ -97,14 +106,17 @@
                                     <label for="location_id" class="form-label">Location<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-map-pin-line input-icon"></i>
-                                        <select
+                                        <Multiselect
                                             v-model="form.location_id"
+                                            :options="dropdowns.locations"
+                                            label="name"
+                                            value-prop="value"
+                                            track-by="name"
+                                            :searchable="true"
+                                            placeholder="Select Location"
                                             class="form-control"
                                             :class="{ 'input-error': form.errors.location_id }"
-                                        >
-                                            <option :value="0">Select Location</option>
-                                            <option v-for="l in dropdowns.locations" :key="l.value" :value="l.value">{{ l.name }}</option>
-                                        </select>
+                                        />
                                     </div>
                                     <span class="error-message" v-if="form.errors.location_id">{{ form.errors.location_id }}</span>
                                 </div>
@@ -795,17 +807,18 @@
                         <label for="bank_transfer_account" class="form-label">Bank Account<span class="text-danger">*</span></label>
                         <div class="input-wrapper">
                             <i class="ri-bank-line input-icon"></i>
-                            <select
+                            <Multiselect
                                 id="bank_transfer_account"
                                 v-model="bankTransferDetails.bank_account_id"
+                                :options="bankAccountOptions"
+                                label="name"
+                                value-prop="id"
+                                track-by="name"
+                                :searchable="true"
+                                placeholder="— Select bank account —"
                                 class="form-control"
                                 @change="onSalesBankAccountChange"
-                            >
-                                <option value="">— Select bank account —</option>
-                                <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
-                                    {{ ba.bank_name }} — {{ ba.account_name }}
-                                </option>
-                            </select>
+                            />
                         </div>
                         <small v-if="bankAccounts.length === 0" style="font-size:0.75rem;color:#94a3b8">
                             No bank accounts. <a href="/accounting/bank-accounts" target="_blank">Add one.</a>
@@ -974,13 +987,14 @@
 
 <script>
 import { useForm } from '@inertiajs/vue3';
+import Multiselect from '@vueform/multiselect';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import Item from '@/Pages/Modules/Sales/Components/SalesOrders/Modals/AddItem.vue';
 import Customer from '@/Pages/Modules/Customers/Modals/Create.vue'
 import PaymentPromptModal from '@/Pages/Modules/Sales/Components/SalesOrders/Modals/PaymentPromptModal.vue';
 
 export default {
-    components: { TextInput, Item, Customer, PaymentPromptModal },
+    components: { TextInput, Item, Customer, PaymentPromptModal, Multiselect },
     emits: ['add'],
     props: ['dropdowns', 'user'],
     data() {
@@ -1114,6 +1128,12 @@ export default {
         },
         availableProducts() {
             return this.dropdowns.products.filter(product => product.available > 0);
+        },
+        bankAccountOptions() {
+            return this.bankAccounts.map((ba) => ({
+                id: ba.id,
+                name: `${ba.bank_name} — ${ba.account_name}`,
+            }));
         },
         priceTypeOptions() {
             return [

@@ -27,25 +27,35 @@
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="search-wrapper">
+                                <div class="search-wrapper filter-multiselect-wrapper">
                                     <i class="ri-map-pin-line search-icon"></i>
-                                    <select v-model="filter.location_id" @change="fetch()" class="search-input">
-                                        <option :value="null">All Locations</option>
-                                        <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
-                                            {{ location.name }}
-                                        </option>
-                                    </select>
+                                    <Multiselect
+                                        v-model="filter.location_id"
+                                        :options="dropdowns.locations"
+                                        label="name"
+                                        value-prop="value"
+                                        track-by="name"
+                                        :searchable="true"
+                                        :can-clear="true"
+                                        placeholder="All Locations"
+                                        class="search-input filter-multiselect"
+                                    />
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="search-wrapper">
+                                <div class="search-wrapper filter-multiselect-wrapper">
                                     <i class="ri-flag-line search-icon"></i>
-                                    <select v-model="filter.status" @change="fetch()" class="search-input">
-                                        <option :value="null">All Status</option>
-                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug" >
-                                            {{ status.name }}
-                                        </option>
-                                    </select>
+                                    <Multiselect
+                                        v-model="filter.status"
+                                        :options="dropdowns.sales_statuses"
+                                        label="name"
+                                        value-prop="slug"
+                                        track-by="name"
+                                        :searchable="true"
+                                        :can-clear="true"
+                                        placeholder="All Status"
+                                        class="search-input filter-multiselect"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -323,7 +333,13 @@ export default {
     watch: {
         "filter.keyword"(newVal) {
             this.checkSearchStr(newVal);
-        }
+        },
+        "filter.location_id"() {
+            this.fetch();
+        },
+        "filter.status"() {
+            this.fetch();
+        },
     },
     created() {
         this.fetch();
@@ -475,6 +491,33 @@ export default {
 }
 </script>
 <style scoped>
+    .filter-multiselect-wrapper {
+        --ms-px: 0.75rem;
+        --ms-py: 0.6rem;
+        --ms-font-size: 0.8125rem;
+        --ms-radius: 8px;
+        --ms-bg: #f9fafb;
+        --ms-border-color: #e5e7eb;
+        --ms-border-width: 2px;
+        --ms-border-color-active: #2e8b57;
+        --ms-ring-color: rgba(46, 139, 87, 0.1);
+        --ms-ring-width: 3px;
+        --ms-placeholder-color: #9ca3af;
+    }
+
+    .filter-multiselect-wrapper .filter-multiselect {
+        width: 100%;
+        padding: 0;
+        border: none;
+        background: none;
+    }
+
+    .filter-multiselect-wrapper :deep(.multiselect-single-label),
+    .filter-multiselect-wrapper :deep(.multiselect-placeholder),
+    .filter-multiselect-wrapper :deep(.multiselect-search) {
+        padding-left: 2.5rem;
+    }
+
     .status-badge {
         display: inline-flex;
         align-items: center;

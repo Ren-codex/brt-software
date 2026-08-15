@@ -178,10 +178,14 @@ export default {
             this.form.put(`${this.route}/${this.form.id}`,{
                 preserveScroll: true,
                 onSuccess: (response) => {
+                    const receiptId = response?.props?.flash?.receipt_id || this.$page?.props?.flash?.receipt_id || null;
                     this.$emit('approve', true);
                     this.form.amount_paid = 0.00;
                     this.form.reset();
                     this.hide();
+                    if (receiptId) {
+                        window.open(`/receipts/${receiptId}?option=print&type=receipt`, '_blank');
+                    }
                 },
             });
 

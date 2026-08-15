@@ -28,9 +28,6 @@ echo "→ Building front-end assets"
 npm ci
 npm run build
 
-echo "→ Running database migrations"
-$PHP artisan migrate --force
-
 echo "→ Caching config, routes, views and events"
 $PHP artisan config:cache
 $PHP artisan route:cache
