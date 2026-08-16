@@ -5,14 +5,14 @@
         :class="{ active: showModal }"
         @click.self="hide"
     >
-        <div class="modal-container modal-md">
+        <div class="modal-container modal-lg">
             <div class="modal-header">
                 <div class="d-flex align-items-center gap-2">
                     <div class="modal-header-icon">
                         <i class="ri-checkbox-circle-line"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title mb-0">Remittance Approval</h5>
+                        <h5 class="modal-title mb-0">Remittance Verification</h5>
                         <p class="modal-subtitle mb-0" v-if="item">
                             {{ item.remittance_no }} &middot; {{ formatCurrency(item.total_amount) }}
                         </p>
@@ -26,7 +26,7 @@
             <div class="modal-body">
                 <div class="success-alert" v-if="saveSuccess">
                     <i class="ri-checkbox-circle-fill"></i>
-                    <span>Approval has been saved successfully!</span>
+                    <span>Verification has been saved successfully!</span>
                 </div>
 
                 <form @submit.prevent="submit">
@@ -34,7 +34,7 @@
                     <div class="mb-3">
                         <div class="d-flex gap-3" style="font-size:14px">
                             <label class="d-flex align-items-center gap-1">
-                                <input type="radio" v-model="form.status" value="Approve"> Approve
+                                <input type="radio" v-model="form.status" value="Approve"> Verify
                             </label>
                             <label class="d-flex align-items-center gap-1">
                                 <input type="radio" v-model="form.status" value="Disapprove"> Disapprove
@@ -57,21 +57,74 @@
                         </div>
 
                         <div class="mb-2">
-                            <label class="form-label">Amount Received (₱) <span class="text-danger">*</span></label>
-                            <input
-                                type="number"
-                                class="form-control"
-                                :class="{ 'input-error': form.errors.received_amount }"
-                                placeholder="Enter amount physically counted..."
-                                v-model.number="form.received_amount"
-                                min="0"
-                                step="0.01"
-                            >
+                            <label class="form-label">Amount Received <span class="text-danger">*</span></label>
+                            <div class="table-responsive">
+                                <table class="table table-sm received-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Payment</th>
+                                            <th class="text-end">Amount</th>
+                                            <th class="text-end">Amount Received</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="row in displayRows" :key="row.mode">
+                                            <td>{{ row.mode }}</td>
+                                            <td class="text-end">{{ row.amount !== null ? formatCurrency(row.amount) : '—' }}</td>
+                                            <td class="text-end">
+                                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                                    <input
+                                                        type="number"
+                                                        class="form-control form-control-sm text-end"
+                                                        placeholder="0.00"
+                                                        v-model.number="form.received_breakdown[row.mode]"
+                                                        min="0"
+                                                        step="0.01"
+                                                    >
+                                                    <button
+                                                        v-if="customModes.includes(row.mode)"
+                                                        type="button"
+                                                        class="remove-mode-btn"
+                                                        title="Remove"
+                                                        @click="removeCustomMode(row.mode)"
+                                                    >
+                                                        <i class="ri-close-line"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="displayRows.length === 0">
+                                            <td colspan="3" class="text-center text-muted">No receipts found.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Add a payment mode not already listed above (e.g. money received a different way than originally recorded) -->
+                            <div class="add-mode-row d-flex align-items-center gap-2 mt-2">
+                                <select class="form-select form-select-sm" style="max-width:170px" v-model="newModeSelect">
+                                    <option value="">+ Add payment mode…</option>
+                                    <option v-for="opt in availableModeOptions" :key="opt" :value="opt">{{ opt }}</option>
+                                    <option value="__other__">Other…</option>
+                                </select>
+                                <input
+                                    v-if="newModeSelect === '__other__'"
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    style="max-width:170px"
+                                    placeholder="Payment mode name"
+                                    v-model="newModeCustomLabel"
+                                    @keydown.enter.prevent="addPaymentMode"
+                                >
+                                <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="!canAddMode" @click="addPaymentMode">
+                                    <i class="ri-add-line"></i> Add
+                                </button>
+                            </div>
                             <span class="error-message" v-if="form.errors.received_amount">{{ form.errors.received_amount }}</span>
                         </div>
 
                         <!-- Variance display -->
-                        <div class="variance-line mb-3" v-if="form.received_amount !== null && form.received_amount !== ''">
+                        <div class="variance-line mb-3" v-if="hasReceivedInput">
                             <span class="variance-label">Variance:</span>
                             <span :class="['variance-badge', variance === 0 ? 'ok' : 'warn']">
                                 <template v-if="variance === 0">
@@ -83,22 +136,17 @@
                             </span>
                         </div>
 
-                        <!-- Received via -->
-                        <div class="mb-3">
-                            <label class="form-label">Received Via <span class="text-danger">*</span></label>
-                            <div class="d-flex gap-3" style="font-size:14px">
-                                <label class="d-flex align-items-center gap-1">
-                                    <input type="radio" v-model="form.received_via" value="cash"> Cash
-                                </label>
-                                <label class="d-flex align-items-center gap-1">
-                                    <input type="radio" v-model="form.received_via" value="check"> Check
-                                </label>
+                        <!-- Received via — derived from which payment modes were entered above, not picked separately -->
+                        <div class="mb-3" v-if="receivedViaModes.length">
+                            <label class="form-label">Received Via</label>
+                            <div>
+                                <span v-for="mode in receivedViaModes" :key="mode" class="received-via-chip">{{ mode }}</span>
                             </div>
                             <span class="error-message" v-if="form.errors.received_via">{{ form.errors.received_via }}</span>
                         </div>
 
-                        <!-- Reference no. — only when Check -->
-                        <div class="mb-3" v-if="form.received_via === 'check'">
+                        <!-- Reference no. — only when Check is one of the received modes -->
+                        <div class="mb-3" v-if="hasCheckMode">
                             <label class="form-label">Reference No. <span class="text-danger">*</span></label>
                             <input
                                 type="text"
@@ -111,10 +159,11 @@
                         </div>
                     </template>
 
-                    <!-- Remarks -->
+                    <!-- Remarks / discrepancy reason. When there's a variance, this becomes
+                         the required explanation that gets carried into the journal entry. -->
                     <div class="mb-3">
                         <label class="form-label">
-                            Remarks
+                            {{ form.status === 'Approve' && variance !== 0 ? 'Reason for Discrepancy' : 'Remarks' }}
                             <span v-if="form.status === 'Approve' && variance !== 0" class="text-danger">*</span>
                         </label>
                         <textarea
@@ -125,7 +174,7 @@
                             :class="{ 'input-error': form.errors.remarks }"
                         ></textarea>
                         <div class="variance-hint" v-if="form.status === 'Approve' && variance !== 0">
-                            Variance detected — please explain the difference.
+                            Discrepancy of {{ formatCurrency(Math.abs(variance)) }} ({{ variance > 0 ? 'overage' : 'shortage' }}) — please explain. This reason is recorded on the journal entry.
                         </div>
                         <span class="error-message" v-if="form.errors.remarks">{{ form.errors.remarks }}</span>
                     </div>
@@ -156,19 +205,89 @@ export default {
             form: useForm({
                 status: 'Approve',
                 received_amount: null,
+                received_breakdown: {},
                 received_via: null,
                 reference_no: null,
                 remarks: null,
             }),
             showModal: false,
             saveSuccess: false,
+            // Payment modes added manually, on top of whatever the remittance's
+            // own receipts already contribute to paymentBreakdown.
+            customModes: [],
+            newModeSelect: '',
+            newModeCustomLabel: '',
         };
     },
     computed: {
+        // Amount received is captured per payment mode present on the
+        // remittance's receipts, since a single remittance can bundle cash,
+        // GCash, check, and bank transfer receipts together.
+        paymentBreakdown() {
+            if (!this.item || !Array.isArray(this.item.receipts)) return [];
+            const order = ['Cash', 'GCash', 'Check', 'Bank Transfer'];
+            const totals = {};
+            this.item.receipts.forEach(r => {
+                const mode = r.payment_mode || 'Cash';
+                totals[mode] = (totals[mode] || 0) + (parseFloat(r.amount_paid) || 0);
+            });
+            return Object.keys(totals)
+                .sort((a, b) => {
+                    const ai = order.indexOf(a);
+                    const bi = order.indexOf(b);
+                    if (ai === -1 && bi === -1) return a.localeCompare(b);
+                    if (ai === -1) return 1;
+                    if (bi === -1) return -1;
+                    return ai - bi;
+                })
+                .map(mode => ({ mode, amount: totals[mode] }));
+        },
+        // Rows actually shown in the table: the auto ones derived from the
+        // remittance's receipts, plus any the verifier added manually. Manually
+        // added rows have no "expected" amount, only a received amount.
+        displayRows() {
+            const autoModes = this.paymentBreakdown.map(r => r.mode);
+            const extra = this.customModes.filter(m => !autoModes.includes(m));
+            return [
+                ...this.paymentBreakdown,
+                ...extra.map(mode => ({ mode, amount: null })),
+            ];
+        },
+        standardModeOptions() {
+            return ['Cash', 'GCash', 'Check', 'Bank Transfer'];
+        },
+        availableModeOptions() {
+            const used = this.displayRows.map(r => r.mode.toLowerCase());
+            return this.standardModeOptions.filter(m => !used.includes(m.toLowerCase()));
+        },
+        canAddMode() {
+            if (this.newModeSelect === '__other__') {
+                return !!this.newModeCustomLabel.trim();
+            }
+            return !!this.newModeSelect;
+        },
+        hasReceivedInput() {
+            return Object.values(this.form.received_breakdown || {})
+                .some(v => v !== null && v !== '' && v !== undefined);
+        },
+        totalReceived() {
+            return Object.values(this.form.received_breakdown || {})
+                .reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
+        },
+        // "Received Via" is no longer picked separately — it's whichever
+        // payment modes the verifier actually entered an amount for above.
+        receivedViaModes() {
+            return Object.entries(this.form.received_breakdown || {})
+                .filter(([, v]) => v !== null && v !== '' && v !== undefined)
+                .map(([mode]) => mode);
+        },
+        hasCheckMode() {
+            return this.receivedViaModes.some(m => m.toLowerCase() === 'check');
+        },
         variance() {
-            if (this.form.received_amount === null || this.form.received_amount === '') return 0;
+            if (!this.hasReceivedInput) return 0;
             if (!this.item) return 0;
-            return Math.round(((parseFloat(this.form.received_amount) - parseFloat(this.item.total_amount)) + Number.EPSILON) * 100) / 100;
+            return Math.round(((this.totalReceived - parseFloat(this.item.total_amount)) + Number.EPSILON) * 100) / 100;
         },
         remarksPlaceholder() {
             if (this.form.status === 'Approve' && this.variance !== 0) {
@@ -180,21 +299,46 @@ export default {
     methods: {
         show() {
             this.form.reset();
+            this.customModes = [];
+            this.newModeSelect = '';
+            this.newModeCustomLabel = '';
+            const breakdown = {};
+            this.paymentBreakdown.forEach(row => {
+                breakdown[row.mode] = null;
+            });
+            this.form.received_breakdown = breakdown;
             this.showModal = true;
         },
+        addPaymentMode() {
+            const label = this.newModeSelect === '__other__' ? this.newModeCustomLabel.trim() : this.newModeSelect;
+            if (!label) return;
+            const exists = this.displayRows.some(r => r.mode.toLowerCase() === label.toLowerCase());
+            if (!exists) {
+                this.customModes.push(label);
+                this.form.received_breakdown[label] = null;
+            }
+            this.newModeSelect = '';
+            this.newModeCustomLabel = '';
+        },
+        removeCustomMode(mode) {
+            this.customModes = this.customModes.filter(m => m !== mode);
+            delete this.form.received_breakdown[mode];
+        },
         submit() {
+            if (this.form.status === 'Approve' && !this.hasReceivedInput) {
+                this.form.setError('received_amount', 'Enter the amount received for at least one payment method.');
+                return;
+            }
             if (this.form.status === 'Approve' && this.variance !== 0 && !this.form.remarks?.trim()) {
                 this.form.setError('remarks', 'Remarks are required when there is a variance.');
                 return;
             }
-            if (this.form.status === 'Approve' && !this.form.received_via) {
-                this.form.setError('received_via', 'Select how this was received.');
-                return;
-            }
-            if (this.form.received_via === 'check' && !this.form.reference_no?.trim()) {
+            if (this.hasCheckMode && !this.form.reference_no?.trim()) {
                 this.form.setError('reference_no', 'Reference no. is required for check payments.');
                 return;
             }
+            this.form.received_amount = this.totalReceived;
+            this.form.received_via = this.receivedViaModes.join(', ');
             // Absolute path: the relative form resolved against the current URL
             // and broke on any route deeper than /remittances.
             this.form.post(`/remittances/${this.item.id}/approve`, {
@@ -216,7 +360,7 @@ export default {
         },
         formatCurrency(value) {
             if (!value && value !== 0) return '-';
-            return '₱' + Number(value).toFixed(2);
+            return '₱' + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
     },
 };
@@ -255,6 +399,40 @@ export default {
     font-size: 0.85rem;
     font-weight: 600;
     color: #16422c;
+}
+
+.received-table { font-size: 0.85rem; }
+.received-table th { color: #6b8c85; font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; border-top: none; }
+.received-table td { vertical-align: middle; }
+.received-table input { width: 120px; }
+
+.remove-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #c62828;
+    border-radius: 6px;
+}
+.remove-mode-btn:hover { background: #ffebee; }
+
+.add-mode-row .form-select,
+.add-mode-row .form-control { font-size: 0.8rem; }
+
+.received-via-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    margin-right: 6px;
+    border-radius: 20px;
+    background: rgba(61,141,122,0.12);
+    color: #16322e;
+    font-weight: 600;
+    font-size: 0.78rem;
 }
 
 .variance-line {

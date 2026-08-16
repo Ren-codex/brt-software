@@ -22,6 +22,8 @@ use App\Models\AppSetting;
 use App\Http\Resources\Modules\SalesOrderResource;
 use App\Services\Accounting\JournalEntryService;
 use App\Services\Modules\InventoryService;
+use Illuminate\Support\Facades\Auth;
+use App\Services\System\Permission\PermissionService;
 
 
 class SalesOrderClass
@@ -41,6 +43,10 @@ class SalesOrderClass
     }
 
     public function lists($request){
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
         $returnStatuses = ['sales-returned', 'sales-return-approval', 'partially-returned'];
         $requestedStatuses = is_array($request->status) ? $request->status : [$request->status];
         $requestedStatuses = array_values(array_filter($requestedStatuses));
@@ -93,6 +99,13 @@ class SalesOrderClass
             })
             ->when($request->status_id, function ($query, $status_id) {
                 $query->where('status_id', $status_id);
+            })
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->where(function ($salesOrderQuery) use ($employeeId) {
+                    $salesOrderQuery
+                        ->where('added_by_id', $employeeId)
+                        ->orWhere('sales_rep_id', $employeeId);
+                });
             });
 
         $data = SalesOrderResource::collection(
@@ -758,11 +771,23 @@ class SalesOrderClass
     }
 
     public function dashboard(){
-        $total_sales_orders = SalesOrder::count();
-        $today_orders = SalesOrder::whereDate('created_at', today())->count();
-        $total_revenue = SalesOrder::where('status_id', '!=', ListStatus::getBySlug('cancelled')?->id ?? 0)->sum('total_amount') ?? 0;
-        $pending_orders = SalesOrder::where('status_id', ListStatus::getBySlug('pending')?->id ?? 0)->count();
-        $cancelled_orders = SalesOrder::where('status_id', ListStatus::getBySlug('cancelled')?->id ?? 0)->count();
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+        $base = SalesOrder::query()
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->where(function ($salesOrderQuery) use ($employeeId) {
+                    $salesOrderQuery
+                        ->where('added_by_id', $employeeId)
+                        ->orWhere('sales_rep_id', $employeeId);
+                });
+            });
+        $total_sales_orders = (clone $base)->count();
+        $today_orders = (clone $base)->whereDate('created_at', today())->count();
+        $total_revenue = (clone $base)->where('status_id', '!=', ListStatus::getBySlug('cancelled')?->id ?? 0)->sum('total_amount') ?? 0;
+        $pending_orders = (clone $base)->where('status_id', ListStatus::getBySlug('pending')?->id ?? 0)->count();
+        $cancelled_orders = (clone $base)->where('status_id', ListStatus::getBySlug('cancelled')?->id ?? 0)->count();
 
         return [
             'total_sales_orders' => $total_sales_orders,

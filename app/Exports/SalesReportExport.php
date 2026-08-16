@@ -46,6 +46,9 @@ class SalesReportExport implements WithMultipleSheets
             'sales-by-employee' => [
                 new SalesReportSheet('Sales By Employee', $this->salesRepRows()),
             ],
+            'employee-summary' => [
+                new SalesReportSheet('Employee Summary', $this->employeeSummaryRows()),
+            ],
             'sales-by-payment-type' => [
                 new SalesReportSheet('Payment Summary', $this->paymentSummaryRows($summary)),
             ],
@@ -76,6 +79,7 @@ class SalesReportExport implements WithMultipleSheets
         return match ($reportType) {
             'sales-by-item' => 'Sales by Item',
             'sales-by-employee' => 'Sales by Employee',
+            'employee-summary' => 'Employee Summary',
             'sales-by-payment-type' => 'Sales by Payment Type',
             'receipt' => 'Receipt',
             'discount' => 'Discount',
@@ -190,6 +194,28 @@ class SalesReportExport implements WithMultipleSheets
                 (int) data_get($item, 'total_orders', 0),
                 (float) data_get($item, 'average_order_value', 0),
                 (float) data_get($item, 'total_sales', 0),
+            ];
+        }
+
+        return $rows;
+    }
+
+    private function employeeSummaryRows(): array
+    {
+        $rows = [
+            ['Employee', 'SO Count', 'SO Total', 'AR Count', 'AR Total', 'AR Balance Due', 'Receipt Count', 'Receipt Total'],
+        ];
+
+        foreach (($this->reportData['employee_summary'] ?? []) as $item) {
+            $rows[] = [
+                (string) data_get($item, 'employee_name', ''),
+                (int) data_get($item, 'so_count', 0),
+                (float) data_get($item, 'so_total', 0),
+                (int) data_get($item, 'ar_count', 0),
+                (float) data_get($item, 'ar_total', 0),
+                (float) data_get($item, 'ar_balance_due', 0),
+                (int) data_get($item, 'receipt_count', 0),
+                (float) data_get($item, 'receipt_total', 0),
             ];
         }
 

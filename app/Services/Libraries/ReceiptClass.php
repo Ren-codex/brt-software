@@ -13,6 +13,7 @@ use App\Services\Accounting\JournalEntryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Services\System\Permission\PermissionService;
 
 
 class ReceiptClass
@@ -22,11 +23,25 @@ class ReceiptClass
     }
 
     public function lists($request){
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+
         return ReceiptResource::collection(
             Receipt::with(['arInvoice.sales_order.customer', 'status', 'sourceReceipt'])
                 ->where(function ($query) {
                     $query->whereNull('receipt_type')
                         ->orWhere('receipt_type', '!=', 'refund');
+                })
+                ->when($employeeId, function ($query) use ($employeeId) {
+                    $query->whereHas('arInvoice.sales_order', function ($soQuery) use ($employeeId) {
+                        $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                            $salesOrderQuery
+                                ->where('added_by_id', $employeeId)
+                                ->orWhere('sales_rep_id', $employeeId);
+                        });
+                    });
                 })
                 ->when($request->location_id, function ($query, $locationId) {
                     $query->whereHas('arInvoice.sales_order', function ($q) use ($locationId) {
@@ -62,14 +77,29 @@ class ReceiptClass
     }
 
     public function dashboard(){
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
         $cancelledId = ListStatus::getBySlug('cancelled')?->id ?? 0;
 
+        $base = Receipt::where('status_id', '!=', $cancelledId)
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('arInvoice.sales_order', function ($soQuery) use ($employeeId) {
+                    $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                        $salesOrderQuery
+                            ->where('added_by_id', $employeeId)
+                            ->orWhere('sales_rep_id', $employeeId);
+                    });
+                });
+            });
+
         return [
-            'total_receipts' => Receipt::where('status_id', '!=', $cancelledId)
+            'total_receipts' => (clone $base)
                 ->where(function ($q) {
                     $q->whereNull('receipt_type')->orWhere('receipt_type', '!=', 'refund');
                 })->count(),
-            'total_amount_collected' => Receipt::where('status_id', '!=', $cancelledId)
+            'total_amount_collected' => (clone $base)
                 ->where(function ($q) {
                     $q->whereNull('receipt_type')->orWhereNotIn('receipt_type', ['refund', 'updated']);
                 })->sum('amount_paid'),

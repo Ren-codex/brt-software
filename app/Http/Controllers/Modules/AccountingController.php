@@ -1949,7 +1949,7 @@ class AccountingController extends Controller
         }
 
         $hasReversalColumns = $this->hasJournalReversalColumns();
-        $withRelations = ['lines.account'];
+        $withRelations = ['lines.account', 'lines.bankAccount'];
 
         if ($hasReversalColumns) {
             $withRelations[] = 'reversalOf';
@@ -1977,7 +1977,7 @@ class AccountingController extends Controller
             ->when($request->filled('date_to'), function ($query) use ($request) {
                 $query->whereDate('entry_date', '<=', $request->date_to);
             })
-            ->orderByDesc('entry_date')
+            ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate($request->count ?? 15);
 
@@ -2014,6 +2014,9 @@ class AccountingController extends Controller
                     'id' => $line->id,
                     'account_name' => optional($line->account)->name,
                     'account_code' => optional($line->account)->code,
+                    'bank_account_name' => optional($line->bankAccount)->bank_name
+                        ? optional($line->bankAccount)->bank_name . (optional($line->bankAccount)->account_name ? ' — ' . $line->bankAccount->account_name : '')
+                        : null,
                     'line_type' => $line->line_type,
                     'amount' => number_format((float) $line->amount, 2, '.', ','),
                     'description' => $line->description,

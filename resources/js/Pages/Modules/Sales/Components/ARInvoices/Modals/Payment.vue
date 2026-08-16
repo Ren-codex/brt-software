@@ -169,7 +169,7 @@
     </div>
 
     <div v-if="showSuccessModal" class="modal-overlay active" @click.self="closeSuccessModal">
-        <div class="modal-container modal-sm" @click.stop>
+        <div class="modal-container modal-md" @click.stop>
             <div class="modal-header">
                 <div class="d-flex align-items-center gap-3">
                     <span class="modal-header-icon">
@@ -184,7 +184,10 @@
             <div class="modal-body">
                 <div class="payment-success-card">
                     <div class="payment-success-icon">
-                        <i class="ri-checkbox-circle-fill"></i>
+                        <svg class="success-checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                            <circle class="success-checkmark-circle" cx="26" cy="26" r="25" fill="none" />
+                            <path class="success-checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                        </svg>
                     </div>
                     <h5>Payment recorded successfully</h5>
                     <p>The {{ successPayment.paymentModeLabel }} payment for this invoice has been recorded.</p>
@@ -205,10 +208,6 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="success-footer-btn success-footer-btn-close" @click="closeSuccessModal">
-                    <i class="ri-close-line me-2"></i>
-                    Close
-                </button>
                 <button
                     type="button"
                     class="success-footer-btn success-footer-btn-print"
@@ -850,12 +849,54 @@ export default {
     width: 60px;
     height: 60px;
     margin: 0 auto 0.7rem;
-    border-radius: 16px;
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg, #d8f2e3 0%, #e8f8ef 100%);
-    color: #1f7a4d;
-    font-size: 1.6rem;
+}
+
+.success-checkmark {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: block;
+    stroke-width: 3;
+    stroke: #3d8d7a;
+    stroke-miterlimit: 10;
+    box-shadow: inset 0 0 0 #3d8d7a;
+    animation: successCheckmarkFill 0.4s ease-in-out 0.4s forwards, successCheckmarkScale 0.3s ease-in-out 0.9s both;
+}
+
+.success-checkmark-circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    stroke-width: 3;
+    stroke-miterlimit: 10;
+    stroke: #3d8d7a;
+    fill: none;
+    animation: successCheckmarkStroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.success-checkmark-check {
+    transform-origin: 50% 50%;
+    stroke: #fff;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: successCheckmarkStroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+@keyframes successCheckmarkStroke {
+    100% { stroke-dashoffset: 0; }
+}
+
+@keyframes successCheckmarkScale {
+    0%, 100% { transform: none; }
+    50% { transform: scale3d(1.1, 1.1, 1); }
+}
+
+@keyframes successCheckmarkFill {
+    100% { box-shadow: inset 0 0 0 30px #3d8d7a; }
 }
 
 .payment-success-card h5 {

@@ -28,6 +28,12 @@ class SalesOrderResource extends JsonResource
             'sub_status' => $this->sub_status,
             'total_amount' => $this->total_amount,
             'added_by' => $this->created_by ? $this->created_by->employee : null,
+            'sales_rep' => $this->salesRep ? [
+                'id' => $this->salesRep->id,
+                'fullname' => $this->salesRep->fullname ?? trim(($this->salesRep->firstname ?? '') . ' ' . ($this->salesRep->lastname ?? '')),
+                'firstname' => $this->salesRep->firstname,
+                'lastname' => $this->salesRep->lastname,
+            ] : null,
             'sales_rep_id' => $this->sales_rep_id,
             'driver_id' => $this->driver_id,
             'payment_mode' => $this->payment_mode,
@@ -77,6 +83,10 @@ class SalesOrderResource extends JsonResource
                     'payment_mode'   => $r->payment_mode,
                     'receipt_type'   => $r->receipt_type,
                     'status'         => $r->status,
+                    'sales_rep'      => $inv->sales_order?->salesRep ? [
+                        'id' => $inv->sales_order->salesRep->id,
+                        'fullname' => $inv->sales_order->salesRep->fullname ?? trim(($inv->sales_order->salesRep->firstname ?? '') . ' ' . ($inv->sales_order->salesRep->lastname ?? '')),
+                    ] : null,
                 ])->values(),
             ])->values(),
             'created_at' => $this->created_at->format('M d, Y'),

@@ -60,6 +60,7 @@
                                     <th style="width:3%">#</th>
                                     <th class="text-center" style="width:12%">OR Number</th>
                                     <th class="text-center" style="width:12%">Customer</th>
+                                    <th class="text-center" style="width:12%">Sales Rep</th>
                                     <th class="text-center" style="width:12%">Payment Date</th>
                                     <th class="text-center" style="width:10%">Type</th>
                                     <th class="text-center" style="width:12%">Amount Balance</th>
@@ -70,10 +71,10 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <TableLoadingRow v-if="loading" :colspan="10" message="Loading receipts..." />
+                                <TableLoadingRow v-if="loading" :colspan="11" message="Loading receipts..." />
                                 <template v-else>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="10">
+                                    <td colspan="11">
                                         <div class="sales-empty-state">
                                             <i class="ri-shopping-cart-line"></i>
                                             <p>No receipts found.</p>
@@ -95,6 +96,7 @@
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.receipt_number }}</td>
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
+                                        <td class="text-center">{{ list.sales_rep?.fullname || list.sales_order?.sales_rep?.fullname || '-' }}</td>
                                         <td class="text-center">{{ list.receipt_date }}</td>
                                         <td class="text-center">
                                             <span class="badge" :class="getReceiptTypeClass(list.receipt_type)">
@@ -122,7 +124,7 @@
                                         </td>
                                     </tr>
                                     <tr v-if="expandedRows.includes(index)" class="bg-light">
-                                        <td colspan="10" class="p-0">
+                                        <td colspan="11" class="p-0">
                                             <div class="p-4">
                                                 <h6 class="text-primary mb-3">
                                                     <i class="ri-file-list-line me-2"></i>Order Details
@@ -131,8 +133,9 @@
                                                     <div class="col-md-6">
                                                         <div class="card border-0 shadow-sm ">
                                                             <div class="card-body">
-                                                <h6 class="card-title text-muted small mb-2">Receipt Information</h6>
+                                                                <h6 class="card-title text-muted small mb-2">Receipt Information</h6>
                                                                 <p class="mb-1"><strong>Receipt Date:</strong> {{ list.receipt_date }}</p>
+                                                                <p class="mb-1"><strong>Sales Rep:</strong> {{ list.sales_rep?.fullname || list.sales_order?.sales_rep?.fullname || '-' }}</p>
                                                                 <p class="mb-1"><strong>Receipt Type:</strong> {{ getReceiptTypeLabel(list.receipt_type) }}</p>
                                                                 <p v-if="list.source_receipt?.receipt_number" class="mb-1"><strong>Source Receipt:</strong> {{ list.source_receipt.receipt_number }}</p>
                                                             </div>

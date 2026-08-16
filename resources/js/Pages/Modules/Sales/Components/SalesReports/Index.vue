@@ -380,29 +380,50 @@
             </div>
           </div>
 
-          <div v-else-if="activeReport === 'sales-by-employee'" class="data-table">
-            <div class="table-title">
-              <i class="ri-team-line"></i>
-              <h3>Sales by Employee</h3>
+          <div v-else-if="activeReport === 'employee-summary'" class="data-table">
+            <div class="table-title employee-summary-title">
+              <div class="d-flex align-items-center gap-2">
+                <i class="ri-team-line"></i>
+                <h3>Employee Summary</h3>
+              </div>
+              <div class="employee-search">
+                <i class="ri-search-line"></i>
+                <input
+                  v-model="employeeSearch"
+                  type="text"
+                  placeholder="Search employee..."
+                  class="employee-search-input"
+                />
+              </div>
             </div>
             <table>
               <thead>
                 <tr>
-                  <th>Sales Rep</th>
-                  <th class="text-right">Orders</th>
-                  <th class="text-right">Avg Order</th>
-                  <th class="text-right">Sales</th>
+                  <th>Employee</th>
+                  <th class="text-right">SO Count</th>
+                  <th class="text-right">SO Total</th>
+                  <th class="text-right">AR Count</th>
+                  <th class="text-right">AR Total</th>
+                  <th class="text-right">AR Balance Due</th>
+                  <th class="text-right">Receipt Count</th>
+                  <th class="text-right">Receipt Total</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in report?.sales_rep_report || []" :key="`employee-report-${index}`">
-                  <td>{{ item.sales_rep_name }}</td>
-                  <td class="text-right">{{ item.total_orders }}</td>
-                  <td class="text-right">{{ formatCurrency(item.average_order_value) }}</td>
-                  <td class="text-right amount">{{ formatCurrency(item.total_sales) }}</td>
+                <tr v-for="(item, index) in filteredEmployeeSummary" :key="`employee-summary-${index}`">
+                  <td>{{ item.employee_name }}</td>
+                  <td class="text-right">{{ item.so_count }}</td>
+                  <td class="text-right amount">{{ formatCurrency(item.so_total) }}</td>
+                  <td class="text-right">{{ item.ar_count }}</td>
+                  <td class="text-right amount">{{ formatCurrency(item.ar_total) }}</td>
+                  <td class="text-right">{{ formatCurrency(item.ar_balance_due) }}</td>
+                  <td class="text-right">{{ item.receipt_count }}</td>
+                  <td class="text-right amount">{{ formatCurrency(item.receipt_total) }}</td>
                 </tr>
-                <tr v-if="!report?.sales_rep_report?.length">
-                  <td colspan="4" class="empty-message">No employee sales found</td>
+                <tr v-if="!filteredEmployeeSummary.length">
+                  <td colspan="8" class="empty-message">
+                    {{ employeeSearch ? 'No employees match your search' : 'No employee activity found' }}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -605,6 +626,7 @@ const createDefaultReport = () => ({
   sales_rep_report: [],
   daily_sales_orders: [],
   receipt_report: [],
+  employee_summary: [],
   discount_summary: { discounted_orders: 0, total_discount: 0, average_discount: 0, orders: [] },
   tax_summary: { enabled: false, total_tax: 0, message: 'Tax reporting is not yet configured in sales orders.' },
   payment_summary: { cash: null, credit: null, other: null, grand_total_sales: 0, grand_total_orders: 0 },
@@ -626,10 +648,11 @@ export default {
       downloading: false,
       showDownloadMenu: false,
       activeReport: 'sales-summary',
+      employeeSearch: '',
       reportTabs: [
         { key: 'sales-summary', label: 'Sales Summary', icon: 'ri-line-chart-line' },
         { key: 'sales-by-item', label: 'Sales by Item', icon: 'ri-box-3-line' },
-        { key: 'sales-by-employee', label: 'Sales by Employee', icon: 'ri-team-line' },
+        { key: 'employee-summary', label: 'Employee Summary', icon: 'ri-team-line' },
         { key: 'sales-by-payment-type', label: 'Sales by Payment Type', icon: 'ri-wallet-3-line' },
         { key: 'receipt', label: 'Receipt', icon: 'ri-receipt-line' },
         { key: 'discount', label: 'Discount', icon: 'ri-price-tag-3-line' },
@@ -653,6 +676,12 @@ export default {
         { key: 'credit', label: 'Credit', ...(this.report?.payment_summary?.credit || { total_orders: 0, total_sales: 0 }) },
         { key: 'other', label: 'Other', ...(this.report?.payment_summary?.other || { total_orders: 0, total_sales: 0 }) },
       ];
+    },
+    filteredEmployeeSummary() {
+      const rows = this.report?.employee_summary || [];
+      const term = this.employeeSearch.trim().toLowerCase();
+      if (!term) return rows;
+      return rows.filter(item => (item.employee_name || '').toLowerCase().includes(term));
     },
   },
   created() {
@@ -1036,6 +1065,39 @@ export default {
   font-weight: 700;
   color: #20413a;
   margin: 0;
+}
+
+.employee-summary-title {
+  justify-content: space-between;
+}
+
+.employee-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.employee-search i {
+  position: absolute;
+  left: 0.65rem;
+  color: #8ea298;
+  font-size: 0.95rem;
+}
+
+.employee-search-input {
+  width: 220px;
+  padding: 0.45rem 0.75rem 0.45rem 2rem;
+  border: 1px solid #d7e5de;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  background: white;
+  transition: all 0.15s ease;
+}
+
+.employee-search-input:focus {
+  outline: none;
+  border-color: #3d8d7a;
+  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.12);
 }
 
 table {

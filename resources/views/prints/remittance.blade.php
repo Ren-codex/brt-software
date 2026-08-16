@@ -330,6 +330,10 @@
                             <td class="label">Created By:</td>
                             <td>{{ $remittance->createdBy->username ?? 'N/A' }}</td>
                         </tr>
+                        <tr>
+                            <td class="label">Created At:</td>
+                            <td>{{ $remittance->created_at ? \Carbon\Carbon::parse($remittance->created_at)->format('F d, Y h:i A') : 'N/A' }}</td>
+                        </tr>
                         @if($remittance->approved_by)
                         <tr>
                             <td class="label">Approved By:</td>
@@ -347,10 +351,10 @@
                         @if($remittance->received_via)
                         <tr>
                             <td class="label">Received Via:</td>
-                            <td>{{ $remittance->received_via === 'check' ? 'Check' : 'Cash' }}</td>
+                            <td>{{ collect(explode(',', $remittance->received_via))->map(fn($v) => ucfirst(trim($v)))->implode(', ') }}</td>
                         </tr>
                         @endif
-                        @if($remittance->received_via === 'check' && $remittance->reference_no)
+                        @if(str_contains(strtolower($remittance->received_via ?? ''), 'check') && $remittance->reference_no)
                         <tr>
                             <td class="label">Reference No.:</td>
                             <td>{{ $remittance->reference_no }}</td>

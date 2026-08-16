@@ -74,6 +74,7 @@ class ReportsController extends Controller
                 'sales-summary',
                 'sales-by-item',
                 'sales-by-employee',
+                'employee-summary',
                 'sales-by-payment-type',
                 'receipt',
                 'discount',

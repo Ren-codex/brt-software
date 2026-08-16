@@ -58,6 +58,10 @@ class ReceiptResource extends JsonResource
             'created_at' => Carbon::parse($this->created_at)->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at,
             'payment_mode' => $this->payment_mode ?? optional($salesOrder)->payment_mode,
+            'sales_rep' => $salesOrder?->salesRep ? [
+                'id' => $salesOrder->salesRep->id,
+                'fullname' => $salesOrder->salesRep->fullname ?? trim(($salesOrder->salesRep->firstname ?? '') . ' ' . ($salesOrder->salesRep->lastname ?? '')),
+            ] : null,
             'return_policy' => [
                 'window_days' => $returnWindowDays,
                 'days_since_receipt' => $daysSinceReceipt,

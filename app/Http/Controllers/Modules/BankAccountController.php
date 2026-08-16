@@ -20,7 +20,7 @@ class BankAccountController extends Controller
      * bank's transactions into the wrong system account.
      */
     private const RESERVED_SYSTEM_CODES = [
-        '1000', '1011', '1090', '1100', '1200',
+        '1000', '1011', '1012', '1050', '1090', '1100', '1200',
         '2000', '2100',
         '4100', '4110', '4200',
         '5100', '5200', '5201', '5202', '5300', '5310', '5311', '5320', '5341', '5370', '5390', '5400', '5900',

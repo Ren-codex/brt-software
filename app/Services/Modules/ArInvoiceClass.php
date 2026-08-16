@@ -2,6 +2,7 @@
 
 namespace App\Services\Modules;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -13,6 +14,7 @@ use App\Http\Resources\Modules\ArInvoiceResource;
 use App\Models\SalesOrderIncentive;
 use App\Services\PrintClass;
 use App\Services\Accounting\JournalEntryService;
+use App\Services\System\Permission\PermissionService;
 
 
 class ArInvoiceClass
@@ -24,10 +26,24 @@ class ArInvoiceClass
         $this->print = $print;
     }
     public function lists($request){
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+
         $data = ArInvoiceResource::collection(
-            ArInvoice::with(['sales_order.customer', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status'])
+            ArInvoice::with(['sales_order.customer', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status'])
                 ->whereHas('sales_order', function ($q) {
                     $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), ['credit', 'credit sales']);
+                })
+                ->when($employeeId, function ($query) use ($employeeId) {
+                    $query->whereHas('sales_order', function ($soQuery) use ($employeeId) {
+                        $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                            $salesOrderQuery
+                                ->where('added_by_id', $employeeId)
+                                ->orWhere('sales_rep_id', $employeeId);
+                        });
+                    });
                 })
                 ->when($request->location_id, function ($query, $locationId) {
                     $query->whereHas('sales_order', function ($q) use ($locationId) {
@@ -57,11 +73,58 @@ class ArInvoiceClass
         return $data;
     }
 
+    public function remittanceCandidates($request)
+    {
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+
+        $data = ArInvoiceResource::collection(
+            ArInvoice::with(['sales_order.customer', 'sales_order.salesRep', 'status'])
+                ->whereHas('sales_order', function ($q) {
+                    $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), ['credit', 'credit sales']);
+                })
+                ->where('balance_due', '>', 0)
+                ->when($employeeId, function ($query) use ($employeeId) {
+                    $query->whereHas('sales_order', function ($soQuery) use ($employeeId) {
+                        $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                            $salesOrderQuery
+                                ->where('added_by_id', $employeeId)
+                                ->orWhere('sales_rep_id', $employeeId);
+                        });
+                    });
+                })
+                ->when($request->location_id, function ($query, $locationId) {
+                    $query->whereHas('sales_order', function ($soQuery) use ($locationId) {
+                        $soQuery->where('location_id', $locationId);
+                    });
+                })
+                ->orderBy('created_at', 'DESC')
+                ->paginate($request->count ?: 10)
+        );
+
+        return $data;
+    }
+
 
     public function dashboard(){
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
         $cancelledId = ListStatus::getBySlug('cancelled')?->id ?? 0;
 
-        $base = ArInvoice::where('status_id', '!=', $cancelledId);
+        $base = ArInvoice::where('status_id', '!=', $cancelledId)
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('sales_order', function ($soQuery) use ($employeeId) {
+                    $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                        $salesOrderQuery
+                            ->where('added_by_id', $employeeId)
+                            ->orWhere('sales_rep_id', $employeeId);
+                    });
+                });
+            });
 
         $total_invoices      = (clone $base)->count();
         $outstanding_balance = (clone $base)->sum('balance_due') ?? 0.00;

@@ -15,7 +15,7 @@
                     <div class="d-flex gap-2 flex-wrap">
                         <button v-if="canApprove && item.status?.slug === 'for-verification'" class="create-btn" @click="openApprovalModal">
                             <i class="ri-check-line"></i>
-                            <span>Approval</span>
+                            <span>Verify</span>
                         </button>
                         <button v-if="item.status?.slug === 'for-verification' && can('sales', 'remittances', 'admin')" class="create-btn" @click="openDelete(item.id)">
                             <i class="ri-delete-bin-line"></i>
@@ -78,6 +78,13 @@
                                 </div>
                             </div>
                             <div class="profile-info-item">
+                                <div class="profile-label">Created At</div>
+                                <div class="profile-value">
+                                    <i class="ri-time-line"></i>
+                                    {{ formatDateTime(item.created_at) }}
+                                </div>
+                            </div>
+                            <div class="profile-info-item">
                                 <div class="profile-label">Approved By</div>
                                 <div class="profile-value">
                                     <i class="ri-shield-user-line"></i>
@@ -123,10 +130,10 @@
                                 <div class="profile-label">Received Via</div>
                                 <div class="profile-value">
                                     <i class="ri-bank-card-line"></i>
-                                    {{ item.received_via === 'check' ? 'Check' : 'Cash' }}
+                                    {{ receivedViaLabel(item.received_via) }}
                                 </div>
                             </div>
-                            <div class="profile-info-item" v-if="item.received_via === 'check' && item.reference_no">
+                            <div class="profile-info-item" v-if="item.received_via?.toLowerCase().includes('check') && item.reference_no">
                                 <div class="profile-label">Reference No.</div>
                                 <div class="profile-value">
                                     <i class="ri-hashtag"></i>
@@ -317,6 +324,17 @@ export default {
                 hour: 'numeric',
                 minute: '2-digit',
             });
+        },
+        // Older records stored a single lowercase value ('cash'/'check');
+        // newer ones store a comma-separated list of payment modes as
+        // entered in the verification table. Capitalize each for display.
+        receivedViaLabel(value) {
+            if (!value) return '-';
+            return value.split(',')
+                .map(v => v.trim())
+                .filter(Boolean)
+                .map(v => v.charAt(0).toUpperCase() + v.slice(1))
+                .join(', ');
         },
         async markAsRemitted() {
             const result = await Swal.fire({

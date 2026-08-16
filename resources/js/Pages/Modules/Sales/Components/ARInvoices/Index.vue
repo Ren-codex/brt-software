@@ -59,6 +59,7 @@
                                     <th class="text-center" style="width:12%">Invoice Number</th>
                                     <th class="text-center" style="width:12%">Sales Order</th>
                                     <th class="text-center" style="width:12%">Customer</th>
+                                    <th class="text-center" style="width:12%">Sales Rep</th>
                                     <th class="text-center" style="width:12%">Invoice Date</th>
                                     <th class="text-center" style="width:12%">Status</th>
                                     <th class="text-end" style="width:12%">Balance Due</th>
@@ -67,7 +68,7 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <TableLoadingRow v-if="loading" :colspan="9" message="Loading AR invoices..." />
+                                <TableLoadingRow v-if="loading" :colspan="10" message="Loading AR invoices..." />
                                 <template v-else>
                                 <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" :class="{
@@ -88,6 +89,7 @@
                                         <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
                                         <td class="text-center">{{ list.sales_order?.so_number || '-' }}</td>
                                         <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
+                                        <td class="text-center">{{ list.sales_rep?.fullname || '-' }}</td>
                                         <td class="text-center">{{ list.invoice_date }}</td>
                                         <td class="text-center">
                                             <span class="status-badge" :style="getStatusStyle(list.status)">
@@ -155,6 +157,10 @@
                                                                         }}</span>
                                                                 </div>
                                                                 <div class="info-item">
+                                                                    <span class="info-label">Sales Rep:</span>
+                                                                    <span class="info-value">{{ list.sales_rep?.fullname || '-' }}</span>
+                                                                </div>
+                                                                <div class="info-item">
                                                                     <span class="info-label">Amount Balance:</span>
                                                                     <span class="info-value amount">₱{{
                                                                         list.balance_due?.toFixed(2) }}</span>
@@ -214,7 +220,7 @@
                                     </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9">
+                                    <td colspan="10">
                                         <div class="sales-empty-state">
                                             <i class="ri-inbox-line"></i>
                                             <p>No invoices found.</p>

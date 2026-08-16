@@ -84,7 +84,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="driver_id" class="form-label">Assigned To (Driver)<span class="text-danger">*</span></label>
+                                    <label for="driver_id" class="form-label">Assigned To (Driver)</label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
                                         <Multiselect
@@ -103,7 +103,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="location" class="form-label">Location<span class="text-danger">*</span></label>
+                                    <label for="location" class="form-label">Location<span v-if="!isWalkInCustomer" class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-map-pin-line input-icon"></i>
                                         <text-input
@@ -895,23 +895,24 @@
         @proceed="proceedPayment"
     />
 
-    <div v-if="showChargeSuccessModal" class="modal-overlay active charge-success-modal" @click.self="closeChargeSuccessModal">
+    <div v-if="showChargeSuccessModal" class="modal-overlay active order-review-modal" @click.self="closeChargeSuccessModal">
         <div class="modal-container modal-md" @click.stop>
-            <div class="modal-header">
-                <div class="d-flex align-items-center gap-3">
-                    <span class="modal-header-icon">
-                        <i class="ri-checkbox-circle-line"></i>
-                    </span>
-                    <h4 class="mb-0">Payment Successful</h4>
-                </div>
-                <button type="button" class="close-btn" @click="closeChargeSuccessModal">
-                    <i class="ri-close-line"></i>
+            <div class="modal-header bg-primary text-white">
+                <h4 class="mb-0 text-white">
+                    <i class="ri-checkbox-circle-line me-2"></i>
+                    Payment Successful
+                </h4>
+                <button class="close-btn text-white" @click="closeChargeSuccessModal">
+                    <i class="ri-close-line fs-20"></i>
                 </button>
             </div>
-            <div class="modal-body payment-type-modal-body">
+            <div class="modal-body p-4 payment-type-modal-body">
                 <div class="payment-success-card">
                     <div class="payment-success-icon">
-                        <i class="ri-checkbox-circle-fill"></i>
+                        <svg class="success-checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                            <circle class="success-checkmark-circle" cx="26" cy="26" r="25" fill="none" />
+                            <path class="success-checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                        </svg>
                     </div>
                     <h5>Charge completed successfully</h5>
                     <p>The cash payment for this order has been recorded.</p>
@@ -931,12 +932,12 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="success-footer-btn success-footer-btn-close" @click="closeChargeSuccessModal">
+            <div class="modal-footer bg-light border-0 p-4">
+                <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeChargeSuccessModal">
                     <i class="ri-close-line me-2"></i>
                     Close
                 </button>
-                <button type="button" class="success-footer-btn success-footer-btn-print" @click="openPrintPromptAfterCharge">
+                <button type="button" class="btn btn-primary payment-modal-btn" @click="openPrintPromptAfterCharge">
                     <i class="ri-printer-line me-2"></i>
                     Print Sales Invoice
                 </button>
@@ -1133,7 +1134,7 @@ export default {
         canAddItem() {
             const hasCustomer = this.hasCustomerSelection;
             const hasOrderDate = !!this.form.order_date;
-            const hasValidLocation = !!String(this.form.delivery_location || '').trim();
+            const hasValidLocation = this.isWalkInCustomer || !!String(this.form.delivery_location || '').trim();
 
             return hasCustomer && hasOrderDate && hasValidLocation;
         },
@@ -1472,7 +1473,7 @@ export default {
             if (!this.form.sales_rep_id) {
                 errors.sales_rep_id = 'Sales rep is required.';
             }
-            if (!String(this.form.delivery_location || '').trim()) {
+            if (!this.isWalkInCustomer && !String(this.form.delivery_location || '').trim()) {
                 errors.delivery_location = 'Location is required.';
             }
             if (!this.form.items.length) {
@@ -2934,15 +2935,57 @@ export default {
 }
 
 .payment-success-icon {
-    width: 60px;
-    height: 60px;
+    width: 52px;
+    height: 52px;
     margin: 0 auto 0.7rem;
-    border-radius: 16px;
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg, #d8f2e3 0%, #e8f8ef 100%);
-    color: #1f7a4d;
-    font-size: 1.6rem;
+}
+
+.success-checkmark {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: block;
+    stroke-width: 3;
+    stroke: #3d8d7a;
+    stroke-miterlimit: 10;
+    box-shadow: inset 0 0 0 #3d8d7a;
+    animation: successCheckmarkFill 0.4s ease-in-out 0.4s forwards, successCheckmarkScale 0.3s ease-in-out 0.9s both;
+}
+
+.success-checkmark-circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    stroke-width: 3;
+    stroke-miterlimit: 10;
+    stroke: #3d8d7a;
+    fill: none;
+    animation: successCheckmarkStroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.success-checkmark-check {
+    transform-origin: 50% 50%;
+    stroke: #fff;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: successCheckmarkStroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+@keyframes successCheckmarkStroke {
+    100% { stroke-dashoffset: 0; }
+}
+
+@keyframes successCheckmarkScale {
+    0%, 100% { transform: none; }
+    50% { transform: scale3d(1.1, 1.1, 1); }
+}
+
+@keyframes successCheckmarkFill {
+    100% { box-shadow: inset 0 0 0 26px #3d8d7a; }
 }
 
 .payment-success-card h5 {
@@ -3478,39 +3521,6 @@ tfoot .footer-value {
     padding: 0.45rem 0.75rem;
     font-size: 0.72rem;
     border-radius: 9px;
-}
-
-.success-footer-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 150px;
-    padding: 0.55rem 1.1rem;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    font-weight: 700;
-    font-size: 0.82rem;
-    transition: all 0.2s ease;
-}
-
-.success-footer-btn-close {
-    background: #3b82f6;
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-}
-
-.success-footer-btn-close:hover {
-    background: #2563eb;
-}
-
-.success-footer-btn-print {
-    background: #3D8D7A;
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
-}
-
-.success-footer-btn-print:hover {
-    background: #2f6f5f;
 }
 
 .spinner {

@@ -219,12 +219,6 @@ export default {
           description: 'Manage sales orders'
         },
         {
-          id: 'sales_returns',
-          label: 'Sales Returns',
-          icon: 'ri-shopping-bag-line',
-          description: 'Manage sales returns'
-        },
-        {
           id: 'ar_invoices',
           label: 'AR Invoices',
           icon: 'ri-file-list-line',
@@ -241,6 +235,12 @@ export default {
           label: 'Remittances',
           icon: 'ri-bank-line',
           description: 'Remittance records'
+        },
+        {
+          id: 'sales_returns',
+          label: 'Sales Returns',
+          icon: 'ri-shopping-bag-line',
+          description: 'Manage sales returns'
         },
         {
           id: 'sales-reports',

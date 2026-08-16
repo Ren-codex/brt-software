@@ -6,8 +6,10 @@ use App\Services\DropdownClass;
 use App\Services\PrintClass;
 use App\Traits\HandlesTransaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Services\Modules\RemittanceClass;
 use App\Http\Requests\Modules\RemittanceRequest;
+use App\Services\System\Permission\PermissionService;
 
 class RemittanceController extends Controller
 {
@@ -46,25 +48,71 @@ class RemittanceController extends Controller
 
     private function getDashboardMetrics()
     {
-        $totalRemittances = \App\Models\Remittance::count();
-        $todayRemittances = \App\Models\Remittance::whereDate('created_at', today())->count();
+        // Scoped by admin permission, not merely by having an employee record -
+        // an Administrator who also has an employee profile (e.g. superadmin01)
+        // must still see the org-wide total, matching RemittanceClass::lists()/
+        // summary()/undepositedSummary().
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+        $base = \App\Models\Remittance::query()
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('receipts.arInvoice.sales_order', function ($soQuery) use ($employeeId) {
+                    $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                        $salesOrderQuery
+                            ->where('added_by_id', $employeeId)
+                            ->orWhere('sales_rep_id', $employeeId);
+                    });
+                });
+            });
 
-        // Only approved remittances represent cash actually turned over.
-        $totalAmountRemitted = \App\Models\Remittance::whereHas('status', function ($q) {
-            $q->where('slug', 'approved');
+        $totalRemittances = (clone $base)->count();
+        $todayRemittances = (clone $base)->whereDate('created_at', today())->count();
+
+        // Only liquidated remittances represent cash actually turned over and
+        // confirmed received. A Remittance's status is never 'approved' -
+        // RemittanceClass::approve() sets it to 'liquidated' or 'disapproved'
+        // ('approved' is a status used by other modules, e.g. stock returns).
+        $totalAmountRemitted = (clone $base)->whereHas('status', function ($q) {
+            $q->where('slug', 'liquidated');
         })->sum('total_amount');
 
-        // "Open" means still awaiting a decision. Matched on slug, since the
-        // previous comparison against the name 'liquidated' only worked by
-        // accident of MySQL's case-insensitive collation, and nothing ever set
-        // that status anyway - so this counted every remittance ever created.
-        $openRemittances = \App\Models\Remittance::whereHas('status', function ($q) {
-            $q->where('slug', 'pending');
+        // "Open" means still awaiting an approve/disapprove decision, i.e. the
+        // same states RemittanceClass::approve() itself accepts a decision
+        // from. 'pending' is a Receipt status and never appears on a
+        // Remittance, so this previously matched nothing.
+        $openRemittances = (clone $base)->whereHas('status', function ($q) {
+            $q->whereIn('slug', ['for-verification', 'remitted']);
         })->count();
+
+        // "Cash on hand" is money collected but NOT yet remitted - the
+        // org-wide equivalent of RemittanceClass::myHoldings(), which computes
+        // this per sales rep. Receipts, not Remittances: a receipt only joins
+        // a Remittance (and leaves 'pending') once someone prepares one.
+        $totalCashOnHand = \App\Models\Receipt::whereNull('remittance_id')
+            ->whereHas('status', function ($q) {
+                $q->where('slug', 'pending');
+            })
+            ->where(function ($query) {
+                $query->whereNull('receipt_type')
+                    ->orWhere('receipt_type', '!=', 'refund');
+            })
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('arInvoice.sales_order', function ($soQuery) use ($employeeId) {
+                    $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                        $salesOrderQuery
+                            ->where('added_by_id', $employeeId)
+                            ->orWhere('sales_rep_id', $employeeId);
+                    });
+                });
+            })
+            ->sum('amount_paid');
 
         return response()->json([
             'total_remittances' => $totalRemittances,
             'total_amount_remitted' => $totalAmountRemitted,
+            'total_cash_on_hand' => $totalCashOnHand,
             'today_remittances' => $todayRemittances,
             'open_remittances' => $openRemittances
         ]);
@@ -115,8 +163,39 @@ class RemittanceController extends Controller
         $request->validate([
             'status' => 'required|in:Approve,Disapprove',
             'remarks' => 'nullable|string|max:255',
-            'received_via' => 'required_if:status,Approve|nullable|in:cash,check',
-            'reference_no' => 'required_if:received_via,check|nullable|string|max:255',
+            // received_via is derived on the frontend from whichever payment
+            // modes actually got an amount entered in the verification table -
+            // Cash/GCash/Check/Bank Transfer from the receipts, plus any custom
+            // mode the verifier added - so it's a free-form comma-separated
+            // list, not a fixed enum.
+            'received_via' => [
+                'required_if:status,Approve',
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $modes = array_filter(array_map('trim', explode(',', (string) $value)));
+                    if (empty($modes)) {
+                        $fail('Select at least one payment mode.');
+                    }
+                },
+            ],
+            'reference_no' => [
+                'nullable',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($request) {
+                    $modes = array_filter(array_map('trim', explode(',', (string) $request->received_via)));
+                    $hasCheck = collect($modes)->contains(fn ($mode) => strtolower($mode) === 'check');
+                    if ($request->status === 'Approve' && $hasCheck && empty($value)) {
+                        $fail('Reference no. is required when a check payment is included.');
+                    }
+                },
+            ],
+            // Per-payment-mode amounts backing received_amount/received_via,
+            // e.g. {"Cash": 500, "GCash": 250} — used to reclassify each
+            // portion into the right GL account (see recordRemittanceApprovalEntry).
+            'received_breakdown' => 'nullable|array',
+            'received_breakdown.*' => 'nullable|numeric|min:0',
         ]);
 
         $result = $this->handleTransaction(function () use ($request, $id) {

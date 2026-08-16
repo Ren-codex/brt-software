@@ -76,7 +76,7 @@ class SalesOrderRequest extends FormRequest
                 'payment_mode' => 'required|string',
                 'due_date' => 'nullable|date|required_if:payment_mode,Credit',
                 'location_id' => 'nullable|exists:list_locations,id',
-                'delivery_location' => 'required|string|max:255',
+                'delivery_location' => 'nullable|string|max:255|required_with:customer_id',
                 'items' => 'required|array|min:1',
                 'items.*.product_id' => 'required|exists:products,id',
                 'items.*.quantity' => 'required|integer|min:1',

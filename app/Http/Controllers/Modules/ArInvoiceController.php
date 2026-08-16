@@ -32,6 +32,9 @@ class ArInvoiceController extends Controller
             case 'lists':
                 return $this->invoice->lists($request);
             break;
+            case 'remittance_candidates':
+                return $this->invoice->remittanceCandidates($request);
+            break;
             case 'dashboard':
                 return $this->invoice->dashboard();
             break;

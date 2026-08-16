@@ -39,9 +39,14 @@ class JournalEntryService
         $paymentMode = strtolower((string) $salesOrder->payment_mode);
         $isCreditSale = in_array($paymentMode, ['credit', 'credit sales'], true);
 
+        // A cash sale isn't recognized as real Cash/GCash/Bank until its
+        // remittance is verified — the sales rep may still be holding it, or
+        // it may not match what's actually turned over. It lands in
+        // Undeposited Collections here and only moves to the real account in
+        // recordRemittanceApprovalEntry().
         $cashOrReceivableAccount = $isCreditSale
             ? $this->ensureAccount('1100', 'accounts_receivable', 'Accounts Receivable', 'asset', 'current_asset')
-            : $this->resolveCashAccountByPaymentMode($salesOrder->payment_mode, $salesOrder->bank_account_id ?? null);
+            : $this->ensureAccount('1050', 'undeposited_collections', 'Undeposited Collections', 'asset', 'current_asset');
 
         $salesAccount = $this->ensureAccount('4100', 'rice_sales', 'Rice Sales', 'revenue', 'sales');
         $cogsAccount = $this->ensureAccount('5100', 'cost_of_goods_sold', 'Cost of Goods Sold', 'expense', 'cost_of_sales');
@@ -59,7 +64,7 @@ class JournalEntryService
                     'account_id' => $cashOrReceivableAccount->id,
                     'line_type' => 'debit',
                     'amount' => $revenueAmount,
-                    'description' => $isCreditSale ? 'Recognize accounts receivable from sale.' : 'Recognize cash received from sale.',
+                    'description' => $isCreditSale ? 'Recognize accounts receivable from sale.' : 'Recognize collection from sale, pending remittance verification.',
                 ],
                 [
                     'account_id' => $salesAccount->id,
@@ -105,7 +110,12 @@ class JournalEntryService
             return null;
         }
 
-        $cashAccount = $this->resolveCashAccountByPaymentMode($receipt->payment_mode, $receipt->bank_account_id ?? null);
+        // Money collected by a sales rep isn't real Cash/GCash/Bank until the
+        // remittance carrying this receipt is verified — the rep may still be
+        // holding it, or the count may not match. It sits in Undeposited
+        // Collections until then; recordRemittanceApprovalEntry() moves it to
+        // the real account based on what's actually confirmed received.
+        $undepositedAccount = $this->ensureAccount('1050', 'undeposited_collections', 'Undeposited Collections', 'asset', 'current_asset');
         $receivableAccount = $this->ensureAccount('1100', 'accounts_receivable', 'Accounts Receivable', 'asset', 'current_asset');
         $sourceSalesOrder = optional(optional($receipt->arInvoice)->sales_order);
         $memo = 'Receipt ' . $receipt->receipt_number . ' applied to invoice collection.';
@@ -117,10 +127,10 @@ class JournalEntryService
             $memo,
             [
                 [
-                    'account_id' => $cashAccount->id,
+                    'account_id' => $undepositedAccount->id,
                     'line_type' => 'debit',
                     'amount' => $amount,
-                    'description' => 'Record customer collection.',
+                    'description' => 'Record customer collection, pending remittance verification.',
                 ],
                 [
                     'account_id' => $receivableAccount->id,
@@ -1138,15 +1148,21 @@ class JournalEntryService
     }
 
     /**
-     * Each underlying Receipt already booked Dr Cash/Cr AR when the sales rep
-     * collected it from the customer, so approving a remittance is not a new
-     * sale or collection — it's a cash-count verification of money already on
-     * the books. Two things can actually change the ledger here:
-     *  - a check turnover reclassifies the pooled Cash (1000) into Cash in
-     *    Bank (1011), since the rep is handing over a check rather than cash;
-     *  - a variance between total_amount (expected) and received_amount
-     *    (counted) is a real overage/shortage, booked to Cash Over/Short
-     *    (5900), same pattern as recordPettyCashAdjustment().
+     * Each underlying Receipt (or cash-sale revenue entry) booked Dr
+     * Undeposited Collections (1050) / Cr AR-or-Revenue when the sales rep
+     * collected it — money a rep is holding isn't real Cash/GCash/Bank until
+     * someone actually verifies it landed there. Verifying a remittance is
+     * that moment: it moves each confirmed payment mode's amount out of
+     * Undeposited Collections into the account it actually landed in, and
+     * books any shortfall/overage against Cash Over/Short (5900), same
+     * pattern as recordPettyCashAdjustment().
+     *
+     * A remittance can bundle several payment modes at once (received_breakdown,
+     * keyed by mode label — see ApprovalModal.vue), so this moves each mode's
+     * amount individually rather than assuming the whole remittance is one
+     * payment type. Each mode releases only the amount originally expected
+     * for it (from its receipts); anything left over is the discrepancy,
+     * absorbed the same way recordPettyCashAdjustment() does.
      */
     public function recordRemittanceApprovalEntry(Remittance $remittance): ?JournalEntry
     {
@@ -1154,42 +1170,72 @@ class JournalEntryService
         $receivedAmount = round((float) ($remittance->received_amount ?? $remittance->total_amount), 2);
         $variance       = round($receivedAmount - $expectedAmount, 2);
 
-        $fieldCashAccount = $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
-        $turnoverAccount  = $this->resolveCashAccountByPaymentMode($remittance->received_via);
-        $isReclass        = $turnoverAccount->id !== $fieldCashAccount->id;
+        $undepositedAccount = $this->ensureAccount('1050', 'undeposited_collections', 'Undeposited Collections', 'asset', 'current_asset');
 
-        if (!$isReclass && $variance === 0.0) {
-            return null;
-        }
+        $expectedByMode = $remittance->receipts
+            ->groupBy(fn ($r) => $r->payment_mode ?: 'Cash')
+            ->map(fn ($group) => round((float) $group->sum('amount_paid'), 2));
+
+        $receivedByMode = collect($remittance->received_breakdown ?? [])
+            ->filter(fn ($amount) => $amount !== null && $amount !== '')
+            ->map(fn ($amount) => round((float) $amount, 2))
+            ->filter(fn ($amount) => $amount > 0);
 
         $lines = [];
-        $memo  = 'Remittance ' . $remittance->remittance_no . ' verified, turned over via ' . strtoupper((string) $remittance->received_via) . '.';
+        $totalDebits = 0.0;
+        $totalCredits = 0.0;
 
-        if ($isReclass) {
-            if ($receivedAmount > 0) {
-                $lines[] = ['account_id' => $turnoverAccount->id, 'line_type' => 'debit', 'amount' => $receivedAmount, 'description' => 'Record verified remittance turnover.'];
-            }
-            if ($expectedAmount > 0) {
-                $lines[] = ['account_id' => $fieldCashAccount->id, 'line_type' => 'credit', 'amount' => $expectedAmount, 'description' => 'Release field collections cleared by this remittance.'];
-            }
-        } elseif ($variance !== 0.0) {
+        // Every verified mode — cash included — moves its confirmed amount
+        // out of Undeposited Collections into the real account it landed in,
+        // so the entry shows the actual money turned over, not just the
+        // leftover discrepancy.
+        foreach ($receivedByMode as $mode => $amount) {
+            $targetAccount = $this->resolveCashAccountByPaymentMode($mode);
+            $lines[] = ['account_id' => $targetAccount->id, 'line_type' => 'debit', 'amount' => $amount, 'description' => "Record verified remittance turnover via {$mode}."];
+            $totalDebits += $amount;
+            $totalCredits += $expectedByMode->get($mode, 0.0);
+        }
+
+        if ($totalCredits > 0) {
+            $lines[] = ['account_id' => $undepositedAccount->id, 'line_type' => 'credit', 'amount' => round($totalCredits, 2), 'description' => 'Clear undeposited collections cleared by this remittance.'];
+        }
+
+        // The verifier's typed explanation for the variance (required by the
+        // frontend whenever one exists — see ApprovalModal.vue) is carried
+        // into the ledger rather than left to sit only on the Remittance row,
+        // so anyone reviewing the entry later can see why it's off, not just
+        // that it's off.
+        $discrepancyReason = $variance !== 0.0 && $remittance->remarks
+            ? ' Reason: ' . $remittance->remarks
+            : '';
+
+        // Any expected amount not covered by a mode entered above (e.g. the
+        // verifier left a mode blank) stays as an adjustment against
+        // Undeposited Collections rather than silently vanishing.
+        $remainingVariance = round($variance - ($totalDebits - $totalCredits), 2);
+        if ($remainingVariance !== 0.0) {
             $lines[] = [
-                'account_id' => $fieldCashAccount->id,
-                'line_type' => $variance > 0 ? 'debit' : 'credit',
-                'amount' => abs($variance),
-                'description' => $variance > 0 ? 'Record cash overage found during remittance verification.' : 'Record cash shortage found during remittance verification.',
+                'account_id' => $undepositedAccount->id,
+                'line_type' => $remainingVariance > 0 ? 'debit' : 'credit',
+                'amount' => abs($remainingVariance),
+                'description' => ($remainingVariance > 0 ? 'Record overage found during remittance verification.' : 'Record shortage found during remittance verification.') . $discrepancyReason,
             ];
         }
 
         if ($variance !== 0.0) {
             $overShortAccount = $this->ensureAccount('5900', 'cash_over_short', 'Cash Over/Short', 'expense', 'operating_expense');
             $lines[] = $variance > 0
-                ? ['account_id' => $overShortAccount->id, 'line_type' => 'credit', 'amount' => $variance, 'description' => 'Record cash overage discovered during remittance verification.']
-                : ['account_id' => $overShortAccount->id, 'line_type' => 'debit', 'amount' => abs($variance), 'description' => 'Record cash shortage discovered during remittance verification.'];
+                ? ['account_id' => $overShortAccount->id, 'line_type' => 'credit', 'amount' => $variance, 'description' => 'Record cash overage discovered during remittance verification.' . $discrepancyReason]
+                : ['account_id' => $overShortAccount->id, 'line_type' => 'debit', 'amount' => abs($variance), 'description' => 'Record cash shortage discovered during remittance verification.' . $discrepancyReason];
         }
 
         if (empty($lines)) {
             return null;
+        }
+
+        $memo = 'Remittance ' . $remittance->remittance_no . ' verified — ' . number_format($receivedAmount, 2) . ' confirmed received, turned over via ' . ($remittance->received_via ?: 'Cash') . '.';
+        if ($discrepancyReason !== '') {
+            $memo .= ' Variance ' . ($variance > 0 ? '+' : '') . number_format($variance, 2) . ' —' . $discrepancyReason;
         }
 
         return $this->createEntry(

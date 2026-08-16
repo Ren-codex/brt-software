@@ -2,8 +2,10 @@
 
 namespace App\Services\Modules;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use App\Services\System\Permission\PermissionService;
 
 class ReportClass
 {
@@ -20,6 +22,7 @@ class ReportClass
             'receipt_report' => $this->receiptReport($filters),
             'discount_summary' => $this->discountSummary($filters),
             'tax_summary' => $this->taxSummary(),
+            'employee_summary' => $this->employeeSummary($filters),
         ];
     }
 
@@ -151,6 +154,97 @@ class ReportClass
             ->get();
     }
 
+    private function employeeSummary(array $filters)
+    {
+        $soSub = DB::table('sales_orders as so')
+            ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
+            ->where('ls.slug', '!=', 'cancelled')
+            ->whereBetween('so.order_date', [$filters['from'], $filters['to']])
+            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+                $query->where('so.location_id', $filters['location_id']);
+            })
+            ->whereNotNull('so.sales_rep_id')
+            ->select(
+                'so.sales_rep_id',
+                DB::raw('COUNT(so.id) as so_count'),
+                DB::raw('SUM(so.total_amount) as so_total')
+            )
+            ->groupBy('so.sales_rep_id');
+
+        $arSub = DB::table('ar_invoices as ai')
+            ->join('sales_orders as so', 'ai.sales_order_id', '=', 'so.id')
+            ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
+            ->where('ls.slug', '!=', 'cancelled')
+            ->whereBetween('ai.invoice_date', [$filters['from'], $filters['to']])
+            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+                $query->where('so.location_id', $filters['location_id']);
+            })
+            ->whereNotNull('so.sales_rep_id')
+            ->select(
+                'so.sales_rep_id',
+                DB::raw('COUNT(ai.id) as ar_count'),
+                DB::raw('SUM(ai.amount_due) as ar_total'),
+                DB::raw('SUM(ai.balance_due) as ar_balance_due')
+            )
+            ->groupBy('so.sales_rep_id');
+
+        $receiptSub = DB::table('receipts as r')
+            ->join('ar_invoices as ai', 'r.ar_invoice_id', '=', 'ai.id')
+            ->join('sales_orders as so', 'ai.sales_order_id', '=', 'so.id')
+            ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
+            ->where('ls.slug', '!=', 'cancelled')
+            ->whereBetween('r.receipt_date', [$filters['from'], $filters['to']])
+            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+                $query->where('so.location_id', $filters['location_id']);
+            })
+            ->whereNotNull('so.sales_rep_id')
+            ->select(
+                'so.sales_rep_id',
+                DB::raw('COUNT(r.id) as receipt_count'),
+                DB::raw('SUM(r.amount_paid) as receipt_total')
+            )
+            ->groupBy('so.sales_rep_id');
+
+        $query = DB::table('employees as e')
+            ->leftJoinSub($soSub, 'sod', 'sod.sales_rep_id', '=', 'e.id')
+            ->leftJoinSub($arSub, 'ard', 'ard.sales_rep_id', '=', 'e.id')
+            ->leftJoinSub($receiptSub, 'rd', 'rd.sales_rep_id', '=', 'e.id')
+            ->select(
+                'e.id as employee_id',
+                DB::raw("CONCAT(e.firstname, ' ', e.lastname) as employee_name"),
+                DB::raw('COALESCE(sod.so_count, 0) as so_count'),
+                DB::raw('COALESCE(sod.so_total, 0) as so_total'),
+                DB::raw('COALESCE(ard.ar_count, 0) as ar_count'),
+                DB::raw('COALESCE(ard.ar_total, 0) as ar_total'),
+                DB::raw('COALESCE(ard.ar_balance_due, 0) as ar_balance_due'),
+                DB::raw('COALESCE(rd.receipt_count, 0) as receipt_count'),
+                DB::raw('COALESCE(rd.receipt_total, 0) as receipt_total')
+            )
+            ->whereRaw('COALESCE(sod.so_count, 0) + COALESCE(ard.ar_count, 0) + COALESCE(rd.receipt_count, 0) > 0');
+
+        $this->applyEmployeeSummaryScope($query);
+
+        return $query
+            ->orderByDesc(DB::raw('COALESCE(sod.so_total, 0) + COALESCE(ard.ar_total, 0) + COALESCE(rd.receipt_total, 0)'))
+            ->get();
+    }
+
+    private function applyEmployeeSummaryScope(Builder $query): void
+    {
+        $user = Auth::user();
+        if (!$user || app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin')) {
+            return;
+        }
+
+        $employeeId = $user->employee?->id;
+
+        if (!$employeeId) {
+            return;
+        }
+
+        $query->where('e.id', $employeeId);
+    }
+
     private function paymentSummary(array $filters)
     {
         $rows = $this->baseSalesOrderQuery($filters, false)
@@ -256,6 +350,8 @@ class ReportClass
             ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
             ->where('ls.slug', '!=', 'cancelled');
 
+        $this->applySalesRepScope($query);
+
         if ($applyDateRange) {
             $query->whereBetween('so.order_date', [$filters['from'], $filters['to']]);
         }
@@ -267,6 +363,26 @@ class ReportClass
         $this->applyPaymentModeFilter($query, $filters['payment_mode']);
 
         return $query;
+    }
+
+    private function applySalesRepScope(Builder $query): void
+    {
+        $user = Auth::user();
+        if (!$user || app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin')) {
+            return;
+        }
+
+        $employeeId = $user->employee?->id;
+
+        if (!$employeeId) {
+            return;
+        }
+
+        $query->where(function ($salesOrderQuery) use ($employeeId) {
+            $salesOrderQuery
+                ->where('so.added_by_id', $employeeId)
+                ->orWhere('so.sales_rep_id', $employeeId);
+        });
     }
 
     private function applyPaymentModeFilter(Builder $query, string $paymentMode): void

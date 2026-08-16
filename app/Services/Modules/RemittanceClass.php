@@ -5,6 +5,8 @@ namespace App\Services\Modules;
 
 use App\Models\Remittance;
 use App\Models\Receipt;
+use App\Models\ArInvoice;
+use App\Models\Employee;
 use App\Models\ListStatus;
 use App\Http\Resources\Libraries\RemittanceResource;
 use Carbon\Carbon;
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\SeriesService;
 use App\Services\Accounting\JournalEntryService;
 use Illuminate\Validation\ValidationException;
+use App\Services\System\Permission\PermissionService;
 
 class RemittanceClass
 {
@@ -45,7 +48,21 @@ class RemittanceClass
 
     public function lists($request)
     {
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+
         $query = Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount'])
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('receipts.arInvoice.sales_order', function ($soQuery) use ($employeeId) {
+                    $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                        $salesOrderQuery
+                            ->where('added_by_id', $employeeId)
+                            ->orWhere('sales_rep_id', $employeeId);
+                    });
+                });
+            })
             ->when($request->location_id, function ($query, $locationId) {
                 $query->whereHas('receipts', function ($q) use ($locationId) {
                     $q->where(function ($inner) use ($locationId) {
@@ -77,8 +94,22 @@ class RemittanceClass
 
     public function undepositedSummary($request)
     {
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+
         $query = Remittance::whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
             ->whereNull('bank_deposit_id')
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('receipts.arInvoice.sales_order', function ($soQuery) use ($employeeId) {
+                    $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                        $salesOrderQuery
+                            ->where('added_by_id', $employeeId)
+                            ->orWhere('sales_rep_id', $employeeId);
+                    });
+                });
+            })
             ->when($request->location_id, function ($query, $location_id) {
                 $query->whereHas('receipts', function ($q) use ($location_id) {
                     $q->where(function ($inner) use ($location_id) {
@@ -112,6 +143,40 @@ class RemittanceClass
             throw ValidationException::withMessages([
                 'receipts' => 'Select at least one receipt to remit.',
             ]);
+        }
+
+        // A Sales Rep has no checkbox in the UI and must remit every pending
+        // receipt of theirs — but that's only enforced client-side unless we
+        // re-check it here, since this endpoint otherwise trusts whatever
+        // receipt ids are posted.
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+
+        if ($employeeId) {
+            $ownPendingReceiptIds = Receipt::whereNull('remittance_id')
+                ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
+                ->where(function ($query) {
+                    $query->whereNull('receipt_type')
+                        ->orWhere('receipt_type', '!=', 'refund');
+                })
+                ->whereHas('arInvoice.sales_order', function ($q) use ($employeeId) {
+                    $q->where('sales_rep_id', $employeeId);
+                })
+                ->pluck('id');
+
+            if ($receiptIds->diff($ownPendingReceiptIds)->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'receipts' => 'You may only remit your own pending receipts.',
+                ]);
+            }
+
+            if ($ownPendingReceiptIds->diff($receiptIds)->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'receipts' => 'All of your pending receipts must be included in this remittance.',
+                ]);
+            }
         }
 
         // Locked for the duration of the transaction so two remittances cannot
@@ -238,7 +303,13 @@ class RemittanceClass
 
         if ($isApprove) {
             $data->received_via = $request->received_via;
-            $data->reference_no = $request->received_via === 'check' ? $request->reference_no : null;
+            $modes = array_filter(array_map('trim', explode(',', (string) $request->received_via)));
+            $hasCheck = collect($modes)->contains(fn ($mode) => strtolower($mode) === 'check');
+            $data->reference_no = $hasCheck ? $request->reference_no : null;
+            $data->received_breakdown = collect($request->received_breakdown ?? [])
+                ->filter(fn ($amount) => $amount !== null && $amount !== '')
+                ->map(fn ($amount) => round((float) $amount, 2))
+                ->toArray();
         }
 
         $data->save();
@@ -261,9 +332,9 @@ class RemittanceClass
         return [
             'data'    => new RemittanceResource($data->fresh('receipts')),
             'status'  => true,
-            'message' => $isApprove ? 'Remittance approval was successful!' : 'Remittance was disapproved.',
+            'message' => $isApprove ? 'Remittance verification was successful!' : 'Remittance was disapproved.',
             'info'    => $isApprove
-                ? "You've successfully approved the remittance"
+                ? "You've successfully verified the remittance"
                 : "You've disapproved the remittance",
         ];
     }
@@ -285,7 +356,11 @@ class RemittanceClass
                     ->orWhere('receipt_type', '!=', 'refund');
             })
             ->whereHas('arInvoice.sales_order', function ($q) use ($employee) {
-                $q->where('sales_rep_id', $employee->id);
+                $q->where(function ($salesOrderQuery) use ($employee) {
+                    $salesOrderQuery
+                        ->where('added_by_id', $employee->id)
+                        ->orWhere('sales_rep_id', $employee->id);
+                });
             })
             ->selectRaw('COUNT(*) as receipt_count, SUM(amount_paid) as total_amount')
             ->first();
@@ -296,8 +371,19 @@ class RemittanceClass
         ]);
     }
 
+    /**
+     * Employee summary for the Remittance tab. Grouped by sales rep rather
+     * than by date - shows the actual pending receipts (not yet remitted)
+     * and pending AR invoices (balance_due > 0) each employee is holding,
+     * instead of a status-count tally.
+     */
     public function summary($request)
     {
+        $user = Auth::user();
+        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
+            ? $user->employee?->id
+            : null;
+
         $from = $request->from
             ? Carbon::parse($request->from)->startOfDay()
             : Carbon::now()->startOfMonth()->startOfDay();
@@ -306,39 +392,72 @@ class RemittanceClass
             ? Carbon::parse($request->to)->endOfDay()
             : Carbon::now()->endOfMonth()->endOfDay();
 
-        $remittances = Remittance::with(['createdBy.employee', 'status'])
-            ->whereBetween('remittance_date', [$from, $to])
-            ->orderBy('remittance_date', 'DESC')
-            ->get();
+        $cancelledId = ListStatus::getBySlug('cancelled')?->id ?? 0;
 
-        $grouped = $remittances
-            ->groupBy(fn($r) => optional($r->createdBy)->id ?? 0)
-            ->map(function ($repRemittances) {
-                $rep = optional($repRemittances->first()->createdBy)->employee;
-                $byDate = $repRemittances
-                    ->groupBy(fn($r) => Carbon::parse($r->remittance_date)->toDateString())
-                    ->map(fn($dayRows) => [
-                        'date'            => Carbon::parse($dayRows->first()->remittance_date)->toDateString(),
-                        'count'           => $dayRows->count(),
-                        'total_amount'    => $dayRows->sum('total_amount'),
-                        'received_amount' => $dayRows->whereNotNull('received_amount')->sum('received_amount'),
-                        'statuses'        => $dayRows->groupBy(fn($r) => $r->status?->slug ?? 'unknown')
-                                                     ->map->count(),
-                    ])
-                    ->values();
-
-                return [
-                    'rep_id'           => optional($repRemittances->first()->createdBy)->id,
-                    'rep_name'         => $rep?->fullname ?? 'Unknown',
-                    'total_amount'     => $repRemittances->sum('total_amount'),
-                    'remittance_count' => $repRemittances->count(),
-                    'dates'            => $byDate,
-                ];
+        $pendingReceipts = Receipt::whereNull('remittance_id')
+            ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
+            ->where(function ($query) {
+                $query->whereNull('receipt_type')
+                    ->orWhere('receipt_type', '!=', 'refund');
             })
-            ->values();
+            ->whereBetween('receipt_date', [$from, $to])
+            ->with(['arInvoice.sales_order.customer'])
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('arInvoice.sales_order', fn ($q) => $q->where('sales_rep_id', $employeeId));
+            })
+            ->get()
+            ->groupBy(fn ($r) => optional($r->arInvoice?->sales_order)->sales_rep_id ?? 0);
+
+        $pendingArInvoices = ArInvoice::where('balance_due', '>', 0)
+            ->where('status_id', '!=', $cancelledId)
+            ->whereBetween('invoice_date', [$from, $to])
+            ->with(['sales_order.customer'])
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('sales_order', fn ($q) => $q->where('sales_rep_id', $employeeId));
+            })
+            ->get()
+            ->groupBy(fn ($ai) => optional($ai->sales_order)->sales_rep_id ?? 0);
+
+        $repIds = $pendingReceipts->keys()->merge($pendingArInvoices->keys())->unique()->filter();
+
+        $employees = Employee::whereIn('id', $repIds)->get()->keyBy('id');
+
+        $rows = $repIds->map(function ($repId) use ($pendingReceipts, $pendingArInvoices, $employees) {
+            $receipts = $pendingReceipts->get($repId, collect());
+            $invoices = $pendingArInvoices->get($repId, collect());
+            $employee = $employees->get($repId);
+
+            return [
+                'rep_id'                => $repId,
+                'rep_name'              => $employee?->fullname ?? 'Unassigned',
+                'pending_receipt_count' => $receipts->count(),
+                'pending_receipt_total' => (float) $receipts->sum('amount_paid'),
+                'pending_receipts'      => $receipts->map(fn ($r) => [
+                    'id'             => $r->id,
+                    'receipt_number' => $r->receipt_number,
+                    'receipt_date'   => $r->receipt_date,
+                    'so_number'      => optional($r->arInvoice?->sales_order)->so_number,
+                    'customer_name'  => optional($r->arInvoice?->sales_order?->customer)->name ?? 'Walk-in Customer',
+                    'amount_paid'    => (float) $r->amount_paid,
+                ])->values(),
+                'pending_ar_count'      => $invoices->count(),
+                'pending_ar_total'      => (float) $invoices->sum('balance_due'),
+                'pending_ar_invoices'   => $invoices->map(fn ($ai) => [
+                    'id'              => $ai->id,
+                    'invoice_number'  => $ai->invoice_number,
+                    'invoice_date'    => $ai->invoice_date,
+                    'due_date'        => $ai->due_date,
+                    'so_number'       => optional($ai->sales_order)->so_number,
+                    'customer_name'   => optional($ai->sales_order?->customer)->name ?? 'Walk-in Customer',
+                    'balance_due'     => (float) $ai->balance_due,
+                ])->values(),
+            ];
+        })
+        ->sortByDesc(fn ($row) => $row['pending_receipt_total'] + $row['pending_ar_total'])
+        ->values();
 
         return response()->json([
-            'data' => $grouped,
+            'data' => $rows,
             'from' => $from->toDateString(),
             'to'   => $to->toDateString(),
         ]);

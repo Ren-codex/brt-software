@@ -9,6 +9,11 @@ class ArInvoiceResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $salesOrder = $this->sales_order;
+        $salesRep = $salesOrder?->salesRep
+            ?? $salesOrder?->created_by?->employee
+            ?? null;
+
         return [
             'id' => $this->id,
             'sales_order_id' => $this->sales_order_id,
@@ -22,6 +27,12 @@ class ArInvoiceResource extends JsonResource
             'due_date' => $this->due_date?->format('Y-m-d'),
             'due_date_formatted' => $this->due_date?->format('F d, Y'),
             'sales_order' => $this->sales_order,
+            'sales_rep' => $salesRep ? [
+                'id' => $salesRep->id,
+                'fullname' => $salesRep->fullname ?? trim(($salesRep->firstname ?? '') . ' ' . ($salesRep->lastname ?? '')),
+                'firstname' => $salesRep->firstname ?? null,
+                'lastname' => $salesRep->lastname ?? null,
+            ] : null,
             'status' => $this->status,
             'receipts' => $this->whenLoaded('receipts', function () {
                 return $this->receipts->map(function ($receipt) {

@@ -42,6 +42,25 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::get('/suppliers/{id}/stock-returns', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturns']);
     Route::resource('/receipts', App\Http\Controllers\Modules\ReceiptController::class);
 
+    // Remittances are prepared by Sales Reps (not just Administrators) and are
+    // gated purely by the granular permission:sales,remittances,* middleware
+    // below -- this route must not sit inside a role:Administrator group, or
+    // that outer gate 403s every non-Administrator before the permission
+    // check is ever reached.
+    // only(): the controller implements no create/edit/update, so the full
+    // resource registered three routes that threw on any request.
+    Route::resource('/remittances', App\Http\Controllers\RemittanceController::class)
+        ->only(['index', 'store', 'show', 'destroy'])
+        ->middlewareFor(['index', 'show'], 'permission:sales,remittances,view')
+        ->middlewareFor('store', 'permission:sales,remittances,encoder')
+        ->middlewareFor('destroy', 'permission:sales,remittances,admin');
+    Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])
+        ->middleware('permission:sales,remittances,approver')->name('remittances.approve');
+    Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance'])
+        ->middleware('permission:sales,remittances,view');
+    Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])
+        ->middleware('permission:sales,remittances,approver')->name('remittances.remit');
+
     // Make revenue reports available to all authenticated users (not just administrators)
     Route::get('/api/revenue-reports', [App\Http\Controllers\Modules\RevenueReportController::class, 'index']);
 
@@ -181,20 +200,6 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::middleware(['role:Administrator'])->group(function () {
         // Route::get('/receipts', [App\Http\Controllers\Libraries\ReceiptController::class, 'index']);
         // Route::get('/receipts/{id}/print', [App\Http\Controllers\Libraries\ReceiptController::class, 'print']);
-        // only(): the controller implements no create/edit/update, so the full
-        // resource registered three routes that threw on any request.
-        Route::resource('/remittances', App\Http\Controllers\RemittanceController::class)
-            ->only(['index', 'store', 'show', 'destroy'])
-            ->middlewareFor(['index', 'show'], 'permission:sales,remittances,view')
-            ->middlewareFor('store', 'permission:sales,remittances,encoder')
-            ->middlewareFor('destroy', 'permission:sales,remittances,admin');
-        Route::post('/remittances/{id}/approve', [App\Http\Controllers\RemittanceController::class, 'approve'])
-            ->middleware('permission:sales,remittances,approver')->name('remittances.approve');
-        Route::get('/remittances/{id}/print', [App\Http\Controllers\RemittanceController::class, 'printRemittance'])
-            ->middleware('permission:sales,remittances,view');
-        Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])
-            ->middleware('permission:sales,remittances,approver')->name('remittances.remit');
-
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class)
             ->middlewareFor('index', 'permission:payroll,payroll_settings,view')
             ->middlewareFor('update', 'permission:payroll,payroll_settings,encoder');

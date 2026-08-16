@@ -21,10 +21,12 @@ class Remittance extends Model
         'remarks',
         'received_via',
         'reference_no',
+        'received_breakdown',
     ];
 
     protected $casts = [
         'summary' => 'array',
+        'received_breakdown' => 'array',
         'approved_at' => 'datetime',
     ];
 

@@ -195,6 +195,7 @@
                                                                 <tr>
                                                                     <th>Account</th>
                                                                     <th>Code</th>
+                                                                    <th>Bank</th>
                                                                     <th class="text-center">Type</th>
                                                                     <th class="text-end">Debit</th>
                                                                     <th class="text-end">Credit</th>
@@ -205,6 +206,7 @@
                                                                 <tr v-for="line in entry.lines" :key="line.id">
                                                                     <td>{{ line.account_name || '-' }}</td>
                                                                     <td>{{ line.account_code || '-' }}</td>
+                                                                    <td>{{ line.bank_account_name || '-' }}</td>
                                                                     <td class="text-center">
                                                                         <span class="line-type-chip" :class="line.line_type">
                                                                             {{ line.line_type === 'debit' ? 'DR' : 'CR' }}
@@ -217,7 +219,7 @@
                                                             </tbody>
                                                             <tfoot>
                                                                 <tr class="lines-totals-row">
-                                                                    <td colspan="3" class="text-end fw-semibold">Totals</td>
+                                                                    <td colspan="4" class="text-end fw-semibold">Totals</td>
                                                                     <td class="text-end text-debit fw-bold">₱{{ lineDebitTotal(entry.lines) }}</td>
                                                                     <td class="text-end text-credit fw-bold">₱{{ lineCreditTotal(entry.lines) }}</td>
                                                                     <td>
@@ -850,6 +852,7 @@ export default {
 
 .line-table-wrap { overflow: hidden; border: 1px solid rgba(61, 141, 122, 0.12); border-radius: 12px; }
 .line-table thead th { background: #edf5f2; color: #527267; }
+.line-table tbody td { vertical-align: middle; }
 
 .line-type-chip {
     display: inline-flex;

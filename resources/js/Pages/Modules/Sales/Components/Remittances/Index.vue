@@ -22,7 +22,7 @@
                                     </div>
                                     <div class="cash-on-hand-card" v-else>
                                         <span class="cash-on-hand-label">Total Cash on Hand</span>
-                                        <strong class="cash-on-hand-value">{{ formatCurrency(metrics.total_amount_remitted) }}</strong>
+                                        <strong class="cash-on-hand-value">{{ formatCurrency(metrics.total_cash_on_hand) }}</strong>
                                     </div>
                                     <div class="cash-on-hand-card undeposited-card" v-if="!isSalesRep" @click="switchTab('undeposited')" title="View undeposited remittances">
                                         <span class="cash-on-hand-label">Undeposited Cash</span>
@@ -31,7 +31,7 @@
                                     </div>
                                     <button class="acct-btn-secondary" @click="currentView = 'summary'">
                                         <i class="ri-bar-chart-grouped-line"></i>
-                                        Daily Summary
+                                        Pending Collections
                                     </button>
                                     <button v-if="can('sales', 'remittances', 'encoder')" class="acct-btn-primary" @click="openCreate">
                                         <i class="ri-add-line"></i>
@@ -99,7 +99,7 @@
                                             <tr>
                                                 <th style="width:3%">#</th>
                                                 <th class="text-center" style="width:15%">Remittance No.</th>
-                                                <th class="text-center" style="width:15%">Date</th>
+                                                <th class="text-center" style="width:15%">Date &amp; Time</th>
                                                 <th class="text-end" style="width:15%">Amount</th>
                                                 <th class="text-center" style="width:15%">Status</th>
                                                 <th class="text-center" style="width:20%">Sales Rep</th>
@@ -125,7 +125,7 @@
                                             >
                                                 <td>{{ index + 1 }}</td>
                                                 <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
-                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-center">{{ formatDateTime(item.created_at) }}</td>
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">
                                                     <span :style="{ backgroundColor: item.status?.bg_color || '#6c757d', color: '#fff', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-block' }">
@@ -151,7 +151,7 @@
                                             <tr>
                                                 <th style="width:3%">#</th>
                                                 <th class="text-center" style="width:13%">Remittance No.</th>
-                                                <th class="text-center" style="width:12%">Date</th>
+                                                <th class="text-center" style="width:12%">Date &amp; Time</th>
                                                 <th class="text-end" style="width:12%">Amount</th>
                                                 <th class="text-center" style="width:18%">Sales Rep</th>
                                                 <th class="text-center" style="width:15%">Bank Deposit</th>
@@ -177,7 +177,7 @@
                                             >
                                                 <td>{{ index + 1 }}</td>
                                                 <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
-                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-center">{{ formatDateTime(item.created_at) }}</td>
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                                 <td class="text-center">
@@ -205,7 +205,7 @@
                                             <tr>
                                                 <th style="width:3%">#</th>
                                                 <th class="text-center" style="width:15%">Remittance No.</th>
-                                                <th class="text-center" style="width:15%">Date</th>
+                                                <th class="text-center" style="width:15%">Date &amp; Time</th>
                                                 <th class="text-end" style="width:15%">Amount</th>
                                                 <th class="text-center" style="width:20%">Sales Rep</th>
                                                 <th class="text-center" style="width:7%">Actions</th>
@@ -230,7 +230,7 @@
                                             >
                                                 <td>{{ index + 1 }}</td>
                                                 <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
-                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-center">{{ formatDateTime(item.created_at) }}</td>
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                                 <td class="text-center">
@@ -250,7 +250,7 @@
                                             <tr>
                                                 <th style="width:3%">#</th>
                                                 <th class="text-center" style="width:15%">Remittance No.</th>
-                                                <th class="text-center" style="width:15%">Date</th>
+                                                <th class="text-center" style="width:15%">Date &amp; Time</th>
                                                 <th class="text-end" style="width:15%">Amount</th>
                                                 <th class="text-center" style="width:20%">Sales Rep</th>
                                                 <th class="text-center" style="width:7%">Actions</th>
@@ -275,7 +275,7 @@
                                             >
                                                 <td>{{ index + 1 }}</td>
                                                 <td class="text-center fw-semibold">{{ item.remittance_no || '-' }}</td>
-                                                <td class="text-center">{{ item.date || item.remittance_date }}</td>
+                                                <td class="text-center">{{ formatDateTime(item.created_at) }}</td>
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                                 <td class="text-center">
@@ -342,6 +342,7 @@ export default {
             metrics: {
                 total_remittances: 0,
                 total_amount_remitted: 0,
+                total_cash_on_hand: 0,
                 today_remittances: 0,
                 open_remittances: 0
             },
@@ -360,9 +361,13 @@ export default {
         liquidatedRemittance() { return this.lists; },
         disapprovedRemittance() { return this.lists; },
         undepositedRemittance() { return this.lists; },
+        // A user who also holds an admin-level sales role (e.g. Super Admin
+        // stacked with Sales Rep, as happens with multi-role test accounts)
+        // must still see everything — only a pure Sales Rep is restricted.
         isSalesRep() {
             const roles = this.$page.props.roles ?? [];
-            return roles.includes('Sales Rep') && !!this.$page.props.user?.employee_id;
+            const hasSalesAdmin = (this.$page.props.permissions?.sales?._module ?? []).includes('admin');
+            return roles.includes('Sales Rep') && !!this.$page.props.user?.data?.employee_id && !hasSalesAdmin;
         },
     },
     created() {
@@ -383,7 +388,21 @@ export default {
         },
         formatCurrency(value) {
             if (!value && value !== 0) return '-';
-            return '\u20B1' + Number(value).toFixed(2);
+            return '\u20B1' + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        formatDateTime(value) {
+            if (!value) return '-';
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+
+            return date.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            });
         },
         fetch() {
             this.loading = true;

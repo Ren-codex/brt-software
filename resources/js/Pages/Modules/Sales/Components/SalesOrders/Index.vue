@@ -175,6 +175,8 @@
                                                                     list.order_date }}</p>
                                                                 <p class="mb-1"><strong>Added By:</strong> {{
                                                                     list.added_by?.fullname || '-' }}</p>
+                                                                <p class="mb-1"><strong>Sales Rep:</strong> {{
+                                                                    list.sales_rep?.fullname || '-' }}</p>
                                                                 <p class="mb-0" :class="{ 'mb-1': list.status?.slug === 'cancelled' }"><strong>Transferred To:</strong> {{
                                                                     list.transferred_to || '-' }}</p>
                                                                 <p v-if="list.status?.slug === 'cancelled' && list.cancellation_remarks" class="mb-0">
@@ -227,6 +229,7 @@
                                                                         <tr>
                                                                             <th class="fw-semibold">OR Number</th>
                                                                             <th class="fw-semibold">Date</th>
+                                                                            <th class="fw-semibold">Sales Rep</th>
                                                                             <th class="fw-semibold">Amount Paid</th>
                                                                             <th class="fw-semibold">Mode</th>
                                                                             <th class="fw-semibold">Type</th>
@@ -238,6 +241,7 @@
                                                                             <tr v-for="receipt in inv.receipts" :key="receipt.id">
                                                                                 <td class="fw-semibold">{{ receipt.receipt_number }}</td>
                                                                                 <td>{{ receipt.receipt_date }}</td>
+                                                                                <td>{{ receipt.sales_rep?.fullname || list.sales_rep?.fullname || '-' }}</td>
                                                                                 <td>₱{{ receipt.amount_paid }}</td>
                                                                                 <td>{{ receipt.payment_mode || '-' }}</td>
                                                                                 <td>

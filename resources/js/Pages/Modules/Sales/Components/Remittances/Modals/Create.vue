@@ -2,7 +2,10 @@
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
         <div class="modal-container" style="max-width: 900px;">
             <div class="modal-header">
-                <h2>Prepare Remittance</h2>
+                <div>
+                    <h2>Prepare Remittance</h2>
+                    <p class="modal-subtitle mb-0">{{ stepSubtitle }}</p>
+                </div>
                 <button class="close-btn" @click="hide"><i class="ri-close-line"></i></button>
             </div>
 
@@ -13,89 +16,170 @@
                 </div>
 
                 <form @submit.prevent="submit">
-                    <div class="mb-3 d-flex align-items-center gap-2">
-                        <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt"
-                            class="form-control" />
-                        <button v-if="!isSalesRep" type="button" class="acct-btn-secondary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</button>
-                    </div>
-
-                    <!-- A Sales Rep must remit every pending receipt of theirs, so the
-                         checkbox column is dropped entirely: nothing here is optional. -->
-                    <div class="table-responsive" style="max-height: 180px; overflow:auto;">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th v-if="!isSalesRep" style="width:40px"><input type="checkbox" :checked="allSelected"
-                                            @change="toggleSelectAll" /></th>
-                                    <th>#</th>
-                                    <th>Receipt No.</th>
-                                    <th>Customer</th>
-                                    <th class="text-end">Amount</th>
-                                    <th>Payment</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(order, idx) in pagedOrders" :key="order.id">
-                                    <td v-if="!isSalesRep"><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
-                                    <td>{{ (currentPage - 1) * pageSize + idx + 1 }}</td>
-                                    <td>{{ order.receipt_number || '-' }}</td>
-                                    <td>{{ getCustomerName(order) }}</td>
-                                    <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
-                                    <td>{{ getPaymentMode(order) || '-' }}</td>
-                                    <td>{{ formatDate(order.created_at) }}</td>
-                                </tr>
-                                <tr v-if="filteredOrders.length === 0">
-                                    <td :colspan="isSalesRep ? 6 : 7" class="text-center text-muted">No pending sales orders found.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between mt-2">
-                        <small class="text-muted">
-                            Showing {{ filteredOrders.length ? (currentPage - 1) * pageSize + 1 : 0 }}–{{ Math.min(currentPage * pageSize, filteredOrders.length) }} of {{ filteredOrders.length }}
-                        </small>
-                        <div class="d-flex align-items-center gap-1">
-                            <button type="button" class="page-btn" :disabled="currentPage === 1" @click="currentPage--">←</button>
-                            <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-                            <button type="button" class="page-btn" :disabled="currentPage >= totalPages" @click="currentPage++">→</button>
-                        </div>
-                        <p class="mb-0" v-if="isSalesRep">
-                            <span class="text-primary"><b>{{ selectedIds.length }}</b></span> pending receipt(s) to remit
-                        </p>
-                        <p class="mb-0" v-else>
-                            <span class="text-primary"><b>{{ selectedIds.length }}</b></span> Selected
-                        </p>
-                    </div>
-                    <div v-if="form.errors.receipts" class="text-danger mb-2">
-                        {{ form.errors.receipts }}
-                    </div>
-
-                    <div>
-                        <h6 class="text-primary"><i class="ri-money-dollar-circle-line"></i> Summary</h6>
-                        <div class="row g-2">
-                            <div class="col-md-4">
-                                <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Cash Sales</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.cash_sales) }}</div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Credit Sales</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.credit_sales) }}</div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="p-2 bg-light rounded">
-                                    <small class="text-muted">Bank Transfer</small>
-                                    <div class="fw-bold">{{ formatAmount(totals.bank_transfer) }}</div>
-                                </div>
-                            </div>
+                    <!-- Step 1: pending receipts to remit + outstanding AR invoices (reference only) -->
+                    <div v-show="currentStep === 1" class="step-content">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="text-primary mb-0"><i class="ri-receipt-line"></i> Receipts to Remit</h6>
+                            <button v-if="!isSalesRep" type="button" class="acct-btn-secondary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</button>
                         </div>
 
-                        <div class="my-4 text-end">
-                            TOTAL<h2 class="mb-0"><strong> {{ formatAmount(totals.overall) }}</strong></h2>
+                        <!-- A Sales Rep must remit every pending receipt of theirs, so the
+                             checkbox column is dropped entirely: nothing here is optional. -->
+                        <div class="table-responsive" style="max-height: 220px; overflow:auto;">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th v-if="!isSalesRep" style="width:40px"><input type="checkbox" :checked="allSelected"
+                                                @change="toggleSelectAll" /></th>
+                                        <th>#</th>
+                                        <th>Receipt No.</th>
+                                        <th>Customer</th>
+                                        <th class="text-end">Amount</th>
+                                        <th>Payment</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(order, idx) in orders" :key="order.id">
+                                        <td v-if="!isSalesRep"><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
+                                        <td>{{ idx + 1 }}</td>
+                                        <td>{{ order.receipt_number || '-' }}</td>
+                                        <td>{{ getCustomerName(order) }}</td>
+                                        <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
+                                        <td>{{ getPaymentMode(order) || '-' }}</td>
+                                        <td>{{ formatDate(order.created_at) }}</td>
+                                    </tr>
+                                    <tr v-if="orders.length === 0">
+                                        <td :colspan="isSalesRep ? 6 : 7" class="text-center text-muted">No pending sales orders found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <small class="text-muted">{{ orders.length }} pending receipt(s)</small>
+                            <p class="mb-0" v-if="isSalesRep">
+                                <span class="text-primary"><b>{{ selectedIds.length }}</b></span> pending receipt(s) to remit
+                            </p>
+                            <p class="mb-0" v-else>
+                                <span class="text-primary"><b>{{ selectedIds.length }}</b></span> Selected
+                            </p>
+                        </div>
+                        <div v-if="form.errors.receipts" class="text-danger mb-2">
+                            {{ form.errors.receipts }}
+                        </div>
+
+                        <!-- Unpaid AR invoices, informational only — nothing here is selected or submitted -->
+                        <h6 class="text-primary mb-2 mt-4"><i class="ri-file-warning-line"></i> Outstanding AR Invoices</h6>
+                        <p class="text-muted small mb-2">Outstanding credit-sale invoices, for reference before remitting.</p>
+                        <div class="table-responsive" style="max-height: 220px; overflow:auto;">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Invoice No.</th>
+                                        <th>Customer</th>
+                                        <th class="text-end">Balance Due</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="loadingUnpaidInvoices">
+                                        <td colspan="6" class="text-center text-muted">Loading…</td>
+                                    </tr>
+                                    <template v-else>
+                                        <tr v-for="(invoice, idx) in unpaidInvoices" :key="invoice.id">
+                                            <td>{{ idx + 1 }}</td>
+                                            <td>{{ invoice.invoice_number || '-' }}</td>
+                                            <td>{{ invoice.sales_order?.customer?.name || '-' }}</td>
+                                            <td class="text-end">{{ formatAmount(invoice.balance_due) }}</td>
+                                            <td>{{ invoice.due_date_formatted || '-' }}</td>
+                                            <td>{{ invoice.status?.name || '-' }}</td>
+                                        </tr>
+                                        <tr v-if="unpaidInvoices.length === 0">
+                                            <td colspan="6" class="text-center text-muted">No unpaid invoices found.</td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">{{ unpaidInvoices.length }} unpaid invoice(s)</small>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: totals by payment mode, receipt count, and outstanding AR -->
+                    <div v-show="currentStep === 2" class="step-content">
+                        <div class="remit-total-banner">
+                            <div class="remit-total-banner-left">
+                                <span class="remit-total-icon"><i class="ri-wallet-3-line"></i></span>
+                                <div>
+                                    <div class="remit-total-label">Total Remittance Amount</div>
+                                    <div class="remit-total-amount">{{ formatAmount(totals.overall) }}</div>
+                                </div>
+                            </div>
+                            <div class="remit-total-banner-right">
+                                <i class="ri-file-list-3-line"></i>
+                                <span class="remit-total-check"><i class="ri-check-line"></i></span>
+                            </div>
+                        </div>
+
+                        <div class="remit-cards-row">
+                            <div class="remit-card">
+                                <div class="remit-card-title">
+                                    <span class="remit-card-icon"><i class="ri-file-list-2-line"></i></span>
+                                    Receipts Overview
+                                </div>
+                                <div class="remit-card-body">
+                                    <div class="remit-stat">
+                                        <div class="remit-stat-label">Total Receipts</div>
+                                        <div class="remit-stat-value">{{ selectedIds.length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="remit-card remit-card-wide">
+                                <div class="remit-card-title">
+                                    <span class="remit-card-icon"><i class="ri-pie-chart-2-line"></i></span>
+                                    Payment Breakdown
+                                </div>
+                                <div class="remit-card-body remit-card-body-row">
+                                    <div class="remit-stat">
+                                        <div class="remit-stat-label">Cash Sales</div>
+                                        <div class="remit-stat-value">{{ formatAmount(totals.cash_sales) }}</div>
+                                    </div>
+                                    <div class="remit-stat">
+                                        <div class="remit-stat-label">Credit Sales</div>
+                                        <div class="remit-stat-value">{{ formatAmount(totals.credit_sales) }}</div>
+                                    </div>
+                                    <div class="remit-stat">
+                                        <div class="remit-stat-label">Bank Transfer</div>
+                                        <div class="remit-stat-value">{{ formatAmount(totals.bank_transfer) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="remit-card remit-card-full">
+                            <div class="remit-card-title">
+                                <span class="remit-card-icon"><i class="ri-user-line"></i></span>
+                                Accounts Receivable
+                            </div>
+                            <div class="remit-ar-row">
+                                <div class="remit-ar-tile">
+                                    <span class="remit-ar-icon"><i class="ri-file-text-line"></i></span>
+                                    <div>
+                                        <div class="remit-stat-label">Unpaid Invoices</div>
+                                        <div class="remit-stat-value">{{ unpaidInvoices.length }}</div>
+                                    </div>
+                                </div>
+                                <div class="remit-ar-tile">
+                                    <span class="remit-ar-icon"><i class="ri-wallet-3-line"></i></span>
+                                    <div>
+                                        <div class="remit-stat-label">Outstanding Balance</div>
+                                        <div class="remit-stat-value">{{ formatAmount(unpaidInvoicesTotal) }}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -106,14 +190,18 @@
                     </div>
 
                     <div class="form-actions mt-3 d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-cancel" @click="hide">
-                            <i class="ri-close-line"></i>
-                            Cancel
+                        <button v-if="currentStep > 1" type="button" class="acct-btn-secondary" @click="prevStep">
+                            <i class="ri-arrow-left-line"></i>
+                            Back
                         </button>
-                        <button type="submit" class="btn btn-save" :disabled="selectedIds.length === 0 || submitting">
+                        <button v-if="currentStep < 2" type="button" class="btn btn-save" :disabled="selectedIds.length === 0" @click="nextStep">
+                            Next
+                            <i class="ri-arrow-right-line"></i>
+                        </button>
+                        <button v-else type="submit" class="btn btn-save" :disabled="selectedIds.length === 0 || submitting">
                             <i class="ri-save-line" v-if="!submitting"></i>
                             <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ submitting ? 'Saving...' : 'Save Remit' }}
+                            {{ submitting ? 'Saving...' : 'Save Remittance' }}
                         </button>
                     </div>
                 </form>
@@ -123,21 +211,18 @@
 </template>
 
 <script>
-import _ from 'lodash';
 import { useForm } from '@inertiajs/vue3';
 
 export default {
     data() {
         return {
             showModal: false,
+            currentStep: 1,
             orders: [],
-            filteredOrders: [],
             selectedIds: [],
-            keyword: '',
-            currentPage: 1,
-            pageSize: 3,
+            unpaidInvoices: [],
+            loadingUnpaidInvoices: false,
             submitting: false,
-            debouncedFetch: null,
             form: useForm({
                 receipts: [],
                 summary: {},
@@ -151,19 +236,17 @@ export default {
         // else (Admin, Manager, etc.) opening this on behalf of the business
         // needs to see every pending receipt, not just ones tied to their own
         // (likely nonexistent) sales_rep_id — see isSalesRep in Remittances/Index.vue.
+        // A user who also holds an admin-level sales role (e.g. Super Admin
+        // stacked with Sales Rep, as happens with multi-role test accounts)
+        // must still see every pending receipt — only a pure Sales Rep is
+        // restricted to their own.
         isSalesRep() {
             const roles = this.$page.props.roles ?? [];
-            return roles.includes('Sales Rep') && !!this.$page.props.user?.employee_id;
+            const hasSalesAdmin = (this.$page.props.permissions?.sales?._module ?? []).includes('admin');
+            return roles.includes('Sales Rep') && !!this.$page.props.user?.data?.employee_id && !hasSalesAdmin;
         },
         allSelected() {
-            return this.filteredOrders.length > 0 && this.selectedIds.length === this.filteredOrders.length;
-        },
-        pagedOrders() {
-            const start = (this.currentPage - 1) * this.pageSize;
-            return this.filteredOrders.slice(start, start + this.pageSize);
-        },
-        totalPages() {
-            return Math.max(1, Math.ceil(this.filteredOrders.length / this.pageSize));
+            return this.orders.length > 0 && this.selectedIds.length === this.orders.length;
         },
         totals() {
             const t = { cash_sales: 0, credit_sales: 0, bank_transfer: 0, overall: 0 };
@@ -177,28 +260,57 @@ export default {
                 t.overall += amt;
             });
             return t;
+        },
+        unpaidInvoicesTotal() {
+            return this.unpaidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.balance_due) || 0), 0);
+        },
+        stepSubtitle() {
+            if (this.currentStep === 1) return 'Select receipts to remit and review outstanding invoices';
+            return 'Summary of remittance details';
         }
-    },
-    created() {
-        this.debouncedFetch = _.debounce(this.applyFilter, 400);
     },
     methods: {
         show() {
             this.showModal = true;
+            this.currentStep = 1;
             this.selectedIds = [];
-            this.keyword = '';
-            this.currentPage = 1;
             this.fetchPending();
+            this.fetchUnpaidInvoices();
         },
         hide() {
             this.showModal = false;
+        },
+        nextStep() {
+            if (this.currentStep === 1 && this.selectedIds.length === 0) return;
+            this.currentStep = Math.min(2, this.currentStep + 1);
+        },
+        prevStep() {
+            this.currentStep = Math.max(1, this.currentStep - 1);
+        },
+        fetchUnpaidInvoices() {
+            this.loadingUnpaidInvoices = true;
+            axios.get('/ar-invoices', {
+                params: {
+                    option: 'remittance_candidates',
+                    count: 100000,
+                }
+            })
+                .then(res => {
+                    if (res && res.data) {
+                        this.unpaidInvoices = res.data.data || res.data;
+                    }
+                })
+                .catch(err => console.error(err))
+                .finally(() => {
+                    this.loadingUnpaidInvoices = false;
+                });
         },
         fetchPending() {
             axios.get('/receipts', {
                 params: {
                     status: "pending",
                     option: 'lists',
-                    count: 100,
+                    count: 100000,
                     ...(this.isSalesRep ? { scope_to_rep: 1 } : {}),
                 }
             })
@@ -214,26 +326,9 @@ export default {
                             // Reset selectedIds to only those still present
                             this.selectedIds = this.selectedIds.filter(id => this.orders.find(o => o.id === id));
                         }
-                        // apply client-side filter (displayed list)
-                        this.applyFilter();
                     }
                 })
                 .catch(err => console.error(err));
-        },
-        applyFilter() {
-            this.currentPage = 1;
-            if (!this.keyword) {
-                this.filteredOrders = [...this.orders];
-            } else {
-                const kw = this.keyword.toLowerCase();
-                this.filteredOrders = this.orders.filter(o =>
-                    (
-                        (o.receipt_number || '') + ' ' +
-                        (this.getCustomerName(o) || '') + ' ' +
-                        (this.getPaymentMode(o) || '')
-                    ).toLowerCase().includes(kw)
-                );
-            }
         },
         getCustomerName(order) {
             return order?.customer?.name || order?.ar_invoice?.sales_order?.customer?.name || '-';
@@ -250,7 +345,7 @@ export default {
             if (this.allSelected) {
                 this.selectedIds = [];
             } else {
-                this.selectedIds = this.filteredOrders.map(o => o.id);
+                this.selectedIds = this.orders.map(o => o.id);
             }
         },
         formatDate(dateStr) {
@@ -328,24 +423,180 @@ export default {
     min-width: 140px;
 }
 
-.page-btn {
+.modal-subtitle {
+    font-size: 0.78rem;
+    color: #6b8c85;
+    font-weight: 500;
+}
+
+/* Step 2 summary */
+.remit-total-banner {
+    display: flex;
+    align-items: stretch;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.remit-total-banner-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.4rem;
+    background: linear-gradient(135deg, #1f6f57 0%, #2c8a6c 100%);
+    color: #fff;
+    min-width: 0;
+}
+
+.remit-total-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.remit-total-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+.remit-total-amount {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.remit-total-banner-right {
+    width: 120px;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #cfe9df 0%, #eef8f4 100%);
+    color: rgba(31, 111, 87, 0.35);
+    font-size: 2.4rem;
+}
+
+.remit-total-check {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1f6f57;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.remit-cards-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.remit-card {
+    flex: 1;
+    min-width: 0;
     background: #fff;
-    border: 1px solid #c4d9d2;
-    border-radius: 6px;
+    border: 1px solid #e6ede9;
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+}
+
+.remit-card-wide {
+    flex: 1.4;
+}
+
+.remit-card-full {
+    width: 100%;
+}
+
+.remit-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: #16322e;
-    padding: 2px 10px;
-    font-size: 13px;
-    line-height: 1.6;
-    cursor: pointer;
+    margin-bottom: 0.9rem;
 }
-.page-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
+
+.remit-card-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: rgba(61, 141, 122, 0.12);
+    color: #3d8d7a;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
-.page-info {
-    font-size: 12px;
-    color: #5f756d;
-    padding: 0 4px;
+
+.remit-card-body-row {
+    display: flex;
+    gap: 1.25rem;
+}
+
+.remit-stat {
+    flex: 1;
+}
+
+.remit-stat-label {
+    font-size: 0.78rem;
+    color: #6b8c85;
+    margin-bottom: 0.2rem;
+}
+
+.remit-stat-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #16322e;
+}
+
+.remit-ar-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.remit-ar-tile {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    background: #f4f9f7;
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+}
+
+.remit-ar-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(61, 141, 122, 0.12);
+    color: #3d8d7a;
+    font-size: 1rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @media (max-width: 768px) {
@@ -353,6 +604,21 @@ export default {
         max-height: 85vh;
         overflow-y: auto;
         margin: 0 10px;
+    }
+
+    .remit-cards-row,
+    .remit-ar-row {
+        flex-direction: column;
+    }
+
+    .remit-total-banner {
+        flex-direction: column;
+    }
+
+    .remit-total-banner-right {
+        width: 100%;
+        height: 48px;
+        font-size: 1.6rem;
     }
 }
 </style>
