@@ -77,9 +77,10 @@
           <i class="ri-close-line"></i>
           Cancel
         </button>
-        <button type="button" class="btn btn-save" :disabled="isUnchanged || wholesalePriceError || retailPriceError" @click="savePrices">
-          <i class="ri-save-line"></i>
-          Save
+        <button type="button" class="btn btn-save" :disabled="form.processing || isUnchanged || wholesalePriceError || retailPriceError" @click="savePrices">
+          <i class="ri-save-line" v-if="!form.processing"></i>
+          <i class="ri-loader-4-line spinner" v-else></i>
+          {{ form.processing ? 'Saving...' : 'Save' }}
         </button>
       </div>
     </div>

@@ -33,7 +33,7 @@
                                         <i class="ri-bar-chart-grouped-line"></i>
                                         Daily Summary
                                     </button>
-                                    <button v-if="can('accounting', 'remittances', 'encoder')" class="acct-btn-primary" @click="openCreate">
+                                    <button v-if="can('sales', 'remittances', 'encoder')" class="acct-btn-primary" @click="openCreate">
                                         <i class="ri-add-line"></i>
                                         Prepare Remittance
                                     </button>

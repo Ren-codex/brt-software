@@ -20,9 +20,6 @@
             <h2 class="order-title">{{ $isUpdatedReceipt ? 'Updated Receipt' : ($isRefundReceipt ? 'Refund Receipt' : 'Receipt') }}</h2>
             <table class="order-meta-table">
                 <tr>
-                    <td class="order-meta-label">Date</td>
-                </tr>
-                <tr>
                     <td class="order-meta-value">{{ $receiptDate }}</td>
                 </tr>
                 <tr>

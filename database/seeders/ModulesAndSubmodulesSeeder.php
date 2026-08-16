@@ -16,6 +16,7 @@ class ModulesAndSubmodulesSeeder extends Seeder
                 ['key' => 'ar_invoices', 'name' => 'AR Invoices', 'sort_order' => 2],
                 ['key' => 'receipts', 'name' => 'Receipts', 'sort_order' => 3],
                 ['key' => 'sales_returns', 'name' => 'Sales Returns', 'sort_order' => 4],
+                ['key' => 'remittances', 'name' => 'Remittances', 'sort_order' => 5],
             ]],
             ['key' => 'inventory', 'name' => 'Inventory', 'sort_order' => 2, 'submodules' => [
                 ['key' => 'purchase_orders', 'name' => 'Purchase Orders', 'sort_order' => 1],
@@ -39,7 +40,6 @@ class ModulesAndSubmodulesSeeder extends Seeder
                 ['key' => 'petty_cash', 'name' => 'Petty Cash', 'sort_order' => 5],
                 ['key' => 'expenses', 'name' => 'Expenses', 'sort_order' => 6],
                 ['key' => 'bank_reconciliation', 'name' => 'Bank Reconciliation', 'sort_order' => 7],
-                ['key' => 'remittances', 'name' => 'Remittances', 'sort_order' => 8],
             ]],
             ['key' => 'user_management', 'name' => 'User Management', 'sort_order' => 7, 'submodules' => []],
             ['key' => 'dashboard', 'name' => 'Dashboard', 'sort_order' => 8, 'submodules' => []],

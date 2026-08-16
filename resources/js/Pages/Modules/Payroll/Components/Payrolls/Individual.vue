@@ -29,6 +29,14 @@
               </div>
               <div class="overtime-row">
                 <div class="overtime-field">
+                  <span class="overtime-label">Hours/Day</span>
+                  <input type="number" v-model.number="form.hours_per_day" min="0" max="24" step="0.5" class="summary-input" />
+                </div>
+                <div class="overtime-field">
+                  <span class="overtime-label">OT Rate (₱/hr)</span>
+                  <input type="number" v-model.number="form.overtime_rate" min="0" step="0.01" class="summary-input" />
+                </div>
+                <div class="overtime-field">
                   <span class="overtime-label">OT Hours</span>
                   <input type="number" v-model.number="form.overtime_hours" min="0" step="0.5" class="summary-input" />
                 </div>
@@ -36,15 +44,15 @@
                   <span class="overtime-label">Computed Amount</span>
                   <span class="overtime-amount">₱ {{ formatNumber(overtimeAmount) }}</span>
                 </div>
-                <button class="btn-mini" :disabled="!hoursPerDay || !overtimeRate" @click="applyOvertime">
+                <button class="btn-mini" :disabled="!form.overtime_rate" @click="applyOvertime">
                   {{ hasOvertimeEarning ? 'Update' : 'Add' }}
                 </button>
               </div>
-              <small v-if="!hoursPerDay || !overtimeRate" class="overtime-hint">
-                Set the "Hours Per Day" and "Overtime Rate" payroll settings to enable overtime computation.
+              <small v-if="!form.overtime_rate" class="overtime-hint">
+                Set this employee's Overtime Rate to enable overtime computation.
               </small>
               <small v-else class="overtime-hint">
-                (Rate per day ÷ {{ hoursPerDay }} hrs) × {{ overtimeRate }} × OT hours
+                OT Rate × OT Hours
               </small>
             </div>
 
@@ -243,6 +251,8 @@ export default {
         total_days: 0,
         loans: [],
         overtime_hours: 0,
+        hours_per_day: 0,
+        overtime_rate: 0,
       },
       showEarningModal: false,
       isEarningEdit: false,
@@ -279,18 +289,9 @@ export default {
     netPay() {
       return this.totalEarnings - this.totalDeductions
     },
-    hoursPerDay() {
-      const setting = (this.dropdowns?.payroll_settings || []).find(s => s.slug === 'hours-per-day');
-      return setting ? Number(setting.value) || 0 : 0;
-    },
-    overtimeRate() {
-      const setting = (this.dropdowns?.payroll_settings || []).find(s => s.slug === 'overtime-rate');
-      return setting ? Number(setting.value) || 0 : 0;
-    },
     overtimeAmount() {
-      if (!this.hoursPerDay || !this.overtimeRate || !this.form.overtime_hours) return 0;
-      const dailySalary = Number(this.form.basic_salary) || 0;
-      return Math.round(((dailySalary / this.hoursPerDay) * this.overtimeRate * Number(this.form.overtime_hours)) * 100) / 100;
+      if (!this.form.overtime_rate || !this.form.overtime_hours) return 0;
+      return Math.round((Number(this.form.overtime_rate) || 0) * (Number(this.form.overtime_hours) || 0) * 100) / 100;
     },
     hasOvertimeEarning() {
       return this.form.earnings.some(e => e.description === 'Overtime');
@@ -305,6 +306,8 @@ export default {
         total_days: 0,
         loans: [],
         overtime_hours: 0,
+        hours_per_day: 0,
+        overtime_rate: 0,
       }
     },
     resetForm() {
@@ -325,7 +328,9 @@ export default {
         this.form.earnings = (this.employee.earnings || []).map(item => ({ ...item }));
         this.form.deductions = (this.employee.deductions || []).map(item => ({ ...item }));
         this.form.loans = (this.employee.loans || []).map(loan => ({ ...loan }));
-        this.form.overtime_hours = 0;
+        this.form.overtime_hours = this.employee.overtime_hours || 0;
+        this.form.hours_per_day = this.employee.hours_per_day ?? 8;
+        this.form.overtime_rate = this.employee.overtime_rate ?? 0;
       } else {
         this.resetForm()
       }
@@ -453,6 +458,10 @@ export default {
         total_deductions: this.totalDeductions,
         net_salary: this.netPay,
         loans: this.form.loans.map(loan => ({ ...loan })),
+        hours_per_day: this.form.hours_per_day,
+        overtime_hours: this.form.overtime_hours,
+        overtime_rate: this.form.overtime_rate,
+        overtime_amount: this.overtimeAmount,
       }
 
       this.$emit('save', payload)

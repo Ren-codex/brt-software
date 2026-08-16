@@ -737,7 +737,7 @@ class AccountingController extends Controller
                 'jel.description',
                 'u.username as posted_by',
             ])
-            ->orderByDesc('je.entry_date')
+            ->orderByDesc('je.created_at')
             ->orderByDesc('je.id')
             ->orderByDesc('jel.id')
             ->paginate($perPage);

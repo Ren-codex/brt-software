@@ -3,9 +3,13 @@
         <div class="modal-container" @click.stop>
             <!-- Header Section -->
             <div class="modal-header">
-                <div class="header-left">
-                    <div class="header-text">
-                        <h2>{{ editable ? 'Update Loan Application' : 'New Loan Application' }}</h2>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="modal-header-icon">
+                        <i class="ri-bank-card-line"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0">{{ editable ? 'Update Loan Application' : 'New Loan Application' }}</h5>
+                        <p class="modal-subtitle mb-0">{{ editable ? 'Update the loan details below' : 'Fill in the borrower and loan details' }}</p>
                     </div>
                 </div>
                 <button class="close-btn" @click="hide">
@@ -121,12 +125,13 @@
                             </label>
                             <div class="input-group">
                                 <span class="currency-symbol">₱</span>
-                                <input 
-                                    type="number" 
-                                    v-model="form.amount" 
-                                    class="form-control" 
+                                <input
+                                    type="number"
+                                    v-model="form.amount"
+                                    class="form-control"
                                     :class="{ 'input-error': form.errors.amount }"
                                     placeholder="0.00"
+                                    @wheel="$event.target.blur()"
                                 >
                             </div>
                             <span class="error-message" v-if="form.errors.amount">
@@ -164,13 +169,16 @@
                                     <span class="required">*</span>
                                 </label>
                                 <div class="input-group">
-                                    <input 
-                                        type="number" 
-                                        step="0.01" 
-                                        v-model="form.interest_rate" 
-                                        class="form-control" 
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        v-model="form.interest_rate"
+                                        class="form-control"
                                         :class="{ 'input-error': form.errors.interest_rate }"
                                         placeholder="Enter rate"
+                                        @wheel="$event.target.blur()"
                                     >
                                     <span class="input-suffix">%</span>
                                 </div>
@@ -316,6 +324,9 @@ export default {
         },
         interestRateValue() {
             const value = parseFloat(this.form.interest_rate);
+            if (Number.isFinite(value) && value < 0) {
+                return 0;
+            }
             return Number.isFinite(value) ? value : 0;
         },
         termMonthsValue() {
@@ -353,17 +364,22 @@ export default {
                     return;
                 }
             }
-            if (this.currentStep === 3) {
-                if (!this.form.interest_rate || this.form.interest_rate < 0) {
-                    this.form.errors.interest_rate = 'Please enter a valid interest rate';
-                    return;
-                }
-                if (!this.form.term_months || this.form.term_months <= 0) {
-                    this.form.errors.term_months = 'Please enter a valid term';
-                    return;
-                }
+            if (this.currentStep === 3 && !this.validateStep3()) {
+                return;
             }
             this.currentStep++;
+        },
+        validateStep3() {
+            this.form.clearErrors('interest_rate', 'term_months');
+            if (this.form.interest_rate === '' || this.form.interest_rate === null || this.form.interest_rate < 0) {
+                this.form.errors.interest_rate = 'Please enter a valid interest rate';
+                return false;
+            }
+            if (!this.form.term_months || this.form.term_months <= 0) {
+                this.form.errors.term_months = 'Please enter a valid term';
+                return false;
+            }
+            return true;
         },
         previousStep() {
             this.currentStep--;
@@ -394,6 +410,9 @@ export default {
         },
         submit() {
             if (this.currentStep === 3) {
+                if (!this.validateStep3()) {
+                    return;
+                }
                 if (this.editable) {
                     this.form.put(`/loans/${this.form.id}`, {
                         preserveScroll: true,
@@ -457,47 +476,15 @@ export default {
     }
 }
 
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    position: relative;
-    z-index: 1;
-}
-
-.icon-circle {
-    width: 40px;
-    height: 40px;
-    background: rgba(61, 141, 122, 0.12);
-    border: 1px solid rgba(61, 141, 122, 0.16);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(10px);
-}
-
-.icon-circle i {
-    font-size: 28px;
-    color: #3d8d7a;
-}
-
-.header-text h2 {
-    margin: 0 0 4px 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+.modal-title {
+    font-size: 0.95rem;
+    font-weight: 700;
     color: #16322e;
-    letter-spacing: -0.3px;
 }
 
-.header-text p {
-    margin: 0;
-    font-size: 0.875rem;
+.modal-subtitle {
+    font-size: 0.75rem;
     color: #6b8c85;
-}
-
-.close-btn i {
-    font-size: 20px;
 }
 
 /* Body */
@@ -1103,10 +1090,6 @@ export default {
         margin: 1rem;
     }
     
-    .modal-header {
-        padding: 1.25rem 1.5rem;
-    }
-
     .loan-type-grid {
         grid-template-columns: 1fr;
     }

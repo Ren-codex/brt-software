@@ -136,7 +136,7 @@ class DropdownClass
     public function products(){
         $data = Product::with(['brand', 'unit', 'packaging'])->get()->map(function ($item) {
             $batchStocks = InventoryStocks::query()
-                ->with('receivedItem')
+                ->with('receivedItem.receivedStock')
                 ->where('quantity', '>', 0)
                 ->where(function ($q) use ($item) {
                     // Received stocks (linked via received_item)
@@ -160,13 +160,16 @@ class DropdownClass
 
             $batch_stocks = $batchStocksByCode->map(function ($stocks, $batchCode) {
                 $firstStock = $stocks->sortBy('created_at')->first();
+                $receivedDate = $firstStock?->receivedItem?->receivedStock?->received_date ?? $firstStock?->created_at;
 
                 return [
+                    'id' => $firstStock?->id,
                     'batch_code' => $batchCode,
                     'quantity' => (int) $stocks->sum('quantity'),
                     'unit_cost' => $firstStock?->receivedItem?->unit_cost ?? $firstStock?->unit_cost,
                     'retail_price' => $firstStock?->retail_price,
                     'wholesale_price' => $firstStock?->wholesale_price,
+                    'received_date' => $receivedDate?->toDateString(),
                 ];
             })->values()->sortBy('batch_code')->values()->all();
 
@@ -236,6 +239,8 @@ class DropdownClass
                 'name' => $item->lastname . ', ' . $item->firstname . ' ' . ($item->middlename ? strtoupper($item->middlename[0]) . '.' : ''),
                 'position_name' => $item->position ? $item->position->title : null,
                 'basic_salary' => $item->position ? $item->position->rate_per_day : null,
+                'hours_per_day' => $item->hours_per_day,
+                'overtime_rate' => $item->overtime_rate,
                 'total_loan_count' => $item->loans->where('status', 'active')->count(),
                 'total_unpaid_loan' => $totalUnpaidLoan,
             ];
@@ -330,6 +335,8 @@ class DropdownClass
                         'id' => $emp->id,
                         'name' => $emp->lastname . ', ' . $emp->firstname . ' ' . ($emp->middlename ? strtoupper($emp->middlename[0]) . '.' : ''),
                         'basic_salary' => $emp->position ? $emp->position->rate_per_day : null,
+                        'hours_per_day' => $emp->hours_per_day,
+                        'overtime_rate' => $emp->overtime_rate,
                     ];
                 }),
             ];

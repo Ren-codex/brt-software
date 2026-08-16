@@ -32,12 +32,12 @@ class ReceivedStockService
 
     public function getAll()
     {
-        return ReceivedStock::with(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'voidedBy', 'payments.createdBy'])->get();
+        return ReceivedStock::with(['purchaseOrder', 'supplier', 'items.product.brand', 'items.product.unit', 'items.product.packaging', 'receivedBy', 'voidedBy', 'payments.createdBy'])->get();
     }
 
     public function getById($id)
     {
-        return ReceivedStock::with(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'voidedBy', 'payments.createdBy'])->findOrFail($id);
+        return ReceivedStock::with(['purchaseOrder', 'supplier', 'items.product.brand', 'items.product.unit', 'items.product.packaging', 'receivedBy', 'voidedBy', 'payments.createdBy'])->findOrFail($id);
     }
 
     public function create(array $data)

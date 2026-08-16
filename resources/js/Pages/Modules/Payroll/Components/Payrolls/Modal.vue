@@ -299,6 +299,10 @@ export default {
           total_deductions: data.total_deductions,
           net_salary: data.net_salary,
           loans: nextLoans,
+          hours_per_day: data.hours_per_day,
+          overtime_hours: data.overtime_hours,
+          overtime_rate: data.overtime_rate,
+          overtime_amount: data.overtime_amount,
         };
       }
       this.showIndividualModal = false;
@@ -331,6 +335,10 @@ export default {
                   total_deductions: item.total_deductions,
                   net_salary: item.net_salary,
                   loans: item.loans || [],
+                  hours_per_day: item.hours_per_day,
+                  overtime_hours: item.overtime_hours,
+                  overtime_rate: item.overtime_rate,
+                  overtime_amount: item.overtime_amount,
                 }
               })
             }
@@ -424,6 +432,10 @@ export default {
             loans: normalizeLoans(e),
             // Backward-compatible key to support legacy backend paths.
             selected_loans: normalizeLoans(e),
+            hours_per_day: e.hours_per_day,
+            overtime_hours: e.overtime_hours,
+            overtime_rate: e.overtime_rate,
+            overtime_amount: e.overtime_amount,
           };
         }),
         total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),

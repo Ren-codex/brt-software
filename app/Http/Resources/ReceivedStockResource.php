@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\Libraries\ListSupplierResource;
+use App\Http\Resources\Libraries\ProductResource;
 use App\Http\Resources\System\PurchaseOrder\PurchaseOrderResource;
 use App\Http\Resources\System\User\ViewResource;
 use Illuminate\Http\Request;
@@ -35,6 +36,15 @@ class ReceivedStockResource extends JsonResource
             'received_by' => $this->receivedBy ? new ViewResource($this->receivedBy) : null,
             'received_date' => $this->received_date,
             'remarks' => $this->remarks,
+            'items' => $this->items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product' => $item->product ? new ProductResource($item->product) : null,
+                    'quantity' => $item->quantity,
+                    'unit_cost' => (float) $item->unit_cost,
+                    'total_cost' => (float) $item->total_cost,
+                ];
+            })->values(),
             'payment_mode' => $resolvedPaymentMode,
             'original_payment_mode' => $this->payment_mode,
             'due_date' => optional($this->due_date)->toDateString() ?: $this->due_date,

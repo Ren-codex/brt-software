@@ -15,7 +15,12 @@
         </div>
 
         <div class="card-body m-2 p-3">
-          <div class="row g-3">
+          <div v-if="isLoading" class="product-summary-preloader">
+            <div class="table-loading-spinner"></div>
+            <p class="mt-2 mb-0 text-muted">Loading product inventory...</p>
+          </div>
+
+          <div v-else class="row g-3">
             <div class="col-lg-4 col-xl-3">
               <div class="search-wrapper mb-3">
                 <i class="ri-search-line search-icon"></i>
@@ -240,10 +245,14 @@ export default {
       batchKeyword: '',
       stockPage: 1,
       stocksPerPage: 10,
-      stocksLoaded: false,
+      loadingProducts: true,
+      loadingStocks: true,
     };
   },
   computed: {
+    isLoading() {
+      return this.loadingProducts || this.loadingStocks;
+    },
     activeProducts() {
       return this.products.filter((product) => this.isProductActive(product));
     },
@@ -365,6 +374,7 @@ export default {
       return Boolean(value);
     },
     async fetchProducts() {
+      this.loadingProducts = true;
       try {
         const response = await axios.get('/libraries/products', {
           params: {
@@ -384,10 +394,12 @@ export default {
       } catch (error) {
         console.error(error);
         this.products = [];
+      } finally {
+        this.loadingProducts = false;
       }
     },
     async fetchInventoryStocks() {
-      this.stocksLoaded = false;
+      this.loadingStocks = true;
       try {
         const response = await axios.get('/inventory-stocks', {
           params: {
@@ -401,7 +413,7 @@ export default {
         console.error(error);
         this.inventoryStocks = [];
       } finally {
-        this.stocksLoaded = true;
+        this.loadingStocks = false;
       }
     },
     selectProduct(product, isConverted = false) {
@@ -442,7 +454,7 @@ export default {
         .reduce((total, stock) => total + Number(stock.quantity || 0), 0);
     },
     isLowStock(productId) {
-      if (!this.stocksLoaded) return false;
+      if (this.loadingStocks) return false;
       return this.totalQuantityByProductId(productId) < 11;
     },
     formatDate(date) {
@@ -497,6 +509,29 @@ export default {
 </script>
 
 <style scoped>
+.product-summary-preloader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+}
+
+.table-loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #d7e5de;
+  border-top-color: #3d8d7a;
+  border-radius: 50%;
+  animation: table-loading-spin 0.8s linear infinite;
+}
+
+@keyframes table-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .products-list-section {
   overflow-y: auto;
   overflow-x: hidden;

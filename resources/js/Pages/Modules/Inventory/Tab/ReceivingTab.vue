@@ -45,26 +45,25 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>PR Number</th>
-                <th>PO Number</th>
                 <th>Received No.</th>
+                <th>PO Number</th>
                 <th>Supplier</th>
                 <th>Received Date</th>
                 <th>Payment Method</th>
                 <th>Amount Paid</th>
                 <th>Bank Details</th>
+                <th>Remarks</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <TableLoadingRow v-if="loading" :colspan="9" message="Loading received stocks..." />
+              <TableLoadingRow v-if="loading" :colspan="12" message="Loading received stocks..." />
               <template v-else>
-                <tr v-for="(record, index) in filteredRecords" :key="record.id">
+                <tr v-for="(record, index) in filteredRecords" :key="record.id" :class="{ 'voided-row': record.is_voided }">
                   <td>{{ index + 1 }}</td>
-                  <td>
-                    <strong>{{ record.purchase_order?.pr_number || 'N/A' }}</strong>
-                  </td>
+                  <td><b>{{ record.received_no || `RCV-${record.id}` }}</b></td>
                   <td>{{ record.purchase_order?.po_number || 'N/A' }}</td>
-                  <td>{{ record.received_no || `RCV-${record.id}` }}</td>
                   <td>
                     <div class="supplier-cell">
                       <strong>{{ record.supplier?.name || 'Unknown Supplier' }}</strong>
@@ -87,9 +86,40 @@
                     </span>
                     <span v-else class="bank-details muted">Cash payment</span>
                   </td>
+                  <td>
+                    <span v-if="record.remarks" class="remarks-cell">{{ record.remarks }}</span>
+                    <span v-else class="bank-details muted">—</span>
+                  </td>
+                  <td>
+                    <span v-if="record.is_voided" class="status-badge status-voided" :title="record.void_reason || ''">
+                      Voided
+                    </span>
+                    <span v-else class="status-badge status-active">Active</span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button
+                        type="button"
+                        class="action-btn action-btn-view"
+                        title="View Details"
+                        @click="openDetailsModal(record)"
+                      >
+                        <i class="ri-eye-line"></i>
+                      </button>
+                      <button
+                        v-if="!record.is_voided"
+                        type="button"
+                        class="action-btn action-btn-void"
+                        title="Void this received stock"
+                        @click="openVoidModal(record)"
+                      >
+                        <i class="ri-close-circle-line"></i>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
                 <tr v-if="filteredRecords.length === 0">
-                  <td colspan="9" class="empty-state">
+                  <td colspan="12" class="empty-state">
                     <i class="ri-inbox-line"></i>
                     <p>No paid purchase requests found</p>
                     <small>Paid receiving records will appear here after stock is fully settled.</small>
@@ -101,15 +131,25 @@
         </div>
       </div>
     </div>
+
+    <VoidReceivedStockModal
+      ref="voidModal"
+      @voided="$emit('refresh')"
+      @toast="$emit('toast', $event)"
+    />
+    <ViewReceivedStockModal ref="detailsModal" />
   </div>
 </template>
 
 <script>
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+import VoidReceivedStockModal from '../Modal/VoidReceivedStockModal.vue';
+import ViewReceivedStockModal from '../Modal/ViewReceivedStockModal.vue';
 
 export default {
   name: 'ReceivingTab',
-  components: { TableLoadingRow },
+  components: { TableLoadingRow, VoidReceivedStockModal, ViewReceivedStockModal },
+  emits: ['refresh', 'toast'],
   props: {
     listReceivedStocks: {
       type: Array,
@@ -172,6 +212,12 @@ export default {
     },
   },
   methods: {
+    openVoidModal(record) {
+      this.$refs.voidModal.show(record);
+    },
+    openDetailsModal(record) {
+      this.$refs.detailsModal.show(record);
+    },
     formatCurrency(value) {
       return '₱' + Number(value || 0).toLocaleString('en-PH', {
         minimumFractionDigits: 2,
@@ -410,6 +456,78 @@ export default {
 
 .bank-details.muted {
   color: #94a3b8;
+}
+
+.remarks-cell {
+  color: #334155;
+  font-size: 0.85rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 220px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.status-badge.status-active {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.status-badge.status-voided {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn-view {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.action-btn-view:hover {
+  background-color: #bbdefb;
+  transform: translateY(-2px);
+}
+
+.action-btn-void {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.action-btn-void:hover {
+  background-color: #ffcdd2;
+  transform: translateY(-2px);
+}
+
+.voided-row {
+  opacity: 0.6;
 }
 
 .empty-state {

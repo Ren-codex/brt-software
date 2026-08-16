@@ -16,14 +16,16 @@
                     <div class="mb-3 d-flex align-items-center gap-2">
                         <input type="text" v-model="keyword" @input="debouncedFetch" placeholder="Search receipt"
                             class="form-control" />
-                        <button type="button" class="acct-btn-secondary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</button>
+                        <button v-if="!isSalesRep" type="button" class="acct-btn-secondary" @click="toggleSelectAll">{{ allSelected ? 'Unselect All' : 'Select All' }}</button>
                     </div>
 
+                    <!-- A Sales Rep must remit every pending receipt of theirs, so the
+                         checkbox column is dropped entirely: nothing here is optional. -->
                     <div class="table-responsive" style="max-height: 180px; overflow:auto;">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width:40px"><input type="checkbox" :checked="allSelected"
+                                    <th v-if="!isSalesRep" style="width:40px"><input type="checkbox" :checked="allSelected"
                                             @change="toggleSelectAll" /></th>
                                     <th>#</th>
                                     <th>Receipt No.</th>
@@ -35,7 +37,7 @@
                             </thead>
                             <tbody>
                                 <tr v-for="(order, idx) in pagedOrders" :key="order.id">
-                                    <td><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
+                                    <td v-if="!isSalesRep"><input type="checkbox" :value="order.id" v-model="selectedIds" /></td>
                                     <td>{{ (currentPage - 1) * pageSize + idx + 1 }}</td>
                                     <td>{{ order.receipt_number || '-' }}</td>
                                     <td>{{ getCustomerName(order) }}</td>
@@ -44,7 +46,7 @@
                                     <td>{{ formatDate(order.created_at) }}</td>
                                 </tr>
                                 <tr v-if="filteredOrders.length === 0">
-                                    <td colspan="7" class="text-center text-muted">No pending sales orders found.</td>
+                                    <td :colspan="isSalesRep ? 6 : 7" class="text-center text-muted">No pending sales orders found.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -58,7 +60,10 @@
                             <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
                             <button type="button" class="page-btn" :disabled="currentPage >= totalPages" @click="currentPage++">→</button>
                         </div>
-                        <p class="mb-0">
+                        <p class="mb-0" v-if="isSalesRep">
+                            <span class="text-primary"><b>{{ selectedIds.length }}</b></span> pending receipt(s) to remit
+                        </p>
+                        <p class="mb-0" v-else>
                             <span class="text-primary"><b>{{ selectedIds.length }}</b></span> Selected
                         </p>
                     </div>
@@ -201,8 +206,14 @@ export default {
                     if (res && res.data) {
                         // Assume data is array
                         this.orders = res.data.data || res.data;
-                        // Reset selectedIds to only those still present
-                        this.selectedIds = this.selectedIds.filter(id => this.orders.find(o => o.id === id));
+                        if (this.isSalesRep) {
+                            // A Sales Rep has no picker to skip receipts with — every
+                            // pending receipt of theirs is remitted, always.
+                            this.selectedIds = this.orders.map(o => o.id);
+                        } else {
+                            // Reset selectedIds to only those still present
+                            this.selectedIds = this.selectedIds.filter(id => this.orders.find(o => o.id === id));
+                        }
                         // apply client-side filter (displayed list)
                         this.applyFilter();
                     }

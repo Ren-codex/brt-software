@@ -36,7 +36,7 @@ class RemittancePermissionTest extends TestCase
         UserRole::create(['user_id' => $user->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $user->id]);
 
         if ($level !== null) {
-            $module = Module::where('key', 'accounting')->firstOrFail();
+            $module = Module::where('key', 'sales')->firstOrFail();
             $submodule = $module->submodules()->where('key', 'remittances')->firstOrFail();
             RolePermission::create([
                 'role_id' => $role->id, 'module_id' => $module->id,

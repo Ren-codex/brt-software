@@ -50,6 +50,8 @@ class EmployeeRequest extends FormRequest
             'religion' => 'nullable|string|max:100',
             'address' => 'nullable|string|max:500',
             'position_id' => 'required|exists:list_positions,id',
+            'hours_per_day' => 'nullable|numeric|min:0|max:24',
+            'overtime_rate' => 'nullable|numeric|min:0',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_regular' => 'required|boolean',
             'is_active' => 'required|boolean',

@@ -219,6 +219,35 @@
                             </div>
 
                             <div class="form-group">
+                                <label>Hours Per Day <span class="required">*</span></label>
+                                <input
+                                    type="number"
+                                    v-model.number="form.hours_per_day"
+                                    :class="{ 'error': form.errors.hours_per_day }"
+                                    placeholder="8"
+                                    min="0"
+                                    max="24"
+                                    step="0.5"
+                                    @input="handleInput('hours_per_day')"
+                                >
+                                <span class="error-text" v-if="form.errors.hours_per_day">{{ form.errors.hours_per_day }}</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Overtime Rate (₱ / hour) <span class="required">*</span></label>
+                                <input
+                                    type="number"
+                                    v-model.number="form.overtime_rate"
+                                    :class="{ 'error': form.errors.overtime_rate }"
+                                    placeholder="0.00"
+                                    min="0"
+                                    step="0.01"
+                                    @input="handleInput('overtime_rate')"
+                                >
+                                <span class="error-text" v-if="form.errors.overtime_rate">{{ form.errors.overtime_rate }}</span>
+                            </div>
+
+                            <div class="form-group">
                                 <label>Status</label>
                                 <div class="toggle-wrapper">
                                     <label class="toggle-switch">
@@ -307,6 +336,8 @@ export default {
                 religion: null,
                 address: null,
                 position_id: null,
+                hours_per_day: 8,
+                overtime_rate: 0,
                 avatar: null,
                 is_regular: 0,
                 is_active: 1,
@@ -346,6 +377,8 @@ export default {
             this.form.religion = data.religion;
             this.form.address = data.address;
             this.form.position_id = data.position_id;
+            this.form.hours_per_day = data.hours_per_day ?? 8;
+            this.form.overtime_rate = data.overtime_rate ?? 0;
             this.form.is_regular = data.is_regular;
             this.form.is_active = data.is_active;
             this.form.is_blacklisted = data.is_blacklisted;

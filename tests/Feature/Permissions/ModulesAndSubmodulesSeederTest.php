@@ -25,7 +25,7 @@ class ModulesAndSubmodulesSeederTest extends TestCase
 
         $sales = Module::where('key', 'sales')->firstOrFail();
         $this->assertEquals(
-            ['sales_orders', 'ar_invoices', 'receipts', 'sales_returns'],
+            ['sales_orders', 'ar_invoices', 'receipts', 'sales_returns', 'remittances'],
             $sales->submodules->pluck('key')->all()
         );
 
@@ -42,7 +42,7 @@ class ModulesAndSubmodulesSeederTest extends TestCase
         $this->seed(ModulesAndSubmodulesSeeder::class);
 
         $this->assertEquals(9, Module::count());
-        $this->assertEquals(4, Module::where('key', 'sales')->firstOrFail()->submodules()->count());
+        $this->assertEquals(5, Module::where('key', 'sales')->firstOrFail()->submodules()->count());
     }
 
     public function test_seeds_payroll_submodules(): void
@@ -64,7 +64,7 @@ class ModulesAndSubmodulesSeederTest extends TestCase
         $this->assertEquals(
             [
                 'financial_reports', 'journal_entries', 'chart_of_accounts', 'cash_management',
-                'petty_cash', 'expenses', 'bank_reconciliation', 'remittances',
+                'petty_cash', 'expenses', 'bank_reconciliation',
             ],
             $accounting->submodules->pluck('key')->all()
         );

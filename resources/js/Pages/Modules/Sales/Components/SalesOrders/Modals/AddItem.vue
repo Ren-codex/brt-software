@@ -1,14 +1,22 @@
 <template>
-    <div 
+    <div
         v-show="showModal"
         class="modal-overlay"
         :class="{ active: showModal }"
         @click.self="hide"
-        
+
     >
         <div class="modal-container modal-xl" @click.stop>
             <div class="modal-header">
-                <h2>{{ editable ? 'Update Item' : 'Add Item' }}</h2>
+                <div class="modal-header-title-group">
+                    <div class="modal-header-icon">
+                        <i class="ri-add-box-line"></i>
+                    </div>
+                    <div>
+                        <h2>{{ editable ? 'Update Item' : 'Add Item' }}</h2>
+                        <p class="modal-header-subtitle">{{ editable ? 'Update this item on the sales order' : 'Add a new item to the sales order' }}</p>
+                    </div>
+                </div>
                 <button class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
@@ -16,110 +24,126 @@
             <div class="modal-body">
                 <form @submit.prevent="submit">
                   <div class="form-row">
-                        <div class="form-group form-group-half">
-                            <label for="product_id" class="form-label">Product</label>
+                        <div class="form-group">
+                            <label for="product_id" class="form-label">Product <span class="required-asterisk">*</span></label>
                             <div class="input-wrapper">
-                                <i class="ri-bar-chart-2-line input-icon"></i>
-                                <select
-                                    class="form-control"
+                                <i class="ri-box-3-line input-icon batch-select-icon"></i>
+                                <Multiselect
+                                    id="product_id"
+                                    ref="productSelect"
                                     v-model="form.product_id"
+                                    :options="productSelectOptions"
+                                    label="name"
+                                    value-prop="value"
+                                    track-by="name"
+                                    :searchable="true"
+                                    :can-clear="false"
+                                    placeholder="Select Product"
+                                    class="form-control batch-multiselect"
                                     :class="{ 'input-error': form.errors.product_id }"
                                     @change="onProductChange"
-                                >
-                                    <option :value="null" disabled>Select Product</option>
-                                    <option v-for="p in availableProducts" :key="p.value" :value="p.value">{{ p.name }}</option>
-                                </select>
+                                />
                             </div>
                             <span class="error-message" v-if="form.errors.product_id">{{ form.errors.product_id }}</span>
                         </div>
-
-                        <div class="form-group form-group-half">
-                            <label for="price_type" class="form-label">Price Type</label>
-                            <div class="input-wrapper">
-                                <i class="ri-price-tag-3-line input-icon"></i>
-                                <select
-                                    class="form-control"
-                                    v-model="form.price_type"
-                                    :class="{ 'input-error': form.errors.price_type }"
-                                    @change="onPriceTypeChange"
-                                >
-                                    <option :value="null" disabled>Select Price Type</option>
-                                    <option v-for="pt in priceTypeOptions" :key="pt.value" :value="pt.value">{{ pt.text }}</option>
-                                </select>
-                            </div>
-                            <span class="error-message" v-if="form.errors.price_type">{{ form.errors.price_type }}</span>
-                        </div>
-
                     </div>
-                    <div class="form-row" v-if="selectedProductBatches.length > 0">
-                        <div class="form-group form-group-half">
-                            <label for="batch_code" class="form-label">Batch</label>
-                            <div class="input-wrapper">
-                                <i class="ri-barcode-line input-icon"></i>
-                                <select
-                                    id="batch_code"
-                                    class="form-control"
-                                    v-model="form.batch_code"
-                                    @change="onBatchCodeChange"
-                                >
-                                    <option v-for="batch in selectedProductBatches" :key="batch.batch_code" :value="batch.batch_code">
-                                        {{ batch.batch_code }} ({{ batch.quantity }} available){{ batch.batch_code === recommendedBatchCode ? ' — oldest' : '' }}
-                                    </option>
-                                </select>
-                            </div>
-                            <small v-if="isBatchOverride" class="batch-override-warning">
-                                <i class="ri-alert-line"></i>
-                                Not the oldest available batch — this order will require approval.
-                            </small>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                         <div class="form-group form-group-half">
-                            <label for="quantity" class="form-label">Quantity</label>
-                            <div class="input-wrapper">
-                                <i class="ri-stack-line input-icon"></i>
-                                <TextInput
-                                    type="number"
-                                    id="quantity"
-                                    v-model.number="form.quantity"
-                                    class="form-control"
-                                    :class="{ 'input-error': form.errors.quantity }"
-                                    placeholder="Enter Quantity"
-                                    :max="editable ? selectedProductStock : totalAllocatableStock"
-                                    @input="validateQuantity"
-                                />
 
-                            </div>
-                            <div v-if="selectedProductStock !== null" class="stock-info">
-                                <small class="text-muted">
-                                    <i class="ri-information-line"></i>
-                                    Available Stock (Selected Batch): <strong>{{ selectedProductStock }}</strong>
-                                </small>
-                                <small class="text-muted d-block">
-                                    <i class="ri-stack-line"></i>
-                                    Total Available From This Batch Onward: <strong>{{ totalAllocatableStock }}</strong>
-                                </small>
-                                <small
-                                    v-if="shouldSplitIntoMultipleItems"
-                                    class="text-muted d-block"
-                                >
-                                    <i class="ri-git-merge-line"></i>
-                                    This quantity will be split into multiple items by batch.
-                                </small>
-                             
-                                <div v-if="selectedProductBatches.length > 0" class="batch-stock-list">
-                                    <small class="text-muted d-block mb-1">All Batch Stocks:</small>
-                                    <div class="batch-stock-item" v-for="batch in selectedProductBatches" :key="batch.batch_code">
-                                        <span>{{ batch.batch_code }}</span>
-                                        <strong>{{ batch.quantity }}</strong>
+                    <hr class="section-divider" />
+
+                    <div class="quantity-pricing-grid">
+                        <div class="quantity-pricing-col">
+                            <h3 class="section-title">Quantity</h3>
+
+                            <div class="stat-row">
+                                <div class="stat-box">
+                                    <span class="stat-label">Available (Selected Batch)</span>
+                                    <div class="stat-value">{{ selectedProductStock ?? 0 }}</div>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Total Available Onward</span>
+                                    <div class="stat-value stat-value-accent">{{ totalAllocatableStock }}</div>
+                                </div>
+                                <div class="stat-box stat-box-input">
+                                    <label for="quantity" class="stat-label">Quantity to Add <span class="required-asterisk">*</span></label>
+                                    <div class="quantity-stepper">
+                                        <button
+                                            type="button"
+                                            class="quantity-stepper-btn"
+                                            :disabled="(parseFloat(form.quantity) || 0) <= 0"
+                                            @click="stepQuantity(-1)"
+                                        >
+                                            <i class="ri-subtract-line"></i>
+                                        </button>
+                                        <input
+                                            type="number"
+                                            id="quantity"
+                                            ref="quantityInput"
+                                            class="stat-input-field"
+                                            v-model.number="form.quantity"
+                                            :class="{ 'input-error': form.errors.quantity }"
+                                            :max="editable ? selectedProductStock : totalAllocatableStock"
+                                            @input="validateQuantity"
+                                        />
+                                        <button
+                                            type="button"
+                                            class="quantity-stepper-btn"
+                                            :disabled="(parseFloat(form.quantity) || 0) >= (editable ? selectedProductStock : totalAllocatableStock)"
+                                            @click="stepQuantity(1)"
+                                        >
+                                            <i class="ri-add-line"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                             <span class="error-message" v-if="form.errors.quantity">{{ form.errors.quantity }}</span>
+
+                            <div v-if="selectedProductBatches.length > 0" class="batch-stock-panel">
+                                <p class="batch-stock-panel-title">All Batch Stocks</p>
+                                <div
+                                    v-for="batch in selectedProductBatches"
+                                    :key="batch.batch_code"
+                                    class="batch-radio-row"
+                                    :class="{ selected: batch.batch_code === form.batch_code }"
+                                    @click="selectBatch(batch.batch_code)"
+                                >
+                                    <span class="batch-radio-dot" :class="{ selected: batch.batch_code === form.batch_code }"></span>
+                                    <span class="batch-radio-code">{{ batch.batch_code }}</span>
+                                    <span v-if="batch.received_date" class="batch-radio-date">Received {{ formatDate(batch.received_date) }}</span>
+                                    <span class="batch-radio-qty">{{ batch.quantity }}</span>
+                                    <span v-if="batch.batch_code === recommendedBatchCode" class="batch-radio-oldest-tag">(oldest)</span>
+                                </div>
+                                <p class="batch-note">
+                                    <i class="ri-information-line"></i>
+                                    Stocks are displayed from oldest to newest.
+                                </p>
+                                <small v-if="isBatchOverride" class="batch-override-warning">
+                                    <i class="ri-alert-line"></i>
+                                    Not the oldest available batch — this order will require approval.
+                                </small>
+                            </div>
+
+                            <small
+                                v-if="shouldSplitIntoMultipleItems"
+                                class="text-muted d-block split-note"
+                            >
+                                <i class="ri-git-merge-line"></i>
+                                This quantity will be split into multiple items by batch.
+                            </small>
                         </div>
-                         <div class="form-group form-group-half">
+
+                        <div class="quantity-pricing-col">
+                            <h3 class="section-title">Pricing</h3>
+
+                            <div class="checkbox-wrapper price-type-toggle">
+                                <label class="switch">
+                                    <input type="checkbox" v-model="isWholesale" @change="onPriceTypeChange">
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="checkbox-label">{{ isWholesale ? 'Wholesale Price' : 'Retail Price' }}</span>
+                            </div>
+
                             <div class="price-label-row">
-                                <label for="price" class="form-label mb-0">Price</label>
+                                <label for="price" class="form-label mb-0">Unit Price</label>
                                 <button
                                     v-if="!shouldSplitIntoMultipleItems"
                                     type="button"
@@ -135,6 +159,7 @@
                                 <i class="ri-cash-line input-icon"></i>
                                 <input
                                     type="text"
+                                    id="price"
                                     :value="formatCurrency(form.price)"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.price }"
@@ -171,31 +196,42 @@
                                 </div>
                             </div>
                             <span class="error-message" v-if="form.errors.price">{{ form.errors.price }}</span>
-                        </div>
-                    </div>
 
-
-                  
-
-                    <div class="form-row">
-        
-
-                        <div class="form-group form-group-half">
-                            <label for="discount_per_unit" class="form-label">Discount per Unit (Amount)</label>
-                            <div class="input-wrapper">
-                                <i class="ri-cash-line input-icon"></i>
-                                <Amount
-                                    @amount="updateDiscountPerUnit($event)"
-                                    :class="{ 'input-error': form.errors.discount_per_unit }"
-                                    class="form-control"
-                                    ref="discountComponent"
-                                />
+                            <div class="form-group discount-group">
+                                <label for="discount_per_unit" class="form-label">Discount per Unit (Amount)</label>
+                                <div class="input-wrapper">
+                                    <i class="ri-cash-line input-icon"></i>
+                                    <Amount
+                                        @amount="updateDiscountPerUnit($event)"
+                                        :class="{ 'input-error': form.errors.discount_per_unit }"
+                                        class="form-control"
+                                        ref="discountComponent"
+                                    />
+                                </div>
+                                <span class="error-message" v-if="form.errors.discount_per_unit">{{ form.errors.discount_per_unit }}</span>
                             </div>
-                            <span class="error-message" v-if="form.errors.discount_per_unit">{{ form.errors.discount_per_unit }}</span>
                         </div>
                     </div>
 
-  
+                    <div v-if="!shouldSplitIntoMultipleItems" class="net-price-panel">
+                        <div class="net-price-icon">
+                            <i class="ri-price-tag-3-line"></i>
+                        </div>
+                        <div class="net-price-text">
+                            <div class="net-price-label">Net Unit Price</div>
+                            <div class="net-price-sub">(Unit Price – Discount)</div>
+                        </div>
+                        <div class="net-price-value">{{ formatCurrency(netUnitPrice) }}</div>
+
+                        <div class="net-price-divider"></div>
+
+                        <div class="net-price-text">
+                            <div class="net-price-label">Total Amount</div>
+                            <div class="net-price-sub">Net Unit Price × Qty ({{ form.quantity || 0 }})</div>
+                        </div>
+                        <div class="net-price-value net-price-value-total">{{ formatCurrency(lineTotal) }}</div>
+                    </div>
+
                     <div class="success-alert" v-if="saveSuccess">
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Item has been saved successfully!</span>
@@ -210,8 +246,8 @@
                             <i class="ri-loader-4-line spinner" v-else></i>
                             {{ form.processing ? 'Saving...' : 'Add Item' }}
                         </button>
-                    </div>  
-                    
+                    </div>
+
 
                 </form>
             </div>
@@ -227,13 +263,12 @@
 <script>
 import { useForm } from '@inertiajs/vue3';
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
-import TextInput from '@/Shared/Components/Forms/TextInput.vue';
-import Multiselect from '@/Shared/Components/Forms/Multiselect.vue';
+import Multiselect from '@vueform/multiselect';
 import Amount from '@/Shared/Components/Forms/Amount.vue';
 import UpdatePriceModal from '@/Pages/Modules/Inventory/Modal/UpdatePriceModal.vue';
 
 export default {
-    components: { InputLabel, TextInput, Multiselect, Amount, UpdatePriceModal },
+    components: { InputLabel, Multiselect, Amount, UpdatePriceModal },
     props: {
         dropdowns: { type: Object, required: true },
         items: { type: Array, default: () => [] },
@@ -263,11 +298,13 @@ export default {
         }
     },
     computed: {
-        priceTypeOptions() {
-            return [
-                { value: 'retail', text: 'Retail Price' },
-                { value: 'wholesale', text: 'Wholesale Price' }
-            ];
+        isWholesale: {
+            get() {
+                return this.form.price_type === 'wholesale';
+            },
+            set(value) {
+                this.form.price_type = value ? 'wholesale' : 'retail';
+            }
         },
         reservedStocks() {
             const reserved = {};
@@ -310,6 +347,7 @@ export default {
                         unit_cost: parseFloat(batch.unit_cost) || 0,
                         retail_price: parseFloat(batch.retail_price) || 0,
                         wholesale_price: parseFloat(batch.wholesale_price) || 0,
+                        received_date: batch.received_date || null,
                     };
                 })
                 .filter((batch) => batch.quantity > 0);
@@ -366,6 +404,21 @@ export default {
                 }, 0);
                 return totalAvailable > 0;
             });
+        },
+        productSelectOptions() {
+            return this.availableProducts.map((product) => ({
+                value: product.value,
+                name: product.name,
+            }));
+        },
+        netUnitPrice() {
+            const price = parseFloat(this.form.price) || 0;
+            const discount = parseFloat(this.form.discount_per_unit) || 0;
+            return Math.max(price - discount, 0);
+        },
+        lineTotal() {
+            const quantity = parseFloat(this.form.quantity) || 0;
+            return this.netUnitPrice * quantity;
         }
     },
 
@@ -380,7 +433,8 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
             this.$nextTick(() => {
-            this.$refs.discountComponent.emitValue(0.00);
+                this.$refs.discountComponent.emitValue(0.00);
+                this.$refs.productSelect?.blur();
             });
         },
         edit(data, index) {
@@ -398,6 +452,9 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
             this.validateQuantity(); // Validate quantity against current stock
+            this.$nextTick(() => {
+                this.$refs.productSelect?.blur();
+            });
         },
 
         submit() {
@@ -457,7 +514,12 @@ export default {
             this.validateDiscount();
         },
 
-        onProductChange() {
+        onProductChange(productId) {
+            // The Multiselect's @change fires before it updates v-model, so form.product_id
+            // may still hold the previous selection here — use the emitted value when given.
+            if (productId !== undefined) {
+                this.form.product_id = productId;
+            }
             const product_id = this.form.product_id;
             const product = this.dropdowns.products.find(p => p.value === product_id);
             if (product) {
@@ -465,10 +527,24 @@ export default {
                 this.form.batch_code = availableBatch ? availableBatch.batch_code : null;
                 const price = this.getBatchPrice(availableBatch);
                 this.form.price = parseFloat(price || 0).toFixed(2);
+                this.focusQuantity();
             } else {
                 this.form.batch_code = null;
                 this.form.price = '0.00';
             }
+        },
+
+        focusQuantity() {
+            this.$nextTick(() => {
+                this.$refs.quantityInput?.focus();
+                this.$refs.quantityInput?.select();
+            });
+        },
+
+        selectBatch(batchCode) {
+            if (this.form.batch_code === batchCode) return;
+            this.form.batch_code = batchCode;
+            this.onBatchCodeChange();
         },
 
         onBatchCodeChange() {
@@ -495,7 +571,11 @@ export default {
         openPriceAdjustment(stock = null) {
             if (!stock) return;
             this.priceAdjustmentStock = stock;
-            this.$refs.updatePriceModal.show();
+            // UpdatePriceModal reads its `inventoryStock` prop inside show(), which needs a
+            // render tick to receive the value just assigned above.
+            this.$nextTick(() => {
+                this.$refs.updatePriceModal.show();
+            });
         },
 
         handlePriceAdjustmentSaved(payload = {}) {
@@ -530,6 +610,14 @@ export default {
                 this.form.errors.quantity = null;
             }
             this.validateDiscount();
+        },
+
+        stepQuantity(delta) {
+            const current = parseFloat(this.form.quantity) || 0;
+            const max = parseFloat(this.editable ? this.selectedProductStock : this.totalAllocatableStock) || 0;
+            const next = Math.min(Math.max(current + delta, 0), max);
+            this.form.quantity = next;
+            this.validateQuantity();
         },
 
         allocateItemQuantities(baseItem) {
@@ -569,14 +657,49 @@ export default {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
+        },
+
+        formatDate(value) {
+            if (!value) return '';
+            const date = new Date(`${value}T00:00:00`);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
         }
 
-        
+
     }
 }
 </script>
 
 <style scoped>
+.modal-header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.modal-header-subtitle {
+    margin: 0;
+    font-size: 0.72rem;
+    color: #6b8c85;
+}
+
+.required-asterisk {
+    color: #e74c3c;
+}
+
+.form-row > .form-group {
+    flex: 1;
+}
+
+.batch-select-icon {
+    z-index: 2;
+}
+
+.batch-multiselect {
+    padding-left: 2.3rem !important;
+}
+
 .batch-override-warning {
     display: block;
     margin-top: 0.35rem;
@@ -585,38 +708,228 @@ export default {
     font-weight: 600;
 }
 
-.stock-info {
-    margin-top: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    border-left: 3px solid #17a2b8;
+.section-divider {
+    border: none;
+    border-top: 1px solid #e9ecef;
+    margin: 1rem 0;
 }
 
-.stock-info small {
-    font-size: 0.75rem;
-    color: #6c757d;
-}
-
-.stock-info strong {
-    color: #17a2b8;
-}
-
-.batch-stock-list {
-    margin-top: 0.35rem;
-}
-
-.batch-stock-item {
+.quantity-pricing-grid {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.35rem;
-    border-radius: 4px;
-    background: #ffffff;
+    gap: 1.25rem;
+    margin-bottom: 0.85rem;
+}
+
+.quantity-pricing-col {
+    flex: 1;
+    min-width: 0;
+}
+
+.section-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #3d8d7a;
+    margin: 0 0 0.65rem;
+}
+
+.stat-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-box {
+    flex: 1;
+    min-width: 0;
+    background-color: #f8f9fa;
     border: 1px solid #e9ecef;
-    margin-bottom: 0.2rem;
+    border-radius: 9px;
+    padding: 0.55rem 0.7rem;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.68rem;
+    color: #7f8c8d;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #16322e;
+}
+
+.stat-value-accent {
+    color: #3d8d7a;
+}
+
+.stat-box-input {
+    background-color: #fff;
+    border: 1.5px solid #3d8d7a;
+    box-shadow: 0 1px 3px rgba(61, 141, 122, 0.12);
+}
+
+.stat-box-input .stat-label {
+    color: #267a4c;
+    font-weight: 600;
+}
+
+.quantity-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.stat-box-input .stat-input-field {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #16322e;
+    text-align: center;
+    -moz-appearance: textfield;
+}
+
+.stat-box-input .stat-input-field::-webkit-outer-spin-button,
+.stat-box-input .stat-input-field::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.stat-box-input .stat-input-field:focus {
+    outline: none;
+}
+
+.stat-box-input:focus-within {
+    border-color: #267a4c;
+    box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.18);
+}
+
+.quantity-stepper-btn {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid #c4d9d2;
+    background: #eef7f3;
+    color: #267a4c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    padding: 0;
+    transition: all 0.15s ease;
+}
+
+.quantity-stepper-btn:hover:not(:disabled) {
+    background: #3d8d7a;
+    color: #fff;
+}
+
+.quantity-stepper-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.stat-box-input.input-error,
+.stat-input-field.input-error {
+    border-color: #e74c3c;
+}
+
+.batch-stock-panel {
+    margin-top: 0.6rem;
+    border: 1px solid #e9ecef;
+    border-radius: 9px;
+    padding: 0.6rem 0.7rem;
+    background: #fff;
+}
+
+.batch-stock-panel-title {
+    margin: 0 0 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #495057;
+}
+
+.batch-radio-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.45rem;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.batch-radio-row:hover {
+    background-color: #f5f9f7;
+}
+
+.batch-radio-row.selected {
+    background-color: #eef7f3;
+}
+
+.batch-radio-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #3d8d7a;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.batch-radio-dot.selected::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3d8d7a;
+}
+
+.batch-radio-code {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #16322e;
+}
+
+.batch-radio-date {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    flex: 1;
+}
+
+.batch-radio-qty {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #16322e;
+    margin-left: auto;
+}
+
+.batch-radio-oldest-tag {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+}
+
+.batch-note {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0.5rem 0 0;
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
+.split-note {
+    margin-top: 0.5rem;
 }
 
 .split-preview-list {
@@ -630,6 +943,15 @@ export default {
     border: 1px solid #e9ecef;
     border-radius: 6px;
     background: #f8f9fa;
+}
+
+.discount-group {
+    margin-top: 0.85rem;
+    margin-bottom: 0;
+}
+
+.price-type-toggle {
+    margin-bottom: 0.85rem;
 }
 
 .price-label-row {
@@ -683,5 +1005,83 @@ export default {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+}
+
+.net-price-panel {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 9px;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.85rem;
+}
+
+.net-price-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(61, 141, 122, 0.12);
+    color: #3d8d7a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.net-price-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.net-price-label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #16322e;
+}
+
+.net-price-sub {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+}
+
+.net-price-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #267a4c;
+    white-space: nowrap;
+}
+
+.net-price-value-total {
+    font-size: 1.5rem;
+    color: #16322e;
+}
+
+.net-price-divider {
+    width: 1px;
+    align-self: stretch;
+    background: #e9ecef;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .net-price-panel {
+        flex-wrap: wrap;
+    }
+
+    .net-price-divider {
+        display: none;
+    }
+
+    .quantity-pricing-grid {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .stat-row {
+        flex-direction: column;
+    }
 }
 </style>

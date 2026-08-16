@@ -110,7 +110,8 @@
 
               <div class="row" v-if="activeTab === 'receiving' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
-                  <ReceivingTab :listReceivedStocks="listReceivedStocks" :loading="isReceivingLoading" />
+                  <ReceivingTab :listReceivedStocks="listReceivedStocks" :loading="isReceivingLoading"
+                    @refresh="fetchReceivedStocks" @toast="showToast" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"

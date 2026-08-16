@@ -20,9 +20,6 @@
             <h2 class="order-title">Sales Order</h2>
             <table class="order-meta-table">
                 <tr>
-                    <td class="order-meta-label">Date</td>
-                </tr>
-                <tr>
                     <td class="order-meta-value">{{ \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') }}</td>
                 </tr>
                 <tr>

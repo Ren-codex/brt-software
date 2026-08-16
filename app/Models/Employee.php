@@ -26,6 +26,8 @@ class Employee extends Model
         'suffix',
         'religion',
         'position_id',
+        'hours_per_day',
+        'overtime_rate',
         'is_regular',
         'is_active',
         'is_blacklisted',
@@ -71,6 +73,8 @@ class Employee extends Model
             'religion',
             'address',
             'position_id',
+            'hours_per_day',
+            'overtime_rate',
             'avatar'
         ])
         ->setDescriptionForEvent(function(string $eventName) {

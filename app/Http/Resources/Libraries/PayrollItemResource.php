@@ -22,6 +22,10 @@ class PayrollItemResource extends JsonResource
             'net_salary' => $this->net_salary,
             'total_days' => $this->total_days,
             'loans' => $this->loans,
+            'hours_per_day' => $this->hours_per_day,
+            'overtime_hours' => $this->overtime_hours,
+            'overtime_rate' => $this->overtime_rate,
+            'overtime_amount' => $this->overtime_amount,
         ];
     }
 }

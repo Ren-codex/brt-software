@@ -23,6 +23,8 @@ class EmployeeResource extends JsonResource
             'religion' => $this->religion,
             'address' => $this->address,
             'position_id' => $this->position_id,
+            'hours_per_day' => $this->hours_per_day,
+            'overtime_rate' => $this->overtime_rate,
             'avatar' => $this->avatar,
             'is_regular' => $this->is_regular,
             'is_active' => $this->is_active,

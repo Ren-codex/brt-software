@@ -17,7 +17,7 @@
                             <i class="ri-check-line"></i>
                             <span>Approval</span>
                         </button>
-                        <button v-if="item.status?.slug === 'for-verification' && can('accounting', 'remittances', 'admin')" class="create-btn" @click="openDelete(item.id)">
+                        <button v-if="item.status?.slug === 'for-verification' && can('sales', 'remittances', 'admin')" class="create-btn" @click="openDelete(item.id)">
                             <i class="ri-delete-bin-line"></i>
                         </button>
                         <button class="create-btn" @click="onPrint(item.id)">
@@ -258,7 +258,7 @@ export default {
     emits: ['back', 'reload'],
     computed: {
         canApprove() {
-            return this.can('accounting', 'remittances', 'approver');
+            return this.can('sales', 'remittances', 'approver');
         },
         receiptCount() {
             return Array.isArray(this.item?.receipts) ? this.item.receipts.length : 0;

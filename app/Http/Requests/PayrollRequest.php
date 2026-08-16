@@ -35,6 +35,10 @@ class PayrollRequest extends FormRequest
             'items.*.total_days' => 'nullable|numeric|min:0',
             'items.*.net_salary' => 'required|numeric|min:0',
             'items.*.loans' => 'nullable|array',
+            'items.*.hours_per_day' => 'nullable|numeric|min:0|max:24',
+            'items.*.overtime_hours' => 'nullable|numeric|min:0',
+            'items.*.overtime_rate' => 'nullable|numeric|min:0',
+            'items.*.overtime_amount' => 'nullable|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',
         ];
     }

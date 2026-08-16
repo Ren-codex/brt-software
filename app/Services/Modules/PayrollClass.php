@@ -91,6 +91,10 @@ class PayrollClass
                     'total_deductions' => $item['total_deductions'] ?? 0,
                     'net_salary' => $item['net_salary'],
                     'loans' => $item['loans'] ?? [],
+                    'hours_per_day' => $item['hours_per_day'] ?? null,
+                    'overtime_hours' => $item['overtime_hours'] ?? 0,
+                    'overtime_rate' => $item['overtime_rate'] ?? null,
+                    'overtime_amount' => $item['overtime_amount'] ?? 0,
                 ]);
             }
 
@@ -143,6 +147,10 @@ class PayrollClass
                     'total_days' => $item['total_days'] ?? 0,
                     'net_salary' => $item['net_salary'],
                     'loans' => $item['loans'] ?? [],
+                    'hours_per_day' => $item['hours_per_day'] ?? null,
+                    'overtime_hours' => $item['overtime_hours'] ?? 0,
+                    'overtime_rate' => $item['overtime_rate'] ?? null,
+                    'overtime_amount' => $item['overtime_amount'] ?? 0,
                 ]);
             }
 

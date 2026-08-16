@@ -100,7 +100,7 @@
         /* Signature Section */
         .signature-section { width: 100%; margin-top: 16px; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
-        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-bottom: 4px; }
+        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 24px; padding-bottom: 4px; }
 
         /* Copy label */
         .copy-label {

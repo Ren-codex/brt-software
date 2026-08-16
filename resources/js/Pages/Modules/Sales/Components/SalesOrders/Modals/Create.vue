@@ -895,18 +895,20 @@
         @proceed="proceedPayment"
     />
 
-    <div v-if="showChargeSuccessModal" class="modal-overlay active order-review-modal" @click.self="closeChargeSuccessModal">
+    <div v-if="showChargeSuccessModal" class="modal-overlay active charge-success-modal" @click.self="closeChargeSuccessModal">
         <div class="modal-container modal-md" @click.stop>
-            <div class="modal-header bg-primary text-white">
-                <h4 class="mb-0 text-white">
-                    <i class="ri-checkbox-circle-line me-2"></i>
-                    Payment Successful
-                </h4>
-                <button class="close-btn text-white" @click="closeChargeSuccessModal">
-                    <i class="ri-close-line fs-20"></i>
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="modal-header-icon">
+                        <i class="ri-checkbox-circle-line"></i>
+                    </span>
+                    <h4 class="mb-0">Payment Successful</h4>
+                </div>
+                <button type="button" class="close-btn" @click="closeChargeSuccessModal">
+                    <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body p-4 payment-type-modal-body">
+            <div class="modal-body payment-type-modal-body">
                 <div class="payment-success-card">
                     <div class="payment-success-icon">
                         <i class="ri-checkbox-circle-fill"></i>
@@ -929,12 +931,12 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer bg-light border-0 p-4">
-                <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeChargeSuccessModal">
+            <div class="modal-footer">
+                <button type="button" class="success-footer-btn success-footer-btn-close" @click="closeChargeSuccessModal">
                     <i class="ri-close-line me-2"></i>
                     Close
                 </button>
-                <button type="button" class="btn btn-primary payment-modal-btn" @click="openPrintPromptAfterCharge">
+                <button type="button" class="success-footer-btn success-footer-btn-print" @click="openPrintPromptAfterCharge">
                     <i class="ri-printer-line me-2"></i>
                     Print Sales Invoice
                 </button>
@@ -1017,7 +1019,7 @@ export default {
                 customer_id: null,
                 sales_rep_id: null,
                 driver_id: null,
-                location: '',
+                delivery_location: '',
                 status_id: null,
                 billing_account: null,
                 payment_mode: null,
@@ -1254,7 +1256,12 @@ export default {
                 this.bankAccounts = [];
             }
         },
-        onSalesBankAccountChange() {
+        onSalesBankAccountChange(newValue) {
+            // The Multiselect's @change fires before it updates v-model, so bank_account_id
+            // may still hold the previous selection here — use the emitted value when given.
+            if (newValue !== undefined) {
+                this.bankTransferDetails.bank_account_id = newValue;
+            }
             const selected = this.bankAccounts.find(b => b.id === this.bankTransferDetails.bank_account_id);
             this.bankTransferDetails.bank_name = selected ? selected.bank_name : '';
         },
@@ -1267,7 +1274,12 @@ export default {
             };
             this.bankTransferError = null;
         },
-        handleCustomerSelectionChange() {
+        handleCustomerSelectionChange(newValue) {
+            // The Multiselect's @change fires before it updates v-model, so customerSelection
+            // may still hold the previous selection here — use the emitted value when given.
+            if (newValue !== undefined) {
+                this.customerSelection = newValue;
+            }
             this.form.customer_id = this.isWalkInCustomer ? null : this.customerSelection;
             this.handleInput('customer_id');
             // Location defaults from the customer's address but stays editable —
@@ -2922,15 +2934,15 @@ export default {
 }
 
 .payment-success-icon {
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
     margin: 0 auto 0.7rem;
     border-radius: 16px;
     display: grid;
     place-items: center;
     background: linear-gradient(135deg, #d8f2e3 0%, #e8f8ef 100%);
     color: #1f7a4d;
-    font-size: 1.45rem;
+    font-size: 1.6rem;
 }
 
 .payment-success-card h5 {
@@ -3466,6 +3478,39 @@ tfoot .footer-value {
     padding: 0.45rem 0.75rem;
     font-size: 0.72rem;
     border-radius: 9px;
+}
+
+.success-footer-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px;
+    padding: 0.55rem 1.1rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: 0.82rem;
+    transition: all 0.2s ease;
+}
+
+.success-footer-btn-close {
+    background: #3b82f6;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.success-footer-btn-close:hover {
+    background: #2563eb;
+}
+
+.success-footer-btn-print {
+    background: #3D8D7A;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
+}
+
+.success-footer-btn-print:hover {
+    background: #2f6f5f;
 }
 
 .spinner {

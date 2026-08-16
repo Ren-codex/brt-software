@@ -7,207 +7,216 @@
     >
         <div class="modal-container modal-lg" @click.stop>
             <div class="modal-header">
-                <h4 class="mb-0">
-                    <i class="ri-money-dollar-circle-line me-2"></i>
-                    Record Invoice Payment
-                </h4>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="modal-header-icon">
+                        <i class="ri-secure-payment-line"></i>
+                    </span>
+                    <div>
+                        <h4 class="mb-0">Record Invoice Payment</h4>
+                        <p class="modal-subtitle mb-0">Apply payment to this invoice and generate a receipt.</p>
+                    </div>
+                </div>
                 <button type="button" class="close-btn" @click="hide">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body p-4">
-                <!-- Invoice Summary Card -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-primary">
-                            <i class="ri-file-list-line me-2"></i>
-                            Invoice Summary
-                        </h6>
+            <div class="modal-body">
+                <!-- Invoice Overview -->
+                <p class="section-label"><i class="ri-file-text-line"></i> {{ invoice?.invoice_number || 'N/A' }}</p>
+                <div class="overview-card">
+                    <div class="overview-items">
+                        <!-- <div class="overview-item">
+                            <i class="ri-hashtag overview-icon"></i>
+                            <div>
+                                <p class="overview-label">Invoice #</p>
+                                <p class="overview-value">{{ invoice?.invoice_number || 'N/A' }}</p>
+                            </div>
+                        </div> -->
+                        <div class="overview-item">
+                            <i class="ri-user-line overview-icon"></i>
+                            <div>
+                                <p class="overview-label">Customer</p>
+                                <p class="overview-value">{{ invoice?.sales_order?.customer?.name || 'N/A' }}</p>
+                            </div>
+                        </div>
+                        <div class="overview-item">
+                            <i class="ri-calendar-line overview-icon"></i>
+                            <div>
+                                <p class="overview-label">Due Date</p>
+                                <p class="overview-value">{{ invoice?.due_date_formatted || invoice?.invoice_date || 'N/A' }}</p>
+                                <p class="due-badge" :class="dueInfo.cls" v-if="dueInfo">{{ dueInfo.text }}</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="text-center">
-                                    <i class="ri-file-text-line fs-24 text-muted mb-2"></i>
-                                    <p class="text-muted small mb-1">Invoice #</p>
-                                    <h6 class="fw-bold">{{ invoice?.invoice_number || 'N/A' }}</h6>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="text-center">
-                                    <i class="ri-user-line fs-24 text-muted mb-2"></i>
-                                    <p class="text-muted small mb-1">Customer</p>
-                                    <h6 class="fw-bold">{{ invoice?.sales_order?.customer?.name || 'N/A' }}</h6>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="text-center">
-                                    <i class="ri-calendar-line fs-24 text-muted mb-2"></i>
-                                    <p class="text-muted small mb-1">Due Date</p>
-                                    <h6 class="fw-bold">{{ invoice?.invoice_date || 'N/A' }}</h6>
-                                </div>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="text-center">
-                            <h4 class="text-success mb-0">
-                                Outstanding Balance: <p class="fw-bold text-dark">{{ numberFormat(form.balance_due?.toFixed(2)) }}</p>
-                            </h4>
-                        </div>
+                    <div class="balance-box">
+                        <i class="ri-wallet-3-line balance-decor"></i>
+                        <p class="balance-label">Outstanding Balance</p>
+                        <p class="balance-value">{{ numberFormat(form.balance_due) }}</p>
                     </div>
                 </div>
 
-                <!-- Payment Details -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-light d-flex align-items-center justify-content-between">
-                        <h6 class="mb-0 text-primary">
-                            <i class="ri-edit-line me-2"></i>
-                            Payment Details
-                        </h6>
-                        <div class="form-check form-switch mb-0">
+                <!-- Payment Information -->
+                <p class="section-label mt-4"><i class="ri-bank-card-2-line"></i> Payment Information</p>
+                <div class="payment-card">
+                    <div class="payment-top-row">
+                        <div class="field-group">
+                            <label class="form-label" for="payment_date">Payment Date</label>
                             <input
-                                class="form-check-input"
-                                type="checkbox"
-                                id="is_split_payment"
-                                v-model="isSplitPayment"
-                                @change="onToggleSplit"
-                            >
-                            <label class="form-check-label small fw-semibold" for="is_split_payment">Split payment</label>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div v-if="!isSplitPayment" class="row g-3">
-                            <div class="col-md-6">
-                                <label for="payment_amount" class="form-label fw-semibold">
-                                    <i class="ri-money-dollar-circle-line me-2 text-success"></i>
-                                    Payment Amount <span class="text-danger">*</span>
-                                </label>
-                                <Amount
-                                    v-model="form.amount_paid"
-                                    ref="amount_paid"
-                                    id="payment_amount"
-                                    @input="handleInput('amount_paid')"
-                                    class="form-control"
-                                    :disabled="!allowsPartialPayment"
-                                    :class="{ 'is-invalid': form.errors.amount_paid }"
-                                />
-                                <div class="invalid-feedback" v-if="form.errors.amount_paid">{{ form.errors.amount_paid }}</div>
-                                <small v-if="!allowsPartialPayment" class="text-muted d-block mt-2">
-                                    Cash sales require full payment of the outstanding balance.
-                                </small>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="payment_mode" class="form-label fw-semibold">
-                                    <i class="ri-bank-card-line me-2 text-success"></i>
-                                    Mode of Payment <span class="text-danger">*</span>
-                                </label>
-                                <select
-                                    id="payment_mode"
-                                    class="form-control"
-                                    v-model="form.payment_mode"
-                                    @change="handleInput('payment_mode')"
-                                    :class="{ 'is-invalid': form.errors.payment_mode }"
-                                >
-                                    <option v-for="mode in payment_modes" :key="mode" :value="mode">{{ mode }}</option>
-                                </select>
-                                <div class="invalid-feedback" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="payment_date" class="form-label fw-semibold">
-                                    <i class="ri-calendar-line me-2 text-info"></i>
-                                    Payment Date <span class="text-danger">*</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    class="form-control"
-                                    id="payment_date"
-                                    v-model="form.payment_date"
-                                    @input="handleInput('payment_date')"
-                                    :class="{ 'is-invalid': form.errors.payment_date }"
-                                />
-                                <div class="invalid-feedback" v-if="form.errors.payment_date">{{ form.errors.payment_date }}</div>
-                            </div>
+                                type="date"
+                                id="payment_date"
+                                class="field-input"
+                                v-model="form.payment_date"
+                                @input="handleInput('payment_date')"
+                                :class="{ 'is-invalid': form.errors.payment_date }"
+                            />
+                            <div class="invalid-feedback" v-if="form.errors.payment_date">{{ form.errors.payment_date }}</div>
                         </div>
 
-                        <div v-else>
-                            <div v-for="(split, index) in form.splits" :key="index" class="row g-3 align-items-end mb-3">
-                                <div class="col-md-5">
-                                    <label class="form-label fw-semibold" v-if="index === 0">
-                                        <i class="ri-bank-card-line me-2 text-success"></i>
-                                        Mode of Payment
-                                    </label>
-                                    <select class="form-control" v-model="split.payment_mode">
+                        <div class="split-control">
+                            <span class="split-title">
+                                Split Payment
+                                <i class="ri-question-line" title="Enable if payment will be made using multiple methods."></i>
+                            </span>
+                            <div class="split-switch-row">
+                                <label class="switch">
+                                    <input type="checkbox" v-model="isSplitPayment" @change="onToggleSplit">
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="split-desc">Enable if payment will be made using multiple methods.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="payment-table">
+                        <div class="payment-table-header">
+                            <span class="col-num">#</span>
+                            <span class="col-mode">Mode of Payment</span>
+                            <span class="col-amount">Amount</span>
+                            <span class="col-action">Action</span>
+                        </div>
+                        <div class="payment-table-row" v-for="(split, index) in form.splits" :key="index">
+                            <span class="col-num">{{ index + 1 }}</span>
+                            <div class="col-mode">
+                                <div class="mode-select-wrap">
+                                    <i class="mode-icon" :class="modeIcon(split.payment_mode)"></i>
+                                    <select class="field-select" v-model="split.payment_mode">
                                         <option v-for="mode in payment_modes" :key="mode" :value="mode">{{ mode }}</option>
                                     </select>
                                 </div>
-                                <div class="col-md-5">
-                                    <label class="form-label fw-semibold" v-if="index === 0">
-                                        <i class="ri-money-dollar-circle-line me-2 text-success"></i>
-                                        Amount
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        class="form-control"
-                                        v-model.number="split.amount"
-                                    >
-                                </div>
-                                <div class="col-md-2">
-                                    <button
-                                        type="button"
-                                        class="btn btn-outline-secondary w-100"
-                                        :disabled="form.splits.length <= 1"
-                                        @click="removeSplit(index)"
-                                    >
-                                        <i class="ri-close-line"></i>
-                                    </button>
-                                </div>
                             </div>
-
-                            <button type="button" class="btn btn-outline-secondary btn-sm mb-3" @click="addSplit">
-                                <i class="ri-add-line me-1"></i> Add another payment method
-                            </button>
-
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="payment_date_split" class="form-label fw-semibold">
-                                        <i class="ri-calendar-line me-2 text-info"></i>
-                                        Payment Date <span class="text-danger">*</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        class="form-control"
-                                        id="payment_date_split"
-                                        v-model="form.payment_date"
-                                        @input="handleInput('payment_date')"
-                                        :class="{ 'is-invalid': form.errors.payment_date }"
-                                    />
-                                    <div class="invalid-feedback" v-if="form.errors.payment_date">{{ form.errors.payment_date }}</div>
-                                </div>
-                                <div class="col-md-6 text-md-end">
-                                    <p class="text-muted small mb-1">Split Total</p>
-                                    <h6 class="fw-bold" :class="{ 'text-danger': splitTotal > form.balance_due }">
-                                        {{ numberFormat(splitTotal) }}
-                                    </h6>
-                                </div>
+                            <div class="col-amount">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="field-input"
+                                    v-model.number="split.amount"
+                                    :disabled="!isSplitPayment && !allowsPartialPayment"
+                                    @input="handleInput('splits')"
+                                >
                             </div>
-                            <div class="invalid-feedback d-block" v-if="form.errors.splits">{{ form.errors.splits }}</div>
-                            <small v-if="!allowsPartialPayment" class="text-muted d-block mt-2">
-                                Cash sales require the split total to cover the full outstanding balance.
-                            </small>
+                            <div class="col-action">
+                                <button
+                                    type="button"
+                                    class="row-delete-btn"
+                                    :disabled="!isSplitPayment || form.splits.length <= 1"
+                                    @click="removeSplit(index)"
+                                >
+                                    <i class="ri-delete-bin-6-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="add-split-btn" v-if="isSplitPayment" @click="addSplit">
+                        <i class="ri-add-circle-fill"></i> Add another payment method
+                    </button>
+
+                    <small v-if="!allowsPartialPayment" class="cash-note">
+                        <i class="ri-information-line"></i>
+                        Cash sales require payment in full ({{ numberFormat(form.balance_due) }}).
+                    </small>
+
+                    <div class="invalid-feedback d-block" v-if="form.errors.splits">{{ form.errors.splits }}</div>
+
+                    <div class="payment-summary-bar">
+                        <span class="summary-icon"><i class="ri-calculator-line"></i></span>
+                        <div class="summary-block">
+                            <p class="summary-label">Total Payment</p>
+                            <p class="summary-value">{{ numberFormat(splitTotal) }}</p>
+                        </div>
+                        <div class="summary-divider"></div>
+                        <div class="summary-block">
+                            <p class="summary-label">Remaining Balance</p>
+                            <p class="summary-value" :class="{ 'is-negative': remainingBalance < 0 }">{{ numberFormat(remainingBalance) }}</p>
+                        </div>
+                        <div class="summary-status" :class="statusClass">
+                            <i :class="statusIcon"></i>
+                            <span>{{ summaryStatusText }}</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer bg-light border-0 p-4">
-                <button class="btn btn-outline-secondary me-3" @click="hide">
-                    <i class="ri-close-line me-2"></i>
-                    Cancel
+            <div class="modal-footer">
+                <button type="button" class="footer-btn secondary" @click="hide">
+                    <i class="ri-close-line"></i> Cancel
                 </button>
-                <button class="btn btn-primary" @click="submit">
-                    <i class="ri-check-line me-2"></i>
-                    Record Payment & Generate Receipt
+                <button type="button" class="footer-btn primary" @click="submit">
+                    <i class="ri-check-line"></i> Record Payment & Generate Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showSuccessModal" class="modal-overlay active" @click.self="closeSuccessModal">
+        <div class="modal-container modal-sm" @click.stop>
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="modal-header-icon">
+                        <i class="ri-checkbox-circle-line"></i>
+                    </span>
+                    <h4 class="mb-0">Payment Successful</h4>
+                </div>
+                <button type="button" class="close-btn" @click="closeSuccessModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-success-card">
+                    <div class="payment-success-icon">
+                        <i class="ri-checkbox-circle-fill"></i>
+                    </div>
+                    <h5>Payment recorded successfully</h5>
+                    <p>The {{ successPayment.paymentModeLabel }} payment for this invoice has been recorded.</p>
+                    <div class="payment-success-breakdown">
+                        <div class="payment-success-row">
+                            <span>Amount Paid</span>
+                            <strong>{{ numberFormat(successPayment.amountPaid) }}</strong>
+                        </div>
+                        <div class="payment-success-row">
+                            <span>Payment Mode</span>
+                            <strong>{{ successPayment.paymentModeLabel }}</strong>
+                        </div>
+                        <div class="payment-success-row payment-success-row-highlight">
+                            <span>Remaining Balance</span>
+                            <strong>{{ numberFormat(successPayment.remainingBalance) }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="success-footer-btn success-footer-btn-close" @click="closeSuccessModal">
+                    <i class="ri-close-line me-2"></i>
+                    Close
+                </button>
+                <button
+                    type="button"
+                    class="success-footer-btn success-footer-btn-print"
+                    :disabled="!successPayment.receiptId"
+                    @click="printReceipt"
+                >
+                    <i class="ri-printer-line me-2"></i>
+                    Print Receipt
                 </button>
             </div>
         </div>
@@ -216,11 +225,8 @@
 <script>
 
 import { useForm } from '@inertiajs/vue3';
-import Amount from '@/Shared/Components/Forms/Amount.vue';
-
 
 export default {
-    components: { Amount },
     props: [ ],
     computed: {
         normalizedPaymentMode() {
@@ -232,6 +238,46 @@ export default {
         splitTotal() {
             return (this.form.splits || []).reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
         },
+        remainingBalance() {
+            return this.round2(Number(this.form.balance_due || 0) - this.splitTotal);
+        },
+        statusClass() {
+            if (this.remainingBalance === 0) return 'is-complete';
+            if (this.remainingBalance < 0) return 'is-over';
+            return 'is-pending';
+        },
+        statusIcon() {
+            if (this.remainingBalance === 0) return 'ri-checkbox-circle-fill';
+            if (this.remainingBalance < 0) return 'ri-error-warning-fill';
+            return 'ri-time-line';
+        },
+        summaryStatusText() {
+            if (this.remainingBalance === 0) return 'Payment covers the full balance.';
+            if (this.remainingBalance < 0) return `Exceeds balance by ${this.numberFormat(Math.abs(this.remainingBalance))}.`;
+            return `${this.numberFormat(this.remainingBalance)} remaining after this payment.`;
+        },
+        dueInfo() {
+            const dueDateValue = this.invoice?.due_date ?? this.invoice?.sales_order?.due_date;
+            const balance = Number(this.invoice?.balance_due || 0);
+            if (!dueDateValue || balance <= 0) return null;
+
+            const dueDate = new Date(dueDateValue);
+            if (Number.isNaN(dueDate.getTime())) return null;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            dueDate.setHours(0, 0, 0, 0);
+
+            const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                const days = Math.abs(diffDays);
+                return { text: `Overdue by ${days} day${days === 1 ? '' : 's'}`, cls: 'is-overdue' };
+            }
+            if (diffDays === 0) return { text: 'Due today', cls: 'is-soon' };
+            if (diffDays <= 2) return { text: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'}`, cls: 'is-soon' };
+            return { text: `Due in ${diffDays} days`, cls: 'is-later' };
+        },
     },
     data(){
         return {
@@ -240,9 +286,7 @@ export default {
             form: useForm({
                 id: null,
                 action: 'payment',
-                payment_mode: 'Cash',
                 balance_due: 0.00,
-                amount_paid: 0.00,
                 payment_date: new Date().toISOString().slice(0, 10),  // current date,
                 billing_account: null,
                 option: 'payment',
@@ -251,9 +295,15 @@ export default {
 
             payment_modes: ['Cash', 'GCash', 'Bank Transfer', 'Check'],
             title: null,
-            table: null,
             showModal: false,
             invoice: null,
+            showSuccessModal: false,
+            successPayment: {
+                amountPaid: 0,
+                paymentModeLabel: '',
+                remainingBalance: 0,
+                receiptId: null,
+            },
         }
     },
 
@@ -264,18 +314,17 @@ export default {
             this.isSplitPayment = false;
             this.form.id = data.id;
             this.form.balance_due = data.balance_due;
-            this.form.payment_mode = 'Cash';
-            this.form.splits = [{ payment_mode: 'Cash', amount: 0 }];
-            this.$refs.amount_paid.emitValue(this.form.balance_due?.toFixed(2));
+            this.form.splits = [{ payment_mode: 'Cash', amount: this.round2(data.balance_due) }];
             this.title = title;
             this.route = route;
         },
 
         onToggleSplit() {
             this.form.clearErrors();
-            if (this.isSplitPayment) {
-                const total = this.allowsPartialPayment ? (this.cleanAmount(this.form.amount_paid) || this.form.balance_due) : this.form.balance_due;
-                this.form.splits = [{ payment_mode: this.form.payment_mode || 'Cash', amount: total }];
+            if (!this.isSplitPayment) {
+                const mode = this.form.splits[0]?.payment_mode || 'Cash';
+                const amount = this.allowsPartialPayment ? this.splitTotal : this.form.balance_due;
+                this.form.splits = [{ payment_mode: mode, amount: this.round2(amount) }];
             }
         },
 
@@ -288,64 +337,89 @@ export default {
             this.form.splits.splice(index, 1);
         },
 
+        modeIcon(mode) {
+            const map = {
+                'Cash': 'ri-money-dollar-circle-line',
+                'GCash': 'ri-smartphone-line',
+                'Bank Transfer': 'ri-bank-line',
+                'Check': 'ri-file-list-3-line',
+            };
+            return map[mode] || 'ri-bank-card-line';
+        },
+
         submit(){
             this.form.clearErrors();
 
-            if (this.isSplitPayment) {
-                const splits = (this.form.splits || []).filter(s => Number(s.amount) > 0);
-                if (!splits.length) {
-                    this.form.errors.splits = 'Add at least one payment method with an amount.';
-                    return;
-                }
-                const total = splits.reduce((sum, s) => sum + Number(s.amount), 0);
-                if (!this.allowsPartialPayment && Math.abs(total - this.form.balance_due) > 0.009) {
-                    this.form.errors.splits = 'Cash sales require the split total to cover the full outstanding balance.';
-                    return;
-                }
-                if (total > this.form.balance_due + 0.009) {
-                    this.form.errors.splits = 'Split total cannot exceed the outstanding balance.';
-                    return;
-                }
-                this.form.splits = splits;
-                this.form.amount_paid = total;
-            } else {
-                this.form.amount_paid = this.cleanAmount(this.form.amount_paid);
-                if (!this.allowsPartialPayment) {
-                    this.form.amount_paid = this.form.balance_due;
-                    this.$refs.amount_paid.emitValue(this.form.balance_due?.toFixed(2));
-                }
-                this.form.splits = [];
+            const splits = (this.form.splits || [])
+                .map(s => ({ payment_mode: s.payment_mode, amount: Number(s.amount) || 0 }))
+                .filter(s => s.amount > 0);
+
+            if (!splits.length) {
+                this.form.errors.splits = 'Add at least one payment method with an amount.';
+                return;
             }
+
+            const total = splits.reduce((sum, s) => sum + s.amount, 0);
+
+            if (!this.allowsPartialPayment && Math.abs(total - this.form.balance_due) > 0.009) {
+                this.form.errors.splits = 'Cash sales require the payment to cover the full outstanding balance.';
+                return;
+            }
+
+            if (total > this.form.balance_due + 0.009) {
+                this.form.errors.splits = 'Total payment cannot exceed the outstanding balance.';
+                return;
+            }
+
+            this.form.splits = splits;
 
             this.form.put(`${this.route}/${this.form.id}`,{
                 preserveScroll: true,
                 onSuccess: (response) => {
                     const receiptId = response?.props?.flash?.receipt_id || this.$page?.props?.flash?.receipt_id || null;
+                    const updatedInvoice = response?.props?.flash?.data || this.$page?.props?.flash?.data || null;
+                    const remainingBalance = updatedInvoice
+                        ? Number(updatedInvoice.balance_due)
+                        : Math.max(this.round2(this.form.balance_due - total), 0);
+
+                    this.successPayment = {
+                        amountPaid: total,
+                        paymentModeLabel: splits.length > 1 ? 'Split Payment' : (splits[0]?.payment_mode || 'Cash'),
+                        remainingBalance,
+                        receiptId,
+                    };
+
                     this.$emit('approve', true);
-                    this.form.amount_paid = 0.00;
                     this.form.splits = [];
                     this.form.reset();
                     this.hide();
-                    if (receiptId) {
-                        window.open(`/receipts/${receiptId}?option=print&type=receipt`, '_blank');
-                    }
+                    this.showSuccessModal = true;
                 },
             });
 
         },
 
-        cleanAmount(value) {
-            // Remove currency symbol and commas, then parse to float
-            return parseFloat(value.replace(/₱|,/g, '')) || 0;
+        round2(value) {
+            return Math.round((Number(value) || 0) * 100) / 100;
         },
 
         handleInput(field) {
             this.form.errors[field] = false;
         },
         hide(){
-            this.editable = false;
             this.showModal = false;
             this.invoice = null;
+        },
+
+        closeSuccessModal() {
+            this.showSuccessModal = false;
+        },
+
+        printReceipt() {
+            if (this.successPayment.receiptId) {
+                window.open(`/receipts/${this.successPayment.receiptId}?option=print&type=receipt`, '_blank');
+            }
+            this.showSuccessModal = false;
         },
 
         numberFormat(value) {
@@ -353,170 +427,558 @@ export default {
                 style: 'currency',
                 currency: 'PHP',
                 minimumFractionDigits: 2
-            }).format(value);
+            }).format(value || 0);
         }
-
-
-   
     }
 }
 </script>
 <style scoped>
-.modal-footer {
-    flex-shrink: 0;
-    border-top: 1px solid #e2e8f0;
-    background: #f8f9fa;
+.modal-subtitle {
+    font-size: 0.78rem;
+    color: #6b8c85;
+    font-weight: 500;
 }
 
-.payment-mode-grid {
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #267A4C;
+}
+
+/* Invoice Overview */
+.overview-card {
+    display: flex;
+    align-items: stretch;
+    gap: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.1rem;
+    background: #fff;
+    margin-bottom: 0.25rem;
+}
+
+.overview-items {
+    flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
 }
 
-.payment-mode-card {
+.overview-item {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem 1rem;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
+    align-items: flex-start;
+    gap: 0.6rem;
 }
 
-.payment-mode-card:hover {
-    border-color: #2e8b57;
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.15);
-    transform: translateY(-2px);
+.overview-icon {
+    color: #94a3b8;
+    font-size: 1.1rem;
+    margin-top: 0.15rem;
 }
 
-.selected-payment-mode {
-    border-color: #2e8b57;
-    background: #3D8D7A;
-    color: white;
-    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
-}
-
-.payment-icon {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.payment-label {
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.error-message {
-    color: #e74c3c;
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
-}
-
-.card {
-    border-radius: 12px;
-}
-
-.card-header {
-    border-radius: 12px 12px 0 0 !important;
-    background: #f9fafb;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.card-header h6 {
-    color: #267A4C;
-    font-weight: 600;
-}
-
-.btn {
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-primary {
-    background: #3D8D7A;
-    color: white;
-    border: none;
-    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(61, 141, 122, 0.4);
-    background: #3D8D7A;
-}
-
-.btn-outline-secondary {
-    background: transparent;
-    border: 1px solid #e9ecef;
+.overview-label {
+    margin: 0 0 0.15rem;
     color: #7f8c8d;
+    font-size: 0.75rem;
 }
 
-.btn-outline-secondary:hover {
-    background: #f8f9fa;
-    border-color: #7f8c8d;
+.overview-value {
+    margin: 0;
+    color: #16322e;
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.due-badge {
+    display: inline-block;
+    margin: 0.3rem 0 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.due-badge.is-overdue { color: #dc2626; }
+.due-badge.is-soon { color: #d97706; }
+.due-badge.is-later { color: #7f8c8d; }
+
+.balance-box {
+    position: relative;
+    overflow: hidden;
+    flex: 0 0 230px;
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    background: linear-gradient(135deg, #e4f3ec 0%, #f3faf7 100%);
+}
+
+.balance-decor {
+    position: absolute;
+    right: -0.4rem;
+    bottom: -0.6rem;
+    font-size: 3rem;
+    color: rgba(61, 141, 122, 0.15);
+}
+
+.balance-label {
+    margin: 0 0 0.35rem;
+    color: #267A4C;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.balance-value {
+    margin: 0;
+    color: #16322e;
+    font-weight: 800;
+    font-size: 1.35rem;
+}
+
+/* Payment Information */
+.payment-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.1rem;
+    background: #fff;
+}
+
+.payment-top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1.1rem;
+}
+
+.field-group {
+    flex: 1;
+    max-width: 260px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
     color: #2c3e50;
+    font-size: 0.8rem;
 }
 
-.form-control {
+.field-input,
+.field-select {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
     border: 1px solid #e9ecef;
-    border-radius: 10px;
-    padding: 10px 12px;
-    transition: all 0.3s ease;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    background-color: #fff;
+    transition: all 0.2s ease;
 }
 
-.form-control:focus {
+.field-input:focus,
+.field-select:focus {
     outline: none;
     border-color: #2e8b57;
     box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
 }
 
-.form-control.is-invalid {
+.field-input:disabled {
+    background: #f5f6f7;
+    color: #7f8c8d;
+}
+
+.field-input.is-invalid {
     border-color: #e74c3c;
 }
 
 .invalid-feedback {
     color: #e74c3c;
     font-size: 0.75rem;
+    margin-top: 0.3rem;
 }
 
-.text-primary {
-    color: #267A4C !important;
+.split-control {
+    text-align: right;
 }
 
-.text-success {
-    color: #2e8b57 !important;
+.split-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.82rem;
 }
 
-.text-danger {
-    color: #e74c3c !important;
+.split-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.4rem;
 }
 
-.text-info {
-    color: #267A4C !important;
+.split-desc {
+    color: #7f8c8d;
+    font-size: 0.75rem;
+    max-width: 220px;
+    text-align: left;
 }
 
-.text-muted {
-    color: #7f8c8d !important;
+/* Payment table */
+.payment-table {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-.text-dark {
-    color: #2c3e50 !important;
+.payment-table-header,
+.payment-table-row {
+    display: grid;
+    grid-template-columns: 40px 1fr 180px 70px;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
 }
 
-.text-white {
-    color: white !important;
+.payment-table-header {
+    background: #f9fafb;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
-.bg-light {
-    background-color: #f9fafb !important;
+.payment-table-row {
+    border-top: 1px solid #eef2f1;
+}
+
+.col-num {
+    color: #94a3b8;
+    font-weight: 600;
+    text-align: center;
+}
+
+.col-action {
+    display: flex;
+    justify-content: center;
+}
+
+.mode-select-wrap {
+    position: relative;
+}
+
+.mode-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #3D8D7A;
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+
+.mode-select-wrap .field-select {
+    padding-left: 2.15rem;
+}
+
+.row-delete-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #f3c6c6;
+    background: #fff5f5;
+    color: #e74c3c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.row-delete-btn:hover:not(:disabled) {
+    background: #fde8e8;
+}
+
+.row-delete-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.add-split-btn {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.6rem;
+    border: 1px dashed #c4d9d2;
+    border-radius: 10px;
+    background: transparent;
+    color: #267A4C;
+    font-weight: 700;
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.add-split-btn:hover {
+    background: #f0f7f4;
+}
+
+.cash-note {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.6rem;
+    color: #7f8c8d;
+    font-size: 0.78rem;
+}
+
+/* Summary bar */
+.payment-summary-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    background: #f3faf7;
+}
+
+.summary-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(61, 141, 122, 0.12);
+    color: #3d8d7a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.summary-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-label {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.72rem;
+}
+
+.summary-value {
+    margin: 0;
+    color: #16322e;
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+.summary-value.is-negative {
+    color: #dc2626;
+}
+
+.summary-divider {
+    width: 1px;
+    align-self: stretch;
+    background: #dbe7e2;
+}
+
+.summary-status {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.summary-status.is-complete { color: #267A4C; }
+.summary-status.is-pending { color: #d97706; }
+.summary-status.is-over { color: #dc2626; }
+
+/* Footer */
+.footer-btn {
+    min-width: 132px;
+    min-height: 42px;
+    padding: 0.55rem 1.1rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.footer-btn.secondary {
+    background: #fff;
+    border-color: #d8dee7;
+    color: #64748b;
+}
+
+.footer-btn.secondary:hover {
+    background: #f8f9fa;
+}
+
+.footer-btn.primary {
+    background: #3D8D7A;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
+}
+
+.footer-btn.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(61, 141, 122, 0.4);
+}
+
+/* Payment success modal */
+.payment-success-card {
+    padding: 0.9rem 0.7rem;
+    text-align: center;
+}
+
+.payment-success-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 0.7rem;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #d8f2e3 0%, #e8f8ef 100%);
+    color: #1f7a4d;
+    font-size: 1.6rem;
+}
+
+.payment-success-card h5 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #16322e;
+}
+
+.payment-success-card p {
+    margin: 0.3rem 0 0;
+    color: #6b8c85;
+    font-size: 0.8rem;
+}
+
+.payment-success-breakdown {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    text-align: left;
+}
+
+.payment-success-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+}
+
+.payment-success-row span {
+    color: #7f8c8d;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.payment-success-row strong {
+    color: #16322e;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.payment-success-row-highlight {
+    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
+    border-color: #b9e6ca;
+}
+
+.success-footer-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 130px;
+    padding: 0.55rem 1.1rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: 0.82rem;
+    transition: all 0.2s ease;
+}
+
+.success-footer-btn-close {
+    background: #3b82f6;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.success-footer-btn-close:hover {
+    background: #2563eb;
+}
+
+.success-footer-btn-print {
+    background: #3D8D7A;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
+}
+
+.success-footer-btn-print:hover:not(:disabled) {
+    background: #2f6f5f;
+}
+
+.success-footer-btn-print:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .overview-card {
+        flex-direction: column;
+    }
+
+    .overview-items {
+        grid-template-columns: 1fr;
+    }
+
+    .balance-box {
+        flex: 1;
+    }
+
+    .payment-top-row {
+        flex-direction: column;
+    }
+
+    .field-group {
+        max-width: 100%;
+    }
+
+    .split-control {
+        text-align: left;
+        width: 100%;
+    }
+
+    .split-switch-row {
+        justify-content: flex-start;
+    }
+
+    .payment-table-header,
+    .payment-table-row {
+        grid-template-columns: 30px 1fr 130px 50px;
+    }
 }
 </style>
