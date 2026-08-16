@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Stock — Style B</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f4f3;
+    min-height: 100vh;
+    padding: 28px 24px;
+    color: #102723;
+  }
+
+  .library-card {
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid #dde8e4;
+    box-shadow: 0 4px 24px rgba(20,56,48,0.07);
+    overflow: hidden;
+    max-width: 1360px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  .library-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+    border-bottom: 1px solid #c4d9d2;
+  }
+  .header-icon {
+    width: 40px; height: 40px;
+    background: rgba(61,141,122,0.12);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #3d8d7a; font-size: 1.2rem;
+  }
+  .header-title { font-size: 1rem; font-weight: 700; color: #16322e; }
+  .header-subtitle { font-size: 0.75rem; color: #6b8c85; }
+  .create-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 10px;
+    background: #2d7a6a; color: #fff;
+    border: none; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+  }
+
+  .library-card-body { padding: 0; }
+
+  /* ── Metrics Banner ── */
+  .metrics-banner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-bottom: 1px solid #e4eeeb;
+  }
+  .metric-cell {
+    padding: 20px 24px;
+    border-right: 1px solid #e4eeeb;
+    position: relative;
+  }
+  .metric-cell:last-child { border-right: none; }
+  .metric-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  .metric-icon.green  { background: #e0f5ef; color: #1a7e67; }
+  .metric-icon.teal   { background: #d6f0ea; color: #2d8a76; }
+  .metric-icon.amber  { background: #fff5e0; color: #c47f00; }
+  .metric-label {
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #6b8c85; margin-bottom: 4px;
+  }
+  .metric-value {
+    font-size: 1.35rem; font-weight: 800; color: #102723; line-height: 1;
+  }
+  .metric-value.retail   { color: #1a7e67; }
+  .metric-value.wholesale { color: #c47f00; }
+
+  /* ── Two-column body ── */
+  .body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .body-col {
+    padding: 22px 24px;
+  }
+  .body-col:first-child {
+    border-right: 1px solid #e4eeeb;
+  }
+
+  /* ── Section ── */
+  .section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #3d8d7a;
+    margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid #e0f0ea;
+  }
+
+  /* ── Field rows ── */
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .field-grid.cols-1 { grid-template-columns: 1fr; }
+  .field-item {}
+  .field-label {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: #6b8c85; margin-bottom: 3px;
+  }
+  .field-value {
+    font-size: 0.92rem; font-weight: 600; color: #102723;
+  }
+  .field-value.price {
+    font-size: 1rem; font-weight: 700; color: #1a4e48;
+  }
+  .field-value.exp-warn { color: #c47f00; font-weight: 700; }
+  .field-value.muted { color: #6b8c85; }
+
+  /* ── Logs area ── */
+  .logs-wrap {
+    grid-column: 1 / -1;
+    padding: 0 24px 24px;
+  }
+  .logs-inner {
+    border: 1px solid #dbe9e5;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .logs-header-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: #f6fcfa;
+    border-bottom: 1px solid #dbe9e5;
+  }
+  .logs-title {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 0.82rem; font-weight: 700; color: #16322e;
+  }
+  .logs-badge {
+    font-size: 0.7rem; font-weight: 700; color: #35524d;
+    background: #e0f0ea; border: 1px solid #c4d9d2;
+    border-radius: 999px; padding: 2px 8px;
+  }
+  .logs-table { width: 100%; border-collapse: collapse; }
+  .logs-table th, .logs-table td {
+    padding: 9px 14px; font-size: 0.76rem;
+    border-bottom: 1px solid #edf5f2; text-align: left;
+  }
+  .logs-table th {
+    background: #fff; color: #6b8c85; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .logs-table tbody tr:last-child td { border-bottom: none; }
+  .logs-table tbody tr:hover { background: #f9fdfb; }
+  .logs-table td { color: #35524d; }
+</style>
+</head>
+<body>
+
+<div class="library-card">
+
+  <!-- Header -->
+  <div class="library-card-header">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-icon"><i class="ri-archive-line"></i></div>
+      <div>
+        <div class="header-title">B2026000001</div>
+        <div class="header-subtitle">View and manage inventory stock details</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="create-btn">Update Price</button>
+      <button class="create-btn"><i class="ri-edit-line"></i> Adjust Stocks</button>
+      <button class="create-btn"><i class="ri-arrow-left-line"></i></button>
+    </div>
+  </div>
+
+  <!-- Metrics Banner -->
+  <div class="metrics-banner">
+    <div class="metric-cell">
+      <div class="metric-icon green"><i class="ri-coins-line"></i></div>
+      <div class="metric-label">Total Value</div>
+      <div class="metric-value">₱47,950,000.00</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-icon teal"><i class="ri-percent-line"></i></div>
+      <div class="metric-label">Profit Margin (Retail)</div>
+      <div class="metric-value retail">16.7%</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-icon amber"><i class="ri-percent-line"></i></div>
+      <div class="metric-label">Profit Margin (Wholesale)</div>
+      <div class="metric-value wholesale">9.1%</div>
+    </div>
+  </div>
+
+  <div class="library-card-body">
+
+    <!-- Two-column section -->
+    <div class="body-grid">
+
+      <!-- Left col: Pricing + Product info -->
+      <div class="body-col">
+        <div class="section-title"><i class="ri-price-tag-3-line"></i> Pricing &amp; Quantity</div>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-label">Unit Cost</div>
+            <div class="field-value price">₱500.00</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Quantity</div>
+            <div class="field-value price">95,900 units</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Retail Price</div>
+            <div class="field-value price">₱600.00</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Wholesale Price</div>
+            <div class="field-value price">₱550.00</div>
+          </div>
+        </div>
+
+        <div class="section-title"><i class="ri-calendar-check-line"></i> Additional Information</div>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-label">Expiration Date</div>
+            <div class="field-value exp-warn">1/1/1970</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Created At</div>
+            <div class="field-value">6/16/2026</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Last Updated</div>
+            <div class="field-value">6/19/2026</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right col: Received info -->
+      <div class="body-col">
+        <div class="section-title"><i class="ri-truck-line"></i> Received Information</div>
+        <div class="field-grid cols-1">
+          <div class="field-item">
+            <div class="field-label">Batch Code</div>
+            <div class="field-value">B2026000001</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Product</div>
+            <div class="field-value">Jasmine Rice 10 Kg</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Supplier</div>
+            <div class="field-value">Bountiful Grains Inc.</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Received Date</div>
+            <div class="field-value">Jun 16, 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full-width logs -->
+    <div class="logs-wrap">
+      <div class="logs-inner">
+        <div class="logs-header-bar">
+          <span class="logs-title"><i class="ri-history-line"></i> Inventory Adjustment Logs</span>
+          <span class="logs-badge">3 record(s)</span>
+        </div>
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Adjustment</th>
+              <th>Adjusted By</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Jun 19, 2026</td><td>96,000 → 95,900</td><td>Juan dela Cruz</td><td>Damaged goods removed</td>
+            </tr>
+            <tr>
+              <td>Jun 17, 2026</td><td>95,800 → 96,000</td><td>Maria Santos</td><td>Stock count correction</td>
+            </tr>
+            <tr>
+              <td>Jun 16, 2026</td><td>0 → 95,800</td><td>System</td><td>Initial receiving</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

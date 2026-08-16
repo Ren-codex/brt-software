@@ -42,6 +42,13 @@ class SalesOrderController extends Controller
             case 'return-history':
                 return response()->json($this->sales_order->returnHistory($request));
             break;
+            case 'products':
+                // Fresh product/batch/price snapshot for the Add Item modal — the
+                // Inertia-loaded `dropdowns.products` prop is fetched once on page
+                // load and never refreshes, so it goes stale as soon as any other
+                // stock/price activity happens while this page stays open.
+                return response()->json($this->dropdown->products());
+            break;
             default:
                 return inertia('Modules/Sales/Index', [
                     'dropdowns' => [

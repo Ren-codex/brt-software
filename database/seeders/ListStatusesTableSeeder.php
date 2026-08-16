@@ -340,6 +340,18 @@ class ListStatusesTableSeeder extends Seeder
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
             ),
+
+            27 =>
+            array (
+                'id' => 28,
+                'name' => 'Partial',
+                'slug' => 'partial',
+                'description' => 'Partially resolved status',
+                'text_color' => '#000000',
+                'bg_color' => '#ffa726',
+                'created_at' => '2025-01-01 00:00:00',
+                'updated_at' => '2025-01-01 00:00:00',
+            ),
         ));
     }
 }

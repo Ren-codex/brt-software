@@ -403,9 +403,10 @@ class StockReturnClass
             $stockReturnItem->replaced_quantity = $newReplacedTotal;
             $stockReturnItem->loss_quantity = $newLossTotal;
             $pendingStatusId = $this->getStatusIdBySlug('pending');
+            $partialStatusId = $this->getStatusIdBySlug('partial');
             $replacedStatusId = $this->getStatusIdBySlug('replaced');
             $lossStatusId = $this->getStatusIdBySlug('loss');
-            if (! $pendingStatusId || ! $replacedStatusId || ! $lossStatusId) {
+            if (! $pendingStatusId || ! $partialStatusId || ! $replacedStatusId || ! $lossStatusId) {
                 $this->fail('Receive statuses are not configured.');
             }
             if ($actualReceivedQty < $requestedQty) {

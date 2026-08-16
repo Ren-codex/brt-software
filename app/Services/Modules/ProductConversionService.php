@@ -125,11 +125,16 @@ class ProductConversionService
 
         $conversion->update(['output_stock_id' => $outputStock->id]);
 
+        // Value of any leftover source material that gets returned to the
+        // source batch below rather than consumed — must be re-debited to
+        // inventory in the journal entry, or it reads as a real loss.
+        $returnedValue = $computedRemainderKg > 0.001 ? round($computedRemainderKg * $unitCostPerKg, 2) : 0.0;
+
         $this->journalEntryService->recordStockConversionEntry($conversion->fresh([
             'sourceStock.receivedItem.product',
             'sourceStock.product',
             'outputStock.product',
-        ]));
+        ]), $returnedValue);
 
         // Soft-mark selected weight losses as converted
         if (!empty($selectedLossIds)) {
@@ -156,31 +161,57 @@ class ProductConversionService
             'adjusted_by_id'      => Auth::id(),
         ]);
 
-        // Return partial sack to source batch as short weight (same batch, no new batch number)
-        if ($computedRemainderKg > 0.001 && $sourceWeight > $computedRemainderKg) {
-            $lossPerSack        = round($sourceWeight - $computedRemainderKg, 4);
-            $prevAfterDecrement = $source->quantity;
-            $source->increment('quantity', 1);
+        // Return whatever didn't fit in the output units back to the source
+        // batch, as full-weight sacks plus (if anything is left over) one
+        // short-weight sack — not just a single partial sack. A remainder
+        // can be larger than one source sack whenever the target unit is
+        // heavier than the source (e.g. 5 x 10kg sacks -> a 25kg product
+        // only consumes 1 unit's worth and leaves 22.5kg, more than two
+        // whole source sacks); the old code only ever handled a remainder
+        // smaller than one source sack, silently dropping the rest.
+        if ($computedRemainderKg > 0.001 && $sourceWeight > 0) {
+            $wholeSacksReturned = (int) floor($computedRemainderKg / $sourceWeight);
+            $subSackRemainderKg = round($computedRemainderKg - ($wholeSacksReturned * $sourceWeight), 4);
+            $totalSacksReturned = $wholeSacksReturned;
 
-            InventoryWeightLoss::create([
-                'inventory_stock_id' => $source->id,
-                'affected_sacks'     => 1,
-                'loss_per_sack'      => $lossPerSack,
-                'loss_kg'            => $lossPerSack,
-                'reason'             => 'Partial sack remaining from conversion — ' . round($computedRemainderKg, 2) . ' kg',
-                'recorded_by_id'     => Auth::id(),
-                'recorded_at'        => now(),
-            ]);
+            if ($subSackRemainderKg > 0.001 && $sourceWeight > $subSackRemainderKg) {
+                $lossPerSack = round($sourceWeight - $subSackRemainderKg, 4);
+                $totalSacksReturned += 1;
 
-            InventoryAdjustment::create([
-                'inventory_stocks_id' => $source->id,
-                'previous_quantity'   => $prevAfterDecrement,
-                'new_quantity'        => $source->quantity,
-                'reason'              => 'Partial sack (' . round($computedRemainderKg, 2) . ' kg) returned to source after conversion',
-                'type'                => 'conversion_partial',
-                'adjustment_date'     => now()->format('Y-m-d'),
-                'adjusted_by_id'      => Auth::id(),
-            ]);
+                InventoryWeightLoss::create([
+                    'inventory_stock_id' => $source->id,
+                    'affected_sacks'     => 1,
+                    'loss_per_sack'      => $lossPerSack,
+                    'loss_kg'            => $lossPerSack,
+                    'reason'             => 'Partial sack remaining from conversion — ' . round($subSackRemainderKg, 2) . ' kg',
+                    'recorded_by_id'     => Auth::id(),
+                    'recorded_at'        => now(),
+                ]);
+            }
+
+            if ($totalSacksReturned > 0) {
+                $prevAfterDecrement = $source->quantity;
+                $source->increment('quantity', $totalSacksReturned);
+
+                $reasonParts = [];
+                if ($wholeSacksReturned > 0) {
+                    $reasonParts[] = $wholeSacksReturned . ' full sack(s)';
+                }
+                if ($subSackRemainderKg > 0.001) {
+                    $reasonParts[] = round($subSackRemainderKg, 2) . ' kg partial sack';
+                }
+
+                InventoryAdjustment::create([
+                    'inventory_stocks_id' => $source->id,
+                    'previous_quantity'   => $prevAfterDecrement,
+                    'new_quantity'        => $source->quantity,
+                    'reason'              => implode(' + ', $reasonParts) . ' returned to source after conversion ('
+                        . round($computedRemainderKg, 2) . ' kg total)',
+                    'type'                => 'conversion_partial',
+                    'adjustment_date'     => now()->format('Y-m-d'),
+                    'adjusted_by_id'      => Auth::id(),
+                ]);
+            }
         }
 
         InventoryAdjustment::create([
