@@ -26,6 +26,8 @@ class StoreReceivedStockRequest extends FormRequest
         return [
             'po_id' => 'required|exists:purchase_orders,id',
             'supplier_id' => 'required|exists:list_suppliers,id',
+            'received_date' => 'nullable|date',
+            'remarks' => 'nullable|string|max:1000',
             'payment_mode' => 'required|in:Cash,Bank Transfer,Check,Credit',
             'due_date' => 'nullable|date|required_if:payment_mode,Credit',
             'amount_paid' => 'nullable|numeric|min:0',

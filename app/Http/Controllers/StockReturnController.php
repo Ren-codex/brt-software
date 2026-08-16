@@ -68,8 +68,8 @@ class StockReturnController extends Controller
         // Accept old payload { actual_received_quantity, status } and convert it
         // to the new split payload { replaced_quantity, loss_quantity }.
         if (
-            !$request->has('replaced_quantity')
-            && !$request->has('loss_quantity')
+            ! $request->has('replaced_quantity')
+            && ! $request->has('loss_quantity')
             && $request->has('actual_received_quantity')
         ) {
             $actualQty = (int) $request->input('actual_received_quantity', 0);
@@ -91,6 +91,23 @@ class StockReturnController extends Controller
 
         return response()->json([
             'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'] ?? true,
+        ]);
+    }
+
+    public function void(Request $request, $id)
+    {
+        $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $result = $this->stockReturn->void($request, $id);
+
+        return response()->json([
+            'data' => $result['data'],
+            'deleted' => $result['deleted'] ?? false,
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'] ?? true,

@@ -53,7 +53,7 @@
               <div class="ap-detail-info-row">
                 <span class="ap-detail-info-label">Received Date</span>
                 <div class="ap-detail-info-value ap-detail-info-value-soft">
-                  {{ formatDate(record?.received_date) }}
+                  {{ formatDateTime(record?.received_date) }}
                 </div>
               </div>
               <div v-if="record?.due_date" class="ap-detail-info-row">
@@ -111,6 +111,12 @@
                 <span class="ap-detail-info-label">Received By</span>
                 <div class="ap-detail-info-value">
                   {{ record?.received_by?.fullname || 'System User' }}
+                </div>
+              </div>
+              <div v-if="record?.remarks" class="ap-detail-info-row">
+                <span class="ap-detail-info-label">Remarks</span>
+                <div class="ap-detail-info-value ap-detail-info-value-soft">
+                  {{ record?.remarks }}
                 </div>
               </div>
             </div>
@@ -226,6 +232,14 @@ export default {
     },
     formatCurrency,
     formatDate,
+    formatDateTime(value) {
+      if (!value) return 'N/A';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString('en-PH', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+      });
+    },
     payableStatusLabel(record) {
       const isUnpaid = Number(record?.amount_paid || 0) <= 0;
       return isUnpaid ? 'Unpaid' : 'Partially Paid';

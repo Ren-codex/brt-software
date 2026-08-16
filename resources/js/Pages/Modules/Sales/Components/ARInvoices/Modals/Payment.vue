@@ -59,14 +59,24 @@
 
                 <!-- Payment Details -->
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-light d-flex align-items-center justify-content-between">
                         <h6 class="mb-0 text-primary">
                             <i class="ri-edit-line me-2"></i>
                             Payment Details
                         </h6>
+                        <div class="form-check form-switch mb-0">
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                id="is_split_payment"
+                                v-model="isSplitPayment"
+                                @change="onToggleSplit"
+                            >
+                            <label class="form-check-label small fw-semibold" for="is_split_payment">Split payment</label>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
+                        <div v-if="!isSplitPayment" class="row g-3">
                             <div class="col-md-6">
                                 <label for="payment_amount" class="form-label fw-semibold">
                                     <i class="ri-money-dollar-circle-line me-2 text-success"></i>
@@ -87,6 +97,22 @@
                                 </small>
                             </div>
                             <div class="col-md-6">
+                                <label for="payment_mode" class="form-label fw-semibold">
+                                    <i class="ri-bank-card-line me-2 text-success"></i>
+                                    Mode of Payment <span class="text-danger">*</span>
+                                </label>
+                                <select
+                                    id="payment_mode"
+                                    class="form-control"
+                                    v-model="form.payment_mode"
+                                    @change="handleInput('payment_mode')"
+                                    :class="{ 'is-invalid': form.errors.payment_mode }"
+                                >
+                                    <option v-for="mode in payment_modes" :key="mode" :value="mode">{{ mode }}</option>
+                                </select>
+                                <div class="invalid-feedback" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</div>
+                            </div>
+                            <div class="col-md-6">
                                 <label for="payment_date" class="form-label fw-semibold">
                                     <i class="ri-calendar-line me-2 text-info"></i>
                                     Payment Date <span class="text-danger">*</span>
@@ -101,6 +127,75 @@
                                 />
                                 <div class="invalid-feedback" v-if="form.errors.payment_date">{{ form.errors.payment_date }}</div>
                             </div>
+                        </div>
+
+                        <div v-else>
+                            <div v-for="(split, index) in form.splits" :key="index" class="row g-3 align-items-end mb-3">
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold" v-if="index === 0">
+                                        <i class="ri-bank-card-line me-2 text-success"></i>
+                                        Mode of Payment
+                                    </label>
+                                    <select class="form-control" v-model="split.payment_mode">
+                                        <option v-for="mode in payment_modes" :key="mode" :value="mode">{{ mode }}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold" v-if="index === 0">
+                                        <i class="ri-money-dollar-circle-line me-2 text-success"></i>
+                                        Amount
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        class="form-control"
+                                        v-model.number="split.amount"
+                                    >
+                                </div>
+                                <div class="col-md-2">
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary w-100"
+                                        :disabled="form.splits.length <= 1"
+                                        @click="removeSplit(index)"
+                                    >
+                                        <i class="ri-close-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-outline-secondary btn-sm mb-3" @click="addSplit">
+                                <i class="ri-add-line me-1"></i> Add another payment method
+                            </button>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="payment_date_split" class="form-label fw-semibold">
+                                        <i class="ri-calendar-line me-2 text-info"></i>
+                                        Payment Date <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        class="form-control"
+                                        id="payment_date_split"
+                                        v-model="form.payment_date"
+                                        @input="handleInput('payment_date')"
+                                        :class="{ 'is-invalid': form.errors.payment_date }"
+                                    />
+                                    <div class="invalid-feedback" v-if="form.errors.payment_date">{{ form.errors.payment_date }}</div>
+                                </div>
+                                <div class="col-md-6 text-md-end">
+                                    <p class="text-muted small mb-1">Split Total</p>
+                                    <h6 class="fw-bold" :class="{ 'text-danger': splitTotal > form.balance_due }">
+                                        {{ numberFormat(splitTotal) }}
+                                    </h6>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback d-block" v-if="form.errors.splits">{{ form.errors.splits }}</div>
+                            <small v-if="!allowsPartialPayment" class="text-muted d-block mt-2">
+                                Cash sales require the split total to cover the full outstanding balance.
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -133,23 +228,28 @@ export default {
         },
         allowsPartialPayment() {
             return ['credit', 'credit sales'].includes(this.normalizedPaymentMode);
-        }
+        },
+        splitTotal() {
+            return (this.form.splits || []).reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+        },
     },
     data(){
         return {
             currentUrl: window.location.origin,
+            isSplitPayment: false,
             form: useForm({
                 id: null,
                 action: 'payment',
-                payment_mode: null,
+                payment_mode: 'Cash',
                 balance_due: 0.00,
                 amount_paid: 0.00,
                 payment_date: new Date().toISOString().slice(0, 10),  // current date,
                 billing_account: null,
                 option: 'payment',
+                splits: [],
             }),
 
-            payment_modes: ['Cash', 'Credit Card', 'Debit Card','Bank Transfer'],
+            payment_modes: ['Cash', 'GCash', 'Bank Transfer', 'Check'],
             title: null,
             table: null,
             showModal: false,
@@ -157,30 +257,73 @@ export default {
         }
     },
 
-    methods: { 
+    methods: {
         show(data, title, route){
             this.showModal = true;
             this.invoice = data;
+            this.isSplitPayment = false;
             this.form.id = data.id;
             this.form.balance_due = data.balance_due;
-            this.form.payment_mode = data?.sales_order?.payment_mode || null;
+            this.form.payment_mode = 'Cash';
+            this.form.splits = [{ payment_mode: 'Cash', amount: 0 }];
             this.$refs.amount_paid.emitValue(this.form.balance_due?.toFixed(2));
             this.title = title;
             this.route = route;
         },
 
-        submit(){
-            this.form.amount_paid = this.cleanAmount(this.form.amount_paid);
-            if (!this.allowsPartialPayment) {
-                this.form.amount_paid = this.form.balance_due;
-                this.$refs.amount_paid.emitValue(this.form.balance_due?.toFixed(2));
+        onToggleSplit() {
+            this.form.clearErrors();
+            if (this.isSplitPayment) {
+                const total = this.allowsPartialPayment ? (this.cleanAmount(this.form.amount_paid) || this.form.balance_due) : this.form.balance_due;
+                this.form.splits = [{ payment_mode: this.form.payment_mode || 'Cash', amount: total }];
             }
+        },
+
+        addSplit() {
+            this.form.splits.push({ payment_mode: 'Cash', amount: 0 });
+        },
+
+        removeSplit(index) {
+            if (this.form.splits.length <= 1) return;
+            this.form.splits.splice(index, 1);
+        },
+
+        submit(){
+            this.form.clearErrors();
+
+            if (this.isSplitPayment) {
+                const splits = (this.form.splits || []).filter(s => Number(s.amount) > 0);
+                if (!splits.length) {
+                    this.form.errors.splits = 'Add at least one payment method with an amount.';
+                    return;
+                }
+                const total = splits.reduce((sum, s) => sum + Number(s.amount), 0);
+                if (!this.allowsPartialPayment && Math.abs(total - this.form.balance_due) > 0.009) {
+                    this.form.errors.splits = 'Cash sales require the split total to cover the full outstanding balance.';
+                    return;
+                }
+                if (total > this.form.balance_due + 0.009) {
+                    this.form.errors.splits = 'Split total cannot exceed the outstanding balance.';
+                    return;
+                }
+                this.form.splits = splits;
+                this.form.amount_paid = total;
+            } else {
+                this.form.amount_paid = this.cleanAmount(this.form.amount_paid);
+                if (!this.allowsPartialPayment) {
+                    this.form.amount_paid = this.form.balance_due;
+                    this.$refs.amount_paid.emitValue(this.form.balance_due?.toFixed(2));
+                }
+                this.form.splits = [];
+            }
+
             this.form.put(`${this.route}/${this.form.id}`,{
                 preserveScroll: true,
                 onSuccess: (response) => {
                     const receiptId = response?.props?.flash?.receipt_id || this.$page?.props?.flash?.receipt_id || null;
                     this.$emit('approve', true);
                     this.form.amount_paid = 0.00;
+                    this.form.splits = [];
                     this.form.reset();
                     this.hide();
                     if (receiptId) {
@@ -203,21 +346,6 @@ export default {
             this.editable = false;
             this.showModal = false;
             this.invoice = null;
-        },
-
-        getPaymentModeIcon(mode) {
-            const icons = {
-                'Cash': 'ri-money-dollar-circle-line',
-                'Credit Card': 'ri-bank-card-line',
-                'Debit Card': 'ri-bank-card-2-line',
-                'Bank Transfer': 'ri-exchange-dollar-line'
-            };
-            return icons[mode] || 'ri-money-dollar-circle-line';
-        },
-
-        selectPaymentMode(mode) {
-            this.form.payment_mode = mode;
-            this.handleInput('payment_mode');
         },
 
         numberFormat(value) {

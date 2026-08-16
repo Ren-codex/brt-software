@@ -5,17 +5,22 @@ namespace App\Services\Modules;
 use App\Models\Loan;
 use App\Models\LoanLog;
 use App\Services\SeriesService;
+use App\Services\System\Permission\PermissionService;
 use App\Http\Resources\Modules\LoanResource;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LoanClass
 {
     protected $series_service;
+    protected $permissions;
 
     public function __construct(
         SeriesService $series_service,
+        PermissionService $permissions,
     ) {
         $this->series_service = $series_service;
+        $this->permissions = $permissions;
     }
 
     public function lists($request)
@@ -147,6 +152,15 @@ class LoanClass
         $loan = Loan::findOrFail($id);
         $oldStatus = $loan->status;
         $newStatus = $request->status;
+
+        // Releasing (disbursing) the loan is a separate control point from
+        // approving/rejecting it — each requires its own access level.
+        $requiredLevel = $newStatus === 'active' ? 'releaser' : 'approver';
+        if (!$this->permissions->userHasAccess(Auth::user(), 'payroll', 'loans', $requiredLevel)) {
+            abort(403, $newStatus === 'active'
+                ? 'You do not have permission to release this loan.'
+                : 'You do not have permission to approve or reject this loan.');
+        }
 
         $payload = [
             'status' => $newStatus === 'disapproved' ? 'rejected' : $newStatus,

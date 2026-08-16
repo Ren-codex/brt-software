@@ -63,7 +63,7 @@
                                     </button>
                                 </div><br>
                                 <p class="mb-1"><strong>Approved By:</strong> {{ item.approved_by?.fullname || '-' }}</p>
-                                <p class="mb-1"><strong>Date Approved:</strong> {{ item.approved_at || '-' }}</p>
+                                <p class="mb-1"><strong>{{ item.status?.slug === 'liquidated' ? 'Liquidated At' : 'Date Approved' }}:</strong> {{ item.approved_at || '-' }}</p>
                                 <p class="mb-1" v-if="item.status?.slug === 'liquidated'">
                                     <strong>Bank Deposit:</strong>
                                     <span v-if="item.is_deposited" class="deposit-status-chip deposited ms-1">

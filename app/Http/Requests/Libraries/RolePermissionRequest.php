@@ -17,7 +17,7 @@ class RolePermissionRequest extends FormRequest
             'grants' => 'array',
             'grants.*.module_id' => 'required|integer|exists:modules,id',
             'grants.*.submodule_id' => 'nullable|integer|exists:submodules,id',
-            'grants.*.access_level' => 'required|string|in:encoder,approver,view,admin',
+            'grants.*.access_level' => 'required|string|in:encoder,approver,releaser,void,view,admin',
         ];
     }
 }

@@ -23,7 +23,7 @@ class LoanRequest extends FormRequest
     {
         return [
             'employee_id' => 'required|exists:employees,id',
-            'loan_type' => 'required|in:personal,salary,emergency,housing',
+            'loan_type' => 'required|in:personal,salary,emergency,cash_advance',
             'amount' => 'required|numeric|min:0',
             'interest_rate' => 'required|numeric|min:0|max:100',
             'term_months' => 'required|integer|min:1',

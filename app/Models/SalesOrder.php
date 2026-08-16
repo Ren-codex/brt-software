@@ -25,6 +25,9 @@ class SalesOrder extends Model
         'payment_mode',
         'due_date',
         'location_id',
+        'delivery_location',
+        'cancellation_remarks',
+        'requires_batch_approval',
     ];
 
     protected $casts = [

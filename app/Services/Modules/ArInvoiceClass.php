@@ -92,21 +92,37 @@ class ArInvoiceClass
     public function payment($request, $id = null){
         $ar_invoice = ArInvoice::findOrFail($request->id);
 
+        // A payment is either one {payment_mode, amount_paid} pair, or a 'splits'
+        // array of them (e.g. part Cash, part GCash) applied together in one go.
+        $splits = collect($request->splits ?? [])
+            ->map(fn ($s) => ['payment_mode' => (string) ($s['payment_mode'] ?? ''), 'amount' => round((float) ($s['amount'] ?? 0), 2)])
+            ->filter(fn ($s) => $s['amount'] > 0)
+            ->values();
+
+        if ($splits->isEmpty()) {
+            $splits = collect([[
+                'payment_mode' => (string) $request->payment_mode,
+                'amount' => round((float) $request->amount_paid, 2),
+            ]]);
+        }
+
+        $totalPayment = round((float) $splits->sum('amount'), 2);
+
         // Server-authoritative overpayment guard (mirrors ReceiptClass::save):
         // validate the payment against the invoice's actual DB balance, not any
         // client-supplied value.
-        if ((float) $request->amount_paid <= 0) {
+        if ($totalPayment <= 0) {
             throw ValidationException::withMessages(['amount_paid' => 'Payment amount must be greater than zero.']);
         }
-        if ((float) $request->amount_paid > (float) $ar_invoice->balance_due) {
+        if ($totalPayment > (float) $ar_invoice->balance_due) {
             throw ValidationException::withMessages([
-                'amount_paid' => 'Payment of ₱' . number_format((float) $request->amount_paid, 2) . ' exceeds the outstanding balance of ₱' . number_format((float) $ar_invoice->balance_due, 2) . '.',
+                'amount_paid' => 'Payment of ₱' . number_format($totalPayment, 2) . ' exceeds the outstanding balance of ₱' . number_format((float) $ar_invoice->balance_due, 2) . '.',
             ]);
         }
 
-        // Update AR Invoice balances first so balance_due is correct when receipt is created
-        $ar_invoice->amount_paid = $ar_invoice->amount_paid + $request->amount_paid;
-        $ar_invoice->balance_due = $ar_invoice->balance_due - $request->amount_paid;
+        // Update AR Invoice balances first so balance_due is correct when receipts are created
+        $ar_invoice->amount_paid = $ar_invoice->amount_paid + $totalPayment;
+        $ar_invoice->balance_due = $ar_invoice->balance_due - $totalPayment;
 
         $sales_order = SalesOrder::findOrFail($ar_invoice->sales_order_id);
 
@@ -138,23 +154,34 @@ class ArInvoiceClass
         }
         $ar_invoice->save();
 
-        $receipt = Receipt::create([
-            'receipt_number' => Receipt::generateReceiptNumber(),
-            'receipt_type'   => 'payment',
-            'receipt_date'   => $request->payment_date,
-            'amount_paid'    => $request->amount_paid,
-            'balance_due'    => $ar_invoice->balance_due,
-            'payment_mode'   => $request->payment_mode,
-            'status_id'      => ListStatus::getBySlug('pending')?->id,
-            'customer_id'    => optional($ar_invoice->sales_order)->customer_id,
-            'ar_invoice_id'  => $ar_invoice->id,
-        ]);
+        $pendingStatusId = ListStatus::getBySlug('pending')?->id;
+        $lastReceipt = null;
+        $receiptIds = [];
 
-        $this->journalEntryService->recordReceiptEntry($receipt);
+        foreach ($splits as $split) {
+            $receipt = Receipt::create([
+                'receipt_number' => Receipt::generateReceiptNumber(),
+                'receipt_type'   => 'payment',
+                'receipt_date'   => $request->payment_date,
+                'amount_paid'    => $split['amount'],
+                // The invoice's resulting balance is the same for every receipt in
+                // this batch — they were all applied together, not sequentially.
+                'balance_due'    => $ar_invoice->balance_due,
+                'payment_mode'   => $split['payment_mode'],
+                'status_id'      => $pendingStatusId,
+                'customer_id'    => optional($ar_invoice->sales_order)->customer_id,
+                'ar_invoice_id'  => $ar_invoice->id,
+            ]);
+
+            $this->journalEntryService->recordReceiptEntry($receipt);
+            $receiptIds[] = $receipt->id;
+            $lastReceipt = $receipt;
+        }
 
         return [
             'data' => new ArInvoiceResource($ar_invoice),
-            'receipt_id' => $receipt->id,
+            'receipt_id' => $lastReceipt?->id,
+            'receipt_ids' => $receiptIds,
             'message' => 'Payment saved successfully!',
             'info' => "Payment successfully saved"
         ];

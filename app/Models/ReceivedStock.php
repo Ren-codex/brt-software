@@ -16,11 +16,18 @@ class ReceivedStock extends Model
         'amount_paid',
         'bank_name',
         'reference_number',
+        'bank_account_id',
         'received_by_id',
+        'remarks',
+        'voided_at',
+        'void_reason',
+        'voided_by_id',
     ];
 
     protected $casts = [
         'due_date' => 'date',
+        'received_date' => 'datetime',
+        'voided_at' => 'datetime',
     ];
 
     public function purchaseOrder()
@@ -41,6 +48,11 @@ class ReceivedStock extends Model
     public function receivedBy()
     {
         return $this->belongsTo(User::class, 'received_by_id');
+    }
+
+    public function voidedBy()
+    {
+        return $this->belongsTo(User::class, 'voided_by_id');
     }
 
     public function payments()

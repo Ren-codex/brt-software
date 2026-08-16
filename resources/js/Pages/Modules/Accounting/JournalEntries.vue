@@ -311,13 +311,22 @@
                                 <tr v-for="(line, i) in entryForm.lines" :key="i">
                                     <td>
                                         <select v-model="line.account_id" class="form-select form-select-sm"
-                                            :class="{ 'is-invalid': entryErrors['lines.' + i + '.account_id'] }">
+                                            :class="{ 'is-invalid': entryErrors['lines.' + i + '.account_id'] }"
+                                            @change="line.bank_account_id = null">
                                             <option :value="null">— Select account —</option>
                                             <optgroup v-for="type in accountTypes" :key="type" :label="capitalize(type)">
                                                 <option v-for="acct in accountsByType[type]" :key="acct.id" :value="acct.id">
                                                     {{ acct.code }} — {{ acct.name }}
                                                 </option>
                                             </optgroup>
+                                        </select>
+                                        <select v-if="isCashInBankAccount(line.account_id)" v-model="line.bank_account_id"
+                                            class="form-select form-select-sm mt-1"
+                                            :class="{ 'is-invalid': entryErrors['lines.' + i + '.bank_account_id'] }">
+                                            <option :value="null">— Select bank account —</option>
+                                            <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
+                                                {{ ba.bank_name }} — {{ ba.account_name }}
+                                            </option>
                                         </select>
                                     </td>
                                     <td>
@@ -486,10 +495,11 @@ export default {
                 entry_date: '',
                 memo: '',
                 lines: [
-                    { account_id: null, line_type: 'debit',  amount: null, description: '' },
-                    { account_id: null, line_type: 'credit', amount: null, description: '' },
+                    { account_id: null, line_type: 'debit',  amount: null, description: '', bank_account_id: null },
+                    { account_id: null, line_type: 'credit', amount: null, description: '', bank_account_id: null },
                 ],
             },
+            bankAccounts: [],
             accountTypes: ['asset', 'liability', 'equity', 'revenue', 'expense'],
             entryTypes: [
                 'sales_revenue',
@@ -540,8 +550,21 @@ export default {
     },
     created() {
         this.fetch();
+        this.loadBankAccounts();
     },
     methods: {
+        async loadBankAccounts() {
+            try {
+                const res = await axios.get('/accounting/bank-accounts/list');
+                this.bankAccounts = res.data || [];
+            } catch {
+                this.bankAccounts = [];
+            }
+        },
+        isCashInBankAccount(accountId) {
+            const acct = this.accounts.find(a => a.id === accountId);
+            return acct?.code === '1011';
+        },
         fetch(pageUrl) {
             pageUrl = pageUrl || '/accounting/journal-entries';
             this.listLoading = true;
@@ -572,8 +595,8 @@ export default {
                 entry_date: today,
                 memo: '',
                 lines: [
-                    { account_id: null, line_type: 'debit',  amount: null, description: '' },
-                    { account_id: null, line_type: 'credit', amount: null, description: '' },
+                    { account_id: null, line_type: 'debit',  amount: null, description: '', bank_account_id: null },
+                    { account_id: null, line_type: 'credit', amount: null, description: '', bank_account_id: null },
                 ],
             };
             this.entryErrors = {};
@@ -595,7 +618,7 @@ export default {
             this.voucherDrawer.open = false;
         },
         addLine() {
-            this.entryForm.lines.push({ account_id: null, line_type: 'debit', amount: null, description: '' });
+            this.entryForm.lines.push({ account_id: null, line_type: 'debit', amount: null, description: '', bank_account_id: null });
         },
         removeLine(index) {
             if (this.entryForm.lines.length > 2) {
@@ -603,8 +626,17 @@ export default {
             }
         },
         async submitEntry() {
-            this.entrySaving = true;
             this.entryErrors = {};
+
+            const missingBankAccount = this.entryForm.lines.findIndex(
+                l => this.isCashInBankAccount(l.account_id) && !l.bank_account_id
+            );
+            if (missingBankAccount !== -1) {
+                this.entryErrors['lines.' + missingBankAccount + '.bank_account_id'] = 'Select which bank account this line applies to.';
+                return;
+            }
+
+            this.entrySaving = true;
             try {
                 await axios.post('/accounting/journal-entries', this.entryForm);
                 this.closeEntryModal();

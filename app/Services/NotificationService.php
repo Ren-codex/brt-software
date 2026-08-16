@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Models\InventoryStocks;
 use App\Models\PettyCashFund;
 use App\Models\Product;
+use App\Models\SalesOrder;
 use App\Models\User;
 use App\Notifications\LowBalanceFundNotification;
 use App\Notifications\LowStockNotification;
 use App\Notifications\OverdueInvoiceNotification;
+use App\Notifications\UnpaidSameDaySalesOrderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -84,6 +86,35 @@ class NotificationService
         foreach ($invoices as $invoice) {
             foreach ($users as $user) {
                 $user->notify(new OverdueInvoiceNotification($invoice));
+            }
+        }
+    }
+
+    /**
+     * COD/credit sales orders placed today that are still unpaid this afternoon —
+     * notify the assigned sales rep plus admins so it can be chased down same-day.
+     */
+    public function notifyUnpaidSameDaySalesOrders(Collection $salesOrders): void
+    {
+        if ($salesOrders->isEmpty()) {
+            return;
+        }
+
+        $admins = User::whereHas(
+            'roles', fn ($q) => $q->whereIn('name', ['Administrator', 'Top Management'])
+        )->get();
+
+        foreach ($salesOrders as $salesOrder) {
+            $balanceDue = (float) $salesOrder->arInvoices->sum('balance_due');
+            if ($balanceDue <= 0) {
+                continue;
+            }
+
+            // concat() (not push()) so $admins itself isn't mutated across iterations.
+            $recipients = $admins->concat([$salesOrder->salesRep?->user])->filter()->unique('id');
+
+            foreach ($recipients as $user) {
+                $user->notify(new UnpaidSameDaySalesOrderNotification($salesOrder, $balanceDue));
             }
         }
     }

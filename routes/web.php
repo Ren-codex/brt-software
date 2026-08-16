@@ -3,14 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', [App\Http\Controllers\WelcomeController::class, 'index'])->middleware('guest')->name('welcome');;
+Route::get('/', [App\Http\Controllers\WelcomeController::class, 'index'])->middleware('guest')->name('welcome');
 
 // Landing Page Routes
 Route::get('/landing', function () {
     return Inertia::render('Landing');
 })->middleware('guest')->name('landing');
 
-Route::middleware(['2fa','auth','is_active'])->group(function () {
+Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class);
     Route::get('/reports', [App\Http\Controllers\Modules\ReportsController::class, 'index']);
@@ -34,7 +34,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         ->middleware('permission:customers,view');
     Route::get('/customers/{id}/purchase-history', [App\Http\Controllers\Modules\CustomerController::class, 'purchaseHistory'])
         ->middleware('permission:customers,view');
-     Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
+    Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class);
     Route::patch('/suppliers/{id}/toggle-active', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleActive']);
     Route::patch('/suppliers/{id}/toggle-blacklist', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleBlacklist']);
     Route::get('/suppliers/{id}/purchase-order-summary', [App\Http\Controllers\Libraries\SupplierController::class, 'purchaseOrderSummary']);
@@ -138,7 +138,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::put('/purchase-orders/{id}/status', [App\Http\Controllers\PurchaseOrderController::class, 'updateStatus'])
             ->middleware('permission:inventory,purchase_orders,approver');
         Route::patch('/purchase-orders/{id}/void', [App\Http\Controllers\PurchaseOrderController::class, 'void'])
-            ->middleware('permission:inventory,purchase_orders,approver');
+            ->middleware('permission:inventory,purchase_orders,void');
         Route::resource('/stock-returns', App\Http\Controllers\StockReturnController::class)
             ->middlewareFor(['index', 'show'], 'permission:inventory,stock_returns,view')
             ->middlewareFor('store', 'permission:inventory,stock_returns,encoder');
@@ -146,6 +146,8 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:inventory,stock_returns,approver');
         Route::post('/stock-returns/{id}/items/{itemId}/receive', [App\Http\Controllers\StockReturnController::class, 'receiveItem'])
             ->middleware('permission:inventory,stock_returns,approver');
+        Route::patch('/stock-returns/{id}/void', [App\Http\Controllers\StockReturnController::class, 'void'])
+            ->middleware('permission:inventory,stock_returns,void');
         Route::get('/purchase-orders/{id}/print', [App\Http\Controllers\PurchaseOrderController::class, 'printPO'])
             ->middleware('permission:inventory,purchase_orders,view');
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode'])
@@ -156,7 +158,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class)
             ->middlewareFor(['index', 'show'], 'permission:inventory,receiving,view')
             ->middlewareFor(['store', 'update'], 'permission:inventory,receiving,encoder')
-            ->middlewareFor('destroy', 'permission:inventory,receiving,admin');
+            ->middlewareFor('destroy', 'permission:inventory,receiving,void');
         Route::resource('inventory-stocks', App\Http\Controllers\InventoryStockController::class)
             ->middlewareFor(['index', 'show'], 'permission:inventory,inventory_stocks,view')
             ->middlewareFor('update', 'permission:inventory,inventory_stocks,encoder');
@@ -192,7 +194,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:accounting,remittances,view');
         Route::post('/remittances/{id}/remit', [App\Http\Controllers\RemittanceController::class, 'remit'])
             ->middleware('permission:accounting,remittances,approver')->name('remittances.remit');
-        
+
         Route::resource('/payroll-settings', App\Http\Controllers\Modules\PayrollSettingController::class)
             ->middlewareFor('index', 'permission:payroll,payroll_settings,view')
             ->middlewareFor('update', 'permission:payroll,payroll_settings,encoder');
@@ -236,8 +238,8 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
             ->middleware('permission:accounting,financial_reports,view');
         Route::get('/accounting/settings', [App\Http\Controllers\Modules\AccountingController::class, 'settings'])
             ->middleware('permission:accounting,chart_of_accounts,view');
-        Route::get('/accounting/chart-of-accounts', fn() => redirect('/accounting/settings'));
-        Route::get('/accounting/bank-accounts', fn() => redirect('/accounting/settings'));
+        Route::get('/accounting/chart-of-accounts', fn () => redirect('/accounting/settings'));
+        Route::get('/accounting/bank-accounts', fn () => redirect('/accounting/settings'));
         Route::post('/accounting/accounts', [App\Http\Controllers\Modules\AccountingController::class, 'storeAccount'])
             ->middleware('permission:accounting,chart_of_accounts,encoder');
         Route::put('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'updateAccount'])
@@ -257,7 +259,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher'])
             ->middleware('permission:accounting,petty_cash,encoder');
         Route::delete('/accounting/petty-cash/vouchers/{id}', [App\Http\Controllers\Modules\PettyCashController::class, 'voidVoucher'])
-            ->middleware('permission:accounting,petty_cash,approver');
+            ->middleware('permission:accounting,petty_cash,void');
         Route::get('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'index'])
             ->middleware('permission:accounting,expenses,view');
         Route::post('/accounting/expenses', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'store'])
@@ -267,7 +269,7 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::patch('/accounting/expenses/{id}/approve', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'approve'])
             ->middleware('permission:accounting,expenses,approver');
         Route::patch('/accounting/expenses/{id}/void', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'void'])
-            ->middleware('permission:accounting,expenses,approver');
+            ->middleware('permission:accounting,expenses,void');
         Route::delete('/accounting/expenses/{id}', [App\Http\Controllers\Modules\GeneralExpenseController::class, 'destroy'])
             ->middleware('permission:accounting,expenses,admin');
         Route::get('/accounting/bank-reconciliation', [App\Http\Controllers\Modules\BankReconciliationController::class, 'index'])
@@ -312,9 +314,11 @@ Route::middleware(['2fa','auth','is_active'])->group(function () {
         Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index']);
         Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus'])
             ->middleware('permission:payroll,payroll_processing,approver');
-        Route::put('/loans/{id}/status', [App\Http\Controllers\Modules\LoanController::class, 'updateStatus'])
-            ->middleware('permission:payroll,loans,approver');
-        
+        // No blanket permission gate here — approve/reject vs. release require
+        // different access levels ('approver' vs 'releaser'), enforced per-status
+        // inside LoanClass::updateStatus().
+        Route::put('/loans/{id}/status', [App\Http\Controllers\Modules\LoanController::class, 'updateStatus']);
+
         // Contact Management
         Route::resource('/contacts', App\Http\Controllers\Modules\ContactController::class);
         Route::patch('/contacts/{id}/mark-read', [App\Http\Controllers\Modules\ContactController::class, 'markAsRead']);

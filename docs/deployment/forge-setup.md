@@ -137,7 +137,7 @@ Server → **Scheduler** → **Add Scheduled Job**:
 - **Frequency:** Every Minute (`* * * * *`)
 
 This drives the app's scheduled commands: `credit:monthly`, `credit:annual`,
-`invoices:mark-overdue`, `expense:carry-budget`.
+`invoices:mark-overdue`, `expense:carry-budget`, `sales-orders:notify-unpaid-same-day`.
 
 ## Step 8 — Reverb WebSocket daemon
 

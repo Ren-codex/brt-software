@@ -85,10 +85,10 @@
                                 </div>
                             </div>
                             <div class="profile-info-item">
-                                <div class="profile-label">Approved At</div>
+                                <div class="profile-label">{{ item.status?.slug === 'liquidated' ? 'Liquidated At' : 'Approved At' }}</div>
                                 <div class="profile-value">
                                     <i class="ri-time-line"></i>
-                                    {{ formatDate(item.approved_at) }}
+                                    {{ formatDateTime(item.approved_at) }}
                                 </div>
                             </div>
                             <div class="profile-info-item" v-if="item.status?.slug === 'liquidated'">
@@ -302,6 +302,20 @@ export default {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
+            });
+        },
+        formatDateTime(value) {
+            if (!value) return '-';
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+
+            return date.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
             });
         },
         async markAsRemitted() {

@@ -26,7 +26,7 @@ class InventoryAdjustmentClass
             $previousQuantity = (int) $inventoryStock->quantity;
             if (in_array($request->type, ['received items', 'inventory count'])) {
                 $inventoryStock->quantity += $request->new_quantity;
-            } elseif (in_array($request->type, ['loss', 'damage'])) {
+            } elseif (in_array($request->type, ['loss', 'damage', 'consume'])) {
                 $inventoryStock->quantity -= $request->new_quantity;
                 if ($inventoryStock->quantity < 0) {
                     $inventoryStock->quantity = 0;

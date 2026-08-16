@@ -22,6 +22,32 @@
           <!-- LEFT SIDE -->
           <div class="left-panel">
 
+            <!-- Overtime -->
+            <div class="panel-box">
+              <div class="panel-header">
+                <span>Overtime</span>
+              </div>
+              <div class="overtime-row">
+                <div class="overtime-field">
+                  <span class="overtime-label">OT Hours</span>
+                  <input type="number" v-model.number="form.overtime_hours" min="0" step="0.5" class="summary-input" />
+                </div>
+                <div class="overtime-field">
+                  <span class="overtime-label">Computed Amount</span>
+                  <span class="overtime-amount">₱ {{ formatNumber(overtimeAmount) }}</span>
+                </div>
+                <button class="btn-mini" :disabled="!hoursPerDay || !overtimeRate" @click="applyOvertime">
+                  {{ hasOvertimeEarning ? 'Update' : 'Add' }}
+                </button>
+              </div>
+              <small v-if="!hoursPerDay || !overtimeRate" class="overtime-hint">
+                Set the "Hours Per Day" and "Overtime Rate" payroll settings to enable overtime computation.
+              </small>
+              <small v-else class="overtime-hint">
+                (Rate per day ÷ {{ hoursPerDay }} hrs) × {{ overtimeRate }} × OT hours
+              </small>
+            </div>
+
             <!-- Earnings -->
             <div class="panel-box">
               <div class="panel-header">
@@ -214,8 +240,9 @@ export default {
         basic_salary: 0,
         earnings: [],
         deductions: [],
-        total_days: 0, 
+        total_days: 0,
         loans: [],
+        overtime_hours: 0,
       },
       showEarningModal: false,
       isEarningEdit: false,
@@ -251,7 +278,23 @@ export default {
     },
     netPay() {
       return this.totalEarnings - this.totalDeductions
-    }
+    },
+    hoursPerDay() {
+      const setting = (this.dropdowns?.payroll_settings || []).find(s => s.slug === 'hours-per-day');
+      return setting ? Number(setting.value) || 0 : 0;
+    },
+    overtimeRate() {
+      const setting = (this.dropdowns?.payroll_settings || []).find(s => s.slug === 'overtime-rate');
+      return setting ? Number(setting.value) || 0 : 0;
+    },
+    overtimeAmount() {
+      if (!this.hoursPerDay || !this.overtimeRate || !this.form.overtime_hours) return 0;
+      const dailySalary = Number(this.form.basic_salary) || 0;
+      return Math.round(((dailySalary / this.hoursPerDay) * this.overtimeRate * Number(this.form.overtime_hours)) * 100) / 100;
+    },
+    hasOvertimeEarning() {
+      return this.form.earnings.some(e => e.description === 'Overtime');
+    },
   },
   methods: {
     getEmptyForm() {
@@ -261,6 +304,7 @@ export default {
         deductions: [],
         total_days: 0,
         loans: [],
+        overtime_hours: 0,
       }
     },
     resetForm() {
@@ -281,12 +325,25 @@ export default {
         this.form.earnings = (this.employee.earnings || []).map(item => ({ ...item }));
         this.form.deductions = (this.employee.deductions || []).map(item => ({ ...item }));
         this.form.loans = (this.employee.loans || []).map(loan => ({ ...loan }));
+        this.form.overtime_hours = 0;
       } else {
         this.resetForm()
       }
     },
     close() {
       this.$emit('close')
+    },
+    applyOvertime() {
+      const existingIndex = this.form.earnings.findIndex(e => e.description === 'Overtime');
+      if (this.overtimeAmount <= 0) {
+        if (existingIndex !== -1) this.form.earnings.splice(existingIndex, 1);
+        return;
+      }
+      if (existingIndex !== -1) {
+        this.form.earnings[existingIndex] = { description: 'Overtime', amount: this.overtimeAmount };
+      } else {
+        this.form.earnings.push({ description: 'Overtime', amount: this.overtimeAmount });
+      }
     },
     addEarning() {
       this.isEarningEdit = false
@@ -572,6 +629,44 @@ export default {
 
 .btn-mini:hover {
   background: #2d6d5e;
+}
+
+.btn-mini:disabled {
+  background: #a8bdb8;
+  cursor: not-allowed;
+}
+
+.overtime-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  flex-wrap: wrap;
+}
+
+.overtime-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.overtime-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 600;
+}
+
+.overtime-amount {
+  font-weight: 700;
+  color: #3D8D7A;
+  padding: 0.3rem 0;
+}
+
+.overtime-hint {
+  display: block;
+  padding: 0 1rem 0.75rem;
+  color: #6c757d;
+  font-size: 0.72rem;
 }
 
 .btn-action {

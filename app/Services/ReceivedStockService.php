@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\InventoryAdjustment;
 use App\Models\InventoryStocks;
 use App\Models\PurchaseOrderItem;
 use App\Models\ReceivedStock;
@@ -31,12 +32,12 @@ class ReceivedStockService
 
     public function getAll()
     {
-        return ReceivedStock::with(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'payments.createdBy'])->get();
+        return ReceivedStock::with(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'voidedBy', 'payments.createdBy'])->get();
     }
 
     public function getById($id)
     {
-        return ReceivedStock::with(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'payments.createdBy'])->findOrFail($id);
+        return ReceivedStock::with(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'voidedBy', 'payments.createdBy'])->findOrFail($id);
     }
 
     public function create(array $data)
@@ -56,7 +57,7 @@ class ReceivedStockService
             $receivedStock = ReceivedStock::create([
                 'po_id' => $data['po_id'],
                 'supplier_id' => $data['supplier_id'],
-                'received_date' => Carbon::now(),
+                'received_date' => !empty($data['received_date']) ? Carbon::parse($data['received_date']) : Carbon::now(),
                 'received_no' => $this->series_service->get('received_no'),
                 'payment_mode' => $paymentMode,
                 'due_date' => $dueDate,
@@ -65,6 +66,7 @@ class ReceivedStockService
                 'bank_name' => $bankName,
                 'reference_number' => $referenceNumber,
                 'received_by_id' => Auth::id(),
+                'remarks' => $data['remarks'] ?? null,
             ]);
 
             if ($paymentMode !== 'Credit' && $amountPaid > 0) {
@@ -230,6 +232,12 @@ class ReceivedStockService
         return DB::transaction(function () use ($receivedStock, $data) {
             $receivedStock->loadMissing(['items', 'purchaseOrder', 'supplier', 'receivedBy', 'payments.createdBy']);
 
+            if ($receivedStock->voided_at) {
+                throw ValidationException::withMessages([
+                    'received_stock' => 'This received stock has been voided and can no longer accept payments.',
+                ]);
+            }
+
             $totalAmount = round((float) $receivedStock->items->sum('total_cost'), 2);
             $currentPaid = round((float) ($receivedStock->amount_paid ?? 0), 2);
             $paymentAmount = round((float) ($data['payment_amount'] ?? 0), 2);
@@ -265,30 +273,73 @@ class ReceivedStockService
         });
     }
 
-    public function delete($id)
+    public function void($id, $reason = null)
     {
-        return DB::transaction(function () use ($id) {
+        return DB::transaction(function () use ($id, $reason) {
             $receivedStock = ReceivedStock::with(['payments', 'items.inventoryStocks'])->findOrFail($id);
 
-            // Block deletion once any of this receipt's stock has been consumed
-            // (sold, converted, or adjusted down). Deleting then would leave
+            if ($receivedStock->voided_at) {
+                throw ValidationException::withMessages([
+                    'received_stock' => 'This received stock has already been voided.',
+                ]);
+            }
+
+            $trimmedReason = trim((string) $reason);
+            if ($trimmedReason === '') {
+                throw ValidationException::withMessages([
+                    'reason' => 'A reason is required to void this received stock.',
+                ]);
+            }
+
+            // Block voiding once any of this receipt's stock has been consumed
+            // (sold, converted, or adjusted down). Voiding then would leave
             // inventory and accounting inconsistent — those movements must be
             // reversed first.
             foreach ($receivedStock->items as $item) {
                 foreach ($item->inventoryStocks as $stock) {
                     if ((int) $stock->quantity < (int) $item->quantity) {
                         throw ValidationException::withMessages([
-                            'received_stock' => 'This received stock cannot be deleted because some of its stock has already been sold, converted, or adjusted. Reverse those movements first.',
+                            'received_stock' => 'This received stock cannot be voided because some of its stock has already been sold, converted, or adjusted. Reverse those movements first.',
                         ]);
                     }
                 }
             }
 
             foreach ($receivedStock->payments as $payment) {
-                $this->journalEntryService->reverseEntriesForSource($payment, 'Supplier payment deleted along with received stock.', now()->toDateString());
+                $this->journalEntryService->reverseEntriesForSource($payment, 'Supplier payment reversed — received stock voided. Reason: ' . $trimmedReason, now()->toDateString());
             }
-            $this->journalEntryService->reverseEntriesForSource($receivedStock, 'Received stock deleted. Purchase receipt entry reversed.', now()->toDateString());
-            $receivedStock->delete();
+            $this->journalEntryService->reverseEntriesForSource($receivedStock, 'Received stock voided. Reason: ' . $trimmedReason, now()->toDateString());
+
+            // Pull the stock this receiving added back out of inventory (audited),
+            // rather than cascade-deleting the batch rows — the received_stock
+            // record itself is kept for the audit trail instead of being removed.
+            foreach ($receivedStock->items as $item) {
+                foreach ($item->inventoryStocks as $stock) {
+                    $previousQuantity = (int) $stock->quantity;
+                    if ($previousQuantity <= 0) {
+                        continue;
+                    }
+
+                    $stock->quantity = 0;
+                    $stock->save();
+
+                    InventoryAdjustment::create([
+                        'inventory_stocks_id' => $stock->id,
+                        'previous_quantity'   => $previousQuantity,
+                        'new_quantity'        => 0,
+                        'reason'              => 'Received stock #' . $receivedStock->received_no . ' voided: ' . $trimmedReason,
+                        'type'                => 'void',
+                        'adjustment_date'     => now()->format('Y-m-d'),
+                        'adjusted_by_id'      => Auth::id(),
+                    ]);
+                }
+            }
+
+            $receivedStock->update([
+                'voided_at' => now(),
+                'void_reason' => $trimmedReason,
+                'voided_by_id' => Auth::id(),
+            ]);
         });
     }
 

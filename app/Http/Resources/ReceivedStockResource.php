@@ -25,6 +25,7 @@ class ReceivedStockResource extends JsonResource
         $resolvedPaymentMode = ($latestPayment['payment_mode'] ?? null) === 'Payment'
             ? $this->payment_mode
             : ($latestPayment['payment_mode'] ?? $this->payment_mode);
+        $isVoided = (bool) $this->voided_at;
 
         return [
             'id' => $this->id,
@@ -33,18 +34,23 @@ class ReceivedStockResource extends JsonResource
             'supplier' => $this->supplier ? new ListSupplierResource($this->supplier) : [],
             'received_by' => $this->receivedBy ? new ViewResource($this->receivedBy) : null,
             'received_date' => $this->received_date,
+            'remarks' => $this->remarks,
             'payment_mode' => $resolvedPaymentMode,
             'original_payment_mode' => $this->payment_mode,
             'due_date' => optional($this->due_date)->toDateString() ?: $this->due_date,
             'amount_paid' => $amountPaid,
             'received_total' => $receivedTotal,
-            'remaining_balance' => round(max($receivedTotal - $amountPaid, 0), 2),
+            'remaining_balance' => $isVoided ? 0 : round(max($receivedTotal - $amountPaid, 0), 2),
             'is_fully_paid' => $receivedTotal > 0 && $amountPaid >= $receivedTotal,
             'bank_name' => $latestPayment['bank_name'] ?? $this->bank_name,
             'reference_number' => $latestPayment['reference_number'] ?? $this->reference_number,
             'payment_count' => $payments->count(),
             'payments' => $payments->values()->all(),
             'batch_code' => $this->batch_code,
+            'is_voided' => $isVoided,
+            'voided_at' => $this->voided_at,
+            'void_reason' => $this->void_reason,
+            'voided_by' => $this->voidedBy ? new ViewResource($this->voidedBy) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

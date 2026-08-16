@@ -288,7 +288,7 @@ export default {
                 { value: 'personal', label: 'Personal Loan', icon: 'ri-user-line' },
                 { value: 'salary', label: 'Salary Loan', icon: 'ri-money-dollar-circle-line' },
                 { value: 'emergency', label: 'Emergency Loan', icon: 'ri-flashlight-line' },
-                { value: 'housing', label: 'Housing Loan', icon: 'ri-home-line' }
+                { value: 'cash_advance', label: 'Cash Advance', icon: 'ri-hand-coin-line' }
             ],
             form: useForm({
                 id: null,

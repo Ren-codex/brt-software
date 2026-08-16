@@ -152,11 +152,11 @@ class SalesOrderController extends Controller
         return $this->print->print($id, $request);
     }
 
-    public function destroy($id){
+    public function destroy(Request $request, $id){
         $this->authorizePermission('sales', 'sales_orders', 'approver');
 
-        $result = $this->handleTransaction(function () use ($id) {
-            return $this->sales_order->cancel($id);
+        $result = $this->handleTransaction(function () use ($request, $id) {
+            return $this->sales_order->cancel($id, $request->remarks);
         });
 
         if (!$result['status']) {

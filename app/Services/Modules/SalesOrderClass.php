@@ -137,8 +137,12 @@ class SalesOrderClass
             }
         }
 
-        $externalLocationIds = \App\Models\ListLocation::where('name', '!=', 'Zamboanga City')->pluck('id');
-        $isExternal = in_array($request->location_id, $externalLocationIds->toArray());
+        // A manually overridden (non-FIFO) batch selection on any item holds the
+        // order for approver sign-off before it can finalize — even a cash sale
+        // won't auto-close/auto-receipt until it's approved.
+        $requiresBatchApproval = collect($request->items)->contains(fn ($item) => !empty($item['is_batch_override']));
+
+        [$isExternal, $locationId, $locationText] = $this->resolveLocation($request);
         $prefix = $isExternal ? 'SO-EXT' : 'SO';
         $data = null;
         $maxAttempts = 5;
@@ -151,9 +155,11 @@ class SalesOrderClass
             $candidate->driver_id = $request->driver_id;
             $candidate->payment_mode = $request->payment_mode;
             $candidate->due_date = in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true) ? $request->due_date : null;
-            $candidate->location_id = $request->location_id;
+            $candidate->location_id = $locationId;
+            $candidate->delivery_location = $locationText;
             $candidate->added_by_id = auth()->user()->id;
             $candidate->status_id = ListStatus::getBySlug('for-payment')?->id;
+            $candidate->requires_batch_approval = $requiresBatchApproval;
 
             try {
                 $candidate->save();
@@ -184,6 +190,7 @@ class SalesOrderClass
                 'price_type' => $item['price_type'],
                 'batch_code' => $item['batch_code'],
                 'discount_per_unit' => $discount_per_unit,
+                'is_batch_override' => !empty($item['is_batch_override']),
             ]);
 
             $totalAmount += ($price * $quantity) - $total_discount_amount;
@@ -214,21 +221,8 @@ class SalesOrderClass
         $invoice->save();
 
         $autoReceiptId = null;
-        if (!$isCreditSale) {
-            $autoReceipt = Receipt::create([
-                'ar_invoice_id'  => $invoice->id,
-                'customer_id'    => $data->customer_id,
-                'status_id'      => ListStatus::getBySlug('pending')?->id,
-                'receipt_number' => Receipt::generateReceiptNumber(),
-                'receipt_type'   => 'payment',
-                'receipt_date'   => $data->order_date,
-                'amount_paid'    => $totalAmount,
-                'balance_due'    => 0,
-                'payment_mode'   => $data->payment_mode,
-            ]);
-
-            $autoReceiptId = $autoReceipt->id;
-            $data->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+        if (!$isCreditSale && !$requiresBatchApproval) {
+            $autoReceiptId = $this->finalizeCashSale($data, $invoice);
         }
 
         $this->journalEntryService->recordSaleEntries($data->load('items'));
@@ -252,11 +246,25 @@ class SalesOrderClass
         $data = SalesOrder::findOrFail($request->id);
         $data->load(['items', 'arInvoices']);
 
+        // Once a credit sale has collected a payment, switching it to Cash mid-edit
+        // isn't safe — the Credit→Cash sync below assumes no prior receipts exist.
+        $wasCreditSale = in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+        $existingAmountPaidBeforeEdit = round((float) optional($data->arInvoices->first())->amount_paid, 2);
+        $willBeCreditSale = in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true);
+        if ($wasCreditSale && !$willBeCreditSale && $existingAmountPaidBeforeEdit > 0) {
+            throw ValidationException::withMessages([
+                'payment_mode' => 'This order already has a recorded payment of ₱' . number_format($existingAmountPaidBeforeEdit, 2) . '. It cannot be switched to Cash while editing — cancel and recreate it instead if the payment terms changed.',
+            ]);
+        }
+
         $this->journalEntryService->reverseEntriesForSource($data, 'Sales order updated. Previous accounting entry reversed.', $request->order_date);
 
         foreach ($data->items as $item) {
             $this->inventoryService->addStock($item->product_id, $item->quantity, 'Update SO - Restore Old Stock - SO#' . $data->so_number, $item->batch_code);
         }
+
+        [, $locationId, $locationText] = $this->resolveLocation($request);
+        $requiresBatchApproval = collect($request->items)->contains(fn ($item) => !empty($item['is_batch_override']));
 
         $data->update([
             'customer_id' => $request->customer_id,
@@ -265,7 +273,9 @@ class SalesOrderClass
             'driver_id' => $request->driver_id,
             'payment_mode' => $request->payment_mode,
             'due_date' => in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true) ? $request->due_date : null,
-            'location_id' => $request->location_id,
+            'location_id' => $locationId,
+            'delivery_location' => $locationText,
+            'requires_batch_approval' => $requiresBatchApproval || $data->requires_batch_approval,
             'updated_by_id' => auth()->user()->id,
         ]);
 
@@ -293,6 +303,7 @@ class SalesOrderClass
                 'price_type' => $item['price_type'],
                 'batch_code' => $item['batch_code'],
                 'discount_per_unit' => $discount_per_unit,
+                'is_batch_override' => !empty($item['is_batch_override']),
             ]);
 
             $totalAmount += ($price * $quantity) - $total_discount_amount;
@@ -309,24 +320,42 @@ class SalesOrderClass
         $invoice = $data->arInvoices()->first();
         $isCreditSaleNow = in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
 
+        $soStatusSlug = $isCreditSaleNow ? 'for-payment' : 'closed';
+
         if ($invoice) {
-            // Bug 10 fix: sync invoice status and amount_paid/balance_due with new payment mode
+            // Credit sales can now be edited after a partial payment has already
+            // been collected (item 20) — preserve whatever was already paid
+            // instead of wiping it back to 0 on every edit. Cap it at the new
+            // total so an edit that shrinks the order can't leave amount_paid
+            // higher than amount_due.
+            $existingAmountPaid = $isCreditSaleNow ? round((float) $invoice->amount_paid, 2) : 0;
+            $newAmountPaid = $isCreditSaleNow ? min($existingAmountPaid, $totalAmount) : $totalAmount;
+            $newBalanceDue = $isCreditSaleNow ? round(max(0, $totalAmount - $newAmountPaid), 2) : 0;
+
+            if ($isCreditSaleNow) {
+                $isSettled = $newBalanceDue <= 0;
+                $isPartial = !$isSettled && $newAmountPaid > 0;
+                // ar_invoices and sales_orders use different status vocabularies
+                // for the same three states (unpaid/partially-paid/paid vs.
+                // for-payment/partially-paid/closed) — map each independently.
+                $invoiceStatusSlug = $isSettled ? 'paid' : ($isPartial ? 'partially-paid' : 'unpaid');
+                $soStatusSlug = $isSettled ? 'closed' : ($isPartial ? 'partially-paid' : 'for-payment');
+            } else {
+                $invoiceStatusSlug = 'paid';
+                $soStatusSlug = 'closed';
+            }
+
             $invoice->update([
                 'amount_due'     => $totalAmount,
-                'balance_due'    => $isCreditSaleNow ? $totalAmount : 0,
-                'amount_paid'    => $isCreditSaleNow ? 0 : $totalAmount,
+                'balance_due'    => $newBalanceDue,
+                'amount_paid'    => $newAmountPaid,
                 'total_discount' => $totalDiscount,
-                'status_id'      => $isCreditSaleNow
-                    ? ListStatus::getBySlug('unpaid')?->id
-                    : ListStatus::getBySlug('paid')?->id,
+                'status_id'      => ListStatus::getBySlug($invoiceStatusSlug)?->id,
             ]);
         }
 
-        // Bug 10 fix: sync SO status with the new payment mode
         $data->update([
-            'status_id' => $isCreditSaleNow
-                ? ListStatus::getBySlug('for-payment')?->id
-                : ListStatus::getBySlug('closed')?->id,
+            'status_id' => ListStatus::getBySlug($soStatusSlug)?->id,
         ]);
 
         // Sync the auto-receipt when cash SO total changes; create one if Credit→Cash conversion
@@ -368,6 +397,54 @@ class SalesOrderClass
             'message' => 'Sales Order updated successfully!',
             'info' => "You've successfully updated the Sales Order"
         ];
+    }
+
+    /**
+     * Auto-collects a cash sale in full and closes the order — the normal
+     * end-of-save() step for cash sales, deferred here so a batch-approval-held
+     * order can run it once approved instead of at save() time.
+     */
+    private function finalizeCashSale(SalesOrder $data, ArInvoice $invoice): int
+    {
+        $autoReceipt = Receipt::create([
+            'ar_invoice_id'  => $invoice->id,
+            'customer_id'    => $data->customer_id,
+            'status_id'      => ListStatus::getBySlug('pending')?->id,
+            'receipt_number' => Receipt::generateReceiptNumber(),
+            'receipt_type'   => 'payment',
+            'receipt_date'   => $data->order_date,
+            'amount_paid'    => $invoice->amount_due,
+            'balance_due'    => 0,
+            'payment_mode'   => $data->payment_mode,
+        ]);
+
+        $data->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+
+        return $autoReceipt->id;
+    }
+
+    /**
+     * The location field is now free text (defaulted from the customer's address
+     * in the UI) rather than a dropdown tied to list_locations. This still
+     * resolves the SO-number prefix (SO vs SO-EXT) the same way the old dropdown
+     * did — "Zamboanga City" is local, anything else is external — and opportunistically
+     * links location_id when the text matches a known list_locations name, so the
+     * existing location filter keeps working for orders that happen to match one.
+     *
+     * @return array{0: bool, 1: ?int, 2: ?string}
+     */
+    private function resolveLocation($request): array
+    {
+        $locationText = trim((string) $request->delivery_location);
+        $locationText = $locationText !== '' ? $locationText : null;
+
+        $isExternal = $locationText === null || strcasecmp($locationText, 'Zamboanga City') !== 0;
+
+        $locationId = $locationText
+            ? \App\Models\ListLocation::whereRaw('LOWER(name) = ?', [strtolower($locationText)])->value('id')
+            : null;
+
+        return [$isExternal, $locationId, $locationText];
     }
 
     public function approve($id, $itemIds = [], $replacementItems = []){
@@ -587,21 +664,39 @@ class SalesOrderClass
                 ]);
             }
 
-            $data->update([
-                'status_id' => ListStatus::getBySlug('approved')?->id,
-                'approved_by_id' => auth()->user()->id,
-                'approved_at' => now(),
-            ]);
+            $autoReceiptId = null;
+            if ($data->requires_batch_approval) {
+                // The batch-override hold deferred the cash auto-receipt/close at
+                // save() time — run it now that an approver has signed off.
+                // Credit sales just resume their normal for-payment flow.
+                $isCashSale = !in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+                $invoice = $data->arInvoices()->first();
+                if ($isCashSale && $invoice && !$invoice->receipts()->exists()) {
+                    $autoReceiptId = $this->finalizeCashSale($data, $invoice);
+                }
+
+                $data->update([
+                    'approved_by_id' => auth()->user()->id,
+                    'approved_at' => now(),
+                ]);
+            } else {
+                $data->update([
+                    'status_id' => ListStatus::getBySlug('approved')?->id,
+                    'approved_by_id' => auth()->user()->id,
+                    'approved_at' => now(),
+                ]);
+            }
 
             return [
                 'data' => SalesOrder::find($id),
                 'message' => 'Sales Order approved successfully!',
-                'info' => "You've successfully approved the Sales Order"
+                'info' => "You've successfully approved the Sales Order",
+                'receipt_id' => $autoReceiptId,
             ];
         }
     }
 
-    public function cancel($id){
+    public function cancel($id, $remarks = null){
         $data = SalesOrder::findOrFail($id);
         $data->load(['items', 'arInvoices.receipts.status', 'status']);
         $cancelledStatusId = ListStatus::getBySlug('cancelled')?->id;
@@ -652,6 +747,7 @@ class SalesOrderClass
 
         $data->update([
             'status_id' => $cancelledStatusId,
+            'cancellation_remarks' => trim((string) $remarks) !== '' ? trim((string) $remarks) : null,
         ]);
 
         return [

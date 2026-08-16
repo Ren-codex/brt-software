@@ -28,10 +28,12 @@
             <thead>
               <tr>
                 <th>Module / Submodule</th>
-                <th class="text-center">Encoder</th>
-                <th class="text-center">Approver</th>
-                <th class="text-center">View</th>
-                <th class="text-center">Admin</th>
+                <th class="text-center" v-for="lm in levelMeta" :key="lm.key">
+                  <div class="perm-head">
+                    <i :class="lm.icon"></i>
+                    <span>{{ lm.label }}</span>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -101,8 +103,20 @@ export default {
       saving: false,
       role: null,
       modules: [],
-      levels: ['encoder', 'approver', 'view', 'admin'],
+      levelMeta: [
+        { key: 'encoder', label: 'Encoder', icon: 'ri-edit-line' },
+        { key: 'approver', label: 'Approver', icon: 'ri-checkbox-circle-line' },
+        { key: 'releaser', label: 'Releaser', icon: 'ri-send-plane-line' },
+        { key: 'void', label: 'Voider', icon: 'ri-forbid-line' },
+        { key: 'view', label: 'Viewer', icon: 'ri-eye-line' },
+        { key: 'admin', label: 'Admin', icon: 'ri-shield-star-line' },
+      ],
     };
+  },
+  computed: {
+    levels() {
+      return this.levelMeta.map((lm) => lm.key);
+    },
   },
   methods: {
     show(role) {
@@ -174,8 +188,30 @@ export default {
 </script>
 
 <style scoped>
-.permissions-table { width: 100%; }
+.permissions-table {
+  width: 100%;
+  /* Bootstrap's default border-collapse: collapse breaks position: sticky on
+     <th> in Chrome/Edge -- collapsed cell borders let the row scrolling
+     underneath bleed through the sticky header during repaint. */
+  border-collapse: separate;
+  border-spacing: 0;
+}
 .permissions-table td, .permissions-table th { vertical-align: middle; }
+.permissions-table thead th {
+  position: sticky;
+  top: -16px;
+  z-index: 3;
+  background: #fff;
+  box-shadow: inset 0 -1px 0 #dcebe6, 0 2px 4px rgba(22, 50, 46, 0.06);
+}
+.perm-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+.perm-head i { font-size: 1.05rem; color: #3d8d7a; }
+.perm-head span { font-size: 0.78rem; }
 .module-row td { background: #f7fbf9; font-weight: 600; }
 .submodule-row .submodule-name { padding-left: 2rem; color: #5a7a73; }
 .permissions-loading { display: flex; align-items: center; gap: .5rem; padding: 2rem; justify-content: center; color: #6b8c85; }

@@ -8,14 +8,14 @@
     >
         <div class="modal-container modal-xl" @click.stop>
                 <div class="modal-header">
-                    <h2>{{ 'Approve Order' }}</h2>
+                    <h2>{{ 'Approve Batch Selection' }}</h2>
                     <button class="close-btn" @click="hide">
                         <i class="ri-close-line"></i>
                     </button>
                 </div>
             <div class="text-center p-5">
                 <h1> <i class="ri-check-fill align-bottom text-success" style="font-size: 60px;"></i></h1>
-                <h5>Are you sure you want to approve this {{title}}? </h5>
+                <h5>This {{title}} used a manually selected (non-default) batch. Approve it to finalize the order?</h5>
 
             </div>
             <div class="modal-footer m-3">

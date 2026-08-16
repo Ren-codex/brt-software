@@ -101,6 +101,20 @@
         .signature-section { width: 100%; margin-top: 16px; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
         .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-bottom: 4px; }
+
+        /* Copy label */
+        .copy-label {
+            display: inline-block;
+            font-size: 8px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #fff;
+            background-color: #7f8c8d;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
@@ -109,13 +123,13 @@
     @endphp
 
     <div class="copy-cell">
-        @include('prints.partials.sales-order-copy')
+        @include('prints.partials.sales-order-copy', ['copyLabel' => 'Customer Copy'])
     </div>
 
     <div class="cut-line"></div>
 
     <div class="copy-cell">
-        @include('prints.partials.sales-order-copy')
+        @include('prints.partials.sales-order-copy', ['copyLabel' => 'BRT Copy'])
     </div>
 
 </body>

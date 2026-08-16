@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class RolePermission extends Model
 {
-    public const LEVELS = ['encoder', 'approver', 'view', 'admin'];
+    public const LEVELS = ['encoder', 'approver', 'releaser', 'void', 'view', 'admin'];
 
     protected $fillable = ['role_id', 'module_id', 'submodule_id', 'access_level'];
 

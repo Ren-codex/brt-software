@@ -23,7 +23,7 @@ return new class extends Migration
             // deleting-and-recreating a role's grants atomically rather than relying
             // on a DB constraint for that case.
             $table->foreignId('submodule_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->string('access_level'); // encoder | approver | view | admin
+            $table->string('access_level'); // encoder | approver | releaser | void | view | admin
             $table->timestamps();
         });
     }

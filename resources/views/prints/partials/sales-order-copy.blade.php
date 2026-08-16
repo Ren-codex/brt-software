@@ -14,6 +14,9 @@
             Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
         </td>
         <td class="order-info" style="width: 120px;">
+            @isset($copyLabel)
+                <div class="copy-label">{{ $copyLabel }}</div>
+            @endisset
             <h2 class="order-title">Sales Order</h2>
             <table class="order-meta-table">
                 <tr>

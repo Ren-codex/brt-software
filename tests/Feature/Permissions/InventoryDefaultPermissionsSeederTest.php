@@ -40,13 +40,13 @@ class InventoryDefaultPermissionsSeederTest extends TestCase
         $this->assertEquals(['admin'], $this->grantLevels('Administrator'));
     }
 
-    public function test_warehouse_manager_gets_encoder_approver_and_view_module_wide(): void
+    public function test_warehouse_manager_gets_encoder_approver_view_and_void_module_wide(): void
     {
         ListRole::create(['name' => 'Warehouse Manager', 'type' => 'role', 'definition' => 'test', 'is_active' => true]);
 
         $this->seed(InventoryDefaultPermissionsSeeder::class);
 
-        $this->assertEquals(['approver', 'encoder', 'view'], $this->grantLevels('Warehouse Manager'));
+        $this->assertEquals(['approver', 'encoder', 'view', 'void'], $this->grantLevels('Warehouse Manager'));
     }
 
     public function test_seeder_is_idempotent(): void
@@ -56,7 +56,7 @@ class InventoryDefaultPermissionsSeederTest extends TestCase
         $this->seed(InventoryDefaultPermissionsSeeder::class);
         $this->seed(InventoryDefaultPermissionsSeeder::class);
 
-        $this->assertEquals(['approver', 'encoder', 'view'], $this->grantLevels('Warehouse Manager'));
+        $this->assertEquals(['approver', 'encoder', 'view', 'void'], $this->grantLevels('Warehouse Manager'));
     }
 
     public function test_seeder_skips_roles_that_dont_exist_in_this_environment(): void

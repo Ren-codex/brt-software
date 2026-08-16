@@ -28,6 +28,10 @@ class InventoryDefaultPermissionsSeeder extends Seeder
             ['role' => 'Warehouse Manager', 'level' => 'encoder'],
             ['role' => 'Warehouse Manager', 'level' => 'approver'],
             ['role' => 'Warehouse Manager', 'level' => 'view'],
+            // Warehouse Manager could void purchase orders/stock returns/received
+            // stock via the 'approver'/'admin' gate before 'void' became its own
+            // level -- grant it here so this rewiring doesn't silently revoke that.
+            ['role' => 'Warehouse Manager', 'level' => 'void'],
         ];
 
         foreach ($grants as $grant) {

@@ -41,6 +41,24 @@
                     </div>
 
                     <div class="verification-card">
+                        <label class="verification-label" for="cancel_remarks">
+                            Reason from customer <span class="text-danger">*</span>
+                        </label>
+                        <textarea
+                            id="cancel_remarks"
+                            v-model.trim="form.remarks"
+                            class="form-control"
+                            rows="3"
+                            placeholder="What did the customer say? Why is this order being voided?"
+                            :class="{ 'verification-input-error': form.errors.remarks }"
+                            @input="handleInput('remarks')"
+                        ></textarea>
+                        <small v-if="form.errors.remarks" class="verification-error">
+                            {{ form.errors.remarks }}
+                        </small>
+                    </div>
+
+                    <div class="verification-card">
                         <label class="verification-label" for="cancel_verification">
                             Type <strong>CANCEL</strong> to continue
                         </label>
@@ -84,6 +102,7 @@ export default {
             form: useForm({
                 id: null,
                 action: 'cancel',
+                remarks: '',
             }),
             title: null,
             table: null,
@@ -104,6 +123,7 @@ export default {
             this.title = title;
             this.route = route;
             this.confirmationText = '';
+            this.form.remarks = '';
             this.hasPayments = hasPayments;
             this.form.clearErrors();
         },
@@ -111,6 +131,11 @@ export default {
         submit(){
             if (!this.isVerificationMatched) {
                 this.form.errors.confirmation = 'Please type CANCEL to verify this action.';
+                return;
+            }
+
+            if (!String(this.form.remarks || '').trim()) {
+                this.form.errors.remarks = 'Please record the reason given by the customer.';
                 return;
             }
 
@@ -126,14 +151,12 @@ export default {
         },
         handleInput(field) {
             this.form.errors[field] = false;
-            if (field === 'confirmation') {
-                this.form.errors.confirmation = false;
-            }
         },
         hide(){
             this.editable = false;
             this.showModal = false;
             this.confirmationText = '';
+            this.form.remarks = '';
             this.form.clearErrors();
         },
 

@@ -17,10 +17,14 @@ class StockReturn extends Model
         'created_by_id',
         'approved_by_id',
         'approved_at',
+        'voided_at',
+        'void_reason',
+        'voided_by_id',
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
+        'voided_at' => 'datetime',
     ];
 
     public function purchaseOrder()
@@ -51,5 +55,10 @@ class StockReturn extends Model
     public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by_id');
+    }
+
+    public function voidedBy()
+    {
+        return $this->belongsTo(User::class, 'voided_by_id');
     }
 }

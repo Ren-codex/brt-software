@@ -14,6 +14,9 @@
             Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
         </td>
         <td class="order-info" style="width: 120px;">
+            @isset($copyLabel)
+                <div class="copy-label">{{ $copyLabel }}</div>
+            @endisset
             <h2 class="order-title">{{ $isUpdatedReceipt ? 'Updated Receipt' : ($isRefundReceipt ? 'Refund Receipt' : 'Receipt') }}</h2>
             <table class="order-meta-table">
                 <tr>
@@ -162,3 +165,14 @@
         </td>
     </tr>
 </table>
+
+<div class="signature-section">
+    <div class="signature-box">
+        <div class="signature-line"></div>
+        <strong>Prepared By</strong>
+    </div>
+    <div class="signature-box">
+        <div class="signature-line"></div>
+        <strong>Received By</strong>
+    </div>
+</div>

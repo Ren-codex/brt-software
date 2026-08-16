@@ -54,6 +54,28 @@
                         </div>
 
                     </div>
+                    <div class="form-row" v-if="selectedProductBatches.length > 0">
+                        <div class="form-group form-group-half">
+                            <label for="batch_code" class="form-label">Batch</label>
+                            <div class="input-wrapper">
+                                <i class="ri-barcode-line input-icon"></i>
+                                <select
+                                    id="batch_code"
+                                    class="form-control"
+                                    v-model="form.batch_code"
+                                    @change="onBatchCodeChange"
+                                >
+                                    <option v-for="batch in selectedProductBatches" :key="batch.batch_code" :value="batch.batch_code">
+                                        {{ batch.batch_code }} ({{ batch.quantity }} available){{ batch.batch_code === recommendedBatchCode ? ' — oldest' : '' }}
+                                    </option>
+                                </select>
+                            </div>
+                            <small v-if="isBatchOverride" class="batch-override-warning">
+                                <i class="ri-alert-line"></i>
+                                Not the oldest available batch — this order will require approval.
+                            </small>
+                        </div>
+                    </div>
                     <div class="form-row">
                          <div class="form-group form-group-half">
                             <label for="quantity" class="form-label">Quantity</label>
@@ -330,6 +352,12 @@ export default {
 
             return allocations;
         },
+        recommendedBatchCode() {
+            return this.selectedProductBatches[0]?.batch_code || null;
+        },
+        isBatchOverride() {
+            return !!(this.form.batch_code && this.recommendedBatchCode && this.form.batch_code !== this.recommendedBatchCode);
+        },
         availableProducts() {
             return this.dropdowns.products.filter((product) => {
                 if (!product?.value) return false;
@@ -394,6 +422,7 @@ export default {
                 price_type: this.form.price_type,
                 discount_per_unit: this.form.discount_per_unit,
                 total_amount: this.form.amount || 0,
+                is_batch_override: this.isBatchOverride,
             };
 
             if (this.editable) {
@@ -443,6 +472,13 @@ export default {
                 this.form.batch_code = null;
                 this.form.price = '0.00';
             }
+        },
+
+        onBatchCodeChange() {
+            const batch = this.selectedProductBatches.find((b) => b.batch_code === this.form.batch_code);
+            const price = this.getBatchPrice(batch);
+            this.form.price = parseFloat(price || 0).toFixed(2);
+            this.validateQuantity();
         },
 
         onPriceTypeChange() {
@@ -544,6 +580,14 @@ export default {
 </script>
 
 <style scoped>
+.batch-override-warning {
+    display: block;
+    margin-top: 0.35rem;
+    color: #b45309;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
 .stock-info {
     margin-top: 0.25rem;
     padding: 0.25rem 0.5rem;

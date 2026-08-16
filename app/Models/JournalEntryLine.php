@@ -9,6 +9,7 @@ class JournalEntryLine extends Model
     protected $fillable = [
         'journal_entry_id',
         'account_id',
+        'bank_account_id',
         'line_type',
         'amount',
         'description',
@@ -27,5 +28,10 @@ class JournalEntryLine extends Model
     public function account()
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(BankAccount::class);
     }
 }

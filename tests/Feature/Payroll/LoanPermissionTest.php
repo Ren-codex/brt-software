@@ -105,6 +105,24 @@ class LoanPermissionTest extends TestCase
         $this->assertNotEquals(403, $response->getStatusCode());
     }
 
+    public function test_release_denied_with_only_approver_grant(): void
+    {
+        $loan = $this->makeLoan();
+        $user = $this->administratorWithGrant('approver');
+
+        $this->actingAs($user)->put("/loans/{$loan->id}/status", ['status' => 'active'])->assertForbidden();
+    }
+
+    public function test_release_allowed_with_releaser_grant(): void
+    {
+        $loan = $this->makeLoan();
+        $user = $this->administratorWithGrant('releaser');
+
+        $response = $this->actingAs($user)->put("/loans/{$loan->id}/status", ['status' => 'active']);
+
+        $this->assertNotEquals(403, $response->getStatusCode());
+    }
+
     public function test_destroy_denied_without_admin_grant(): void
     {
         $loan = $this->makeLoan();

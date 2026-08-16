@@ -28,15 +28,15 @@
             type="number"
             min="0"
             step="1"
-            :max="Number(selectedReturnItem?.quantity || 0)"
+            :max="remainingReturnedQty"
             class="form-control"
             placeholder="Enter replacement quantity"
             @input="updateField('replaced_quantity', $event.target.value)"
           >
           <small v-if="replacementQtyError" class="error-message">{{ replacementQtyError }}</small>
           <div class="returned-qty-highlight">
-            <span class="returned-qty-label">Remaining Returned Qty</span>
-            <span class="returned-qty-value">{{ remainingReturnedQty }}</span>
+            <span class="returned-qty-label">Remaining To Receive</span>
+            <span class="returned-qty-value">{{ remainingToReceive }}</span>
           </div>
         
         </div>
@@ -101,8 +101,10 @@ export default {
     selectedReturnItemName() {
       return this.selectedReturnItem?.purchase_order_item?.product?.name || 'N/A';
     },
-    totalReturnedQty() {
-      return Number(this.selectedReturnItem?.quantity || 0);
+    remainingReturnedQty() {
+      const total = Number(this.selectedReturnItem?.quantity || 0);
+      const alreadyReceived = Number(this.selectedReturnItem?.returned_quantity || 0);
+      return Math.max(total - alreadyReceived, 0);
     },
     replacementQtyValue() {
       return Number(this.receiveForm?.replaced_quantity || 0);
@@ -114,13 +116,13 @@ export default {
       if (!Number.isInteger(this.replacementQtyValue)) {
         return 'Replacement quantity must be a whole number.';
       }
-      if (this.replacementQtyValue > this.totalReturnedQty) {
-        return `Replacement quantity cannot be greater than ${this.totalReturnedQty}.`;
+      if (this.replacementQtyValue > this.remainingReturnedQty) {
+        return `Replacement quantity cannot be greater than the remaining ${this.remainingReturnedQty}.`;
       }
       return '';
     },
-    remainingReturnedQty() {
-      return Math.max(this.totalReturnedQty - this.replacementQtyValue, 0);
+    remainingToReceive() {
+      return Math.max(this.remainingReturnedQty - this.replacementQtyValue, 0);
     },
   },
   methods: {

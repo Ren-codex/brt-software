@@ -168,6 +168,7 @@ class AccountingController extends Controller
             'memo'       => 'nullable|string|max:500',
             'lines'      => 'required|array|min:2',
             'lines.*.account_id' => 'required|exists:accounts,id',
+            'lines.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
             'lines.*.line_type'  => 'required|in:debit,credit',
             'lines.*.amount'     => 'required|numeric|min:0.01',
             'lines.*.description'=> 'nullable|string|max:255',
@@ -181,6 +182,16 @@ class AccountingController extends Controller
                 'message' => 'Journal entry must balance: total debits must equal total credits.',
                 'errors'  => ['lines' => ['Debits (' . number_format($debitTotal, 2) . ') ≠ Credits (' . number_format($creditTotal, 2) . ')']],
             ], 422);
+        }
+
+        $cashInBankAccountId = Account::where('code', '1011')->value('id');
+        foreach ($data['lines'] as $order => $line) {
+            if ($cashInBankAccountId && (int) $line['account_id'] === (int) $cashInBankAccountId && empty($line['bank_account_id'])) {
+                return response()->json([
+                    'message' => 'Select which bank account applies to each Cash in Bank line.',
+                    'errors'  => ["lines.{$order}.bank_account_id" => ['A bank account is required for Cash in Bank lines.']],
+                ], 422);
+            }
         }
 
         $entryDate = Carbon::parse($data['entry_date']);
@@ -201,6 +212,7 @@ class AccountingController extends Controller
                 JournalEntryLine::create([
                     'journal_entry_id' => $entry->id,
                     'account_id'       => $line['account_id'],
+                    'bank_account_id'  => $line['bank_account_id'] ?? null,
                     'line_type'        => $line['line_type'],
                     'amount'           => $line['amount'],
                     'description'      => $line['description'] ?? null,

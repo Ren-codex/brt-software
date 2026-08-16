@@ -113,6 +113,16 @@
                             <i class="ri-money-dollar-circle-line"></i>
                             <span>Pay</span>
                           </button>
+                          <button
+                            v-if="Number(record.amount_paid || 0) <= 0"
+                            type="button"
+                            class="table-action-btn void-btn"
+                            title="Void this received stock"
+                            @click.stop="openVoidModal(record)"
+                          >
+                            <i class="ri-close-circle-line"></i>
+                            <span>Void</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -161,12 +171,18 @@
       ref="detailsModal"
       @pay="openPayFromDetails"
     />
+    <VoidReceivedStockModal
+      ref="voidModal"
+      @voided="$emit('refresh')"
+      @toast="$emit('toast', $event)"
+    />
   </BRow>
 </template>
 
 <script>
 import PayAccountsPayableModal from '../Modal/PayAccountsPayableModal.vue';
 import ViewAccountsPayableModal from '../Modal/ViewAccountsPayableModal.vue';
+import VoidReceivedStockModal from '../Modal/VoidReceivedStockModal.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import { formatCurrency, formatDate } from '@/Shared/utils/formatters.js';
 
@@ -175,6 +191,7 @@ export default {
   components: {
     PayAccountsPayableModal,
     ViewAccountsPayableModal,
+    VoidReceivedStockModal,
     TableLoadingRow,
   },
   emits: ['refresh', 'toast'],
@@ -266,6 +283,9 @@ export default {
     },
     openPayFromDetails(record) {
       this.$refs.payModal.show(record);
+    },
+    openVoidModal(record) {
+      this.$refs.voidModal.show(record);
     },
     isAccountsPayableRecord(record) {
       return Number(record?.remaining_balance || 0) > 0;
@@ -492,6 +512,16 @@ export default {
 .pay-btn:hover {
   background: #347868;
   border-color: #347868;
+}
+
+.void-btn {
+  color: #c0392b;
+  border-color: #f1c3bc;
+}
+
+.void-btn:hover {
+  background: #fdecea;
+  border-color: #e74c3c;
 }
 
 @media (max-width: 767px) {

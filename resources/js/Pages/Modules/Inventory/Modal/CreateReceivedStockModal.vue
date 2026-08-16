@@ -144,6 +144,32 @@
               </table>
             </div>
           </div>
+
+          <div class="mb-2">
+            <p class="section-kicker">Receiving Details</p>
+            <div class="row">
+              <div class="col-md-4">
+                <label for="received_stock_received_date" class="payment-detail-label">Received Date &amp; Time</label>
+                <input
+                  id="received_stock_received_date"
+                  v-model="form.received_date"
+                  type="datetime-local"
+                  class="form-control modern-input"
+                  :max="nowLocal"
+                />
+              </div>
+              <div class="col-md-8">
+                <label for="received_stock_remarks" class="payment-detail-label">Remarks</label>
+                <textarea
+                  id="received_stock_remarks"
+                  v-model="form.remarks"
+                  class="form-control modern-input"
+                  rows="1"
+                  placeholder="Optional remarks about this receipt"
+                ></textarea>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -439,6 +465,8 @@ export default {
         bank_name: '',
         reference_number: '',
         due_date: null,
+        received_date: '',
+        remarks: '',
         items: [],
       },
       errorMessage: '',
@@ -511,6 +539,11 @@ export default {
     },
     todayDate() {
       return new Date().toISOString().slice(0, 10);
+    },
+    nowLocal() {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
     },
   },
   mounted() {
@@ -614,6 +647,7 @@ export default {
       this.resetForm();
       this.form.po_id = this.purchaseOrder.id;
       this.form.supplier_id = this.purchaseOrder.supplier.id;
+      this.form.received_date = this.nowLocal;
       this.form.items = this.purchaseOrder.items
         .filter(item => item.status === 'pending')
         .map(item => ({
@@ -647,6 +681,8 @@ export default {
         bank_name: '',
         reference_number: '',
         due_date: null,
+        received_date: '',
+        remarks: '',
         items: [],
       };
       this.errorMessage = '';

@@ -36,8 +36,11 @@ class SalesOrderResource extends JsonResource
             'transferred_to' => $this->transferred_to,
             'transferred_at' => $this->transferred_at,
             'location' => $this->location ? ['id' => $this->location->id, 'name' => $this->location->name] : null,
+            'delivery_location' => $this->delivery_location,
             'approved_by_user' => $this->approved_by ? ($this->approved_by->employee ? $this->approved_by->employee->full_name ?? $this->approved_by->name : $this->approved_by->name) : null,
             'approved_at' => $this->approved_at?->format('M d, Y'),
+            'cancellation_remarks' => $this->cancellation_remarks,
+            'requires_batch_approval' => (bool) $this->requires_batch_approval,
             'items' => $this->items->map(fn($item) => [
                 'id'                 => $item->id,
                 'product_id'         => $item->product_id,
@@ -48,6 +51,7 @@ class SalesOrderResource extends JsonResource
                 'discount_per_unit'  => $item->discount_per_unit ?? 0,
                 'unit'               => $item->unit,
                 'batch_code'         => $item->batch_code,
+                'is_batch_override'  => (bool) $item->is_batch_override,
             ])->values(),
             'return_item_ids' => $returnItems
                 ->pluck('sales_order_item_id')

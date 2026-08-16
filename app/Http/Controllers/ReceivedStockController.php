@@ -81,12 +81,12 @@ class ReceivedStockController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Void the specified resource (kept for audit; stock and payments reversed).
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $this->receivedStockService->delete($id);
-        return response()->json(['message' => 'Received stock deleted successfully']);
+        $this->receivedStockService->void($id, $request->reason);
+        return response()->json(['message' => 'Received stock voided successfully']);
     }
 
     public function getNextBatchCode()

@@ -31,6 +31,7 @@
                 <option value="inventory count">Add to Count</option>
                 <option value="loss">Loss</option>
                 <option value="damage">Damage</option>
+                <option value="consume">Consume</option>
               </select>
             </div>
             <span class="error-message" v-if="form.errors.type">{{ form.errors.type }}</span>
@@ -111,7 +112,7 @@ export default {
     quantityLabel() {
       if (this.form.type === 'received items' || this.form.type === 'inventory count') {
         return 'Plus Count';
-      } else if (this.form.type === 'loss' || this.form.type === 'damage') {
+      } else if (['loss', 'damage', 'consume'].includes(this.form.type)) {
         return 'Minus Count';
       } else {
         return 'New Count';
@@ -120,7 +121,7 @@ export default {
     quantityIcon() {
       if (this.form.type === 'received items' || this.form.type === 'inventory count') {
         return 'ri-add-line';
-      } else if (this.form.type === 'loss' || this.form.type === 'damage') {
+      } else if (['loss', 'damage', 'consume'].includes(this.form.type)) {
         return 'ri-subtract-line';
       } else {
         return '';
@@ -129,7 +130,7 @@ export default {
     inputIcon() {
       if (this.form.type === 'received items' || this.form.type === 'inventory count') {
         return 'ri-add-line';
-      } else if (this.form.type === 'loss' || this.form.type === 'damage') {
+      } else if (['loss', 'damage', 'consume'].includes(this.form.type)) {
         return 'ri-subtract-line';
       } else {
         return 'ri-inbox-unarchive-line';
@@ -140,7 +141,7 @@ export default {
       const newQty = parseFloat(this.form.new_quantity) || 0;
       if (this.form.type === 'received items' || this.form.type === 'inventory count') {
         return prev + newQty;
-      } else if (this.form.type === 'loss' || this.form.type === 'damage') {
+      } else if (['loss', 'damage', 'consume'].includes(this.form.type)) {
         return Math.max(0, prev - newQty);
       } else {
         return newQty;

@@ -75,7 +75,8 @@ class SalesOrderRequest extends FormRequest
                 'driver_id' => 'nullable|exists:employees,id',
                 'payment_mode' => 'required|string',
                 'due_date' => 'nullable|date|required_if:payment_mode,Credit',
-                'location_id' => 'required|exists:list_locations,id',
+                'location_id' => 'nullable|exists:list_locations,id',
+                'delivery_location' => 'required|string|max:255',
                 'items' => 'required|array|min:1',
                 'items.*.product_id' => 'required|exists:products,id',
                 'items.*.quantity' => 'required|integer|min:1',
@@ -83,6 +84,7 @@ class SalesOrderRequest extends FormRequest
                 'items.*.price_type' => 'required|string|in:retail,wholesale',
                 'items.*.batch_code' => 'required|string|exists:inventory_stocks,batch_code',
                 'items.*.discount_per_unit' => 'nullable|numeric|min:0',
+                'items.*.is_batch_override' => 'nullable|boolean',
 
             ];
 

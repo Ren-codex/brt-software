@@ -103,22 +103,23 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="location_id" class="form-label">Location<span class="text-danger">*</span></label>
+                                    <label for="location" class="form-label">Location<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-map-pin-line input-icon"></i>
-                                        <Multiselect
-                                            v-model="form.location_id"
-                                            :options="dropdowns.locations"
-                                            label="name"
-                                            value-prop="value"
-                                            track-by="name"
-                                            :searchable="true"
-                                            placeholder="Select Location"
+                                        <text-input
+                                            id="location"
+                                            type="text"
+                                            v-model="form.delivery_location"
+                                            placeholder="Delivery location"
                                             class="form-control"
-                                            :class="{ 'input-error': form.errors.location_id }"
+                                            :class="{ 'input-error': form.errors.delivery_location }"
+                                            @input="handleInput('delivery_location')"
                                         />
                                     </div>
-                                    <span class="error-message" v-if="form.errors.location_id">{{ form.errors.location_id }}</span>
+                                    <small v-if="selectedCustomer && selectedCustomer.address" class="form-hint">
+                                        Defaulted from customer address — edit if the delivery location is different.
+                                    </small>
+                                    <span class="error-message" v-if="form.errors.delivery_location">{{ form.errors.delivery_location }}</span>
                                 </div>
                             </div>
 
@@ -131,6 +132,11 @@
                                     <i class="ri-add-line"></i>
                                     Add Item
                                 </button>
+                            </div>
+
+                            <div v-if="hasBatchOverride" class="batch-approval-banner">
+                                <i class="ri-shield-check-line"></i>
+                                One or more items use a manually selected (non-default) batch. This order will require approver sign-off before it's finalized.
                             </div>
 
                             <div class="items-table-wrap">
@@ -169,7 +175,10 @@
                                                     <small class="product-availability">Available: {{ getRowBatchAvailable(list) }}</small>
                                                 </div>
                                             </td>
-                                            <td class="text-center">{{ list.batch_code || '-' }}</td>
+                                            <td class="text-center">
+                                                {{ list.batch_code || '-' }}
+                                                <i v-if="list.is_batch_override" class="ri-alert-line batch-override-icon" v-b-tooltip.hover title="Manually overridden batch — requires approval"></i>
+                                            </td>
                                             <td class="text-center"><span class="metric-pill">{{ list.quantity }}</span></td>
                                             <td class="text-center">
                                                 <div class="price-type-wrap">
@@ -409,7 +418,7 @@
                             </div>
                             <div class="review-info-item">
                                 <span>Location</span>
-                                <strong>{{ getLocationName(form.location_id) }}</strong>
+                                <strong>{{ form.delivery_location || '-' }}</strong>
                             </div>
                         </div>
                     </div>
@@ -680,6 +689,7 @@
                     <div class="credit-terms-section mt-3">
                         <label class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
                         <div class="credit-preset-btns mb-2">
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 1 }"  @click="setDueDatePreset(1)">Net 1</button>
                             <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 7 }"  @click="setDueDatePreset(7)">Net 7</button>
                             <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 14 }" @click="setDueDatePreset(14)">Net 14</button>
                             <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 30 }" @click="setDueDatePreset(30)">Net 30</button>
@@ -1007,7 +1017,7 @@ export default {
                 customer_id: null,
                 sales_rep_id: null,
                 driver_id: null,
-                location_id: 0,
+                location: '',
                 status_id: null,
                 billing_account: null,
                 payment_mode: null,
@@ -1037,7 +1047,7 @@ export default {
             showCashReceivedModal: false,
             showCreditVerificationModal: false,
             creditStep: 1,
-            creditPreset: 30,
+            creditPreset: 1,
             showBankTransferModal: false,
             showChargeSuccessModal: false,
             showPrintPrompt: false,
@@ -1121,13 +1131,15 @@ export default {
         canAddItem() {
             const hasCustomer = this.hasCustomerSelection;
             const hasOrderDate = !!this.form.order_date;
-            const locationId = Number(this.form.location_id);
-            const hasValidLocation = Number.isFinite(locationId) && locationId > 0;
+            const hasValidLocation = !!String(this.form.delivery_location || '').trim();
 
             return hasCustomer && hasOrderDate && hasValidLocation;
         },
         availableProducts() {
             return this.dropdowns.products.filter(product => product.available > 0);
+        },
+        hasBatchOverride() {
+            return this.form.items.some(item => item.is_batch_override);
         },
         bankAccountOptions() {
             return this.bankAccounts.map((ba) => ({
@@ -1258,6 +1270,13 @@ export default {
         handleCustomerSelectionChange() {
             this.form.customer_id = this.isWalkInCustomer ? null : this.customerSelection;
             this.handleInput('customer_id');
+            // Location defaults from the customer's address but stays editable —
+            // only overwrite it here so a manual edit in the same session isn't clobbered later.
+            const address = this.selectedCustomer?.address;
+            if (address && address !== '-') {
+                this.form.delivery_location = address;
+                this.handleInput('delivery_location');
+            }
         },
         syncCustomerSelectionToForm() {
             this.form.customer_id = this.isWalkInCustomer ? null : this.customerSelection;
@@ -1338,7 +1357,7 @@ export default {
             this.showCashReceivedModal = false;
             this.showCreditVerificationModal = false;
             this.creditStep = 1;
-            this.creditPreset = 30;
+            this.creditPreset = 1;
             this.showBankTransferModal = false;
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
@@ -1352,7 +1371,7 @@ export default {
             this.pendingCashPaid = 0;
             this.pendingCashReceived = 0;
             this.showModal = true;
-            this.form.location_id = 0;
+            this.form.delivery_location = '';
             this.form.order_date = new Date().toISOString().slice(0, 10);
             this.form.due_date = null;
             // Default sales rep should be the logged-in employee (not user id).
@@ -1375,7 +1394,7 @@ export default {
             this.customerSelection = data.customer?.id ?? '__walk_in__';
             this.form.sales_rep_id = data.sales_rep_id;
             this.form.driver_id = data.driver_id;
-            this.form.location_id = data.location_id;
+            this.form.delivery_location = data.delivery_location || data.customer?.address || '';
             this.form.status_id = data.status_id;
             this.form.payment_mode = data.payment_mode;
             this.form.due_date = data.due_date_raw || null;
@@ -1431,7 +1450,6 @@ export default {
         validateBeforeReview() {
             this.form.clearErrors();
             const errors = {};
-            const locationId = Number(this.form.location_id);
 
             if (!this.form.order_date) {
                 errors.order_date = 'Order date is required.';
@@ -1442,8 +1460,8 @@ export default {
             if (!this.form.sales_rep_id) {
                 errors.sales_rep_id = 'Sales rep is required.';
             }
-            if (!Number.isFinite(locationId) || locationId <= 0) {
-                errors.location_id = 'Location is required.';
+            if (!String(this.form.delivery_location || '').trim()) {
+                errors.delivery_location = 'Location is required.';
             }
             if (!this.form.items.length) {
                 errors.items = 'Add at least one item before reviewing the order.';
@@ -1488,8 +1506,8 @@ export default {
                 this.creditVerificationText = '';
                 this.creditVerificationError = null;
                 this.creditStep = 1;
-                this.creditPreset = 30;
-                this.setDueDatePreset(30);
+                this.creditPreset = 1;
+                this.setDueDatePreset(1);
                 return;
             } else if (!this.cash_payment_modes.includes(this.form.payment_mode)) {
                 return;
@@ -1903,11 +1921,6 @@ export default {
             const driver = this.dropdowns?.drivers?.find(employee => Number(employee.value) === Number(employeeId));
             return driver ? driver.name : '-';
         },
-        getLocationName(locationId) {
-            if (!locationId) return '-';
-            const location = this.dropdowns?.locations?.find(entry => Number(entry.value) === Number(locationId));
-            return location ? location.name : '-';
-        },
 
         formatCurrency(value) {
             if (!value) return '₱0.00';
@@ -2271,6 +2284,31 @@ export default {
     margin-top: 0.3rem;
     font-size: 0.7rem;
     color: #e74c3c;
+}
+
+.form-hint {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
+    color: #6b8c85;
+}
+
+.batch-override-icon {
+    color: #b45309;
+    margin-left: 0.25rem;
+}
+
+.batch-approval-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    margin-bottom: 0.75rem;
+    border-radius: 8px;
+    background: #fff8e6;
+    border: 1px solid #f2e3ab;
+    color: #6b5b0f;
+    font-size: 0.8rem;
 }
 
 .form-group-inline-action {

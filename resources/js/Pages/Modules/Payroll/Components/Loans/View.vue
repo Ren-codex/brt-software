@@ -27,7 +27,7 @@
                     <i class="ri-delete-bin-line"></i>
                   </button>
                 </template>
-                <button v-if="canApprove && loan.status === 'approved'" class="create-btn"
+                <button v-if="canRelease && loan.status === 'approved'" class="create-btn"
                         @click="releaseLoan">
                   <i class="ri-wallet-3-line"></i>
                   <span>Release Loan</span>
@@ -278,9 +278,10 @@ export default {
   },
   computed: {
     canApprove() {
-      const roles = this.$page.props.roles;
-      const userRoles = roles ? Object.values(roles) : [];
-      return userRoles.some(role => ['Administrator', 'Super Admin'].includes(role));
+      return this.can('payroll', 'loans', 'approver');
+    },
+    canRelease() {
+      return this.can('payroll', 'loans', 'releaser');
     },
     totalAmountValue() {
       return this.toNumber(this.loan?.amount, 0);

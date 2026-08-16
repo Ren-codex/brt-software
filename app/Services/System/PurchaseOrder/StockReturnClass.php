@@ -54,6 +54,7 @@ class StockReturnClass
             'status',
             'createdBy',
             'approvedBy',
+            'voidedBy',
         ])->orderByDesc('id')
             ->paginate($request->count ?? 10);
 
@@ -72,6 +73,7 @@ class StockReturnClass
             'status',
             'createdBy',
             'approvedBy',
+            'voidedBy',
         ])->findOrFail($id);
 
         return new StockReturnResource($data);
@@ -190,6 +192,7 @@ class StockReturnClass
                 'status',
                 'createdBy',
                 'approvedBy',
+                'voidedBy',
             ]);
         });
 
@@ -271,12 +274,12 @@ class StockReturnClass
                             // Audit trail for the returned-to-supplier deduction.
                             InventoryAdjustment::create([
                                 'inventory_stocks_id' => $inventoryStock->id,
-                                'previous_quantity'   => $prevQty,
-                                'new_quantity'        => $prevQty - $deductQty,
-                                'reason'              => 'Returned to supplier (Stock Return #' . $stockReturn->id . ')',
-                                'type'                => 'return_out',
-                                'adjustment_date'     => now()->format('Y-m-d'),
-                                'adjusted_by_id'      => Auth::id(),
+                                'previous_quantity' => $prevQty,
+                                'new_quantity' => $prevQty - $deductQty,
+                                'reason' => 'Returned to supplier (Stock Return #'.$stockReturn->id.')',
+                                'type' => 'return_out',
+                                'adjustment_date' => now()->format('Y-m-d'),
+                                'adjusted_by_id' => Auth::id(),
                             ]);
 
                             $remainingQty -= $deductQty;
@@ -329,6 +332,7 @@ class StockReturnClass
                 'status',
                 'createdBy',
                 'approvedBy',
+                'voidedBy',
             ]);
         });
 
@@ -366,38 +370,53 @@ class StockReturnClass
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            // Prevent re-processing an item that was already received (would
-            // otherwise re-add replacement stock on every submission).
+            // Prevent re-processing an item that was already fully resolved (would
+            // otherwise re-add replacement stock on every submission). Items that
+            // are only partially received stay 'pending' and can be received again.
             if (in_array(optional($stockReturnItem->status)->slug, ['replaced', 'loss'], true)) {
-                $this->fail('This return item has already been received and cannot be processed again.');
+                $this->fail('This return item has already been fully received and cannot be processed again.');
             }
 
-            $replacedQty = (int) $request->replaced_quantity;
-            $lossQty = (int) $request->loss_quantity;
-            $actualReceivedQty = $replacedQty + $lossQty;
-            $requestedQty = (int) $stockReturnItem->quantity;
-            if ($actualReceivedQty < 0 || $actualReceivedQty > $requestedQty) {
-                $this->fail('Replacement plus loss quantity cannot be greater than the returned quantity.');
+            // Amounts on the request are for THIS submission only; accumulate them
+            // on top of whatever was already received in prior partial submissions.
+            $incomingReplacedQty = (int) $request->replaced_quantity;
+            $incomingLossQty = (int) $request->loss_quantity;
+            if ($incomingReplacedQty < 0 || $incomingLossQty < 0) {
+                $this->fail('Replacement and loss quantity must be 0 or greater.');
             }
+
+            $requestedQty = (int) $stockReturnItem->quantity;
+            $previouslyReceivedQty = (int) $stockReturnItem->returned_quantity;
+            $remainingQty = $requestedQty - $previouslyReceivedQty;
+            $incomingQty = $incomingReplacedQty + $incomingLossQty;
+            if ($incomingQty > $remainingQty) {
+                $this->fail("Replacement plus loss quantity cannot be greater than the remaining returned quantity ({$remainingQty}).");
+            }
+
+            $replacedQty = $incomingReplacedQty; // this call's replacement amount, used for the inventory/PO increments below
+            $newReplacedTotal = (int) $stockReturnItem->replaced_quantity + $incomingReplacedQty;
+            $newLossTotal = (int) $stockReturnItem->loss_quantity + $incomingLossQty;
+            $actualReceivedQty = $newReplacedTotal + $newLossTotal;
 
             $remarks = trim((string) ($request->remarks ?? ''));
             $stockReturnItem->returned_quantity = $actualReceivedQty;
-            $stockReturnItem->replaced_quantity = $replacedQty;
-            $stockReturnItem->loss_quantity = $lossQty;
+            $stockReturnItem->replaced_quantity = $newReplacedTotal;
+            $stockReturnItem->loss_quantity = $newLossTotal;
             $pendingStatusId = $this->getStatusIdBySlug('pending');
             $replacedStatusId = $this->getStatusIdBySlug('replaced');
             $lossStatusId = $this->getStatusIdBySlug('loss');
             if (! $pendingStatusId || ! $replacedStatusId || ! $lossStatusId) {
                 $this->fail('Receive statuses are not configured.');
             }
-            if ($actualReceivedQty === 0) {
+            if ($actualReceivedQty < $requestedQty) {
+                // Still has a remaining quantity to receive — keep it open for a future submission.
                 $stockReturnItem->status_id = $pendingStatusId;
-            } elseif ($replacedQty > 0) {
+            } elseif ($newReplacedTotal > 0) {
                 $stockReturnItem->status_id = $replacedStatusId;
             } else {
                 $stockReturnItem->status_id = $lossStatusId;
             }
-            $stockReturnItem->remarks = $remarks !== '' ? $remarks : null;
+            $stockReturnItem->remarks = $remarks !== '' ? $remarks : $stockReturnItem->remarks;
             $stockReturnItem->received_by_id = Auth::id();
             $stockReturnItem->received_at = now();
 
@@ -431,12 +450,12 @@ class StockReturnClass
                 // Audit trail for the replacement stock added back.
                 InventoryAdjustment::create([
                     'inventory_stocks_id' => $inventoryStock->id,
-                    'previous_quantity'   => $prevInvQty,
-                    'new_quantity'        => $prevInvQty + $replacedQty,
-                    'reason'              => 'Replacement received from supplier (Stock Return #' . $stockReturn->id . ', Item #' . $stockReturnItem->id . ')',
-                    'type'                => 'return_replacement',
-                    'adjustment_date'     => now()->format('Y-m-d'),
-                    'adjusted_by_id'      => Auth::id(),
+                    'previous_quantity' => $prevInvQty,
+                    'new_quantity' => $prevInvQty + $replacedQty,
+                    'reason' => 'Replacement received from supplier (Stock Return #'.$stockReturn->id.', Item #'.$stockReturnItem->id.')',
+                    'type' => 'return_replacement',
+                    'adjustment_date' => now()->format('Y-m-d'),
+                    'adjusted_by_id' => Auth::id(),
                 ]);
 
                 PurchaseOrderLog::create([
@@ -461,7 +480,7 @@ class StockReturnClass
                 'stock_return_id' => $stockReturn->id,
                 'user_id' => Auth::id(),
                 'action' => 'Item Received',
-                'remarks' => "Received return item {$productName}: replaced {$replacedQty}, loss {$lossQty}, total {$actualReceivedQty}."
+                'remarks' => "Received return item {$productName}: replaced {$replacedQty}, loss {$incomingLossQty}, total {$actualReceivedQty}."
                     .($remarks !== '' ? " {$remarks}" : ''),
             ]);
 
@@ -496,6 +515,7 @@ class StockReturnClass
                 'status',
                 'createdBy',
                 'approvedBy',
+                'voidedBy',
             ]);
         });
 
@@ -503,6 +523,158 @@ class StockReturnClass
             'data' => new StockReturnResource($data),
             'message' => 'Return item received successfully!',
             'info' => "You've successfully recorded the received return item.",
+            'status' => true,
+        ];
+    }
+
+    public function void($request, $id)
+    {
+        $data = DB::transaction(function () use ($request, $id) {
+            $stockReturn = StockReturn::with(['items', 'status'])
+                ->lockForUpdate()
+                ->findOrFail($id);
+
+            if ($stockReturn->voided_at) {
+                $this->fail('This stock return has already been voided.');
+            }
+
+            $completedStatusId = $this->getStatusIdBySlug('completed');
+            if ((int) $stockReturn->status_id === (int) $completedStatusId) {
+                $this->fail('This stock return has already been completed and cannot be voided.');
+            }
+
+            $hasReceivedItems = $stockReturn->items->contains(function ($item) {
+                return (int) $item->returned_quantity > 0;
+            });
+            if ($hasReceivedItems) {
+                $this->fail('This stock return already has received items and cannot be voided. Reverse those returns first.');
+            }
+
+            $trimmedReason = trim((string) ($request->reason ?? ''));
+            if ($trimmedReason === '') {
+                $this->fail('A reason is required to void this stock return.');
+            }
+
+            $approvedStatusId = $this->getStatusIdBySlug('approved');
+            $wasApproved = (int) $stockReturn->status_id === (int) $approvedStatusId;
+
+            if (! $wasApproved) {
+                // Still pending/disapproved — nothing has touched inventory or the books
+                // yet, so there is nothing to reverse. Just remove the request outright
+                // (items/logs cascade-delete with it) instead of leaving a voided husk.
+                $stockReturnId = $stockReturn->id;
+                $poId = $stockReturn->po_id;
+                $stockReturn->delete();
+
+                PurchaseOrderLog::create([
+                    'po_id' => $poId,
+                    'user_id' => Auth::id(),
+                    'action' => 'Stock Return Deleted',
+                    'remarks' => "Stock return #{$stockReturnId} deleted. Reason: {$trimmedReason}",
+                ]);
+
+                return null;
+            }
+
+            // Reverse exactly what was deducted on approval, using that step's own
+            // audit trail so restored quantities land back in their original batches.
+            $adjustments = InventoryAdjustment::where('type', 'return_out')
+                ->where('reason', 'Returned to supplier (Stock Return #'.$stockReturn->id.')')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($adjustments as $adjustment) {
+                $inventoryStock = InventoryStocks::lockForUpdate()->find($adjustment->inventory_stocks_id);
+                if (! $inventoryStock) {
+                    continue;
+                }
+
+                $restoreQty = (int) $adjustment->previous_quantity - (int) $adjustment->new_quantity;
+                if ($restoreQty <= 0) {
+                    continue;
+                }
+
+                $prevQty = (int) $inventoryStock->quantity;
+                $inventoryStock->increment('quantity', $restoreQty);
+
+                InventoryAdjustment::create([
+                    'inventory_stocks_id' => $inventoryStock->id,
+                    'previous_quantity' => $prevQty,
+                    'new_quantity' => $prevQty + $restoreQty,
+                    'reason' => 'Stock return #'.$stockReturn->id.' voided: '.$trimmedReason,
+                    'type' => 'void',
+                    'adjustment_date' => now()->format('Y-m-d'),
+                    'adjusted_by_id' => Auth::id(),
+                ]);
+            }
+
+            foreach ($stockReturn->items as $item) {
+                $poItem = PurchaseOrderItem::lockForUpdate()->find($item->po_item_id);
+                if ($poItem) {
+                    $poItem->increment('received_quantity', (int) $item->quantity);
+                }
+            }
+
+            $this->journalEntryService->reverseEntriesForSource(
+                $stockReturn,
+                'Stock return voided. Reason: '.$trimmedReason,
+                now()->toDateString()
+            );
+
+            PurchaseOrderLog::create([
+                'po_id' => $stockReturn->po_id,
+                'user_id' => Auth::id(),
+                'action' => 'Stock Return Voided',
+                'remarks' => "Stock return #{$stockReturn->id} voided; returned stock restored to inventory.",
+            ]);
+
+            $voidedStatusId = $this->getStatusIdBySlug('voided');
+            if (! $voidedStatusId) {
+                $this->fail('Voided status is not configured.');
+            }
+
+            $stockReturn->status_id = $voidedStatusId;
+            $stockReturn->voided_at = now();
+            $stockReturn->void_reason = $trimmedReason;
+            $stockReturn->voided_by_id = Auth::id();
+            $stockReturn->save();
+
+            StockReturnLog::create([
+                'stock_return_id' => $stockReturn->id,
+                'user_id' => Auth::id(),
+                'action' => 'Voided',
+                'remarks' => $trimmedReason,
+            ]);
+
+            return $stockReturn->fresh([
+                'purchaseOrder.status',
+                'purchaseOrder.supplier',
+                'items.purchaseOrderItem.product',
+                'items.status',
+                'items.receivedBy',
+                'logs.user',
+                'status',
+                'createdBy',
+                'approvedBy',
+                'voidedBy',
+            ]);
+        });
+
+        if ($data === null) {
+            return [
+                'data' => null,
+                'deleted' => true,
+                'message' => 'Stock return deleted successfully!',
+                'info' => "You've successfully deleted the pending stock return.",
+                'status' => true,
+            ];
+        }
+
+        return [
+            'data' => new StockReturnResource($data),
+            'deleted' => false,
+            'message' => 'Stock return voided successfully!',
+            'info' => "You've successfully voided the stock return.",
             'status' => true,
         ];
     }

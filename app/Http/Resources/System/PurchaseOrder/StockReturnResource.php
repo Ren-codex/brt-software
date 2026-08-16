@@ -51,6 +51,11 @@ class StockReturnResource extends JsonResource
                 ? new ViewResource($this->approvedBy)
                 : null,
             'approved_at' => $this->approved_at,
+            'voided_at' => $this->voided_at,
+            'void_reason' => $this->void_reason,
+            'voided_by' => $this->voidedBy
+                ? new ViewResource($this->voidedBy)
+                : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

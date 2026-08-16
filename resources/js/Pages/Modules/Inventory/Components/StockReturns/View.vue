@@ -19,6 +19,10 @@
                 <button class="create-btn" @click="approveStockReturn()" v-if="canApprove && data.status.slug == 'pending'">
                   <span>{{ approving ? 'Saving...' : 'Approve Return' }}</span>
                 </button>
+                <button class="create-btn void-btn" @click="openVoidModal()" v-if="canVoid">
+                  <i class="ri-close-circle-line"></i>
+                  <span>{{ data.status.slug === 'approved' ? 'Void' : 'Delete' }}</span>
+                </button>
                 <button @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back">
                   <i class="ri-arrow-left-line"></i>
                 </button>
@@ -69,6 +73,12 @@
               <div style="background: #f8f9fa; padding: 0.75rem 1rem; border-radius: 10px;">
                 <span style="color: #6c757d; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; display: block;">Approved At</span>
                 <span style="color: #2c3e50;" v-if="data.approved_at">{{ formatDate(data.approved_at) }} by <b>{{ data.approved_by?.fullname || 'N/A' }}</b></span>
+              </div>
+
+              <!-- Voided (full width) -->
+              <div v-if="data.voided_at" style="grid-column: span 2; background: #fdecea; padding: 0.75rem 1rem; border-radius: 10px;">
+                <span style="color: #a94442; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; display: block;">Voided</span>
+                <span style="color: #a94442;">{{ formatDate(data.voided_at) }} by <b>{{ data.voided_by?.fullname || 'N/A' }}</b> — {{ data.void_reason }}</span>
               </div>
             </div>
           </div>
@@ -189,15 +199,22 @@
     @save="saveReceivedReturnItem"
     @update-receive-form="updateReceiveForm"
   />
+
+  <VoidStockReturnModal
+    ref="voidModal"
+    @toast="$emit('toast', $event)"
+    @voided="handleVoided"
+  />
 </template>
 
 <script>
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 import ReceiveReturnItemModal from '../../Modal/ReceiveReturnItemModal.vue';
+import VoidStockReturnModal from '../../Modal/VoidStockReturnModal.vue';
 
 export default {
   name: 'StockReturnDetails',
-  components: { TransactionLogs, ReceiveReturnItemModal },
+  components: { TransactionLogs, ReceiveReturnItemModal, VoidStockReturnModal },
   emits: ['back', 'toast', 'refresh'],
   props: {
     stockReturn: Object,
@@ -239,6 +256,13 @@ export default {
     canApprove() {
       return this.can('inventory', 'stock_returns', 'approver');
     },
+    canVoid() {
+      if (!this.can('inventory', 'stock_returns', 'admin')) return false;
+      if (!this.data || this.data.voided_at) return false;
+
+      const statusSlug = String(this.data?.status?.slug || '').toLowerCase();
+      return ['pending', 'approved', 'disapproved'].includes(statusSlug);
+    },
     stockReturnLogs() {
       return this.data?.stock_return_logs || [];
     },
@@ -268,6 +292,19 @@ export default {
       this.showModal = false;
       this.remarks = '';
     },
+    openVoidModal() {
+      if (!this.canVoid) return;
+      this.$refs.voidModal.show(this.data);
+    },
+    handleVoided(payload = {}) {
+      if (payload.deleted) {
+        // The record no longer exists server-side — go back to the list instead
+        // of trying to refetch a stock return that was just deleted.
+        this.$emit('back');
+        return;
+      }
+      this.$emit('refresh', this.data.id);
+    },
     isItemFinalized(item) {
       const statusSlug = String(item?.status?.slug || '').toLowerCase();
       return ['replaced', 'loss'].includes(statusSlug);
@@ -276,8 +313,10 @@ export default {
       if (!item?.id || this.receiving || this.isItemFinalized(item)) return;
 
       this.selectedReturnItem = item;
-      this.receiveForm.replaced_quantity = Number(item.replaced_quantity || item.returned_quantity || 0);
-      this.receiveForm.remarks = item.remarks || '';
+      // replaced_quantity here is the amount being received in THIS submission
+      // (added on top of whatever was already received in prior partial submissions).
+      this.receiveForm.replaced_quantity = 0;
+      this.receiveForm.remarks = '';
       this.showReceiveModal = true;
     },
     onReceiveCancel(force = false) {
@@ -298,16 +337,14 @@ export default {
     async saveReceivedReturnItem() {
       if (!this.data?.id || !this.selectedReturnItem?.id || this.receiving) return;
 
-      const maxQty = Number(this.selectedReturnItem.quantity || 0);
+      const maxQty = Number(this.selectedReturnItem.quantity || 0) - Number(this.selectedReturnItem.returned_quantity || 0);
       const replacedQty = Number(this.receiveForm.replaced_quantity || 0);
-      const totalQty = replacedQty;
       if (
         Number.isNaN(replacedQty)
         || replacedQty < 0
-        || totalQty < 0
-        || totalQty > maxQty
+        || replacedQty > maxQty
       ) {
-        this.$emit('toast', `Replacement quantity must be between 0 and ${maxQty}`);
+        this.$emit('toast', `Replacement quantity must be between 0 and the remaining ${maxQty}`);
         return;
       }
 
@@ -422,6 +459,17 @@ export default {
 .action-btn-receive:hover {
   background-color: #c8e6c9;
   transform: translateY(-2px);
+}
+
+.void-btn {
+  background-color: #c0392b !important;
+  color: #fff !important;
+  border-color: #c0392b !important;
+}
+
+.void-btn:hover {
+  background-color: #a93226 !important;
+  border-color: #a93226 !important;
 }
 
 .quick-summary-grid {

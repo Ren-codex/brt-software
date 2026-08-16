@@ -14,7 +14,8 @@ class SalesOrderItem extends Model
         'price',
         'price_type',
         'batch_code',
-        'discount_per_unit'
+        'discount_per_unit',
+        'is_batch_override',
     ];
 
     public function sales_order()

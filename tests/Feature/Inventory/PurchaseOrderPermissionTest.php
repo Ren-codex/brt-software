@@ -98,18 +98,18 @@ class PurchaseOrderPermissionTest extends TestCase
         $this->assertNotEquals(403, $response->getStatusCode());
     }
 
-    public function test_void_denied_without_approver_grant(): void
+    public function test_void_denied_without_void_grant(): void
     {
         $po = $this->makePurchaseOrder();
-        $user = $this->warehouseManagerWithGrant('purchase_orders', 'encoder');
+        $user = $this->warehouseManagerWithGrant('purchase_orders', 'approver');
 
         $this->actingAs($user)->patch("/purchase-orders/{$po->id}/void")->assertForbidden();
     }
 
-    public function test_void_allowed_with_approver_grant(): void
+    public function test_void_allowed_with_void_grant(): void
     {
         $po = $this->makePurchaseOrder();
-        $user = $this->warehouseManagerWithGrant('purchase_orders', 'approver');
+        $user = $this->warehouseManagerWithGrant('purchase_orders', 'void');
 
         $response = $this->actingAs($user)->patch("/purchase-orders/{$po->id}/void");
 

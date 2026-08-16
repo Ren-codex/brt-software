@@ -103,6 +103,9 @@
                                                 <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
+                                            <span v-if="list.requires_batch_approval && !list.approved_at" class="badge bg-warning text-dark ms-1" v-b-tooltip.hover title="A manually selected batch needs approver sign-off">
+                                                Pending Batch Approval
+                                            </span>
                                         </td>
                                           <!-- <td class="text-center">
                                             <span
@@ -129,10 +132,10 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <button v-if="canApprove && list.status?.slug == 'for-payment'"
+                                                <button v-if="canApprove && list.requires_batch_approval && !list.approved_at"
                                                     @click.stop="onApproval(list.id)"
-                                                    class="action-btn success" title="Approve Order">
-                                                    <i class="ri-check-line"></i>
+                                                    class="action-btn success" title="Approve manually-selected batch">
+                                                    <i class="ri-shield-check-line"></i>
                                                 </button>
                                                 <button v-if="list.status?.slug == 'for-payment' && can('sales', 'sales_orders', 'encoder')"
                                                     @click.stop="onSalesAdjustment(list)"
@@ -143,7 +146,7 @@
                                                     class="action-btn info" title="Print Invoice">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
-                                                <button v-if="list.status?.slug == 'for-payment' && can('sales', 'sales_orders', 'encoder')"
+                                                <button v-if="isEditableOrder(list) && can('sales', 'sales_orders', 'encoder')"
                                                     @click.stop="openEdit(list, index)"
                                                     class="action-btn edit" title="Edit">
                                                     <i class="ri-pencil-fill"></i>
@@ -172,8 +175,11 @@
                                                                     list.order_date }}</p>
                                                                 <p class="mb-1"><strong>Added By:</strong> {{
                                                                     list.added_by?.fullname || '-' }}</p>
-                                                                <p class="mb-0"><strong>Transferred To:</strong> {{
+                                                                <p class="mb-0" :class="{ 'mb-1': list.status?.slug === 'cancelled' }"><strong>Transferred To:</strong> {{
                                                                     list.transferred_to || '-' }}</p>
+                                                                <p v-if="list.status?.slug === 'cancelled' && list.cancellation_remarks" class="mb-0">
+                                                                    <strong>Void Reason:</strong> {{ list.cancellation_remarks }}
+                                                                </p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -399,6 +405,10 @@ export default {
             this.$refs.cancel.show(list.id, title, url, hasPayments);
         },
 
+        isEditableOrder(list) {
+            // Credit/COD orders stay editable until fully paid, not just at creation.
+            return ['for-payment', 'partially-paid'].includes(list.status?.slug);
+        },
         onApproval(id) {
             let title = "Sales Order";
             let url = '/sales-orders';

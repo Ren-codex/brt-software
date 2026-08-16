@@ -166,7 +166,7 @@ export default {
     if (userId && window.Echo) {
         window.Echo.private('App.Models.User.' + userId)
             .notification(notification => {
-                if (['low_balance', 'low_stock', 'overdue_invoice'].includes(notification.type)) {
+                if (['low_balance', 'low_stock', 'overdue_invoice', 'unpaid_same_day_sales_order'].includes(notification.type)) {
                     this.unreadCount++;
                     this.notifications.unshift({
                         id:         notification.id || null,
@@ -314,6 +314,18 @@ export default {
                       </p>
                       <p class="mb-0 fs-11 text-muted">
                         {{ n.data.customer_name }} &middot;
+                        &#8369;{{ Number(n.data.balance_due).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                        &middot; {{ timeAgo(n.created_at) }}
+                      </p>
+                    </template>
+
+                    <!-- unpaid_same_day_sales_order -->
+                    <template v-else-if="n.data.type === 'unpaid_same_day_sales_order'">
+                      <p class="mb-0 fs-12 fw-semibold text-truncate" style="max-width:240px;">
+                        <strong>{{ n.data.so_number }}</strong> still unpaid today
+                      </p>
+                      <p class="mb-0 fs-11 text-muted">
+                        {{ n.data.customer_name }} &middot; {{ n.data.payment_mode }} &middot;
                         &#8369;{{ Number(n.data.balance_due).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
                         &middot; {{ timeAgo(n.created_at) }}
                       </p>
