@@ -689,12 +689,13 @@
                     <div class="credit-terms-section mt-3">
                         <label class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
                         <div class="credit-preset-btns mb-2">
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 'today' }" @click="setDueDatePreset('today')">Due today</button>
                             <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 1 }"  @click="setDueDatePreset(1)">Net 1</button>
                             <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 7 }"  @click="setDueDatePreset(7)">Net 7</button>
                             <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 14 }" @click="setDueDatePreset(14)">Net 14</button>
                             <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 30 }" @click="setDueDatePreset(30)">Net 30</button>
                             <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 60 }" @click="setDueDatePreset(60)">Net 60</button>
-                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 0 }"  @click="setDueDatePreset(0)">Custom</button>
+                            <button type="button" class="credit-preset-btn" :class="{ active: creditPreset === 'custom' }" @click="setDueDatePreset('custom')">Custom</button>
                         </div>
                         <div class="input-wrapper">
                             <i class="ri-calendar-line input-icon"></i>
@@ -704,14 +705,19 @@
                                 class="form-control"
                                 :class="{ 'input-error': form.errors.due_date }"
                                 :min="form.order_date"
-                                @change="creditPreset = 0; handleInput('due_date')"
+                                @change="creditPreset = 'custom'; handleInput('due_date')"
                             />
                         </div>
                         <span class="error-message" v-if="form.errors.due_date">{{ form.errors.due_date }}</span>
                         <p v-if="form.due_date" class="credit-due-hint mt-1">
                             <i class="ri-information-line"></i>
-                            Payment expected by <strong>{{ form.due_date }}</strong>
-                            ({{ dueDateDaysFromOrder }} day{{ dueDateDaysFromOrder === 1 ? '' : 's' }} from order date)
+                            <template v-if="dueDateDaysFromOrder === 0">
+                                Payment expected <strong>today</strong> ({{ form.due_date }})
+                            </template>
+                            <template v-else>
+                                Payment expected by <strong>{{ form.due_date }}</strong>
+                                ({{ dueDateDaysFromOrder }} day{{ dueDateDaysFromOrder === 1 ? '' : 's' }} from order date)
+                            </template>
                         </p>
                     </div>
                 </div>
@@ -1686,12 +1692,13 @@ export default {
             this.cashChargeError = null;
             this.showPaymentTypeModal = true;
         },
-        setDueDatePreset(days) {
-            this.creditPreset = days;
-            if (days === 0) {
+        setDueDatePreset(preset) {
+            this.creditPreset = preset;
+            if (preset === 'custom') {
                 this.form.due_date = '';
                 return;
             }
+            const days = preset === 'today' ? 0 : preset;
             const d = new Date();
             d.setDate(d.getDate() + days);
             this.form.due_date = d.toISOString().slice(0, 10);
