@@ -95,6 +95,7 @@
                                                     track-by="name"
                                                     :searchable="true"
                                                     :can-clear="false"
+                                                    :append-to-body="true"
                                                     placeholder="Select a product..."
                                                     class="form-control table-select table-multiselect"
                                                     :class="{ 'input-error': form.errors[`items.${index}.product_id`], 'input-warning': isDuplicateProduct(index) }"

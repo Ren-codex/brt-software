@@ -195,6 +195,14 @@ File: Custom Css File
 }
 
 .multiselect-dropdown {
+  // A multiselect using append-to-body teleports its dropdown to <body>,
+  // escaping any ancestor's overflow:hidden clipping (e.g. a rounded-corner
+  // table wrapper). The library's own theme CSS is lazy-loaded per component
+  // and can be injected after this global stylesheet, so without !important
+  // its z-index:100 wins the tie and buries the dropdown under our modal
+  // overlay (z-index 1060) regardless of source order here.
+  z-index: 2000 !important;
+
   .multiselect-options {
     list-style: none;
     padding-left: 0;
