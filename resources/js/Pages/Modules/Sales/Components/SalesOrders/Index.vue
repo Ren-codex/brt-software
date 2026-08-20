@@ -156,7 +156,7 @@
                                                     class="action-btn edit" title="Edit">
                                                     <i class="ri-pencil-fill"></i>
                                                 </button>
-                                                <button v-if="isEditable(list) && can('sales', 'sales_orders', 'approver')"
+                                                <button v-if="isEditable(list) && (can('sales', 'sales_orders', 'void') || can('sales', 'sales_orders', 'approver'))"
                                                     @click.stop="onCancel(list)"
                                                     class="action-btn delete" title="Cancel Order">
                                                     <i class="ri-close-line"></i>
