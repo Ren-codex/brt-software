@@ -212,30 +212,13 @@
 
         <div v-if="selectedPaymentType === 'Cash'" class="payment-suboption-panel">
           <div class="payment-panel-heading">
-            <span class="payment-panel-kicker">Cash Settlement</span>
-            <h5>Choose how you will pay the supplier</h5>
-            <p>Select either direct cash payment or bank transfer.</p>
+            <span class="payment-panel-kicker">Immediate Payment</span>
+            <h5>Record how this is being paid</h5>
+            <p>You can split it across cash, a bank account and a check in one go.</p>
           </div>
-
-          <div class="payment-option-grid suboption-grid">
-            <button
-              v-for="option in cashPaymentModes"
-              :key="option.value"
-              type="button"
-              class="payment-option-card payment-suboption-card"
-              :class="{ 'selected': selectedCashPaymentMode === option.value }"
-              @click="selectCashPaymentMode(option.value)"
-            >
-              <span class="payment-option-icon">
-                <i :class="option.icon"></i>
-              </span>
-              <span class="payment-option-title">{{ option.label }}</span>
-              <small class="payment-option-copy">{{ option.description }}</small>
-            </button>
-          </div>
-          <div class="payment-suboption-note">
-            Select <strong>Cash</strong>, <strong>Bank Transfer</strong>, or <strong>Check</strong> to open the amount-paid modal.
-          </div>
+          <button type="button" class="btn btn-save" @click="openPaymentLines">
+            <i class="ri-wallet-3-line me-1"></i> Enter payment
+          </button>
         </div>
 
         <div v-if="selectedPaymentType === 'Credit'" class="payment-suboption-panel">
@@ -299,7 +282,7 @@
   <div v-if="showAmountPaidModal" class="modal-overlay active payment-method-overlay" @click.self="backToPaymentMethodModal">
     <div class="modal-container modal-md payment-method-modal amount-paid-modal">
       <div class="modal-header">
-        <h2>{{ isBankTransferMode ? 'Bank Transfer Details' : (isCheckMode ? 'Check Details' : 'Total Amount Paid') }}</h2>
+        <h2>Record Payment</h2>
         <button type="button" class="close-btn" @click="backToPaymentMethodModal" :disabled="isSubmitting"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
@@ -310,117 +293,18 @@
 
         <div class="payment-suboption-panel payment-amount-dialog">
           <div class="payment-panel-heading">
-            <span class="payment-panel-kicker">{{ selectedCashPaymentMode }}</span>
-            <h5>
-              {{
-                isBankTransferMode
-                  ? 'Enter the bank transfer details'
-                  : (isCheckMode ? 'Enter the check details' : 'Enter the total amount already paid')
-              }}
-            </h5>
-            <p>
-              {{
-                isBankTransferMode
-                  ? 'Provide the bank information together with the amount already transferred.'
-                  : (isCheckMode
-                    ? 'Provide the check reference number together with the amount paid.'
-                    : 'Any remaining balance after this payment will stay under accounts payable.')
-              }}
-            </p>
+            <span class="payment-panel-kicker">Payment</span>
+            <h5>Where is this being paid from?</h5>
+            <p>Add a line for each method. A part-payment is fine — anything left stays under accounts payable.</p>
           </div>
 
-          <div v-if="isBankTransferMode" class="payment-detail-grid">
-            <div class="payment-detail-field">
-              <label for="received_stock_bank_account" class="payment-detail-label">
-                Bank Account
-              </label>
-              <select
-                id="received_stock_bank_account"
-                v-model="form.bank_account_id"
-                class="form-control payment-detail-input"
-                @change="onBankAccountChange"
-              >
-                <option value="">— Select bank account —</option>
-                <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
-                  {{ ba.bank_name }} — {{ ba.account_name }} ({{ formatCurrency(ba.balance) }})
-                </option>
-              </select>
-              <small v-if="bankAccounts.length === 0" style="font-size:0.75rem;color:#94a3b8">
-                No bank accounts. <a href="/accounting/bank-accounts" target="_blank">Add one.</a>
-              </small>
-            </div>
-
-            <div class="payment-detail-field">
-              <label for="received_stock_reference_number" class="payment-detail-label">
-                Reference Number
-              </label>
-              <input
-                id="received_stock_reference_number"
-                v-model.trim="form.reference_number"
-                type="text"
-                class="form-control payment-detail-input"
-                placeholder="Enter transfer reference number"
-                @input="paymentMethodError = ''"
-              />
-            </div>
-          </div>
-
-          <div v-if="isCheckMode" class="payment-detail-grid">
-            <div class="payment-detail-field">
-              <label for="received_stock_check_reference_number" class="payment-detail-label">
-                Reference No.
-              </label>
-              <input
-                id="received_stock_check_reference_number"
-                v-model.trim="form.reference_number"
-                type="text"
-                class="form-control payment-detail-input"
-                placeholder="Enter check reference number"
-                @input="paymentMethodError = ''"
-              />
-            </div>
-          </div>
-
-          <div class="payment-amount-panel">
-            <label for="received_stock_amount_paid" class="payment-amount-label">
-              {{ isBankTransferMode || isCheckMode ? 'Amount Paid' : 'Total Amount Paid' }}
-            </label>
-            <div class="payment-amount-input-wrap">
-              <span class="payment-amount-symbol">₱</span>
-              <input
-                id="received_stock_amount_paid"
-                v-model.number="form.amount_paid"
-                type="number"
-                min="0"
-                :max="totalReceiveAmount"
-                step="0.01"
-                class="form-control payment-amount-input"
-                :class="{ 'input-error': paymentMethodError && selectedPaymentType === 'Cash' }"
-                placeholder="Enter total amount paid"
-                @input="paymentMethodError = ''"
-              />
-            </div>
-            <div class="payment-amount-meta">
-              <span>Total Due: {{ formatCurrency(totalReceiveAmount) }}</span>
-              <strong v-if="remainingPayableAmount > 0">
-                Remaining Payable: {{ formatCurrency(remainingPayableAmount) }}
-              </strong>
-              <strong v-else>
-                Fully paid
-              </strong>
-            </div>
-
-            <div v-if="!isBankTransferMode && !isCheckMode" class="payment-cash-on-hand-note">
-              <i class="ri-wallet-3-line"></i>
-              <span v-if="cashOnHandLoaded">Available Cash on Hand: <strong>{{ formatCurrency(cashOnHand) }}</strong></span>
-              <span v-else>Loading current Cash on Hand balance…</span>
-            </div>
-
-            <div v-if="isBankTransferMode && selectedBankAccount" class="payment-cash-on-hand-note">
-              <i class="ri-bank-line"></i>
-              <span>Available balance for {{ selectedBankAccount.bank_name }} — {{ selectedBankAccount.account_name }}: <strong>{{ formatCurrency(selectedBankAccount.balance) }}</strong></span>
-            </div>
-          </div>
+          <PaymentLines
+            v-model="paymentLines"
+            :bank-accounts="bankAccounts"
+            :cash-on-hand="cashOnHand"
+            :total-due="totalReceiveAmount"
+            @validity="paymentLinesValid = $event"
+          />
 
           <div v-if="paymentMethodError" class="alert alert-danger mt-3 mb-0" role="alert">
             {{ paymentMethodError }}
@@ -430,8 +314,8 @@
       <div class="modal-footer">
         <div class="form-actions">
           <button type="button" class="btn btn-cancel" @click="backToPaymentMethodModal" :disabled="isSubmitting">Back</button>
-          <button type="button" class="btn btn-save" @click="confirmPaymentMethod" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Submitting...' : `Confirm ${selectedCashPaymentMode} Payment` }}
+          <button type="button" class="btn btn-save" @click="confirmPaymentMethod" :disabled="isSubmitting || !paymentLinesValid">
+            {{ isSubmitting ? 'Submitting...' : 'Confirm Payment' }}
           </button>
         </div>
       </div>
@@ -441,8 +325,11 @@
 </template>
 
 <script>
+import PaymentLines from '@/Shared/Components/PaymentLines.vue';
+
 export default {
   name: "CreateReceivedStockModal",
+  components: { PaymentLines },
   props: {
     dropdowns: {
       type: Object,
@@ -474,6 +361,8 @@ export default {
       submitAttempted: false,
       showPaymentMethodModal: false,
       showAmountPaidModal: false,
+      paymentLines: [],
+      paymentLinesValid: false,
       selectedPaymentType: null,
       selectedCashPaymentMode: null,
       creditPreset: 30,
@@ -806,6 +695,19 @@ export default {
       this.form.due_date = d.toISOString().slice(0, 10);
       this.paymentMethodError = '';
     },
+    /** Immediate payment goes straight to the lines screen. */
+    openPaymentLines() {
+      if (this.isSubmitting) return;
+      this.selectedPaymentType = 'Cash';
+      this.paymentMethodError = '';
+      if (!this.paymentLines.length) {
+        this.paymentLines = [];
+      }
+      this.loadCashOnHand();
+      this.loadBankAccounts();
+      this.showPaymentMethodModal = false;
+      this.showAmountPaidModal = true;
+    },
     selectCashPaymentMode(mode) {
       if (this.isSubmitting) return;
 
@@ -853,11 +755,6 @@ export default {
         return;
       }
 
-      if (this.selectedPaymentType === 'Cash' && !this.selectedCashPaymentMode) {
-        this.paymentMethodError = 'Please choose Cash or Bank Transfer.';
-        return;
-      }
-
       if (this.selectedPaymentType === 'Credit') {
         if (!this.form.due_date) {
           this.paymentMethodError = 'Please select a due date for this credit purchase.';
@@ -871,56 +768,28 @@ export default {
       }
 
       if (this.selectedPaymentType === 'Cash') {
-        const amountPaid = this.toNumber(this.form.amount_paid);
-
-        if (amountPaid === null) {
-          this.paymentMethodError = 'Please enter the total amount paid.';
+        // The PaymentLines component owns per-line and per-source validation;
+        // the server re-checks all of it. Only the emptiness case is caught here.
+        if (!this.paymentLines.length) {
+          this.paymentMethodError = 'Please enter at least one payment.';
           return;
         }
-
-        if (amountPaid <= 0) {
-          this.paymentMethodError = 'Total amount paid must be greater than zero.';
+        if (!this.paymentLinesValid) {
+          this.paymentMethodError = 'Please correct the payment lines before continuing.';
           return;
-        }
-
-        if (amountPaid > this.totalReceiveAmount) {
-          this.paymentMethodError = 'Total amount paid cannot exceed the total purchase cost.';
-          return;
-        }
-
-        if (this.selectedCashPaymentMode === 'Cash' && amountPaid > this.cashOnHand) {
-          this.paymentMethodError = `Amount exceeds available Cash on Hand (${this.formatCurrency(this.cashOnHand)}). Reduce the amount, use Bank Transfer, or record this as Credit.`;
-          return;
-        }
-
-        if (this.isBankTransferMode) {
-          if (!this.form.bank_account_id) {
-            this.paymentMethodError = 'Please select a bank account for this transfer.';
-            return;
-          }
-
-          if (!String(this.form.reference_number || '').trim()) {
-            this.paymentMethodError = 'Please enter the transfer reference number.';
-            return;
-          }
-
-          if (this.selectedBankAccount && amountPaid > Number(this.selectedBankAccount.balance)) {
-            this.paymentMethodError = `Amount exceeds this bank account's available balance (${this.formatCurrency(this.selectedBankAccount.balance)}).`;
-            return;
-          }
-        } else if (this.isCheckMode) {
-          if (!String(this.form.reference_number || '').trim()) {
-            this.paymentMethodError = 'Please enter the check reference number.';
-            return;
-          }
-        } else {
-          this.clearBankTransferDetails();
         }
       }
 
-      this.form.payment_mode = this.selectedPaymentType === 'Credit'
-        ? 'Credit'
-        : this.selectedCashPaymentMode;
+      if (this.selectedPaymentType === 'Credit') {
+        this.form.payment_mode = 'Credit';
+        this.form.payment_lines = [];
+      } else {
+        // 'Split' tells the server the lines are authoritative; the header
+        // amount is their sum.
+        this.form.payment_mode = 'Split';
+        this.form.payment_lines = this.paymentLines;
+        this.form.amount_paid = this.paymentLines.reduce((sum, l) => sum + (Number(l.payment_amount) || 0), 0);
+      }
 
       if (this.selectedPaymentType === 'Credit') {
         this.form.amount_paid = 0;
