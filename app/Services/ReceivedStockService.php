@@ -240,34 +240,63 @@ class ReceivedStockService
 
             $totalAmount = round((float) $receivedStock->items->sum('total_cost'), 2);
             $currentPaid = round((float) ($receivedStock->amount_paid ?? 0), 2);
-            $paymentAmount = round((float) ($data['payment_amount'] ?? 0), 2);
-            $newAmountPaid = min(round($currentPaid + $paymentAmount, 2), $totalAmount);
 
-            $payMode  = $data['payment_mode'] ?? 'Cash on Hand';
-            $isBT     = $payMode === 'Bank Transfer';
-            $isCheck  = $payMode === 'Check';
+            // A payment may be split across several methods. The request
+            // normalises a single-payment body into a one-line list, so this
+            // handles both shapes. Each line becomes its own payment row and
+            // its own journal entry against its own funding source, which is
+            // what keeps cash, each bank account and check clearing accurate.
+            $lines = $data['lines'] ?? [[
+                'payment_mode'     => $data['payment_mode'] ?? 'Cash on Hand',
+                'payment_amount'   => $data['payment_amount'] ?? 0,
+                'bank_account_id'  => $data['bank_account_id'] ?? null,
+                'bank_name'        => $data['bank_name'] ?? null,
+                'reference_number' => $data['reference_number'] ?? null,
+            ]];
 
-            $payment = $receivedStock->payments()->create([
-                'payment_date'       => Carbon::now()->toDateString(),
-                'payment_mode'       => $payMode,
-                'amount_paid'        => $paymentAmount,
-                'bank_account_id'    => $isBT ? ((int) ($data['bank_account_id'] ?? 0) ?: null) : null,
-                'bank_name'          => $isBT ? trim((string) ($data['bank_name'] ?? '')) : null,
-                'reference_number'   => ($isBT || $isCheck) ? trim((string) ($data['reference_number'] ?? '')) : null,
-                'created_by_id'      => Auth::id(),
-            ]);
+            $paidNow = 0.0;
+            $lastMode = null;
 
+            foreach ($lines as $line) {
+                $lineAmount = round((float) ($line['payment_amount'] ?? 0), 2);
+                if ($lineAmount <= 0) {
+                    continue;
+                }
+
+                $payMode = $line['payment_mode'] ?? 'Cash on Hand';
+                $isBT    = $payMode === 'Bank Transfer';
+                $isCheck = $payMode === 'Check';
+
+                $payment = $receivedStock->payments()->create([
+                    'payment_date'       => Carbon::now()->toDateString(),
+                    'payment_mode'       => $payMode,
+                    'amount_paid'        => $lineAmount,
+                    'bank_account_id'    => $isBT ? ((int) ($line['bank_account_id'] ?? 0) ?: null) : null,
+                    'bank_name'          => $isBT ? trim((string) ($line['bank_name'] ?? '')) : null,
+                    'reference_number'   => ($isBT || $isCheck) ? trim((string) ($line['reference_number'] ?? '')) : null,
+                    'created_by_id'      => Auth::id(),
+                ]);
+
+                $payment->load('createdBy');
+                $this->journalEntryService->recordReceivedStockPaymentEntry($receivedStock, $payment);
+
+                $paidNow += $lineAmount;
+                $lastMode = $payMode;
+            }
+
+            $newAmountPaid = min(round($currentPaid + $paidNow, 2), $totalAmount);
             $isFullySettled = $newAmountPaid >= $totalAmount;
+
             $receivedStock->update([
                 'amount_paid' => $newAmountPaid,
+                // On a split the recorded mode is the last line's; the payment
+                // rows carry the authoritative per-method detail.
                 'payment_mode' => $isFullySettled
-                    ? ($data['payment_mode'] ?? $receivedStock->payment_mode)
+                    ? ($lastMode ?? $receivedStock->payment_mode)
                     : $receivedStock->payment_mode,
             ]);
 
-            $payment->load('createdBy');
             $receivedStock->load(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'payments.createdBy']);
-            $this->journalEntryService->recordReceivedStockPaymentEntry($receivedStock, $payment);
 
             return $receivedStock;
         });
