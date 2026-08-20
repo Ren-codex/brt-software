@@ -170,6 +170,12 @@
                   />
                 </div>
               </div>
+              <div class="row" v-if="activeTab === 'inventoryReport' && currentView === 'list'">
+                <div class="col-md-12">
+                  <InventoryReportTab @toast="showToast" />
+                </div>
+              </div>
+
               <div class="row" v-if="activeTab === 'stockReturns' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <StockReturnsTab :listStockReturns="listStockReturns" :meta="meta" :links="links" :filter="filter"
@@ -220,6 +226,7 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
 import PurchaseRequestsTab from './Tab/PurchaseRequestsTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
+import InventoryReportTab from './Tab/InventoryReportTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import StockReturnsTab from './Tab/StockReturnsTab.vue';
 import AccountsPayableTab from './Tab/AccountsPayableTab.vue';
@@ -240,6 +247,7 @@ export default {
     PurchaseOrdersTab,
     PurchaseRequestsTab,
     ProductsTab,
+    InventoryReportTab,
     InventoryStocksTab,
     StockReturnsTab,
     AccountsPayableTab,
@@ -336,6 +344,12 @@ export default {
           icon: 'ri-text-wrap',
           description: 'List of stock returns'
         },
+        {
+          id: 'inventoryReport',
+          label: 'Inventory Report',
+          icon: 'ri-clipboard-line',
+          description: 'Stock position and value'
+        },
       ]
     };
   },
@@ -350,6 +364,7 @@ export default {
         receiving: 'receiving',
         productSummary: 'inventory_stocks',
         stockReturns: 'stock_returns',
+        inventoryReport: 'inventory_stocks',
       };
       return this.tabs.filter((tab) => {
         const submoduleKey = tabToSubmodule[tab.id];

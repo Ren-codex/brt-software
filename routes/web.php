@@ -214,6 +214,10 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         Route::patch('/app-settings/{key}', [App\Http\Controllers\AppSettingController::class, 'update']);
     });
 
+    // Stock position report. Authorised in the controller against
+    // inventory/inventory_stocks/view, so anyone who can see stock can report on it.
+    Route::get('/inventory-report', [App\Http\Controllers\Modules\InventoryReportController::class, 'index']);
+
     // Gated by the granular permission: middleware on each route below.
     // Route::get('/receipts', [App\Http\Controllers\Libraries\ReceiptController::class, 'index']);
     // Route::get('/receipts/{id}/print', [App\Http\Controllers\Libraries\ReceiptController::class, 'print']);
