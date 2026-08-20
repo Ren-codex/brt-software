@@ -330,6 +330,7 @@ export default {
     data() {
         return {
             loading: false,
+            currentPageUrl: null,
             lists: [],
             meta: {},
             links: {},
@@ -384,7 +385,7 @@ export default {
     },
     mounted() {
         this.startPolling(async () => {
-            await this.fetch(null, { quiet: true });
+            await this.fetch(this.currentPageUrl, { quiet: true });
             if (this.isSalesRep) {
                 this.fetchMyHoldings();
             } else {
@@ -418,10 +419,15 @@ export default {
             });
         },
         fetch(page_url, { quiet = false } = {}) {
+            // Pagination emits the next/prev link, which was previously accepted
+            // and then ignored — every page button silently refetched page one.
+            page_url = page_url || '/remittances';
+            this.currentPageUrl = page_url;
+
             if (!quiet) {
                 this.loading = true;
             }
-            return axios.get('/remittances', {
+            return axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
                     location_id: this.filter.location_id === null || this.filter.location_id === '' ? null : Number(this.filter.location_id),
