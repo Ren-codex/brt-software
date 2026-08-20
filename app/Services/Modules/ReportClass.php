@@ -282,6 +282,12 @@ class ReportClass
             })
             ->where('ls.slug', '!=', 'cancelled');
 
+        // This query is built by hand rather than from baseSalesOrderQuery(), so
+        // the rep scope has to be applied explicitly — without it a Sales Rep
+        // sees every receipt in the business, including other reps'. It joins
+        // sales_orders as `so`, which is the alias the scope expects.
+        $this->applySalesRepScope($query);
+
         $this->applyPaymentModeFilter($query, $filters['payment_mode']);
 
         return $query

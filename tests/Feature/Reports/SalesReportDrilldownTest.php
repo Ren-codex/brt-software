@@ -20,11 +20,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Drill-down behind a Sales Report row.
+ * Drill-down behind a Sales Report row, and the rep scoping the reports rely on.
  *
  * The security-critical property is that drilling reuses baseSalesOrderQuery(),
  * so applySalesRepScope() still applies — a Sales Rep must not be able to reach
- * another rep's orders by passing an arbitrary id.
+ * another rep's orders by passing an arbitrary id. receiptReport() builds its
+ * query by hand and so must apply that scope explicitly.
  */
 class SalesReportDrilldownTest extends TestCase
 {
@@ -333,5 +334,97 @@ class SalesReportDrilldownTest extends TestCase
 
         $ids = collect($res->json('rows'))->pluck('id')->all();
         $this->assertContains($own->id, $ids, 'Rep should see an order they created via added_by_id.');
+    }
+
+    /** Build a receipt against an order so the Receipt report has something to scope. */
+    private function makeReceipt(SalesOrder $order, float $amount): int
+    {
+        $statusId = ListStatus::where('slug', 'unpaid')->first()->id;
+
+        $invoiceId = \Illuminate\Support\Facades\DB::table('ar_invoices')->insertGetId([
+            'sales_order_id' => $order->id,
+            'status_id'      => $statusId,
+            'invoice_number' => 'INV-'.uniqid(),
+            'invoice_date'   => $order->order_date,
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+
+        return \Illuminate\Support\Facades\DB::table('receipts')->insertGetId([
+            'ar_invoice_id'  => $invoiceId,
+            'status_id'      => $statusId,
+            'receipt_number' => 'OR-'.uniqid(),
+            'receipt_date'   => $order->order_date,
+            'amount_paid'    => $amount,
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+    }
+
+    /**
+     * receiptReport() is private and summary() cannot run under SQLite —
+     * dailySalesOrders() uses MySQL's GROUP_CONCAT(... SEPARATOR ...), which
+     * SQLite rejects — so call the method directly.
+     */
+    private function receiptReportRows(): array
+    {
+        $service = app(\App\Services\Modules\ReportClass::class);
+        $method = new \ReflectionMethod($service, 'receiptReport');
+        $method->setAccessible(true);
+
+        return collect($method->invoke($service, [
+            'from'         => now()->startOfMonth()->toDateString(),
+            'to'           => now()->toDateString(),
+            'location_id'  => null,
+            'payment_mode' => 'all',
+            'limit'        => 50,
+        ]))->pluck('id')->all();
+    }
+
+    /**
+     * receiptReport() does not go through baseSalesOrderQuery(), so without an
+     * explicit applySalesRepScope() a rep sees every receipt in the business.
+     */
+    public function test_receipt_report_is_scoped_to_the_rep(): void
+    {
+        $mineOrder    = $this->makeOrder($this->customerA, $this->repA, 1000);
+        $notMineOrder = $this->makeOrder($this->customerB, $this->repB, 5000);
+        $mine    = $this->makeReceipt($mineOrder, 1000);
+        $notMine = $this->makeReceipt($notMineOrder, 5000);
+
+        // An admin sees both.
+        $this->actingAs($this->admin);
+        $adminIds = $this->receiptReportRows();
+        $this->assertContains($mine, $adminIds);
+        $this->assertContains($notMine, $adminIds);
+
+        // The rep sees only their own.
+        $repUser = $this->makeUser(salesAdmin: false, employee: $this->repA);
+        $this->actingAs($repUser);
+        $repIds = $this->receiptReportRows();
+
+        $this->assertContains($mine, $repIds, 'Rep should see their own receipt.');
+        $this->assertNotContains($notMine, $repIds, "Rep must not see another rep's receipt.");
+    }
+
+    /**
+     * SalesOrderItem::$fillable had a stray 't' where 'sales_order_id' belonged,
+     * so a direct create() silently dropped the foreign key.
+     */
+    public function test_sales_order_item_persists_sales_order_id_on_direct_create(): void
+    {
+        $order = $this->makeOrder($this->customerA, null, 500);
+
+        $item = \App\Models\SalesOrderItem::create([
+            'sales_order_id'    => $order->id,
+            'product_id'        => $this->product->id,
+            'quantity'          => 2,
+            'price'             => 250,
+            'discount_per_unit' => 0,
+            'price_type'        => 'retail',
+            'batch_code'        => $this->batchCode,
+        ]);
+
+        $this->assertSame($order->id, $item->fresh()->sales_order_id);
     }
 }
