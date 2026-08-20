@@ -11,9 +11,14 @@
                             <p class="header-subtitle mb-0">Manage and track all sales orders.</p>
                         </div>
                     </div>
-                    <button v-if="can('sales', 'sales_orders', 'encoder')" class="acct-btn-primary" @click="openCreate">
-                        <i class="ri-add-line me-1"></i>Create Order
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <span v-if="lastUpdatedAt" class="poll-indicator" :title="'This list refreshes automatically'">
+                            <i class="ri-refresh-line"></i> {{ lastUpdatedLabel() }}
+                        </span>
+                        <button v-if="can('sales', 'sales_orders', 'encoder')" class="acct-btn-primary" @click="openCreate">
+                            <i class="ri-add-line me-1"></i>Create Order
+                        </button>
+                    </div>
             </div>
             <div class="library-card-body">
                    
@@ -305,14 +310,17 @@ import Create from './Modals/Create.vue';
 import Adjustment from './Modals/Adjustment.vue';
 import Approval from './Modals/Approval.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+import { pollingMixin } from '@/Shared/polling.js';
 
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval, TableLoadingRow },
+    mixins: [pollingMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
+            currentPageUrl: null,
             loading: false,
             lists: [],
             meta: {},
@@ -353,6 +361,9 @@ export default {
     },
     created() {
         this.fetch();
+    },
+    mounted() {
+        this.startPolling(() => this.fetch(this.currentPageUrl, { quiet: true }));
         this.fetchMetrics();
     },
     methods: {
@@ -369,11 +380,23 @@ export default {
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
-        fetch(page_url) {
+        /**
+         * `quiet` is used by the background refresh: it skips the loading row
+         * and keeps any expanded row open, so the poll is invisible to whoever
+         * is reading the screen.
+         */
+        fetch(page_url, { quiet = false } = {}) {
             let baseUrl = this.isExternal ? '/sales-orders-external' : '/sales-orders';
             page_url = page_url || baseUrl;
-            this.loading = true;
-            axios.get(page_url, {
+            // Remembered so a background refresh stays on the page the user is
+            // actually looking at rather than snapping back to the first one.
+            this.currentPageUrl = page_url;
+
+            if (!quiet) {
+                this.loading = true;
+            }
+
+            return axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
                     location_id: this.filter.location_id,
@@ -387,11 +410,13 @@ export default {
                         this.lists = response.data.data;
                         this.meta = response.data.meta;
                         this.links = response.data.links;
-                        this.expandedRow = null; // Reset expanded row when data changes
+                        if (!quiet) {
+                            this.expandedRow = null; // Reset expanded row when data changes
+                        }
                     }
                 })
                 .catch(err => console.log(err))
-                .finally(() => { this.loading = false; });
+                .finally(() => { if (!quiet) this.loading = false; });
         },
         openCreate() {
             this.$refs.create.show();
@@ -505,6 +530,17 @@ export default {
 }
 </script>
 <style scoped>
+/* Quiet "this screen keeps itself current" hint. */
+.poll-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: #7f9a92;
+    white-space: nowrap;
+    user-select: none;
+}
+
     .filter-multiselect-wrapper {
         --ms-px: 0.75rem;
         --ms-py: 0.6rem;

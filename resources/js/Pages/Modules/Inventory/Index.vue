@@ -285,6 +285,7 @@ export default {
       isPurchaseOrdersLoading: false,
       isProductsLoading: false,
       isInventoryStocksLoading: false,
+      currentStocksPageUrl: null,
       isReceivingLoading: false,
       isStockReturnsLoading: false,
       isToastVisible: false,
@@ -506,11 +507,15 @@ export default {
       }
     },
 
-    fetchInventoryStocks(page_url) {
+    fetchInventoryStocks(page_url, { quiet = false } = {}) {
       if (this.activeTab === 'inventoryStocks') {
         page_url = page_url || '/inventory-stocks';
-        this.isInventoryStocksLoading = true;
-        axios
+        // Remembered so a background refresh keeps the user's page.
+        this.currentStocksPageUrl = page_url;
+        if (!quiet) {
+          this.isInventoryStocksLoading = true;
+        }
+        return axios
           .get(page_url, {
             params: {
               keyword: this.filter.keyword,
@@ -528,7 +533,7 @@ export default {
           })
           .catch((err) => console.error(err))
           .finally(() => {
-            this.isInventoryStocksLoading = false;
+            if (!quiet) this.isInventoryStocksLoading = false;
           });
       }
     },

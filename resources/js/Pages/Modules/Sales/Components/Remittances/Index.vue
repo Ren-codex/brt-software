@@ -321,9 +321,11 @@ import Create from './Modals/Create.vue';
 import View from './View.vue';
 import SummaryView from './SummaryView.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+import { pollingMixin } from '@/Shared/polling.js';
 
 export default {
     components: { Pagination, Create, View, SummaryView, TableLoadingRow },
+    mixins: [pollingMixin],
     props: ['dropdowns'],
     data() {
         return {
@@ -380,6 +382,17 @@ export default {
             this.fetchUndepositedSummary();
         }
     },
+    mounted() {
+        this.startPolling(async () => {
+            await this.fetch(null, { quiet: true });
+            if (this.isSalesRep) {
+                this.fetchMyHoldings();
+            } else {
+                this.fetchMetrics();
+                this.fetchUndepositedSummary();
+            }
+        });
+    },
     methods: {
         switchTab(tab) {
             this.activeTab = tab;
@@ -404,8 +417,10 @@ export default {
                 minute: '2-digit',
             });
         },
-        fetch() {
-            this.loading = true;
+        fetch(page_url, { quiet = false } = {}) {
+            if (!quiet) {
+                this.loading = true;
+            }
             return axios.get('/remittances', {
                 params: {
                     keyword: this.filter.keyword,
@@ -423,7 +438,7 @@ export default {
                 }
             })
             .catch(err => console.log(err))
-            .finally(() => { this.loading = false; });
+            .finally(() => { if (!quiet) this.loading = false; });
         },
         openCreate() {
             this.$refs.create.show();
