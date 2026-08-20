@@ -423,7 +423,7 @@
 
     <UpdatePriceModal
       :inventoryStock="data"
-      @saved="$inertia.reload()"
+      @saved="onPriceSaved"
       ref="updatePriceDialog"
     />
 
@@ -467,7 +467,7 @@ import StockQuickViewModal from '../../Modal/StockQuickViewModal.vue';
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 
 export default {
-  emits: ['back'],
+  emits: ['back', 'toast'],
   components: {
     Link,
     AdjustStockModal,
@@ -650,6 +650,16 @@ export default {
   methods: {
     updatePrice() {
       this.$refs.updatePriceDialog.show();
+    },
+    /**
+     * The displayed stock comes from localStock, which is fetched over axios and
+     * takes precedence over the Inertia props. Reloading Inertia therefore left
+     * the old price on screen even though the save had gone through — refetch
+     * the record itself so the new price appears straight away.
+     */
+    onPriceSaved() {
+      this.refreshData();
+      this.$emit('toast', 'Price updated successfully');
     },
     adjustStock() {
       this.$refs.adjustStockDialog.show();
