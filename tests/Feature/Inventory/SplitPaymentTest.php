@@ -97,6 +97,15 @@ class SplitPaymentTest extends TestCase
             'gl_code' => '1020', 'is_active' => true,
         ]);
 
+        // SeriesService generates the document numbers on creation.
+        foreach ([['Received No', 'received_no', 'RS-'], ['Batch Code', 'batch_code', 'B-']] as [$name, $slug, $prefix]) {
+            \Illuminate\Support\Facades\DB::table('series')->insert([
+                'name' => $name, 'slug' => $slug, 'prefix' => $prefix,
+                'current_date' => now()->toDateString(), 'starting_value' => 1, 'max_digit' => 4,
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+
         $this->fundAccount('1000', 'Cash', 50000);
         $this->fundAccount('1020', 'BDO — BRT', 50000);
     }
@@ -238,5 +247,77 @@ class SplitPaymentTest extends TestCase
 
         $this->assertCount(1, $this->received->fresh()->payments);
         $this->assertEqualsWithDelta(2500, (float) $this->received->fresh()->amount_paid, 0.01);
+    }
+
+    /**
+     * The same capability on creation: a receipt can be settled with several
+     * methods at the moment it is recorded, not only afterwards.
+     */
+    public function test_creating_a_receipt_with_split_payment_lines(): void
+    {
+        $po = PurchaseOrder::create([
+            'po_date' => now()->toDateString(), 'total_amount' => 10000,
+            'status_id' => ListStatus::where('slug', 'pending')->first()->id,
+            'supplier_id' => $this->received->supplier_id, 'created_by_id' => $this->user->id,
+        ]);
+        $product = Product::first();
+        $poItem = PurchaseOrderItem::create([
+            'po_id' => $po->id, 'product_id' => $product->id,
+            'quantity' => 20, 'unit_cost' => 500, 'total_cost' => 10000,
+        ]);
+
+        $res = $this->actingAs($this->user)->postJson('/received-stocks', [
+            'po_id' => $po->id,
+            'supplier_id' => $this->received->supplier_id,
+            'received_date' => now()->toDateString(),
+            'payment_mode' => 'Split',
+            'payment_lines' => [
+                ['payment_mode' => 'Cash on Hand', 'payment_amount' => 4000],
+                ['payment_mode' => 'Bank Transfer', 'payment_amount' => 6000, 'bank_account_id' => $this->bank->id, 'bank_name' => 'BDO', 'reference_number' => 'TRN-9'],
+            ],
+            'items' => [[
+                'product_id' => $product->id, 'product_name' => 'Test', 'quantity' => 20,
+                'unit_cost' => 500, 'total_cost' => 10000, 'to_received_quantity' => 20,
+                'po_item_id' => $poItem->id, 'retail_price' => 600, 'wholesale_price' => 550,
+                'expiration_date' => null,
+            ]],
+        ]);
+
+        $res->assertSuccessful();
+
+        $created = ReceivedStock::where('po_id', $po->id)->firstOrFail();
+        $this->assertCount(2, $created->payments, 'One row per line at creation.');
+        $this->assertEqualsWithDelta(10000, (float) $created->amount_paid, 0.01, 'Header total is the sum of the lines.');
+    }
+
+    public function test_creation_split_cannot_exceed_the_purchase_cost(): void
+    {
+        $po = PurchaseOrder::create([
+            'po_date' => now()->toDateString(), 'total_amount' => 5000,
+            'status_id' => ListStatus::where('slug', 'pending')->first()->id,
+            'supplier_id' => $this->received->supplier_id, 'created_by_id' => $this->user->id,
+        ]);
+        $product = Product::first();
+        $poItem = PurchaseOrderItem::create([
+            'po_id' => $po->id, 'product_id' => $product->id,
+            'quantity' => 10, 'unit_cost' => 500, 'total_cost' => 5000,
+        ]);
+
+        $this->actingAs($this->user)->postJson('/received-stocks', [
+            'po_id' => $po->id,
+            'supplier_id' => $this->received->supplier_id,
+            'received_date' => now()->toDateString(),
+            'payment_mode' => 'Split',
+            'payment_lines' => [
+                ['payment_mode' => 'Cash on Hand', 'payment_amount' => 4000],
+                ['payment_mode' => 'Cash on Hand', 'payment_amount' => 4000],
+            ],
+            'items' => [[
+                'product_id' => $product->id, 'product_name' => 'Test', 'quantity' => 10,
+                'unit_cost' => 500, 'total_cost' => 5000, 'to_received_quantity' => 10,
+                'po_item_id' => $poItem->id, 'retail_price' => 600, 'wholesale_price' => 550,
+                'expiration_date' => null,
+            ]],
+        ])->assertStatus(422);
     }
 }
