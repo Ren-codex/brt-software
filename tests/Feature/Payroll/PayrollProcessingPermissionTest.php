@@ -117,7 +117,13 @@ class PayrollProcessingPermissionTest extends TestCase
         $this->actingAs($user)->delete("/payrolls/{$payroll->id}")->assertForbidden();
     }
 
-    public function test_still_blocked_by_the_existing_role_gate(): void
+    /**
+     * This previously asserted the opposite — that the holder was blocked even
+     * with the right grant, because the routes sat inside a role:* group. That
+     * was the bug: permissions assigned through the Roles screen did nothing.
+     * Access is decided by the grant now.
+     */
+    public function test_grant_alone_admits_a_non_administrator_role(): void
     {
         $role = ListRole::create(['name' => 'Random Role', 'type' => 'role', 'definition' => 'test', 'is_active' => true]);
         $user = User::factory()->create();
@@ -126,6 +132,15 @@ class PayrollProcessingPermissionTest extends TestCase
         RolePermission::create([
             'role_id' => $role->id, 'module_id' => $module->id, 'submodule_id' => null, 'access_level' => 'admin',
         ]);
+
+        $this->actingAs($user)->getJson('/payrolls?option=lists')->assertOk();
+    }
+
+    public function test_a_role_with_no_grant_for_this_module_is_still_denied(): void
+    {
+        $role = ListRole::create(['name' => 'Unrelated Role', 'type' => 'role', 'definition' => 'test', 'is_active' => true]);
+        $user = User::factory()->create();
+        UserRole::create(['user_id' => $user->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $user->id]);
 
         $this->actingAs($user)->getJson('/payrolls?option=lists')->assertForbidden();
     }
