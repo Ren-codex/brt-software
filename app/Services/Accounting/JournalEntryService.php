@@ -1140,6 +1140,16 @@ class JournalEntryService
             ->groupBy(fn ($r) => $r->payment_mode ?: 'Cash')
             ->map(fn ($group) => round((float) $group->sum('amount_paid'), 2));
 
+        // Within a mode, which bank account each receipt names. A bank transfer
+        // belongs in the bank it actually reached, not a catch-all Cash in Bank.
+        // Keyed by bank id, with 0 standing for "no particular account".
+        $expectedByModeAndBank = $remittance->receipts
+            ->groupBy(fn ($r) => $r->payment_mode ?: 'Cash')
+            ->map(fn ($group) => $group
+                ->groupBy(fn ($r) => (int) ($r->bank_account_id ?: 0))
+                ->map(fn ($byBank) => round((float) $byBank->sum('amount_paid'), 2))
+                ->filter(fn ($amount) => $amount > 0));
+
         $receivedByMode = collect($remittance->received_breakdown ?? [])
             ->filter(fn ($amount) => $amount !== null && $amount !== '')
             ->map(fn ($amount) => round((float) $amount, 2))
@@ -1154,9 +1164,16 @@ class JournalEntryService
         // so the entry shows the actual money turned over, not just the
         // leftover discrepancy.
         foreach ($receivedByMode as $mode => $amount) {
-            $targetAccount = $this->resolveCashAccountByPaymentMode($mode);
-            $lines[] = ['account_id' => $targetAccount->id, 'line_type' => 'debit', 'amount' => $amount, 'description' => "Record verified remittance turnover via {$mode}."];
-            $totalDebits += $amount;
+            foreach ($this->allocateAcrossBanks($mode, $amount, $expectedByModeAndBank->get($mode)) as [$bankAccountId, $portion]) {
+                $targetAccount = $this->resolveCashAccountByPaymentMode($mode, $bankAccountId);
+                $lines[] = [
+                    'account_id' => $targetAccount->id,
+                    'line_type' => 'debit',
+                    'amount' => $portion,
+                    'description' => "Record verified remittance turnover via {$mode}.",
+                ];
+                $totalDebits += $portion;
+            }
             $totalCredits += $expectedByMode->get($mode, 0.0);
         }
 
@@ -1209,6 +1226,47 @@ class JournalEntryService
             $memo,
             $lines
         );
+    }
+
+    /**
+     * Splits one mode's verified amount across the bank accounts its receipts
+     * name. The verifier enters a single figure per mode, so when a mode spans
+     * more than one account the amount is shared out in proportion to what each
+     * was expecting, with the last account absorbing the rounding remainder so
+     * the portions always add back to the amount.
+     *
+     * Falls back to a single unattributed portion when the mode has no receipts
+     * behind it — a mode the verifier added by hand — or names no bank.
+     *
+     * @param  \Illuminate\Support\Collection<int, float>|null  $expectedByBank
+     * @return array<int, array{0: ?int, 1: float}>  [bank account id or null, amount]
+     */
+    private function allocateAcrossBanks(string $mode, float $amount, $expectedByBank): array
+    {
+        $expectedTotal = $expectedByBank ? round((float) $expectedByBank->sum(), 2) : 0.0;
+
+        if (!$expectedByBank || $expectedByBank->isEmpty() || $expectedTotal <= 0) {
+            return [[null, $amount]];
+        }
+
+        $portions = [];
+        $allocated = 0.0;
+        $remaining = $expectedByBank->count();
+
+        foreach ($expectedByBank as $bankId => $expected) {
+            $remaining--;
+            $portion = $remaining === 0
+                ? round($amount - $allocated, 2)
+                : round($amount * ($expected / $expectedTotal), 2);
+
+            $allocated = round($allocated + $portion, 2);
+
+            if ($portion != 0.0) {
+                $portions[] = [$bankId ?: null, $portion];
+            }
+        }
+
+        return $portions ?: [[null, $amount]];
     }
 
     private function resolveBankAccountGl(BankAccount $bankAccount): Account

@@ -158,7 +158,12 @@ class ArInvoiceClass
         // A payment is either one {payment_mode, amount_paid} pair, or a 'splits'
         // array of them (e.g. part Cash, part GCash) applied together in one go.
         $splits = collect($request->splits ?? [])
-            ->map(fn ($s) => ['payment_mode' => (string) ($s['payment_mode'] ?? ''), 'amount' => round((float) ($s['amount'] ?? 0), 2)])
+            ->map(fn ($s) => [
+                'payment_mode' => (string) ($s['payment_mode'] ?? ''),
+                'amount' => round((float) ($s['amount'] ?? 0), 2),
+                'bank_account_id' => $s['bank_account_id'] ?? null,
+                'reference_number' => $s['reference_number'] ?? null,
+            ])
             ->filter(fn ($s) => $s['amount'] > 0)
             ->values();
 
@@ -166,7 +171,22 @@ class ArInvoiceClass
             $splits = collect([[
                 'payment_mode' => (string) $request->payment_mode,
                 'amount' => round((float) $request->amount_paid, 2),
+                'bank_account_id' => $request->bank_account_id,
+                'reference_number' => $request->reference_number,
             ]]);
+        }
+
+        // A transfer or check without its reference can't be matched against the
+        // bank statement later, so it isn't accepted without one.
+        $missingReference = $splits->first(fn ($s) => in_array($s['payment_mode'], ['Bank Transfer', 'Check'], true)
+            && blank($s['reference_number']));
+
+        if ($missingReference) {
+            throw ValidationException::withMessages([
+                'splits' => $missingReference['payment_mode'] === 'Check'
+                    ? 'Enter the check number for the check payment.'
+                    : 'Enter the reference number for the bank transfer.',
+            ]);
         }
 
         $totalPayment = round((float) $splits->sum('amount'), 2);
@@ -231,6 +251,8 @@ class ArInvoiceClass
                 // this batch — they were all applied together, not sequentially.
                 'balance_due'    => $ar_invoice->balance_due,
                 'payment_mode'   => $split['payment_mode'],
+                'bank_account_id' => $split['bank_account_id'],
+                'reference_number' => $split['reference_number'],
                 'status_id'      => $pendingStatusId,
                 'customer_id'    => optional($ar_invoice->sales_order)->customer_id,
                 'ar_invoice_id'  => $ar_invoice->id,

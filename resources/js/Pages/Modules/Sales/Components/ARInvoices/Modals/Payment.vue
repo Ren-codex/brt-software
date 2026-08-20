@@ -125,6 +125,34 @@
                                     <i class="ri-delete-bin-6-line"></i>
                                 </button>
                             </div>
+
+                            <!-- Where the money actually landed. Only transfers
+                                 and checks have anything to reconcile, so only
+                                 they ask. -->
+                            <div v-if="needsBankDetails(split)" class="split-bank-details">
+                                <div v-if="split.payment_mode === 'Bank Transfer'" class="split-bank-field">
+                                    <label class="split-bank-label">Bank account <span class="text-danger">*</span></label>
+                                    <select class="field-select" v-model="split.bank_account_id" @change="handleInput('splits')">
+                                        <option :value="null">Select bank account</option>
+                                        <option v-for="bank in bankAccounts" :key="bank.id" :value="bank.id">
+                                            {{ bank.bank_name }} — {{ bank.account_name }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="split-bank-field">
+                                    <label class="split-bank-label">
+                                        {{ split.payment_mode === 'Check' ? 'Check number' : 'Reference number' }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        class="field-input"
+                                        v-model.trim="split.reference_number"
+                                        :placeholder="split.payment_mode === 'Check' ? 'e.g. 000123' : 'e.g. TRN-8891'"
+                                        @input="handleInput('splits')"
+                                    >
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -293,6 +321,7 @@ export default {
             }),
 
             payment_modes: ['Cash', 'GCash', 'Bank Transfer', 'Check'],
+            bankAccounts: [],
             title: null,
             showModal: false,
             invoice: null,
@@ -313,22 +342,45 @@ export default {
             this.isSplitPayment = false;
             this.form.id = data.id;
             this.form.balance_due = data.balance_due;
-            this.form.splits = [{ payment_mode: 'Cash', amount: this.round2(data.balance_due) }];
+            this.form.splits = [this.newSplit('Cash', this.round2(data.balance_due))];
             this.title = title;
             this.route = route;
+            this.loadBankAccounts();
+        },
+
+        newSplit(mode = 'Cash', amount = 0) {
+            return { payment_mode: mode, amount, bank_account_id: null, reference_number: '' };
+        },
+
+        needsBankDetails(split) {
+            return ['Bank Transfer', 'Check'].includes(split.payment_mode);
+        },
+
+        async loadBankAccounts() {
+            if (this.bankAccounts.length) return;
+            try {
+                const res = await axios.get('/accounting/bank-accounts/list');
+                this.bankAccounts = res.data || [];
+            } catch {
+                this.bankAccounts = [];
+            }
         },
 
         onToggleSplit() {
             this.form.clearErrors();
             if (!this.isSplitPayment) {
-                const mode = this.form.splits[0]?.payment_mode || 'Cash';
+                const first = this.form.splits[0] || {};
                 const amount = this.allowsPartialPayment ? this.splitTotal : this.form.balance_due;
-                this.form.splits = [{ payment_mode: mode, amount: this.round2(amount) }];
+                this.form.splits = [{
+                    ...this.newSplit(first.payment_mode || 'Cash', this.round2(amount)),
+                    bank_account_id: first.bank_account_id ?? null,
+                    reference_number: first.reference_number || '',
+                }];
             }
         },
 
         addSplit() {
-            this.form.splits.push({ payment_mode: 'Cash', amount: 0 });
+            this.form.splits.push(this.newSplit());
         },
 
         removeSplit(index) {
@@ -350,11 +402,32 @@ export default {
             this.form.clearErrors();
 
             const splits = (this.form.splits || [])
-                .map(s => ({ payment_mode: s.payment_mode, amount: Number(s.amount) || 0 }))
+                .map(s => ({
+                    payment_mode: s.payment_mode,
+                    amount: Number(s.amount) || 0,
+                    // Only a transfer names an account; a check clears through
+                    // whichever bank it is deposited to, so it carries a number only.
+                    bank_account_id: s.payment_mode === 'Bank Transfer' ? (s.bank_account_id || null) : null,
+                    reference_number: this.needsBankDetails(s) ? (s.reference_number || '') : null,
+                }))
                 .filter(s => s.amount > 0);
 
             if (!splits.length) {
                 this.form.errors.splits = 'Add at least one payment method with an amount.';
+                return;
+            }
+
+            const missingBank = splits.find(s => s.payment_mode === 'Bank Transfer' && !s.bank_account_id);
+            if (missingBank) {
+                this.form.errors.splits = 'Choose which bank account the transfer landed in.';
+                return;
+            }
+
+            const missingReference = splits.find(s => ['Bank Transfer', 'Check'].includes(s.payment_mode) && !s.reference_number);
+            if (missingReference) {
+                this.form.errors.splits = missingReference.payment_mode === 'Check'
+                    ? 'Enter the check number for the check payment.'
+                    : 'Enter the reference number for the bank transfer.';
                 return;
             }
 
@@ -655,6 +728,29 @@ export default {
 
 .payment-table-row {
     border-top: 1px solid #eef2f1;
+}
+
+/* Bank details sit on their own row beneath the split they belong to,
+   spanning the grid so the fields have room to breathe. */
+.split-bank-details {
+    grid-column: 2 / -1;
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.1rem;
+}
+
+.split-bank-field {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.split-bank-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 0.2rem;
 }
 
 .col-num {
