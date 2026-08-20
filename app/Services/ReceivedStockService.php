@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use App\Services\Accounting\JournalEntryService;
 use App\Services\SeriesService;
+use App\Services\System\Permission\PermissionService;
 use Carbon\Carbon;
 
 class ReceivedStockService
@@ -30,6 +31,23 @@ class ReceivedStockService
         $this->journalEntryService = $journalEntryService;
     }
 
+    /**
+     * Whether the signed-in user may settle a supplier bill. Unauthenticated
+     * callers (console commands, jobs) are treated as permitted, since the
+     * separation of duties is about who is sitting at the screen.
+     */
+    private function userMaySettlePayables(): bool
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return true;
+        }
+
+        return app(PermissionService::class)
+            ->userHasAccess($user, 'accounting', 'accounts_payable', 'encoder');
+    }
+
     public function getAll()
     {
         return ReceivedStock::with(['purchaseOrder', 'supplier', 'items.product.brand', 'items.product.unit', 'items.product.packaging', 'receivedBy', 'voidedBy', 'payments.createdBy'])->get();
@@ -42,6 +60,15 @@ class ReceivedStockService
 
     public function create(array $data)
     {
+        // Receiving the goods and paying for them are separate duties. Someone
+        // who may only receive records the delivery as Credit, leaving an open
+        // payable — whatever payment the request carried is dropped rather than
+        // quietly recorded, since hiding the buttons is not by itself a control.
+        if (!$this->userMaySettlePayables()) {
+            $data['payment_mode'] = 'Credit';
+            unset($data['payment_lines'], $data['amount_paid'], $data['bank_account_id'], $data['bank_name'], $data['reference_number']);
+        }
+
         return DB::transaction(function () use ($data) {
             $paymentMode = $data['payment_mode'] ?? 'Credit';
             $amountPaid = $paymentMode === 'Credit'

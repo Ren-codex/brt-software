@@ -184,8 +184,11 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         ->middleware('permission:inventory,purchase_orders,view');
     Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode'])
         ->middleware('permission:inventory,receiving,encoder');
+    // Paying a supplier is a separate duty from receiving their goods, so it
+    // answers to accounting/accounts_payable rather than inventory/receiving.
+    // A warehouse manager can take a delivery in without being able to move money.
     Route::post('/received-stocks/{receivedStock}/pay', [App\Http\Controllers\ReceivedStockController::class, 'pay'])
-        ->middleware('permission:inventory,receiving,encoder');
+        ->middleware('permission:accounting,accounts_payable,encoder');
     Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class)->except(['create', 'edit'])
         ->middlewareFor(['index', 'show'], 'permission:inventory,receiving,view')
         ->middlewareFor(['store', 'update'], 'permission:inventory,receiving,encoder')

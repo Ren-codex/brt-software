@@ -193,7 +193,17 @@
           <strong class="payment-summary-value">{{ formatCurrency(totalReceiveAmount) }}</strong>
         </div>
 
-        <div class="payment-option-grid">
+        <!-- Someone who may only receive never chooses how it is paid: the
+             delivery is recorded as a payable for whoever settles bills. -->
+        <div v-if="!canSettlePayables" class="payment-suboption-panel">
+          <div class="payment-panel-heading">
+            <span class="payment-panel-kicker">Accounts Payable</span>
+            <h5>This delivery will be recorded as unpaid</h5>
+            <p>Payment is handled separately by whoever settles supplier bills. Set the due date agreed with the supplier.</p>
+          </div>
+        </div>
+
+        <div v-if="canSettlePayables" class="payment-option-grid">
           <button
             v-for="option in paymentTypes"
             :key="option.value"
@@ -221,8 +231,8 @@
           </button>
         </div>
 
-        <div v-if="selectedPaymentType === 'Credit'" class="payment-suboption-panel">
-          <div class="payment-panel-heading">
+        <div v-if="selectedPaymentType === 'Credit' || !canSettlePayables" class="payment-suboption-panel">
+          <div v-if="canSettlePayables" class="payment-panel-heading">
             <span class="payment-panel-kicker">Credit Terms</span>
             <h5>Set the due date</h5>
             <p>This receipt will be recorded under accounts payable and settled by the due date.</p>
@@ -262,16 +272,18 @@
             type="button"
             class="btn btn-save"
             @click="confirmPaymentMethod"
-            :disabled="isSubmitting || selectedPaymentType === 'Cash'"
+            :disabled="isSubmitting || (canSettlePayables && selectedPaymentType === 'Cash')"
           >
             {{
               isSubmitting
                 ? 'Submitting...'
-                : selectedPaymentType === 'Credit'
-                  ? 'Confirm Payment Method'
-                  : selectedPaymentType === 'Cash'
-                    ? 'Choose Cash or Bank Transfer'
-                    : 'Select Payment Method'
+                : !canSettlePayables
+                  ? 'Record as Payable'
+                  : selectedPaymentType === 'Credit'
+                    ? 'Confirm Payment Method'
+                    : selectedPaymentType === 'Cash'
+                      ? 'Choose Cash or Bank Transfer'
+                      : 'Select Payment Method'
             }}
           </button>
         </div>
@@ -407,6 +419,14 @@ export default {
     };
   },
   computed: {
+    /**
+     * Whether this user settles supplier bills. When they don't, receiving is
+     * goods-only: no payment choice, no bank list, and the delivery becomes an
+     * open payable for someone else to pay.
+     */
+    canSettlePayables() {
+      return this.can('accounting', 'accounts_payable', 'encoder');
+    },
     totalReceiveAmount() {
       return (this.form.items || []).reduce((total, item) => {
         const toReceive = this.toNumber(item.to_received_quantity) ?? 0;
@@ -669,7 +689,9 @@ export default {
         return;
       }
 
-      this.selectedPaymentType = null;
+      // Without the authority to settle payables there is nothing to choose:
+      // the delivery is always recorded as an unpaid payable.
+      this.selectedPaymentType = this.canSettlePayables ? null : 'Credit';
       this.selectedCashPaymentMode = null;
       this.form.amount_paid = this.totalReceiveAmount > 0 ? this.totalReceiveAmount : null;
       this.paymentMethodError = '';

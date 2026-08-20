@@ -59,6 +59,15 @@ class SplitPaymentTest extends TestCase
             'access_level' => 'encoder',
         ]);
 
+        // Settling the bill is a separate duty from receiving the goods, so this
+        // role needs both to pay at the point of receipt.
+        $accounting = Module::where('key', 'accounting')->firstOrFail();
+        RolePermission::create([
+            'role_id' => $role->id, 'module_id' => $accounting->id,
+            'submodule_id' => $accounting->submodules()->where('key', 'accounts_payable')->firstOrFail()->id,
+            'access_level' => 'encoder',
+        ]);
+
         $supplierId = \DB::table('list_suppliers')->insertGetId([
             'name' => 'Split Supplier', 'address' => 'Addr', 'contact_person' => 'P',
             'contact_number' => '09000000000', 'email' => 's@test.com', 'tin' => '000',

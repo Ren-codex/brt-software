@@ -105,7 +105,10 @@
                             <i class="ri-eye-line"></i>
                             <span>Details</span>
                           </button>
+                          <!-- Anyone who can see inventory may review what is
+                               owed; only whoever settles bills may pay one. -->
                           <button
+                            v-if="can('accounting', 'accounts_payable', 'encoder')"
                             type="button"
                             class="table-action-btn pay-btn"
                             @click.stop="openPayModal(record)"

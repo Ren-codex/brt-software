@@ -40,6 +40,9 @@ class ModulesAndSubmodulesSeeder extends Seeder
                 ['key' => 'petty_cash', 'name' => 'Petty Cash', 'sort_order' => 5],
                 ['key' => 'expenses', 'name' => 'Expenses', 'sort_order' => 6],
                 ['key' => 'bank_reconciliation', 'name' => 'Bank Reconciliation', 'sort_order' => 7],
+                // Settling supplier bills. Kept apart from inventory/receiving so
+                // taking goods in does not also confer the ability to pay for them.
+                ['key' => 'accounts_payable', 'name' => 'Accounts Payable', 'sort_order' => 8],
             ]],
             ['key' => 'user_management', 'name' => 'User Management', 'sort_order' => 7, 'submodules' => []],
             ['key' => 'dashboard', 'name' => 'Dashboard', 'sort_order' => 8, 'submodules' => []],
