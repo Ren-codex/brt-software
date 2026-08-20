@@ -8,8 +8,9 @@
           <h4 class="ap-details-title mb-0">Credit Payable Details</h4>
         </div>
         <div class="ap-details-header-actions">
+          <!-- Reviewing what is owed is open to inventory; settling it is not. -->
           <button
-            v-if="record"
+            v-if="record && can('accounting', 'accounts_payable', 'encoder')"
             type="button"
             class="ap-details-pay-btn"
             @click="handlePay"
