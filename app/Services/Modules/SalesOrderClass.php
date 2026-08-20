@@ -832,9 +832,16 @@ class SalesOrderClass
             ];
         }
 
-        // A closed/paid order has already run its full course through the ledger;
-        // cancelling it here would reverse entries the books consider settled.
-        \App\Support\RecordLock::assertEditable($data, 'This sales order', 'cancelled', 'cancel');
+        // Cancelling answers to a narrower rule than editing does. An order that
+        // is still running — for payment, partially paid, even paid — can be
+        // pulled back by the rep who raised it. Only a Closed order is off
+        // limits: it has run its full course through the ledger. Editing and
+        // deleting remain locked on every terminal status.
+        if (optional($data->status)->slug === 'closed') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'cancel' => ['This sales order is already closed and can no longer be cancelled.'],
+            ]);
+        }
 
         // Block only if a receipt has already been remitted/banked — that cash
         // has moved up the chain and must not be silently reversed here. Otherwise

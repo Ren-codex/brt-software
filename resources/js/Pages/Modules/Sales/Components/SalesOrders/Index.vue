@@ -156,7 +156,7 @@
                                                     class="action-btn edit" title="Edit">
                                                     <i class="ri-pencil-fill"></i>
                                                 </button>
-                                                <button v-if="isEditable(list) && (can('sales', 'sales_orders', 'void') || can('sales', 'sales_orders', 'approver'))"
+                                                <button v-if="isCancellable(list) && (can('sales', 'sales_orders', 'void') || can('sales', 'sales_orders', 'approver'))"
                                                     @click.stop="onCancel(list)"
                                                     class="action-btn delete" title="Cancel Order">
                                                     <i class="ri-close-line"></i>
@@ -435,6 +435,14 @@ export default {
             this.$refs.cancel.show(list.id, title, url, hasPayments);
         },
 
+        /**
+         * Cancelling is allowed for longer than editing is. An order still in
+         * play — for payment, partially paid, even paid — can be pulled back;
+         * only a Closed one has finished its run through the ledger.
+         */
+        isCancellable(list) {
+            return !['closed', 'cancelled'].includes(list.status?.slug);
+        },
         isEditableOrder(list) {
             // Credit/COD orders stay editable until fully paid, not just at creation.
             return ['for-payment', 'partially-paid'].includes(list.status?.slug);

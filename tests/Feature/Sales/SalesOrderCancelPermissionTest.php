@@ -27,7 +27,7 @@ class SalesOrderCancelPermissionTest extends TestCase
         parent::setUp();
         $this->seed(ModulesAndSubmodulesSeeder::class);
 
-        foreach (['for-payment', 'cancelled'] as $slug) {
+        foreach (['for-payment', 'cancelled', 'closed', 'partially-paid', 'paid'] as $slug) {
             ListStatus::firstOrCreate(['slug' => $slug], [
                 'name' => ucfirst($slug), 'text_color' => '#fff', 'bg_color' => '#333',
             ]);
@@ -51,7 +51,7 @@ class SalesOrderCancelPermissionTest extends TestCase
         return $user;
     }
 
-    private function order(): SalesOrder
+    private function order(string $statusSlug = 'for-payment'): SalesOrder
     {
         return SalesOrder::create([
             'so_number' => 'SO-' . uniqid(),
@@ -61,8 +61,29 @@ class SalesOrderCancelPermissionTest extends TestCase
             'total_discount' => 0,
             'added_by_id' => User::factory()->create()->id,
             'requires_batch_approval' => false,
-            'status_id' => ListStatus::where('slug', 'for-payment')->first()->id,
+            'status_id' => ListStatus::where('slug', $statusSlug)->first()->id,
         ]);
+    }
+
+    public function test_a_partially_paid_order_can_still_be_cancelled(): void
+    {
+        $status = $this->actingAs($this->userWithLevel('void'))
+            ->delete('/sales-orders/' . $this->order('partially-paid')->id, ['remarks' => 'customer changed mind'])
+            ->getStatusCode();
+
+        $this->assertNotEquals(403, $status);
+    }
+
+    public function test_a_closed_order_cannot_be_cancelled(): void
+    {
+        // Closed means the sale has run its full course through the ledger.
+        $order = $this->order('closed');
+
+        $this->actingAs($this->userWithLevel('void'))
+            ->delete('/sales-orders/' . $order->id, ['remarks' => 'too late'])
+            ->assertSessionHasErrors('cancel');
+
+        $this->assertEquals('closed', $order->fresh()->status->slug, 'A closed order must be left alone.');
     }
 
     public function test_a_sales_rep_holding_void_may_cancel(): void

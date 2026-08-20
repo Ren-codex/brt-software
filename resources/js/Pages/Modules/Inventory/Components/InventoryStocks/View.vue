@@ -134,7 +134,7 @@
                   <div class="col-md-6">
                     <div class="mb-3">
                       <label class="form-label">Product</label>
-                      <p class="text-muted">{{ data.received_item?.product?.name || 'N/A' }}</p>
+                      <p class="text-muted">{{ productName }}</p>
                     </div>
                   </div>
                   <div class="col-md-12">
@@ -527,6 +527,15 @@ export default {
     },
   },
   computed: {
+    /**
+     * Received stock carries its product through the received item; stock made
+     * by a conversion carries it on the row itself. Reading only the first left
+     * every converted batch showing 'N/A' for its product.
+     */
+    productName() {
+      const product = this.data?.received_item?.product || this.data?.product;
+      return product?.name || 'N/A';
+    },
     data() {
       if (this.localStock) return this.localStock;
       if (this.stock) return this.stock;
