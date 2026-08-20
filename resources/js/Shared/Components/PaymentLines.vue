@@ -80,6 +80,13 @@
       </div>
     </div>
 
+    <!-- Why the bank options are missing, when they are. Without this an
+         unauthorised or failed load is indistinguishable from a business that
+         simply has no bank accounts. -->
+    <p v-if="loadError" class="payment-lines-warning">
+      <i class="ri-information-line"></i> {{ loadError }}
+    </p>
+
     <p v-if="overallError" class="payment-lines-error">
       <i class="ri-error-warning-line"></i> {{ overallError }}
     </p>
@@ -147,6 +154,8 @@ export default {
      * fund ('Cash on Hand'); a customer at the counter simply pays 'Cash'.
      */
     cashPaymentMode: { type: String, default: 'Cash on Hand' },
+    /** Explains an empty bank list — a refusal or a failed request, not "none exist". */
+    loadError: { type: String, default: '' },
   },
   emits: ['update:modelValue', 'validity'],
   data() {
@@ -382,6 +391,16 @@ export default {
 .payment-line-error,
 .payment-lines-error {
   color: #b91c1c;
+  font-size: 0.75rem;
+  margin: 0.4rem 0 0;
+}
+
+.payment-lines-warning {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
   font-size: 0.75rem;
   margin: 0.4rem 0 0;
 }

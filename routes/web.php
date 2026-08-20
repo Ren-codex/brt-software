@@ -251,6 +251,14 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::get('/accounting/cash-on-hand', [App\Http\Controllers\Modules\CashManagementController::class, 'cashOnHand'])
         ->middleware('permission:accounting,cash_management,view');
 
+    // Payment screens live in Inventory and Sales, not just Accounting, so the
+    // list of bank accounts they offer as a destination cannot sit behind an
+    // accounting grant — doing so left a warehouse manager or sales rep with an
+    // empty bank dropdown and no way to record a transfer. The controller
+    // authorises against "can record a payment" instead, and withholds balances
+    // from anyone who can only collect.
+    Route::get('/bank-accounts/payment-options', [App\Http\Controllers\Modules\BankAccountController::class, 'paymentOptions']);
+
     // Accounting is gated purely by the granular permission:accounting,*
     // middleware below. It deliberately sits outside the role:Administrator
     // group: while it was inside, RoleMiddleware rejected every non-Administrator

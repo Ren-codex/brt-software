@@ -138,6 +138,9 @@
                                             {{ bank.bank_name }} — {{ bank.account_name }}
                                         </option>
                                     </select>
+                                    <!-- An empty list is a refusal or a failed
+                                         load, not "no banks exist" — say which. -->
+                                    <small v-if="bankAccountsError" class="split-bank-warning">{{ bankAccountsError }}</small>
                                 </div>
                                 <div class="split-bank-field">
                                     <label class="split-bank-label">
@@ -322,6 +325,7 @@ export default {
 
             payment_modes: ['Cash', 'GCash', 'Bank Transfer', 'Check'],
             bankAccounts: [],
+            bankAccountsError: '',
             title: null,
             showModal: false,
             invoice: null,
@@ -359,10 +363,14 @@ export default {
         async loadBankAccounts() {
             if (this.bankAccounts.length) return;
             try {
-                const res = await axios.get('/accounting/bank-accounts/list');
+                const res = await axios.get('/bank-accounts/payment-options');
                 this.bankAccounts = res.data || [];
-            } catch {
+                this.bankAccountsError = '';
+            } catch (e) {
                 this.bankAccounts = [];
+                this.bankAccountsError = e.response?.status === 403
+                    ? 'You do not have permission to record a bank transfer. Cash and check are still available.'
+                    : 'Could not load bank accounts. Check your connection and reopen this window to try again.';
             }
         },
 
@@ -751,6 +759,12 @@ export default {
     font-weight: 700;
     color: #64748b;
     margin-bottom: 0.2rem;
+}
+
+.split-bank-warning {
+    color: #92400e;
+    font-size: 0.7rem;
+    margin-top: 0.2rem;
 }
 
 .col-num {

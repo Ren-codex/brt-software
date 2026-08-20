@@ -562,6 +562,7 @@
                         :require-exact-total="true"
                         :bank-accounts="bankAccounts"
                         :total-due="grandTotal"
+                        :load-error="bankAccountsError"
                         @validity="paymentLinesValid = $event"
                     />
                 </div>
@@ -1075,6 +1076,7 @@ export default {
             creditVerificationError: null,
             bankTransferError: null,
             bankAccounts: [],
+            bankAccountsError: '',
             paymentLines: [],
             paymentLinesValid: false,
             selectedReviewPaymentType: null,
@@ -1278,10 +1280,16 @@ export default {
     methods: {
         async loadBankAccounts() {
             try {
-                const res = await axios.get('/accounting/bank-accounts/list');
+                const res = await axios.get('/bank-accounts/payment-options');
                 this.bankAccounts = res.data || [];
-            } catch {
+                this.bankAccountsError = '';
+            } catch (e) {
+                // Say so rather than falling back to an empty list — a silent []
+                // here reads as "this business has no bank accounts".
                 this.bankAccounts = [];
+                this.bankAccountsError = e.response?.status === 403
+                    ? 'You do not have permission to accept a bank transfer. Cash and check are still available.'
+                    : 'Could not load bank accounts. Check your connection and reopen this window to try again.';
             }
         },
         onSalesBankAccountChange(newValue) {

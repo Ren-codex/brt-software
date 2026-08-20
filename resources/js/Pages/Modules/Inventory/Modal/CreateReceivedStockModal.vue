@@ -303,6 +303,7 @@
             :bank-accounts="bankAccounts"
             :cash-on-hand="cashOnHand"
             :total-due="totalReceiveAmount"
+            :load-error="bankAccountsError"
             @validity="paymentLinesValid = $event"
           />
 
@@ -341,6 +342,7 @@ export default {
     return {
       showModal: false,
       bankAccounts: [],
+      bankAccountsError: '',
       cashOnHand: 0,
       cashOnHandLoaded: false,
       form: {
@@ -460,10 +462,17 @@ export default {
     },
     async loadBankAccounts() {
       try {
-        const res = await axios.get('/accounting/bank-accounts/list');
+        const res = await axios.get('/bank-accounts/payment-options');
         this.bankAccounts = res.data || [];
-      } catch {
+        this.bankAccountsError = '';
+      } catch (e) {
+        // Say so rather than falling back to an empty list — a silent [] here
+        // is indistinguishable from "this business has no bank accounts", which
+        // is how a permissions problem came to look like a missing feature.
         this.bankAccounts = [];
+        this.bankAccountsError = e.response?.status === 403
+          ? 'You do not have permission to pay from a bank account. Cash and check are still available.'
+          : 'Could not load bank accounts. Check your connection and reopen this window to try again.';
       }
     },
     async loadCashOnHand() {
