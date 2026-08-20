@@ -552,22 +552,18 @@
                 <div v-if="selectedPaymentType === 'Cash Sales'" class="payment-subtype-section payment-detail-card">
                     <div class="payment-section-heading payment-section-heading-sm">
                         <span class="payment-section-kicker">Step 2</span>
-                        <h5>Cash Payment Method</h5>
-                        <p>Choose how the cashier will receive the payment.</p>
+                        <h5>Payment Method</h5>
+                        <p>Add a line for each method. A customer can settle with more than one.</p>
                     </div>
-                    <div class="payment-mode-grid payment-subtype-grid">
-                        <div v-for="mode in cash_payment_modes" :key="mode"
-                            :class="{ 'selected-payment-mode': form.payment_mode === mode }"
-                            class="payment-mode-card payment-subtype-card payment-choice-card" @click="selectPaymentMode(mode)">
-                            <div class="payment-choice-icon-wrap">
-                                <i :class="getPaymentModeIcon(mode)" class="payment-icon"></i>
-                            </div>
-                            <span class="payment-label">{{ mode }}</span>
-                            <small class="payment-choice-copy">
-                                {{ mode === 'Cash' ? 'Cashier accepts cash and gives change' : 'Paid through bank transfer' }}
-                            </small>
-                        </div>
-                    </div>
+                    <PaymentLines
+                        v-model="paymentLines"
+                        mode="collection"
+                        cash-payment-mode="Cash"
+                        :require-exact-total="true"
+                        :bank-accounts="bankAccounts"
+                        :total-due="grandTotal"
+                        @validity="paymentLinesValid = $event"
+                    />
                 </div>
 
             </div>
@@ -602,11 +598,22 @@
                     <strong>{{ formatCurrency(grandTotal) }}</strong>
                 </div>
 
+                <!-- On a split sale only the cash portion passes through the
+                     drawer, so change is worked out against that, not the total. -->
+                <div v-if="isSplitPayment" class="cash-change-display mt-2">
+                    <span>Settled by other methods</span>
+                    <strong>{{ formatCurrency(grandTotal - cashLineAmount) }}</strong>
+                </div>
+
                 <div class="payment-detail-card form-group mb-0 mt-3">
                     <div class="payment-section-heading payment-section-heading-sm">
                         <span class="payment-section-kicker">Final Step</span>
                         <h5>Cashier Input</h5>
-                        <p>Enter the amount received from the customer.</p>
+                        <p>
+                            {{ isSplitPayment
+                                ? 'Enter the cash handed over for the ' + formatCurrency(cashLineAmount) + ' cash portion.'
+                                : 'Enter the amount received from the customer.' }}
+                        </p>
                     </div>
                     <label for="cash_received_modal" class="form-label">Amount Received<span class="text-danger">*</span></label>
                     <div class="input-wrapper">
@@ -1011,9 +1018,10 @@ import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import Item from '@/Pages/Modules/Sales/Components/SalesOrders/Modals/AddItem.vue';
 import Customer from '@/Pages/Modules/Customers/Modals/Create.vue'
 import PaymentPromptModal from '@/Pages/Modules/Sales/Components/SalesOrders/Modals/PaymentPromptModal.vue';
+import PaymentLines from '@/Shared/Components/PaymentLines.vue';
 
 export default {
-    components: { TextInput, Item, Customer, PaymentPromptModal, Multiselect },
+    components: { TextInput, Item, Customer, PaymentPromptModal, Multiselect, PaymentLines },
     emits: ['add'],
     props: ['dropdowns', 'user'],
     data() {
@@ -1031,6 +1039,7 @@ export default {
                 billing_account: null,
                 payment_mode: null,
                 bank_account_id: null,
+                payment_lines: [],
                 items: [],
                 option: 'lists',
                 action: null
@@ -1066,6 +1075,8 @@ export default {
             creditVerificationError: null,
             bankTransferError: null,
             bankAccounts: [],
+            paymentLines: [],
+            paymentLinesValid: false,
             selectedReviewPaymentType: null,
             bankTransferDetails: {
                 bank_account_id: '',
@@ -1195,20 +1206,30 @@ export default {
             if (paymentMode) return 'Cash';
             return null;
         },
-        isCashChargeMode() {
-            return this.selectedPaymentType === 'Cash Sales' && this.form.payment_mode === 'Cash';
+        /** How much of this sale the customer is handing over as physical cash. */
+        cashLineAmount() {
+            return this.paymentLines
+                .filter((line) => line.payment_mode === 'Cash')
+                .reduce((sum, line) => sum + (Number(line.payment_amount) || 0), 0);
         },
+        isSplitPayment() {
+            return this.paymentLines.length > 1;
+        },
+        isCashChargeMode() {
+            return this.selectedPaymentType === 'Cash Sales' && this.cashLineAmount > 0;
+        },
+        /** Only a cash line needs the drawer step — change is a cash-only idea. */
         requiresCashReceivedModal() {
-            return this.selectedPaymentType === 'Cash Sales' && this.form.payment_mode === 'Cash';
+            return this.isCashChargeMode;
         },
         cashChangeAmount() {
             const received = Number(this.cashReceivedAmount) || 0;
-            return received - this.grandTotal;
+            return received - this.cashLineAmount;
         },
         isCashChargeInvalid() {
             if (!this.showCashReceivedModal && !this.isCashChargeMode) return false;
             const received = Number(this.cashReceivedAmount);
-            return !Number.isFinite(received) || received < this.grandTotal;
+            return !Number.isFinite(received) || received < this.cashLineAmount;
         },
         isCreditVerificationMatched() {
             return this.creditVerificationText.trim().toUpperCase() === 'CREDIT';
@@ -1239,7 +1260,7 @@ export default {
         },
         isPaymentTypeActionDisabled() {
             if (this.form.processing || !this.selectedPaymentType) return true;
-            if (this.selectedPaymentType === 'Cash Sales' && !this.cash_payment_modes.includes(this.form.payment_mode)) {
+            if (this.selectedPaymentType === 'Cash Sales' && !this.paymentLinesValid) {
                 return true;
             }
             return false;
@@ -1528,26 +1549,22 @@ export default {
                 this.creditPreset = 1;
                 this.setDueDatePreset(1);
                 return;
-            } else if (!this.cash_payment_modes.includes(this.form.payment_mode)) {
+            } else if (!this.paymentLinesValid) {
                 return;
             }
+
+            // 'Split' when several methods share the sale; otherwise the single
+            // method's own name, so nothing downstream has to unpack one line.
+            this.form.payment_mode = this.isSplitPayment
+                ? 'Split'
+                : (this.paymentLines[0]?.payment_mode || 'Cash');
+            this.form.payment_lines = this.paymentLines;
 
             if (this.requiresCashReceivedModal) {
                 this.showPaymentTypeModal = false;
                 this.showCashReceivedModal = true;
-                this.cashReceivedAmount = this.grandTotal;
+                this.cashReceivedAmount = this.cashLineAmount;
                 this.cashChargeError = null;
-                return;
-            }
-
-            if (this.form.payment_mode === 'Bank Transfer') {
-                this.showPaymentTypeModal = false;
-                this.showBankTransferModal = true;
-                this.bankTransferError = null;
-                if (!this.bankTransferDetails.amount_paid) {
-                    this.bankTransferDetails.amount_paid = this.grandTotal;
-                }
-                this.loadBankAccounts();
                 return;
             }
 
@@ -1567,8 +1584,8 @@ export default {
                 return false;
             }
 
-            if (received < this.grandTotal) {
-                this.cashChargeError = `Amount received cannot be less than ${this.formatCurrency(this.grandTotal)}.`;
+            if (received < this.cashLineAmount) {
+                this.cashChargeError = `Amount received cannot be less than ${this.formatCurrency(this.cashLineAmount)}.`;
                 return false;
             }
 
@@ -1614,8 +1631,13 @@ export default {
                     const paymentMode = this.form.payment_mode;
                     const flashData = response?.props?.flash?.data ?? this.$page?.props?.flash?.data ?? null;
                     const createdOrder = flashData?.data || flashData;
-                    const isCash = ['cash', 'cash sales'].includes((paymentMode || '').toLowerCase());
-                    const isCashCharge = paymentMode === 'Cash';
+                    // Anything that isn't a credit sale settles at the counter —
+                    // including 'Split', which no single mode name describes.
+                    const isCashSale = !['credit', 'credit sales'].includes((paymentMode || '').toLowerCase());
+                    // Whether physical cash crossed the counter, which decides
+                    // between the change screen and the plain print prompt. Read
+                    // before form.reset() clears what it derives from.
+                    const isCashCharge = this.isCashChargeMode;
                     const invoice = createdOrder?.invoices?.[0] || null;
 
                     this.showOrderReview = false;
@@ -1625,12 +1647,14 @@ export default {
                     const changeAmount = this.isCashChargeMode ? Math.max(this.cashChangeAmount, 0) : 0;
                     const cashReceivedAmount = this.isCashChargeMode ? (Number(this.cashReceivedAmount) || 0) : 0;
                     this.form.reset();
+                    this.paymentLines = [];
+                    this.paymentLinesValid = false;
                     this.hide();
                     this.pendingCashChange = changeAmount;
                     this.pendingCashReceived = cashReceivedAmount;
                     this.pendingCashPaid = 0;
 
-                    if ((isCashCharge || isCash) && invoice) {
+                    if (isCashSale && invoice) {
                         const receiptId = response?.props?.flash?.receipt_id
                             || this.$page?.props?.flash?.receipt_id
                             || null;
@@ -2012,10 +2036,13 @@ export default {
             }
 
             this.selectedReviewPaymentType = 'Cash Sales';
-            const currentMode = this.form.payment_mode;
-            this.form.payment_mode = this.cash_payment_modes.includes(currentMode) ? currentMode : null;
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
+
+            // Open on a single cash line covering the whole sale — the common
+            // case — which the cashier can then split up if the customer asks to.
+            this.paymentLines = [{ payment_mode: 'Cash', payment_amount: this.grandTotal }];
+            this.loadBankAccounts();
             this.handleInput('payment_mode');
         },
 

@@ -9,7 +9,7 @@
             class="form-control modern-input"
             @change="onSourceChange(line)"
           >
-            <option value="cash">Cash on Hand</option>
+            <option value="cash">{{ cashPaymentMode }}</option>
             <option v-for="ba in bankAccounts" :key="ba.id" :value="'bank:' + ba.id">
               {{ ba.bank_name }} — {{ ba.account_name }}
             </option>
@@ -101,6 +101,28 @@ const emptyLine = () => ({
   reference_number: '',
 });
 
+/**
+ * Lines arrive in the shape this component emits — the shape the API wants —
+ * so a caller can seed it with a starting payment. Internally each line is
+ * keyed by `source` ('cash', 'bank:3', 'check'), which is what the picker binds
+ * to, so translate on the way in.
+ */
+const toInternalLine = (line, cashPaymentMode) => {
+  if (line.source) return { ...line };
+
+  const mode = String(line.payment_mode || '').toLowerCase();
+  let source = 'cash';
+  if (mode === 'check') source = 'check';
+  else if (mode === 'bank transfer') source = line.bank_account_id ? `bank:${line.bank_account_id}` : 'cash';
+  else if (mode && mode !== String(cashPaymentMode).toLowerCase()) source = 'cash';
+
+  return {
+    source,
+    payment_amount: line.payment_amount ?? null,
+    reference_number: line.reference_number || '',
+  };
+};
+
 export default {
   name: 'PaymentLines',
   props: {
@@ -108,11 +130,30 @@ export default {
     bankAccounts: { type: Array, default: () => [] },
     cashOnHand: { type: Number, default: 0 },
     totalDue: { type: Number, default: 0 },
+    /**
+     * 'disbursement' pays money out, so each line is capped by what that source
+     * actually holds. 'collection' takes money in — a customer's payment doesn't
+     * draw down our balances, so those caps don't apply.
+     */
+    mode: {
+      type: String,
+      default: 'disbursement',
+      validator: (value) => ['disbursement', 'collection'].includes(value),
+    },
+    /** Cash sales settle in full or not at all — no partial counter payments. */
+    requireExactTotal: { type: Boolean, default: false },
+    /**
+     * What to call physical cash when emitting. Purchases pay out of a named
+     * fund ('Cash on Hand'); a customer at the counter simply pays 'Cash'.
+     */
+    cashPaymentMode: { type: String, default: 'Cash on Hand' },
   },
   emits: ['update:modelValue', 'validity'],
   data() {
     return {
-      lines: this.modelValue.length ? [...this.modelValue] : [emptyLine()],
+      lines: this.modelValue.length
+        ? this.modelValue.map((line) => toInternalLine(line, this.cashPaymentMode))
+        : [emptyLine()],
     };
   },
   computed: {
@@ -134,6 +175,9 @@ export default {
       if (this.totalEntered <= 0) return 'Enter at least one payment amount.';
       if (this.totalEntered > this.totalDue) {
         return `Payments total ${this.formatCurrency(this.totalEntered)}, more than the ${this.formatCurrency(this.totalDue)} due.`;
+      }
+      if (this.requireExactTotal && this.remaining > 0) {
+        return `${this.formatCurrency(this.remaining)} of the ${this.formatCurrency(this.totalDue)} total is still unpaid. A cash sale must be paid in full.`;
       }
       for (const [source, amount] of Object.entries(this.perSourceTotals)) {
         const available = this.availableFor(source);
@@ -163,7 +207,7 @@ export default {
       return line.source === 'check' || String(line.source).startsWith('bank:');
     },
     sourceLabel(source) {
-      if (source === 'cash') return 'Cash on Hand';
+      if (source === 'cash') return this.cashPaymentMode;
       if (source === 'check') return 'Check';
       const bank = this.bankFor(source);
       return bank ? `${bank.bank_name} — ${bank.account_name}` : 'Bank';
@@ -174,6 +218,7 @@ export default {
     },
     /** Null means "no balance to check against", as for a check. */
     availableFor(source) {
+      if (this.mode === 'collection') return null;
       if (source === 'cash') return Number(this.cashOnHand) || 0;
       if (String(source).startsWith('bank:')) {
         const bank = this.bankFor(source);
@@ -182,6 +227,9 @@ export default {
       return null;
     },
     availableLabel(line) {
+      if (this.mode === 'collection') {
+        return this.needsReference(line) ? 'Reference required' : 'Counted into the drawer';
+      }
       const available = this.availableFor(line.source);
       if (available === null) return 'No balance check for checks';
       return `Available ${this.formatCurrency(available)}`;
@@ -212,7 +260,7 @@ export default {
         .filter((l) => (Number(l.payment_amount) || 0) > 0)
         .map((l) => {
           if (l.source === 'cash') {
-            return { payment_mode: 'Cash on Hand', payment_amount: Number(l.payment_amount) };
+            return { payment_mode: this.cashPaymentMode, payment_amount: Number(l.payment_amount) };
           }
           if (l.source === 'check') {
             return {

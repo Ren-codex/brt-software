@@ -155,6 +155,12 @@ class SalesOrderClass
         // won't auto-close/auto-receipt until it's approved.
         $requiresBatchApproval = collect($request->items)->contains(fn ($item) => !empty($item['is_batch_override']));
 
+        // The cashier may settle a cash sale with more than one method at once.
+        // 'Split' keeps the order out of every credit-sale branch while making it
+        // obvious on the record that no single mode describes how it was paid.
+        $paymentLines = $isCreditMode ? [] : $this->normalisePaymentLines($request);
+        $paymentMode = count($paymentLines) > 1 ? 'Split' : ($paymentLines[0]['payment_mode'] ?? $request->payment_mode);
+
         [$isExternal, $locationId, $locationText] = $this->resolveLocation($request);
         $prefix = $isExternal ? 'SO-EXT' : 'SO';
         $data = null;
@@ -166,8 +172,9 @@ class SalesOrderClass
             $candidate->customer_id = $request->customer_id;
             $candidate->sales_rep_id = $request->sales_rep_id;
             $candidate->driver_id = $request->driver_id;
-            $candidate->payment_mode = $request->payment_mode;
-            $candidate->due_date = in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true) ? $request->due_date : null;
+            $candidate->payment_mode = $paymentMode;
+            $candidate->payment_lines = $paymentLines ?: null;
+            $candidate->due_date = $isCreditMode ? $request->due_date : null;
             $candidate->location_id = $locationId;
             $candidate->delivery_location = $locationText;
             $candidate->added_by_id = auth()->user()->id;
@@ -218,6 +225,23 @@ class SalesOrderClass
         ]);
 
         $isCreditSale = in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+
+        // A cash sale settled by several methods must still be settled in full —
+        // the order closes on save, so anything short would leave it closed and
+        // underpaid. Checked here, against the server's own total, rather than
+        // trusting the figure the browser worked out.
+        if (!$isCreditSale && $paymentLines) {
+            $linesTotal = round(collect($paymentLines)->sum('payment_amount'), 2);
+            if ($linesTotal !== round((float) $totalAmount, 2)) {
+                throw ValidationException::withMessages([
+                    'payment_lines' => sprintf(
+                        'The payment breakdown totals ₱%s but the order comes to ₱%s. A cash sale must be paid in full.',
+                        number_format($linesTotal, 2),
+                        number_format($totalAmount, 2)
+                    ),
+                ]);
+            }
+        }
 
         $invoice = new ArInvoice();
         $invoice->sales_order_id = $data->id;
@@ -421,21 +445,105 @@ class SalesOrderClass
      */
     private function finalizeCashSale(SalesOrder $data, ArInvoice $invoice): int
     {
-        $autoReceipt = Receipt::create([
-            'ar_invoice_id'  => $invoice->id,
-            'customer_id'    => $data->customer_id,
-            'status_id'      => ListStatus::getBySlug('pending')?->id,
-            'receipt_number' => Receipt::generateReceiptNumber(),
-            'receipt_type'   => 'payment',
-            'receipt_date'   => $data->order_date,
-            'amount_paid'    => $invoice->amount_due,
-            'balance_due'    => 0,
-            'payment_mode'   => $data->payment_mode,
-        ]);
+        $pendingStatusId = ListStatus::getBySlug('pending')?->id;
+        $lastReceiptId = null;
+
+        // One receipt per payment method, so a split sale leaves a separate OR
+        // for the cash, the transfer and the check — each carrying its own bank
+        // account and reference for later reconciliation.
+        foreach ($this->resolveCashSalePaymentLines($data, $invoice) as $line) {
+            $receipt = Receipt::create([
+                'ar_invoice_id'    => $invoice->id,
+                'customer_id'      => $data->customer_id,
+                'status_id'        => $pendingStatusId,
+                'receipt_number'   => Receipt::generateReceiptNumber(),
+                'receipt_type'     => 'payment',
+                'receipt_date'     => $data->order_date,
+                'amount_paid'      => $line['amount'],
+                // Every line settles part of the same fully-paid invoice, so the
+                // remaining balance is zero on each — they were applied together,
+                // not one after another.
+                'balance_due'      => 0,
+                'payment_mode'     => $line['payment_mode'],
+                'bank_account_id'  => $line['bank_account_id'],
+                'reference_number' => $line['reference_number'],
+            ]);
+
+            $lastReceiptId = $receipt->id;
+        }
 
         $data->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
 
-        return $autoReceipt->id;
+        return $lastReceiptId;
+    }
+
+    /**
+     * Reads the cashier's payment breakdown off the request. Accepts the legacy
+     * single-mode body (a bare payment_mode, with the bank details the Bank
+     * Transfer step collects) so older callers keep working, and normalises both
+     * into the same line shape.
+     *
+     * @return array<int, array{payment_mode: string, payment_amount: float, bank_account_id: ?int, reference_number: ?string}>
+     */
+    private function normalisePaymentLines($request): array
+    {
+        $lines = collect($request->payment_lines ?? [])
+            ->map(fn ($line) => [
+                'payment_mode'     => trim((string) ($line['payment_mode'] ?? '')),
+                'payment_amount'   => round((float) ($line['payment_amount'] ?? 0), 2),
+                'bank_account_id'  => $line['bank_account_id'] ?? null,
+                'reference_number' => $line['reference_number'] ?? null,
+            ])
+            ->filter(fn ($line) => $line['payment_amount'] > 0 && $line['payment_mode'] !== '')
+            ->values();
+
+        if ($lines->isNotEmpty()) {
+            $missingReference = $lines->first(fn ($line) => in_array($line['payment_mode'], ['Bank Transfer', 'Check'], true)
+                && blank($line['reference_number']));
+
+            if ($missingReference) {
+                throw ValidationException::withMessages([
+                    'payment_lines' => $missingReference['payment_mode'] === 'Check'
+                        ? 'Enter the check number for the check payment.'
+                        : 'Enter the reference number for the bank transfer.',
+                ]);
+            }
+
+            return $lines->all();
+        }
+
+        return [];
+    }
+
+    /**
+     * The cashier's payment breakdown, normalised. Orders saved before split
+     * payments existed — and any still settled with a single method — have no
+     * stored breakdown, and fall back to one line for the full invoice.
+     *
+     * @return array<int, array{payment_mode: string, amount: float, bank_account_id: ?int, reference_number: ?string}>
+     */
+    private function resolveCashSalePaymentLines(SalesOrder $data, ArInvoice $invoice): array
+    {
+        $lines = collect($data->payment_lines ?? [])
+            ->map(fn ($line) => [
+                'payment_mode'     => (string) ($line['payment_mode'] ?? ''),
+                'amount'           => round((float) ($line['payment_amount'] ?? $line['amount'] ?? 0), 2),
+                'bank_account_id'  => $line['bank_account_id'] ?? null,
+                'reference_number' => $line['reference_number'] ?? null,
+            ])
+            ->filter(fn ($line) => $line['amount'] > 0 && $line['payment_mode'] !== '')
+            ->values();
+
+        if ($lines->isNotEmpty()) {
+            return $lines->all();
+        }
+
+        return [[
+            'payment_mode'     => $data->payment_mode,
+            'amount'           => round((float) $invoice->amount_due, 2),
+            'bank_account_id'  => null,
+            'reference_number' => null,
+        ]];
     }
 
     /**

@@ -12,6 +12,8 @@ class Receipt extends Model
         'amount_paid',
         'balance_due',
         'payment_mode',
+        'bank_account_id',
+        'reference_number',
         'receipt_type',
         'billing_account',
         'status_id',
@@ -35,6 +37,11 @@ class Receipt extends Model
     public function customer()
     {
         return $this->belongsTo('App\Models\Customer', 'customer_id');
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo('App\Models\BankAccount', 'bank_account_id');
     }
 
     public function sourceReceipt()
