@@ -9,6 +9,39 @@ use Illuminate\Support\Collection;
 
 class PermissionService
 {
+    /**
+     * Levels that describe doing work in a submodule. Each implies read access:
+     * someone who encodes or approves in a submodule has to be able to open it,
+     * and routes gate reads with 'view'. Without this, granting only 'encoder'
+     * locked the holder out of the page entirely.
+     *
+     * This is one-directional — it never grants a write level. An encoder still
+     * cannot approve, and a viewer still cannot encode.
+     */
+    private const WORKING_LEVELS = ['encoder', 'approver', 'releaser', 'void'];
+
+    /** The granted levels that would satisfy a required level. */
+    private function levelsSatisfying(string $required): array
+    {
+        $levels = [$required, 'admin'];
+
+        if ($required === 'view') {
+            $levels = array_merge($levels, self::WORKING_LEVELS);
+        }
+
+        return array_values(array_unique($levels));
+    }
+
+    /** Add the read access that working levels imply, for the shared map. */
+    private function withImpliedLevels(array $granted): array
+    {
+        if (array_intersect($granted, self::WORKING_LEVELS) && !in_array('view', $granted, true)) {
+            $granted[] = 'view';
+        }
+
+        return array_values(array_unique($granted));
+    }
+
     public function userHasAccess(User $user, string $moduleKey, ?string $submoduleKey, string $level): bool
     {
         if ($this->isSuperAdmin($user)) {
@@ -42,7 +75,7 @@ class PermissionService
                     $query->orWhere('submodule_id', $submoduleId);
                 }
             })
-            ->whereIn('access_level', array_unique([$level, 'admin']))
+            ->whereIn('access_level', $this->levelsSatisfying($level))
             ->exists();
     }
 
@@ -78,7 +111,7 @@ class PermissionService
 
         foreach ($map as $moduleKey => $subs) {
             foreach ($subs as $subKey => $levels) {
-                $map[$moduleKey][$subKey] = array_values(array_unique($levels));
+                $map[$moduleKey][$subKey] = $this->withImpliedLevels($levels);
             }
         }
 

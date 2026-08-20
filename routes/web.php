@@ -135,6 +135,9 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         Route::patch('/libraries/payroll-items/{id}/toggle-active', [App\Http\Controllers\Libraries\PayrollItemController::class, 'toggleActive'])
             ->middleware('permission:payroll,payroll_settings,encoder');
 
+    });
+
+    // Petty cash funds: accounting permissions only, no role gate.
         Route::resource('/accounting/funds', App\Http\Controllers\Libraries\FundController::class)->only(['index', 'store', 'update'])
             ->middlewareFor('index', 'permission:accounting,petty_cash,view')
             ->middlewareFor(['store', 'update'], 'permission:accounting,petty_cash,encoder');
@@ -144,7 +147,7 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
             ->middleware('permission:accounting,petty_cash,approver');
         Route::patch('/accounting/funds/{id}/toggle-active', [App\Http\Controllers\Libraries\FundController::class, 'toggleActive'])
             ->middleware('permission:accounting,petty_cash,encoder');
-    });
+
 
     Route::middleware(['role:Administrator,Warehouse Manager'])->group(function () {
         Route::get('/inventory', [App\Http\Controllers\InventoryManagementController::class, 'index']);
@@ -171,7 +174,6 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
             ->middleware('permission:inventory,purchase_orders,view');
         Route::get('/received-stocks/next-batch-code', [App\Http\Controllers\ReceivedStockController::class, 'getNextBatchCode'])
             ->middleware('permission:inventory,receiving,encoder');
-        Route::get('/accounting/cash-on-hand', [App\Http\Controllers\Modules\CashManagementController::class, 'cashOnHand']);
         Route::post('/received-stocks/{receivedStock}/pay', [App\Http\Controllers\ReceivedStockController::class, 'pay'])
             ->middleware('permission:inventory,receiving,encoder');
         Route::resource('/received-stocks', App\Http\Controllers\ReceivedStockController::class)
@@ -225,6 +227,19 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
             ->middlewareFor('index', 'permission:payroll,loans,view')
             ->middlewareFor(['store', 'update'], 'permission:payroll,loans,encoder')
             ->middlewareFor('destroy', 'permission:payroll,loans,admin');
+    });
+
+    // Exposes the live cash position, so it needs the same guard as the rest of
+    // Cash Management — it previously had no permission middleware at all.
+    Route::get('/accounting/cash-on-hand', [App\Http\Controllers\Modules\CashManagementController::class, 'cashOnHand'])
+        ->middleware('permission:accounting,cash_management,view');
+
+    // Accounting is gated purely by the granular permission:accounting,*
+    // middleware below. It deliberately sits outside the role:Administrator
+    // group: while it was inside, RoleMiddleware rejected every non-Administrator
+    // with 'Unauthorized' before the permission check ran, so accounting grants
+    // assigned to a role had no effect at all.
+    Route::middleware([])->group(function () {
         Route::get('/accounting', [App\Http\Controllers\Modules\AccountingController::class, 'index'])
             ->middleware('permission:accounting,financial_reports,view');
         Route::get('/accounting/general-ledger', [App\Http\Controllers\Modules\AccountingController::class, 'generalLedger'])
@@ -243,8 +258,10 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
             ->middleware('permission:accounting,financial_reports,view');
         Route::get('/accounting/settings', [App\Http\Controllers\Modules\AccountingController::class, 'settings'])
             ->middleware('permission:accounting,chart_of_accounts,view');
-        Route::get('/accounting/chart-of-accounts', fn () => redirect('/accounting/settings'));
-        Route::get('/accounting/bank-accounts', fn () => redirect('/accounting/settings'));
+        Route::get('/accounting/chart-of-accounts', fn () => redirect('/accounting/settings'))
+            ->middleware('permission:accounting,chart_of_accounts,view');
+        Route::get('/accounting/bank-accounts', fn () => redirect('/accounting/settings'))
+            ->middleware('permission:accounting,chart_of_accounts,view');
         Route::post('/accounting/accounts', [App\Http\Controllers\Modules\AccountingController::class, 'storeAccount'])
             ->middleware('permission:accounting,chart_of_accounts,encoder');
         Route::put('/accounting/accounts/{id}', [App\Http\Controllers\Modules\AccountingController::class, 'updateAccount'])
@@ -313,6 +330,9 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
             ->middleware('permission:accounting,chart_of_accounts,encoder');
         Route::patch('/accounting/bank-accounts/{id}/toggle', [App\Http\Controllers\Modules\BankAccountController::class, 'toggle'])
             ->middleware('permission:accounting,chart_of_accounts,encoder');
+    });
+
+    Route::middleware(['role:Administrator'])->group(function () {
 
         Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll'])
             ->middleware('permission:payroll,payroll_processing,view');

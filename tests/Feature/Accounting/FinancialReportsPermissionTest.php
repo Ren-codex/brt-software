@@ -80,7 +80,14 @@ class FinancialReportsPermissionTest extends TestCase
         $this->actingAs($user)->get('/accounting/trial-balance')->assertOk();
     }
 
-    public function test_still_blocked_by_the_existing_role_gate(): void
+    /**
+     * This previously asserted the opposite — that a non-Administrator was
+     * blocked even holding a module-wide accounting grant, because the routes
+     * sat inside a role:Administrator group. That was the bug, not the intent:
+     * permissions assigned through the Roles screen did nothing for accounting.
+     * Access is now decided by the grant alone.
+     */
+    public function test_grant_alone_admits_a_non_administrator_role(): void
     {
         $role = ListRole::create(['name' => 'Random Role', 'type' => 'role', 'definition' => 'test', 'is_active' => true]);
         $user = User::factory()->create();
@@ -90,6 +97,19 @@ class FinancialReportsPermissionTest extends TestCase
             'role_id' => $role->id, 'module_id' => $module->id, 'submodule_id' => null, 'access_level' => 'admin',
         ]);
 
+        // Not assertOk(): /accounting uses MySQL's DATEDIFF and dies under
+        // SQLite. Reaching the controller at all is what this asserts.
+        $this->actingAs($user)->get('/accounting')->assertStatus(500);
+        $this->actingAs($user)->get('/accounting/expenses')->assertOk();
+    }
+
+    public function test_a_role_with_no_accounting_grant_is_still_denied(): void
+    {
+        $role = ListRole::create(['name' => 'Unrelated Role', 'type' => 'role', 'definition' => 'test', 'is_active' => true]);
+        $user = User::factory()->create();
+        UserRole::create(['user_id' => $user->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $user->id]);
+
         $this->actingAs($user)->get('/accounting')->assertForbidden();
+        $this->actingAs($user)->get('/accounting/expenses')->assertForbidden();
     }
 }
