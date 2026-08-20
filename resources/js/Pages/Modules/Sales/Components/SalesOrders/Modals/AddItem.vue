@@ -394,7 +394,10 @@ export default {
             return !!(this.form.batch_code && this.recommendedBatchCode && this.form.batch_code !== this.recommendedBatchCode);
         },
         availableProducts() {
-            return this.dropdowns.products.filter((product) => {
+            // Modules/Sales/Index is rendered by several controllers and not all
+            // of them pass a products dropdown (ReceiptController, for one), so
+            // this component can mount without one. Default rather than throw.
+            return (this.dropdowns?.products || []).filter((product) => {
                 if (!product?.value) return false;
                 const totalAvailable = (product.batch_stocks || []).reduce((sum, batch) => {
                     const key = `${product.value}::${batch.batch_code}`;
