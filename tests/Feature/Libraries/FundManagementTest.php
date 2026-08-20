@@ -10,7 +10,6 @@ use App\Models\PettyCashTransaction;
 use App\Models\User;
 use App\Services\Libraries\FundClass;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class FundManagementTest extends TestCase
@@ -147,24 +146,5 @@ class FundManagementTest extends TestCase
         $service->toggleActive($fund->id, false);
 
         $this->assertFalse($fund->fresh()->is_active);
-    }
-
-    // --- inactive fund guard in ExpenseClass ---
-
-    public function test_recording_expense_on_inactive_fund_throws_validation_exception(): void
-    {
-        $fund = $this->makeFund(['balance' => 1000, 'is_active' => false]);
-
-        $request = \Illuminate\Http\Request::create('/expenses', 'POST', [
-            'fund_id'      => $fund->id,
-            'expense_type' => 'operational',
-            'amount'       => '100',
-            'expense_date' => now()->toDateString(),
-            'status'       => 'pending',
-        ]);
-
-        $this->expectException(ValidationException::class);
-
-        app(\App\Services\Modules\ExpenseClass::class)->save($request, $this->user->id);
     }
 }

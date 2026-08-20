@@ -416,42 +416,6 @@ class JournalEntryService
         );
     }
 
-    public function recordExpenseReleaseEntry(Expense $expense): ?JournalEntry
-    {
-        $amount = round((float) $expense->amount, 2);
-        if ($amount <= 0) {
-            return null;
-        }
-
-        $expenseAccount = $this->resolveExpenseAccount($expense->expense_type);
-        $creditAccount  = $expense->fund_id
-            ? $this->resolvePettyCashAccount($expense->loadMissing('fund')->fund)
-            : $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset');
-
-        return $this->createEntry(
-            $expense,
-            $expense->expense_date,
-            'expense_release',
-            'Expense release for ' . $expense->expense_type . '.',
-            [
-                [
-                    'account_id' => $expenseAccount->id,
-                    'line_type' => 'debit',
-                    'amount' => $amount,
-                    'description' => 'Recognize released expense.',
-                ],
-                [
-                    'account_id' => $creditAccount->id,
-                    'line_type' => 'credit',
-                    'amount' => $amount,
-                    'description' => $expense->fund_id ? 'Reduce petty cash fund: ' . $expense->fund->name . '.' : 'Reduce cash for expense payment.',
-                ],
-            ],
-            'Expense #' . $expense->id . ' - Released expense posting.'
-        );
-    }
-
-
     public function recordGeneralExpenseEntry(Expense $expense): ?JournalEntry
     {
         $amount = round((float) $expense->amount, 2);

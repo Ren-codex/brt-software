@@ -87,15 +87,20 @@
                                         <tr v-for="(item, index) in form.items" :key="index">
                                             <td>{{ index + 1 }}</td>
                                             <td>
-                                                <select v-model="item.product_id" class="form-control form-control-plain table-select"
+                                                <Multiselect
+                                                    v-model="item.product_id"
+                                                    :options="dropdowns.products"
+                                                    label="name"
+                                                    value-prop="value"
+                                                    track-by="name"
+                                                    :searchable="true"
+                                                    :can-clear="false"
+                                                    placeholder="Select a product..."
+                                                    class="form-control table-select table-multiselect"
                                                     :class="{ 'input-error': form.errors[`items.${index}.product_id`], 'input-warning': isDuplicateProduct(index) }"
-                                                    @change="handleInput(`items.${index}.product_id`)">
-                                                    <option value="" disabled>Select a product...</option>
-                                                    <option v-for="product in dropdowns.products" :value="product.value"
-                                                        :key="product.value">
-                                                        {{ product.name }}
-                                                    </option>
-                                                </select>
+                                                    :style="productSelectStyle(index)"
+                                                    @change="handleInput(`items.${index}.product_id`)"
+                                                />
                                                 <span class="error-message" v-if="form.errors[`items.${index}.product_id`]">
                                                     {{ form.errors[`items.${index}.product_id`] }}
                                                 </span>
@@ -250,9 +255,11 @@
 
 <script>
 import { useForm } from '@inertiajs/vue3';
+import Multiselect from '@vueform/multiselect';
 
 export default {
     name: "CreatePurchaseOrderModal",
+    components: { Multiselect },
     props: ['dropdowns'],
     emits: ['add'],
     data() {
@@ -298,6 +305,19 @@ export default {
             const productId = this.form.items[index]?.product_id;
             if (!productId) return false;
             return this.form.items.some((other, i) => i !== index && other.product_id === productId);
+        },
+        productSelectStyle(index) {
+            // The @vueform/multiselect library and a global theme rule both set
+            // border-color with !important, which a class-based override can't
+            // reliably beat. An inline style always wins over stylesheet rules,
+            // important or not, so the error/warning border is set this way.
+            if (this.form.errors[`items.${index}.product_id`]) {
+                return 'border-color: #e74c3c !important;';
+            }
+            if (this.isDuplicateProduct(index)) {
+                return 'border-color: #d97706 !important; background: #fffbeb !important;';
+            }
+            return '';
         },
         show() {
             this.form.reset();
@@ -901,6 +921,21 @@ export default {
 .table-select {
     min-width: 160px;
     font-size: 0.8rem;
+}
+
+.table-multiselect {
+    padding: 0 !important;
+}
+
+.table-multiselect :deep(.multiselect-wrapper) {
+    min-height: 34px !important;
+}
+
+.table-multiselect :deep(.multiselect-single-label),
+.table-multiselect :deep(.multiselect-search),
+.table-multiselect :deep(.multiselect-placeholder) {
+    font-size: 0.8rem;
+    padding-left: 0.75rem;
 }
 
 .table-qty-input {
