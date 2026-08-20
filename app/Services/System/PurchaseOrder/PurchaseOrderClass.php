@@ -185,7 +185,9 @@ class PurchaseOrderClass
     public function update($request)
     {
         $data = DB::transaction(function () use ($request) {
-            $purchaseOrder = PurchaseOrder::with('items.receivedItems')->findOrFail($request->id);
+            $purchaseOrder = PurchaseOrder::with(['status', 'items.receivedItems'])->findOrFail($request->id);
+
+            \App\Support\RecordLock::assertEditable($purchaseOrder, 'This purchase order', 'edited');
 
             // Editing rebuilds the item list (delete + recreate), which would
             // orphan any received stock and its inventory links. Block once
@@ -237,7 +239,9 @@ class PurchaseOrderClass
     public function delete($id)
     {
         return DB::transaction(function () use ($id) {
-            $purchaseOrder = PurchaseOrder::with('items.receivedItems')->findOrFail($id);
+            $purchaseOrder = PurchaseOrder::with(['status', 'items.receivedItems'])->findOrFail($id);
+
+            \App\Support\RecordLock::assertEditable($purchaseOrder, 'This purchase order', 'deleted', 'delete');
 
             // Deleting a PO with received stock would orphan the received
             // records and inventory. Steer to void / stock-return instead.

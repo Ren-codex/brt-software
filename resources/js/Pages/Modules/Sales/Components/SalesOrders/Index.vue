@@ -156,7 +156,7 @@
                                                     class="action-btn edit" title="Edit">
                                                     <i class="ri-pencil-fill"></i>
                                                 </button>
-                                                <button v-if="list.status?.slug !== 'cancelled' && can('sales', 'sales_orders', 'approver')"
+                                                <button v-if="isEditable(list) && can('sales', 'sales_orders', 'approver')"
                                                     @click.stop="onCancel(list)"
                                                     class="action-btn delete" title="Cancel Order">
                                                     <i class="ri-close-line"></i>
@@ -311,11 +311,12 @@ import Adjustment from './Modals/Adjustment.vue';
 import Approval from './Modals/Approval.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import { pollingMixin } from '@/Shared/polling.js';
+import { recordLockMixin } from '@/Shared/recordLock.js';
 
 
 export default {
     components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval, TableLoadingRow },
-    mixins: [pollingMixin],
+    mixins: [pollingMixin, recordLockMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
         return {

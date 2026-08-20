@@ -257,7 +257,9 @@ class SalesOrderClass
         }
 
         $data = SalesOrder::findOrFail($request->id);
-        $data->load(['items', 'arInvoices']);
+        $data->load(['items', 'arInvoices', 'status']);
+
+        \App\Support\RecordLock::assertEditable($data, 'This sales order', 'edited');
 
         // Once a credit sale has collected a payment, switching it to Cash mid-edit
         // isn't safe — the Credit→Cash sync below assumes no prior receipts exist.
@@ -721,6 +723,10 @@ class SalesOrderClass
                 'info' => 'This Sales Order has already been voided.',
             ];
         }
+
+        // A closed/paid order has already run its full course through the ledger;
+        // cancelling it here would reverse entries the books consider settled.
+        \App\Support\RecordLock::assertEditable($data, 'This sales order', 'cancelled', 'cancel');
 
         // Block only if a receipt has already been remitted/banked — that cash
         // has moved up the chain and must not be silently reversed here. Otherwise
