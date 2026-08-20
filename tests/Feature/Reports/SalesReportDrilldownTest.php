@@ -427,4 +427,57 @@ class SalesReportDrilldownTest extends TestCase
 
         $this->assertSame($order->id, $item->fresh()->sales_order_id);
     }
+
+    /**
+     * The whole summary payload used to 500 under SQLite because
+     * dailySalesOrders() used MySQL's GROUP_CONCAT(... SEPARATOR ...), so the
+     * main report had no coverage at all. It is composed in PHP now.
+     */
+    public function test_summary_endpoint_returns_every_report_section(): void
+    {
+        $this->actingAs($this->admin);
+        $order = $this->makeOrder($this->customerA, $this->repA, 1000, qty: 4, date: now()->toDateString());
+
+        $res = $this->getJson('/reports?'.http_build_query([
+            'option' => 'summary',
+            'from'   => now()->startOfMonth()->toDateString(),
+            'to'     => now()->toDateString(),
+            'day'    => now()->toDateString(),
+        ]))->assertOk();
+
+        $res->assertJsonStructure([
+            'top_customers',
+            'top_products',
+            'product_sales_report',
+            'customer_sales_report',
+            'sales_rep_report',
+            'daily_sales_orders',
+            'payment_summary',
+            'receipt_report',
+            'discount_summary',
+            'tax_summary',
+            'employee_summary',
+        ]);
+
+        $daily = collect($res->json('daily_sales_orders'))->firstWhere('id', $order->id);
+        $this->assertNotNull($daily, 'Order dated today should appear in daily_sales_orders.');
+        $this->assertSame('Jasmine 25 Sack x4', $daily['sold_products']);
+    }
+
+    /** An order with no line items still renders, with a placeholder. */
+    public function test_daily_sales_orders_handles_an_order_with_no_items(): void
+    {
+        $this->actingAs($this->admin);
+        $order = $this->makeOrder($this->customerA, null, 750, date: now()->toDateString());
+
+        $res = $this->getJson('/reports?'.http_build_query([
+            'option' => 'summary',
+            'from'   => now()->startOfMonth()->toDateString(),
+            'to'     => now()->toDateString(),
+            'day'    => now()->toDateString(),
+        ]))->assertOk();
+
+        $daily = collect($res->json('daily_sales_orders'))->firstWhere('id', $order->id);
+        $this->assertSame('-', $daily['sold_products']);
+    }
 }

@@ -63,12 +63,8 @@ class ReportClass
 
     private function dailySalesOrders(array $filters)
     {
-        return $this->baseSalesOrderQuery($filters, false)
+        $orders = $this->baseSalesOrderQuery($filters, false)
             ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
-            ->leftJoin('sales_order_items as soi', 'so.id', '=', 'soi.sales_order_id')
-            ->leftJoin('products as p', 'soi.product_id', '=', 'p.id')
-            ->leftJoin('list_brands as lb', 'p.brand_id', '=', 'lb.id')
-            ->leftJoin('list_units as lu', 'p.unit_id', '=', 'lu.id')
             ->whereDate('so.order_date', $filters['day'])
             ->select(
                 'so.id',
@@ -76,28 +72,44 @@ class ReportClass
                 'so.order_date',
                 DB::raw("COALESCE(c.name, 'Walk-in Customer') as customer_name"),
                 'so.payment_mode',
-                'so.total_amount',
-                DB::raw("COALESCE(
-                    GROUP_CONCAT(
-                        CONCAT(lb.name, ' ', p.weight, ' ', lu.name, ' x', soi.quantity)
-                        ORDER BY soi.id ASC
-                        SEPARATOR ', '
-                    ),
-                    '-'
-                ) as sold_products")
-            )
-            ->groupBy(
-                'so.id',
-                'so.so_number',
-                'so.order_date',
-                'c.name',
-                'so.payment_mode',
                 'so.total_amount'
             )
             ->orderByDesc('so.order_date')
             ->orderByDesc('so.id')
             ->limit($filters['limit'])
             ->get();
+
+        if ($orders->isEmpty()) {
+            return $orders;
+        }
+
+        // The sold-products summary is composed in PHP rather than with
+        // GROUP_CONCAT. MySQL spells it `GROUP_CONCAT(x SEPARATOR ', ')` and
+        // SQLite spells it `GROUP_CONCAT(x, ', ')` with different semantics, so
+        // the SQL version made this whole report impossible to cover in tests.
+        // The row count here is already bounded by the report's limit.
+        $soldProducts = DB::table('sales_order_items as soi')
+            ->join('products as p', 'soi.product_id', '=', 'p.id')
+            ->join('list_brands as lb', 'p.brand_id', '=', 'lb.id')
+            ->join('list_units as lu', 'p.unit_id', '=', 'lu.id')
+            ->whereIn('soi.sales_order_id', $orders->pluck('id')->all())
+            ->orderBy('soi.id')
+            ->select(
+                'soi.sales_order_id',
+                'soi.quantity',
+                DB::raw("CONCAT(lb.name, ' ', p.weight, ' ', lu.name) as product_name")
+            )
+            ->get()
+            ->groupBy('sales_order_id')
+            ->map(fn ($items) => $items
+                ->map(fn ($item) => $item->product_name.' x'.$item->quantity)
+                ->implode(', '));
+
+        foreach ($orders as $order) {
+            $order->sold_products = $soldProducts[$order->id] ?? '-';
+        }
+
+        return $orders;
     }
 
     private function productSalesReport(array $filters)
