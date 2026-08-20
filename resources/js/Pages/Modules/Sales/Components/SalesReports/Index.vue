@@ -150,7 +150,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in report?.top_customers || []" :key="index">
+                  <tr v-for="(item, index) in report?.top_customers || []" :key="index" class="clickable-row" @click="openDrill('customer', item.customer_id)">
                     <td>
                       <div class="customer-cell">
                         <span class="rank">{{ index + 1 }}</span>
@@ -182,7 +182,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in report?.top_products || []" :key="index">
+                  <tr v-for="(item, index) in report?.top_products || []" :key="index" class="clickable-row" @click="openDrill('product', item.product_id)">
                     <td>
                       <div class="product-cell">
                         <span class="rank">{{ index + 1 }}</span>
@@ -216,7 +216,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in report?.product_sales_report || []" :key="`product-report-${index}`">
+                  <tr v-for="(item, index) in report?.product_sales_report || []" :key="`product-report-${index}`" class="clickable-row" @click="openDrill('product', item.product_id)">
                     <td>{{ item.product_name }}</td>
                     <td class="text-right">{{ item.total_orders }}</td>
                     <td class="text-right">{{ item.total_quantity }}</td>
@@ -244,7 +244,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in report?.customer_sales_report || []" :key="`customer-report-${index}`">
+                  <tr v-for="(item, index) in report?.customer_sales_report || []" :key="`customer-report-${index}`" class="clickable-row" @click="openDrill('customer', item.customer_id)">
                     <td>{{ item.customer_name }}</td>
                     <td class="text-right">{{ item.total_orders }}</td>
                     <td class="text-right">{{ formatCurrency(item.average_order_value) }}</td>
@@ -273,7 +273,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in report?.sales_rep_report || []" :key="`rep-report-${index}`">
+                <tr v-for="(item, index) in report?.sales_rep_report || []" :key="`rep-report-${index}`" class="clickable-row" @click="openDrill('sales_rep', item.sales_rep_id)">
                   <td>{{ item.sales_rep_name }}</td>
                   <td class="text-right">{{ item.total_orders }}</td>
                   <td class="text-right">{{ formatCurrency(item.average_order_value) }}</td>
@@ -304,7 +304,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in report?.daily_sales_orders || []" :key="item.id">
+                <tr v-for="item in report?.daily_sales_orders || []" :key="item.id" class="clickable-row" @click="openDrill('order', item.id)">
                   <td><span class="so-number">{{ item.so_number }}</span></td>
                   <td>{{ formatDate(item.order_date) }}</td>
                   <td>{{ item.customer_name }}</td>
@@ -339,7 +339,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in report?.top_products || []" :key="`item-top-${index}`">
+                  <tr v-for="(item, index) in report?.top_products || []" :key="`item-top-${index}`" class="clickable-row" @click="openDrill('product', item.product_id)">
                     <td>{{ item.product_name }}</td>
                     <td class="text-right">{{ item.total_quantity }}</td>
                     <td class="text-right amount">{{ formatCurrency(item.total_sales) }}</td>
@@ -366,7 +366,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in report?.product_sales_report || []" :key="`item-report-${index}`">
+                  <tr v-for="(item, index) in report?.product_sales_report || []" :key="`item-report-${index}`" class="clickable-row" @click="openDrill('product', item.product_id)">
                     <td>{{ item.product_name }}</td>
                     <td class="text-right">{{ item.total_orders }}</td>
                     <td class="text-right">{{ item.total_quantity }}</td>
@@ -410,7 +410,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in filteredEmployeeSummary" :key="`employee-summary-${index}`">
+                <tr v-for="(item, index) in filteredEmployeeSummary" :key="`employee-summary-${index}`" class="clickable-row" @click="openDrill('sales_rep', item.employee_id)">
                   <td>{{ item.employee_name }}</td>
                   <td class="text-right">{{ item.so_count }}</td>
                   <td class="text-right amount">{{ formatCurrency(item.so_total) }}</td>
@@ -507,7 +507,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in report?.receipt_report || []" :key="item.id">
+                <tr v-for="item in report?.receipt_report || []" :key="item.id" class="clickable-row" @click="openDrill('receipt', item.id)">
                   <td><span class="so-number">{{ item.receipt_number || '-' }}</span></td>
                   <td>{{ formatDate(item.receipt_date) }}</td>
                   <td>{{ item.so_number || '-' }}</td>
@@ -574,7 +574,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in report?.discount_summary?.orders || []" :key="item.id">
+                  <tr v-for="item in report?.discount_summary?.orders || []" :key="item.id" class="clickable-row" @click="openDrill('order', item.id)">
                     <td><span class="so-number">{{ item.so_number }}</span></td>
                     <td>{{ formatDate(item.order_date) }}</td>
                     <td>{{ item.customer_name }}</td>
@@ -612,11 +612,14 @@
         </div>
       </div>
     </div>
+
+    <DrillDown ref="drillDown" :filters="normalizedForm()" :locations="locations" />
   </div>
 </template>
 
 <script>
 import _ from 'lodash';
+import DrillDown from '@/Pages/Modules/Sales/Components/SalesReports/Modals/DrillDown.vue';
 
 const createDefaultReport = () => ({
   top_customers: [],
@@ -633,6 +636,7 @@ const createDefaultReport = () => ({
 });
 
 export default {
+  components: { DrillDown },
   props: {
     locations: { type: Array, default: () => [] },
     filters: { type: Object, default: () => null },
@@ -718,6 +722,13 @@ export default {
     },
     selectReport(reportKey) {
       this.activeReport = reportKey;
+    },
+    /**
+     * Open the detail behind a report row. `id` may legitimately be null —
+     * that is how "Walk-in Customer" and "Unassigned" rep rows are represented.
+     */
+    openDrill(type, id) {
+      this.$refs.drillDown.show(type, id ?? null);
     },
     toggleDownloadMenu(e) {
       e.stopPropagation();
@@ -1129,6 +1140,20 @@ tr:last-child td {
 
 tbody tr:hover td {
   background: #f4faf8;
+}
+
+/* Rows that open a drill-down. */
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.clickable-row:hover td {
+  background: #eaf5f1;
+}
+
+.clickable-row:active td {
+  background: #dfeee8;
 }
 
 .text-right {

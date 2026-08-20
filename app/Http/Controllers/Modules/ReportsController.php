@@ -18,6 +18,24 @@ class ReportsController extends Controller
     public function index(Request $request)
     {
         $filters = $this->resolveFilters($request);
+
+        // Handled before summary() so a drill-down does not pay for the full
+        // report aggregation it never reads.
+        if ($request->option === 'drilldown') {
+            $validated = $request->validate([
+                // A null id is meaningful: it is how the report represents
+                // "Walk-in Customer" and "Unassigned" sales rep rows.
+                'type' => 'required|in:customer,product,sales_rep,order,receipt',
+                'id'   => 'nullable|integer',
+            ]);
+
+            return response()->json($this->reports->drilldown(
+                $filters,
+                $validated['type'],
+                isset($validated['id']) ? (int) $validated['id'] : null
+            ));
+        }
+
         $reportData = $this->reports->summary($filters);
 
         if ($request->option === 'summary') {
