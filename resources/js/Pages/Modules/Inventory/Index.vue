@@ -318,7 +318,7 @@ export default {
           id: 'receiving',
           label: 'Received Stocks',
           icon: 'ri-inbox-unarchive-line',
-          description: 'List of all fully settled stock receipts'
+          description: 'All stock received, paid or not'
         },
         {
           id: 'accountsPayable',
