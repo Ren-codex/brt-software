@@ -1,5 +1,5 @@
 <template>
-    <div v-if="total" class="brt-pagination" style="padding-right: 56px">
+    <div v-if="total" class="brt-pagination">
         <div class="pagination-info">
             Showing
             <span class="fw-semibold">{{ rangeStart }}–{{ rangeEnd }}</span>
@@ -79,11 +79,14 @@ export default {
 .brt-pagination {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    /* Centred rather than pushed to the edges: these tables run the full width
+       of the card, so space-between stranded the count and the controls at
+       opposite ends of a very wide row. */
+    justify-content: center;
+    gap: 1rem;
     padding-top: 0.75rem;
     padding-bottom: 0.25rem;
     flex-wrap: wrap;
-    gap: 0.5rem;
 }
 
 .pagination-info {
