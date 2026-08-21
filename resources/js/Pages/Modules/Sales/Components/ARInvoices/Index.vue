@@ -355,6 +355,12 @@ export default {
         },
 
         isDueSoon(list) {
+            // A cancelled or voided document owes nothing, whatever balance
+            // was left on the row when it was cancelled — chasing it as due
+            // would be chasing money nobody has to pay.
+            const status = (list?.status?.slug || list?.sales_order?.status?.slug || '').toLowerCase();
+            if (['cancelled', 'voided'].includes(status)) return false;
+
             const dueDateValue = list?.due_date ?? list?.sales_order?.due_date;
             if (!dueDateValue || Number(list?.balance_due || 0) <= 0) return false;
 

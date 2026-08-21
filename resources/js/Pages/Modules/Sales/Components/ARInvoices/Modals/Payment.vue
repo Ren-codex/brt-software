@@ -291,6 +291,11 @@ export default {
             return `${this.numberFormat(this.remainingBalance)} remaining after this payment.`;
         },
         dueInfo() {
+            // Nothing is owed on a cancelled or voided invoice, so neither
+            // "due soon" nor "overdue" applies however its balance was left.
+            const status = (this.invoice?.status?.slug || this.invoice?.sales_order?.status?.slug || '').toLowerCase();
+            if (['cancelled', 'voided'].includes(status)) return null;
+
             const dueDateValue = this.invoice?.due_date ?? this.invoice?.sales_order?.due_date;
             const balance = Number(this.invoice?.balance_due || 0);
             if (!dueDateValue || balance <= 0) return null;
