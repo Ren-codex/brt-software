@@ -183,6 +183,21 @@ class ReportClass
             )
             ->groupBy('so.sales_rep_id');
 
+        $qtySub = DB::table('sales_orders as so')
+            ->join('sales_order_items as soi', 'so.id', '=', 'soi.sales_order_id')
+            ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
+            ->where('ls.slug', '!=', 'cancelled')
+            ->whereBetween('so.order_date', [$filters['from'], $filters['to']])
+            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+                $query->where('so.location_id', $filters['location_id']);
+            })
+            ->whereNotNull('so.sales_rep_id')
+            ->select(
+                'so.sales_rep_id',
+                DB::raw('SUM(soi.quantity) as sold_quantity')
+            )
+            ->groupBy('so.sales_rep_id');
+
         $arSub = DB::table('ar_invoices as ai')
             ->join('sales_orders as so', 'ai.sales_order_id', '=', 'so.id')
             ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
@@ -219,12 +234,14 @@ class ReportClass
 
         $query = DB::table('employees as e')
             ->leftJoinSub($soSub, 'sod', 'sod.sales_rep_id', '=', 'e.id')
+            ->leftJoinSub($qtySub, 'qd', 'qd.sales_rep_id', '=', 'e.id')
             ->leftJoinSub($arSub, 'ard', 'ard.sales_rep_id', '=', 'e.id')
             ->leftJoinSub($receiptSub, 'rd', 'rd.sales_rep_id', '=', 'e.id')
             ->select(
                 'e.id as employee_id',
                 DB::raw("CONCAT(e.firstname, ' ', e.lastname) as employee_name"),
                 DB::raw('COALESCE(sod.so_count, 0) as so_count'),
+                DB::raw('COALESCE(qd.sold_quantity, 0) as sold_quantity'),
                 DB::raw('COALESCE(sod.so_total, 0) as so_total'),
                 DB::raw('COALESCE(ard.ar_count, 0) as ar_count'),
                 DB::raw('COALESCE(ard.ar_total, 0) as ar_total'),

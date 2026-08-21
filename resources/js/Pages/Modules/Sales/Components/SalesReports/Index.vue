@@ -401,6 +401,7 @@
                 <tr>
                   <th>Employee</th>
                   <th class="text-right">SO Count</th>
+                  <th class="text-right">Sold Quantity</th>
                   <th class="text-right">SO Total</th>
                   <th class="text-right">AR Count</th>
                   <th class="text-right">AR Total</th>
@@ -413,6 +414,7 @@
                 <tr v-for="(item, index) in filteredEmployeeSummary" :key="`employee-summary-${index}`" class="clickable-row" @click="openDrill('sales_rep', item.employee_id)">
                   <td>{{ item.employee_name }}</td>
                   <td class="text-right">{{ item.so_count }}</td>
+                  <td class="text-right">{{ item.sold_quantity }}</td>
                   <td class="text-right amount">{{ formatCurrency(item.so_total) }}</td>
                   <td class="text-right">{{ item.ar_count }}</td>
                   <td class="text-right amount">{{ formatCurrency(item.ar_total) }}</td>
@@ -421,7 +423,7 @@
                   <td class="text-right amount">{{ formatCurrency(item.receipt_total) }}</td>
                 </tr>
                 <tr v-if="!filteredEmployeeSummary.length">
-                  <td colspan="8" class="empty-message">
+                  <td colspan="9" class="empty-message">
                     {{ employeeSearch ? 'No employees match your search' : 'No employee activity found' }}
                   </td>
                 </tr>

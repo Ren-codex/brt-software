@@ -203,13 +203,14 @@ class SalesReportExport implements WithMultipleSheets
     private function employeeSummaryRows(): array
     {
         $rows = [
-            ['Employee', 'SO Count', 'SO Total', 'AR Count', 'AR Total', 'AR Balance Due', 'Receipt Count', 'Receipt Total'],
+            ['Employee', 'SO Count', 'Sold Quantity', 'SO Total', 'AR Count', 'AR Total', 'AR Balance Due', 'Receipt Count', 'Receipt Total'],
         ];
 
         foreach (($this->reportData['employee_summary'] ?? []) as $item) {
             $rows[] = [
                 (string) data_get($item, 'employee_name', ''),
                 (int) data_get($item, 'so_count', 0),
+                (int) data_get($item, 'sold_quantity', 0),
                 (float) data_get($item, 'so_total', 0),
                 (int) data_get($item, 'ar_count', 0),
                 (float) data_get($item, 'ar_total', 0),
