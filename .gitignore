@@ -19,3 +19,8 @@ yarn-error.log
 /.vscode
 nul
 /.claude/worktrees/
+
+# Vite writes this transiently while loading the config; committing it made
+# the bundle hash flip between builds, which risks a manifest naming an asset
+# that was never shipped.
+vite.config.js.timestamp-*.mjs
