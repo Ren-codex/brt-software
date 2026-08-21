@@ -21,8 +21,8 @@
                     <i class="ri-close-line"></i>
                 </button>
             </div>
-            <div class="modal-body">
-                <form @submit.prevent="submit">
+            <form class="modal-form" @submit.prevent="submit">
+                <div class="modal-body">
                   <div class="form-row">
                         <div class="form-group">
                             <label for="product_id" class="form-label">Product <span class="required-asterisk">*</span></label>
@@ -236,21 +236,19 @@
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Item has been saved successfully!</span>
                     </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-cancel" @click="hide">
-                            <i class="ri-close-line"></i>
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || parseFloat(form.price) === 0 || !form.product_id || !form.price_type  || !form.batch_code)">
-                            <i class="ri-save-line" v-if="!form.processing"></i>
-                            <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : 'Add Item' }}
-                        </button>
-                    </div>
-
-
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" @click="hide">
+                        <i class="ri-close-line"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || parseFloat(form.price) === 0 || !form.product_id || !form.price_type  || !form.batch_code)">
+                        <i class="ri-save-line" v-if="!form.processing"></i>
+                        <i class="ri-loader-4-line spinner" v-else></i>
+                        {{ form.processing ? 'Saving...' : 'Add Item' }}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     <UpdatePriceModal
@@ -675,6 +673,10 @@ export default {
 </script>
 
 <style scoped>
+.modal-form {
+    display: contents;
+}
+
 .modal-header-title-group {
     display: flex;
     align-items: center;
