@@ -440,11 +440,24 @@ export default {
 .receiving-table-wrap {
   border: 1px solid #edf2f7;
   border-radius: 20px;
-  overflow: hidden;
+  /* overflow:hidden clipped the row instead of scrolling it, so the last
+     columns were simply unreachable once the Payment column was added. */
+  overflow: auto;
+  max-height: 70vh;
 }
 
 .receiving-table {
   margin: 0;
+  /* Let the columns keep their natural width and scroll, rather than
+     squeezing thirteen of them into the viewport. */
+  min-width: 1200px;
+}
+
+/* Keep the headings in view while scrolling a long list. */
+.receiving-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .receiving-table thead th {
