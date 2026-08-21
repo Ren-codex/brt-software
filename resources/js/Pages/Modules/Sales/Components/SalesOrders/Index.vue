@@ -202,6 +202,7 @@
                                                                         <thead>
                                                                             <tr>
                                                                                 <th class="fw-semibold">Product Name</th>
+                                                                                <th class="fw-semibold">Batch Code</th>
                                                                                 <th class="fw-semibold">Quantity</th>
                                                                                 <th class="fw-semibold">Price</th>
                                                                             </tr>
@@ -209,6 +210,7 @@
                                                                         <tbody>
                                                                             <tr v-for="item in list.items" :key="item.id">
                                                                                 <td>{{ getProduct(item.product_id).name || 'Unknown Product' }}</td>
+                                                                                <td>{{ item.batch_code || '-' }}</td>
                                                                                 <td>
                                                                                     <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
                                                                                 </td>
