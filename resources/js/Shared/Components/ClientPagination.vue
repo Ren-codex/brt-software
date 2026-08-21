@@ -1,5 +1,5 @@
 <template>
-    <div v-if="total" class="brt-pagination">
+    <div v-if="total" class="brt-pagination" style="padding-right: 56px">
         <div class="pagination-info">
             Showing
             <span class="fw-semibold">{{ rangeStart }}–{{ rangeEnd }}</span>
