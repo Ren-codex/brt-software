@@ -61,8 +61,8 @@
             <tbody>
               <TableLoadingRow v-if="loading" :colspan="13" message="Loading received stocks..." />
               <template v-else>
-                <tr v-for="(record, index) in filteredRecords" :key="record.id" :class="{ 'voided-row': record.is_voided }">
-                  <td>{{ index + 1 }}</td>
+                <tr v-for="(record, index) in pagedRecords" :key="record.id" :class="{ 'voided-row': record.is_voided }">
+                  <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td><b>{{ record.received_no || `RCV-${record.id}` }}</b></td>
                   <td>{{ record.purchase_order?.po_number || 'N/A' }}</td>
                   <td>
@@ -127,7 +127,7 @@
                     </div>
                   </td>
                 </tr>
-                <tr v-if="filteredRecords.length === 0">
+                <tr v-if="pagedRecords.length === 0">
                   <td colspan="13" class="empty-state">
                     <i class="ri-inbox-line"></i>
                     <p>No received stock found</p>
@@ -138,6 +138,8 @@
             </tbody>
           </table>
         </div>
+
+        <ClientPagination v-model="currentPage" :total="filteredRecords.length" :per-page="pageSize" noun="records" />
       </div>
     </div>
 
@@ -151,13 +153,14 @@
 </template>
 
 <script>
+import ClientPagination from '@/Shared/Components/ClientPagination.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import VoidReceivedStockModal from '../Modal/VoidReceivedStockModal.vue';
 import ViewReceivedStockModal from '../Modal/ViewReceivedStockModal.vue';
 
 export default {
   name: 'ReceivingTab',
-  components: { TableLoadingRow, VoidReceivedStockModal, ViewReceivedStockModal },
+  components: { ClientPagination, TableLoadingRow, VoidReceivedStockModal, ViewReceivedStockModal },
   emits: ['refresh', 'toast'],
   props: {
     listReceivedStocks: {
@@ -172,6 +175,8 @@ export default {
   data() {
     return {
       localKeyword: '',
+      currentPage: 1,
+      pageSize: 15,
       selectedPaymentFilter: 'all',
       paymentFilters: [
         { value: 'all',           label: 'All',           icon: 'ri-list-check-2' },
@@ -193,6 +198,7 @@ export default {
     paidReceivingRecords() {
       return this.listReceivedStocks || [];
     },
+    /** Every record matching the filters — paged for display below. */
     filteredRecords() {
       const keyword = this.localKeyword.toLowerCase();
 
@@ -227,6 +233,32 @@ export default {
         .sort((left, right) => {
           return new Date(right?.received_date || 0) - new Date(left?.received_date || 0);
         });
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredRecords.length / this.pageSize));
+    },
+    rangeStart() {
+      return this.filteredRecords.length ? (this.currentPage - 1) * this.pageSize + 1 : 0;
+    },
+    rangeEnd() {
+      return Math.min(this.currentPage * this.pageSize, this.filteredRecords.length);
+    },
+    pagedRecords() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      return this.filteredRecords.slice(start, start + this.pageSize);
+    },
+  },
+  watch: {
+    // A filter or search that shortens the list must not strand the reader on
+    // a page that no longer exists.
+    localKeyword() {
+      this.currentPage = 1;
+    },
+    selectedPaymentFilter() {
+      this.currentPage = 1;
+    },
+    listReceivedStocks() {
+      this.currentPage = 1;
     },
   },
   methods: {
@@ -289,6 +321,7 @@ export default {
 </script>
 
 <style scoped>
+
 .payment-status {
   display: inline-block;
   padding: 2px 9px;

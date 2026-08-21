@@ -206,7 +206,11 @@
     "src": "public/images/sidebar/img-4.jpg"
   },
   "resources/js/app.js": {
+<<<<<<< HEAD
     "file": "assets/app-EX_2thb4.js",
+=======
+    "file": "assets/app-CQMToEui.js",
+>>>>>>> 61ae81207369380773e59e33ffde3898f34c5ffd
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -215,7 +219,11 @@
       "node_modules/vue3-apexcharts/dist/apexcharts.ssr.esm-fe46cd2d.js"
     ],
     "css": [
+<<<<<<< HEAD
       "assets/app-2UHUBW7O.css"
+=======
+      "assets/app-CM0d--jk.css"
+>>>>>>> 61ae81207369380773e59e33ffde3898f34c5ffd
     ],
     "assets": [
       "assets/official-logo-D8VPb1Z4.png",

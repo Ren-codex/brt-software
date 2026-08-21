@@ -138,12 +138,12 @@
                             <tr v-if="loading">
                                 <td colspan="10" class="text-center py-4 text-muted">Loading…</td>
                             </tr>
-                            <tr v-else-if="!report.rows.length">
+                            <tr v-else-if="!pagedRows.length">
                                 <td colspan="10" class="text-center py-4 text-muted">
                                     No stock matches these filters.
                                 </td>
                             </tr>
-                            <tr v-else v-for="row in report.rows" :key="row.id">
+                            <tr v-else v-for="row in pagedRows" :key="row.id">
                                 <td class="font-monospace text-muted">{{ row.batch_code }}</td>
                                 <td class="fw-semibold">{{ row.product_name }}</td>
                                 <td>{{ row.brand }}</td>
@@ -177,6 +177,8 @@
                     </table>
                 </div>
 
+                <ClientPagination v-model="currentPage" :total="report.rows.length" :per-page="pageSize" noun="batches" />
+
                 <div v-if="report.by_brand.length" class="brand-breakdown">
                     <h5 class="brand-breakdown-title">By brand</h5>
                     <div class="brand-grid">
@@ -194,9 +196,11 @@
 
 <script>
 import _ from 'lodash';
+import ClientPagination from '@/Shared/Components/ClientPagination.vue';
 
 export default {
     name: 'InventoryReportTab',
+    components: { ClientPagination },
     emits: ['toast'],
     data() {
         return {
@@ -204,6 +208,8 @@ export default {
             brands: [],
             report: { totals: this.emptyTotals(), rows: [], by_brand: [] },
             showExport: false,
+            currentPage: 1,
+            pageSize: 15,
             periods: [
                 { value: 'current', label: 'Current' },
                 { value: 'week', label: 'Weekly' },
@@ -228,6 +234,20 @@ export default {
         this.fetch();
     },
     computed: {
+        totalPages() {
+            return Math.max(1, Math.ceil((this.report.rows || []).length / this.pageSize));
+        },
+        rangeStart() {
+            return this.report.rows.length ? (this.currentPage - 1) * this.pageSize + 1 : 0;
+        },
+        rangeEnd() {
+            return Math.min(this.currentPage * this.pageSize, this.report.rows.length);
+        },
+        /** Only the current page is drawn; the totals row still sums everything. */
+        pagedRows() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            return (this.report.rows || []).slice(start, start + this.pageSize);
+        },
         /**
          * The choices behind the granularity — actual month names, quarters,
          * week ranges or years, most recent first, so picking one reads plainly
@@ -332,6 +352,7 @@ export default {
             axios.get('/inventory-report', { params: { ...this.filter, option: 'summary' } })
                 .then(({ data }) => {
                     this.report = data;
+                    this.currentPage = 1;
                     // Brands come from the rows themselves, so the filter only
                     // ever offers brands that actually have stock.
                     this.brands = [...new Set((data.rows || []).map((r) => r.brand))].sort();
@@ -365,6 +386,7 @@ export default {
 </script>
 
 <style scoped>
+
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
