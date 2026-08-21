@@ -139,20 +139,7 @@
           </table>
         </div>
 
-        <div v-if="!loading && filteredRecords.length" class="rcv-pagination">
-          <span class="rcv-page-count">
-            Showing {{ rangeStart }}&ndash;{{ rangeEnd }} of {{ filteredRecords.length }}
-          </span>
-          <div v-if="totalPages > 1" class="rcv-page-controls">
-            <button type="button" class="rcv-page-btn" :disabled="currentPage === 1" @click="currentPage--">
-              <i class="ri-arrow-left-s-line"></i> Prev
-            </button>
-            <span class="rcv-page-info">Page {{ currentPage }} of {{ totalPages }}</span>
-            <button type="button" class="rcv-page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
-              Next <i class="ri-arrow-right-s-line"></i>
-            </button>
-          </div>
-        </div>
+        <ClientPagination v-model="currentPage" :total="filteredRecords.length" :per-page="pageSize" noun="records" />
       </div>
     </div>
 
@@ -166,13 +153,14 @@
 </template>
 
 <script>
+import ClientPagination from '@/Shared/Components/ClientPagination.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import VoidReceivedStockModal from '../Modal/VoidReceivedStockModal.vue';
 import ViewReceivedStockModal from '../Modal/ViewReceivedStockModal.vue';
 
 export default {
   name: 'ReceivingTab',
-  components: { TableLoadingRow, VoidReceivedStockModal, ViewReceivedStockModal },
+  components: { ClientPagination, TableLoadingRow, VoidReceivedStockModal, ViewReceivedStockModal },
   emits: ['refresh', 'toast'],
   props: {
     listReceivedStocks: {
@@ -333,32 +321,6 @@ export default {
 </script>
 
 <style scoped>
-.rcv-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 0.25rem 0;
-  flex-wrap: wrap;
-}
-
-.rcv-page-count { font-size: 0.78rem; color: #64748b; }
-.rcv-page-controls { display: flex; align-items: center; gap: 0.5rem; }
-
-.rcv-page-btn {
-  border: 1px solid #dcebe5;
-  background: #fff;
-  color: #16322e;
-  border-radius: 9px;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.rcv-page-btn:hover:not(:disabled) { background: #f2faf7; }
-.rcv-page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.rcv-page-info { font-size: 0.78rem; color: #4a6b63; font-weight: 600; }
 
 .payment-status {
   display: inline-block;

@@ -143,25 +143,7 @@
             </table>
           </div>
 
-          <div v-if="!isLoading && totalPages > 1" class="ap-pagination">
-            <button
-              type="button"
-              class="ap-page-btn"
-              :disabled="currentPage === 1"
-              @click="currentPage--"
-            >
-              <i class="ri-arrow-left-s-line"></i> Prev
-            </button>
-            <span class="ap-page-info">Page {{ currentPage }} of {{ totalPages }}</span>
-            <button
-              type="button"
-              class="ap-page-btn"
-              :disabled="currentPage === totalPages"
-              @click="currentPage++"
-            >
-              Next <i class="ri-arrow-right-s-line"></i>
-            </button>
-          </div>
+          <ClientPagination v-if="!isLoading" v-model="currentPage" :total="filteredPayables.length" :per-page="pageSize" noun="records" />
         </div>
       </div>
     </div>
@@ -186,12 +168,13 @@
 import PayAccountsPayableModal from '../Modal/PayAccountsPayableModal.vue';
 import ViewAccountsPayableModal from '../Modal/ViewAccountsPayableModal.vue';
 import VoidReceivedStockModal from '../Modal/VoidReceivedStockModal.vue';
+import ClientPagination from '@/Shared/Components/ClientPagination.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import { formatCurrency, formatDate } from '@/Shared/utils/formatters.js';
 
 export default {
   name: 'AccountsPayableTab',
-  components: {
+  components: { ClientPagination,
     PayAccountsPayableModal,
     ViewAccountsPayableModal,
     VoidReceivedStockModal,
@@ -267,6 +250,12 @@ export default {
     totalPages() {
       return Math.max(1, Math.ceil(this.filteredPayables.length / this.pageSize));
     },
+    rangeStart() {
+      return this.filteredPayables.length ? (this.currentPage - 1) * this.pageSize + 1 : 0;
+    },
+    rangeEnd() {
+      return Math.min(this.currentPage * this.pageSize, this.filteredPayables.length);
+    },
     paginatedPayables() {
       const start = (this.currentPage - 1) * this.pageSize;
       return this.filteredPayables.slice(start, start + this.pageSize);
@@ -275,6 +264,12 @@ export default {
   watch: {
     localKeyword() {
       this.currentPage = 1;
+    },
+    // A shorter list must not leave the reader on a page that no longer exists.
+    filteredPayables() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = 1;
+      }
     },
   },
   methods: {
@@ -533,42 +528,12 @@ export default {
   }
 }
 
-.ap-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 0.85rem 0.25rem 0;
-}
 
-.ap-page-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.45rem 0.85rem;
-  border: 1px solid #ced4da;
-  border-radius: 8px;
-  background: #fff;
-  color: #2e8b57;
-  font-size: 0.8rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
 
-.ap-page-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 
-.ap-page-btn:not(:disabled):hover {
-  background: #f0f9f4;
-  border-color: #9ad0b7;
-}
 
-.ap-page-info {
-  font-size: 0.82rem;
-  color: #6c757d;
-}
+
+
 
 /* Card Header */
 .library-card-header {
