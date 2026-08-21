@@ -105,7 +105,11 @@
                     </Link>
                 </li>
 
-                <li class="nav-item" v-if="canAny('payroll')">
+                <!-- canAny('payroll') showed this to anyone holding any payroll
+                     grant, but the link only ever opens /payrolls, which is gated
+                     on payroll_processing view -- a loans-only holder got a menu
+                     item that 403s. Gate it on what the link actually opens. -->
+                <li class="nav-item" v-if="can('payroll', 'payroll_processing', 'view')">
                     <Link href="/payrolls" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/payrolls') }">
                     <i class="ri-wallet-2-line"></i>

@@ -168,7 +168,17 @@ export default {
       });
 
       try {
-        await axios.post(`/libraries/roles/${this.role.id}/permissions`, { grants });
+        const res = await axios.post(`/libraries/roles/${this.role.id}/permissions`, { grants });
+
+        // HandlesTransaction swallows the exception and still answers 200 with
+        // status:false, so a resolved promise is not proof the grants were
+        // written. Without this check a rolled-back save showed the green
+        // success toast and the role kept its old permissions.
+        if (res.data && res.data.status === false) {
+          this.fail(res.data.info || res.data.message || 'The permissions were not saved.');
+          return;
+        }
+
         this.$emit('saved');
         this.hide();
         this.$confirm({
@@ -179,9 +189,36 @@ export default {
           hideCancel: true,
           autoCloseMs: 1800,
         });
+      } catch (error) {
+        // There is no global axios interceptor, so without this catch a 403 or
+        // an expired session left the modal open with no message at all and the
+        // grants silently never reached the server.
+        this.fail(this.errorMessage(error));
       } finally {
         this.saving = false;
       }
+    },
+    errorMessage(error) {
+      const status = error?.response?.status;
+      if (status === 403) {
+        return 'You are not allowed to change role permissions. This needs Libraries → Roles admin access.';
+      }
+      if (status === 419) {
+        return 'Your session expired before the permissions were saved. Reload the page and try again.';
+      }
+      if (status === 422) {
+        return 'The server rejected some of the selected permissions.';
+      }
+      return error?.response?.data?.message || error?.message || 'The permissions could not be saved.';
+    },
+    fail(message) {
+      this.$confirm({
+        title: 'Save failed',
+        message,
+        variant: 'danger',
+        confirmText: 'OK',
+        hideCancel: true,
+      });
     },
   },
 };
