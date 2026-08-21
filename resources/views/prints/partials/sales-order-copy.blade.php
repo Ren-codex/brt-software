@@ -76,6 +76,7 @@
         <tr>
             <th>Item #</th>
             <th>Product</th>
+            <th>Batch Code</th>
             <th>Unit of Measurement</th>
             <th class="text-right">Quantity</th>
             <th class="text-right">Unit Price</th>
@@ -87,6 +88,7 @@
         <tr>
             <td>{{ $index + 1 }}</td>
             <td><strong>{{ $item->product->brand->name ?? '' }} {{ $item->product->weight }}</strong></td>
+            <td>{{ $item->batch_code ?? '---' }}</td>
             <td>{{ $item->product->unit->name ?? '' }}</td>
             <td class="text-right">{{ number_format($item->quantity) }}</td>
             <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
