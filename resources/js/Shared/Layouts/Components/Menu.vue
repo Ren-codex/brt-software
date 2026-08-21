@@ -105,11 +105,15 @@
                     </Link>
                 </li>
 
-                <!-- canAny('payroll') showed this to anyone holding any payroll
-                     grant, but the link only ever opens /payrolls, which is gated
-                     on payroll_processing view -- a loans-only holder got a menu
-                     item that 403s. Gate it on what the link actually opens. -->
-                <li class="nav-item" v-if="can('payroll', 'payroll_processing', 'view')">
+                <!-- Deliberately the loose check: any payroll grant shows the
+                     item. Gating on payroll_processing view instead is tighter and
+                     avoids a menu entry that 403s for a loans-only holder, but it
+                     hid Payroll from holders whose grant sits on a submodule, which
+                     is the worse failure. The real fix is letting /payrolls open
+                     for any payroll submodule -- that needs PayrollController@index
+                     to stop serving ?option=lists payroll data from the same route
+                     as the page shell. -->
+                <li class="nav-item" v-if="canAny('payroll')">
                     <Link href="/payrolls" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/payrolls') }">
                     <i class="ri-wallet-2-line"></i>
