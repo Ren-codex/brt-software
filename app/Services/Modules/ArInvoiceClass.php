@@ -152,6 +152,27 @@ class ArInvoiceClass
         ];
     }
 
+    /**
+     * What is actually owed on an invoice right now, read from the database.
+     *
+     * The payment screen shows and validates against this rather than the list
+     * row it was opened from: the row is a snapshot, and a payment recorded
+     * anywhere else leaves it wrong.
+     */
+    public function currentBalance($id): array
+    {
+        $invoice = ArInvoice::with('status')->findOrFail($id);
+
+        return [
+            'id'            => $invoice->id,
+            'amount_due'    => round((float) $invoice->amount_due, 2),
+            'amount_paid'   => round((float) $invoice->amount_paid, 2),
+            'balance_due'   => round((float) $invoice->balance_due, 2),
+            'status'        => optional($invoice->status)->name,
+            'is_settled'    => round((float) $invoice->balance_due, 2) <= 0,
+        ];
+    }
+
     public function payment($request, $id = null){
         $ar_invoice = ArInvoice::findOrFail($request->id);
 

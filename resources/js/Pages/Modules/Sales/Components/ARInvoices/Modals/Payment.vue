@@ -52,6 +52,10 @@
                         <i class="ri-wallet-3-line balance-decor"></i>
                         <p class="balance-label">Outstanding Balance</p>
                         <p class="balance-value">{{ numberFormat(form.balance_due) }}</p>
+                        <p v-if="loadingBalance" class="balance-note">checking…</p>
+                        <p v-else-if="balanceStale" class="balance-note updated">
+                            <i class="ri-refresh-line"></i> Updated — payments were recorded since this list loaded
+                        </p>
                     </div>
                 </div>
 
@@ -326,6 +330,9 @@ export default {
             payment_modes: ['Cash', 'GCash', 'Bank Transfer', 'Check'],
             bankAccounts: [],
             bankAccountsError: '',
+            loadingBalance: false,
+            balanceStale: false,
+            settled: false,
             title: null,
             showModal: false,
             invoice: null,
@@ -345,11 +352,45 @@ export default {
             this.invoice = data;
             this.isSplitPayment = false;
             this.form.id = data.id;
-            this.form.balance_due = data.balance_due;
-            this.form.splits = [this.newSplit('Cash', this.round2(data.balance_due))];
             this.title = title;
             this.route = route;
+            this.balanceStale = false;
+            this.loadingBalance = true;
+
+            // Start from the row so the screen is never blank, then correct it
+            // from the database. The row is a snapshot: a payment recorded on
+            // any other screen leaves it overstating what is owed, and the
+            // screen would show one balance while the server enforced another.
+            this.applyBalance(Number(data.balance_due) || 0);
+            this.refreshBalance();
             this.loadBankAccounts();
+        },
+
+        applyBalance(balance) {
+            this.form.balance_due = balance;
+            this.form.splits = [this.newSplit('Cash', this.round2(balance))];
+        },
+
+        async refreshBalance() {
+            try {
+                const { data } = await axios.get('/ar-invoices', {
+                    params: { option: 'balance', id: this.form.id },
+                });
+                const fresh = Number(data.balance_due) || 0;
+
+                if (Math.abs(fresh - Number(this.form.balance_due || 0)) > 0.009) {
+                    // Say so rather than silently swapping the figure under them.
+                    this.balanceStale = true;
+                    this.applyBalance(fresh);
+                }
+
+                this.settled = !!data.is_settled;
+            } catch {
+                // Keep the row's figure and let the server have the final word.
+                this.balanceStale = false;
+            } finally {
+                this.loadingBalance = false;
+            }
         },
 
         newSplit(mode = 'Cash', amount = 0) {
@@ -513,6 +554,17 @@ export default {
 }
 </script>
 <style scoped>
+.balance-note {
+    margin: 0.25rem 0 0;
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.balance-note.updated {
+    color: #fde68a;
+    font-weight: 600;
+}
+
 .modal-subtitle {
     font-size: 0.78rem;
     color: #6b8c85;
