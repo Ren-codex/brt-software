@@ -185,6 +185,7 @@ class ReportClass
 
         $qtySub = DB::table('sales_orders as so')
             ->join('sales_order_items as soi', 'so.id', '=', 'soi.sales_order_id')
+            ->leftJoin('products as p', 'soi.product_id', '=', 'p.id')
             ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
             ->where('ls.slug', '!=', 'cancelled')
             ->whereBetween('so.order_date', [$filters['from'], $filters['to']])
@@ -194,7 +195,7 @@ class ReportClass
             ->whereNotNull('so.sales_rep_id')
             ->select(
                 'so.sales_rep_id',
-                DB::raw('SUM(soi.quantity) as sold_quantity')
+                DB::raw('ROUND(SUM(COALESCE(p.weight, 0) * soi.quantity) / 25, 2) as sold_quantity')
             )
             ->groupBy('so.sales_rep_id');
 

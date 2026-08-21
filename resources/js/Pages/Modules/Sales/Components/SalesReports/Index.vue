@@ -414,7 +414,7 @@
                 <tr v-for="(item, index) in filteredEmployeeSummary" :key="`employee-summary-${index}`" class="clickable-row" @click="openDrill('sales_rep', item.employee_id)">
                   <td>{{ item.employee_name }}</td>
                   <td class="text-right">{{ item.so_count }}</td>
-                  <td class="text-right">{{ item.sold_quantity }}</td>
+                  <td class="text-right">{{ formatQuantity(item.sold_quantity) }}</td>
                   <td class="text-right amount">{{ formatCurrency(item.so_total) }}</td>
                   <td class="text-right">{{ item.ar_count }}</td>
                   <td class="text-right amount">{{ formatCurrency(item.ar_total) }}</td>
@@ -765,6 +765,9 @@ export default {
     },
     formatCurrency(val) {
       return `PHP ${Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    },
+    formatQuantity(val) {
+      return Number(val || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
     },
     normalizedForm() {
       return { ...this.form, location_id: this.form.location_id || null };

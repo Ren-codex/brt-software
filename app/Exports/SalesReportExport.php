@@ -210,7 +210,7 @@ class SalesReportExport implements WithMultipleSheets
             $rows[] = [
                 (string) data_get($item, 'employee_name', ''),
                 (int) data_get($item, 'so_count', 0),
-                (int) data_get($item, 'sold_quantity', 0),
+                (float) data_get($item, 'sold_quantity', 0),
                 (float) data_get($item, 'so_total', 0),
                 (int) data_get($item, 'ar_count', 0),
                 (float) data_get($item, 'ar_total', 0),
