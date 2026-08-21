@@ -238,8 +238,14 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         ->middleware('permission:payroll,payroll_templates,encoder');
     Route::delete('/payroll-templates/{templateId}/employees/{employeeId}', [App\Http\Controllers\Modules\PayrollTemplateController::class, 'removeEmployee'])
         ->middleware('permission:payroll,payroll_templates,encoder');
+    // index only renders the Payroll page shell, whose tabs each filter themselves
+    // by permission, so any payroll grant may open it -- gating it on
+    // payroll_processing hid the whole page from a loans-only holder. The payroll
+    // list data this same action serves via ?option=lists is Payroll Processing
+    // data and keeps that submodule's own gate, enforced in the controller.
     Route::resource('/payrolls', App\Http\Controllers\Modules\PayrollController::class)->except(['create', 'edit'])
-        ->middlewareFor(['index', 'show'], 'permission:payroll,payroll_processing,view')
+        ->middlewareFor('index', 'permission:payroll,*,view')
+        ->middlewareFor('show', 'permission:payroll,payroll_processing,view')
         ->middlewareFor(['store', 'update'], 'permission:payroll,payroll_processing,encoder')
         ->middlewareFor('destroy', 'permission:payroll,payroll_processing,admin');
     Route::resource('/loans', App\Http\Controllers\Modules\LoanController::class)->except(['create', 'edit'])

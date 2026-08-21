@@ -20,6 +20,15 @@ class PermissionService
      */
     private const WORKING_LEVELS = ['encoder', 'approver', 'releaser', 'void'];
 
+    /**
+     * Submodule key meaning "module-wide, or any one submodule". A module's
+     * landing page needs this: it is reachable by anyone who can open at least
+     * one tab on it, while the data behind each tab stays gated on that tab's
+     * own submodule. Passing a real submodule key there locked out holders whose
+     * grant sat on a different tab of the same page.
+     */
+    public const ANY_SUBMODULE = '*';
+
     /** The granted levels that would satisfy a required level. */
     private function levelsSatisfying(string $required): array
     {
@@ -58,8 +67,10 @@ class PermissionService
             return false;
         }
 
+        $anySubmodule = $submoduleKey === self::ANY_SUBMODULE;
+
         $submoduleId = null;
-        if ($submoduleKey !== null) {
+        if ($submoduleKey !== null && !$anySubmodule) {
             $submodule = $module->submodules()->where('key', $submoduleKey)->first();
             if (!$submodule) {
                 return false;
@@ -67,16 +78,22 @@ class PermissionService
             $submoduleId = $submodule->id;
         }
 
-        return RolePermission::whereIn('role_id', $roleIds)
+        $query = RolePermission::whereIn('role_id', $roleIds)
             ->where('module_id', $module->id)
-            ->where(function ($query) use ($submoduleId) {
-                $query->whereNull('submodule_id');
+            ->whereIn('access_level', $this->levelsSatisfying($level));
+
+        // ANY_SUBMODULE deliberately leaves the submodule column unconstrained,
+        // so a grant on any tab of the module satisfies the check.
+        if (!$anySubmodule) {
+            $query->where(function ($inner) use ($submoduleId) {
+                $inner->whereNull('submodule_id');
                 if ($submoduleId !== null) {
-                    $query->orWhere('submodule_id', $submoduleId);
+                    $inner->orWhere('submodule_id', $submoduleId);
                 }
-            })
-            ->whereIn('access_level', $this->levelsSatisfying($level))
-            ->exists();
+            });
+        }
+
+        return $query->exists();
     }
 
     /**

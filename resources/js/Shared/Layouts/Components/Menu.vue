@@ -105,14 +105,11 @@
                     </Link>
                 </li>
 
-                <!-- Deliberately the loose check: any payroll grant shows the
-                     item. Gating on payroll_processing view instead is tighter and
-                     avoids a menu entry that 403s for a loans-only holder, but it
-                     hid Payroll from holders whose grant sits on a submodule, which
-                     is the worse failure. The real fix is letting /payrolls open
-                     for any payroll submodule -- that needs PayrollController@index
-                     to stop serving ?option=lists payroll data from the same route
-                     as the page shell. -->
+                <!-- Matches the route exactly: /payrolls is gated on
+                     permission:payroll,*,view, so any payroll grant that shows this
+                     item also opens the page. The tabs on it filter themselves, and
+                     the payroll list behind ?option=lists keeps its own
+                     payroll_processing gate in the controller. -->
                 <li class="nav-item" v-if="canAny('payroll')">
                     <Link href="/payrolls" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/payrolls') }">
