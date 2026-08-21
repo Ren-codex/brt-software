@@ -61,8 +61,8 @@
             <tbody>
               <TableLoadingRow v-if="loading" :colspan="13" message="Loading received stocks..." />
               <template v-else>
-                <tr v-for="(record, index) in filteredRecords" :key="record.id" :class="{ 'voided-row': record.is_voided }">
-                  <td>{{ index + 1 }}</td>
+                <tr v-for="(record, index) in pagedRecords" :key="record.id" :class="{ 'voided-row': record.is_voided }">
+                  <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td><b>{{ record.received_no || `RCV-${record.id}` }}</b></td>
                   <td>{{ record.purchase_order?.po_number || 'N/A' }}</td>
                   <td>
@@ -127,7 +127,7 @@
                     </div>
                   </td>
                 </tr>
-                <tr v-if="filteredRecords.length === 0">
+                <tr v-if="pagedRecords.length === 0">
                   <td colspan="13" class="empty-state">
                     <i class="ri-inbox-line"></i>
                     <p>No received stock found</p>
@@ -137,6 +137,21 @@
               </template>
             </tbody>
           </table>
+        </div>
+
+        <div v-if="!loading && filteredRecords.length" class="rcv-pagination">
+          <span class="rcv-page-count">
+            Showing {{ rangeStart }}&ndash;{{ rangeEnd }} of {{ filteredRecords.length }}
+          </span>
+          <div v-if="totalPages > 1" class="rcv-page-controls">
+            <button type="button" class="rcv-page-btn" :disabled="currentPage === 1" @click="currentPage--">
+              <i class="ri-arrow-left-s-line"></i> Prev
+            </button>
+            <span class="rcv-page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+            <button type="button" class="rcv-page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
+              Next <i class="ri-arrow-right-s-line"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -172,6 +187,8 @@ export default {
   data() {
     return {
       localKeyword: '',
+      currentPage: 1,
+      pageSize: 15,
       selectedPaymentFilter: 'all',
       paymentFilters: [
         { value: 'all',           label: 'All',           icon: 'ri-list-check-2' },
@@ -193,6 +210,7 @@ export default {
     paidReceivingRecords() {
       return this.listReceivedStocks || [];
     },
+    /** Every record matching the filters — paged for display below. */
     filteredRecords() {
       const keyword = this.localKeyword.toLowerCase();
 
@@ -227,6 +245,32 @@ export default {
         .sort((left, right) => {
           return new Date(right?.received_date || 0) - new Date(left?.received_date || 0);
         });
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredRecords.length / this.pageSize));
+    },
+    rangeStart() {
+      return this.filteredRecords.length ? (this.currentPage - 1) * this.pageSize + 1 : 0;
+    },
+    rangeEnd() {
+      return Math.min(this.currentPage * this.pageSize, this.filteredRecords.length);
+    },
+    pagedRecords() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      return this.filteredRecords.slice(start, start + this.pageSize);
+    },
+  },
+  watch: {
+    // A filter or search that shortens the list must not strand the reader on
+    // a page that no longer exists.
+    localKeyword() {
+      this.currentPage = 1;
+    },
+    selectedPaymentFilter() {
+      this.currentPage = 1;
+    },
+    listReceivedStocks() {
+      this.currentPage = 1;
     },
   },
   methods: {
@@ -289,6 +333,33 @@ export default {
 </script>
 
 <style scoped>
+.rcv-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.25rem 0;
+  flex-wrap: wrap;
+}
+
+.rcv-page-count { font-size: 0.78rem; color: #64748b; }
+.rcv-page-controls { display: flex; align-items: center; gap: 0.5rem; }
+
+.rcv-page-btn {
+  border: 1px solid #dcebe5;
+  background: #fff;
+  color: #16322e;
+  border-radius: 9px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rcv-page-btn:hover:not(:disabled) { background: #f2faf7; }
+.rcv-page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.rcv-page-info { font-size: 0.78rem; color: #4a6b63; font-weight: 600; }
+
 .payment-status {
   display: inline-block;
   padding: 2px 9px;
