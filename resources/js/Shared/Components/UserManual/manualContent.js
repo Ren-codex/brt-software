@@ -96,6 +96,13 @@ export const roles = [
         icon: 'ri-team-line',
         accent: '#10b981',
     },
+    {
+        key: 'accountant',
+        name: 'Accountant',
+        tagline: 'Keeps the books straight',
+        icon: 'ri-calculator-line',
+        accent: '#14b8a6',
+    },
 ];
 
 /** Static chrome text for the book UI itself (toolbar, nav, small labels). */
@@ -819,6 +826,79 @@ const rawPagesEn = [
         ],
     },
 
+    /* -------------------------------------------------------------- 18a */
+    {
+        id: 'role-accountant',
+        kind: 'plain',
+        part: PART_ROLES,
+        roleKey: 'accountant',
+        kicker: 'Part II · Role',
+        title: 'Accountant',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Keeps the books straight. The Accountant works under Accounting — approving expenses, managing petty cash, reconciling the bank, and reading the reports everyone else\'s numbers roll up into.',
+            },
+            {
+                type: 'grid',
+                items: [
+                    { label: 'Menu access', value: 'Accounting' },
+                    { label: 'You approve', value: 'Expenses, petty cash top-ups' },
+                    { label: 'You reconcile', value: 'Bank statements' },
+                    { label: 'You cannot', value: 'Edit sales or inventory records' },
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Review and approve expenses, which posts them to the general ledger.',
+                    'Create and top up petty cash funds, and keep them reconciled.',
+                    'Reconcile bank statements against the recorded journal entries.',
+                    'Read the financial reports to check the business is tracking correctly.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Approving writes to the ledger',
+                text: 'Approving an expense or finalizing a reconciliation is not a formality — it posts or locks entries immediately. There is no draft state once you approve.',
+            },
+        ],
+    },
+
+    /* -------------------------------------------------------------- 18b */
+    {
+        id: 'role-accountant-day',
+        kind: 'plain',
+        part: PART_ROLES,
+        roleKey: 'accountant',
+        kicker: 'Part II · Accountant',
+        title: 'A day as Accountant',
+        blocks: [
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Clear pending expenses',
+                        text: 'Anything sitting in Draft is waiting on you. Check the account and amount before approving.',
+                    },
+                    {
+                        title: 'Reconcile the bank',
+                        text: 'Match yesterday\'s entries against the bank statement while it is still fresh.',
+                    },
+                    {
+                        title: 'Review AR and AP',
+                        text: 'Check which customers still owe money and which suppliers are still owed, under Accounts Receivable and Accounts Payable.',
+                    },
+                    {
+                        title: 'Spot-check the Trial Balance',
+                        text: 'Confirm total debits still equal total credits before trusting any other report.',
+                    },
+                ],
+            },
+        ],
+    },
+
     /* --------------------------------------------------------------- 19 */
     {
         id: 'role-matrix',
@@ -842,7 +922,7 @@ const rawPagesEn = [
                     ['Sales Management', 'Sales Rep, Administrator'],
                     ['Customers', 'Sales Manager, Administrator'],
                     ['Suppliers', 'Administrator'],
-                    ['Expenses', 'Administrator'],
+                    ['Accounting', 'Accountant, Administrator'],
                     ['Payroll', 'Sales Rep, Inventory Mgr, Administrator'],
                     ['Loans', 'HR Officer, Administrator'],
                     ['Guest Messages', 'Administrator'],
@@ -1200,6 +1280,158 @@ const rawPagesEn = [
         ],
     },
 
+    /* ------------------------------------------------------------ 30a */
+    {
+        id: 'process-approve-expense',
+        kind: 'plain',
+        part: PART_PROCESS,
+        kicker: 'Part III · Process',
+        title: 'Approving an expense',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'An expense records a running cost that is not a purchase or a wage — rent, utilities, supplies. Nothing hits the books until it is approved.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Create the draft', text: 'Accounting, then Expenses, then New Expense. Enter the payee, pick the expense account, the amount and how it will be paid.' },
+                    { title: 'Leave it for review', text: 'It sits as Draft until someone with approval rights checks it.' },
+                    { title: 'Approve', text: 'The system checks there is enough cash on hand or bank balance to cover it, then posts the entry: a debit to the expense account and a credit to the cash or bank account.' },
+                    { title: 'Void if it was wrong', text: 'Voiding an approved expense automatically reverses the journal entry it posted.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Approval posts to the ledger',
+                text: 'Unlike most drafts, approving an expense immediately writes a journal entry. Get the account and amount right before approving, not after.',
+            },
+        ],
+    },
+
+    /* ------------------------------------------------------------ 30b */
+    {
+        id: 'process-petty-cash',
+        kind: 'plain',
+        part: PART_PROCESS,
+        kicker: 'Part III · Process',
+        title: 'Managing petty cash',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'A petty cash fund is a fixed amount of cash set aside for small, everyday purchases, tracked separately from the main bank accounts.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Create the fund', text: 'Accounting, then Petty Cash, then Add Fund. Set its fixed amount — this is the ceiling the fund always reconciles back to.' },
+                    { title: 'Top it up', text: 'When cash on hand runs low, top up the fund from the bank or from cash on hand.' },
+                    { title: 'Issue a voucher', text: 'Each time the fund pays for something, record a voucher against it so the spend is accounted for.' },
+                    { title: 'Replenish', text: 'Periodically reimburse the vouchers so cash on hand is brought back up toward the fixed amount.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'The reconciliation rule',
+                text: 'Cash on Hand plus Unreimbursed Vouchers must always equal the Fixed Fund Amount. If it does not, a voucher is missing or was entered twice.',
+            },
+        ],
+    },
+
+    /* ------------------------------------------------------------ 30c */
+    {
+        id: 'process-bank-reconciliation',
+        kind: 'plain',
+        part: PART_PROCESS,
+        kicker: 'Part III · Process',
+        title: 'Reconciling the bank statement',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Reconciliation checks that what the books say and what the bank says agree. Today this is done by hand, line by line.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Open Bank Reconciliation', text: 'Under Accounting. Start a new reconciliation for the account and period.' },
+                    { title: 'Enter the statement balance', text: 'Type in the ending balance from the physical or downloaded bank statement.' },
+                    { title: 'Match each line', text: 'Go through the journal entries for the period and check off every one that also appears on the statement.' },
+                    { title: 'Look at what is left', text: 'Anything unchecked is a difference — a cheque still in transit, a bank fee not yet recorded, or a mistake worth chasing down.' },
+                    { title: 'Finalize', text: 'Once the checked total matches the statement balance, close the reconciliation.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'tip',
+                title: 'Do it every period',
+                text: 'A reconciliation gets harder the longer it is left. A missed period compounds into the next one.',
+            },
+        ],
+    },
+
+    /* ------------------------------------------------------------ 30d */
+    {
+        id: 'process-financial-reports',
+        kind: 'plain',
+        part: PART_PROCESS,
+        kicker: 'Part III · Process',
+        title: 'Reading the financial reports',
+        blocks: [
+            {
+                type: 'p',
+                text: 'Every report under Accounting reads from the same journal entries — they just slice the same numbers differently.',
+            },
+            {
+                type: 'table',
+                head: ['Report', 'What it tells you'],
+                rows: [
+                    ['General Ledger', 'Every posted entry, account by account, in order.'],
+                    ['Trial Balance', 'Every account’s balance at once, to prove total debits equal total credits.'],
+                    ['Profit & Loss', 'Revenue minus expenses over a period — whether the business made money.'],
+                    ['Balance Sheet', 'What the business owns, owes, and retains, as of one date.'],
+                    ['Cash Flow', 'Where cash actually moved: operating, investing, financing.'],
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Start with the Trial Balance',
+                text: 'If the Trial Balance does not balance, the other reports built on top of it cannot be trusted either.',
+            },
+        ],
+    },
+
+    /* ------------------------------------------------------------ 30e */
+    {
+        id: 'process-journal-entries',
+        kind: 'plain',
+        part: PART_PROCESS,
+        kicker: 'Part III · Process',
+        title: 'Understanding journal entries',
+        blocks: [
+            {
+                type: 'p',
+                text: 'Almost nobody creates a journal entry by hand. Recording a sale, approving an expense, releasing payroll and converting stock all post their own entries automatically the moment they happen.',
+            },
+            {
+                type: 'list',
+                items: [
+                    'Find them under Accounting, then Journal Entries — filter by date, account or the module that posted them.',
+                    'Each entry balances: total debits always equal total credits.',
+                    'An entry is not edited once posted. If it is wrong, the source transaction is voided or reversed, which posts an equal and opposite entry.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Chase the source, not the entry',
+                text: 'A wrong journal entry almost always means the transaction that created it was wrong. Fix it there — the correcting entry follows automatically.',
+            },
+        ],
+    },
+
     /* --------------------------------------------------------------- 31 */
     {
         id: 'process-libraries',
@@ -1288,6 +1520,7 @@ const rawPagesEn = [
                     ['Completed', 'Finished'],
                     ['Closed', 'Archived'],
                     ['Cancelled', 'Voided before completion'],
+                    ['Voided', 'Reversed after being approved'],
                 ],
             },
         ],
@@ -1968,6 +2201,79 @@ const rawPagesTl = [
         ],
     },
 
+    /* -------------------------------------------------------------- 18a */
+    {
+        id: 'role-accountant',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'accountant',
+        kicker: 'Bahagi II · Tungkulin',
+        title: 'Accountant',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Pinapanatiling tama ang mga libro. Nagtatrabaho ang Accountant sa ilalim ng Accounting — nag-a-approve ng expenses, namamahala ng petty cash, nire-reconcile ang bangko, at binabasa ang mga report na pinagsasama-samahan ng bilang ng lahat.',
+            },
+            {
+                type: 'grid',
+                items: [
+                    { label: 'Menu access', value: 'Accounting' },
+                    { label: 'Ina-approve mo', value: 'Expenses, petty cash top-up' },
+                    { label: 'Nire-reconcile mo', value: 'Bank statements' },
+                    { label: 'Hindi mo magagawa', value: 'I-edit ang sales o inventory records' },
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Suriin at aprubahan ang expenses, na nagpo-post nito sa general ledger.',
+                    'Gumawa at mag-top-up ng petty cash funds, at panatilihing balanse ang mga ito.',
+                    'I-reconcile ang bank statements laban sa mga naitalang journal entries.',
+                    'Basahin ang mga financial report para masiguradong tama ang takbo ng negosyo.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Ang pag-approve ay sumusulat sa ledger',
+                text: 'Ang pag-approve ng expense o pagtatapos ng reconciliation ay hindi lang formality — agad itong nagpo-post o nagsasara ng entries. Walang draft state kapag na-approve mo na.',
+            },
+        ],
+    },
+
+    /* -------------------------------------------------------------- 18b */
+    {
+        id: 'role-accountant-day',
+        kind: 'plain',
+        part: PART_ROLES_TL,
+        roleKey: 'accountant',
+        kicker: 'Bahagi II · Accountant',
+        title: 'Isang araw bilang Accountant',
+        blocks: [
+            {
+                type: 'steps',
+                items: [
+                    {
+                        title: 'Linisin ang mga nakabinbing expenses',
+                        text: 'Anumang nasa Draft ay naghihintay sa iyo. Suriin ang account at halaga bago mag-approve.',
+                    },
+                    {
+                        title: 'I-reconcile ang bangko',
+                        text: 'Itugma ang mga entry kahapon laban sa bank statement habang bago pa ito.',
+                    },
+                    {
+                        title: 'Suriin ang AR at AP',
+                        text: 'Tingnan kung sinong mga customer ang may utang pa at sinong mga supplier ang may hindi pa nababayaran, sa ilalim ng Accounts Receivable at Accounts Payable.',
+                    },
+                    {
+                        title: 'I-check ang Trial Balance',
+                        text: 'Kumpirmahin na pantay pa rin ang kabuuang debit at credit bago paniwalaan ang ibang report.',
+                    },
+                ],
+            },
+        ],
+    },
+
     /* --------------------------------------------------------------- 19 */
     {
         id: 'role-matrix',
@@ -1991,7 +2297,7 @@ const rawPagesTl = [
                     ['Sales Management', 'Sales Rep, Administrator'],
                     ['Customers', 'Sales Manager, Administrator'],
                     ['Suppliers', 'Administrator'],
-                    ['Expenses', 'Administrator'],
+                    ['Accounting', 'Accountant, Administrator'],
                     ['Payroll', 'Sales Rep, Inventory Mgr, Administrator'],
                     ['Loans', 'HR Officer, Administrator'],
                     ['Guest Messages', 'Administrator'],
@@ -2349,6 +2655,158 @@ const rawPagesTl = [
         ],
     },
 
+    /* ------------------------------------------------------------ 30a */
+    {
+        id: 'process-approve-expense',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pag-apruba ng expense',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Itinatala ng expense ang isang tumatakbong gastos na hindi purchase o wage — renta, kuryente, supplies. Walang tumatama sa libro hangga\'t hindi ito na-a-approve.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Gumawa ng draft', text: 'Accounting, pagkatapos Expenses, pagkatapos New Expense. Ilagay ang payee, piliin ang expense account, ang halaga at kung paano ito babayaran.' },
+                    { title: 'Iwanan para sa review', text: 'Mananatili itong Draft hangga\'t walang may karapatang mag-approve na susuri nito.' },
+                    { title: 'I-approve', text: 'Susuriin ng sistema kung sapat ang cash on hand o bank balance para dito, pagkatapos ay ipo-post ang entry: debit sa expense account, credit sa cash o bank account.' },
+                    { title: 'I-void kung mali', text: 'Ang pag-void ng na-approve nang expense ay awtomatikong nagre-reverse sa journal entry na naipost nito.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Ang pag-approve ay nagpo-post sa ledger',
+                text: 'Hindi tulad ng ibang draft, ang pag-approve ng expense ay agad na nagsusulat ng journal entry. Siguraduhing tama ang account at halaga bago mag-approve, hindi pagkatapos.',
+            },
+        ],
+    },
+
+    /* ------------------------------------------------------------ 30b */
+    {
+        id: 'process-petty-cash',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pamamahala ng petty cash',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Ang petty cash fund ay isang fixed na halaga ng cash na nakalaan para sa maliliit, pang-araw-araw na gastos, hiwalay na sinusubaybayan mula sa pangunahing bank accounts.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Gumawa ng fund', text: 'Accounting, pagkatapos Petty Cash, pagkatapos Add Fund. Itakda ang fixed amount nito — ito ang ceiling na palaging babalikan ng fund.' },
+                    { title: 'I-top-up ito', text: 'Kapag paubos na ang cash on hand, mag-top-up mula sa bangko o mula sa cash on hand.' },
+                    { title: 'Mag-isyu ng voucher', text: 'Tuwing may binabayaran ang fund, mag-record ng voucher laban dito para maitala ang gastos.' },
+                    { title: 'Mag-replenish', text: 'Paminsan-minsan ay i-reimburse ang mga voucher para maibalik ang cash on hand palapit sa fixed amount.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Ang reconciliation rule',
+                text: 'Ang Cash on Hand kasama ang Unreimbursed Vouchers ay dapat palaging katumbas ng Fixed Fund Amount. Kung hindi, may nawawalang voucher o may na-enter nang dalawang beses.',
+            },
+        ],
+    },
+
+    /* ------------------------------------------------------------ 30c */
+    {
+        id: 'process-bank-reconciliation',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pag-reconcile ng bank statement',
+        blocks: [
+            {
+                type: 'lead',
+                text: 'Sinusuri ng reconciliation kung magkatugma ang sinasabi ng libro at ng bangko. Sa ngayon ay ginagawa ito nang de-kamay, linya-por-linya.',
+            },
+            {
+                type: 'steps',
+                items: [
+                    { title: 'Buksan ang Bank Reconciliation', text: 'Sa ilalim ng Accounting. Magsimula ng bagong reconciliation para sa account at period.' },
+                    { title: 'Ilagay ang statement balance', text: 'I-type ang ending balance mula sa pisikal o na-download na bank statement.' },
+                    { title: 'Itugma ang bawat linya', text: 'Suriin ang mga journal entry para sa period at markahan ang bawat isang lumalabas din sa statement.' },
+                    { title: 'Tingnan ang natitira', text: 'Anumang hindi na-check ay isang pagkakaiba — isang tsekeng nasa transit pa, isang bank fee na hindi pa naitala, o isang malaking mali na dapat habulin.' },
+                    { title: 'I-finalize', text: 'Kapag tumugma na ang na-check na kabuuan sa statement balance, isara ang reconciliation.' },
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'tip',
+                title: 'Gawin ito tuwing period',
+                text: 'Lalong nahihirapan ang reconciliation kapag pinabayaan. Ang isang na-miss na period ay dumadagdag sa susunod.',
+            },
+        ],
+    },
+
+    /* ------------------------------------------------------------ 30d */
+    {
+        id: 'process-financial-reports',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pagbasa ng mga financial report',
+        blocks: [
+            {
+                type: 'p',
+                text: 'Bawat report sa ilalim ng Accounting ay nagbabasa mula sa parehong mga journal entry — hinihiwa lang nila nang iba ang parehong mga numero.',
+            },
+            {
+                type: 'table',
+                head: ['Report', 'Ano ang sinasabi nito sa iyo'],
+                rows: [
+                    ['General Ledger', 'Bawat naipost na entry, account por account, ayon sa pagkakasunod.'],
+                    ['Trial Balance', 'Balanse ng bawat account nang sabay-sabay, para patunayan na pantay ang kabuuang debit at credit.'],
+                    ['Profit & Loss', 'Revenue minus expenses sa loob ng isang period — kung kumita ang negosyo.'],
+                    ['Balance Sheet', 'Kung ano ang pag-aari, utang, at natitira ng negosyo, sa isang petsa.'],
+                    ['Cash Flow', 'Kung saan talaga gumalaw ang cash: operating, investing, financing.'],
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'info',
+                title: 'Magsimula sa Trial Balance',
+                text: 'Kung hindi balanse ang Trial Balance, hindi rin dapat pagkatiwalaan ang ibang report na nakabatay dito.',
+            },
+        ],
+    },
+
+    /* ------------------------------------------------------------ 30e */
+    {
+        id: 'process-journal-entries',
+        kind: 'plain',
+        part: PART_PROCESS_TL,
+        kicker: 'Bahagi III · Proseso',
+        title: 'Pag-unawa sa journal entries',
+        blocks: [
+            {
+                type: 'p',
+                text: 'Halos walang gumagawa ng journal entry nang de-kamay. Ang pagtatala ng benta, pag-apruba ng expense, paglabas ng payroll, at pag-convert ng stock ay lahat nagpo-post ng sarili nilang entry nang awtomatiko sa sandaling mangyari ito.',
+            },
+            {
+                type: 'list',
+                items: [
+                    'Hanapin ang mga ito sa ilalim ng Accounting, pagkatapos Journal Entries — i-filter ayon sa petsa, account, o ang module na nag-post nito.',
+                    'Bawat entry ay balanse: palaging pantay ang kabuuang debit at credit.',
+                    'Hindi ine-edit ang entry kapag naipost na. Kung mali ito, ang source transaction ang bo-voidin o rire-reverse, na magpo-post ng katumbas at kabaligtaran na entry.',
+                ],
+            },
+            {
+                type: 'note',
+                tone: 'warn',
+                title: 'Habulin ang pinagmulan, hindi ang entry',
+                text: 'Ang isang maling journal entry ay halos palaging nangangahulugang mali ang transaction na gumawa nito. Ayusin doon — awtomatikong susunod ang tamang entry.',
+            },
+        ],
+    },
+
     /* --------------------------------------------------------------- 31 */
     {
         id: 'process-libraries',
@@ -2437,6 +2895,7 @@ const rawPagesTl = [
                     ['Completed', 'Tapos na'],
                     ['Closed', 'Naka-archive'],
                     ['Cancelled', 'Nakansela bago matapos'],
+                    ['Voided', 'Na-reverse pagkatapos ma-approve'],
                 ],
             },
         ],

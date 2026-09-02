@@ -125,6 +125,12 @@ class StockReturnPartialReceiveTest extends TestCase
      * the stock return's own completion check think every item was
      * resolved, prematurely marking the whole return 'completed' and
      * hiding the Receive Stock button before the remaining 5 ever arrived.
+     *
+     * Current fix (each receiveItem() call is an INCREMENTAL amount for
+     * that submission, accumulated on top of whatever was already
+     * received — not a cumulative running total): a partial submission
+     * stays 'pending' rather than a terminal status, so the stock return's
+     * completion check correctly still sees it as unresolved.
      */
     public function test_partial_receive_does_not_prematurely_complete_the_return(): void
     {
@@ -141,7 +147,7 @@ class StockReturnPartialReceiveTest extends TestCase
         $item->refresh();
         $stockReturn->refresh();
 
-        $this->assertEquals('partial', $item->status->slug);
+        $this->assertEquals('pending', $item->status->slug);
         $this->assertEquals(5, $item->returned_quantity);
         $this->assertEquals(5, $item->replaced_quantity);
 
@@ -152,11 +158,19 @@ class StockReturnPartialReceiveTest extends TestCase
         $inventoryStock->refresh();
         $this->assertEquals(10, $inventoryStock->quantity); // 5 original + 5 replaced
 
-        // Finish the job: submit the full cumulative quantity (10, not an
-        // incremental 5 — the frontend pre-fills the running total).
-        $response2 = $this->actingAs($user)->postJson(
+        // Submitting the OLD (cumulative) quantity by mistake must be
+        // rejected — 10 exceeds what's actually still remaining (5).
+        $overshoot = $this->actingAs($user)->postJson(
             "/stock-returns/{$stockReturn->id}/items/{$item->id}/receive",
             ['replaced_quantity' => 10, 'loss_quantity' => 0]
+        );
+        $overshoot->assertStatus(422);
+
+        // Finish the job: submit the REMAINING 5 (incremental, not the
+        // cumulative 10) to fully resolve the item.
+        $response2 = $this->actingAs($user)->postJson(
+            "/stock-returns/{$stockReturn->id}/items/{$item->id}/receive",
+            ['replaced_quantity' => 5, 'loss_quantity' => 0]
         );
         $response2->assertOk();
 
@@ -164,6 +178,11 @@ class StockReturnPartialReceiveTest extends TestCase
         $stockReturn->refresh();
 
         $this->assertEquals('replaced', $item->status->slug);
+        $this->assertEquals(10, $item->returned_quantity);
+        $this->assertEquals(10, $item->replaced_quantity);
         $this->assertEquals('completed', $stockReturn->status->slug);
+
+        $inventoryStock->refresh();
+        $this->assertEquals(15, $inventoryStock->quantity); // 5 original + 5 + 5 replaced
     }
 }

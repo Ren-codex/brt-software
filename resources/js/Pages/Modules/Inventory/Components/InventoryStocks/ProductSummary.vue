@@ -231,8 +231,11 @@
 <script>
 import axios from 'axios';
 
+import { pollingMixin } from '@/Shared/polling.js';
+
 export default {
   name: 'ProductSummary',
+  mixins: [pollingMixin],
   emits: ['view-details'],
   data() {
     return {
@@ -366,6 +369,11 @@ export default {
     this.fetchProducts();
     this.fetchInventoryStocks();
   },
+  mounted() {
+    // Only the stock levels need refreshing; the product list barely changes
+    // and refetching 1000 rows on a timer would be wasteful.
+    this.startPolling(() => this.fetchInventoryStocks({ quiet: true }));
+  },
   methods: {
     isProductActive(product) {
       const value = product?.is_active;
@@ -398,8 +406,11 @@ export default {
         this.loadingProducts = false;
       }
     },
-    async fetchInventoryStocks() {
-      this.loadingStocks = true;
+    async fetchInventoryStocks({ quiet = false } = {}) {
+      // `quiet` is the background refresh: no spinner, so the poll is invisible.
+      if (!quiet) {
+        this.loadingStocks = true;
+      }
       try {
         const response = await axios.get('/inventory-stocks', {
           params: {
@@ -413,7 +424,7 @@ export default {
         console.error(error);
         this.inventoryStocks = [];
       } finally {
-        this.loadingStocks = false;
+        if (!quiet) this.loadingStocks = false;
       }
     },
     selectProduct(product, isConverted = false) {

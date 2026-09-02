@@ -105,6 +105,11 @@
                     </Link>
                 </li>
 
+                <!-- Matches the route exactly: /payrolls is gated on
+                     permission:payroll,*,view, so any payroll grant that shows this
+                     item also opens the page. The tabs on it filter themselves, and
+                     the payroll list behind ?option=lists keeps its own
+                     payroll_processing gate in the controller. -->
                 <li class="nav-item" v-if="canAny('payroll')">
                     <Link href="/payrolls" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/payrolls') }">

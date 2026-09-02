@@ -152,13 +152,39 @@ class ArInvoiceClass
         ];
     }
 
+    /**
+     * What is actually owed on an invoice right now, read from the database.
+     *
+     * The payment screen shows and validates against this rather than the list
+     * row it was opened from: the row is a snapshot, and a payment recorded
+     * anywhere else leaves it wrong.
+     */
+    public function currentBalance($id): array
+    {
+        $invoice = ArInvoice::with('status')->findOrFail($id);
+
+        return [
+            'id'            => $invoice->id,
+            'amount_due'    => round((float) $invoice->amount_due, 2),
+            'amount_paid'   => round((float) $invoice->amount_paid, 2),
+            'balance_due'   => round((float) $invoice->balance_due, 2),
+            'status'        => optional($invoice->status)->name,
+            'is_settled'    => round((float) $invoice->balance_due, 2) <= 0,
+        ];
+    }
+
     public function payment($request, $id = null){
         $ar_invoice = ArInvoice::findOrFail($request->id);
 
         // A payment is either one {payment_mode, amount_paid} pair, or a 'splits'
         // array of them (e.g. part Cash, part GCash) applied together in one go.
         $splits = collect($request->splits ?? [])
-            ->map(fn ($s) => ['payment_mode' => (string) ($s['payment_mode'] ?? ''), 'amount' => round((float) ($s['amount'] ?? 0), 2)])
+            ->map(fn ($s) => [
+                'payment_mode' => (string) ($s['payment_mode'] ?? ''),
+                'amount' => round((float) ($s['amount'] ?? 0), 2),
+                'bank_account_id' => $s['bank_account_id'] ?? null,
+                'reference_number' => $s['reference_number'] ?? null,
+            ])
             ->filter(fn ($s) => $s['amount'] > 0)
             ->values();
 
@@ -166,7 +192,22 @@ class ArInvoiceClass
             $splits = collect([[
                 'payment_mode' => (string) $request->payment_mode,
                 'amount' => round((float) $request->amount_paid, 2),
+                'bank_account_id' => $request->bank_account_id,
+                'reference_number' => $request->reference_number,
             ]]);
+        }
+
+        // A transfer or check without its reference can't be matched against the
+        // bank statement later, so it isn't accepted without one.
+        $missingReference = $splits->first(fn ($s) => in_array($s['payment_mode'], ['Bank Transfer', 'Check'], true)
+            && blank($s['reference_number']));
+
+        if ($missingReference) {
+            throw ValidationException::withMessages([
+                'splits' => $missingReference['payment_mode'] === 'Check'
+                    ? 'Enter the check number for the check payment.'
+                    : 'Enter the reference number for the bank transfer.',
+            ]);
         }
 
         $totalPayment = round((float) $splits->sum('amount'), 2);
@@ -231,6 +272,8 @@ class ArInvoiceClass
                 // this batch — they were all applied together, not sequentially.
                 'balance_due'    => $ar_invoice->balance_due,
                 'payment_mode'   => $split['payment_mode'],
+                'bank_account_id' => $split['bank_account_id'],
+                'reference_number' => $split['reference_number'],
                 'status_id'      => $pendingStatusId,
                 'customer_id'    => optional($ar_invoice->sales_order)->customer_id,
                 'ar_invoice_id'  => $ar_invoice->id,

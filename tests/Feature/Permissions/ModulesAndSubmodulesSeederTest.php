@@ -64,7 +64,7 @@ class ModulesAndSubmodulesSeederTest extends TestCase
         $this->assertEquals(
             [
                 'financial_reports', 'journal_entries', 'chart_of_accounts', 'cash_management',
-                'petty_cash', 'expenses', 'bank_reconciliation',
+                'petty_cash', 'expenses', 'bank_reconciliation', 'accounts_payable',
             ],
             $accounting->submodules->pluck('key')->all()
         );

@@ -21,7 +21,7 @@
                       <i class="ri-check-line"></i>
                       <span>Approval</span>
                     </button>
-                    <template v-if="purchaseOrder.status?.name === 'pending' && purchaseOrder.created_by_id === $page.props.user.id">
+                    <template v-if="canEditOwnOrder">
                       <button @click="editPurchaseOrder" class="create-btn" v-b-tooltip.hover title="Edit">
                         <i class="ri-pencil-fill"></i>
                       </button>
@@ -274,10 +274,12 @@
 
 <script>
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
+import { recordLockMixin } from '@/Shared/recordLock.js';
 
 export default {
   name: "PurchaseOrderDetails",
   components: { TransactionLogs },
+  mixins: [recordLockMixin],
   props: {
     purchaseOrder: Object,
     dropdowns: Object,
@@ -300,6 +302,19 @@ export default {
   computed: {
     canApprove() {
       return this.can('inventory', 'purchase_orders', 'approver');
+    },
+    /**
+     * Edit and delete belong to whoever raised the order, and only while it is
+     * still open — once it is approved, completed or voided its numbers have
+     * been acted on. The service refuses either way; this just hides the buttons.
+     */
+    canEditOwnOrder() {
+      if (!this.purchaseOrder) return false;
+      if (!this.can('inventory', 'purchase_orders', 'encoder')) return false;
+      if (!this.isEditable(this.purchaseOrder)) return false;
+
+      const createdById = this.purchaseOrder.created_by_id;
+      return !!createdById && createdById === this.$page.props.user?.data?.id;
     },
     canVoid() {
       if (!this.can('inventory', 'purchase_orders', 'approver')) return false;

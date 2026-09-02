@@ -176,11 +176,13 @@ import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+import { pollingMixin } from '@/Shared/polling.js';
 
 
 
 export default {
     components: { PageHeader, Pagination, TableLoadingRow },
+    mixins: [pollingMixin],
     props: ['dropdowns', 'isExternal'],
     data(){
         return {
@@ -200,7 +202,8 @@ export default {
                 total_amount_collected: 0
             },
 
-            expandedRows: []
+            expandedRows: [],
+            currentPageUrl: null
         }
     },
 
@@ -213,14 +216,24 @@ export default {
        this.fetch();
        this.fetchMetrics();
     },
+    mounted() {
+        this.startPolling(async () => {
+            await this.fetch(this.currentPageUrl, { quiet: true });
+            this.fetchMetrics();
+        });
+    },
     methods: {
         checkSearchStr: _.debounce(function(string) {
             this.fetch();
         }, 300),
-        fetch(page_url){
+        fetch(page_url, { quiet = false } = {}){
             page_url = page_url || '/receipts';
-            this.loading = true;
-            axios.get(page_url,{
+            // Remembered so a background refresh keeps the user's page.
+            this.currentPageUrl = page_url;
+            if (!quiet) {
+                this.loading = true;
+            }
+            return axios.get(page_url,{
                 params : {
                     keyword: this.filter.keyword,
                     location_id: this.filter.location_id,
@@ -238,7 +251,7 @@ export default {
                 }
             })
             .catch(err => console.log(err))
-            .finally(() => { this.loading = false; });
+            .finally(() => { if (!quiet) this.loading = false; });
         },
 
 

@@ -175,19 +175,22 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Inventory Statistics (filtered by selected date range)
-        $inventoryStocksInRange = InventoryStocks::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
-        $totalProducts = Product::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
-        $totalInventoryValue = (clone $inventoryStocksInRange)->sum(\DB::raw('retail_price * quantity'));
+        // Inventory statistics describe stock as it stands right now, not
+        // movement over a period, so they are deliberately NOT filtered by the
+        // selected date range. Filtering them by inventory_stocks.created_at
+        // asked "what was received during this window", which reported ₱0 stock
+        // value and an empty low-stock alert on any day nothing came in.
+        $inventoryStocksOnHand = InventoryStocks::query();
+        $totalProducts = Product::count();
+        $totalInventoryValue = (clone $inventoryStocksOnHand)->sum(\DB::raw('retail_price * quantity'));
         $lowStockItems = \DB::table('inventory_stocks')
             ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
             ->join('products', 'received_items.product_id', '=', 'products.id')
-            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
             ->where('inventory_stocks.quantity', '>', 0)
             ->where('products.minimum_stock', '>', 0)
             ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
             ->count();
-        $outOfStock = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
+        $outOfStock = (clone $inventoryStocksOnHand)->where('quantity', '<=', 0)->count();
 
         // Stock by Category for bar chart
         $stockByCategory = \DB::table('inventory_stocks')
@@ -195,7 +198,6 @@ class DashboardController extends Controller
             ->join('products', 'received_items.product_id', '=', 'products.id')
             ->join('list_brands', 'products.brand_id', '=', 'list_brands.id')
             ->select('list_brands.name as category', \DB::raw('SUM(inventory_stocks.quantity) as quantity'))
-            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
             ->groupBy('list_brands.name')
             ->get()
             ->map(function ($item) {
@@ -208,8 +210,7 @@ class DashboardController extends Controller
         // Stock Distribution for donut chart
         $stockDistBase = \DB::table('inventory_stocks')
             ->join('received_items', 'inventory_stocks.received_item_id', '=', 'received_items.id')
-            ->join('products', 'received_items.product_id', '=', 'products.id')
-            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']]);
+            ->join('products', 'received_items.product_id', '=', 'products.id');
         $inStockCount = (clone $stockDistBase)
             ->where('inventory_stocks.quantity', '>', 0)
             ->where(function ($q) {
@@ -221,7 +222,7 @@ class DashboardController extends Controller
             ->where('products.minimum_stock', '>', 0)
             ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
             ->count();
-        $outOfStockCount = (clone $inventoryStocksInRange)->where('quantity', '<=', 0)->count();
+        $outOfStockCount = (clone $inventoryStocksOnHand)->where('quantity', '<=', 0)->count();
         
         $stockDistribution = [
             ['status' => 'In Stock', 'percentage' => $inStockCount],
@@ -230,10 +231,10 @@ class DashboardController extends Controller
         ];
 
         // Pending Purchase Orders
+        // Everything still awaiting approval, not just what was raised recently.
         $pendingPOs = PurchaseOrder::whereHas('status', function($q) {
                 $q->where('name', 'Pending');
             })
-            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
             ->count();
 
         // Low Stock Items for table
@@ -250,7 +251,6 @@ class DashboardController extends Controller
                 'inventory_stocks.quantity as current_stock',
                 'products.minimum_stock'
             )
-            ->whereBetween('inventory_stocks.created_at', [$dateRange['start'], $dateRange['end']])
             ->where('products.minimum_stock', '>', 0)
             ->whereColumn('inventory_stocks.quantity', '<=', 'products.minimum_stock')
             ->where('inventory_stocks.quantity', '>', 0)

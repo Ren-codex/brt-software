@@ -44,6 +44,13 @@ class ArInvoiceController extends Controller
             case 'print':
                 return $this->invoice->print($request);
             break;
+            // The payment screen asks for this as it opens. It used to trust the
+            // row it was handed, which goes stale the moment anyone records a
+            // payment, leaving the screen showing one balance while the server
+            // enforced another.
+            case 'balance':
+                return $this->invoice->currentBalance($request->input('id'));
+            break;
             default:
                 return inertia('Modules/Sales/Components/ARInvoices/Index', [
                     'dropdowns' => [

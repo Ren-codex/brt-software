@@ -321,13 +321,16 @@ import Create from './Modals/Create.vue';
 import View from './View.vue';
 import SummaryView from './SummaryView.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+import { pollingMixin } from '@/Shared/polling.js';
 
 export default {
     components: { Pagination, Create, View, SummaryView, TableLoadingRow },
+    mixins: [pollingMixin],
     props: ['dropdowns'],
     data() {
         return {
             loading: false,
+            currentPageUrl: null,
             lists: [],
             meta: {},
             links: {},
@@ -380,6 +383,17 @@ export default {
             this.fetchUndepositedSummary();
         }
     },
+    mounted() {
+        this.startPolling(async () => {
+            await this.fetch(this.currentPageUrl, { quiet: true });
+            if (this.isSalesRep) {
+                this.fetchMyHoldings();
+            } else {
+                this.fetchMetrics();
+                this.fetchUndepositedSummary();
+            }
+        });
+    },
     methods: {
         switchTab(tab) {
             this.activeTab = tab;
@@ -404,9 +418,16 @@ export default {
                 minute: '2-digit',
             });
         },
-        fetch() {
-            this.loading = true;
-            return axios.get('/remittances', {
+        fetch(page_url, { quiet = false } = {}) {
+            // Pagination emits the next/prev link, which was previously accepted
+            // and then ignored — every page button silently refetched page one.
+            page_url = page_url || '/remittances';
+            this.currentPageUrl = page_url;
+
+            if (!quiet) {
+                this.loading = true;
+            }
+            return axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
                     location_id: this.filter.location_id === null || this.filter.location_id === '' ? null : Number(this.filter.location_id),
@@ -423,7 +444,7 @@ export default {
                 }
             })
             .catch(err => console.log(err))
-            .finally(() => { this.loading = false; });
+            .finally(() => { if (!quiet) this.loading = false; });
         },
         openCreate() {
             this.$refs.create.show();

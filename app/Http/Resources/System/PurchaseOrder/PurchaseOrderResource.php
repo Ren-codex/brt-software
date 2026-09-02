@@ -26,6 +26,9 @@ class PurchaseOrderResource extends JsonResource
             'items' => $this->items ? PurchaseOrderItemResource::collection($this->items) : null,
             'logs' => $this->logs ? PurchaseOrderLogResource::collection($this->logs) : null,
             'created_by' => $this->created_by ? new ViewResource($this->created_by) : null,
+            // The nested resource carries no id, so the raw key is exposed for
+            // the "only the person who raised it may edit it" check on the view.
+            'created_by_id' => $this->created_by_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'approved_by' => $this->approved_by ? new ViewResource($this->approved_by) : null,

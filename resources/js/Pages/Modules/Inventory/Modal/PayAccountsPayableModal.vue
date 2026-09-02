@@ -101,7 +101,9 @@
                   {{ ba.bank_name }} — {{ ba.account_name }} ({{ formatCurrency(ba.balance) }})
                 </option>
               </select>
-              <small v-if="bankAccounts.length === 0" class="form-help text-muted">
+              <!-- An empty list has two very different causes; say which. -->
+              <small v-if="bankAccountsError" class="field-error">{{ bankAccountsError }}</small>
+              <small v-else-if="bankAccounts.length === 0" class="form-help text-muted">
                 No bank accounts configured. <a href="/accounting/bank-accounts" target="_blank">Add one here.</a>
               </small>
               <small v-if="errors.bank_account_id" class="field-error">{{ errors.bank_account_id }}</small>
@@ -124,7 +126,7 @@
 
       <div class="modal-footer">
         <button type="button" class="footer-btn secondary" @click="hide" :disabled="isSubmitting">Cancel</button>
-        <button type="button" class="footer-btn primary" @click="submit" :disabled="isSubmitting || !can('inventory', 'receiving', 'encoder')">
+        <button type="button" class="footer-btn primary" @click="submit" :disabled="isSubmitting || !can('accounting', 'accounts_payable', 'encoder')">
           <i v-if="isSubmitting" class="ri-loader-4-line rotating-icon me-1"></i>
           <span>{{ isSubmitting ? 'Processing...' : 'Pay' }}</span>
         </button>
@@ -146,6 +148,7 @@ export default {
       isSubmitting: false,
       record: null,
       bankAccounts: [],
+      bankAccountsError: '',
       cashOnHand: 0,
       cashOnHandLoaded: false,
       form: {
@@ -209,10 +212,14 @@ export default {
     },
     async loadBankAccounts() {
       try {
-        const res = await axios.get('/accounting/bank-accounts/list');
+        const res = await axios.get('/bank-accounts/payment-options');
         this.bankAccounts = res.data || [];
-      } catch {
+        this.bankAccountsError = '';
+      } catch (e) {
         this.bankAccounts = [];
+        this.bankAccountsError = e.response?.status === 403
+          ? 'You do not have permission to pay from a bank account. Cash and check are still available.'
+          : 'Could not load bank accounts. Check your connection and reopen this window to try again.';
       }
     },
     async loadCashOnHand() {

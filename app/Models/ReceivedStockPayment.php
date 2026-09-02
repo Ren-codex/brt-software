@@ -12,6 +12,7 @@ class ReceivedStockPayment extends Model
         'payment_mode',
         'amount_paid',
         'bank_name',
+        'bank_account_id',
         'reference_number',
         'petty_cash_fund_id',
         'created_by_id',

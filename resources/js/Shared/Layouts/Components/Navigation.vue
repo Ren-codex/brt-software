@@ -8,6 +8,7 @@ const logout = () => {
 
 <script>
 import simplebar from "simplebar-vue";
+import { pollingMixin } from '@/Shared/polling.js';
 export default {
   data() {
     return {
@@ -19,6 +20,7 @@ export default {
       unreadCount: 0,
     };
   },
+  mixins: [pollingMixin],
   components: {
     simplebar
   },
@@ -125,7 +127,7 @@ export default {
       window.open(url, '_blank');
     },
     fetchNotifications() {
-        axios.get('/notifications')
+        return axios.get('/notifications')
             .then(res => {
                 this.notifications = res.data.notifications;
                 this.unreadCount   = res.data.unread_count;
@@ -162,6 +164,9 @@ export default {
       document.getElementById("topnav-hamburger-icon").addEventListener("click", this.toggleHamburgerMenu);
 
     this.fetchNotifications();
+    // The bell is database-backed, so polling picks up anything raised while
+    // the user was elsewhere — no websocket needed.
+    this.startPolling(() => this.fetchNotifications());
     const userId = this.$page?.props?.user?.data?.id;
     if (userId && window.Echo) {
         window.Echo.private('App.Models.User.' + userId)

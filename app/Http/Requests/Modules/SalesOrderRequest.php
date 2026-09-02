@@ -86,6 +86,14 @@ class SalesOrderRequest extends FormRequest
                 'items.*.discount_per_unit' => 'nullable|numeric|min:0',
                 'items.*.is_batch_override' => 'nullable|boolean',
 
+                // A cash sale may be settled with several methods at once. Absent
+                // for credit sales and for the older single-mode body, both of
+                // which the service still accepts.
+                'payment_lines' => 'nullable|array',
+                'payment_lines.*.payment_mode' => 'required|string|in:Cash,Bank Transfer,Check',
+                'payment_lines.*.payment_amount' => 'required|numeric|min:0.01',
+                'payment_lines.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
+                'payment_lines.*.reference_number' => 'nullable|string|max:255',
             ];
 
             if ($this->input('is_external')) {

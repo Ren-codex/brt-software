@@ -160,7 +160,9 @@ class SalesOrderController extends Controller
     }
 
     public function destroy(Request $request, $id){
-        $this->authorizePermission('sales', 'sales_orders', 'approver');
+        // Cancelling is the void-holder's job — a sales rep who raised the order
+        // can pull it back — but an approver may do it too, so neither loses out.
+        $this->authorizeAnyPermission('sales', 'sales_orders', ['void', 'approver']);
 
         $result = $this->handleTransaction(function () use ($request, $id) {
             return $this->sales_order->cancel($id, $request->remarks);

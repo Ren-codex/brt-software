@@ -8,7 +8,7 @@
           </div>
           <div>
             <h4 class="receiving-title">Received Stocks</h4>
-            <p class="receiving-subtitle">List of all fully settled stock receipts</p>
+            <p class="receiving-subtitle">All stock received, paid or not</p>
           </div>
         </div>
       </div>
@@ -51,6 +51,7 @@
                 <th>Received Date</th>
                 <th>Payment Method</th>
                 <th>Amount Paid</th>
+                <th>Payment</th>
                 <th>Bank Details</th>
                 <th>Remarks</th>
                 <th>Status</th>
@@ -58,10 +59,10 @@
               </tr>
             </thead>
             <tbody>
-              <TableLoadingRow v-if="loading" :colspan="12" message="Loading received stocks..." />
+              <TableLoadingRow v-if="loading" :colspan="13" message="Loading received stocks..." />
               <template v-else>
-                <tr v-for="(record, index) in filteredRecords" :key="record.id" :class="{ 'voided-row': record.is_voided }">
-                  <td>{{ index + 1 }}</td>
+                <tr v-for="(record, index) in pagedRecords" :key="record.id" :class="{ 'voided-row': record.is_voided }">
+                  <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td><b>{{ record.received_no || `RCV-${record.id}` }}</b></td>
                   <td>{{ record.purchase_order?.po_number || 'N/A' }}</td>
                   <td>
@@ -77,6 +78,14 @@
                     </span>
                   </td>
                   <td>{{ formatCurrency(record.amount_paid) }}</td>
+                  <td>
+                    <span class="payment-status" :class="paymentStatus(record).key">
+                      {{ paymentStatus(record).label }}
+                    </span>
+                    <small v-if="paymentStatus(record).key !== 'paid' && !record.is_voided" class="balance-note">
+                      {{ formatCurrency(record.remaining_balance) }} outstanding
+                    </small>
+                  </td>
                   <td>
                     <span v-if="record.payment_mode === 'Bank Transfer'" class="bank-details">
                       {{ formatBankDetails(record) }}
@@ -118,17 +127,19 @@
                     </div>
                   </td>
                 </tr>
-                <tr v-if="filteredRecords.length === 0">
-                  <td colspan="12" class="empty-state">
+                <tr v-if="pagedRecords.length === 0">
+                  <td colspan="13" class="empty-state">
                     <i class="ri-inbox-line"></i>
-                    <p>No paid purchase requests found</p>
-                    <small>Paid receiving records will appear here after stock is fully settled.</small>
+                    <p>No received stock found</p>
+                    <small>Receipts appear here as soon as stock is received, paid or not.</small>
                   </td>
                 </tr>
               </template>
             </tbody>
           </table>
         </div>
+
+        <ClientPagination v-model="currentPage" :total="filteredRecords.length" :per-page="pageSize" noun="records" />
       </div>
     </div>
 
@@ -142,13 +153,14 @@
 </template>
 
 <script>
+import ClientPagination from '@/Shared/Components/ClientPagination.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import VoidReceivedStockModal from '../Modal/VoidReceivedStockModal.vue';
 import ViewReceivedStockModal from '../Modal/ViewReceivedStockModal.vue';
 
 export default {
   name: 'ReceivingTab',
-  components: { TableLoadingRow, VoidReceivedStockModal, ViewReceivedStockModal },
+  components: { ClientPagination, TableLoadingRow, VoidReceivedStockModal, ViewReceivedStockModal },
   emits: ['refresh', 'toast'],
   props: {
     listReceivedStocks: {
@@ -163,9 +175,13 @@ export default {
   data() {
     return {
       localKeyword: '',
+      currentPage: 1,
+      pageSize: 15,
       selectedPaymentFilter: 'all',
       paymentFilters: [
-        { value: 'all',           label: 'All Paid',      icon: 'ri-check-double-line' },
+        { value: 'all',           label: 'All',           icon: 'ri-list-check-2' },
+        { value: 'unpaid',        label: 'Unpaid',        icon: 'ri-time-line' },
+        { value: 'paid',          label: 'Fully Paid',    icon: 'ri-check-double-line' },
         { value: 'Cash',          label: 'Cash',          icon: 'ri-cash-line' },
         { value: 'Bank Transfer', label: 'Bank Transfer', icon: 'ri-bank-line' },
         { value: 'Check',         label: 'Check',         icon: 'ri-file-text-line' },
@@ -173,19 +189,27 @@ export default {
     };
   },
   computed: {
+    /**
+     * Every receipt, settled or not. This list used to keep only fully paid
+     * records, which meant a tab called Received Stocks showed nothing at all
+     * while the goods sat in Accounts Payable — and once receiving was split
+     * from paying, a warehouse manager's receipts could never qualify.
+     */
     paidReceivingRecords() {
-      return (this.listReceivedStocks || []).filter((record) => record?.is_fully_paid === true);
+      return this.listReceivedStocks || [];
     },
+    /** Every record matching the filters — paged for display below. */
     filteredRecords() {
       const keyword = this.localKeyword.toLowerCase();
 
       return this.paidReceivingRecords
         .filter((record) => {
-          if (this.selectedPaymentFilter !== 'all') {
-            return record?.payment_mode === this.selectedPaymentFilter;
-          }
-
-          return true;
+          const filter = this.selectedPaymentFilter;
+          if (filter === 'all') return true;
+          if (filter === 'paid') return record?.is_fully_paid === true;
+          if (filter === 'unpaid') return record?.is_fully_paid !== true;
+          // Anything else names a payment method.
+          return record?.payment_mode === filter;
         })
         .filter((record) => {
           if (!keyword) return true;
@@ -209,6 +233,32 @@ export default {
         .sort((left, right) => {
           return new Date(right?.received_date || 0) - new Date(left?.received_date || 0);
         });
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredRecords.length / this.pageSize));
+    },
+    rangeStart() {
+      return this.filteredRecords.length ? (this.currentPage - 1) * this.pageSize + 1 : 0;
+    },
+    rangeEnd() {
+      return Math.min(this.currentPage * this.pageSize, this.filteredRecords.length);
+    },
+    pagedRecords() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      return this.filteredRecords.slice(start, start + this.pageSize);
+    },
+  },
+  watch: {
+    // A filter or search that shortens the list must not strand the reader on
+    // a page that no longer exists.
+    localKeyword() {
+      this.currentPage = 1;
+    },
+    selectedPaymentFilter() {
+      this.currentPage = 1;
+    },
+    listReceivedStocks() {
+      this.currentPage = 1;
     },
   },
   methods: {
@@ -236,6 +286,16 @@ export default {
         day: 'numeric',
       });
     },
+    /**
+     * Where a receipt stands: settled, part-paid, or still owed. Voided ones say
+     * so rather than reporting a balance nobody has to pay.
+     */
+    paymentStatus(record) {
+      if (record?.is_voided) return { key: 'voided', label: 'Voided' };
+      if (record?.is_fully_paid) return { key: 'paid', label: 'Fully Paid' };
+      if (Number(record?.amount_paid) > 0) return { key: 'partial', label: 'Partially Paid' };
+      return { key: 'unpaid', label: 'Unpaid' };
+    },
     paymentModeClass(mode) {
       return String(mode || '')
         .toLowerCase()
@@ -261,6 +321,28 @@ export default {
 </script>
 
 <style scoped>
+
+.payment-status {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.payment-status.paid    { background: #dcfce7; color: #166534; }
+.payment-status.partial { background: #fef3c7; color: #92400e; }
+.payment-status.unpaid  { background: #fee2e2; color: #7c2d12; }
+.payment-status.voided  { background: #e5e7eb; color: #4b5563; }
+
+.balance-note {
+  display: block;
+  font-size: 0.66rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
 .receiving-card {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -391,11 +473,24 @@ export default {
 .receiving-table-wrap {
   border: 1px solid #edf2f7;
   border-radius: 20px;
-  overflow: hidden;
+  /* overflow:hidden clipped the row instead of scrolling it, so the last
+     columns were simply unreachable once the Payment column was added. */
+  overflow: auto;
+  max-height: 70vh;
 }
 
 .receiving-table {
   margin: 0;
+  /* Let the columns keep their natural width and scroll, rather than
+     squeezing thirteen of them into the viewport. */
+  min-width: 1200px;
+}
+
+/* Keep the headings in view while scrolling a long list. */
+.receiving-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .receiving-table thead th {

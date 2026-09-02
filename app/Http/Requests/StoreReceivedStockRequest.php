@@ -28,7 +28,14 @@ class StoreReceivedStockRequest extends FormRequest
             'supplier_id' => 'required|exists:list_suppliers,id',
             'received_date' => 'nullable|date',
             'remarks' => 'nullable|string|max:1000',
-            'payment_mode' => 'required|in:Cash,Bank Transfer,Check,Credit',
+            'payment_mode' => 'required|in:Cash,Bank Transfer,Check,Credit,Split',
+            // A receipt may be settled with several methods at once.
+            'payment_lines' => 'nullable|array',
+            'payment_lines.*.payment_mode' => 'required_with:payment_lines|in:Cash on Hand,Cash,Bank Transfer,Check',
+            'payment_lines.*.payment_amount' => 'required_with:payment_lines|numeric|min:0.01',
+            'payment_lines.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'payment_lines.*.bank_name' => 'nullable|string|max:255',
+            'payment_lines.*.reference_number' => 'nullable|string|max:255',
             'due_date' => 'nullable|date|required_if:payment_mode,Credit',
             'amount_paid' => 'nullable|numeric|min:0',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
@@ -63,6 +70,69 @@ class StoreReceivedStockRequest extends FormRequest
 
                     return round($quantity * $unitCost, 2);
                 });
+
+            // A split carries its own lines; the single-mode rules below do not
+            // apply to it. Each line is checked on its own terms, and lines
+            // drawing on the same source are checked against that source's
+            // balance combined — two affordable cash lines can otherwise
+            // jointly overdraw cash.
+            $lines = $this->input('payment_lines', []);
+            if (is_array($lines) && $lines !== []) {
+                $cash = app(CashManagementService::class);
+                $perSource = [];
+                $grand = 0.0;
+
+                foreach ($lines as $i => $line) {
+                    $mode = trim((string) ($line['payment_mode'] ?? ''));
+                    $amount = round((float) ($line['payment_amount'] ?? 0), 2);
+                    $ref = trim((string) ($line['reference_number'] ?? ''));
+                    $bank = trim((string) ($line['bank_name'] ?? ''));
+                    $bankId = $line['bank_account_id'] ?? null;
+                    $grand += $amount;
+
+                    if ($mode === 'Check' && $ref === '') {
+                        $validator->errors()->add("payment_lines.$i.reference_number", 'Reference number is required for check payments.');
+                    }
+                    if ($mode === 'Bank Transfer') {
+                        if ($bank === '') {
+                            $validator->errors()->add("payment_lines.$i.bank_name", 'Bank name is required for bank transfer payments.');
+                        }
+                        if ($ref === '') {
+                            $validator->errors()->add("payment_lines.$i.reference_number", 'Reference number is required for bank transfer payments.');
+                        }
+                    }
+
+                    $key = $mode === 'Bank Transfer' ? 'bank:'.$bankId : 'cash';
+                    $perSource[$key] = ($perSource[$key] ?? 0) + ($mode === 'Check' ? 0 : $amount);
+                }
+
+                if (round($grand, 2) > $totalAmount) {
+                    $validator->errors()->add('payment_lines', 'Payments total ₱' . number_format($grand, 2) . ', which exceeds the total purchase cost of ₱' . number_format($totalAmount, 2) . '.');
+                }
+
+                foreach ($perSource as $key => $requested) {
+                    $requested = round($requested, 2);
+                    if ($requested <= 0) {
+                        continue;
+                    }
+                    if ($key === 'cash') {
+                        $available = $cash->getCashOnHandBalance();
+                        if ($requested > $available) {
+                            $validator->errors()->add('payment_lines', 'Cash payments total ₱' . number_format($requested, 2) . ', which exceeds available Cash on Hand (₱' . number_format($available, 2) . ').');
+                        }
+                    } elseif (str_starts_with($key, 'bank:')) {
+                        $bankId = substr($key, 5);
+                        if ($bankId !== '' && $bankId !== 'null') {
+                            $available = $cash->getBankAccountBalance((int) $bankId);
+                            if ($requested > $available) {
+                                $validator->errors()->add('payment_lines', 'Bank transfers total ₱' . number_format($requested, 2) . ' against an account holding ₱' . number_format($available, 2) . '.');
+                            }
+                        }
+                    }
+                }
+
+                return; // split validated; skip the single-mode rules
+            }
 
             if ($paymentMode !== 'Credit') {
                 if ($amountPaid === null || $amountPaid === '') {

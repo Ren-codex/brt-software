@@ -8,6 +8,7 @@ use App\Http\Requests\PayrollRequest;
 use App\Services\DropdownClass;
 use App\Services\Modules\PayrollClass;
 use App\Services\PrintClass;
+use App\Services\System\Permission\PermissionService;
 
 class PayrollController extends Controller
 {
@@ -22,6 +23,17 @@ class PayrollController extends Controller
     public function index(Request $request){
         switch($request->option){
             case 'lists':
+                // The route gate on index is deliberately loose so that any
+                // payroll grant can open the page shell. The payroll list itself
+                // is Payroll Processing data, so it keeps that submodule's gate
+                // here rather than riding in on the looser route.
+                abort_unless(
+                    app(PermissionService::class)
+                        ->userHasAccess($request->user(), 'payroll', 'payroll_processing', 'view'),
+                    403,
+                    'You do not have permission to perform this action.'
+                );
+
                 $payrolls = $this->payroll->lists($request);
                 return response()->json($payrolls);
             break;

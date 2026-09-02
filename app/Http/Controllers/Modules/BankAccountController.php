@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\BankAccount;
 use App\Services\Accounting\CashManagementService;
+use App\Services\System\Permission\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -99,6 +100,46 @@ class BankAccountController extends Controller
         $account->update(['is_active' => !$account->is_active]);
 
         return response()->json(['message' => $account->is_active ? 'Bank account activated.' : 'Bank account deactivated.']);
+    }
+
+    /**
+     * The bank accounts a payment screen can offer as a destination.
+     *
+     * Separate from list() because that one is accounting's own view — it hands
+     * back account numbers, GL codes and every balance, and is gated on
+     * accounting access. Choosing where a payment lands is an operational act
+     * that happens in Inventory and Sales too, so a warehouse manager settling a
+     * supplier bill or a sales rep collecting a customer transfer needs this
+     * without being handed the run of the chart of accounts.
+     */
+    public function paymentOptions(PermissionService $permissions)
+    {
+        $user = auth()->user();
+
+        // Money going out: the payer needs to see what each account holds.
+        $canDisburse = $permissions->userHasAccess($user, 'inventory', 'receiving', 'encoder')
+            || $permissions->userHasAccess($user, 'accounting', 'chart_of_accounts', 'view');
+        // Money coming in: only needs to name the account it arrived in.
+        $canCollect = $permissions->userHasAccess($user, 'sales', 'sales_orders', 'encoder')
+            || $permissions->userHasAccess($user, 'sales', 'ar_invoices', 'encoder');
+
+        if (!$canDisburse && !$canCollect) {
+            abort(403, 'You do not have permission to record payments.');
+        }
+
+        $accounts = BankAccount::active()->orderBy('bank_name')->orderBy('account_name')
+            ->get(['id', 'bank_name', 'account_name']);
+
+        // A balance only matters when it caps what can be spent, so it is not
+        // sent to someone who can only collect.
+        if ($canDisburse) {
+            $accounts->each(function ($account) {
+                $account->balance = $this->cashManagementService->getBankAccountBalance($account->id);
+                $account->balance_formatted = '₱' . number_format($account->balance, 2);
+            });
+        }
+
+        return response()->json($accounts);
     }
 
     public function list()

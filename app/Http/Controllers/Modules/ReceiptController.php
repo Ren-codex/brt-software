@@ -43,7 +43,6 @@ class ReceiptController extends Controller
                     'dropdowns' => [
                         'customers' => $this->dropdown->customers(),
                         'statuses' => $this->dropdown->statuses(),
-                        'ar_invoices' => $this->dropdown->arInvoices(),
                     ]
                 ]);
             break;

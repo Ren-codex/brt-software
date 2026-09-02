@@ -99,6 +99,12 @@ class PettyCashController extends Controller
 
         $fund = PettyCashFund::findOrFail($data['fund_id']);
 
+        if (!$fund->is_active) {
+            return response()->json([
+                'message' => "The selected fund '{$fund->name}' is inactive and cannot receive new vouchers.",
+            ], 422);
+        }
+
         if ($data['amount'] > $fund->balance) {
             return response()->json([
                 'message' => 'Amount exceeds available fund balance of ₱' . number_format($fund->balance, 2) . '.',

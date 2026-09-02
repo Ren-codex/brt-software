@@ -23,6 +23,7 @@ class SalesOrder extends Model
         'sales_rep_id',
         'driver_id',
         'payment_mode',
+        'payment_lines',
         'due_date',
         'location_id',
         'delivery_location',
@@ -37,6 +38,7 @@ class SalesOrder extends Model
         'approved_at' => 'date',
         'total_amount' => 'decimal:2',
         'total_discount' => 'decimal:2',
+        'payment_lines' => 'array',
     ];
 
     public function customer()

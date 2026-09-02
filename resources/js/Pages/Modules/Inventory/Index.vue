@@ -170,6 +170,12 @@
                   />
                 </div>
               </div>
+              <div class="row" v-if="activeTab === 'inventoryReport' && currentView === 'list'">
+                <div class="col-md-12">
+                  <InventoryReportTab @toast="showToast" />
+                </div>
+              </div>
+
               <div class="row" v-if="activeTab === 'stockReturns' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <StockReturnsTab :listStockReturns="listStockReturns" :meta="meta" :links="links" :filter="filter"
@@ -220,6 +226,7 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
 import PurchaseRequestsTab from './Tab/PurchaseRequestsTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
+import InventoryReportTab from './Tab/InventoryReportTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import StockReturnsTab from './Tab/StockReturnsTab.vue';
 import AccountsPayableTab from './Tab/AccountsPayableTab.vue';
@@ -240,6 +247,7 @@ export default {
     PurchaseOrdersTab,
     PurchaseRequestsTab,
     ProductsTab,
+    InventoryReportTab,
     InventoryStocksTab,
     StockReturnsTab,
     AccountsPayableTab,
@@ -285,6 +293,7 @@ export default {
       isPurchaseOrdersLoading: false,
       isProductsLoading: false,
       isInventoryStocksLoading: false,
+      currentStocksPageUrl: null,
       isReceivingLoading: false,
       isStockReturnsLoading: false,
       isToastVisible: false,
@@ -309,7 +318,7 @@ export default {
           id: 'receiving',
           label: 'Received Stocks',
           icon: 'ri-inbox-unarchive-line',
-          description: 'List of all fully settled stock receipts'
+          description: 'All stock received, paid or not'
         },
         {
           id: 'accountsPayable',
@@ -335,6 +344,12 @@ export default {
           icon: 'ri-text-wrap',
           description: 'List of stock returns'
         },
+        {
+          id: 'inventoryReport',
+          label: 'Inventory Report',
+          icon: 'ri-clipboard-line',
+          description: 'Stock position and value'
+        },
       ]
     };
   },
@@ -349,6 +364,7 @@ export default {
         receiving: 'receiving',
         productSummary: 'inventory_stocks',
         stockReturns: 'stock_returns',
+        inventoryReport: 'inventory_stocks',
       };
       return this.tabs.filter((tab) => {
         const submoduleKey = tabToSubmodule[tab.id];
@@ -506,11 +522,15 @@ export default {
       }
     },
 
-    fetchInventoryStocks(page_url) {
+    fetchInventoryStocks(page_url, { quiet = false } = {}) {
       if (this.activeTab === 'inventoryStocks') {
         page_url = page_url || '/inventory-stocks';
-        this.isInventoryStocksLoading = true;
-        axios
+        // Remembered so a background refresh keeps the user's page.
+        this.currentStocksPageUrl = page_url;
+        if (!quiet) {
+          this.isInventoryStocksLoading = true;
+        }
+        return axios
           .get(page_url, {
             params: {
               keyword: this.filter.keyword,
@@ -528,7 +548,7 @@ export default {
           })
           .catch((err) => console.error(err))
           .finally(() => {
-            this.isInventoryStocksLoading = false;
+            if (!quiet) this.isInventoryStocksLoading = false;
           });
       }
     },

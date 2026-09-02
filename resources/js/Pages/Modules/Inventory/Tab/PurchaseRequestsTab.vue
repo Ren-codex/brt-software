@@ -135,10 +135,10 @@
                       </td>
                       <td>
                         <div class="action-buttons" @click.stop>
-                          <button @click.stop="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                          <button v-if="isEditable(list)" @click.stop="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                             <i class="ri-pencil-line"></i>
                           </button>
-                          <button @click.stop="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                          <button v-if="isEditable(list)" @click.stop="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
                             <i class="ri-delete-bin-line"></i>
                           </button>
                           <button @click.stop="printPurchaseOrder(list.id)" class="action-btn action-btn-print" v-b-tooltip.hover title="Print">
@@ -177,10 +177,12 @@
 import Pagination from '@/Shared/Components/Pagination.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
 import CreatePurchaseOrderModal from '../Modal/CreatePurchaseOrderModal.vue';
+import { recordLockMixin } from '@/Shared/recordLock.js';
 
 export default {
   name: "PurchaseOrdersTab",
   components: { Pagination, Delete, CreatePurchaseOrderModal },
+  mixins: [recordLockMixin],
   props: {
     listPurchaseRequests: Array,
     listPurchaseOrders: Array,

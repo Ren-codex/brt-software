@@ -186,6 +186,14 @@ export default {
       });
     },
   },
+  created() {
+    // activeTab is restored from localStorage and defaults to payroll_management,
+    // neither of which is guaranteed to be a tab this holder can see -- a
+    // loans-only holder would land on a hidden tab and get an empty page.
+    if (!this.visibleTabs.some((tab) => tab.id === this.activeTab)) {
+      this.activeTab = this.visibleTabs.length ? this.visibleTabs[0].id : null;
+    }
+  },
   methods: {
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;

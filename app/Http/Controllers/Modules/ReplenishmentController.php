@@ -81,9 +81,14 @@ class ReplenishmentController extends Controller
 
     public function approve(Request $request, $id)
     {
+        // source_type is required: without it the journal entry falls back to a
+        // generic "Cash in Bank" (1011) catch-all that is never deposited into,
+        // so it drifts negative and splits bank reporting away from the real
+        // per-bank accounts (1020/1021). The approver must say where the money
+        // actually came from.
         $request->validate([
             'review_notes'    => 'nullable|string|max:1000',
-            'source_type'     => 'nullable|in:cash,bank',
+            'source_type'     => 'required|in:cash,bank',
             'bank_account_id' => 'nullable|required_if:source_type,bank|exists:bank_accounts,id',
         ]);
 
