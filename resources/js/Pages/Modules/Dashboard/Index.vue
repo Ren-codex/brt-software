@@ -1537,5 +1537,15 @@ export default {
     .manual-btn {
         width: 100%;
     }
+    .filter-buttons {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    .selected-date-input {
+        width: 100%;
+    }
+    .date-input {
+        width: 100%;
+    }
 }
 </style>

@@ -518,6 +518,22 @@ export default {
   white-space: nowrap;
 }
 
+@media (max-width: 768px) {
+  .quick-stats-floating-toggle {
+    top: auto;
+    bottom: 16px;
+    transform: none;
+    padding: 8px 14px;
+    border-radius: 20px;
+  }
+
+  .quick-stats-floating-toggle span {
+    writing-mode: horizontal-tb;
+    transform: none;
+    letter-spacing: normal;
+  }
+}
+
 .inventory-toast {
   position: fixed;
   top: 20px;

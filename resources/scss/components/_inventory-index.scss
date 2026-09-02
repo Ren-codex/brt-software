@@ -416,12 +416,16 @@
   .inventory-sidebar-tabs {
     display: flex;
     padding: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
   .inventory-sidebar-header {
   display: none;
   }
   .inventory-sidebar-tab {
     flex-direction: column;
+    flex-shrink: 0;
     text-align: center;
     min-width: 100px;
     padding: 12px;

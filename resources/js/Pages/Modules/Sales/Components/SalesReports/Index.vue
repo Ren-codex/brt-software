@@ -1046,6 +1046,8 @@ export default {
   border: 1px solid #e0ece7;
   border-radius: 14px;
   padding: 1.1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table-title {
@@ -1225,6 +1227,10 @@ tbody tr:hover td {
     grid-template-columns: 1fr;
   }
 
+  .data-table table,
+  .daily-sales table {
+    min-width: 480px;
+  }
 }
 </style>
 

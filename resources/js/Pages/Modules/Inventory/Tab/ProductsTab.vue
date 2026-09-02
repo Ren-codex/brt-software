@@ -33,7 +33,7 @@
           </div>
 
           <div class="table-section">
-            <div class="table-responsive" style="overflow: visible; max-height: none;">
+            <div class="table-responsive">
               <table class="table align-middle table-centered mb-0">
                 <thead>
                   <tr>
