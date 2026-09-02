@@ -39,7 +39,7 @@ class SupplierRequest extends FormRequest
             ],
 
             'tin' => [
-                'required',
+                'nullable',
                 'string',
                 Rule::unique('list_suppliers', 'tin')->ignore($this->id),
             ],
@@ -54,7 +54,6 @@ class SupplierRequest extends FormRequest
             'contact_person.required' => 'This field is required',
             'contact_number.required' => 'This field is required',
             'email.required' => 'This field is required',
-            'tin.required' => 'This field is required',
         ];
 
     }

@@ -105,7 +105,7 @@
                         </div>
 
                         <div class="form-group form-group-half">
-                            <label for="tin" class="form-label">TIN</label>
+                            <label for="tin" class="form-label">TIN <span class="text-muted">(optional)</span></label>
                             <div class="input-wrapper">
                                 <i class="ri-file-list-3-line input-icon"></i>
                                 <input 
