@@ -1,19 +1,21 @@
 <?php
 
-test('registration screen can be rendered', function () {
-    $response = $this->get('/register');
-
-    $response->assertStatus(200);
+/**
+ * Self-registration is deliberately not exposed: accounts are provisioned by an
+ * administrator through the Employees module. The Breeze registration routes
+ * were removed, and these guard against them being reintroduced by accident.
+ */
+test('the registration screen is not exposed', function () {
+    $this->get('/register')->assertNotFound();
 });
 
-test('new users can register', function () {
-    $response = $this->post('/register', [
+test('a visitor cannot register themselves an account', function () {
+    $this->post('/register', [
         'name' => 'Test User',
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ]);
+    ])->assertNotFound();
 
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $this->assertGuest();
 });
