@@ -984,7 +984,7 @@ class JournalEntryService
 
         return $this->createEntry(
             $deposit,
-            $deposit->deposit_date,
+            $deposit->effectiveDate(),
             'bank_deposit',
             'Bank deposit ' . $deposit->deposit_no . ' — cash deposited to ' . $deposit->bankAccount->bank_name . '.',
             [

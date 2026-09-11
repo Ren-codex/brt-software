@@ -96,7 +96,7 @@ class CashManagementController extends Controller
                 ->orderBy('code')
                 ->get(['id', 'code', 'name', 'subtype'])
                 ->map(function ($a) {
-                    $a->balance = $this->service->getAccountBalance($a->id);
+                    $a->balance = $this->service->getAvailableCashBalance($a->id);
                     $a->balance_formatted = '₱' . number_format($a->balance, 2);
                     return $a;
                 })
@@ -110,6 +110,10 @@ class CashManagementController extends Controller
                 'id'               => $d->id,
                 'deposit_no'       => $d->deposit_no,
                 'deposit_date'     => $d->deposit_date,
+                'deposit_type'     => $d->deposit_type,
+                'check_date'       => $d->check_date?->toDateString(),
+                'check_number'     => $d->check_number,
+                'status'           => $d->status,
                 'cash_account'     => optional($d->cashAccount)->name,
                 'bank_name'        => optional($d->bankAccount)->bank_name . ' — ' . optional($d->bankAccount)->account_name,
                 'amount'           => (float) $d->amount,
@@ -264,6 +268,9 @@ class CashManagementController extends Controller
             'bank_account_id'    => 'required|integer|exists:bank_accounts,id',
             'amount'             => 'required|numeric|min:0.01',
             'deposit_date'       => 'required|date',
+            'deposit_type'       => 'required|in:cash,check',
+            'check_date'         => 'required_if:deposit_type,check|nullable|date',
+            'check_number'       => 'required_if:deposit_type,check|nullable|string|max:50',
             'reference'          => 'nullable|string|max:100',
             'notes'              => 'nullable|string|max:500',
             'remittance_ids'     => 'nullable|array',
@@ -271,11 +278,15 @@ class CashManagementController extends Controller
         ]);
 
         $amount = round((float) $data['amount'], 2);
-        $sourceBalance = $this->service->getAccountBalance((int) $data['cash_account_id']);
+        // Pending check deposits are already spoken for, so they do not count
+        // as available cash.
+        $sourceBalance = $this->service->getAvailableCashBalance((int) $data['cash_account_id']);
         if ($amount > $sourceBalance) {
+            $message = 'Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').';
+
             return response()->json([
-                'message' => 'Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').',
-                'errors'  => ['amount' => ['Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').']],
+                'message' => $message,
+                'errors'  => ['amount' => [$message]],
             ], 422);
         }
 

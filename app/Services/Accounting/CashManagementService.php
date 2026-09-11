@@ -61,19 +61,30 @@ class CashManagementService
     public function createBankDeposit(array $data): BankDeposit
     {
         return DB::transaction(function () use ($data) {
+            $isCheck = ($data['deposit_type'] ?? BankDeposit::TYPE_CASH) === BankDeposit::TYPE_CHECK;
+
             $deposit = BankDeposit::create([
                 'deposit_no' => $this->series->get('bank_deposit_no'),
                 'cash_account_id' => $data['cash_account_id'],
                 'bank_account_id' => $data['bank_account_id'],
+                'deposit_type' => $isCheck ? BankDeposit::TYPE_CHECK : BankDeposit::TYPE_CASH,
                 'amount' => round((float) $data['amount'], 2),
                 'deposit_date' => $data['deposit_date'],
+                'check_date' => $isCheck ? ($data['check_date'] ?? null) : null,
+                'check_number' => $isCheck ? ($data['check_number'] ?? null) : null,
+                'status' => BankDeposit::STATUS_PENDING,
                 'reference' => $data['reference'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'created_by_id' => Auth::id(),
             ]);
 
             $deposit->load(['cashAccount', 'bankAccount', 'createdBy']);
-            $this->journal->recordBankDepositEntry($deposit);
+
+            // A post-dated check is not money yet: hold the entry until the
+            // check date arrives, when deposits:post-due-checks posts it.
+            if ($deposit->isDueForPosting()) {
+                $this->postBankDeposit($deposit);
+            }
 
             if (!empty($data['remittance_ids'])) {
                 $liquidatedStatusId = ListStatus::getBySlug('liquidated')?->id;
@@ -87,11 +98,36 @@ class CashManagementService
         });
     }
 
+    /**
+     * Writes the DR Bank / CR Cash entry and marks the deposit posted. Safe to
+     * call twice — a posted deposit is left alone, so the scheduled command
+     * cannot double-post.
+     */
+    public function postBankDeposit(BankDeposit $deposit): BankDeposit
+    {
+        if ($deposit->status === BankDeposit::STATUS_POSTED) {
+            return $deposit;
+        }
+
+        $deposit->loadMissing(['cashAccount', 'bankAccount']);
+        $this->journal->recordBankDepositEntry($deposit);
+
+        $deposit->forceFill([
+            'status' => BankDeposit::STATUS_POSTED,
+            'posted_at' => now(),
+        ])->save();
+
+        return $deposit;
+    }
+
     public function deleteBankDeposit(int $id): void
     {
         DB::transaction(function () use ($id) {
             $deposit = BankDeposit::with(['cashAccount', 'bankAccount'])->findOrFail($id);
-            $this->journal->reverseEntriesForSource($deposit, 'Bank deposit deleted.', now()->toDateString());
+            // A pending check never posted an entry, so there is nothing to reverse.
+            if ($deposit->status === BankDeposit::STATUS_POSTED) {
+                $this->journal->reverseEntriesForSource($deposit, 'Bank deposit deleted.', now()->toDateString());
+            }
             Remittance::where('bank_deposit_id', $id)->update(['bank_deposit_id' => null]);
             $deposit->delete();
         });
@@ -262,6 +298,21 @@ class CashManagementService
         $credit = (float) JournalEntryLine::where('account_id', $accountId)->where('line_type', 'credit')->sum('amount');
 
         return round($debit - $credit, 2);
+    }
+
+    /**
+     * Cash still on hand once pending check deposits are accounted for. Those
+     * checks have left the drawer but have not credited the ledger yet, so
+     * spending against the raw balance would let several of them each pass the
+     * guard while together overdrawing the account.
+     */
+    public function getAvailableCashBalance(int $accountId): float
+    {
+        $pending = (float) BankDeposit::where('cash_account_id', $accountId)
+            ->where('status', BankDeposit::STATUS_PENDING)
+            ->sum('amount');
+
+        return round($this->getAccountBalance($accountId) - $pending, 2);
     }
 
     public function getCashInBankBalance(): float

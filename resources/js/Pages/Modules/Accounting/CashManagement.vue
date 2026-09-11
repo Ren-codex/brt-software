@@ -302,6 +302,8 @@
                                 <tr>
                                     <th>Deposit No</th>
                                     <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
                                     <th>Cash Account</th>
                                     <th>Deposited To</th>
                                     <th class="text-end">Amount</th>
@@ -315,6 +317,20 @@
                                 <tr v-for="d in deposits" :key="d.id">
                                     <td class="font-monospace deposit-no">{{ d.deposit_no }}</td>
                                     <td class="text-nowrap">{{ d.deposit_date }}</td>
+                                    <td>
+                                        <span v-if="d.deposit_type === 'check'" class="bd-type-chip check" :title="'Check ' + (d.check_number || '')">
+                                            <i class="ri-bill-line"></i> Check
+                                        </span>
+                                        <span v-else class="bd-type-chip cash"><i class="ri-money-dollar-circle-line"></i> Cash</span>
+                                        <div v-if="d.deposit_type === 'check'" class="bd-check-meta">
+                                            {{ d.check_number || '—' }} · {{ d.check_date || '—' }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="bd-status-chip" :class="d.status">
+                                            {{ d.status === 'pending' ? 'Pending' : 'Posted' }}
+                                        </span>
+                                    </td>
                                     <td class="text-muted small">{{ d.cash_account }}</td>
                                     <td><span class="bank-chip to">{{ d.bank_name }}</span></td>
                                     <td class="text-end fw-semibold deposit-amount">{{ d.amount_formatted }}</td>
@@ -345,7 +361,7 @@
                         <div class="modal-header-icon"><i class="ri-bank-card-2-line"></i></div>
                         <div>
                             <h5 class="modal-title">Record Bank Deposit</h5>
-                            <p class="modal-subtitle">Cash on hand deposited to a bank account. Posts DR Bank / CR Cash automatically.</p>
+                            <p class="modal-subtitle">Cash on hand deposited to a bank account. Posts DR Bank / CR Cash — a check posts on its check date.</p>
                         </div>
                         <button class="close-btn ms-auto" @click="bdModal.open = false"><i class="ri-close-line"></i></button>
                     </div>
@@ -355,6 +371,39 @@
                                 <label class="form-label">Deposit Date <span class="text-danger">*</span></label>
                                 <input v-model="bdForm.deposit_date" type="date" class="form-control" />
                                 <div v-if="bdErrors.deposit_date" class="error-msg">{{ bdErrors.deposit_date[0] }}</div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Deposit Type <span class="text-danger">*</span></label>
+                                <select v-model="bdForm.deposit_type" class="form-select">
+                                    <option value="cash">Cash</option>
+                                    <option value="check">Check</option>
+                                </select>
+                                <div v-if="bdErrors.deposit_type" class="error-msg">{{ bdErrors.deposit_type[0] }}</div>
+                            </div>
+                        </div>
+
+                        <div v-if="bdIsCheck" class="row g-3 mt-0">
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Check Date <span class="text-danger">*</span></label>
+                                <input v-model="bdForm.check_date" type="date" class="form-control" />
+                                <div v-if="bdErrors.check_date" class="error-msg">{{ bdErrors.check_date[0] }}</div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Check Number <span class="text-danger">*</span></label>
+                                <input v-model="bdForm.check_number" type="text" class="form-control" placeholder="e.g. 0012345" />
+                                <div v-if="bdErrors.check_number" class="error-msg">{{ bdErrors.check_number[0] }}</div>
+                            </div>
+                            <div class="col-12">
+                                <p class="bd-check-note mb-0">
+                                    <i class="ri-time-line"></i>
+                                    <span v-if="bdCheckIsFuture">
+                                        This deposit will be held as <strong>Pending</strong> — the amount reaches the bank on
+                                        <strong>{{ bdForm.check_date }}</strong>, and the journal entry posts on that date.
+                                    </span>
+                                    <span v-else>
+                                        The check date is today or earlier, so this posts immediately.
+                                    </span>
+                                </p>
                             </div>
                         </div>
 
@@ -670,6 +719,9 @@ const emptyFtForm = () => ({
 
 const emptyBdForm = (cashAccounts = []) => ({
     deposit_date: new Date().toISOString().slice(0, 10),
+    deposit_type: 'cash',
+    check_date: '',
+    check_number: '',
     cash_account_id: (cashAccounts.find(a => a.code === '1000') ?? cashAccounts[0])?.id ?? '',
     bank_account_id: '',
     amount: '',
@@ -728,6 +780,13 @@ export default {
     computed: {
         selectedFund() {
             return this.funds.find(f => f.id === this.selectedFundId) ?? null;
+        },
+        bdIsCheck() {
+            return this.bdForm.deposit_type === 'check';
+        },
+        bdCheckIsFuture() {
+            if (!this.bdIsCheck || !this.bdForm.check_date) return false;
+            return this.bdForm.check_date > new Date().toISOString().slice(0, 10);
         },
         bdSelectedCashAccount() {
             return this.cashAccounts.find(a => a.id === this.bdForm.cash_account_id) ?? null;
@@ -926,6 +985,52 @@ export default {
 }
 .bank-chip.from { background: #fff0e9; color: #9a3b1b; border: 1px solid #f9c5a8; }
 .bank-chip.to   { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+
+/* ── Deposit type / status chips ─────────────────────────────── */
+.bd-type-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.bd-type-chip.cash  { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+.bd-type-chip.check { background: #eef2fb; color: #29457e; border: 1px solid #b9caea; }
+
+.bd-check-meta {
+    margin-top: 2px;
+    font-size: 0.72rem;
+    color: #6b8c85;
+    white-space: nowrap;
+}
+
+.bd-status-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.bd-status-chip.posted  { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+.bd-status-chip.pending { background: #fdf3e3; color: #8a5a10; border: 1px solid #f0d49a; }
+
+.bd-check-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #f4f8f7;
+    border: 1px solid #d8e6e1;
+    color: #33564f;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+.bd-check-note i { color: #3d8d7a; margin-top: 1px; }
 
 /* ── Transaction type chip ───────────────────────────────────── */
 .txn-type-chip {
