@@ -22,12 +22,24 @@
             </div>
             <div class="library-card-body">
                    
+                    <div class="status-tab-bar">
+                        <button
+                            v-for="tab in statusTabs"
+                            :key="tab.slug || 'all'"
+                            class="status-tab-btn"
+                            :class="{ active: filter.status === tab.slug }"
+                            @click="filter.status = tab.slug"
+                        >
+                            {{ tab.label }}
+                        </button>
+                    </div>
+
                     <div class="search-section">
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
-                                    <input type="text"  v-model="filter.keyword" 
+                                    <input type="text"  v-model="filter.keyword"
                                         placeholder="Search sales order..." class="search-input">
                                 </div>
                             </div>
@@ -43,22 +55,6 @@
                                         :searchable="true"
                                         :can-clear="true"
                                         placeholder="All Locations"
-                                        class="search-input filter-multiselect"
-                                    />
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="search-wrapper filter-multiselect-wrapper">
-                                    <i class="ri-flag-line search-icon"></i>
-                                    <Multiselect
-                                        v-model="filter.status"
-                                        :options="dropdowns.sales_statuses"
-                                        label="name"
-                                        value-prop="slug"
-                                        track-by="name"
-                                        :searchable="true"
-                                        :can-clear="true"
-                                        placeholder="All Status"
                                         class="search-input filter-multiselect"
                                     />
                                 </div>
@@ -350,6 +346,15 @@ export default {
         canApprove() {
             return this.can('sales', 'sales_orders', 'approver');
         },
+        statusTabs() {
+            const relevant = ['for-payment', 'partially-paid', 'closed', 'cancelled'];
+            const bySlug = Object.fromEntries((this.dropdowns.sales_statuses || []).map(s => [s.slug, s]));
+
+            return [
+                { slug: null, label: 'All' },
+                ...relevant.filter(slug => bySlug[slug]).map(slug => ({ slug, label: bySlug[slug].name })),
+            ];
+        },
     },
     watch: {
         "filter.keyword"(newVal) {
@@ -418,7 +423,10 @@ export default {
                         }
                     }
                 })
-                .catch(err => console.log(err))
+                .catch(err => {
+                    console.log(err);
+                    if (!quiet) this.$toast.error('Unable to load sales orders.');
+                })
                 .finally(() => { if (!quiet) this.loading = false; });
         },
         openCreate() {
@@ -492,7 +500,10 @@ export default {
                         this.metrics = response.data;
                     }
                 })
-                .catch(err => console.log(err));
+                .catch(err => {
+                    console.log(err);
+                    this.$toast.error('Unable to load sales order metrics.');
+                });
         },
         getStatusStyle(status) {
             if (!status) return {};
@@ -547,6 +558,28 @@ export default {
 }
 </script>
 <style scoped>
+.status-tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.status-tab-btn {
+    padding: 6px 16px;
+    border-radius: 8px;
+    border: 1px solid #c4d9d2;
+    background: #fff;
+    color: #6b8c85;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-tab-btn:hover { background: #edf6f2; color: #16322e; }
+.status-tab-btn.active { background: #3D8D7A; border-color: #3D8D7A; color: #fff; }
+
 /* Quiet "this screen keeps itself current" hint. */
 .poll-indicator {
     display: inline-flex;

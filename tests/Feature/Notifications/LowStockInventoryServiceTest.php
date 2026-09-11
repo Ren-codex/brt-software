@@ -29,7 +29,10 @@ class LowStockInventoryServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $adminRole = ListRole::create(['name' => 'Administrator', 'type' => 'role', 'definition' => '', 'is_active' => true]);
+        $adminRole = ListRole::firstOrCreate(
+            ['name' => 'Administrator'],
+            ['type' => 'role', 'definition' => '', 'is_active' => true]
+        );
         $this->admin = User::factory()->create();
         $this->admin->roles()->attach($adminRole->id, ['added_by_id' => $this->admin->id]);
         $this->actingAs($this->admin);
@@ -50,15 +53,16 @@ class LowStockInventoryServiceTest extends TestCase
             'email' => 'supplier'.$seq.'@example.com',
             'tin' => 'TIN'.$seq,
         ]);
-        $status = ListStatus::create([
-            'name' => 'Pending',
-            'slug' => 'pending',
-            'text_color' => '#000000',
-            'bg_color' => '#FFFFFF',
-        ]);
+        // 'pending' ships with the schema (see the add_stock_return_statuses
+        // migration), so reuse it rather than colliding with its unique slug.
+        $status = ListStatus::firstOrCreate(
+            ['slug' => 'pending'],
+            ['name' => 'Pending', 'text_color' => '#000000', 'bg_color' => '#FFFFFF']
+        );
         $product = Product::create([
+            'code' => 'PRD-TEST-'.$seq,
             'brand_id' => $brand->id,
-            'pack_size' => '100mg',
+            'weight' => 25,
             'unit_id' => $unit->id,
             'is_active' => true,
             'minimum_stock' => $minimumStock,

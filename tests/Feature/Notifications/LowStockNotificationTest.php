@@ -15,13 +15,14 @@ class LowStockNotificationTest extends TestCase
 
     public function test_notification_has_correct_type_and_channels(): void
     {
-        $brand   = ListBrand::create(['name' => 'BrandA']);
-        $unit    = ListUnit::create(['name' => 'pcs']);
+        $brand = ListBrand::create(['name' => 'BrandA']);
+        $unit = ListUnit::create(['name' => 'pcs']);
         $product = Product::create([
-            'brand_id'      => $brand->id,
-            'pack_size'     => '500mg',
-            'unit_id'       => $unit->id,
-            'is_active'     => true,
+            'code' => 'PRD-LOWSTOCK-1',
+            'brand_id' => $brand->id,
+            'weight' => 50,
+            'unit_id' => $unit->id,
+            'is_active' => true,
             'minimum_stock' => 10,
         ]);
 

@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Modules;
 
-use App\Models\Loan;
-use Illuminate\Http\Request;
-use App\Services\DropdownClass;
-use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
-use App\Services\Modules\LoanClass;
 use App\Http\Requests\Modules\LoanRequest;
+use App\Services\DropdownClass;
+use App\Services\Modules\LoanClass;
+use App\Traits\HandlesTransaction;
+use Illuminate\Http\Request;
 
 class LoanController extends Controller
 {
     use HandlesTransaction;
 
-    public $loan, $dropdown;
+    public $loan;
+
+    public $dropdown;
 
     public function __construct(LoanClass $loan, DropdownClass $dropdown)
     {
@@ -31,8 +32,9 @@ class LoanController extends Controller
             default:
                 return inertia('Modules/Loans/Index', [
                     'dropdowns' => [
-                        'employees' => $this->dropdown->employees()
-                    ]
+                        'employees' => $this->dropdown->employees(),
+                        'loan_type_limits' => $this->dropdown->loan_type_limits(),
+                    ],
                 ]);
                 break;
         }
@@ -49,7 +51,7 @@ class LoanController extends Controller
         return back()->with([
             'success' => $result['message'],
             'info' => $result['info'],
-            'data' => $result['data'] // Optional: if you want to pass data back
+            'data' => $result['data'], // Optional: if you want to pass data back
         ]);
     }
 
@@ -87,6 +89,7 @@ class LoanController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $result = $this->loan->updateStatus($request, $id);
+
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],

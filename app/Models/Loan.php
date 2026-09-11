@@ -12,6 +12,7 @@ class Loan extends Model
         'loan_no',
         'employee_id',
         'loan_type',
+        'payment_type',
         'amount',
         'interest_rate',
         'term_months',

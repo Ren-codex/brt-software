@@ -2,10 +2,10 @@
 
 namespace App\Services\Modules;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Facades\DB;
 use App\Services\System\Permission\PermissionService;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ReportClass
 {
@@ -172,7 +172,7 @@ class ReportClass
             ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
             ->where('ls.slug', '!=', 'cancelled')
             ->whereBetween('so.order_date', [$filters['from'], $filters['to']])
-            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+            ->when(! empty($filters['location_id']), function ($query) use ($filters) {
                 $query->where('so.location_id', $filters['location_id']);
             })
             ->whereNotNull('so.sales_rep_id')
@@ -189,13 +189,13 @@ class ReportClass
             ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
             ->where('ls.slug', '!=', 'cancelled')
             ->whereBetween('so.order_date', [$filters['from'], $filters['to']])
-            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+            ->when(! empty($filters['location_id']), function ($query) use ($filters) {
                 $query->where('so.location_id', $filters['location_id']);
             })
             ->whereNotNull('so.sales_rep_id')
             ->select(
                 'so.sales_rep_id',
-                DB::raw('ROUND(SUM(COALESCE(p.weight, 0) * soi.quantity) / 25, 2) as sold_quantity')
+                DB::raw('ROUND(SUM(COALESCE(p.weight, 0) * soi.quantity) / 50, 2) as sold_quantity')
             )
             ->groupBy('so.sales_rep_id');
 
@@ -204,7 +204,7 @@ class ReportClass
             ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
             ->where('ls.slug', '!=', 'cancelled')
             ->whereBetween('ai.invoice_date', [$filters['from'], $filters['to']])
-            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+            ->when(! empty($filters['location_id']), function ($query) use ($filters) {
                 $query->where('so.location_id', $filters['location_id']);
             })
             ->whereNotNull('so.sales_rep_id')
@@ -222,7 +222,7 @@ class ReportClass
             ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
             ->where('ls.slug', '!=', 'cancelled')
             ->whereBetween('r.receipt_date', [$filters['from'], $filters['to']])
-            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+            ->when(! empty($filters['location_id']), function ($query) use ($filters) {
                 $query->where('so.location_id', $filters['location_id']);
             })
             ->whereNotNull('so.sales_rep_id')
@@ -254,21 +254,43 @@ class ReportClass
 
         $this->applyEmployeeSummaryScope($query);
 
+        // Company-wide total (unscoped by visibility) so a single sales rep's
+        // percentage share is computed against everyone, not just their own row.
+        $totalSoldQuantity = DB::table('sales_orders as so')
+            ->join('sales_order_items as soi', 'so.id', '=', 'soi.sales_order_id')
+            ->leftJoin('products as p', 'soi.product_id', '=', 'p.id')
+            ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
+            ->where('ls.slug', '!=', 'cancelled')
+            ->whereBetween('so.order_date', [$filters['from'], $filters['to']])
+            ->when(! empty($filters['location_id']), function ($query) use ($filters) {
+                $query->where('so.location_id', $filters['location_id']);
+            })
+            ->whereNotNull('so.sales_rep_id')
+            ->selectRaw('SUM(COALESCE(p.weight, 0) * soi.quantity) / 50 as total')
+            ->value('total') ?? 0;
+
         return $query
             ->orderByDesc(DB::raw('COALESCE(sod.so_total, 0) + COALESCE(ard.ar_total, 0) + COALESCE(rd.receipt_total, 0)'))
-            ->get();
+            ->get()
+            ->map(function ($row) use ($totalSoldQuantity) {
+                $row->percentage = $totalSoldQuantity > 0
+                    ? round(($row->sold_quantity / $totalSoldQuantity) * 100, 2)
+                    : 0;
+
+                return $row;
+            });
     }
 
     private function applyEmployeeSummaryScope(Builder $query): void
     {
         $user = Auth::user();
-        if (!$user || app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin')) {
+        if (! $user || app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin')) {
             return;
         }
 
         $employeeId = $user->employee?->id;
 
-        if (!$employeeId) {
+        if (! $employeeId) {
             return;
         }
 
@@ -279,7 +301,7 @@ class ReportClass
     {
         $rows = $this->baseSalesOrderQuery($filters, false)
             ->select(
-                DB::raw($this->normalizedPaymentModeSql() . ' as payment_type'),
+                DB::raw($this->normalizedPaymentModeSql().' as payment_type'),
                 DB::raw('COUNT(so.id) as total_orders'),
                 DB::raw('SUM(so.total_amount) as total_sales')
             )
@@ -304,10 +326,10 @@ class ReportClass
             ->join('sales_orders as so', 'ai.sales_order_id', '=', 'so.id')
             ->join('list_statuses as ls', 'so.status_id', '=', 'ls.id')
             ->leftJoin('customers as c', 'r.customer_id', '=', 'c.id')
-            ->when(!empty($filters['from']) && !empty($filters['to']), function ($query) use ($filters) {
+            ->when(! empty($filters['from']) && ! empty($filters['to']), function ($query) use ($filters) {
                 $query->whereBetween('so.order_date', [$filters['from'], $filters['to']]);
             })
-            ->when(!empty($filters['location_id']), function ($query) use ($filters) {
+            ->when(! empty($filters['location_id']), function ($query) use ($filters) {
                 $query->where('so.location_id', $filters['location_id']);
             })
             ->where('ls.slug', '!=', 'cancelled');
@@ -393,19 +415,19 @@ class ReportClass
     {
         return match ($type) {
             'customer', 'product', 'sales_rep' => $this->drilldownOrders($filters, $type, $id),
-            'order'   => $this->drilldownOrder($filters, (int) $id),
+            'order' => $this->drilldownOrder($filters, (int) $id),
             'receipt' => $this->drilldownReceipt($filters, (int) $id),
-            default   => $this->emptyDrilldown(),
+            default => $this->emptyDrilldown(),
         };
     }
 
     private function emptyDrilldown(string $label = 'Not found'): array
     {
         return [
-            'mode'    => 'orders',
+            'mode' => 'orders',
             'context' => ['label' => $label, 'meta' => []],
-            'totals'  => ['orders' => 0, 'quantity' => null, 'sales' => 0.0],
-            'rows'    => [],
+            'totals' => ['orders' => 0, 'quantity' => null, 'sales' => 0.0],
+            'rows' => [],
         ];
     }
 
@@ -453,14 +475,14 @@ class ReportClass
             ->get();
 
         return [
-            'mode'    => 'orders',
+            'mode' => 'orders',
             'context' => ['label' => $this->drilldownLabel($type, $id), 'meta' => []],
-            'totals'  => [
-                'orders'   => $rows->count(),
+            'totals' => [
+                'orders' => $rows->count(),
                 'quantity' => $isProduct ? (float) $rows->sum('quantity') : null,
-                'sales'    => (float) $rows->sum('amount'),
+                'sales' => (float) $rows->sum('amount'),
             ],
-            'rows'    => $rows,
+            'rows' => $rows,
         ];
     }
 
@@ -484,7 +506,7 @@ class ReportClass
                 : 'Walk-in Customer';
         }
 
-        if (!$id) {
+        if (! $id) {
             return 'Unassigned';
         }
 
@@ -519,17 +541,17 @@ class ReportClass
             )
             ->first();
 
-        if (!$order) {
+        if (! $order) {
             return $this->emptyDrilldown('Order not available');
         }
 
         $rows = $this->orderLineItems($id);
 
         return [
-            'mode'    => 'record',
+            'mode' => 'record',
             'context' => [
                 'label' => $order->so_number,
-                'meta'  => [
+                'meta' => [
                     ['label' => 'Customer',     'value' => $order->customer_name],
                     ['label' => 'Order date',   'value' => $order->order_date],
                     ['label' => 'Payment mode', 'value' => $order->payment_mode ?: '—'],
@@ -538,12 +560,12 @@ class ReportClass
                     ['label' => 'Location',     'value' => $order->location_name ?: '—'],
                 ],
             ],
-            'totals'  => [
-                'orders'   => null,
+            'totals' => [
+                'orders' => null,
                 'quantity' => (float) $rows->sum('quantity'),
-                'sales'    => (float) $order->total_amount,
+                'sales' => (float) $order->total_amount,
             ],
-            'rows'    => $rows,
+            'rows' => $rows,
         ];
     }
 
@@ -574,17 +596,17 @@ class ReportClass
             DB::raw("COALESCE(c.name, 'Walk-in Customer') as customer_name")
         )->first();
 
-        if (!$receipt) {
+        if (! $receipt) {
             return $this->emptyDrilldown('Receipt not available');
         }
 
         $rows = $this->orderLineItems((int) $receipt->sales_order_id);
 
         return [
-            'mode'    => 'record',
+            'mode' => 'record',
             'context' => [
                 'label' => $receipt->receipt_number,
-                'meta'  => [
+                'meta' => [
                     ['label' => 'Customer',     'value' => $receipt->customer_name],
                     ['label' => 'Receipt date', 'value' => $receipt->receipt_date],
                     ['label' => 'Against order', 'value' => $receipt->so_number],
@@ -593,12 +615,12 @@ class ReportClass
                     ['label' => 'Balance due',  'value' => number_format((float) $receipt->balance_due, 2)],
                 ],
             ],
-            'totals'  => [
-                'orders'   => null,
+            'totals' => [
+                'orders' => null,
                 'quantity' => (float) $rows->sum('quantity'),
-                'sales'    => (float) $receipt->amount_paid,
+                'sales' => (float) $receipt->amount_paid,
             ],
-            'rows'    => $rows,
+            'rows' => $rows,
         ];
     }
 
@@ -634,7 +656,7 @@ class ReportClass
             $query->whereBetween('so.order_date', [$filters['from'], $filters['to']]);
         }
 
-        if (!empty($filters['location_id'])) {
+        if (! empty($filters['location_id'])) {
             $query->where('so.location_id', $filters['location_id']);
         }
 
@@ -646,13 +668,13 @@ class ReportClass
     private function applySalesRepScope(Builder $query): void
     {
         $user = Auth::user();
-        if (!$user || app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin')) {
+        if (! $user || app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin')) {
             return;
         }
 
         $employeeId = $user->employee?->id;
 
-        if (!$employeeId) {
+        if (! $employeeId) {
             return;
         }
 
@@ -677,12 +699,13 @@ class ReportClass
         }
 
         if ($paymentMode === 'cash') {
-            $query->whereRaw($this->normalizedPaymentModeSql() . " = 'cash'");
+            $query->whereRaw($this->normalizedPaymentModeSql()." = 'cash'");
+
             return;
         }
 
         if ($paymentMode === 'credit') {
-            $query->whereRaw($this->normalizedPaymentModeSql() . " = 'credit'");
+            $query->whereRaw($this->normalizedPaymentModeSql()." = 'credit'");
         }
     }
 

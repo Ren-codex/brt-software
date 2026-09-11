@@ -46,31 +46,28 @@ class LowStockStockReturnTest extends TestCase
         $brand = ListBrand::create(['name' => 'TestBrand']);
         $unit = ListUnit::create(['name' => 'pcs']);
         $product = Product::create([
+            'code' => 'PRD-RETURN-1',
             'brand_id' => $brand->id,
-            'pack_size' => '100mg',
+            'weight' => 25,
             'unit_id' => $unit->id,
             'is_active' => true,
             'minimum_stock' => 10,
         ]);
 
-        ListStatus::create([
-            'name' => 'Pending',
-            'slug' => 'pending',
-            'text_color' => '#000000',
-            'bg_color' => '#ffff00',
-        ]);
-        ListStatus::create([
-            'name' => 'Approved',
-            'slug' => 'approved',
-            'text_color' => '#000000',
-            'bg_color' => '#00ff00',
-        ]);
-        ListStatus::create([
-            'name' => 'Disapproved',
-            'slug' => 'disapproved',
-            'text_color' => '#ffffff',
-            'bg_color' => '#ff0000',
-        ]);
+        // These ship with the schema (see the add_stock_return_statuses
+        // migration), so reuse them rather than colliding with the unique slug.
+        ListStatus::firstOrCreate(
+            ['slug' => 'pending'],
+            ['name' => 'Pending', 'text_color' => '#000000', 'bg_color' => '#ffff00']
+        );
+        ListStatus::firstOrCreate(
+            ['slug' => 'approved'],
+            ['name' => 'Approved', 'text_color' => '#000000', 'bg_color' => '#00ff00']
+        );
+        ListStatus::firstOrCreate(
+            ['slug' => 'disapproved'],
+            ['name' => 'Disapproved', 'text_color' => '#ffffff', 'bg_color' => '#ff0000']
+        );
 
         $pendingStatus = ListStatus::where('slug', 'pending')->first();
         $approvedStatus = ListStatus::where('slug', 'approved')->first();

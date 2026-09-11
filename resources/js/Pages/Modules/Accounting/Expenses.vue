@@ -11,9 +11,14 @@
                         <p class="header-subtitle mb-0">Record, approve, and release direct business expenses with GL posting</p>
                     </div>
                 </div>
-                <button v-if="can('accounting', 'expenses', 'encoder')" class="acct-btn-primary" @click="openCreate">
-                    <i class="ri-add-line"></i> New Expense
-                </button>
+                <div class="d-flex gap-2">
+                    <button v-if="can('accounting', 'expenses', 'encoder') && bankChargesAccount" class="acct-btn-secondary" @click="openTransactionFee">
+                        <i class="ri-bank-card-2-line"></i> Record Transaction Fee
+                    </button>
+                    <button v-if="can('accounting', 'expenses', 'encoder')" class="acct-btn-primary" @click="openCreate">
+                        <i class="ri-add-line"></i> New Expense
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -291,6 +296,10 @@ export default {
             }
             return Object.values(groups);
         },
+
+        bankChargesAccount() {
+            return this.expenseAccounts.find(a => a.code === '5410') || null;
+        },
     },
 
     methods: {
@@ -321,6 +330,18 @@ export default {
 
         openCreate() {
             this.form   = this.blankForm();
+            this.errors = {};
+            this.modal  = { show: true, editId: null };
+            this.receiptFileObj = null;
+        },
+
+        openTransactionFee() {
+            this.form = {
+                ...this.blankForm(),
+                payee:          'Bank',
+                gl_account_id:  this.bankChargesAccount?.id || '',
+                payment_method: 'bank_transfer',
+            };
             this.errors = {};
             this.modal  = { show: true, editId: null };
             this.receiptFileObj = null;

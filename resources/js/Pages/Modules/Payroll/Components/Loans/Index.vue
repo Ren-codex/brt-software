@@ -37,6 +37,7 @@
               <th style="width: 10%;">Loan No.</th>
               <th style="width: 15%;">Employee</th>
               <th style="width: 10%;">Loan Type</th>
+              <th style="width: 8%;">Payment Type</th>
               <th style="width: 10%;">Amount</th>
               <th style="width: 8%;">Interest Rate</th>
               <th style="width: 8%;">Term (Months)</th>
@@ -47,7 +48,7 @@
           </thead>
 
           <tbody class="table-white fs-12">
-            <TableLoadingRow v-if="loading" :colspan="10" message="Loading loans..." />
+            <TableLoadingRow v-if="loading" :colspan="11" message="Loading loans..." />
             <template v-else>
               <tr
                 v-for="(loan, index) in loans"
@@ -78,6 +79,7 @@
                   </div>
                 </td>
                 <td>{{ loan.loan_type || '-' }}</td>
+                <td class="text-capitalize">{{ loan.payment_type || '-' }}</td>
                 <td>{{ formatAmount(loan.amount) }}</td>
                 <td>{{ loan.interest_rate ? loan.interest_rate + '%' : '-' }}</td>
                 <td>{{ loan.term_months || '-' }}</td>

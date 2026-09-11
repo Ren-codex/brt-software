@@ -203,14 +203,6 @@
       <span>Quick Stats</span>
     </button>
 
-    <!-- Toast -->
-    <div v-if="isToastVisible" class="inventory-toast">
-      <div class="inventory-toast-content">
-        <i class="ri-check-line"></i>
-        {{ toastMessage }}
-      </div>
-    </div>
-
     <!-- Modals -->
     <CreatePurchaseOrderModal ref="createModal" :dropdowns="dropdowns" @add="handlePurchaseOrderUpdate"
       :purchaseOrder="selectedPurchaseOrder" />
@@ -296,8 +288,6 @@ export default {
       currentStocksPageUrl: null,
       isReceivingLoading: false,
       isStockReturnsLoading: false,
-      isToastVisible: false,
-      toastMessage: '',
       selectedPurchaseOrder: null,
       selectedInventoryStock: null, // Add this
       selectedStockReturn: null,
@@ -770,12 +760,16 @@ export default {
       this.backToList();
     },
 
-    showToast(message) {
-      this.toastMessage = message;
-      this.isToastVisible = true;
-      setTimeout(() => {
-        this.isToastVisible = false;
-      }, 3000);
+    showToast(payload) {
+      const isObject = typeof payload === 'object' && payload !== null;
+      const message = isObject ? payload.message : payload;
+      const type = isObject ? (payload.type || 'success') : 'success';
+
+      if (type === 'error') {
+        this.$toast.error(message);
+      } else {
+        this.$toast.success(message);
+      }
     },
 
     updateKeyword(keyword) {

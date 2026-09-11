@@ -12,74 +12,32 @@ test('profile page is displayed', function () {
     $response->assertOk();
 });
 
-test('profile information can be updated', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->patch('/profile', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect('/profile');
-
-    $user->refresh();
-
-    $this->assertSame('Test User', $user->name);
-    $this->assertSame('test@example.com', $user->email);
-    $this->assertNull($user->email_verified_at);
+test('a guest cannot view the profile page', function () {
+    $this->get('/profile')->assertRedirect('/login');
 });
 
-test('email verification status is unchanged when the email address is unchanged', function () {
+/**
+ * Breeze's self-service profile endpoints (PATCH /profile to change your own
+ * name and email, DELETE /profile to delete your own account) are deliberately
+ * not part of this system — employee records are maintained through
+ * EmployeeController, and accounts are deactivated by an administrator rather
+ * than self-deleted. These pin that divergence so the endpoints are not
+ * reintroduced without a decision.
+ */
+test('the breeze self-service profile update endpoint is not exposed', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->patch('/profile', [
-            'name' => 'Test User',
-            'email' => $user->email,
-        ]);
-
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect('/profile');
-
-    $this->assertNotNull($user->refresh()->email_verified_at);
+    $this->actingAs($user)
+        ->patch('/profile', ['name' => 'Test User', 'email' => 'test@example.com'])
+        ->assertMethodNotAllowed();
 });
 
-test('user can delete their account', function () {
+test('a user cannot delete their own account', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->delete('/profile', [
-            'password' => 'password',
-        ]);
-
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect('/');
-
-    $this->assertGuest();
-    $this->assertNull($user->fresh());
-});
-
-test('correct password must be provided to delete account', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->from('/profile')
-        ->delete('/profile', [
-            'password' => 'wrong-password',
-        ]);
-
-    $response
-        ->assertSessionHasErrors('password')
-        ->assertRedirect('/profile');
+    $this->actingAs($user)
+        ->delete('/profile', ['password' => 'password'])
+        ->assertMethodNotAllowed();
 
     $this->assertNotNull($user->fresh());
 });

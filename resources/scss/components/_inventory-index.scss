@@ -352,51 +352,6 @@
 }
 
 /* Toast */
-.inventory-toast {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 9999;
-  background: #267a4c;
-  color: white;
-  padding: 10px 14px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(38, 122, 76, 0.3);
-  animation: toast-slide 0.3s ease-out, toast-fade 3s ease-out forwards;
-}
-
-@keyframes toast-slide {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes toast-fade {
-
-  0%,
-  80% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
-}
-
-.inventory-toast-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
 .inventory-toast-content i {
   font-size: 14px;
 }
