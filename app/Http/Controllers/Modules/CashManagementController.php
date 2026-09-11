@@ -18,6 +18,17 @@ use Illuminate\Support\Facades\Storage;
 
 class CashManagementController extends Controller
 {
+    /**
+     * Cash on hand that may be deposited from, or withdrawn to.
+     *
+     * Subtype cannot identify these accounts: the chart marks 1000 Cash as
+     * 'current_asset' — the catch-all it also gives Accounts Receivable,
+     * Prepaid Expenses and every bank GL — while 1011 Cash in Bank is 'cash'.
+     * Slugs are stable and explicit, so the list is defined by slug. Add a slug
+     * here to offer a new cash account in the deposit and withdrawal modals.
+     */
+    private const CASH_ACCOUNT_SLUGS = ['cash', 'undeposited_collections'];
+
     public function __construct(private CashManagementService $service) {}
 
     public function cashOnHand()
@@ -83,15 +94,19 @@ class CashManagementController extends Controller
         $bankAccounts = BankAccount::active()->orderBy('bank_name')->orderBy('account_name')->get(['id', 'bank_name', 'account_name', 'gl_code']);
         $cashPosition = $this->buildCashPosition($bankAccounts);
 
+        $bankGlCodes = Schema::hasTable('bank_accounts')
+            ? \App\Models\BankAccount::whereNotNull('gl_code')->pluck('gl_code')->all()
+            : [];
+
         $cashAccounts = Schema::hasTable('accounts')
             ? Account::where('type', 'asset')
-                ->where(function ($q) {
-                    $q->whereIn('subtype', ['cash', 'petty_cash', 'current_asset'])
-                      ->orWhere('name', 'like', '%Cash%');
-                })
-                // Exclude "Cash in Bank" control accounts — those represent money
-                // already deposited, not a valid source for a NEW bank deposit.
-                ->where('name', 'not like', '%Cash in Bank%')
+                ->whereIn('slug', self::CASH_ACCOUNT_SLUGS)
+                // Belt and braces: a bank GL is money already in the bank, never
+                // cash on hand. resolveBankAccountGl() always slugs them
+                // bank_<glcode>, so they cannot match the list above, but an
+                // account created by hand could.
+                ->where('slug', 'not like', 'bank_%')
+                ->when($bankGlCodes, fn ($q) => $q->whereNotIn('code', $bankGlCodes))
                 ->where('is_active', true)
                 ->orderBy('code')
                 ->get(['id', 'code', 'name', 'subtype'])
