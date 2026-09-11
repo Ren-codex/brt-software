@@ -138,6 +138,34 @@
                                 <i class="ri-alert-line"></i>
                                 {{ form.errors.amount }}
                             </span>
+                            <span class="error-message" v-else-if="selectedLoanTypeLimit && principalAmount > selectedLoanTypeLimit">
+                                <i class="ri-alert-line"></i>
+                                Amount must not exceed {{ formatCurrency(selectedLoanTypeLimit) }} for this loan type.
+                            </span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="ri-bank-card-2-line"></i>
+                                Payment Type
+                                <span class="required">*</span>
+                            </label>
+                            <div class="loan-type-grid">
+                                <div
+                                    v-for="type in paymentTypes"
+                                    :key="type.value"
+                                    class="loan-type-card"
+                                    :class="{ active: form.payment_type === type.value }"
+                                    @click="form.payment_type = type.value"
+                                >
+                                    <i :class="type.icon"></i>
+                                    <span>{{ type.label }}</span>
+                                </div>
+                            </div>
+                            <span class="error-message" v-if="form.errors.payment_type">
+                                <i class="ri-alert-line"></i>
+                                {{ form.errors.payment_type }}
+                            </span>
                         </div>
 
                         <div class="form-group">
@@ -298,10 +326,15 @@ export default {
                 { value: 'emergency', label: 'Emergency Loan', icon: 'ri-flashlight-line' },
                 { value: 'cash_advance', label: 'Cash Advance', icon: 'ri-hand-coin-line' }
             ],
+            paymentTypes: [
+                { value: 'cash', label: 'Cash', icon: 'ri-cash-line' },
+                { value: 'check', label: 'Check', icon: 'ri-file-paper-2-line' }
+            ],
             form: useForm({
                 id: null,
                 employee_id: null,
                 loan_type: '',
+                payment_type: '',
                 amount: '',
                 interest_rate: 0,
                 term_months: '',
@@ -321,6 +354,11 @@ export default {
         principalAmount() {
             const value = parseFloat(this.form.amount);
             return Number.isFinite(value) ? value : 0;
+        },
+        selectedLoanTypeLimit() {
+            const limits = this.dropdowns.loan_type_limits || {};
+            const limit = limits[this.form.loan_type];
+            return limit !== undefined ? parseFloat(limit) : null;
         },
         interestRateValue() {
             const value = parseFloat(this.form.interest_rate);
@@ -363,6 +401,14 @@ export default {
                     this.form.errors.amount = 'Please enter a valid loan amount';
                     return;
                 }
+                if (this.selectedLoanTypeLimit && this.principalAmount > this.selectedLoanTypeLimit) {
+                    this.form.errors.amount = `Amount must not exceed ${this.formatCurrency(this.selectedLoanTypeLimit)} for this loan type.`;
+                    return;
+                }
+                if (!this.form.payment_type) {
+                    this.form.errors.payment_type = 'Please select a payment type';
+                    return;
+                }
             }
             if (this.currentStep === 3 && !this.validateStep3()) {
                 return;
@@ -398,6 +444,7 @@ export default {
             this.form.id = data.id;
             this.form.employee_id = data.employee_id;
             this.form.loan_type = data.loan_type;
+            this.form.payment_type = data.payment_type;
             this.form.amount = data.amount;
             this.form.interest_rate = data.interest_rate;
             this.form.term_months = data.term_months;

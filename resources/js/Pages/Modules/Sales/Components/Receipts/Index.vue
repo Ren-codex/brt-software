@@ -16,6 +16,18 @@
 
                 </div>
                 <div class="library-card-body">
+                    <div class="status-tab-bar">
+                        <button
+                            v-for="tab in statusTabs"
+                            :key="tab.slug || 'all'"
+                            class="status-tab-btn"
+                            :class="{ active: filter.status === tab.slug }"
+                            @click="filter.status = tab.slug; fetch()"
+                        >
+                            {{ tab.label }}
+                        </button>
+                    </div>
+
                     <div class="search-section">
                         <div class="row">
                             <div class="col-md-3">
@@ -32,17 +44,6 @@
                                         <option :value="null">All Locations</option>
                                         <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
                                             {{ location.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="search-wrapper">
-                                    <i class="ri-flag-line search-icon"></i>
-                                    <select v-model="filter.status" @change="fetch()" class="search-input">
-                                        <option :value="null">All Status</option>
-                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value" :value="status.slug">
-                                            {{ status.name }}
                                         </option>
                                     </select>
                                 </div>
@@ -207,6 +208,17 @@ export default {
         }
     },
 
+    computed: {
+        statusTabs() {
+            const relevant = ['pending', 'liquidated', 'voided'];
+            const bySlug = Object.fromEntries((this.dropdowns.sales_statuses || []).map(s => [s.slug, s]));
+
+            return [
+                { slug: null, label: 'All' },
+                ...relevant.filter(slug => bySlug[slug]).map(slug => ({ slug, label: bySlug[slug].name })),
+            ];
+        },
+    },
     watch: {
         "filter.keyword"(newVal){
             this.checkSearchStr(newVal);
@@ -295,6 +307,28 @@ export default {
 }
 </script>
 <style scoped>
+.status-tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.status-tab-btn {
+    padding: 6px 16px;
+    border-radius: 8px;
+    border: 1px solid #c4d9d2;
+    background: #fff;
+    color: #6b8c85;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-tab-btn:hover { background: #edf6f2; color: #16322e; }
+.status-tab-btn.active { background: #3D8D7A; border-color: #3D8D7A; color: #fff; }
+
 .main-table-row {
     transition: all 0.2s ease;
     border-left: 3px solid transparent;

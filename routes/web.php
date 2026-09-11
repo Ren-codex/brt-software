@@ -41,6 +41,7 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::get('/suppliers/{id}/stock-return-summary', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturnSummary']);
     Route::get('/suppliers/{id}/stock-returns', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturns']);
     Route::resource('/receipts', App\Http\Controllers\Modules\ReceiptController::class)->except(['create', 'edit']);
+    Route::put('/receipts/{id}/confirm-check', [App\Http\Controllers\Modules\ReceiptController::class, 'confirmCheck']);
 
     // Remittances are prepared by Sales Reps (not just Administrators) and are
     // gated purely by the granular permission:sales,remittances,* middleware

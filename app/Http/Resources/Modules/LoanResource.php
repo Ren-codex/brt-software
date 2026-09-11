@@ -19,6 +19,7 @@ class LoanResource extends JsonResource
             'loan_no' => $this->loan_no,
             'employee_id' => $this->employee_id,
             'loan_type' => $this->loan_type,
+            'payment_type' => $this->payment_type,
             'amount' => $this->amount,
             'interest_rate' => $this->interest_rate,
             'term_months' => $this->term_months,

@@ -22,6 +22,18 @@ class Receipt extends Model
         'source_receipt_id',
         'remittance_id',
         'notes',
+        'check_date',
+        'check_status',
+        'released_at',
+        'bank_name',
+        'confirmed_at',
+        'confirmed_by_id',
+    ];
+
+    protected $casts = [
+        'check_date' => 'date',
+        'released_at' => 'datetime',
+        'confirmed_at' => 'datetime',
     ];
 
     public function arInvoice()
@@ -52,6 +64,11 @@ class Receipt extends Model
     public function remittance()
     {
         return $this->belongsTo('App\Models\Remittance', 'remittance_id');
+    }
+
+    public function confirmedBy()
+    {
+        return $this->belongsTo('App\Models\User', 'confirmed_by_id');
     }
 
     public static function generateReceiptNumber($date = null)

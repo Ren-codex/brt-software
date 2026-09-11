@@ -127,6 +127,11 @@ class ArInvoiceSplitPaymentTest extends TestCase
         $this->assertEquals('paid', $invoice->status->slug);
     }
 
+    /**
+     * A check's amount is deliberately excluded from the invoice balance
+     * until it's confirmed (see ArInvoiceCheckConfirmationTest) — only the
+     * Cash portion is recognized here.
+     */
     public function test_a_partial_collection_leaves_the_balance_outstanding(): void
     {
         $this->pay([
@@ -136,9 +141,13 @@ class ArInvoiceSplitPaymentTest extends TestCase
 
         $invoice = $this->invoice->fresh();
 
-        $this->assertEquals(4000.0, round((float) $invoice->amount_paid, 2));
-        $this->assertEquals(6000.0, round((float) $invoice->balance_due, 2));
+        $this->assertEquals(2500.0, round((float) $invoice->amount_paid, 2));
+        $this->assertEquals(7500.0, round((float) $invoice->balance_due, 2));
         $this->assertEquals('partially-paid', $invoice->status->slug);
+
+        $check = Receipt::where('payment_mode', 'Check')->firstOrFail();
+        $this->assertEquals('on_hand', $check->check_status);
+        $this->assertNull($check->confirmed_at);
     }
 
     public function test_a_transfer_without_a_reference_is_rejected(): void

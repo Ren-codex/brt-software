@@ -12,8 +12,7 @@ class SalesReportExport implements WithMultipleSheets
     public function __construct(
         private array $filters,
         private array $reportData
-    ) {
-    }
+    ) {}
 
     public function sheets(): array
     {
@@ -203,7 +202,7 @@ class SalesReportExport implements WithMultipleSheets
     private function employeeSummaryRows(): array
     {
         $rows = [
-            ['Employee', 'SO Count', 'Sold Quantity', 'SO Total', 'AR Count', 'AR Total', 'AR Balance Due', 'Receipt Count', 'Receipt Total'],
+            ['Employee', 'SO Count', 'Sold Quantity (50kg Sacks)', '% of Total (50kg)', 'SO Total', 'AR Count', 'AR Total', 'AR Balance Due', 'Receipt Count', 'Receipt Total'],
         ];
 
         foreach (($this->reportData['employee_summary'] ?? []) as $item) {
@@ -211,6 +210,7 @@ class SalesReportExport implements WithMultipleSheets
                 (string) data_get($item, 'employee_name', ''),
                 (int) data_get($item, 'so_count', 0),
                 (float) data_get($item, 'sold_quantity', 0),
+                (float) data_get($item, 'percentage', 0),
                 (float) data_get($item, 'so_total', 0),
                 (int) data_get($item, 'ar_count', 0),
                 (float) data_get($item, 'ar_total', 0),
@@ -305,13 +305,12 @@ class SalesReportExport implements WithMultipleSheets
     }
 }
 
-class SalesReportSheet implements FromArray, WithTitle, ShouldAutoSize
+class SalesReportSheet implements FromArray, ShouldAutoSize, WithTitle
 {
     public function __construct(
         private string $title,
         private array $rows
-    ) {
-    }
+    ) {}
 
     public function array(): array
     {

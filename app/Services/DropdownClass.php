@@ -2,85 +2,88 @@
 
 namespace App\Services;
 
-use App\Models\ListAcademic;
-use Carbon\Carbon;
-use App\Models\User;
-use App\Models\ListRole;
-use App\Models\ListPosition;
-use App\Models\ListSalary;
-use App\Models\ListStatus;
-use App\Models\ListUnit;
-use App\Models\ListBrand;
-use App\Models\ListPackaging;
 use App\Models\ArInvoice;
 use App\Models\Customer;
 use App\Models\Employee;
-use App\Models\ListSupplier;
-use App\Models\Product;
 use App\Models\InventoryStocks;
+use App\Models\ListBrand;
+use App\Models\ListLocation;
+use App\Models\ListPackaging;
+use App\Models\ListPayrollItem;
+use App\Models\ListPosition;
+use App\Models\ListRole;
+use App\Models\ListSalary;
+use App\Models\ListStatus;
+use App\Models\ListSupplier;
+use App\Models\ListUnit;
 use App\Models\PayrollSetting;
 use App\Models\PayrollTemplate;
-use App\Models\ListLocation;
-use App\Models\ListPayrollItem;
+use App\Models\Product;
 
 class DropdownClass
-{  
-
-    public function roles(){
+{
+    public function roles()
+    {
         $data = ListRole::where('is_active', 1)->get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'name' => $item->name
-            ];
-        });
-        return  $data;
-    }
-
-    public function statuses(){
-        $data = ListStatus::get()->map(function ($item) {
-            return [
-                'value' => $item->id,
-                'name' => $item->name
-            ];
-        });
-        return  $data;
-    }
-
-    public function units(){
-        $data = ListUnit::get()->map(function ($item) {
-            return [
-                'value' => $item->id,
-                'name' => $item->name
-            ];
-        });
-      
-        return  $data;
-    }
-
-    
-    public function brands(){
-        $data = ListBrand::get()->map(function ($item) {
-            return [
-                'value' => $item->id,
-                'name' => $item->name
-            ];
-        });
-
-        return  $data;
-    }
-
-    public function packagings(){
-        $data = ListPackaging::orderBy('name')->get()->map(function ($item) {
-            return [
-                'value' => $item->id,
-                'name'  => $item->name,
+                'name' => $item->name,
             ];
         });
 
         return $data;
     }
 
-    public function customers(){
+    public function statuses()
+    {
+        $data = ListStatus::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+            ];
+        });
+
+        return $data;
+    }
+
+    public function units()
+    {
+        $data = ListUnit::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+            ];
+        });
+
+        return $data;
+    }
+
+    public function brands()
+    {
+        $data = ListBrand::get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+            ];
+        });
+
+        return $data;
+    }
+
+    public function packagings()
+    {
+        $data = ListPackaging::orderBy('name')->get()->map(function ($item) {
+            return [
+                'value' => $item->id,
+                'name' => $item->name,
+            ];
+        });
+
+        return $data;
+    }
+
+    public function customers()
+    {
         $data = Customer::where('is_active', 1)->get()->map(function ($item) {
             $outstandingBalance = (float) ArInvoice::query()
                 ->whereHas('sales_order', function ($query) use ($item) {
@@ -100,40 +103,48 @@ class DropdownClass
                 'outstanding_balance' => round($outstandingBalance, 2),
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function positions(){
-        $data = ListPosition::where('is_active',1)->get()->map(function ($item) {
+    public function positions()
+    {
+        $data = ListPosition::where('is_active', 1)->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'title' => $item->title,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function salaries(){
-        $data = ListSalary::where('is_active',1)->get()->map(function ($item) {
+    public function salaries()
+    {
+        $data = ListSalary::where('is_active', 1)->get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'amount' => $item->amount,   
+                'amount' => $item->amount,
             ];
         });
-        return  $data;
+
+        return $data;
     }
-        
-    public function suppliers(){
+
+    public function suppliers()
+    {
         $data = ListSupplier::get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'name' => $item->name
+                'name' => $item->name,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function products(){
+    public function products()
+    {
         $data = Product::with(['brand', 'unit', 'packaging'])->get()->map(function ($item) {
             $batchStocks = InventoryStocks::query()
                 ->with('receivedItem.receivedStock')
@@ -144,10 +155,10 @@ class DropdownClass
                         $sub->where('product_id', $item->id);
                     })
                     // Converted stocks (product_id set directly on the row)
-                    ->orWhere(function ($sub) use ($item) {
-                        $sub->where('product_id', $item->id)
-                            ->whereNotNull('conversion_id');
-                    });
+                        ->orWhere(function ($sub) use ($item) {
+                            $sub->where('product_id', $item->id)
+                                ->whereNotNull('conversion_id');
+                        });
                 })
                 ->orderBy('created_at')
                 ->get();
@@ -186,10 +197,10 @@ class DropdownClass
                         $q->whereHas('receivedItem', function ($sub) use ($item) {
                             $sub->where('product_id', $item->id);
                         })
-                        ->orWhere(function ($sub) use ($item) {
-                            $sub->where('product_id', $item->id)
-                                ->whereNotNull('conversion_id');
-                        });
+                            ->orWhere(function ($sub) use ($item) {
+                                $sub->where('product_id', $item->id)
+                                    ->whereNotNull('conversion_id');
+                            });
                     })
                     ->orderBy('created_at')
                     ->first();
@@ -200,9 +211,10 @@ class DropdownClass
                 $retail_price = $firstInventoryStock->retail_price;
                 $wholesale_price = $firstInventoryStock->wholesale_price;
             }
+
             return [
                 'value' => $item->id,
-                'name' => trim(($item->brand ? $item->brand->name : '') . ' ' . ($item->weight ?? '') . ' ' . ($item->unit ? $item->unit->name : '')) . ($item->packaging ? ' (' . $item->packaging->name . ')' : ''),
+                'name' => trim(($item->brand ? $item->brand->name : '').' '.($item->weight ?? '').' '.($item->unit ? $item->unit->name : '')).($item->packaging ? ' ('.$item->packaging->name.')' : ''),
                 'batch_code' => $batch_code,
                 'batch_available' => $batch_available,
                 'batch_stocks' => $batch_stocks,
@@ -213,20 +225,31 @@ class DropdownClass
                 'available' => $available_quantity,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function batch_codes(){
+    public function batch_codes()
+    {
         $data = InventoryStocks::get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'code' => $item->batch_code
+                'code' => $item->batch_code,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function employees(){
+    public function loan_type_limits()
+    {
+        return \App\Models\LoanTypeLimit::all()->mapWithKeys(function ($item) {
+            return [$item->loan_type => (float) $item->max_amount];
+        });
+    }
+
+    public function employees()
+    {
         $data = Employee::with(['position', 'loans'])->get()->map(function ($item) {
             $totalUnpaidLoan = $item->loans
                 ->where('status', 'active')
@@ -236,7 +259,7 @@ class DropdownClass
 
             return [
                 'value' => $item->id,
-                'name' => $item->lastname . ', ' . $item->firstname . ' ' . ($item->middlename ? strtoupper($item->middlename[0]) . '.' : ''),
+                'name' => $item->lastname.', '.$item->firstname.' '.($item->middlename ? strtoupper($item->middlename[0]).'.' : ''),
                 'position_name' => $item->position ? $item->position->title : null,
                 'basic_salary' => $item->position ? $item->position->rate_per_day : null,
                 'hours_per_day' => $item->hours_per_day,
@@ -245,11 +268,13 @@ class DropdownClass
                 'total_unpaid_loan' => $totalUnpaidLoan,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function employeesWithoutAccount(){
-        $userService = new \App\Services\System\User\UserClass();
+    public function employeesWithoutAccount()
+    {
+        $userService = new \App\Services\System\User\UserClass;
 
         return Employee::whereNull('user_id')
             ->with('position')
@@ -258,62 +283,71 @@ class DropdownClass
             ->map(function ($item) use ($userService) {
                 $label = $item->fullname;
                 if ($item->position) {
-                    $label .= ' — ' . $item->position->title;
+                    $label .= ' — '.$item->position->title;
                 }
+
                 return [
                     'value' => $item->id,
-                    'name'  => $label,
+                    'name' => $label,
                     'email' => $item->email,
                     'username' => $item->birthdate ? $userService->generateUsername($item) : null,
                 ];
             });
     }
 
-    public function sales_reps(){
+    public function sales_reps()
+    {
         $data = Employee::where('position_id', ListPosition::getID('Sales Rep'))->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->fullname,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function drivers(){
+    public function drivers()
+    {
         $data = Employee::where('position_id', ListPosition::getID('Driver'))->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->fullname,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function locations(){
+    public function locations()
+    {
         $data = ListLocation::where('is_active', 1)->get()->map(function ($item) {
             return [
                 'value' => $item->id,
-                'name' => $item->name
+                'name' => $item->name,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function sales_statuses(){
+    public function sales_statuses()
+    {
         // Return all statuses so tab filters show the full list
         $data = ListStatus::orderBy('name')->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->name,
-                'slug' => $item->slug
+                'slug' => $item->slug,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-
-    public function payroll_settings(){
-        $data = PayrollSetting::where('is_active',1)->get()->map(function ($item) {
+    public function payroll_settings()
+    {
+        $data = PayrollSetting::where('is_active', 1)->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'slug' => $item->slug,
@@ -322,18 +356,20 @@ class DropdownClass
                 'value' => $item->value,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function payroll_templates(){
-        $data = PayrollTemplate::where('is_active',1)->get()->map(function ($item) {
+    public function payroll_templates()
+    {
+        $data = PayrollTemplate::where('is_active', 1)->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->name,
                 'employees' => $item->employees->map(function ($emp) {
                     return [
                         'id' => $emp->id,
-                        'name' => $emp->lastname . ', ' . $emp->firstname . ' ' . ($emp->middlename ? strtoupper($emp->middlename[0]) . '.' : ''),
+                        'name' => $emp->lastname.', '.$emp->firstname.' '.($emp->middlename ? strtoupper($emp->middlename[0]).'.' : ''),
                         'basic_salary' => $emp->position ? $emp->position->rate_per_day : null,
                         'hours_per_day' => $emp->hours_per_day,
                         'overtime_rate' => $emp->overtime_rate,
@@ -341,17 +377,20 @@ class DropdownClass
                 }),
             ];
         });
-        return  $data;
+
+        return $data;
     }
 
-    public function payroll_items(){
-        $data = ListPayrollItem::where('is_active',1)->get()->map(function ($item) {
+    public function payroll_items()
+    {
+        $data = ListPayrollItem::where('is_active', 1)->get()->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->name,
                 'type' => $item->type,
             ];
         });
-        return  $data;
+
+        return $data;
     }
 }

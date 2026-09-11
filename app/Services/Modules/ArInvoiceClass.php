@@ -224,9 +224,65 @@ class ArInvoiceClass
             ]);
         }
 
-        // Update AR Invoice balances first so balance_due is correct when receipts are created
-        $ar_invoice->amount_paid = $ar_invoice->amount_paid + $totalPayment;
-        $ar_invoice->balance_due = $ar_invoice->balance_due - $totalPayment;
+        // A check isn't real money until someone confirms it cleared (see
+        // confirmCheck()) — only non-check splits are recognized against the
+        // invoice balance immediately. Cash and Bank Transfer are unaffected.
+        $immediateTotal = round((float) $splits->reject(fn ($s) => $s['payment_mode'] === 'Check')->sum('amount'), 2);
+
+        if ($immediateTotal > 0) {
+            $this->applyPaymentToInvoice($ar_invoice, $immediateTotal);
+        }
+
+        $pendingStatusId = ListStatus::getBySlug('pending')?->id;
+        $lastReceipt = null;
+        $receiptIds = [];
+
+        foreach ($splits as $split) {
+            $isCheck = $split['payment_mode'] === 'Check';
+
+            $receipt = Receipt::create([
+                'receipt_number' => Receipt::generateReceiptNumber(),
+                'receipt_type'   => 'payment',
+                'receipt_date'   => $request->payment_date,
+                'amount_paid'    => $split['amount'],
+                // The invoice's resulting balance is the same for every receipt in
+                // this batch — they were all applied together, not sequentially.
+                // A check's own amount is deliberately excluded until confirmed.
+                'balance_due'    => $ar_invoice->balance_due,
+                'payment_mode'   => $split['payment_mode'],
+                'bank_account_id' => $split['bank_account_id'],
+                'reference_number' => $split['reference_number'],
+                'status_id'      => $pendingStatusId,
+                'customer_id'    => optional($ar_invoice->sales_order)->customer_id,
+                'ar_invoice_id'  => $ar_invoice->id,
+                'check_status'   => $isCheck ? 'on_hand' : null,
+            ]);
+
+            $this->journalEntryService->recordReceiptEntry($receipt);
+            $receiptIds[] = $receipt->id;
+            $lastReceipt = $receipt;
+        }
+
+        return [
+            'data' => new ArInvoiceResource($ar_invoice),
+            'receipt_id' => $lastReceipt?->id,
+            'receipt_ids' => $receiptIds,
+            'message' => 'Payment saved successfully!',
+            'info' => "Payment successfully saved"
+        ];
+    }
+
+    /**
+     * Recognizes `$amount` against an invoice: reduces balance_due, moves
+     * amount_paid, and re-derives the invoice/sales-order status — settling
+     * the order and awarding the incentive if this closes the balance.
+     * Shared by payment() (for non-check splits, applied immediately) and
+     * confirmCheck() (for a check split, applied once confirmed).
+     */
+    private function applyPaymentToInvoice(ArInvoice $ar_invoice, float $amount): void
+    {
+        $ar_invoice->amount_paid = $ar_invoice->amount_paid + $amount;
+        $ar_invoice->balance_due = $ar_invoice->balance_due - $amount;
 
         $sales_order = SalesOrder::findOrFail($ar_invoice->sales_order_id);
 
@@ -257,39 +313,57 @@ class ArInvoiceClass
             ]);
         }
         $ar_invoice->save();
+    }
 
-        $pendingStatusId = ListStatus::getBySlug('pending')?->id;
-        $lastReceipt = null;
-        $receiptIds = [];
+    /**
+     * The manual bank-confirmation step for a check receipt (punch-list #11).
+     * This is what releases the check's amount into the invoice's balance
+     * (punch-list #12) — before this, the check sits "on hand" and the
+     * customer's balance still reflects it as unpaid.
+     */
+    public function confirmCheck($receiptId, $bankName, $checkDate = null)
+    {
+        $receipt = Receipt::with('arInvoice.sales_order')->findOrFail($receiptId);
 
-        foreach ($splits as $split) {
-            $receipt = Receipt::create([
-                'receipt_number' => Receipt::generateReceiptNumber(),
-                'receipt_type'   => 'payment',
-                'receipt_date'   => $request->payment_date,
-                'amount_paid'    => $split['amount'],
-                // The invoice's resulting balance is the same for every receipt in
-                // this batch — they were all applied together, not sequentially.
-                'balance_due'    => $ar_invoice->balance_due,
-                'payment_mode'   => $split['payment_mode'],
-                'bank_account_id' => $split['bank_account_id'],
-                'reference_number' => $split['reference_number'],
-                'status_id'      => $pendingStatusId,
-                'customer_id'    => optional($ar_invoice->sales_order)->customer_id,
-                'ar_invoice_id'  => $ar_invoice->id,
+        if (strcasecmp((string) $receipt->payment_mode, 'Check') !== 0) {
+            throw ValidationException::withMessages([
+                'payment_mode' => 'Only check receipts can be confirmed this way.',
             ]);
-
-            $this->journalEntryService->recordReceiptEntry($receipt);
-            $receiptIds[] = $receipt->id;
-            $lastReceipt = $receipt;
         }
 
+        if ($receipt->confirmed_at) {
+            throw ValidationException::withMessages([
+                'confirmed_at' => 'This check has already been confirmed.',
+            ]);
+        }
+
+        if (blank($bankName)) {
+            throw ValidationException::withMessages([
+                'bank_name' => 'Enter the bank name to confirm this check.',
+            ]);
+        }
+
+        $ar_invoice = $receipt->arInvoice;
+        if (!$ar_invoice) {
+            throw ValidationException::withMessages([
+                'receipt' => 'This receipt is not linked to an AR invoice.',
+            ]);
+        }
+
+        $this->applyPaymentToInvoice($ar_invoice, (float) $receipt->amount_paid);
+
+        $receipt->update([
+            'bank_name' => $bankName,
+            'confirmed_at' => now(),
+            'confirmed_by_id' => auth()->id(),
+            'check_date' => $checkDate ?: $receipt->check_date,
+            'balance_due' => $ar_invoice->fresh()->balance_due,
+        ]);
+
         return [
-            'data' => new ArInvoiceResource($ar_invoice),
-            'receipt_id' => $lastReceipt?->id,
-            'receipt_ids' => $receiptIds,
-            'message' => 'Payment saved successfully!',
-            'info' => "Payment successfully saved"
+            'data' => new ArInvoiceResource($ar_invoice->fresh()),
+            'message' => 'Check confirmed and payment applied to the invoice balance.',
+            'info' => "Check from {$bankName} confirmed successfully.",
         ];
     }
 

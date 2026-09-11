@@ -442,7 +442,10 @@ export default {
                         this.links = response.data.links;
                     }
                 })
-                .catch(err => console.log(err))
+                .catch(err => {
+                    console.log(err);
+                    this.$toast.error('Unable to load sales returns.');
+                })
                 .finally(() => { this.loading = false; });
         },
         openCreate() {
@@ -506,7 +509,10 @@ export default {
                         this.metrics = response.data;
                     }
                 })
-                .catch(err => console.log(err));
+                .catch(err => {
+                    console.log(err);
+                    this.$toast.error('Unable to load sales return metrics.');
+                });
         },
         getStatusStyle(status) {
             if (!status) return {};

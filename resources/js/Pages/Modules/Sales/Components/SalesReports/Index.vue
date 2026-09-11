@@ -401,7 +401,8 @@
                 <tr>
                   <th>Employee</th>
                   <th class="text-right">SO Count</th>
-                  <th class="text-right">Sold Quantity</th>
+                  <th class="text-right">Sacks (50kg)</th>
+                  <th class="text-right">% of Total</th>
                   <th class="text-right">SO Total</th>
                   <th class="text-right">AR Count</th>
                   <th class="text-right">AR Total</th>
@@ -415,6 +416,7 @@
                   <td>{{ item.employee_name }}</td>
                   <td class="text-right">{{ item.so_count }}</td>
                   <td class="text-right">{{ formatQuantity(item.sold_quantity) }}</td>
+                  <td class="text-right">{{ formatQuantity(item.percentage) }}%</td>
                   <td class="text-right amount">{{ formatCurrency(item.so_total) }}</td>
                   <td class="text-right">{{ item.ar_count }}</td>
                   <td class="text-right amount">{{ formatCurrency(item.ar_total) }}</td>
@@ -423,7 +425,7 @@
                   <td class="text-right amount">{{ formatCurrency(item.receipt_total) }}</td>
                 </tr>
                 <tr v-if="!filteredEmployeeSummary.length">
-                  <td colspan="9" class="empty-message">
+                  <td colspan="10" class="empty-message">
                     {{ employeeSearch ? 'No employees match your search' : 'No employee activity found' }}
                   </td>
                 </tr>
@@ -591,25 +593,6 @@
             </div>
           </div>
 
-          <div v-else-if="activeReport === 'taxes'">
-            <div class="summary-cards">
-              <div class="summary-card total">
-                <div class="summary-icon">
-                  <i class="ri-government-line"></i>
-                </div>
-                <div class="summary-details">
-                  <span class="summary-label">Total Taxes</span>
-                  <span class="summary-value">{{ formatCurrency(report?.tax_summary?.total_tax || 0) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="empty-panel">
-              <i class="ri-information-line"></i>
-              <h3>Taxes report unavailable</h3>
-              <p>{{ report?.tax_summary?.message || 'Tax reporting is not configured yet.' }}</p>
-            </div>
-          </div>
         </div>
         </div>
       </div>
@@ -633,7 +616,6 @@ const createDefaultReport = () => ({
   receipt_report: [],
   employee_summary: [],
   discount_summary: { discounted_orders: 0, total_discount: 0, average_discount: 0, orders: [] },
-  tax_summary: { enabled: false, total_tax: 0, message: 'Tax reporting is not yet configured in sales orders.' },
   payment_summary: { cash: null, credit: null, other: null, grand_total_sales: 0, grand_total_orders: 0 },
 });
 
@@ -662,7 +644,6 @@ export default {
         { key: 'sales-by-payment-type', label: 'Sales by Payment Type', icon: 'ri-wallet-3-line' },
         { key: 'receipt', label: 'Receipt', icon: 'ri-receipt-line' },
         { key: 'discount', label: 'Discount', icon: 'ri-price-tag-3-line' },
-        { key: 'taxes', label: 'Taxes', icon: 'ri-government-line' },
       ],
       form: this.filters || {
         from: monthStart.toISOString().split('T')[0],

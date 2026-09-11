@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Resources\Libraries\ReceiptResource;
 use App\Services\PrintClass;
+use App\Services\Modules\ArInvoiceClass;
 
 class ReceiptController extends Controller
 {
@@ -21,7 +22,7 @@ class ReceiptController extends Controller
     use \App\Traits\AuthorizesPermission;
     public $receipt,$dropdown, $print;
 
-    public function __construct(ReceiptClass $receipt, DropdownClass $dropdown, PrintClass $print){
+    public function __construct(ReceiptClass $receipt, DropdownClass $dropdown, PrintClass $print, private ArInvoiceClass $arInvoice){
         $this->dropdown = $dropdown;
         $this->receipt = $receipt;
         $this->print = $print;
@@ -82,6 +83,31 @@ class ReceiptController extends Controller
         $result = $this->handleTransaction(function () use ($request) {
             return $this->receipt->update($request);
         });
+
+        return back()->with([
+            'data' => $result['data'],
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
+
+    public function confirmCheck($id, Request $request)
+    {
+        $this->authorizePermission('sales', 'receipts', 'encoder');
+
+        $result = $this->handleTransaction(function () use ($id, $request) {
+            return $this->arInvoice->confirmCheck($id, $request->input('bank_name'), $request->input('check_date'));
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => $result['data'],
+                'message' => $result['message'],
+                'info' => $result['info'],
+                'status' => $result['status'],
+            ]);
+        }
 
         return back()->with([
             'data' => $result['data'],
