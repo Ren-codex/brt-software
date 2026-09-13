@@ -128,6 +128,13 @@
                 </div>
               </div>
 
+              <!-- Check Monitoring: the rep's own checks, read-only -->
+              <div v-if="activeTab === 'check_monitoring'" class="row">
+                <div class="col-md-12">
+                  <CheckMonitoring />
+                </div>
+              </div>
+
               <div v-if="activeTab === 'sales-reports'" class="shadow-sm p-3">
                 <SalesReports :locations="dropdowns.locations || []" />
               </div>
@@ -168,9 +175,10 @@ import Remittances from "@/Pages/Modules/Sales/Components/Remittances/Index.vue"
 import SalesReports from "@/Pages/Modules/Sales/Components/SalesReports/Index.vue";
 import QuickStatsSidebar from "@/Pages/Modules/Sales/Components/QuickStatsSidebar.vue";
 import StockSidebar from "@/Pages/Modules/Sales/Components/StockSidebar.vue";
+import CheckMonitoring from "@/Pages/Modules/Sales/Components/CheckMonitoring/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar, StockSidebar },
+  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar, StockSidebar, CheckMonitoring },
   props: ['dropdowns', 'return_grace_period'],
   data() {
     return {
@@ -237,6 +245,12 @@ export default {
           description: 'Remittance records'
         },
         {
+          id: 'check_monitoring',
+          label: 'Check Monitoring',
+          icon: 'ri-bill-line',
+          description: 'Checks you collected and whether they cleared'
+        },
+        {
           id: 'sales_returns',
           label: 'Sales Returns',
           icon: 'ri-shopping-bag-line',
@@ -259,7 +273,7 @@ export default {
       // (it's prepared and lived under the Sales tab all along); its
       // permission key is 'remittance' in the tab list but 'remittances'
       // in the submodule catalog, so it's mapped explicitly below.
-      const salesGatedTabIds = ['sales_orders', 'sales_returns', 'ar_invoices', 'receipts'];
+      const salesGatedTabIds = ['sales_orders', 'sales_returns', 'ar_invoices', 'receipts', 'check_monitoring'];
       return this.tabs.filter((tab) => {
         if (tab.id === 'remittance') {
           return this.canAny('sales', 'remittances');

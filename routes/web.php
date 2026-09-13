@@ -43,6 +43,11 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::resource('/receipts', App\Http\Controllers\Modules\ReceiptController::class)->except(['create', 'edit']);
     Route::put('/receipts/{id}/confirm-check', [App\Http\Controllers\Modules\ReceiptController::class, 'confirmCheck']);
 
+    // A rep's read-only view of the checks they took. No actions here: clearing
+    // a check belongs to Accounting, and a rep must not discharge their own.
+    Route::get('/sales/check-monitoring', [App\Http\Controllers\Modules\CheckMonitoringController::class, 'index'])
+        ->middleware('permission:sales,check_monitoring,view');
+
     // Remittances are prepared by Sales Reps (not just Administrators) and are
     // gated purely by the granular permission:sales,remittances,* middleware
     // below -- this route must not sit inside a role:Administrator group, or
