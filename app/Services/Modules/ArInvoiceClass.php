@@ -259,6 +259,14 @@ class ArInvoiceClass
             ]);
 
             $this->journalEntryService->recordReceiptEntry($receipt);
+
+            if ($isCheck) {
+                app(CheckRegisterClass::class)->registerReceived($receipt, [
+                    'check_number' => $split['reference_number'] ?? null,
+                    'check_date' => $split['check_date'] ?? $request->payment_date,
+                ]);
+            }
+
             $receiptIds[] = $receipt->id;
             $lastReceipt = $receipt;
         }
