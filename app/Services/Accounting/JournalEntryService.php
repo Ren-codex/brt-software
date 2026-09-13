@@ -152,6 +152,46 @@ class JournalEntryService
         );
     }
 
+    /**
+     * The collection entry for a check, posted on confirmation rather than on
+     * receipt. Same lines as recordReceiptEntry(); separate entry point so the
+     * check guard there cannot swallow it.
+     */
+    public function recordCheckCollectionEntry(Receipt $receipt): ?JournalEntry
+    {
+        $amount = round((float) $receipt->amount_paid, 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $receipt->loadMissing(['arInvoice.sales_order']);
+
+        $undepositedAccount = $this->ensureAccount('1050', 'undeposited_collections', 'Undeposited Collections', 'asset', 'current_asset');
+        $receivableAccount = $this->ensureAccount('1100', 'accounts_receivable', 'Accounts Receivable', 'asset', 'current_asset');
+        $memo = 'Check ' . $receipt->receipt_number . ' confirmed cleared.';
+
+        return $this->createEntry(
+            $receipt,
+            $receipt->check_date ?: $receipt->receipt_date,
+            'receipt_collection',
+            $memo,
+            [
+                [
+                    'account_id' => $undepositedAccount->id,
+                    'line_type' => 'debit',
+                    'amount' => $amount,
+                    'description' => 'Record confirmed check collection.',
+                ],
+                [
+                    'account_id' => $receivableAccount->id,
+                    'line_type' => 'credit',
+                    'amount' => $amount,
+                    'description' => 'Reduce accounts receivable balance.',
+                ],
+            ]
+        );
+    }
+
     public function reverseEntriesForSource(object $source, string $reason, $entryDate = null): array
     {
         $entryDate = $entryDate ?: now()->toDateString();

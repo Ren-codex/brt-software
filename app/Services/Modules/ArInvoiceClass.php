@@ -352,6 +352,11 @@ class ArInvoiceClass
 
         $this->applyPaymentToInvoice($ar_invoice, (float) $receipt->amount_paid);
 
+        // The receipt posted nothing when it was recorded (see
+        // JournalEntryService::recordReceiptEntry). Confirmation is the single
+        // moment both the ledger and the invoice move, so they cannot drift.
+        $this->journalEntryService->recordCheckCollectionEntry($receipt);
+
         $receipt->update([
             'bank_name' => $bankName,
             'confirmed_at' => now(),
