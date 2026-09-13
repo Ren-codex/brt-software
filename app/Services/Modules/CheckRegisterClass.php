@@ -58,6 +58,26 @@ class CheckRegisterClass
             ]);
         }
 
+        // A given bank account cannot issue the same check number twice. A
+        // bounced or cleared check still blocks reuse of its number: a
+        // bounced check is normally replaced with a different physical check
+        // carrying its own number, while the bounced number itself was still
+        // spent (written, then dishonored) and re-registering it as a new
+        // check would let two physical instruments share one number. Only
+        // this direction is checked — bank_account_id is null for received
+        // checks, so a duplicate check number across incoming customer
+        // checks is expected and not an error.
+        $duplicate = Check::issued()
+            ->where('check_number', $checkNumber)
+            ->where('bank_account_id', $payment->bank_account_id)
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'check_number' => "Check {$checkNumber} has already been issued from this account.",
+            ]);
+        }
+
         return Check::create(array_merge([
             'direction' => Check::DIRECTION_ISSUED,
             'check_number' => $checkNumber,
