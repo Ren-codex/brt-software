@@ -19,7 +19,7 @@ class CheckRegisterClass
         return Check::create(array_merge([
             'direction' => Check::DIRECTION_RECEIVED,
             'check_number' => $receipt->reference_number,
-            'check_date' => $receipt->check_date,
+            'check_date' => $receipt->check_date ?: $receipt->receipt_date,
             'amount' => $receipt->amount_paid,
             'bank_name' => $receipt->bank_name,
             'source_type' => Receipt::class,
