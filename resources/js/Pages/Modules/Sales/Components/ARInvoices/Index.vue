@@ -92,7 +92,7 @@
                                         <td class="text-center">{{ list.sales_rep?.fullname || '-' }}</td>
                                         <td class="text-center">{{ list.invoice_date }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                            <span class="status-badge" :class="statusTone(list.status)">
                                                 {{ list.status?.name || '-' }}
                                             </span>
                                             <span v-if="isOverdue(list)" class="overdue-badge ms-1">
@@ -205,7 +205,7 @@
                                                                     <span class="info-label">Order Status:</span>
                                                                     <span class="info-value">
                                                                         <span class="status-badge"
-                                                                            :style="getStatusStyle(list.sales_order.status)">
+                                                                            :class="statusTone(list.sales_order.status)">
                                                                             {{ list.sales_order.status?.name }}
                                                                         </span>
                                                                     </span>
@@ -245,6 +245,7 @@
 </template>
 
 <script>
+import { statusTone } from '@/Shared/utils/statusTone.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
@@ -290,6 +291,9 @@ export default {
         this.fetchMetrics();
     },
     methods: {
+        // Tone comes from what the status means — see Shared/utils/statusTone.js
+        statusTone,
+
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
@@ -390,23 +394,6 @@ export default {
 
             return dueDate.getTime() < today.getTime();
         },
-
-        getStatusStyle(status) {
-            if (!status) {
-                return {
-                    color: '#6c757d',
-                    backgroundColor: '#e2e3e5',
-                    border: '1px solid #cccccc'
-                };
-            }
-
-            return {
-                color: status.text_color || '#000000',
-                backgroundColor: status.bg_color || '#ffffff',
-                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
-                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
-            };
-        }
     }
 }
 </script>

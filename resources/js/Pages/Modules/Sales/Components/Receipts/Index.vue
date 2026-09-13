@@ -108,7 +108,7 @@
                                         <td class="text-center">₱{{ list.amount_paid }}</td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                            <span class="status-badge" :class="statusTone(list.status)">
                                                 {{ list.status?.name || 'Unknown' }}
                                             </span>
                                             <span v-if="list.is_unremitted_past_day" class="unremitted-badge ms-1">
@@ -172,6 +172,7 @@
 
 </template>
 <script>
+import { statusTone } from '@/Shared/utils/statusTone.js';
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
@@ -234,6 +235,9 @@ export default {
         });
     },
     methods: {
+        // Tone comes from what the status means — see Shared/utils/statusTone.js
+        statusTone,
+
         checkSearchStr: _.debounce(function(string) {
             this.fetch();
         }, 300),
@@ -295,18 +299,6 @@ export default {
             if (type === 'updated') return 'Adjusted Payment';
             if (type === 'refund') return 'Return Refund';
             return 'Payment';
-        },
-        // Shared with the other Sales list screens so a status looks the same
-        // wherever it appears. The receipt-type chip above is deliberately
-        // distinct — a type is not a status.
-        getStatusStyle(status) {
-            if (!status) return {};
-
-            return {
-                color: status.text_color || '#ffffff',
-                backgroundColor: status.bg_color || '#6c757d',
-                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
-            };
         },
         getReceiptTypeClass(type) {
             if (type === 'updated') return 'bg-info text-dark';

@@ -100,7 +100,7 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                            <span class="status-badge" :class="statusTone(list.status)">
                                                 <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
@@ -111,7 +111,7 @@
                                           <!-- <td class="text-center">
                                             <span
                                                 v-if="list.sub_status?.name"
-                                                :style="{ backgroundColor: list.sub_status?.bg_color || '#6c757d', color: '#fff', padding: '4px 8px', borderRadius: '12px', whiteSpace: 'nowrap', display: 'inline-block' }">
+                                                class="status-badge" :class="statusTone(list.sub_status)">
                                                 {{ list.sub_status?.name  }}
                                             </span>
                                         </td> -->
@@ -253,7 +253,7 @@
                                                                                     </span>
                                                                                 </td>
                                                                                 <td>
-                                                                                    <span v-if="receipt.status" class="badge" :style="{ backgroundColor: receipt.status.bg_color, color: receipt.status.text_color }">
+                                                                                    <span v-if="receipt.status" class="status-badge" :class="statusTone(receipt.status)">
                                                                                         {{ receipt.status.name }}
                                                                                     </span>
                                                                                 </td>
@@ -299,6 +299,7 @@
     
 </template>
 <script>
+import { statusTone } from '@/Shared/utils/statusTone.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
@@ -375,6 +376,9 @@ export default {
         this.fetchMetrics();
     },
     methods: {
+        // Tone comes from what the status means — see Shared/utils/statusTone.js
+        statusTone,
+
         getReceiptTypeLabel(type) {
             if (type === 'updated') return 'Adjusted Payment';
             if (type === 'refund') return 'Return Refund';
@@ -504,16 +508,6 @@ export default {
                     console.log(err);
                     this.$toast.error('Unable to load sales order metrics.');
                 });
-        },
-        getStatusStyle(status) {
-            if (!status) return {};
-
-            return {
-                color: status.text_color || '#000000',
-                backgroundColor: status.bg_color || '#ffffff',
-                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
-                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
-            };
         },
 
         formatCurrency(value) {

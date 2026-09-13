@@ -128,7 +128,7 @@
                                                 <td class="text-center">{{ formatDateTime(item.created_at) }}</td>
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">
-                                                    <span class="status-badge" :style="getStatusStyle(item.status)">
+                                                    <span class="status-badge" :class="statusTone(item.status)">
                                                         {{ item.status?.name }}
                                                     </span>
                                                 </td>
@@ -315,6 +315,7 @@
 </template>
 
 <script>
+import { statusTone } from '@/Shared/utils/statusTone.js';
 import _ from 'lodash';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
@@ -395,17 +396,9 @@ export default {
         });
     },
     methods: {
-        // Matches the other Sales list screens: colours come from the status
-        // record so a status looks the same wherever it is shown.
-        getStatusStyle(status) {
-            if (!status) return {};
+        // Tone comes from what the status means — see Shared/utils/statusTone.js
+        statusTone,
 
-            return {
-                color: status.text_color || '#ffffff',
-                backgroundColor: status.bg_color || '#6c757d',
-                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
-            };
-        },
         switchTab(tab) {
             this.activeTab = tab;
             this.filter.status = tab;

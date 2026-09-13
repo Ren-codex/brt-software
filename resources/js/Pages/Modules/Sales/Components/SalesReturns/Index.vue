@@ -107,7 +107,7 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :style="getStatusStyle(list.status)">
+                                            <span class="status-badge" :class="statusTone(list.status)">
                                                 <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
                                                 {{ list.status ? list.status.name : '' }}
                                             </span>
@@ -220,7 +220,7 @@
                                                                                 <span class="det-label">{{ r.receipt_number }}</span>
                                                                                 <span class="det-value d-flex align-items-center gap-1">
                                                                                     <span class="small text-muted">{{ formatCurrency(r.amount_paid) }}</span>
-                                                                                    <span class="rcpt-badge" :style="{ background: r.status?.bg_color + '22', color: r.status?.text_color }">{{ r.status?.name }}</span>
+                                                                                    <span class="status-badge" :class="statusTone(r.status)">{{ r.status?.name }}</span>
                                                                                 </span>
                                                                             </div>
                                                                         </template>
@@ -357,6 +357,7 @@
     </div>
 </template>
 <script>
+import { statusTone } from '@/Shared/utils/statusTone.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
@@ -420,6 +421,9 @@ export default {
         this.fetchMetrics();
     },
     methods: {
+        // Tone comes from what the status means — see Shared/utils/statusTone.js
+        statusTone,
+
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
@@ -513,16 +517,6 @@ export default {
                     console.log(err);
                     this.$toast.error('Unable to load sales return metrics.');
                 });
-        },
-        getStatusStyle(status) {
-            if (!status) return {};
-
-            return {
-                color: status.text_color || '#000000',
-                backgroundColor: status.bg_color || '#ffffff',
-                border: `1px solid ${status.bg_color ? status.bg_color + '40' : '#cccccc'}`,
-                boxShadow: `0 2px 4px ${status.bg_color ? status.bg_color + '20' : 'rgba(0,0,0,0.1)'}`
-            };
         },
         formatCurrency(value) {
             if (!value) return '₱0.00';

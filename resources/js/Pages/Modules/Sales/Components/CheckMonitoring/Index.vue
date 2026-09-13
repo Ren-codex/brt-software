@@ -91,14 +91,14 @@ export default {
             clearTimeout(this.timer);
             this.timer = setTimeout(this.fetch, 300);
         },
-        // These statuses are plain strings, not list_statuses records, so they
-        // pick a shared tone rather than carrying their own colours.
+        // A check's status is a plain string, not a list_statuses record, but it
+        // reads off the same five tones as every other status in Sales.
         badgeTone(status) {
             return {
-                pending: 'is-pending',
-                cleared: 'is-success',
-                bounced: 'is-danger',
-            }[status] ?? 'is-neutral';
+                pending: 'attention',
+                cleared: 'settled',
+                bounced: 'problem',
+            }[status] ?? 'progress';
         },
         label(status) {
             // "Pending" is the honest word: it is with the bank, not yet good.
