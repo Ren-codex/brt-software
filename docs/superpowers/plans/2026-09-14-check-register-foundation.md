@@ -916,6 +916,7 @@ git commit -m "Post a supplier check when it is cashed"
 **Files:**
 - Modify: `app/Console/Commands/PostDueCheckDeposits.php`
 - Modify: `app/Services/Accounting/CashManagementService.php`
+- Modify: `app/Services/Modules/CheckRegisterClass.php` (the deposit-link step below)
 - Test: `tests/Feature/Accounting/BankDepositCheckTest.php` (existing — update it)
 
 **Interfaces:**
