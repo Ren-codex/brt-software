@@ -91,7 +91,7 @@ class BankDepositCheckTest extends TestCase
         $this->assertCount(1, $this->entriesFor($deposit));
     }
 
-    public function test_command_posts_the_check_once_its_date_arrives(): void
+    public function test_the_command_never_posts_a_due_check(): void
     {
         $deposit = $this->service()->createBankDeposit($this->payload([
             'deposit_type' => 'check',
@@ -103,8 +103,8 @@ class BankDepositCheckTest extends TestCase
         $this->artisan('deposits:post-due-checks')->assertSuccessful();
 
         $deposit->refresh();
-        $this->assertSame(BankDeposit::STATUS_POSTED, $deposit->status);
-        $this->assertCount(1, $this->entriesFor($deposit));
+        $this->assertSame(BankDeposit::STATUS_PENDING, $deposit->status, 'Only a person confirms money arrived.');
+        $this->assertCount(0, $this->entriesFor($deposit));
     }
 
     public function test_command_does_not_post_a_check_before_its_date(): void
@@ -120,37 +120,6 @@ class BankDepositCheckTest extends TestCase
         $deposit->refresh();
         $this->assertSame(BankDeposit::STATUS_PENDING, $deposit->status);
         $this->assertCount(0, $this->entriesFor($deposit));
-    }
-
-    public function test_command_is_idempotent(): void
-    {
-        $deposit = $this->service()->createBankDeposit($this->payload([
-            'deposit_type' => 'check',
-            'check_date' => now()->addDay()->toDateString(),
-            'check_number' => 'CHK-005',
-        ]));
-
-        $this->travelTo(now()->addDay());
-        $this->artisan('deposits:post-due-checks');
-        $this->artisan('deposits:post-due-checks');
-
-        $this->assertCount(1, $this->entriesFor($deposit->refresh()));
-    }
-
-    public function test_posted_check_entry_carries_the_check_date(): void
-    {
-        $checkDate = now()->addDays(4)->toDateString();
-        $deposit = $this->service()->createBankDeposit($this->payload([
-            'deposit_type' => 'check',
-            'check_date' => $checkDate,
-            'check_number' => 'CHK-006',
-        ]));
-
-        $this->travelTo(now()->addDays(4));
-        $this->artisan('deposits:post-due-checks');
-
-        $entry = $this->entriesFor($deposit->refresh())->first();
-        $this->assertSame($checkDate, \Illuminate\Support\Carbon::parse($entry->entry_date)->toDateString());
     }
 
     public function test_available_balance_excludes_pending_check_deposits(): void

@@ -3,46 +3,35 @@
 namespace App\Console\Commands;
 
 use App\Models\BankDeposit;
-use App\Services\Accounting\CashManagementService;
 use Illuminate\Console\Command;
 
 /**
- * A check deposit holds its journal entry until the check date, so the money
- * lands in the bank on the day the check is actually good. This posts the ones
- * whose date has arrived.
- *
- * Idempotent: postBankDeposit() ignores an already-posted deposit, and the
- * query only looks at pending ones.
+ * A check whose date has arrived is not necessarily good funds — it can still
+ * bounce. So this command posts nothing: it only reports how many check
+ * deposits are due for a person to confirm. Posting happens only when
+ * CheckRegisterClass::markCleared() confirms the underlying check actually
+ * cleared, which is what calls CashManagementService::postBankDeposit().
  */
 class PostDueCheckDeposits extends Command
 {
     protected $signature = 'deposits:post-due-checks';
 
-    protected $description = 'Post bank deposits whose check date has arrived';
+    protected $description = 'Report bank deposits whose check date has arrived and are awaiting confirmation';
 
-    public function handle(CashManagementService $service): int
+    public function handle(): int
     {
         $due = BankDeposit::dueForPosting(now()->toDateString())->get();
 
         if ($due->isEmpty()) {
-            $this->info('No check deposits are due for posting.');
+            $this->info('No check deposits are awaiting confirmation.');
 
             return self::SUCCESS;
         }
 
-        $posted = 0;
-        foreach ($due as $deposit) {
-            try {
-                $service->postBankDeposit($deposit);
-                $posted++;
-            } catch (\Throwable $e) {
-                // One bad deposit should not stop the rest of the batch.
-                $this->error("Deposit {$deposit->deposit_no} failed to post: {$e->getMessage()}");
-                report($e);
-            }
-        }
-
-        $this->info("Posted {$posted} check deposit(s).");
+        // Deliberately posts nothing. A check whose date has arrived has not
+        // necessarily cleared — it can still bounce — so a person confirms the
+        // money arrived and that confirmation is what posts.
+        $this->info("{$due->count()} check deposit(s) are due for confirmation.");
 
         return self::SUCCESS;
     }

@@ -2,11 +2,13 @@
 
 namespace App\Services\Modules;
 
+use App\Models\BankDeposit;
 use App\Models\Check;
 use App\Models\Receipt;
 use App\Models\ReceivedStockPayment;
 use App\Models\User;
 use App\Notifications\BouncedCheckNotification;
+use App\Services\Accounting\CashManagementService;
 use App\Services\Accounting\JournalEntryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +82,27 @@ class CheckRegisterClass
                 app(JournalEntryService::class)->postClearedSupplierCheck($payment->receivedStock, $payment, $check->check_date);
             } else {
                 app(ArInvoiceClass::class)->confirmCheck($check->source_id, $check->bank_name, $check->check_date?->toDateString());
+            }
+
+            // Spec: "a check-type bank deposit stays pending until its underlying
+            // check is confirmed cleared, and confirming the check is what posts
+            // the deposit." Without this the two pending states drift apart.
+            //
+            // Matched on check_number AND amount, not check_number alone: a
+            // BankDeposit carries no FK back to the Check (or to the customer),
+            // and check numbers are only unique per issuing bank — two
+            // different customers' checks could coincidentally share a number.
+            // Requiring the amount to match too makes a false match on an
+            // unrelated deposit implausible without eliminating the risk
+            // entirely, which would need a real link between the two tables.
+            if ($check->direction === Check::DIRECTION_RECEIVED) {
+                $deposit = BankDeposit::where('deposit_type', BankDeposit::TYPE_CHECK)
+                    ->where('status', BankDeposit::STATUS_PENDING)
+                    ->where('check_number', $check->check_number)
+                    ->where('amount', $check->amount)
+                    ->first();
+
+                $deposit && app(CashManagementService::class)->postBankDeposit($deposit);
             }
 
             $check->update([

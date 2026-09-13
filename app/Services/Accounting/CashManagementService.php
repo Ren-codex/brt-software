@@ -80,8 +80,13 @@ class CashManagementService
 
             $deposit->load(['cashAccount', 'bankAccount', 'createdBy']);
 
-            // A post-dated check is not money yet: hold the entry until the
-            // check date arrives, when deposits:post-due-checks posts it.
+            // A post-dated check is not money yet. Cash, or a check already
+            // dated today or earlier at the moment it's recorded, is posted
+            // right away. A future-dated check instead waits pending until a
+            // person confirms it actually cleared — deposits:post-due-checks
+            // no longer posts anything on a date alone; see
+            // CheckRegisterClass::markCleared(), which is what calls
+            // postBankDeposit() for a confirmed check-type deposit.
             if ($deposit->isDueForPosting()) {
                 $this->postBankDeposit($deposit);
             }
@@ -100,8 +105,9 @@ class CashManagementService
 
     /**
      * Writes the DR Bank / CR Cash entry and marks the deposit posted. Safe to
-     * call twice — a posted deposit is left alone, so the scheduled command
-     * cannot double-post.
+     * call twice — a posted deposit is left alone, so calling this from both
+     * deposit creation (when already due) and check confirmation cannot
+     * double-post.
      */
     public function postBankDeposit(BankDeposit $deposit): BankDeposit
     {
