@@ -94,6 +94,7 @@ class SalesOrderRequest extends FormRequest
                 'payment_lines.*.payment_amount' => 'required|numeric|min:0.01',
                 'payment_lines.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
                 'payment_lines.*.reference_number' => 'nullable|string|max:255',
+                'payment_lines.*.check_date' => 'nullable|date',
             ];
 
             if ($this->input('is_external')) {

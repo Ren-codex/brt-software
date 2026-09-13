@@ -263,6 +263,50 @@ class SplitPaymentTest extends TestCase
      * The same capability on creation: a receipt can be settled with several
      * methods at the moment it is recorded, not only afterwards.
      */
+    /**
+     * At the HTTP boundary, not the service: the controller passes
+     * $request->validated(), so a field the FormRequest does not declare is
+     * silently stripped before the service sees it. That is how a check reached
+     * a rule demanding a check date with no way to supply one — receiving a
+     * delivery paid by check failed outright, and every service-level test
+     * still passed because they never went through validation.
+     */
+    public function test_a_check_line_survives_request_validation_at_creation(): void
+    {
+        $po = PurchaseOrder::create([
+            'supplier_id' => $this->received->supplier_id,
+            'po_number' => 'PO-' . uniqid(), 'po_date' => now()->toDateString(),
+            'total_amount' => 10000, 'status_id' => 1, 'created_by_id' => $this->user->id,
+        ]);
+        $product = Product::first();
+        $poItem = PurchaseOrderItem::create([
+            'po_id' => $po->id, 'product_id' => $product->id,
+            'quantity' => 20, 'unit_cost' => 500, 'total_cost' => 10000,
+        ]);
+        $checkDate = now()->addDays(9)->toDateString();
+
+        $this->actingAs($this->user)->postJson('/received-stocks', [
+            'po_id' => $po->id,
+            'supplier_id' => $this->received->supplier_id,
+            'received_date' => now()->toDateString(),
+            'payment_mode' => 'Split',
+            'payment_lines' => [
+                ['payment_mode' => 'Cash on Hand', 'payment_amount' => 6000],
+                ['payment_mode' => 'Check', 'payment_amount' => 4000, 'reference_number' => 'CHK-9', 'bank_account_id' => $this->bank->id, 'check_date' => $checkDate],
+            ],
+            'items' => [[
+                'product_id' => $product->id, 'product_name' => 'Test', 'quantity' => 20,
+                'unit_cost' => 500, 'total_cost' => 10000, 'to_received_quantity' => 20,
+                'po_item_id' => $poItem->id, 'retail_price' => 600, 'wholesale_price' => 550,
+                'expiration_date' => null,
+            ]],
+        ])->assertSuccessful();
+
+        $check = \App\Models\Check::issued()->firstOrFail();
+        $this->assertSame($checkDate, $check->check_date->toDateString(), 'The date must survive validated().');
+        $this->assertSame($this->bank->id, $check->bank_account_id);
+    }
+
     public function test_creating_a_receipt_with_split_payment_lines(): void
     {
         $po = PurchaseOrder::create([

@@ -36,6 +36,9 @@ class StoreReceivedStockRequest extends FormRequest
             'payment_lines.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
             'payment_lines.*.bank_name' => 'nullable|string|max:255',
             'payment_lines.*.reference_number' => 'nullable|string|max:255',
+            // Must be declared, or validated() strips it before the service sees
+            // it and a check can never satisfy the rule that demands it.
+            'payment_lines.*.check_date' => 'nullable|date',
             'due_date' => 'nullable|date|required_if:payment_mode,Credit',
             'amount_paid' => 'nullable|numeric|min:0',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
