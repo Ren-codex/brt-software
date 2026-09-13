@@ -1084,7 +1084,7 @@ class JournalEntryService
 
         return $this->createEntry(
             $withdrawal,
-            $withdrawal->withdrawal_date,
+            $withdrawal->effectiveDate(),
             'bank_withdrawal',
             'Bank withdrawal ' . $withdrawal->withdrawal_no . ' — cash withdrawn from ' . $withdrawal->bankAccount->bank_name . '.',
             [

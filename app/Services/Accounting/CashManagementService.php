@@ -15,6 +15,7 @@ use App\Services\NotificationService;
 use App\Services\SeriesService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CashManagementService
 {
@@ -155,22 +156,63 @@ class CashManagementService
     public function createBankWithdrawal(array $data): BankWithdrawal
     {
         return DB::transaction(function () use ($data) {
+            $isCheck = ($data['withdrawal_method'] ?? BankWithdrawal::METHOD_SLIP) === BankWithdrawal::METHOD_CHECK;
+
+            if ($isCheck && blank($data['check_date'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'check_date' => 'Enter the date written on the check — it is the day the money leaves the account.',
+                ]);
+            }
+
             $withdrawal = BankWithdrawal::create([
                 'withdrawal_no' => $this->series->get('bank_withdrawal_no'),
                 'bank_account_id' => $data['bank_account_id'],
                 'cash_account_id' => $data['cash_account_id'],
+                'withdrawal_method' => $isCheck ? BankWithdrawal::METHOD_CHECK : BankWithdrawal::METHOD_SLIP,
                 'amount' => round((float) $data['amount'], 2),
                 'withdrawal_date' => $data['withdrawal_date'],
+                'check_number' => $isCheck ? ($data['check_number'] ?? null) : null,
+                'check_date' => $isCheck ? ($data['check_date'] ?? null) : null,
+                'status' => BankWithdrawal::STATUS_PENDING,
                 'reference' => $data['reference'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'created_by_id' => Auth::id(),
             ]);
 
             $withdrawal->load(['bankAccount', 'cashAccount', 'createdBy']);
-            $this->journal->recordBankWithdrawalEntry($withdrawal);
+
+            // A check written to withdraw cash empties the account when it is
+            // presented, not when it is written. Hold it in the register until
+            // someone confirms it cleared; a slip is cash in hand right away.
+            if ($isCheck) {
+                app(\App\Services\Modules\CheckRegisterClass::class)->registerWithdrawal($withdrawal);
+            } else {
+                $this->postBankWithdrawal($withdrawal);
+            }
 
             return $withdrawal;
         });
+    }
+
+    /**
+     * Writes DR Cash / CR Bank and marks the withdrawal posted. Safe to call
+     * twice, so clearing a check cannot double-post.
+     */
+    public function postBankWithdrawal(BankWithdrawal $withdrawal): BankWithdrawal
+    {
+        if ($withdrawal->status === BankWithdrawal::STATUS_POSTED) {
+            return $withdrawal;
+        }
+
+        $withdrawal->loadMissing(['bankAccount', 'cashAccount']);
+        $this->journal->recordBankWithdrawalEntry($withdrawal);
+
+        $withdrawal->forceFill([
+            'status' => BankWithdrawal::STATUS_POSTED,
+            'posted_at' => now(),
+        ])->save();
+
+        return $withdrawal;
     }
 
     public function deleteBankWithdrawal(int $id): void
@@ -330,6 +372,24 @@ class CashManagementService
             ->sum('amount');
 
         return round($this->getAccountBalance($accountId) - $pending, 2);
+    }
+
+    /**
+     * What an account can actually cover, once checks drawn on it are counted.
+     *
+     * A written check has not left the ledger yet, so the raw balance still
+     * shows that money. Spending against it is how an account ends up honouring
+     * one check and bouncing another.
+     */
+    public function getAvailableBankBalance(int $bankAccountId): float
+    {
+        $committed = (float) \App\Models\Check::query()
+            ->where('status', \App\Models\Check::STATUS_PENDING)
+            ->where('direction', \App\Models\Check::DIRECTION_ISSUED)
+            ->where('bank_account_id', $bankAccountId)
+            ->sum('amount');
+
+        return round($this->getBankAccountBalance($bankAccountId) - $committed, 2);
     }
 
     public function getCashInBankBalance(): float

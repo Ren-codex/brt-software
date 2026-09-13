@@ -546,10 +546,39 @@
                                 <div v-if="wdErrors.withdrawal_date" class="error-msg">{{ wdErrors.withdrawal_date[0] }}</div>
                             </div>
                             <div class="col-12 col-sm-6">
+                                <label class="form-label">How <span class="text-danger">*</span></label>
+                                <select v-model="wdForm.withdrawal_method" class="form-select">
+                                    <option value="slip">Withdrawal slip</option>
+                                    <option value="check">Check</option>
+                                </select>
+                                <div class="form-text">A check empties the account when it is presented, not today.</div>
+                            </div>
+                            <div class="col-12 col-sm-6">
                                 <label class="form-label">Amount <span class="text-danger">*</span></label>
                                 <input v-model="wdForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
                                 <div v-if="wdErrors.amount" class="error-msg">{{ wdErrors.amount[0] }}</div>
                             </div>
+
+                            <template v-if="wdIsCheck">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label">Check Number <span class="text-danger">*</span></label>
+                                    <input v-model.trim="wdForm.check_number" type="text" class="form-control" placeholder="e.g. 000123" />
+                                    <div v-if="wdErrors.check_number" class="error-msg">{{ wdErrors.check_number[0] }}</div>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label">Check Date <span class="text-danger">*</span></label>
+                                    <input v-model="wdForm.check_date" type="date" class="form-control" />
+                                    <div v-if="wdErrors.check_date" class="error-msg">{{ wdErrors.check_date[0] }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <p class="bd-check-note mb-0">
+                                        <i class="ri-time-line"></i>
+                                        Held as <strong>Pending</strong> until someone confirms it was presented. The cash is not
+                                        counted as on hand, and the bank is not reduced, before then.
+                                    </p>
+                                </div>
+                            </template>
+
                             <div class="col-12">
                                 <label class="form-label">Withdraw From (Bank Account) <span class="text-danger">*</span></label>
                                 <select v-model="wdForm.bank_account_id" class="form-select">
@@ -732,6 +761,9 @@ const emptyBdForm = (cashAccounts = []) => ({
 
 const emptyWdForm = (cashAccounts = []) => ({
     withdrawal_date: new Date().toISOString().slice(0, 10),
+    withdrawal_method: 'slip',
+    check_number: '',
+    check_date: '',
     bank_account_id: '',
     cash_account_id: (cashAccounts.find(a => a.code === '1000') ?? cashAccounts[0])?.id ?? '',
     amount: '',
@@ -783,6 +815,9 @@ export default {
         },
         bdIsCheck() {
             return this.bdForm.deposit_type === 'check';
+        },
+        wdIsCheck() {
+            return this.wdForm.withdrawal_method === 'check';
         },
         bdCheckIsFuture() {
             if (!this.bdIsCheck || !this.bdForm.check_date) return false;

@@ -324,12 +324,15 @@ class CashManagementController extends Controller
             'cash_account_id'    => 'required|integer|exists:accounts,id',
             'amount'             => 'required|numeric|min:0.01',
             'withdrawal_date'    => 'required|date',
+            'withdrawal_method'  => 'nullable|in:slip,check',
+            'check_number'       => 'required_if:withdrawal_method,check|nullable|string|max:50',
+            'check_date'         => 'required_if:withdrawal_method,check|nullable|date',
             'reference'          => 'nullable|string|max:100',
             'notes'              => 'nullable|string|max:500',
         ]);
 
         $amount = round((float) $data['amount'], 2);
-        $bankBalance = $this->service->getBankAccountBalance((int) $data['bank_account_id']);
+        $bankBalance = $this->service->getAvailableBankBalance((int) $data['bank_account_id']);
         if ($amount > $bankBalance) {
             return response()->json([
                 'message' => 'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').',

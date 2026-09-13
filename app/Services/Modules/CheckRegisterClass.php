@@ -3,6 +3,7 @@
 namespace App\Services\Modules;
 
 use App\Models\BankDeposit;
+use App\Models\BankWithdrawal;
 use App\Models\Check;
 use App\Models\Receipt;
 use App\Models\ReceivedStockPayment;
@@ -112,6 +113,34 @@ class CheckRegisterClass
             ->update(['check_date' => $checkDate]);
     }
 
+    /**
+     * A check written to withdraw cash. It draws on one of our accounts and
+     * empties it when presented, so it is an issued check like any other — the
+     * counterparty is simply ourselves.
+     */
+    public function registerWithdrawal(BankWithdrawal $withdrawal, array $attributes = []): Check
+    {
+        $number = $attributes['check_number'] ?? $withdrawal->check_number;
+
+        if (trim((string) $number) === '') {
+            throw ValidationException::withMessages([
+                'check_number' => 'A check needs its number before it can be entered in the register.',
+            ]);
+        }
+
+        return Check::create(array_merge([
+            'direction' => Check::DIRECTION_ISSUED,
+            'check_number' => $number,
+            'check_date' => $withdrawal->check_date ?: $withdrawal->withdrawal_date,
+            'amount' => $withdrawal->amount,
+            'bank_account_id' => $withdrawal->bank_account_id,
+            'source_type' => BankWithdrawal::class,
+            'source_id' => $withdrawal->id,
+            'status' => Check::STATUS_PENDING,
+            'notes' => 'Cash withdrawal ' . $withdrawal->withdrawal_no . '.',
+        ], $attributes));
+    }
+
     public function registerIssued(ReceivedStockPayment $payment, array $attributes = []): Check
     {
         $payment->loadMissing('receivedStock');
@@ -172,7 +201,11 @@ class CheckRegisterClass
         $this->assertPending($check);
 
         DB::transaction(function () use ($check) {
-            if ($check->direction === Check::DIRECTION_ISSUED) {
+            if ($check->source_type === BankWithdrawal::class) {
+                app(CashManagementService::class)->postBankWithdrawal(
+                    BankWithdrawal::findOrFail($check->source_id)
+                );
+            } elseif ($check->direction === Check::DIRECTION_ISSUED) {
                 $payment = ReceivedStockPayment::with('receivedStock')->findOrFail($check->source_id);
                 app(JournalEntryService::class)->postClearedSupplierCheck($payment->receivedStock, $payment, $check->check_date);
             } else {
