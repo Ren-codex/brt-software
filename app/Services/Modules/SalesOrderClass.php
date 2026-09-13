@@ -467,7 +467,19 @@ class SalesOrderClass
                 'payment_mode'     => $line['payment_mode'],
                 'bank_account_id'  => $line['bank_account_id'],
                 'reference_number' => $line['reference_number'],
+                'check_status'     => strcasecmp(trim((string) $line['payment_mode']), 'Check') === 0 ? 'on_hand' : null,
+                'check_date'       => $line['check_date'] ?? null,
             ]);
+
+            // A customer paying at the counter by check is the same instrument
+            // as one settling an invoice by check: it is not money until it
+            // clears, so it belongs in the register either way.
+            if (strcasecmp(trim((string) $line['payment_mode']), 'Check') === 0) {
+                app(CheckRegisterClass::class)->registerReceived($receipt, [
+                    'check_number' => $line['reference_number'],
+                    'check_date' => $line['check_date'] ?? $data->order_date,
+                ]);
+            }
 
             $lastReceiptId = $receipt->id;
         }
@@ -493,6 +505,7 @@ class SalesOrderClass
                 'payment_amount'   => round((float) ($line['payment_amount'] ?? 0), 2),
                 'bank_account_id'  => $line['bank_account_id'] ?? null,
                 'reference_number' => $line['reference_number'] ?? null,
+                'check_date'       => $line['check_date'] ?? null,
             ])
             ->filter(fn ($line) => $line['payment_amount'] > 0 && $line['payment_mode'] !== '')
             ->values();
@@ -530,6 +543,7 @@ class SalesOrderClass
                 'amount'           => round((float) ($line['payment_amount'] ?? $line['amount'] ?? 0), 2),
                 'bank_account_id'  => $line['bank_account_id'] ?? null,
                 'reference_number' => $line['reference_number'] ?? null,
+                'check_date'       => $line['check_date'] ?? null,
             ])
             ->filter(fn ($line) => $line['amount'] > 0 && $line['payment_mode'] !== '')
             ->values();

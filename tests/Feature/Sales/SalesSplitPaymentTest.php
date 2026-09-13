@@ -164,6 +164,38 @@ class SalesSplitPaymentTest extends TestCase
         $this->assertEquals('000123', Receipt::where('payment_mode', 'Check')->firstOrFail()->reference_number);
     }
 
+    public function test_a_check_taken_at_the_counter_lands_in_the_register(): void
+    {
+        // A customer paying at the counter by check hands over the same
+        // instrument as one settling an invoice by check. It is not money until
+        // it clears, so it has to be tracked the same way.
+        $checkDate = now()->addDays(9)->toDateString();
+
+        $this->saveOrder([
+            'payment_lines' => [
+                ['payment_mode' => 'Cash', 'payment_amount' => 2500],
+                ['payment_mode' => 'Check', 'payment_amount' => 500, 'reference_number' => '000123', 'check_date' => $checkDate],
+            ],
+        ]);
+
+        $receipt = Receipt::where('payment_mode', 'Check')->firstOrFail();
+        $check = \App\Models\Check::where('source_id', $receipt->id)->first();
+
+        $this->assertNotNull($check, 'A counter check must reach the register, like any other.');
+        $this->assertSame(\App\Models\Check::STATUS_PENDING, $check->status);
+        $this->assertSame($checkDate, $check->check_date->toDateString());
+        $this->assertSame($checkDate, $receipt->check_date->toDateString());
+    }
+
+    public function test_a_cash_only_counter_sale_creates_no_register_row(): void
+    {
+        $this->saveOrder([
+            'payment_lines' => [['payment_mode' => 'Cash', 'payment_amount' => 3000]],
+        ]);
+
+        $this->assertSame(0, \App\Models\Check::count(), 'Only checks belong in the register.');
+    }
+
     public function test_an_order_paid_several_ways_is_recorded_as_split(): void
     {
         $result = $this->saveOrder([

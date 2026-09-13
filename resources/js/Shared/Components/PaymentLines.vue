@@ -62,6 +62,41 @@
         />
       </div>
 
+      <!-- A check is not money on the day it is written: it is money on the day
+           it can be cashed, drawn on a particular account. The register needs
+           both to say whether it will clear. -->
+      <div v-if="line.source === 'check'" class="payment-line-reference">
+        <label class="payment-line-label">
+          Check date <span class="text-danger">*</span>
+        </label>
+        <input
+          type="date"
+          v-model="line.check_date"
+          class="form-control modern-input"
+          :class="{ error: !line.check_date }"
+          @input="emitChange"
+        />
+        <small class="payment-line-hint">The date written on the check — when the money actually moves.</small>
+      </div>
+
+      <div v-if="line.source === 'check' && bankAccounts.length" class="payment-line-reference">
+        <label class="payment-line-label">
+          Drawn on <span class="text-danger">*</span>
+        </label>
+        <select
+          v-model="line.check_bank_account_id"
+          class="form-control modern-input"
+          :class="{ error: !line.check_bank_account_id }"
+          @change="emitChange"
+        >
+          <option value="">Select the account</option>
+          <option v-for="b in bankAccounts" :key="b.id" :value="b.id">
+            {{ b.bank_name }} — {{ b.account_name }}
+          </option>
+        </select>
+        <small class="payment-line-hint">Which account this check draws on.</small>
+      </div>
+
       <p v-if="lineError(line, index)" class="payment-line-error">{{ lineError(line, index) }}</p>
     </div>
 
@@ -106,6 +141,8 @@ const emptyLine = () => ({
   source: 'cash',
   payment_amount: null,
   reference_number: '',
+  check_date: '',
+  check_bank_account_id: '',
 });
 
 /**
@@ -127,6 +164,8 @@ const toInternalLine = (line, cashPaymentMode) => {
     source,
     payment_amount: line.payment_amount ?? null,
     reference_number: line.reference_number || '',
+    check_date: line.check_date || '',
+    check_bank_account_id: line.bank_account_id || '',
   };
 };
 
@@ -196,6 +235,12 @@ export default {
       }
       if (this.lines.some((l) => this.needsReference(l) && !l.reference_number)) {
         return 'A reference number is required for bank transfers and checks.';
+      }
+      if (this.lines.some((l) => l.source === 'check' && !l.check_date)) {
+        return 'Enter the date written on the check — it is the day the money moves.';
+      }
+      if (this.bankAccounts.length && this.lines.some((l) => l.source === 'check' && !l.check_bank_account_id)) {
+        return 'Select which account each check draws on.';
       }
       return '';
     },
@@ -276,6 +321,8 @@ export default {
               payment_mode: 'Check',
               payment_amount: Number(l.payment_amount),
               reference_number: l.reference_number,
+              check_date: l.check_date,
+              bank_account_id: l.check_bank_account_id || null,
             };
           }
           const bank = this.bankFor(l.source);
