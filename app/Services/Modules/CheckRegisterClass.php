@@ -5,6 +5,10 @@ namespace App\Services\Modules;
 use App\Models\Check;
 use App\Models\Receipt;
 use App\Models\ReceivedStockPayment;
+use App\Models\User;
+use App\Notifications\BouncedCheckNotification;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Creates register rows. Deliberately does no posting: a pending check moves no
@@ -46,5 +50,51 @@ class CheckRegisterClass
             'supplier_id' => $payment->receivedStock?->supplier_id,
             'status' => Check::STATUS_PENDING,
         ], $attributes));
+    }
+
+    public function markBounced(Check $check, string $reason): Check
+    {
+        $this->assertPending($check);
+
+        if (trim($reason) === '') {
+            throw ValidationException::withMessages([
+                'bounce_reason' => 'Say why the check bounced — the rep needs it to chase the customer.',
+            ]);
+        }
+
+        $check->update([
+            'status' => Check::STATUS_BOUNCED,
+            'bounced_at' => now(),
+            'bounced_by_id' => Auth::id(),
+            'bounce_reason' => trim($reason),
+        ]);
+
+        // Nothing posts and no balance changes: a bounced check never was money.
+        $this->notifyReceivingRep($check);
+
+        return $check;
+    }
+
+    private function assertPending(Check $check): void
+    {
+        if (!$check->isPending()) {
+            throw ValidationException::withMessages([
+                'status' => 'Only a pending check can be cleared or bounced. This one is ' . $check->status . '.',
+            ]);
+        }
+    }
+
+    private function notifyReceivingRep(Check $check): void
+    {
+        // `checks.received_by_id` is an employees.id (see the FK in
+        // create_checks_table). Users don't carry an employee_id column —
+        // it's the other way round: User::employee() is hasOne(Employee,
+        // 'user_id'), i.e. the FK lives on employees.user_id. So look up
+        // the User by walking that relation from the Employee side.
+        $user = $check->received_by_id
+            ? User::whereHas('employee', fn ($q) => $q->where('id', $check->received_by_id))->first()
+            : null;
+
+        $user?->notify(new BouncedCheckNotification($check));
     }
 }
