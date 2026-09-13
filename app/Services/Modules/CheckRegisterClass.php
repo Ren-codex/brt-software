@@ -20,6 +20,31 @@ use Illuminate\Validation\ValidationException;
  */
 class CheckRegisterClass
 {
+    /**
+     * The register, newest maturity first.
+     *
+     * `$ownEmployeeId` scopes the list to one rep's own received checks. Passing
+     * it is how the Sales-side view stays read-only and personal: a rep sees the
+     * checks they took and nothing else, and never the issued side at all.
+     */
+    public function lists(array $filters = [], ?int $ownEmployeeId = null)
+    {
+        return Check::query()
+            ->with(['customer', 'supplier', 'receivedBy', 'bankAccount'])
+            ->when($ownEmployeeId, fn ($q) => $q
+                ->where('direction', Check::DIRECTION_RECEIVED)
+                ->where('received_by_id', $ownEmployeeId))
+            ->when($filters['direction'] ?? null, fn ($q, $d) => $q->where('direction', $d))
+            ->when($filters['status'] ?? null, fn ($q, $st) => $q->where('status', $st))
+            ->when($filters['keyword'] ?? null, fn ($q, $kw) => $q->where(function ($inner) use ($kw) {
+                $inner->where('check_number', 'LIKE', "%{$kw}%")
+                    ->orWhere('bank_name', 'LIKE', "%{$kw}%");
+            }))
+            ->orderBy('check_date')
+            ->orderByDesc('id')
+            ->paginate($filters['count'] ?? 15);
+    }
+
     public function registerReceived(Receipt $receipt, array $attributes = []): Check
     {
         $receipt->loadMissing('arInvoice.sales_order');

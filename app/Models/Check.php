@@ -30,6 +30,26 @@ class Check extends Model
         'bounced_at' => 'datetime',
     ];
 
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(ListSupplier::class, 'supplier_id');
+    }
+
+    public function receivedBy()
+    {
+        return $this->belongsTo(Employee::class, 'received_by_id');
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(BankAccount::class, 'bank_account_id');
+    }
+
     public function source()
     {
         return $this->morphTo();

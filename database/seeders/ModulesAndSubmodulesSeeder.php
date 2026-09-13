@@ -17,6 +17,10 @@ class ModulesAndSubmodulesSeeder extends Seeder
                 ['key' => 'receipts', 'name' => 'Receipts', 'sort_order' => 3],
                 ['key' => 'sales_returns', 'name' => 'Sales Returns', 'sort_order' => 4],
                 ['key' => 'remittances', 'name' => 'Remittances', 'sort_order' => 5],
+                // A rep needs to see whether the check they took has cleared,
+                // without holding an Accounting grant — Journal Entries and
+                // Chart of Accounts live in that module too.
+                ['key' => 'check_monitoring', 'name' => 'Check Monitoring', 'sort_order' => 6],
             ]],
             ['key' => 'inventory', 'name' => 'Inventory', 'sort_order' => 2, 'submodules' => [
                 ['key' => 'purchase_orders', 'name' => 'Purchase Orders', 'sort_order' => 1],
@@ -43,6 +47,10 @@ class ModulesAndSubmodulesSeeder extends Seeder
                 // Settling supplier bills. Kept apart from inventory/receiving so
                 // taking goods in does not also confer the ability to pay for them.
                 ['key' => 'accounts_payable', 'name' => 'Accounts Payable', 'sort_order' => 8],
+                // Confirming that a check actually reached the bank is an
+                // accounting act, so the owner's surface lives here. The rep's
+                // read-only view is a Sales submodule instead — see below.
+                ['key' => 'check_register', 'name' => 'Check Register', 'sort_order' => 9],
             ]],
             ['key' => 'user_management', 'name' => 'User Management', 'sort_order' => 7, 'submodules' => []],
             ['key' => 'dashboard', 'name' => 'Dashboard', 'sort_order' => 8, 'submodules' => []],

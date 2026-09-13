@@ -159,6 +159,13 @@ export default {
                             href: "/accounting/cash-management",
                         },
                         {
+                            id: "check_register",
+                            label: "Check Register",
+                            icon: "ri-bill-line",
+                            description: "Checks in and out, and what falls due",
+                            href: "/accounting/check-register",
+                        },
+                        {
                             id: "petty_cash",
                             label: "Petty Cash",
                             icon: "ri-wallet-3-line",

@@ -315,6 +315,14 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
             ->middleware('permission:accounting,journal_entries,encoder');
         Route::get('/accounting/cash-management', [App\Http\Controllers\Modules\CashManagementController::class, 'index'])
             ->middleware('permission:accounting,cash_management,view');
+        Route::get('/accounting/check-register', [App\Http\Controllers\Modules\CheckRegisterController::class, 'index'])
+            ->middleware('permission:accounting,check_register,view');
+        // Confirming and bouncing both move money (or decide that none moved),
+        // so they sit a level above merely looking at the register.
+        Route::put('/accounting/check-register/{id}/confirm', [App\Http\Controllers\Modules\CheckRegisterController::class, 'confirm'])
+            ->middleware('permission:accounting,check_register,approver');
+        Route::put('/accounting/check-register/{id}/bounce', [App\Http\Controllers\Modules\CheckRegisterController::class, 'bounce'])
+            ->middleware('permission:accounting,check_register,approver');
         Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index'])
             ->middleware('permission:accounting,petty_cash,view');
         Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher'])
