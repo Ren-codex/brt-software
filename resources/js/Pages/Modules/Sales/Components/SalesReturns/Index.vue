@@ -730,17 +730,7 @@ export default {
 }
 
 /* Status Badge Styles */
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    cursor: default;
-}
+/* .status-badge now comes from _library-index.scss so every list screen matches. */
 
 /* Custom badge styles */
 .badge {

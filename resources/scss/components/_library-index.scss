@@ -240,3 +240,58 @@
         }
     }
 }
+
+/* ── Shared list-screen furniture ──────────────────────────────────
+   Every module list screen shows the same three things: a status, an
+   empty table, and a search box. They were being re-styled inside each
+   component, so the same `.status-badge` class rendered a 10px pill on
+   one tab, a 12px pill on another, and unstyled coloured text on a
+   third. Defined once here so a new screen inherits the look instead of
+   inventing its own.
+   ------------------------------------------------------------------ */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    line-height: 1.3;
+    white-space: nowrap;
+    cursor: default;
+
+    /* Most statuses carry their own colours from list_statuses, applied
+       inline. These modifiers are for the few that are plain enum
+       strings with no database record behind them. */
+    &.is-pending  { background: #fdf3e3; color: #8a5a10; border: 1px solid #f0d49a; }
+    &.is-success  { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+    &.is-danger   { background: #fdeaea; color: #96231f; border: 1px solid #f2b8b5; }
+    &.is-neutral  { background: #f1f4f3; color: #55706a; border: 1px solid #dbe6e2; }
+}
+
+/* An empty table should explain itself rather than showing a bare row. */
+.table-empty-state {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #6b8c85;
+
+    i {
+        display: block;
+        font-size: 1.75rem;
+        margin-bottom: 0.4rem;
+        opacity: 0.7;
+    }
+
+    p {
+        margin-bottom: 0.15rem;
+        font-weight: 600;
+        color: #33564f;
+    }
+
+    small {
+        font-size: 0.78rem;
+    }
+}

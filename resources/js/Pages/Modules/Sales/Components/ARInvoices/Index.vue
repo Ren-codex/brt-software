@@ -412,18 +412,7 @@ export default {
 </script>
 
 <style scoped>
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    border-radius: 14px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
-    line-height: 1.2;
-    transition: all 0.3s ease;
-    cursor: default;
-}
+/* .status-badge now comes from _library-index.scss so every list screen matches. */
 
 /* Modern Collapsible Row Styles */
 .main-table-row {
