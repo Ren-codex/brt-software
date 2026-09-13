@@ -53,15 +53,16 @@ class RemittanceController extends Controller
         // must still see the org-wide total, matching RemittanceClass::lists()/
         // summary()/undepositedSummary().
         $user = Auth::user();
-        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
-            ? $user->employee?->id
-            : null;
+        // null = a sales administrator, unrestricted. Any other value filters,
+        // and -1 matches nothing: a user with no employee record sees no one's
+        // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
         $base = \App\Models\Remittance::query()
             ->when($employeeId, function ($query) use ($employeeId) {
                 $query->whereHas('receipts.arInvoice.sales_order', function ($soQuery) use ($employeeId) {
                     $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
                         $salesOrderQuery
-                            ->where('added_by_id', $employeeId)
+                            ->where('added_by_id', Auth::id() ?? -1)
                             ->orWhere('sales_rep_id', $employeeId);
                     });
                 });
@@ -102,7 +103,7 @@ class RemittanceController extends Controller
                 $query->whereHas('arInvoice.sales_order', function ($soQuery) use ($employeeId) {
                     $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
                         $salesOrderQuery
-                            ->where('added_by_id', $employeeId)
+                            ->where('added_by_id', Auth::id() ?? -1)
                             ->orWhere('sales_rep_id', $employeeId);
                     });
                 });

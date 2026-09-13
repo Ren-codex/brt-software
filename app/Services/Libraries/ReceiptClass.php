@@ -24,9 +24,10 @@ class ReceiptClass
 
     public function lists($request){
         $user = Auth::user();
-        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
-            ? $user->employee?->id
-            : null;
+        // null = a sales administrator, unrestricted. Any other value filters,
+        // and -1 matches nothing: a user with no employee record sees no one's
+        // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         return ReceiptResource::collection(
             Receipt::with(['arInvoice.sales_order.customer', 'status', 'sourceReceipt'])
@@ -38,7 +39,7 @@ class ReceiptClass
                     $query->whereHas('arInvoice.sales_order', function ($soQuery) use ($employeeId) {
                         $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
                             $salesOrderQuery
-                                ->where('added_by_id', $employeeId)
+                                ->where('added_by_id', Auth::id() ?? -1)
                                 ->orWhere('sales_rep_id', $employeeId);
                         });
                     });
@@ -78,9 +79,10 @@ class ReceiptClass
 
     public function dashboard(){
         $user = Auth::user();
-        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
-            ? $user->employee?->id
-            : null;
+        // null = a sales administrator, unrestricted. Any other value filters,
+        // and -1 matches nothing: a user with no employee record sees no one's
+        // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
         $cancelledId = ListStatus::getBySlug('cancelled')?->id ?? 0;
 
         $base = Receipt::where('status_id', '!=', $cancelledId)
@@ -88,7 +90,7 @@ class ReceiptClass
                 $query->whereHas('arInvoice.sales_order', function ($soQuery) use ($employeeId) {
                     $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
                         $salesOrderQuery
-                            ->where('added_by_id', $employeeId)
+                            ->where('added_by_id', Auth::id() ?? -1)
                             ->orWhere('sales_rep_id', $employeeId);
                     });
                 });

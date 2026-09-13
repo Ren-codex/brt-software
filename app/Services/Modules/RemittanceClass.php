@@ -49,16 +49,17 @@ class RemittanceClass
     public function lists($request)
     {
         $user = Auth::user();
-        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
-            ? $user->employee?->id
-            : null;
+        // null = a sales administrator, unrestricted. Any other value filters,
+        // and -1 matches nothing: a user with no employee record sees no one's
+        // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         $query = Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount'])
             ->when($employeeId, function ($query) use ($employeeId) {
                 $query->whereHas('receipts.arInvoice.sales_order', function ($soQuery) use ($employeeId) {
                     $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
                         $salesOrderQuery
-                            ->where('added_by_id', $employeeId)
+                            ->where('added_by_id', Auth::id() ?? -1)
                             ->orWhere('sales_rep_id', $employeeId);
                     });
                 });
@@ -95,9 +96,10 @@ class RemittanceClass
     public function undepositedSummary($request)
     {
         $user = Auth::user();
-        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
-            ? $user->employee?->id
-            : null;
+        // null = a sales administrator, unrestricted. Any other value filters,
+        // and -1 matches nothing: a user with no employee record sees no one's
+        // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         $query = Remittance::whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
             ->whereNull('bank_deposit_id')
@@ -105,7 +107,7 @@ class RemittanceClass
                 $query->whereHas('receipts.arInvoice.sales_order', function ($soQuery) use ($employeeId) {
                     $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
                         $salesOrderQuery
-                            ->where('added_by_id', $employeeId)
+                            ->where('added_by_id', Auth::id() ?? -1)
                             ->orWhere('sales_rep_id', $employeeId);
                     });
                 });
@@ -150,9 +152,10 @@ class RemittanceClass
         // re-check it here, since this endpoint otherwise trusts whatever
         // receipt ids are posted.
         $user = Auth::user();
-        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
-            ? $user->employee?->id
-            : null;
+        // null = a sales administrator, unrestricted. Any other value filters,
+        // and -1 matches nothing: a user with no employee record sees no one's
+        // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         if ($employeeId) {
             $ownPendingReceiptIds = Receipt::whereNull('remittance_id')
@@ -380,9 +383,10 @@ class RemittanceClass
     public function summary($request)
     {
         $user = Auth::user();
-        $employeeId = ($user && !app(PermissionService::class)->userHasAccess($user, 'sales', null, 'admin'))
-            ? $user->employee?->id
-            : null;
+        // null = a sales administrator, unrestricted. Any other value filters,
+        // and -1 matches nothing: a user with no employee record sees no one's
+        // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         $from = $request->from
             ? Carbon::parse($request->from)->startOfDay()

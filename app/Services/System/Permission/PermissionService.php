@@ -51,6 +51,32 @@ class PermissionService
         return array_values(array_unique($granted));
     }
 
+    /**
+     * Which employee's sales a user may see.
+     *
+     * `null` means unrestricted — a sales administrator. Any other value is an
+     * employee id to filter by, and **-1 means match nothing**: a user the
+     * system cannot tie to an employee sees no one's sales, not everyone's.
+     *
+     * That distinction is the whole point. This was previously computed inline
+     * as `$user->employee?->id`, which returned null both for an administrator
+     * and for a user with no employee record, and the caller's
+     * `->when($employeeId, ...)` then skipped the filter entirely — showing one
+     * rep every other rep's orders.
+     */
+    public function salesScopeEmployeeId(?User $user): ?int
+    {
+        if (!$user) {
+            return -1;
+        }
+
+        if ($this->userHasAccess($user, 'sales', null, 'admin')) {
+            return null;
+        }
+
+        return $user->employee?->id ?? -1;
+    }
+
     public function userHasAccess(User $user, string $moduleKey, ?string $submoduleKey, string $level): bool
     {
         if ($this->isSuperAdmin($user)) {

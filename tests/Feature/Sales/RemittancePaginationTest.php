@@ -42,6 +42,17 @@ class RemittancePaginationTest extends TestCase
         RolePermission::create([
             'role_id'      => $role->id,
             'module_id'    => $module->id,
+            'submodule_id' => null,
+            'access_level' => 'admin',
+        ]);
+
+        // This test is about paging, so the viewer has to be able to see all 16
+        // rows. A module-wide sales admin is unscoped; anyone narrower is
+        // filtered to their own reps' remittances and would page through an
+        // empty list — which is the point of SalesScopeFailsClosedTest.
+        RolePermission::create([
+            'role_id'      => $role->id,
+            'module_id'    => $module->id,
             'submodule_id' => $module->submodules()->where('key', 'remittances')->firstOrFail()->id,
             'access_level' => 'view',
         ]);
