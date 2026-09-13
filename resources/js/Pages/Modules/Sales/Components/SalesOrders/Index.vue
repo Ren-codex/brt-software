@@ -100,12 +100,14 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :class="statusTone(list.status)">
-                                                <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
-                                                {{ list.status ? list.status.name : '' }}
-                                            </span>
-                                            <span v-if="list.requires_batch_approval && !list.approved_at" class="badge bg-warning text-dark ms-1" v-b-tooltip.hover title="A manually selected batch needs approver sign-off">
-                                                Pending Batch Approval
+                                            <span class="badge-stack">
+                                                <span class="status-badge" :class="statusTone(list.status)">
+                                                    <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
+                                                    {{ list.status ? list.status.name : '' }}
+                                                </span>
+                                                <span v-if="list.requires_batch_approval && !list.approved_at" class="badge bg-warning text-dark" v-b-tooltip.hover title="A manually selected batch needs approver sign-off">
+                                                    Pending Batch Approval
+                                                </span>
                                             </span>
                                         </td>
                                           <!-- <td class="text-center">
@@ -117,8 +119,10 @@
                                         </td> -->
                                         <td class="text-end fw-semibold">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
-                                            {{ list.due_date }}
-                                            <span v-if="isDueSoon(list)" class="badge bg-danger ms-1">Due Soon</span>
+                                            <span class="badge-stack">
+                                                {{ list.due_date }}
+                                                <span v-if="isDueSoon(list)" class="badge bg-danger">Due Soon</span>
+                                            </span>
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex align-items-center justify-content-center">

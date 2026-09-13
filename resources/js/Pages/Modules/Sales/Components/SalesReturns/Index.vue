@@ -114,8 +114,10 @@
                                         </td>
                                         <td class="text-center">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
-                                            {{ list.due_date }}
-                                            <span v-if="isDueSoon(list)" class="badge bg-danger ms-1">Due Soon</span>
+                                            <span class="badge-stack">
+                                                {{ list.due_date }}
+                                                <span v-if="isDueSoon(list)" class="badge bg-danger">Due Soon</span>
+                                            </span>
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex align-items-center justify-content-center">

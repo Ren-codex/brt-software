@@ -92,14 +92,16 @@
                                         <td class="text-center">{{ list.sales_rep?.fullname || '-' }}</td>
                                         <td class="text-center">{{ list.invoice_date }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :class="statusTone(list.status)">
-                                                {{ list.status?.name || '-' }}
-                                            </span>
-                                            <span v-if="isOverdue(list)" class="overdue-badge ms-1">
-                                                Past Due
-                                            </span>
-                                            <span v-if="isDueSoon(list)" class="due-soon-badge ms-1">
-                                                Due Soon
+                                            <span class="badge-stack">
+                                                <span class="status-badge" :class="statusTone(list.status)">
+                                                    {{ list.status?.name || '-' }}
+                                                </span>
+                                                <span v-if="isOverdue(list)" class="overdue-badge">
+                                                    Past Due
+                                                </span>
+                                                <span v-if="isDueSoon(list)" class="due-soon-badge">
+                                                    Due Soon
+                                                </span>
                                             </span>
                                         </td>
                                         <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>

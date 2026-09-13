@@ -108,11 +108,13 @@
                                         <td class="text-center">₱{{ list.amount_paid }}</td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">
-                                            <span class="status-badge" :class="statusTone(list.status)">
-                                                {{ list.status?.name || 'Unknown' }}
-                                            </span>
-                                            <span v-if="list.is_unremitted_past_day" class="unremitted-badge ms-1">
-                                                Unremitted
+                                            <span class="badge-stack">
+                                                <span class="status-badge" :class="statusTone(list.status)">
+                                                    {{ list.status?.name || 'Unknown' }}
+                                                </span>
+                                                <span v-if="list.is_unremitted_past_day" class="unremitted-badge">
+                                                    Unremitted
+                                                </span>
                                             </span>
                                         </td>
                                         <td class="text-center">

@@ -265,12 +265,15 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 3px 9px 3px 8px;
+        /* Vertical padding clears descenders: this app sets a font whose
+           g/y/p tails reach well below the baseline, and 3px clipped them
+           against the badge edge. */
+        padding: 4px 9px 5px 8px;
         border-radius: 6px;
         border: 1px solid transparent;
         font-size: 0.72rem;
         font-weight: 600;
-        line-height: 1.4;
+        line-height: 1.45;
         letter-spacing: 0;
         white-space: nowrap;
         cursor: default;
@@ -296,6 +299,16 @@
     &.problem   { background: #fdeaea; color: #96231f; border-color: #f2b8b5; }
     &.inactive  { background: #f1f4f3; color: #55706a; border-color: #dbe6e2; }
     &.inactive::before { opacity: 0.5; }
+}
+
+/* More than one badge in a cell. A horizontal margin does nothing once the
+   pair wraps to two lines, which is how they end up touching. */
+.badge-stack {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
 /* An empty table should explain itself rather than showing a bare row. */
