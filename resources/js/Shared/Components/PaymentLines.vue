@@ -3,16 +3,14 @@
     <div v-for="(line, index) in lines" :key="index" class="payment-line">
       <div class="payment-line-main">
         <div class="payment-line-field payment-line-source">
-          <label class="payment-line-label">Paid from</label>
+          <label class="payment-line-label">{{ methodLabel }}</label>
           <select
-            v-model="line.source"
+            v-model="line.method"
             class="form-control modern-input"
-            @change="onSourceChange(line)"
+            @change="onMethodChange(line)"
           >
             <option value="cash">{{ cashPaymentMode }}</option>
-            <option v-for="ba in bankAccounts" :key="ba.id" :value="'bank:' + ba.id">
-              {{ ba.bank_name }} — {{ ba.account_name }}
-            </option>
+            <option value="bank">Bank Transfer</option>
             <option value="check">Check</option>
           </select>
           <small class="payment-line-hint">{{ availableLabel(line) }}</small>
@@ -46,10 +44,31 @@
         </button>
       </div>
 
-      <!-- Only the sources that need a reference ask for one. -->
+      <!-- Which account, asked separately from how. Paying out, it is the
+           account the money leaves; taking a payment in, it is the account it
+           lands in, which is what makes it reconcilable against a statement
+           later. Either way it is one of ours, never the customer's. -->
+      <div v-if="line.method === 'bank'" class="payment-line-reference">
+        <label class="payment-line-label">
+          {{ accountLabel }} <span class="text-danger">*</span>
+        </label>
+        <select
+          v-model="line.bank_account_id"
+          class="form-control modern-input"
+          :class="{ error: !line.bank_account_id }"
+          @change="onMethodChange(line)"
+        >
+          <option value="">Select an account</option>
+          <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
+            {{ ba.bank_name }} — {{ ba.account_name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Only the methods that need a reference ask for one. -->
       <div v-if="needsReference(line)" class="payment-line-reference">
         <label class="payment-line-label">
-          {{ line.source === 'check' ? 'Check number' : 'Reference number' }}
+          {{ line.method === 'check' ? 'Check number' : 'Reference number' }}
           <span class="text-danger">*</span>
         </label>
         <input
@@ -57,7 +76,7 @@
           v-model.trim="line.reference_number"
           class="form-control modern-input"
           :class="{ error: !line.reference_number }"
-          :placeholder="line.source === 'check' ? 'e.g. 000123' : 'e.g. TRN-8891'"
+          :placeholder="line.method === 'check' ? 'e.g. 000123' : 'e.g. TRN-8891'"
           @input="emitChange"
         />
       </div>
@@ -65,7 +84,7 @@
       <!-- A check is not money on the day it is written: it is money on the day
            it can be cashed, drawn on a particular account. The register needs
            both to say whether it will clear. -->
-      <div v-if="line.source === 'check'" class="payment-line-reference">
+      <div v-if="line.method === 'check'" class="payment-line-reference">
         <label class="payment-line-label">
           Check date <span class="text-danger">*</span>
         </label>
@@ -79,7 +98,7 @@
         <small class="payment-line-hint">The date written on the check — when the money actually moves.</small>
       </div>
 
-      <div v-if="line.source === 'check' && bankAccounts.length" class="payment-line-reference">
+      <div v-if="line.method === 'check' && mode !== 'collection' && bankAccounts.length" class="payment-line-reference">
         <label class="payment-line-label">
           Drawn on <span class="text-danger">*</span>
         </label>
@@ -138,12 +157,20 @@
  * growing a second copy.
  */
 const emptyLine = () => ({
+  method: 'cash',
+  bank_account_id: '',
   source: 'cash',
   payment_amount: null,
   reference_number: '',
   check_date: '',
   check_bank_account_id: '',
 });
+
+/** The per-source balance checks key on this; it is derived, never picked. */
+const sourceFor = (line) =>
+  line.method === 'bank'
+    ? (line.bank_account_id ? `bank:${line.bank_account_id}` : 'cash')
+    : line.method;
 
 /**
  * Lines arrive in the shape this component emits — the shape the API wants —
@@ -152,7 +179,17 @@ const emptyLine = () => ({
  * to, so translate on the way in.
  */
 const toInternalLine = (line, cashPaymentMode) => {
-  if (line.source) return { ...line };
+  if (line.source) {
+    const method = String(line.source).startsWith('bank:') ? 'bank' : line.source;
+
+    return {
+      method,
+      bank_account_id: method === 'bank' ? Number(String(line.source).slice(5)) : (line.bank_account_id ?? ''),
+      ...line,
+      // `method` must reflect `source`, even if the caller supplied a stale one.
+      ...(line.method ? {} : { method }),
+    };
+  }
 
   const mode = String(line.payment_mode || '').toLowerCase();
   let source = 'cash';
@@ -160,7 +197,11 @@ const toInternalLine = (line, cashPaymentMode) => {
   else if (mode === 'bank transfer') source = line.bank_account_id ? `bank:${line.bank_account_id}` : 'cash';
   else if (mode && mode !== String(cashPaymentMode).toLowerCase()) source = 'cash';
 
+  const method = source.startsWith('bank:') ? 'bank' : source;
+
   return {
+    method,
+    bank_account_id: method === 'bank' ? Number(source.slice(5)) : '',
     source,
     payment_amount: line.payment_amount ?? null,
     reference_number: line.reference_number || '',
@@ -205,6 +246,18 @@ export default {
     };
   },
   computed: {
+    /**
+     * Paying out, the money leaves one of our accounts, so "Paid from" is
+     * literally true. Taking a payment in, it does not: the customer pays from
+     * their own money and it lands in ours, and calling that "Paid from BDO"
+     * describes the wrong direction entirely.
+     */
+    methodLabel() {
+      return this.mode === 'collection' ? 'Paid by' : 'Paid from';
+    },
+    accountLabel() {
+      return this.mode === 'collection' ? 'Received in' : 'Paid from account';
+    },
     totalEntered() {
       return this.lines.reduce((sum, l) => sum + (Number(l.payment_amount) || 0), 0);
     },
@@ -236,10 +289,14 @@ export default {
       if (this.lines.some((l) => this.needsReference(l) && !l.reference_number)) {
         return 'A reference number is required for bank transfers and checks.';
       }
-      if (this.lines.some((l) => l.source === 'check' && !l.check_date)) {
+      if (this.lines.some((l) => l.method === 'bank' && !l.bank_account_id)) {
+        return `Choose which account each bank transfer ${this.mode === 'collection' ? 'was received in' : 'is paid from'}.`;
+      }
+      if (this.lines.some((l) => l.method === 'check' && !l.check_date)) {
         return 'Enter the date written on the check — it is the day the money moves.';
       }
-      if (this.bankAccounts.length && this.lines.some((l) => l.source === 'check' && !l.check_bank_account_id)) {
+      if (this.mode !== 'collection' && this.bankAccounts.length
+          && this.lines.some((l) => l.method === 'check' && !l.check_bank_account_id)) {
         return 'Select which account each check draws on.';
       }
       return '';
@@ -258,7 +315,7 @@ export default {
   },
   methods: {
     needsReference(line) {
-      return line.source === 'check' || String(line.source).startsWith('bank:');
+      return line.method === 'check' || line.method === 'bank';
     },
     sourceLabel(source) {
       if (source === 'cash') return this.cashPaymentMode;
@@ -295,10 +352,23 @@ export default {
       }
       return '';
     },
-    onSourceChange(line) {
-      if (!this.needsReference(line)) line.reference_number = '';
+    onMethodChange(line) {
+      line.source = sourceFor(line);
+
+      if (line.method !== 'bank') {
+        line.bank_account_id = '';
+      }
+      if (!this.needsReference(line)) {
+        line.reference_number = '';
+      }
+      if (line.method !== 'check') {
+        line.check_date = '';
+        line.check_bank_account_id = '';
+      }
+
       this.emitChange();
     },
+
     addLine() {
       this.lines.push(emptyLine());
       this.emitChange();
@@ -313,10 +383,10 @@ export default {
       const payload = this.lines
         .filter((l) => (Number(l.payment_amount) || 0) > 0)
         .map((l) => {
-          if (l.source === 'cash') {
+          if (l.method === 'cash') {
             return { payment_mode: this.cashPaymentMode, payment_amount: Number(l.payment_amount) };
           }
-          if (l.source === 'check') {
+          if (l.method === 'check') {
             return {
               payment_mode: 'Check',
               payment_amount: Number(l.payment_amount),
@@ -325,7 +395,7 @@ export default {
               bank_account_id: l.check_bank_account_id || null,
             };
           }
-          const bank = this.bankFor(l.source);
+          const bank = this.bankAccounts.find((b) => Number(b.id) === Number(l.bank_account_id));
           return {
             payment_mode: 'Bank Transfer',
             payment_amount: Number(l.payment_amount),
