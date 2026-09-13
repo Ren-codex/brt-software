@@ -91,6 +91,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('checks')->truncate();
+        // Deliberately does nothing. Backfilled rows carry the same source_type
+        // values as rows created through the UI, so there is no way to tell them
+        // apart afterwards — a truncate here would destroy every real check
+        // alongside the backfilled ones. Removing backfilled data is a manual,
+        // deliberate act, not something a rollback should do on your behalf.
     }
 };
