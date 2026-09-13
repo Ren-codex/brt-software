@@ -184,6 +184,7 @@ class ArInvoiceClass
                 'amount' => round((float) ($s['amount'] ?? 0), 2),
                 'bank_account_id' => $s['bank_account_id'] ?? null,
                 'reference_number' => $s['reference_number'] ?? null,
+                'check_date' => $s['check_date'] ?? null,
             ])
             ->filter(fn ($s) => $s['amount'] > 0)
             ->values();
@@ -194,6 +195,7 @@ class ArInvoiceClass
                 'amount' => round((float) $request->amount_paid, 2),
                 'bank_account_id' => $request->bank_account_id,
                 'reference_number' => $request->reference_number,
+                'check_date' => $request->check_date,
             ]]);
         }
 
@@ -207,6 +209,17 @@ class ArInvoiceClass
                 'splits' => $missingReference['payment_mode'] === 'Check'
                     ? 'Enter the check number for the check payment.'
                     : 'Enter the reference number for the bank transfer.',
+            ]);
+        }
+
+        // Without its own date a check cannot be tracked to maturity, and the
+        // register would record the day it was handed over instead of the day it
+        // can be cashed — which is the one thing the register exists to know.
+        $missingCheckDate = $splits->first(fn ($s) => $s['payment_mode'] === 'Check' && blank($s['check_date']));
+
+        if ($missingCheckDate) {
+            throw ValidationException::withMessages([
+                'splits' => 'Enter the date written on the check.',
             ]);
         }
 
@@ -256,6 +269,7 @@ class ArInvoiceClass
                 'customer_id'    => optional($ar_invoice->sales_order)->customer_id,
                 'ar_invoice_id'  => $ar_invoice->id,
                 'check_status'   => $isCheck ? 'on_hand' : null,
+                'check_date'     => $isCheck ? $split['check_date'] : null,
             ]);
 
             $this->journalEntryService->recordReceiptEntry($receipt);
@@ -263,7 +277,7 @@ class ArInvoiceClass
             if ($isCheck) {
                 app(CheckRegisterClass::class)->registerReceived($receipt, [
                     'check_number' => $split['reference_number'] ?? null,
-                    'check_date' => $split['check_date'] ?? $request->payment_date,
+                    'check_date' => $split['check_date'],
                 ]);
             }
 
@@ -364,6 +378,9 @@ class ArInvoiceClass
         // JournalEntryService::recordReceiptEntry). Confirmation is the single
         // moment both the ledger and the invoice move, so they cannot drift.
         $this->journalEntryService->recordCheckCollectionEntry($receipt);
+
+        // A date corrected at confirmation has to reach the register too.
+        app(CheckRegisterClass::class)->syncCheckDate($receipt, $checkDate ?: $receipt->check_date);
 
         $receipt->update([
             'bank_name' => $bankName,

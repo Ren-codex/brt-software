@@ -51,6 +51,9 @@ class CheckMonitoringClass
 
         $receipt->update(['check_date' => $checkDate]);
 
+        // The register is what the forecast reads, so it must move with it.
+        app(CheckRegisterClass::class)->syncCheckDate($receipt, $checkDate);
+
         return [
             'data' => new CheckMonitoringResource($receipt->fresh(['customer', 'confirmedBy'])),
             'message' => 'Check date updated.',

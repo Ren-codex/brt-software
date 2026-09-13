@@ -146,6 +146,18 @@
                                          load, not "no banks exist" — say which. -->
                                     <small v-if="bankAccountsError" class="split-bank-warning">{{ bankAccountsError }}</small>
                                 </div>
+                                <div v-if="split.payment_mode === 'Check'" class="split-bank-field">
+                                    <label class="split-bank-label">
+                                        Check date <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        class="field-input"
+                                        v-model="split.check_date"
+                                        @input="handleInput('splits')"
+                                    >
+                                    <small class="split-check-hint">The date written on the check — when it can be cashed.</small>
+                                </div>
                                 <div class="split-bank-field">
                                     <label class="split-bank-label">
                                         {{ split.payment_mode === 'Check' ? 'Check number' : 'Reference number' }}
@@ -399,7 +411,7 @@ export default {
         },
 
         newSplit(mode = 'Cash', amount = 0) {
-            return { payment_mode: mode, amount, bank_account_id: null, reference_number: '' };
+            return { payment_mode: mode, amount, bank_account_id: null, reference_number: '', check_date: '' };
         },
 
         needsBankDetails(split) {
@@ -429,6 +441,7 @@ export default {
                     ...this.newSplit(first.payment_mode || 'Cash', this.round2(amount)),
                     bank_account_id: first.bank_account_id ?? null,
                     reference_number: first.reference_number || '',
+                    check_date: first.check_date || '',
                 }];
             }
         },
@@ -820,6 +833,13 @@ export default {
 
 .split-bank-warning {
     color: #92400e;
+    font-size: 0.7rem;
+    margin-top: 0.2rem;
+}
+
+.split-check-hint {
+    display: block;
+    color: #6b8c85;
     font-size: 0.7rem;
     margin-top: 0.2rem;
 }

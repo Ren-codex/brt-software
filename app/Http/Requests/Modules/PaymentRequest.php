@@ -28,6 +28,9 @@ class PaymentRequest extends FormRequest
             'splits' => 'nullable|array|min:1',
             'splits.*.payment_mode' => 'required_with:splits|string',
             'splits.*.amount' => 'required_with:splits|numeric|min:0.01',
+            // A check carries its own date — the day it can be cashed, which is
+            // what the register tracks and what the cash forecast reads.
+            'splits.*.check_date' => 'nullable|date',
             'amount_paid' => [
                 'required_without:splits',
                 'nullable',

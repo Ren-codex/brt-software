@@ -46,6 +46,25 @@ class CheckRegisterClass
         ], $attributes));
     }
 
+    /**
+     * Push a corrected check date onto the register row for a receipt.
+     *
+     * The register is authoritative for maturity, so a date fixed anywhere else
+     * has to reach it — otherwise the row keeps the original date and the
+     * forecast reads a maturity that is no longer true. Silent when there is no
+     * register row: older check receipts pre-date the register.
+     */
+    public function syncCheckDate(Receipt $receipt, $checkDate): void
+    {
+        if (blank($checkDate)) {
+            return;
+        }
+
+        Check::where('source_type', Receipt::class)
+            ->where('source_id', $receipt->id)
+            ->update(['check_date' => $checkDate]);
+    }
+
     public function registerIssued(ReceivedStockPayment $payment, array $attributes = []): Check
     {
         $payment->loadMissing('receivedStock');

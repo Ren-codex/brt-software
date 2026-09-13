@@ -125,7 +125,7 @@ class ReceivedCheckRegistrationTest extends TestCase
             'id' => $invoice->id,
             'payment_date' => now()->toDateString(),
             'splits' => [
-                ['payment_mode' => 'Check', 'amount' => 5000, 'reference_number' => '000456'],
+                ['payment_mode' => 'Check', 'amount' => 5000, 'reference_number' => '000456', 'check_date' => now()->addDays(9)->toDateString()],
             ],
         ]);
 

@@ -97,7 +97,7 @@ class ArInvoiceSplitPaymentTest extends TestCase
         $this->pay([
             ['payment_mode' => 'Cash', 'amount' => 4000],
             ['payment_mode' => 'Bank Transfer', 'amount' => 5000, 'bank_account_id' => $this->bank->id, 'reference_number' => 'TRN-4410'],
-            ['payment_mode' => 'Check', 'amount' => 1000, 'reference_number' => '000456'],
+            ['payment_mode' => 'Check', 'amount' => 1000, 'reference_number' => '000456', 'check_date' => now()->addDays(9)->toDateString()],
         ]);
 
         $transfer = Receipt::where('payment_mode', 'Bank Transfer')->firstOrFail();
@@ -136,7 +136,7 @@ class ArInvoiceSplitPaymentTest extends TestCase
     {
         $this->pay([
             ['payment_mode' => 'Cash', 'amount' => 2500],
-            ['payment_mode' => 'Check', 'amount' => 1500, 'reference_number' => '000789'],
+            ['payment_mode' => 'Check', 'amount' => 1500, 'reference_number' => '000789', 'check_date' => now()->addDays(9)->toDateString()],
         ]);
 
         $invoice = $this->invoice->fresh();
@@ -164,7 +164,7 @@ class ArInvoiceSplitPaymentTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
-        $this->pay([['payment_mode' => 'Check', 'amount' => 5000]]);
+        $this->pay([['payment_mode' => 'Check', 'amount' => 5000, 'check_date' => now()->addDays(9)->toDateString()]]);
     }
 
     public function test_collecting_more_than_the_balance_is_still_rejected(): void

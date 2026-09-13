@@ -94,7 +94,7 @@ class ArInvoiceCheckConfirmationTest extends TestCase
             'balance_due' => 10000,
             'payment_date' => now()->toDateString(),
             'splits' => [
-                ['payment_mode' => 'Check', 'amount' => 10000, 'reference_number' => '000123'],
+                ['payment_mode' => 'Check', 'amount' => 10000, 'reference_number' => '000123', 'check_date' => now()->addDays(9)->toDateString()],
             ],
         ])->assertOk();
 
