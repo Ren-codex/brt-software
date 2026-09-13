@@ -35,6 +35,31 @@ Issued checks have nothing: `received_stock_payments` carries `payment_mode`, `p
 
 Payments are already one-to-many (see `2026-08-21-split-payments-design.md`), so a single supplier payment may contain several lines and only one of them be a check. The register therefore binds to a **payment line**, not to a payment.
 
+## Prerequisite: what receipts actually post today
+
+Investigated 2026-09-14 against production. An earlier reading of this spec assumed a received check posts nothing until confirmed. That is **not reliably true**, and the difference decides what confirmation should post.
+
+`recordSaleEntries()` branches on the sales order's payment mode:
+
+- **Credit sale** → DR Accounts Receivable / CR Rice Sales
+- **Cash, Bank Transfer, Check, Split** → DR Undeposited Collections / CR Rice Sales, with AR never involved
+
+`SalesOrderClass::finalizeCashSale()` then creates one receipt per payment line and posts **no** receipt entry — correctly, because the sale already debited Undeposited Collections. Verified across all 27 production receipts: a receipt carries a `receipt_collection` entry if and only if its sale was on credit, 27 of 27, no exceptions.
+
+The gap is the other path. `ArInvoiceClass` (settling a credit invoice) calls `recordReceiptEntry()` for **every** split including checks, so a check paid against a credit invoice posts DR Undeposited Collections / CR Accounts Receivable **immediately, while still unconfirmed** — even though `applyPaymentToInvoice()` deliberately skips the check amount, so `balance_due` does not move. The general ledger and the invoice would disagree for as long as the check stays unconfirmed.
+
+Production has not hit this yet: both existing check receipts belong to non-credit sales, so neither posted. The first check taken against a credit invoice will expose it.
+
+**Therefore:** `recordReceiptEntry()` must skip check splits, and confirmation must post DR Undeposited Collections / CR Accounts Receivable *together with* reducing `balance_due`. One event, both effects. This is a prerequisite, not a nice-to-have — without it the register would report a check as pending while the ledger had already spent it.
+
+## Unrelated defect found during this investigation
+
+Cancelling a sales order reverses its journal entries and sets both the order and its AR invoice to Cancelled, but **leaves `ar_invoices.balance_due` at the full amount**. Production has two: SO 12 (₱1,040) and SO 17 (₱51,000).
+
+`DashboardController.php:73` totals outstanding receivables as `ArInvoice::sum('balance_due')` with no status filter, so it currently reads **₱62,800 against a true receivable of ₱10,760** — overstated by ₱52,040. `AccountingController.php:2233` has the same unfiltered sum.
+
+Out of scope for the check register. Tracked separately; listed here because it was found while verifying the ledger claims above.
+
 ## Goals
 
 1. One register of every check, both directions, with a real status.
@@ -150,7 +175,8 @@ A rep must never be able to clear their own check. That separation is the whole 
 | File | Change |
 |---|---|
 | `JournalEntryService::recordReceivedStockPaymentEntry()` | Check lines create a register row and post nothing |
-| `ArInvoiceClass::confirmCheck()` | Drives the register; still gates AR balance release |
+| `ArInvoiceClass::confirmCheck()` | Drives the register; posts the collection entry and reduces `balance_due` together |
+| `JournalEntryService::recordReceiptEntry()` | Skips check splits, so an unconfirmed check no longer credits AR (see Prerequisite) |
 | `CashManagementService::postBankDeposit()` | Posting triggered by confirmation, not by date |
 | `PostDueCheckDeposits` command | Stops posting entirely. Becomes a daily reminder notifying `check_register.approver` holders of pending checks whose date has arrived. It writes no ledger entries and changes no status — a person does that. |
 | `CheckMonitoringClass::lists()` | Reads the register; gains rep scoping |
