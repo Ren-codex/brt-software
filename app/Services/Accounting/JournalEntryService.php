@@ -600,16 +600,39 @@ class JournalEntryService
 
     public function recordReceivedStockPaymentEntry(ReceivedStock $receivedStock, ReceivedStockPayment $payment): ?JournalEntry
     {
-        $amount = round((float) $payment->amount_paid, 2);
-        if ($amount <= 0) {
-            return null;
-        }
-
         // The owner post-dates supplier checks to the day she expects funds, so
         // posting now would credit the bank weeks before the money leaves —
         // routinely driving the account negative. The register holds it until
-        // someone marks it cleared, which is when this entry gets posted.
+        // someone marks it cleared, which is when this entry gets posted (see
+        // postClearedSupplierCheck() below).
         if (strcasecmp(trim((string) $payment->payment_mode), 'Check') === 0) {
+            return null;
+        }
+
+        return $this->postSupplierPaymentEntry($receivedStock, $payment, $payment->payment_date);
+    }
+
+    /**
+     * Posts the supplier-payment entry for a check once it clears, dated the
+     * clearing date rather than the (post-dated) payment date. Same lines as
+     * recordReceivedStockPaymentEntry() — shared via postSupplierPaymentEntry()
+     * below so the two postings can never drift — but skips that method's
+     * check guard, since posting the cleared check is the whole point here.
+     */
+    public function postClearedSupplierCheck(ReceivedStock $receivedStock, ReceivedStockPayment $payment, $clearedDate): ?JournalEntry
+    {
+        return $this->postSupplierPaymentEntry($receivedStock, $payment, $clearedDate);
+    }
+
+    /**
+     * Shared body for the supplier-payment (DR Accounts Payable / CR Bank or
+     * Cash) posting, parameterised by entry date so both the immediate-payment
+     * path and the check-clearing path post through one place.
+     */
+    private function postSupplierPaymentEntry(ReceivedStock $receivedStock, ReceivedStockPayment $payment, $entryDate): ?JournalEntry
+    {
+        $amount = round((float) $payment->amount_paid, 2);
+        if ($amount <= 0) {
             return null;
         }
 
@@ -638,7 +661,7 @@ class JournalEntryService
 
         return $this->createEntry(
             $payment,
-            $payment->payment_date,
+            $entryDate,
             'accounts_payable_payment',
             $memo,
             [

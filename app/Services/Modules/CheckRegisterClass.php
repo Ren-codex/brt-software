@@ -7,7 +7,9 @@ use App\Models\Receipt;
 use App\Models\ReceivedStockPayment;
 use App\Models\User;
 use App\Notifications\BouncedCheckNotification;
+use App\Services\Accounting\JournalEntryService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -66,6 +68,28 @@ class CheckRegisterClass
             'supplier_id' => $payment->receivedStock?->supplier_id,
             'status' => Check::STATUS_PENDING,
         ], $attributes));
+    }
+
+    public function markCleared(Check $check): Check
+    {
+        $this->assertPending($check);
+
+        DB::transaction(function () use ($check) {
+            if ($check->direction === Check::DIRECTION_ISSUED) {
+                $payment = ReceivedStockPayment::with('receivedStock')->findOrFail($check->source_id);
+                app(JournalEntryService::class)->postClearedSupplierCheck($payment->receivedStock, $payment, $check->check_date);
+            } else {
+                app(ArInvoiceClass::class)->confirmCheck($check->source_id, $check->bank_name, $check->check_date?->toDateString());
+            }
+
+            $check->update([
+                'status' => Check::STATUS_CLEARED,
+                'cleared_at' => now(),
+                'cleared_by_id' => Auth::id(),
+            ]);
+        });
+
+        return $check;
     }
 
     public function markBounced(Check $check, string $reason): Check
