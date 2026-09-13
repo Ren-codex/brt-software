@@ -154,6 +154,23 @@ class IssuedCheckClearingTest extends TestCase
     }
 
     /**
+     * assertPending() is what actually enforces this — the two tests above
+     * exercise it via a manually-bounced row — but nothing yet stated the
+     * ordinary "you cannot clear the same check twice" case directly.
+     */
+    public function test_a_cleared_check_cannot_be_cleared_again(): void
+    {
+        [$stock, $payment] = $this->supplierPayment('Check', 1000000);
+        $check = app(CheckRegisterClass::class)->registerIssued($payment);
+
+        app(CheckRegisterClass::class)->markCleared($check);
+
+        $this->expectException(ValidationException::class);
+
+        app(CheckRegisterClass::class)->markCleared($check->fresh());
+    }
+
+    /**
      * Task 3 ruled that ArInvoiceClass::confirmCheck() has no transaction of
      * its own — it was safe only because its single caller wrapped it in
      * HandlesTransaction. markCleared() is its second caller, and the brief
@@ -198,5 +215,46 @@ class IssuedCheckClearingTest extends TestCase
             'The journal entry the throwing service posted must not survive the rollback.'
         );
         $this->assertSame(0.0, $this->bankBalance(), 'No money may appear to have left the bank once the transaction rolled back.');
+    }
+
+    /**
+     * Mirrors the rollback test above, but for the RECEIVED direction, using
+     * a real failure rather than a mock: ArInvoiceClass::confirmCheck()
+     * throws ValidationException when the bank name is blank, and
+     * MakesCheckFixtures::receipt() doesn't set one by default. Registering
+     * a received check without overriding bank_name (unlike the "posts the
+     * collection" test above, which deliberately supplies 'BDO') and then
+     * clearing it exercises that guard for real, through markCleared()'s
+     * transaction, and confirms nothing was left half-written: the check is
+     * still pending with no cleared_at, no journal entry exists for the
+     * receipt, and the invoice balance is untouched. (The guard fires before
+     * confirmCheck() calls applyPaymentToInvoice() or posts anything, so
+     * this doesn't need the anonymous-subclass technique used above — there
+     * is nothing to roll back to prove it was rolled back, only nothing to
+     * have happened in the first place, which is itself the assertion.)
+     */
+    public function test_a_failure_in_the_received_direction_leaves_everything_untouched(): void
+    {
+        $receipt = $this->receipt('Check', '000123');
+        $invoice = $receipt->arInvoice;
+        $balanceBefore = (float) $invoice->balance_due;
+        $check = app(CheckRegisterClass::class)->registerReceived($receipt);
+
+        try {
+            app(CheckRegisterClass::class)->markCleared($check);
+            $this->fail('Expected confirmCheck() to reject the blank bank name.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('bank_name', $e->errors());
+        }
+
+        $check->refresh();
+        $this->assertSame(Check::STATUS_PENDING, $check->status, 'A rejected confirmation must not leave the check cleared.');
+        $this->assertNull($check->cleared_at);
+        $this->assertSame(
+            0,
+            JournalEntry::where('source_type', Receipt::class)->where('source_id', $receipt->id)->count(),
+            'No collection entry may exist when confirmation was rejected.'
+        );
+        $this->assertSame($balanceBefore, (float) $invoice->fresh()->balance_due, 'The invoice balance must be untouched when confirmation was rejected.');
     }
 }
