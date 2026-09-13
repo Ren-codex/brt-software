@@ -17,13 +17,15 @@ const TONES = {
     ],
     // Moving as expected. Nobody owes an action yet.
     progress: [
-        'pending', 'draft', 'for-payment', 'for-release', 'for-verification',
-        'approval', 'sales-return-approval', 'receive', 'adjusted',
-        'partial', 'partially-paid', 'replaced',
+        'pending', 'draft', 'approval', 'sales-return-approval',
+        'receive', 'adjusted', 'partial', 'replaced',
     ],
-    // Somebody has to do something.
+    // Somebody has to do something. 'for-payment' and 'partially-paid' sit here
+    // rather than under progress: both name money still to be collected, and a
+    // collector scanning the list needs them to stand out, not blend in.
     attention: [
-        'unpaid', 'partially-returned', 'sales-returned',
+        'unpaid', 'for-payment', 'partially-paid',
+        'partially-returned', 'sales-returned',
     ],
     // Went wrong, or the money is at risk.
     problem: [
