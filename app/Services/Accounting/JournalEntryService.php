@@ -110,6 +110,15 @@ class JournalEntryService
             return null;
         }
 
+        // A check is not money until someone confirms it cleared. Posting here
+        // would credit Accounts Receivable while applyPaymentToInvoice()
+        // deliberately leaves balance_due alone, so the ledger and the invoice
+        // would disagree for as long as the check stayed unconfirmed.
+        // ArInvoiceClass::confirmCheck() posts this entry on confirmation.
+        if (strcasecmp((string) $receipt->payment_mode, 'Check') === 0) {
+            return null;
+        }
+
         // Money collected by a sales rep isn't real Cash/GCash/Bank until the
         // remittance carrying this receipt is verified — the rep may still be
         // holding it, or the count may not match. It sits in Undeposited
