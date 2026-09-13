@@ -874,8 +874,13 @@ class SalesOrderClass
                 ]);
             }
 
+            // The entries above are reversed, so the ledger now says nothing is
+            // owed. Clear the balance too, or the invoice keeps claiming it and
+            // every receivables total counts a cancelled order. amount_due is
+            // left alone as the record of what was originally invoiced.
             $invoice->update([
                 'status_id' => $cancelledStatusId,
+                'balance_due' => 0,
             ]);
         }
 

@@ -70,7 +70,7 @@ class DashboardController extends Controller
             ->distinct('receipts.id')
             ->count('receipts.id');
 
-        $totalOutstanding = ArInvoice::sum('balance_due');
+        $totalOutstanding = ArInvoice::outstanding()->sum('balance_due');
         $totalCustomers = Receipt::query()
             ->join('remittances as rem', 'receipts.remittance_id', '=', 'rem.id')
             ->join('list_statuses as rem_status', 'rem.status_id', '=', 'rem_status.id')

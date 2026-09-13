@@ -9,6 +9,19 @@ class ArInvoice extends Model
 {
     use HasFactory;
 
+    /**
+     * Invoices that represent money a customer still owes.
+     *
+     * A cancelled invoice is excluded even though its balance should already be
+     * zero: totalling `balance_due` unfiltered is what let two cancelled orders
+     * overstate outstanding receivables by ₱52,040, and a scope is harder to
+     * forget than a where clause at each call site.
+     */
+    public function scopeOutstanding($query)
+    {
+        return $query->whereHas('status', fn ($q) => $q->where('slug', '!=', 'cancelled'));
+    }
+
     protected $fillable = [
         'sales_order_id',
         'status_id',

@@ -2230,7 +2230,7 @@ class AccountingController extends Controller
             return ['formatted' => $this->formatCurrency(0), 'raw' => 0.0];
         }
 
-        $total = (float) DB::table('ar_invoices')->where('balance_due', '>', 0)->sum('balance_due');
+        $total = (float) \App\Models\ArInvoice::outstanding()->where('balance_due', '>', 0)->sum('balance_due');
 
         return ['formatted' => $this->formatCurrency($total), 'raw' => $total];
     }
