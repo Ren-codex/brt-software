@@ -30,6 +30,7 @@ class ApplyReceivedStockPaymentRequest extends FormRequest
                     'bank_account_id'  => $this->input('bank_account_id'),
                     'bank_name'        => $this->input('bank_name'),
                     'reference_number' => $this->input('reference_number'),
+                    'check_date'       => $this->input('check_date'),
                 ]],
             ]);
         }
@@ -44,6 +45,8 @@ class ApplyReceivedStockPaymentRequest extends FormRequest
             'lines.*.bank_account_id'  => 'nullable|exists:bank_accounts,id',
             'lines.*.bank_name'        => 'nullable|string|max:255',
             'lines.*.reference_number' => 'nullable|string|max:255',
+            // The day the check can be cashed — when the money actually leaves.
+            'lines.*.check_date'       => 'nullable|date',
         ];
     }
 

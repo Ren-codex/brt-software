@@ -11,6 +11,7 @@ use App\Models\PurchaseOrder;
 use App\Models\ListStatus;
 use App\Models\PurchaseOrderLog;
 use Illuminate\Support\Facades\DB;
+use App\Services\Modules\CheckRegisterClass;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use App\Services\Accounting\JournalEntryService;
@@ -291,17 +292,37 @@ class ReceivedStockService
             $isBT    = $payMode === 'Bank Transfer';
             $isCheck = $payMode === 'Check';
 
+            $checkDate = $isCheck ? trim((string) ($line['check_date'] ?? '')) : null;
+
+            if ($isCheck && $checkDate === '') {
+                throw ValidationException::withMessages([
+                    'lines' => 'Enter the date written on the check — it is the day the money leaves your account.',
+                ]);
+            }
+
             $payment = $receivedStock->payments()->create([
                 'payment_date'     => Carbon::now()->toDateString(),
                 'payment_mode'     => $payMode,
                 'amount_paid'      => $lineAmount,
-                'bank_account_id'  => $isBT ? ((int) ($line['bank_account_id'] ?? 0) ?: null) : null,
-                'bank_name'        => $isBT ? trim((string) ($line['bank_name'] ?? '')) : null,
+                // A check draws on a specific account just as a transfer does,
+                // and the forecast cannot say whether it will clear without
+                // knowing which one.
+                'bank_account_id'  => ($isBT || $isCheck) ? ((int) ($line['bank_account_id'] ?? 0) ?: null) : null,
+                'bank_name'        => ($isBT || $isCheck) ? trim((string) ($line['bank_name'] ?? '')) : null,
                 'reference_number' => ($isBT || $isCheck) ? trim((string) ($line['reference_number'] ?? '')) : null,
                 'created_by_id'    => Auth::id(),
             ]);
 
             $payment->load('createdBy');
+
+            // A check posts nothing now — the money has not left. Clearing is
+            // driven from the register, so a check that never lands there could
+            // never be posted at all: the money would leave the bank in reality
+            // and never appear in the books.
+            if ($isCheck) {
+                app(CheckRegisterClass::class)->registerIssued($payment, ['check_date' => $checkDate]);
+            }
+
             $this->journalEntryService->recordReceivedStockPaymentEntry($receivedStock, $payment);
 
             $paidNow += $lineAmount;

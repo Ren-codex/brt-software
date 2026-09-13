@@ -149,7 +149,7 @@ class SplitPaymentTest extends TestCase
         $this->pay(['lines' => [
             ['payment_mode' => 'Cash on Hand', 'payment_amount' => 5000],
             ['payment_mode' => 'Bank Transfer', 'payment_amount' => 10000, 'bank_account_id' => $this->bank->id, 'bank_name' => 'BDO', 'reference_number' => 'TRN-1'],
-            ['payment_mode' => 'Check',         'payment_amount' => 3000,  'reference_number' => 'CHK-1'],
+            ['payment_mode' => 'Check',         'payment_amount' => 3000,  'reference_number' => 'CHK-1', 'check_date' => '2026-12-01'],
         ]])->assertOk();
 
         $payments = $this->received->fresh()->payments;

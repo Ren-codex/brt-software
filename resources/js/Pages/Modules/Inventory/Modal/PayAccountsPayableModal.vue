@@ -74,17 +74,42 @@
 
           <template v-if="form.payment_mode === 'Check'">
             <div>
-              <label class="form-label" for="check_reference_number">Reference No.</label>
+              <label class="form-label" for="check_reference_number">Check No.</label>
               <input
                 id="check_reference_number"
                 v-model.trim="form.reference_number"
                 type="text"
                 class="form-input"
-                placeholder="Enter check reference number"
+                placeholder="Enter check number"
               >
               <small v-if="errors.reference_number" class="field-error">{{ errors.reference_number }}</small>
             </div>
-            <div></div>
+            <div>
+              <label class="form-label" for="check_date">Check Date <span class="req">*</span></label>
+              <input
+                id="check_date"
+                v-model="form.check_date"
+                type="date"
+                class="form-input"
+              >
+              <small class="field-hint">The date on the check — the day the money leaves this account.</small>
+              <small v-if="errors.check_date" class="field-error">{{ errors.check_date }}</small>
+            </div>
+            <div>
+              <label class="form-label" for="check_bank_account_id">Drawn On <span class="req">*</span></label>
+              <select
+                id="check_bank_account_id"
+                v-model="form.bank_account_id"
+                class="form-input"
+              >
+                <option value="">Select the account</option>
+                <option v-for="b in bankAccounts" :key="b.id" :value="b.id">
+                  {{ b.bank_name }} — {{ b.account_name }}
+                </option>
+              </select>
+              <small class="field-hint">Which account this check draws on, so the forecast can tell if it will clear.</small>
+              <small v-if="errors.bank_account_id" class="field-error">{{ errors.bank_account_id }}</small>
+            </div>
           </template>
 
           <template v-if="form.payment_mode === 'Bank Transfer'">
@@ -155,6 +180,7 @@ export default {
         payment_mode: 'Cash on Hand',
         payment_amount: '',
         bank_account_id: '',
+        check_date: '',
         bank_name: '',
         reference_number: '',
       },
@@ -191,6 +217,7 @@ export default {
       this.form.payment_mode = 'Cash on Hand';
       this.form.payment_amount = '';
       this.form.bank_account_id = '';
+      this.form.check_date = '';
       this.form.bank_name = '';
       this.form.reference_number = '';
       this.loadBankAccounts();
@@ -206,6 +233,7 @@ export default {
         payment_mode: 'Cash on Hand',
         payment_amount: '',
         bank_account_id: '',
+        check_date: '',
         bank_name: '',
         reference_number: '',
       };
@@ -243,6 +271,7 @@ export default {
 
       if (mode !== 'Bank Transfer') {
         this.form.bank_account_id = '';
+      this.form.check_date = '';
         this.form.bank_name = '';
         this.errors.bank_account_id = null;
       }
@@ -281,6 +310,14 @@ export default {
       }
 
       if (this.form.payment_mode === 'Check') {
+        if (!this.form.check_date) {
+          errors.check_date = 'Enter the date written on the check.';
+        }
+
+        if (!this.form.bank_account_id) {
+          errors.bank_account_id = 'Select the account this check draws on.';
+        }
+
         if (!this.form.reference_number) {
           errors.reference_number = 'Reference number is required.';
         }
@@ -300,11 +337,16 @@ export default {
         const response = await axios.post(`/received-stocks/${this.record.id}/pay`, {
           payment_mode: this.form.payment_mode,
           payment_amount: Number(this.form.payment_amount),
-          bank_account_id: this.form.payment_mode === 'Bank Transfer' ? (this.form.bank_account_id || null) : null,
+          // A check draws on an account just as a transfer does — the forecast
+          // cannot say whether it will clear without knowing which one.
+          bank_account_id: (this.form.payment_mode === 'Bank Transfer' || this.form.payment_mode === 'Check')
+            ? (this.form.bank_account_id || null)
+            : null,
           bank_name: this.form.payment_mode === 'Bank Transfer' ? this.form.bank_name : null,
           reference_number: (this.form.payment_mode === 'Bank Transfer' || this.form.payment_mode === 'Check')
             ? this.form.reference_number
             : null,
+          check_date: this.form.payment_mode === 'Check' ? this.form.check_date : null,
         });
 
         const isFullySettled = Number(response.data?.data?.remaining_balance || 0) <= 0;
@@ -449,6 +491,13 @@ export default {
   margin-top: 0.35rem;
   color: #dc2626;
   font-size: 0.8rem;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: #6b8c85;
+  font-size: 0.75rem;
 }
 
 .footer-btn {
