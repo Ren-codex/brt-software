@@ -79,6 +79,28 @@ class CheckRegisterClass
      * forecast reads a maturity that is no longer true. Silent when there is no
      * register row: older check receipts pre-date the register.
      */
+    /**
+     * Record which bank a received check will land in.
+     *
+     * A customer's check carries the drawee bank, not ours, so until it is
+     * deposited nothing says which of our accounts it will reach — and the
+     * forecast cannot credit an account it is only guessing at. Depositing it is
+     * the moment that becomes known.
+     */
+    public function attributeToBank(string $checkNumber, float $amount, ?int $bankAccountId): void
+    {
+        if (!$bankAccountId || trim($checkNumber) === '') {
+            return;
+        }
+
+        Check::where('direction', Check::DIRECTION_RECEIVED)
+            ->where('status', Check::STATUS_PENDING)
+            ->where('check_number', $checkNumber)
+            ->where('amount', $amount)
+            ->whereNull('bank_account_id')
+            ->update(['bank_account_id' => $bankAccountId]);
+    }
+
     public function syncCheckDate(Receipt $receipt, $checkDate): void
     {
         if (blank($checkDate)) {

@@ -87,6 +87,17 @@ class CashManagementService
             // it. See CheckRegisterClass::markCleared(), which is what calls
             // postBankDeposit() for a confirmed check-type deposit;
             // deposits:post-due-checks never posts anything either.
+            // A deposit is what says which of our accounts a customer's check
+            // will reach, so the register learns it here — without it the
+            // forecast cannot count the money as arriving anywhere.
+            if ($isCheck) {
+                app(\App\Services\Modules\CheckRegisterClass::class)->attributeToBank(
+                    (string) ($data['check_number'] ?? ''),
+                    round((float) $data['amount'], 2),
+                    (int) $data['bank_account_id']
+                );
+            }
+
             if (!$isCheck) {
                 $this->postBankDeposit($deposit);
             }

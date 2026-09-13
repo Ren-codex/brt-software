@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Modules;
 
 use App\Http\Controllers\Controller;
 use App\Models\Check;
+use App\Services\Modules\CheckForecastClass;
 use App\Services\Modules\CheckRegisterClass;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,10 @@ use Illuminate\Http\Request;
  */
 class CheckRegisterController extends Controller
 {
-    public function __construct(private CheckRegisterClass $register) {}
+    public function __construct(
+        private CheckRegisterClass $register,
+        private CheckForecastClass $forecast,
+    ) {}
 
     public function index(Request $request)
     {
@@ -31,6 +35,10 @@ class CheckRegisterController extends Controller
 
         if ($request->input('option') === 'lists') {
             return response()->json($this->register->lists($filters));
+        }
+
+        if ($request->input('option') === 'forecast') {
+            return response()->json($this->forecast->build());
         }
 
         return inertia('Modules/Accounting/CheckRegister', [

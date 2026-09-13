@@ -1,5 +1,77 @@
 <template>
     <div>
+        <!-- Forecast: what falls due, and whether it is covered -->
+        <div class="library-card mb-3">
+            <div class="library-card-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="header-icon"><i class="ri-calendar-check-line"></i></div>
+                    <div>
+                        <h4 class="header-title mb-0">Cash Forecast</h4>
+                        <p class="header-subtitle mb-0">
+                            Checks still to move, by the date each can be cashed. Counts only checks in hand — never invoices.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="library-card-body">
+                <div v-if="forecastLoading" class="chk-empty"><i class="ri-loader-4-line spin"></i> Loading…</div>
+
+                <div v-else-if="!forecast.accounts?.length" class="chk-empty">
+                    <i class="ri-calendar-check-line"></i>
+                    <p class="mb-0">No bank accounts to project.</p>
+                </div>
+
+                <div v-else class="fc-grid">
+                    <div v-for="acct in forecast.accounts" :key="acct.bank_account_id" class="fc-account" :class="{ 'fc-at-risk': acct.shortfall_date }">
+                        <div class="fc-account-head">
+                            <div>
+                                <strong>{{ acct.bank_name }}</strong>
+                                <span class="fc-account-name">{{ acct.account_name }}</span>
+                            </div>
+                            <span class="fc-opening">{{ money(acct.opening_balance) }}</span>
+                        </div>
+
+                        <p v-if="acct.shortfall_date" class="fc-warning">
+                            <i class="ri-alert-line"></i>
+                            Short on <strong>{{ acct.shortfall_date }}</strong> — lowest point {{ money(acct.lowest_balance) }}
+                        </p>
+                        <p v-else-if="acct.rows.length" class="fc-clear">
+                            <i class="ri-check-line"></i> Covered throughout — lowest point {{ money(acct.lowest_balance) }}
+                        </p>
+                        <p v-else class="fc-none">No checks outstanding.</p>
+
+                        <table v-if="acct.rows.length" class="table fc-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-end">In</th>
+                                    <th class="text-end">Out</th>
+                                    <th class="text-end">Balance after</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="row in acct.rows" :key="row.date" :class="{ 'fc-short': row.short }">
+                                    <td class="text-nowrap">{{ row.date }}</td>
+                                    <td class="text-end">{{ row.in ? money(row.in) : '—' }}</td>
+                                    <td class="text-end">{{ row.out ? money(row.out) : '—' }}</td>
+                                    <td class="text-end fw-semibold">
+                                        {{ money(row.balance) }}
+                                        <i v-if="row.short" class="ri-alert-line fc-short-icon" title="Short on this date"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p v-if="forecast.unassigned_received > 0" class="fc-unassigned">
+                    <i class="ri-information-line"></i>
+                    {{ money(forecast.unassigned_received) }} of received checks are not counted above — they have not been
+                    deposited yet, so which account they land in is not known.
+                </p>
+            </div>
+        </div>
+
         <div class="library-card">
             <div class="library-card-header">
                 <div class="d-flex align-items-center gap-3">
@@ -142,6 +214,8 @@ export default {
             loading: true,
             filters: { direction: '', status: '', keyword: '' },
             bounce: { open: false, check: null, reason: '', error: '', saving: false },
+            forecast: { accounts: [], unassigned_received: 0 },
+            forecastLoading: true,
             searchTimer: null,
         };
     },
@@ -152,6 +226,7 @@ export default {
     },
     mounted() {
         this.fetch();
+        this.fetchForecast();
     },
     methods: {
         fetch() {
@@ -160,6 +235,13 @@ export default {
                 .then(({ data }) => { this.rows = data.data ?? []; })
                 .catch(err => console.error('Could not load the register', err))
                 .finally(() => { this.loading = false; });
+        },
+        fetchForecast() {
+            this.forecastLoading = true;
+            axios.get('/accounting/check-register', { params: { option: 'forecast' } })
+                .then(({ data }) => { this.forecast = data; })
+                .catch(err => console.error('Could not load the forecast', err))
+                .finally(() => { this.forecastLoading = false; });
         },
         debouncedFetch() {
             clearTimeout(this.searchTimer);
@@ -182,7 +264,7 @@ export default {
         },
         confirm(check) {
             axios.put(`/accounting/check-register/${check.id}/confirm`)
-                .then(() => this.fetch())
+                .then(() => { this.fetch(); this.fetchForecast(); })
                 .catch(err => alert(err.response?.data?.message || 'Could not confirm this check.'));
         },
         openBounce(check) {
@@ -195,7 +277,7 @@ export default {
             }
             this.bounce.saving = true;
             axios.put(`/accounting/check-register/${this.bounce.check.id}/bounce`, { bounce_reason: this.bounce.reason })
-                .then(() => { this.bounce.open = false; this.fetch(); })
+                .then(() => { this.bounce.open = false; this.fetch(); this.fetchForecast(); })
                 .catch(err => { this.bounce.error = err.response?.data?.message || 'Could not record the bounce.'; })
                 .finally(() => { this.bounce.saving = false; });
         },
@@ -231,6 +313,28 @@ export default {
 .chk-overdue { background: #fffaf3; }
 
 .chk-bounce-summary { font-size: 0.85rem; color: #33564f; margin-bottom: 0.9rem; }
+
+.fc-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.fc-account { border: 1px solid #d8e6e1; border-radius: 10px; padding: 0.9rem; background: #fbfdfc; }
+.fc-account.fc-at-risk { border-color: #f2b8b5; background: #fffafa; }
+.fc-account-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem; }
+.fc-account-name { color: #6b8c85; font-size: 0.78rem; margin-left: 0.35rem; }
+.fc-opening { font-weight: 600; color: #16322e; }
+
+.fc-warning, .fc-clear, .fc-none { font-size: 0.78rem; margin: 0 0 0.6rem; display: flex; align-items: center; gap: 4px; }
+.fc-warning { color: #96231f; }
+.fc-clear { color: #1b6b4a; }
+.fc-none { color: #6b8c85; }
+
+.fc-table { font-size: 0.8rem; }
+.fc-table thead th { color: #6b8c85; font-weight: 600; border-bottom: 1px solid #e3efeb; }
+.fc-short { background: #fdeaea; }
+.fc-short-icon { color: #96231f; margin-left: 3px; }
+
+.fc-unassigned {
+    margin: 0.9rem 0 0; padding: 0.6rem 0.8rem; border-radius: 8px;
+    background: #f4f8f7; border: 1px solid #d8e6e1; color: #33564f; font-size: 0.78rem;
+}
 
 .action-btn.confirm { color: #1b6b4a; }
 .spin { animation: spin 1s linear infinite; }
