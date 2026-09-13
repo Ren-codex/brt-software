@@ -612,17 +612,7 @@ export default {
         padding-left: 2.5rem;
     }
 
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-        cursor: default;
-    }
+    /* .status-badge tones come from _library-index.scss. */
 
     /* Modern Collapsible Row Styles */
     .main-table-row {

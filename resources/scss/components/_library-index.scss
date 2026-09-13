@@ -241,44 +241,55 @@
     }
 }
 
-/* ── Shared list-screen furniture ──────────────────────────────────
-   Every module list screen shows the same three things: a status, an
-   empty table, and a search box. They were being re-styled inside each
-   component, so the same `.status-badge` class rendered a 10px pill on
-   one tab, a 12px pill on another, and unstyled coloured text on a
-   third. Defined once here so a new screen inherits the look instead of
-   inventing its own.
+/* ── Status tones ──────────────────────────────────────────────────
+   Colour used to be stored per status, so it said nothing: Paid and
+   Closed rendered black, Pending and Unpaid green, and seven statuses
+   shared one amber, Approved and Disapproved among them. Nobody could
+   scan a list and tell good from bad.
+
+   A status now reads off one of five tones, decided by what it means.
+   See resources/js/Shared/utils/statusTone.js for the mapping.
+
+   Deliberately keyed on the tone class rather than on `.status-badge`
+   alone: that class is used in Inventory, Payroll, Customers and the
+   dashboard too, and those screens have their own look. Only a badge
+   that asks for a tone gets this treatment.
    ------------------------------------------------------------------ */
 
 .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 9px 3px 8px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    font-size: 0.72rem;
-    font-weight: 600;
-    line-height: 1.4;
-    white-space: nowrap;
-    cursor: default;
+    &.settled,
+    &.progress,
+    &.attention,
+    &.problem,
+    &.inactive {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 9px 3px 8px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        font-size: 0.72rem;
+        font-weight: 600;
+        line-height: 1.4;
+        letter-spacing: 0;
+        white-space: nowrap;
+        cursor: default;
 
-    /* A small dot carries the tone even where the fill is faint, and gives the
-       label something to sit against so it does not float in its own box. */
-    &::before {
-        content: "";
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: currentColor;
-        opacity: 0.85;
-        flex: none;
+        /* The dot carries the tone where the fill is faint, and gives the
+           label something to sit against. */
+        &::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.85;
+            flex: none;
+        }
     }
 
-    /* Five tones, not twenty-eight colours. Meaning decides the tone, so the
-       same meaning looks the same on every screen. Fills stay faint on purpose:
-       a table of fifty saturated pills is exhausting to read, and nothing
-       stands out when everything shouts. */
+    /* Fills stay faint on purpose: fifty saturated pills in a table is
+       tiring, and nothing stands out when everything shouts. */
     &.settled   { background: #e9f5f0; color: #1b6b4a; border-color: #a8dcc8; }
     &.progress  { background: #e8eefa; color: #2b5599; border-color: #c4d8f2; }
     &.attention { background: #fdf3e3; color: #8a5a10; border-color: #f0d49a; }
