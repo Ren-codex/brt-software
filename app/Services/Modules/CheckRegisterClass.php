@@ -20,9 +20,17 @@ class CheckRegisterClass
     {
         $receipt->loadMissing('arInvoice.sales_order');
 
+        $checkNumber = $attributes['check_number'] ?? $receipt->reference_number;
+
+        if (trim((string) $checkNumber) === '') {
+            throw ValidationException::withMessages([
+                'check_number' => 'A check needs its number before it can be entered in the register.',
+            ]);
+        }
+
         return Check::create(array_merge([
             'direction' => Check::DIRECTION_RECEIVED,
-            'check_number' => $receipt->reference_number,
+            'check_number' => $checkNumber,
             'check_date' => $receipt->check_date ?: $receipt->receipt_date,
             'amount' => $receipt->amount_paid,
             'bank_name' => $receipt->bank_name,
@@ -38,9 +46,17 @@ class CheckRegisterClass
     {
         $payment->loadMissing('receivedStock');
 
+        $checkNumber = $attributes['check_number'] ?? $payment->reference_number;
+
+        if (trim((string) $checkNumber) === '') {
+            throw ValidationException::withMessages([
+                'check_number' => 'A check needs its number before it can be entered in the register.',
+            ]);
+        }
+
         return Check::create(array_merge([
             'direction' => Check::DIRECTION_ISSUED,
-            'check_number' => $payment->reference_number,
+            'check_number' => $checkNumber,
             'check_date' => $payment->payment_date,
             'amount' => $payment->amount_paid,
             'bank_name' => $payment->bank_name,
