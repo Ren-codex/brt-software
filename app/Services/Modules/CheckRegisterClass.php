@@ -95,14 +95,26 @@ class CheckRegisterClass
             // Requiring the amount to match too makes a false match on an
             // unrelated deposit implausible without eliminating the risk
             // entirely, which would need a real link between the two tables.
+            //
+            // Still not airtight, so this fails safe rather than guessing: if
+            // more than one pending deposit matches, posting any one of them
+            // could move the wrong customer's money, so none are posted and
+            // the whole confirmation is refused (rolling back the receipt
+            // confirmation above too) until a person resolves the ambiguity.
             if ($check->direction === Check::DIRECTION_RECEIVED) {
-                $deposit = BankDeposit::where('deposit_type', BankDeposit::TYPE_CHECK)
+                $matches = BankDeposit::where('deposit_type', BankDeposit::TYPE_CHECK)
                     ->where('status', BankDeposit::STATUS_PENDING)
                     ->where('check_number', $check->check_number)
                     ->where('amount', $check->amount)
-                    ->first();
+                    ->get();
 
-                $deposit && app(CashManagementService::class)->postBankDeposit($deposit);
+                if ($matches->count() > 1) {
+                    throw ValidationException::withMessages([
+                        'check_number' => "Multiple pending bank deposits match check {$check->check_number} for this amount. Resolve the ambiguity before confirming — posting could move the wrong customer's money.",
+                    ]);
+                }
+
+                $matches->first() && app(CashManagementService::class)->postBankDeposit($matches->first());
             }
 
             $check->update([

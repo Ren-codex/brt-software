@@ -79,7 +79,7 @@ class BankDepositCheckTest extends TestCase
         $this->assertCount(0, $this->entriesFor($deposit));
     }
 
-    public function test_check_dated_today_posts_immediately(): void
+    public function test_check_dated_today_is_created_pending_and_posts_nothing(): void
     {
         $deposit = $this->service()->createBankDeposit($this->payload([
             'deposit_type' => 'check',
@@ -87,8 +87,12 @@ class BankDepositCheckTest extends TestCase
             'check_number' => 'CHK-002',
         ]));
 
-        $this->assertSame(BankDeposit::STATUS_POSTED, $deposit->status);
-        $this->assertCount(1, $this->entriesFor($deposit));
+        // A check dated today can still bounce — the date on the check is
+        // not proof it cleared, so it is never posted on creation, only via
+        // a person confirming it via CheckRegisterClass::markCleared().
+        $this->assertSame(BankDeposit::STATUS_PENDING, $deposit->status);
+        $this->assertNull($deposit->posted_at);
+        $this->assertCount(0, $this->entriesFor($deposit));
     }
 
     public function test_the_command_never_posts_a_due_check(): void

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 class BankDeposit extends Model
 {
@@ -53,19 +52,6 @@ class BankDeposit extends Model
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
-    }
-
-    /**
-     * Cash is good the moment it is deposited; a check only on its own date.
-     */
-    public function isDueForPosting($asOf = null): bool
-    {
-        if (!$this->isCheck() || !$this->check_date) {
-            return true;
-        }
-
-        return $this->check_date->startOfDay()
-            ->lte(Carbon::parse($asOf ?: now())->startOfDay());
     }
 
     public function scopeDueForPosting($query, $asOf)

@@ -115,8 +115,17 @@ class CheckClearingTest extends TestCase
 
         app(CheckRegisterClass::class)->markCleared($check);
 
-        $this->assertSame(BankDeposit::STATUS_POSTED, $deposit->fresh()->status);
-        $this->assertNotNull($deposit->fresh()->posted_at);
+        $deposit->refresh();
+        $this->assertSame(BankDeposit::STATUS_POSTED, $deposit->status);
+        $this->assertNotNull($deposit->posted_at);
+
+        // Pin BankDeposit::effectiveDate(): the journal entry this confirm
+        // triggers must still carry the check's own date, not the day it was
+        // confirmed — the only assertion of this used to live in the
+        // now-deleted test_posted_check_entry_carries_the_check_date.
+        $entry = JournalEntry::where('source_type', BankDeposit::class)->where('source_id', $deposit->id)->first();
+        $this->assertNotNull($entry, 'Confirming the check must post the deposit\'s journal entry.');
+        $this->assertSame($deposit->effectiveDate(), \Illuminate\Support\Carbon::parse($entry->entry_date)->toDateString());
     }
 
     /**
@@ -134,5 +143,31 @@ class CheckClearingTest extends TestCase
 
         $this->assertSame(BankDeposit::STATUS_PENDING, $deposit->fresh()->status);
         $this->assertNull($deposit->fresh()->posted_at);
+    }
+
+    /**
+     * check_number + amount narrows the match a lot but is still not a real
+     * link back to the check — two unrelated pending deposits can still
+     * collide on both fields. When that happens, posting either one would be
+     * a guess about whose money it is, so markCleared() must refuse the
+     * whole confirmation rather than pick one, leaving the check pending and
+     * both deposits untouched.
+     */
+    public function test_two_colliding_pending_deposits_refuse_confirmation_and_stay_unposted(): void
+    {
+        $receipt = $this->receipt('Check', '000123');
+        $check = app(CheckRegisterClass::class)->registerReceived($receipt, ['bank_name' => 'BDO']);
+        $depositA = $this->pendingDepositFor($check);
+        $depositB = $this->pendingDepositFor($check);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        try {
+            app(CheckRegisterClass::class)->markCleared($check);
+        } finally {
+            $this->assertSame(BankDeposit::STATUS_PENDING, $depositA->fresh()->status);
+            $this->assertSame(BankDeposit::STATUS_PENDING, $depositB->fresh()->status);
+            $this->assertSame(Check::STATUS_PENDING, $check->fresh()->status, 'An ambiguous deposit match must not leave the check cleared either.');
+        }
     }
 }
