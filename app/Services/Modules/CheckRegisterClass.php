@@ -69,6 +69,15 @@ class CheckRegisterClass
     {
         $payment->loadMissing('receivedStock');
 
+        // A payment made any other way has already posted its own ledger entry,
+        // so entering it here would let markCleared() post it a second time.
+        // Only a check is held back from posting in the first place.
+        if (strcasecmp(trim((string) $payment->payment_mode), 'Check') !== 0) {
+            throw ValidationException::withMessages([
+                'payment_mode' => 'Only a check payment belongs in the check register.',
+            ]);
+        }
+
         $checkNumber = $attributes['check_number'] ?? $payment->reference_number;
 
         if (trim((string) $checkNumber) === '') {
@@ -209,6 +218,17 @@ class CheckRegisterClass
             ? User::whereHas('employee', fn ($q) => $q->where('id', $check->received_by_id))->first()
             : null;
 
-        $user?->notify(new BouncedCheckNotification($check));
+        if (!$user) {
+            return;
+        }
+
+        // Best-effort on purpose. If a caller wraps markBounced() in a
+        // transaction, letting a notification failure escape would roll the
+        // bounce back — losing a real event because an email did not send.
+        try {
+            $user->notify(new BouncedCheckNotification($check));
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }
