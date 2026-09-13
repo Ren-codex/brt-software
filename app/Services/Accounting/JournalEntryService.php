@@ -115,7 +115,7 @@ class JournalEntryService
         // deliberately leaves balance_due alone, so the ledger and the invoice
         // would disagree for as long as the check stayed unconfirmed.
         // ArInvoiceClass::confirmCheck() posts this entry on confirmation.
-        if (strcasecmp((string) $receipt->payment_mode, 'Check') === 0) {
+        if (strcasecmp(trim((string) $receipt->payment_mode), 'Check') === 0) {
             return null;
         }
 
@@ -602,6 +602,14 @@ class JournalEntryService
     {
         $amount = round((float) $payment->amount_paid, 2);
         if ($amount <= 0) {
+            return null;
+        }
+
+        // The owner post-dates supplier checks to the day she expects funds, so
+        // posting now would credit the bank weeks before the money leaves —
+        // routinely driving the account negative. The register holds it until
+        // someone marks it cleared, which is when this entry gets posted.
+        if (strcasecmp(trim((string) $payment->payment_mode), 'Check') === 0) {
             return null;
         }
 

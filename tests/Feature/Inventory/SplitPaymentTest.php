@@ -153,23 +153,24 @@ class SplitPaymentTest extends TestCase
         ]])->assertOk();
 
         $payments = $this->received->fresh()->payments;
-        $this->assertCount(3, $payments, 'One payment row per line.');
+        $this->assertCount(3, $payments, 'One payment row per line, including the check — the row is how it reaches the register.');
         $this->assertEqualsWithDelta(18000, (float) $this->received->fresh()->amount_paid, 0.01);
 
+        // The check line is a post-dated promise, not money yet: it gets a
+        // payment row but no journal entry until it is cleared (Task 6/7).
+        // Cash and the bank transfer still post immediately.
         $entries = JournalEntry::where('entry_type', 'accounts_payable_payment')->get();
-        $this->assertCount(3, $entries, 'One journal entry per line.');
+        $this->assertCount(2, $entries, 'Cash and bank transfer post immediately; the check does not.');
 
-        // Each line credits its own funding source: cash to cash, the bank line
-        // to that specific bank account, the check to check clearing.
         $creditFor = function (string $mode) use ($payments, $entries) {
             $payment = $payments->firstWhere('payment_mode', $mode);
             $entry = $entries->firstWhere('source_id', $payment->id);
-            return $entry->lines->firstWhere('line_type', 'credit')->account->code;
+            return $entry?->lines->firstWhere('line_type', 'credit')->account->code;
         };
 
         $this->assertSame('1000', $creditFor('Cash on Hand'), 'Cash line credits Cash.');
         $this->assertSame('1020', $creditFor('Bank Transfer'), 'Bank line credits that specific bank account, not generic Cash in Bank.');
-        $this->assertSame('1011', $creditFor('Check'), 'Check line credits Cash in Bank (check clearing).');
+        $this->assertNull($creditFor('Check'), 'A pending check must not post to any account yet.');
     }
 
     public function test_lines_cannot_exceed_the_remaining_payable(): void
