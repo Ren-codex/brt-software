@@ -179,7 +179,7 @@
               <div class="row" v-if="activeTab === 'stockReturns' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <StockReturnsTab :listStockReturns="listStockReturns" :meta="meta" :links="links" :filter="filter"
-                    :dropdowns="dropdowns" :loading="isStockReturnsLoading" @fetch="fetchStockReturns" @update-keyword="updateKeyword"
+                    :dropdowns="dropdowns" :loading="isStockReturnsLoading" @fetch="fetchStockReturns" @refresh="fetchStockReturns(null, { force: true })" @update-keyword="updateKeyword"
                     @toast="showToast" @view-details="openStockReturnDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -456,8 +456,11 @@ export default {
       }
     },
 
-    fetchProducts(page_url) {
-      if (this.activeTab === 'products') {
+    fetchProducts(page_url, { force = false } = {}) {
+      // force: a refresh asked for right after a write must happen even if the
+      // tab check would otherwise drop it. Without an escape hatch the gate
+      // silently swallows the refetch and the new row never appears.
+      if (force || this.activeTab === 'products') {
         page_url = page_url || '/libraries/products';
         this.isProductsLoading = true;
         axios
@@ -482,8 +485,11 @@ export default {
       }
     },
 
-    fetchPurchaseOrders(page_url) {
-      if ((this.activeTab === 'purchaseOrders' || this.activeTab === 'purchaseRequests') && this.currentView === 'list') {
+    fetchPurchaseOrders(page_url, { force = false } = {}) {
+      // force: a refresh asked for right after a write must happen even if the
+      // tab check would otherwise drop it. Without an escape hatch the gate
+      // silently swallows the refetch and the new row never appears.
+      if (force || ((this.activeTab === 'purchaseOrders' || this.activeTab === 'purchaseRequests') && this.currentView === 'list')) {
         page_url = page_url || '/purchase-orders';
         this.isPurchaseOrdersLoading = true;
         axios
@@ -512,8 +518,11 @@ export default {
       }
     },
 
-    fetchInventoryStocks(page_url, { quiet = false } = {}) {
-      if (this.activeTab === 'inventoryStocks') {
+    fetchInventoryStocks(page_url, { quiet = false, force = false } = {}) {
+      // force: a refresh asked for right after a write must happen even if the
+      // tab check would otherwise drop it. Without an escape hatch the gate
+      // silently swallows the refetch and the new row never appears.
+      if (force || this.activeTab === 'inventoryStocks') {
         page_url = page_url || '/inventory-stocks';
         // Remembered so a background refresh keeps the user's page.
         this.currentStocksPageUrl = page_url;
@@ -549,8 +558,11 @@ export default {
       return this.listReceivedStocks;
     },
 
-    fetchReceivedStocks() {
-      if (this.activeTab !== 'receiving' || this.currentView !== 'list') {
+    fetchReceivedStocks(page_url, { force = false } = {}) {
+      // force: a refresh asked for right after a write must happen even if the
+      // tab check would otherwise drop it. Without an escape hatch the gate
+      // silently swallows the refetch and the new row never appears.
+      if (!force && (this.activeTab !== 'receiving' || this.currentView !== 'list')) {
         return;
       }
 
@@ -565,8 +577,11 @@ export default {
         });
     },
 
-    fetchStockReturns(page_url) {
-      if (this.activeTab === 'stockReturns') {
+    fetchStockReturns(page_url, { force = false } = {}) {
+      // force: a refresh asked for right after a write must happen even if the
+      // tab check would otherwise drop it. Without an escape hatch the gate
+      // silently swallows the refetch and the new row never appears.
+      if (force || this.activeTab === 'stockReturns') {
         page_url = page_url || '/stock-returns';
         this.isStockReturnsLoading = true;
         axios
@@ -729,17 +744,19 @@ export default {
 
     handlePurchaseOrderUpdate(payload = {}) {
       const action = payload?.action === 'updated' ? 'updated' : 'created';
-      this.showToast(`Purchase request ${action} successfully`);
+      // Refresh before toasting: $emit and handlers run synchronously, so
+      // anything that throws while showing the message would take the refresh
+      // down with it and leave the list stale with no sign of why.
       if (this.selectedPurchaseOrder) {
-        // Refresh the details view if we're viewing a purchase order
         this.fetchPurchaseOrderDetails(this.selectedPurchaseOrder.id);
       }
-      this.fetchPurchaseOrders();
+      this.fetchPurchaseOrders(null, { force: true });
+      this.showToast(`Purchase request ${action} successfully`);
     },
 
     handleReceiveSuccess() {
+      this.fetchPurchaseOrders(null, { force: true });
       this.showToast('Stock received successfully');
-      this.fetchPurchaseOrders();
       if (this.activeTab === 'accountsPayable') {
         this.fetchAccountsPayableData();
       }
@@ -756,8 +773,9 @@ export default {
     },
 
     handleDeleteSuccess() {
-      this.showToast('Purchase order deleted successfully');
+      // backToList() is what refetches; it goes first for the same reason.
       this.backToList();
+      this.showToast('Purchase order deleted successfully');
     },
 
     showToast(payload) {

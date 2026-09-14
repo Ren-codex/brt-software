@@ -76,16 +76,20 @@ class StockReturnReceiveFixesTest extends TestCase
      */
     private function scenario(int $requestedQty = 10, bool $approved = true): array
     {
+        // Unique per call: some tests stand up two independent scenarios, and
+        // supplier name, product code and batch code all carry unique indexes.
+        $suffix = uniqid();
+
         $supplierId = \DB::table('list_suppliers')->insertGetId([
-            'name' => 'Test Supplier', 'address' => 'Addr', 'contact_person' => 'Person',
-            'contact_number' => '09000000000', 'email' => 's@test.com', 'tin' => '000',
+            'name' => 'Test Supplier '.$suffix, 'address' => 'Addr', 'contact_person' => 'Person',
+            'contact_number' => '09000000000', 'email' => $suffix.'@test.com', 'tin' => '000',
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $product = Product::create([
-            'code' => 'RET-FIX', 'weight' => 10,
-            'unit_id' => ListUnit::create(['name' => 'Sack'])->id,
-            'brand_id' => ListBrand::create(['name' => 'Brand'])->id,
+            'code' => 'RET-'.$suffix, 'weight' => 10,
+            'unit_id' => ListUnit::firstOrCreate(['name' => 'Sack'])->id,
+            'brand_id' => ListBrand::firstOrCreate(['name' => 'Brand'])->id,
             'is_active' => 1, 'minimum_stock' => 1,
         ]);
 
@@ -103,7 +107,7 @@ class StockReturnReceiveFixesTest extends TestCase
 
         $received = ReceivedStock::create([
             'po_id' => $po->id, 'supplier_id' => $supplierId, 'received_date' => now()->toDateString(),
-            'received_no' => 'RS-'.uniqid(), 'payment_mode' => 'Cash', 'amount_paid' => 10000,
+            'received_no' => 'RS-'.$suffix, 'payment_mode' => 'Cash', 'amount_paid' => 10000,
         ]);
         $receivedItem = ReceivedItem::create([
             'received_id' => $received->id, 'product_id' => $product->id, 'po_item_id' => $poItem->id,
@@ -112,11 +116,11 @@ class StockReturnReceiveFixesTest extends TestCase
 
         // Two batches. The first is the one a lowest-id lookup would grab.
         $first = InventoryStocks::create([
-            'batch_code' => 'B-FIRST', 'received_item_id' => $receivedItem->id,
+            'batch_code' => 'B-FIRST-'.$suffix, 'received_item_id' => $receivedItem->id,
             'quantity' => 4, 'retail_price' => 600, 'wholesale_price' => 550, 'unit_cost' => 500,
         ]);
         $second = InventoryStocks::create([
-            'batch_code' => 'B-SECOND', 'received_item_id' => $receivedItem->id,
+            'batch_code' => 'B-SECOND-'.$suffix, 'received_item_id' => $receivedItem->id,
             'quantity' => 16, 'retail_price' => 600, 'wholesale_price' => 550, 'unit_cost' => 500,
         ]);
 
@@ -260,6 +264,24 @@ class StockReturnReceiveFixesTest extends TestCase
         $message = $response->json('message');
         $this->assertStringContainsString('Brand 10 Sack', $message);
         $this->assertStringNotContainsString('selected item', $message);
+    }
+
+    public function test_the_search_box_actually_filters_the_list(): void
+    {
+        // list() read only `count` and ignored `keyword`, though the page sends
+        // one on every request -- so typing in the search box did nothing.
+        $user = $this->approver();
+        ['stockReturn' => $mine] = $this->scenario(10);
+        ['stockReturn' => $other] = $this->scenario(10);
+
+        $mine->update(['stock_return_no' => 'SR-FINDME-001']);
+        $other->update(['stock_return_no' => 'SR-OTHER-002']);
+
+        $ids = collect($this->actingAs($user)->getJson('/stock-returns?keyword=FINDME')->json('data'))
+            ->pluck('id');
+
+        $this->assertTrue($ids->contains($mine->id));
+        $this->assertFalse($ids->contains($other->id));
     }
 
     public function test_a_replacement_goes_back_into_the_batch_the_return_took_it_from(): void

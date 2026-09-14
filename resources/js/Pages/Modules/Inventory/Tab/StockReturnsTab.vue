@@ -179,7 +179,7 @@ export default {
       default: false,
     },
   },
-  emits: ['fetch', 'update-keyword', 'toast', 'view-details'],
+  emits: ['fetch', 'refresh', 'update-keyword', 'toast', 'view-details'],
   data() {
     return {
       localKeyword: this.filter.keyword || '',
@@ -273,9 +273,13 @@ export default {
       this.$refs.returnPurchaseOrderModal.show();
     },
     handleReturnSuccess() {
-      this.$emit('toast', 'Purchase order return processed successfully');
-      this.$emit('fetch');
+      // Refresh first. $emit runs its handlers synchronously, so with the toast
+      // ahead of it anything that threw while showing the message took the
+      // refresh down too -- the return was saved, and the list never moved.
+      // 'refresh' rather than 'fetch' so it cannot be dropped by the tab check.
+      this.$emit('refresh');
       this.returnableOrders = [];
+      this.$emit('toast', 'Purchase order return processed successfully');
     },
     openView(stockReturn) {
       this.$emit('view-details', stockReturn);

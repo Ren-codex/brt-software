@@ -44,6 +44,10 @@ class StockReturnClass
 
     public function list($request)
     {
+        // The page sends a keyword on every request and this ignored it, so the
+        // search box above the list did nothing at all.
+        $keyword = trim((string) $request->keyword);
+
         $data = StockReturn::with([
             'purchaseOrder.status',
             'purchaseOrder.supplier',
@@ -55,7 +59,20 @@ class StockReturnClass
             'createdBy',
             'approvedBy',
             'voidedBy',
-        ])->orderByDesc('id')
+        ])
+            ->when($keyword !== '', function ($query) use ($keyword) {
+                $like = '%'.$keyword.'%';
+
+                $query->where(function ($q) use ($like) {
+                    $q->where('stock_return_no', 'like', $like)
+                        ->orWhere('reason', 'like', $like)
+                        ->orWhereHas('purchaseOrder', function ($po) use ($like) {
+                            $po->where('po_number', 'like', $like)
+                                ->orWhereHas('supplier', fn ($s) => $s->where('name', 'like', $like));
+                        });
+                });
+            })
+            ->orderByDesc('id')
             ->paginate($request->count ?? 10);
 
         return StockReturnResource::collection($data);
