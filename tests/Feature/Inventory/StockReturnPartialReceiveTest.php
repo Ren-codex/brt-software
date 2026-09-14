@@ -129,8 +129,8 @@ class StockReturnPartialReceiveTest extends TestCase
      * Current fix (each receiveItem() call is an INCREMENTAL amount for
      * that submission, accumulated on top of whatever was already
      * received — not a cumulative running total): a partial submission
-     * stays 'pending' rather than a terminal status, so the stock return's
-     * completion check correctly still sees it as unresolved.
+     * lands on 'partial' rather than a terminal status, so the stock
+     * return's completion check correctly still sees it as unresolved.
      */
     public function test_partial_receive_does_not_prematurely_complete_the_return(): void
     {
@@ -147,7 +147,8 @@ class StockReturnPartialReceiveTest extends TestCase
         $item->refresh();
         $stockReturn->refresh();
 
-        $this->assertEquals('pending', $item->status->slug);
+        // 'partial', not 'pending': something came back, just not all of it.
+        $this->assertEquals('partial', $item->status->slug);
         $this->assertEquals(5, $item->returned_quantity);
         $this->assertEquals(5, $item->replaced_quantity);
 

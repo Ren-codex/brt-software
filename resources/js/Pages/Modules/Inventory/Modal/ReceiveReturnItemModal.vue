@@ -9,7 +9,7 @@
             </div>
             <div>
               <h4 class="header-title mb-1">Receive Return Item</h4>
-              <p class="header-subtitle mb-0">Process replacement quantity</p>
+              <p class="header-subtitle mb-0">Record what came back, and what never will</p>
             </div>
           </div>
           <button class="close-btn" @click="$emit('close')">&times;</button>
@@ -34,11 +34,34 @@
             @input="updateField('replaced_quantity', $event.target.value)"
           >
           <small v-if="replacementQtyError" class="error-message">{{ replacementQtyError }}</small>
-          <div class="returned-qty-highlight">
-            <span class="returned-qty-label">Remaining To Receive</span>
-            <span class="returned-qty-value">{{ remainingToReceive }}</span>
-          </div>
-        
+          <small class="field-hint">How many the supplier sent back to replace the returned goods.</small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="loss-qty">Written Off As Loss</label>
+          <input
+            id="loss-qty"
+            :value="Number(receiveForm.loss_quantity || 0)"
+            type="number"
+            min="0"
+            step="1"
+            :max="remainingReturnedQty"
+            class="form-control"
+            placeholder="Enter quantity not being replaced"
+            @input="updateField('loss_quantity', $event.target.value)"
+          >
+          <small v-if="lossQtyError" class="error-message">{{ lossQtyError }}</small>
+          <small class="field-hint">
+            How many the supplier will not replace. Without this an item the supplier
+            writes off can never be closed, and the return stays open forever.
+          </small>
+        </div>
+
+        <small v-if="totalQtyError" class="error-message mb-2 d-block">{{ totalQtyError }}</small>
+
+        <div class="returned-qty-highlight mb-3">
+          <span class="returned-qty-label">Still To Account For</span>
+          <span class="returned-qty-value">{{ remainingToReceive }}</span>
         </div>
 
         <div class="form-group">
@@ -56,7 +79,7 @@
       <div class="modal-footer">
         <div class="form-actions">
           <button class="btn btn-cancel" @click="$emit('close')" :disabled="receiving">Cancel</button>
-          <button class="btn btn-save" @click="$emit('save')" :disabled="receiving || Boolean(replacementQtyError)">
+          <button class="btn btn-save" @click="$emit('save')" :disabled="receiving || hasError">
             {{ receiving ? 'Saving...' : 'Save' }}
           </button>
         </div>
@@ -82,6 +105,7 @@ export default {
       type: Object,
       default: () => ({
         replaced_quantity: 0,
+        loss_quantity: 0,
         remarks: '',
       }),
     },
@@ -109,28 +133,47 @@ export default {
     replacementQtyValue() {
       return Number(this.receiveForm?.replaced_quantity || 0);
     },
+    lossQtyValue() {
+      return Number(this.receiveForm?.loss_quantity || 0);
+    },
     replacementQtyError() {
-      if (Number.isNaN(this.replacementQtyValue) || this.replacementQtyValue < 0) {
-        return 'Replacement quantity must be 0 or greater.';
+      return this.quantityError(this.replacementQtyValue, 'Replacement quantity');
+    },
+    lossQtyError() {
+      return this.quantityError(this.lossQtyValue, 'Loss quantity');
+    },
+    totalQtyError() {
+      if (this.replacementQtyError || this.lossQtyError) return '';
+      const total = this.replacementQtyValue + this.lossQtyValue;
+      if (total > this.remainingReturnedQty) {
+        return `Replacement and loss together cannot be more than the remaining ${this.remainingReturnedQty}.`;
       }
-      if (!Number.isInteger(this.replacementQtyValue)) {
-        return 'Replacement quantity must be a whole number.';
-      }
-      if (this.replacementQtyValue > this.remainingReturnedQty) {
-        return `Replacement quantity cannot be greater than the remaining ${this.remainingReturnedQty}.`;
+      if (total === 0) {
+        return 'Enter how many were replaced, written off as a loss, or both.';
       }
       return '';
     },
+    hasError() {
+      return Boolean(this.replacementQtyError || this.lossQtyError || this.totalQtyError);
+    },
     remainingToReceive() {
-      return Math.max(this.remainingReturnedQty - this.replacementQtyValue, 0);
+      return Math.max(this.remainingReturnedQty - this.replacementQtyValue - this.lossQtyValue, 0);
     },
   },
   methods: {
     _onEscape(e) {
       if (e.key === 'Escape' && this.show) this.$emit('close');
     },
+    quantityError(value, label) {
+      if (Number.isNaN(value) || value < 0) return `${label} must be 0 or greater.`;
+      if (!Number.isInteger(value)) return `${label} must be a whole number.`;
+      if (value > this.remainingReturnedQty) {
+        return `${label} cannot be greater than the remaining ${this.remainingReturnedQty}.`;
+      }
+      return '';
+    },
     updateField(field, value) {
-      const isNumericField = field === 'replaced_quantity';
+      const isNumericField = field === 'replaced_quantity' || field === 'loss_quantity';
       this.$emit('update-receive-form', {
         [field]: isNumericField ? Math.max(0, Math.trunc(Number(value || 0))) : value,
       });
@@ -191,6 +234,14 @@ export default {
 .btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: #6b8c85;
 }
 
 .error-message {

@@ -616,6 +616,18 @@
 
   &:disabled    { opacity: 0.45; cursor: not-allowed; }
   &:disabled:hover { background: transparent; }
+
+  /* Carries a word instead of only an icon. Same vocabulary, but it has to
+     grow to fit what it says -- forcing a label into the 30px square clips it. */
+  &.with-label {
+    width: auto;
+    min-width: 30px;
+    gap: 0.35rem;
+    padding: 0 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
 }
 
 /* Row-action container, so the buttons sit as a set wherever they appear. */

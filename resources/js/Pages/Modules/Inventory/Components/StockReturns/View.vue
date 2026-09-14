@@ -141,7 +141,7 @@
                       <td v-if="data.status.slug == 'approved' && Number(item.returned_quantity || 0) < Number(item.quantity || 0)">
                         <div class="action-buttons">
                           <button
-                            class="action-btn receive"
+                            class="action-btn receive with-label"
                             @click="receivedReturnItem(item)"
                             v-b-tooltip.hover
                             title="Receive Return Item"
@@ -229,6 +229,7 @@ export default {
       selectedReturnItem: null,
       receiveForm: {
         replaced_quantity: 0,
+        loss_quantity: 0,
         remarks: '',
       },
     };
@@ -316,6 +317,7 @@ export default {
       // replaced_quantity here is the amount being received in THIS submission
       // (added on top of whatever was already received in prior partial submissions).
       this.receiveForm.replaced_quantity = 0;
+      this.receiveForm.loss_quantity = 0;
       this.receiveForm.remarks = '';
       this.showReceiveModal = true;
     },
@@ -325,6 +327,7 @@ export default {
       this.selectedReturnItem = null;
       this.receiveForm = {
         replaced_quantity: 0,
+        loss_quantity: 0,
         remarks: '',
       };
     },
@@ -339,12 +342,20 @@ export default {
 
       const maxQty = Number(this.selectedReturnItem.quantity || 0) - Number(this.selectedReturnItem.returned_quantity || 0);
       const replacedQty = Number(this.receiveForm.replaced_quantity || 0);
-      if (
-        Number.isNaN(replacedQty)
-        || replacedQty < 0
-        || replacedQty > maxQty
-      ) {
-        this.$emit('toast', `Replacement quantity must be between 0 and the remaining ${maxQty}`);
+      const lossQty = Number(this.receiveForm.loss_quantity || 0);
+
+      if (Number.isNaN(replacedQty) || Number.isNaN(lossQty) || replacedQty < 0 || lossQty < 0) {
+        this.$emit('toast', 'Replacement and loss quantity must be 0 or greater');
+        return;
+      }
+      if (replacedQty + lossQty > maxQty) {
+        this.$emit('toast', `Replacement and loss together cannot be more than the remaining ${maxQty}`);
+        return;
+      }
+      // An item is only finished once replacement plus loss covers what went
+      // back, so a receipt of nothing would leave the return open forever.
+      if (replacedQty + lossQty === 0) {
+        this.$emit('toast', 'Enter how many were replaced, written off as a loss, or both');
         return;
       }
 
@@ -354,7 +365,7 @@ export default {
           `/stock-returns/${this.data.id}/items/${this.selectedReturnItem.id}/receive`,
           {
             replaced_quantity: replacedQty,
-            loss_quantity: 0,
+            loss_quantity: lossQty,
             remarks: this.receiveForm.remarks,
           },
         );

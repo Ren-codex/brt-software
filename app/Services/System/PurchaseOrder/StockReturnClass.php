@@ -143,12 +143,10 @@ class StockReturnClass
                 $this->fail('Total return quantity must be at least 1.');
             }
 
-            $stockReturnNo = null;
-            try {
-                $stockReturnNo = $this->series_service->get('stock_return');
-            } catch (\Throwable $e) {
-                $stockReturnNo = null;
-            }
+            // Let a series failure surface. Swallowing it saved the return with no
+            // document number at all, which nobody notices until they try to find
+            // the paperwork for it.
+            $stockReturnNo = $this->series_service->get('stock_return');
 
             $stockReturn = StockReturn::create([
                 'stock_return_no' => $stockReturnNo,
@@ -287,6 +285,17 @@ class StockReturnClass
                     }
 
                     $poItem->decrement('received_quantity', $returnQty);
+
+                    // Sending stock back means the line is no longer fully received.
+                    // receiveItem() sets this to 'received' on the way up, so leaving
+                    // it alone here left a purchase order claiming delivery of goods
+                    // that had gone back to the supplier.
+                    $poItem->refresh();
+                    if ((int) $poItem->received_quantity < (int) $poItem->quantity && $poItem->status === 'received') {
+                        $poItem->status = 'pending';
+                        $poItem->save();
+                    }
+
                     $this->notificationService->checkAndNotifyLowStock($poItem->product_id, $previousTotal);
                 }
 
@@ -385,6 +394,12 @@ class StockReturnClass
                 $this->fail('Replacement and loss quantity must be 0 or greater.');
             }
 
+            // Receiving nothing is not a receipt. Allowing it stamped the item with
+            // a receiver and a timestamp and wrote a log line saying nothing happened.
+            if ($incomingReplacedQty === 0 && $incomingLossQty === 0) {
+                $this->fail('Enter how many were replaced, written off as a loss, or both.');
+            }
+
             $requestedQty = (int) $stockReturnItem->quantity;
             $previouslyReceivedQty = (int) $stockReturnItem->returned_quantity;
             $remainingQty = $requestedQty - $previouslyReceivedQty;
@@ -410,8 +425,12 @@ class StockReturnClass
                 $this->fail('Receive statuses are not configured.');
             }
             if ($actualReceivedQty < $requestedQty) {
-                // Still has a remaining quantity to receive — keep it open for a future submission.
-                $stockReturnItem->status_id = $pendingStatusId;
+                // Still has a remaining quantity to receive -- keep it open for a
+                // future submission, but say which kind of open it is. Marking a
+                // half-received item 'pending' made it indistinguishable from one
+                // nobody had touched, while 'partial' was looked up, required, and
+                // then never assigned to anything.
+                $stockReturnItem->status_id = $actualReceivedQty > 0 ? $partialStatusId : $pendingStatusId;
             } elseif ($newReplacedTotal > 0) {
                 $stockReturnItem->status_id = $replacedStatusId;
             } else {
@@ -433,12 +452,12 @@ class StockReturnClass
                 }
                 $poItem->save();
 
-                $inventoryStock = InventoryStocks::whereHas('receivedItem', function ($query) use ($poItem) {
-                    $query->where('po_item_id', $poItem->id);
-                })
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->first();
+                // Put the replacement back in the batch the approval took it from,
+                // replaying that step's own audit trail the way void() does.
+                // Picking the lowest id instead could add stock to a batch the
+                // approval had already emptied -- a different batch, with different
+                // pricing and expiry, from the one that actually went back.
+                $inventoryStock = $this->replacementTarget($stockReturn, $poItem);
 
                 if (! $inventoryStock) {
                     $this->fail('No inventory stock record found for this purchase order item.');
@@ -678,6 +697,40 @@ class StockReturnClass
             'info' => "You've successfully voided the stock return.",
             'status' => true,
         ];
+    }
+
+    /**
+     * The batch a replacement should go back into.
+     *
+     * Prefers a batch this stock return actually deducted from, newest deduction
+     * first, so a replacement lands where the returned goods came from. Falls
+     * back to any batch on the line when the audit trail cannot say -- an older
+     * return, or stock adjusted by hand since.
+     */
+    protected function replacementTarget(StockReturn $stockReturn, PurchaseOrderItem $poItem): ?InventoryStocks
+    {
+        $deductedStockIds = InventoryAdjustment::where('type', 'return_out')
+            ->where('reason', 'Returned to supplier (Stock Return #'.$stockReturn->id.')')
+            ->orderByDesc('id')
+            ->pluck('inventory_stocks_id')
+            ->unique()
+            ->all();
+
+        foreach ($deductedStockIds as $stockId) {
+            $stock = InventoryStocks::whereKey($stockId)
+                ->whereHas('receivedItem', fn ($query) => $query->where('po_item_id', $poItem->id))
+                ->lockForUpdate()
+                ->first();
+
+            if ($stock) {
+                return $stock;
+            }
+        }
+
+        return InventoryStocks::whereHas('receivedItem', fn ($query) => $query->where('po_item_id', $poItem->id))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->first();
     }
 
     protected function getStatusIdBySlug($slug)
