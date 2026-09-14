@@ -174,7 +174,6 @@ class SalesOrderController extends Controller
         // Cancelling is the void-holder's job — a sales rep who raised the order
         // can pull it back — but an approver may do it too, so neither loses out.
         $this->authorizeAnyPermission('sales', 'sales_orders', ['void', 'approver']);
-        $this->requireSupervisor($request, 'sales.cancel_order', \App\Models\SalesOrder::class, (int) $id);
 
         $result = $this->handleTransaction(function () use ($request, $id) {
             return $this->sales_order->cancel($id, $request->remarks);

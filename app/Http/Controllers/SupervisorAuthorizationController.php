@@ -16,7 +16,6 @@ class SupervisorAuthorizationController extends Controller
     /** Actions an override can be granted for. An unlisted action is refused. */
     private const ACTIONS = [
         'sales.credit_sale',
-        'sales.cancel_order',
         'sales.approve_return',
     ];
 

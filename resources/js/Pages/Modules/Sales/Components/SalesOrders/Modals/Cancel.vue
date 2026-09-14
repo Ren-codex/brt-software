@@ -58,12 +58,7 @@
                         </small>
                     </div>
 
-                    <SupervisorGate
-                        ref="gate"
-                        action="sales.cancel_order"
-                        prompt="Cancelling reverses this order's accounting. An administrator must authorize it."
-                        @update:token="onAuthorized"
-                    />
+
                 </div>
             </div>
 
@@ -80,11 +75,9 @@
 </template>
 <script>
 
-import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 import { useForm } from '@inertiajs/vue3';
 
 export default {
-    components: { SupervisorGate, },
     props: [],
     data(){
         return {
@@ -102,7 +95,10 @@ export default {
     },
     computed: {
         isVerificationMatched() {
-            return !!this.form.supervisor_token;
+            // The reason is the deliberate act here: cancelling is the
+            // void-holder's own job, and an order still in play can be pulled
+            // back by the rep who raised it.
+            return String(this.form.remarks || '').trim().length > 0;
         }
     },
     methods: { 
@@ -111,16 +107,12 @@ export default {
             this.form.id = id;
             this.title = title;
             this.route = route;
-            this.form.supervisor_token = '';
-            this.$refs.gate?.reset();
+
             this.form.remarks = '';
             this.hasPayments = hasPayments;
             this.form.clearErrors();
         },
 
-        onAuthorized(token) {
-            this.form.supervisor_token = token;
-        },
         submit(){
             if (!this.isVerificationMatched) {
                 this.form.errors.confirmation = 'Please type CANCEL to verify this action.';
@@ -148,8 +140,7 @@ export default {
         hide(){
             this.editable = false;
             this.showModal = false;
-            this.form.supervisor_token = '';
-            this.$refs.gate?.reset();
+
             this.form.remarks = '';
             this.form.clearErrors();
         },

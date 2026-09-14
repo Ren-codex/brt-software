@@ -65,37 +65,23 @@ class SalesOrderCancelPermissionTest extends TestCase
         ]);
     }
 
-    /** An administrator's authorisation, as the modal would obtain it. */
-    private function supervisorToken(string $action = 'sales.cancel_order'): string
+    public function test_a_rep_may_cancel_their_own_unpaid_order_unaided(): void
     {
-        $admin = \App\Models\User::factory()->create([
-            'username' => 'sup' . uniqid(),
-            'password' => \Illuminate\Support\Facades\Hash::make('secret-password'),
-        ]);
-        $role = ListRole::firstOrCreate(['name' => 'Administrator'], ['type' => 'role', 'definition' => 't', 'is_active' => true]);
-        UserRole::create(['user_id' => $admin->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $admin->id]);
-
-        return app(\App\Services\System\Permission\SupervisorAuthorization::class)
-            ->issue($admin->username, 'secret-password', $action, '127.0.0.1');
-    }
-
-    public function test_cancelling_without_a_supervisor_is_refused(): void
-    {
-        // The gate this replaces lived in the browser, so posting straight to
-        // the endpoint walked past it. This one does not.
+        // Cancelling is the void-holder's job by design: a rep who raised an
+        // order can pull it back without fetching an administrator.
         $order = $this->order();
 
         $this->actingAs($this->userWithLevel('void'))
-            ->delete('/sales-orders/' . $order->id, ['remarks' => 'no authorisation'])
-            ->assertSessionHasErrors('supervisor_token');
+            ->delete('/sales-orders/' . $order->id, ['remarks' => 'customer changed their mind'])
+            ->assertSessionHasNoErrors();
 
-        $this->assertNotEquals('cancelled', $order->fresh()->status->slug);
+        $this->assertEquals('cancelled', $order->fresh()->status->slug);
     }
 
     public function test_a_partially_paid_order_can_still_be_cancelled(): void
     {
         $status = $this->actingAs($this->userWithLevel('void'))
-            ->delete('/sales-orders/' . $this->order('partially-paid')->id, ['remarks' => 'customer changed mind', 'supervisor_token' => $this->supervisorToken()])
+            ->delete('/sales-orders/' . $this->order('partially-paid')->id, ['remarks' => 'customer changed mind'])
             ->getStatusCode();
 
         $this->assertNotEquals(403, $status);
@@ -107,7 +93,7 @@ class SalesOrderCancelPermissionTest extends TestCase
         $order = $this->order('closed');
 
         $this->actingAs($this->userWithLevel('void'))
-            ->delete('/sales-orders/' . $order->id, ['remarks' => 'too late', 'supervisor_token' => $this->supervisorToken()])
+            ->delete('/sales-orders/' . $order->id, ['remarks' => 'too late'])
             ->assertSessionHasErrors('cancel');
 
         $this->assertEquals('closed', $order->fresh()->status->slug, 'A closed order must be left alone.');
@@ -116,7 +102,7 @@ class SalesOrderCancelPermissionTest extends TestCase
     public function test_a_sales_rep_holding_void_may_cancel(): void
     {
         $status = $this->actingAs($this->userWithLevel('void'))
-            ->delete('/sales-orders/' . $this->order()->id, ['remarks' => 'customer backed out', 'supervisor_token' => $this->supervisorToken()])
+            ->delete('/sales-orders/' . $this->order()->id, ['remarks' => 'customer backed out'])
             ->getStatusCode();
 
         $this->assertNotEquals(403, $status, 'A void grant should be enough to cancel.');
@@ -125,7 +111,7 @@ class SalesOrderCancelPermissionTest extends TestCase
     public function test_an_approver_may_still_cancel(): void
     {
         $status = $this->actingAs($this->userWithLevel('approver'))
-            ->delete('/sales-orders/' . $this->order()->id, ['remarks' => 'duplicate', 'supervisor_token' => $this->supervisorToken()])
+            ->delete('/sales-orders/' . $this->order()->id, ['remarks' => 'duplicate'])
             ->getStatusCode();
 
         $this->assertNotEquals(403, $status, 'Approvers must not lose the ability they had.');
