@@ -101,6 +101,13 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         ->middlewareFor(['index', 'show'], 'permission:user_management,view')
         ->middlewareFor(['store', 'update'], 'permission:user_management,encoder');
     // Route::resource('/libraries/suppliers', App\Http\Controllers\Libraries\SupplierController::class)->except(['create', 'edit']);
+    // Who may authorise each guarded action. Sits with roles because that is
+    // what it configures, and answers to the same admin grant.
+    Route::get('/libraries/authorization-settings', [App\Http\Controllers\Modules\AuthorizationSettingsController::class, 'index'])
+        ->middleware('permission:libraries,roles,view');
+    Route::put('/libraries/authorization-settings', [App\Http\Controllers\Modules\AuthorizationSettingsController::class, 'update'])
+        ->middleware('permission:libraries,roles,admin');
+
     Route::resource('/libraries/roles', App\Http\Controllers\Libraries\RoleController::class)->except(['create', 'edit'])
         ->middlewareFor(['index', 'show'], 'permission:libraries,roles,view')
         ->middlewareFor(['store', 'update'], 'permission:libraries,roles,encoder')

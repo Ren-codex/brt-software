@@ -166,7 +166,7 @@
                 <SupervisorGate
                     ref="gate"
                     action="sales.approve_return"
-                    prompt="Approving this return puts stock back and moves money. An administrator must authorize it."
+                    prompt="Approving this return puts stock back and moves money. Someone authorized for this must approve it."
                     @update:token="onAuthorized"
                 />
             </div>

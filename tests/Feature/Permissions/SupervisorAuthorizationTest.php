@@ -148,6 +148,53 @@ class SupervisorAuthorizationTest extends TestCase
         $this->assertStringNotContainsString('token', $response->getContent());
     }
 
+    public function test_a_role_assigned_to_the_action_may_authorize_it(): void
+    {
+        $this->userWithRole('Area Business Manager', 'abm01');
+        $this->assignRole('Area Business Manager', self::ACTION);
+
+        $this->assertNotEmpty($this->authorize('abm01', 'secret-password'));
+    }
+
+    public function test_assigning_a_role_to_one_action_does_not_widen_another(): void
+    {
+        $this->userWithRole('Area Business Manager', 'abm01');
+        $this->assignRole('Area Business Manager', 'checks.bounce');
+
+        $this->expectException(ValidationException::class);
+        $this->authorize('abm01', 'secret-password', self::ACTION);
+    }
+
+    public function test_administrator_still_authorizes_when_nothing_is_configured(): void
+    {
+        // An action nobody has configured falls back to Administrator rather
+        // than becoming impossible to perform.
+        $this->userWithRole('Administrator', 'admin01');
+        \Illuminate\Support\Facades\DB::table('supervisor_action_roles')->delete();
+
+        $this->assertNotEmpty($this->authorize('admin01', 'secret-password'));
+    }
+
+    public function test_super_admin_can_always_authorize(): void
+    {
+        // A configuration that excluded everyone would otherwise lock the action
+        // away with no way back in.
+        $this->userWithRole('Super Admin', 'root01');
+        \Illuminate\Support\Facades\DB::table('supervisor_action_roles')->delete();
+        $this->assignRole('Warehouse Manager', self::ACTION);
+
+        $this->assertNotEmpty($this->authorize('root01', 'secret-password'));
+    }
+
+    /** Let a role authorise one action, the way the settings screen would. */
+    private function assignRole(string $roleName, string $action): void
+    {
+        $role = ListRole::firstOrCreate(['name' => $roleName], ['type' => 'role', 'definition' => 't', 'is_active' => true]);
+        \Illuminate\Support\Facades\DB::table('supervisor_action_roles')->insert([
+            'action' => $action, 'role_id' => $role->id, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
     public function test_consuming_a_token_records_who_authorized_it(): void
     {
         $admin = $this->userWithRole('Administrator', 'admin01');

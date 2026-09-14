@@ -762,7 +762,7 @@
                     <SupervisorGate
                         ref="creditGate"
                         action="sales.credit_sale"
-                        prompt="A credit sale commits the business to collecting later. An administrator must authorize it."
+                        prompt="A credit sale commits the business to collecting later. Someone authorized for this must approve it."
                         @update:token="onCreditAuthorized"
                     />
                     <span class="error-message" v-if="creditVerificationError">{{ creditVerificationError }}</span>

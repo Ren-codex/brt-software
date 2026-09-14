@@ -37,8 +37,18 @@ class SupervisorAuthorization
 
     private const MAX_ATTEMPTS = 5;
 
-    /** Roles allowed to authorise. Super Admin outranks Administrator everywhere else. */
-    private const AUTHORIZING_ROLES = ['Administrator', 'Super Admin'];
+    /**
+     * Assumed when an action has no roles configured, so an action can never
+     * become impossible to authorise through a gap in the settings.
+     */
+    private const DEFAULT_ROLE = 'Administrator';
+
+    /**
+     * Always able to authorise, whatever the settings say. Without this, a
+     * configuration that excluded everyone would lock an action away with no
+     * way back in.
+     */
+    private const ALWAYS_ALLOWED_ROLE = 'Super Admin';
 
     public function issue(string $username, string $password, string $action, ?string $ip = null): string
     {
@@ -63,7 +73,7 @@ class SupervisorAuthorization
             ]);
         }
 
-        if (!$this->canAuthorize($user)) {
+        if (!$this->canAuthorize($user, $action)) {
             RateLimiter::hit($key, 900);
 
             throw ValidationException::withMessages([
@@ -118,12 +128,37 @@ class SupervisorAuthorization
         return (int) $payload['authorized_by_id'];
     }
 
-    private function canAuthorize(User $user): bool
+    private function canAuthorize(User $user, string $action): bool
     {
+        $allowed = $this->rolesFor($action);
+
         return $user->roles()
             ->where('user_roles.is_active', 1)
-            ->whereIn('list_roles.name', self::AUTHORIZING_ROLES)
+            ->where(function ($query) use ($allowed) {
+                $query->whereIn('list_roles.id', $allowed)
+                    ->orWhere('list_roles.name', self::ALWAYS_ALLOWED_ROLE);
+            })
             ->exists();
+    }
+
+    /**
+     * Role ids permitted to authorise this action, as configured. Falls back to
+     * Administrator when nothing is set for it.
+     *
+     * @return array<int, int>
+     */
+    public function rolesFor(string $action): array
+    {
+        $configured = \Illuminate\Support\Facades\DB::table('supervisor_action_roles')
+            ->where('action', $action)
+            ->pluck('role_id')
+            ->all();
+
+        if ($configured) {
+            return $configured;
+        }
+
+        return \App\Models\ListRole::where('name', self::DEFAULT_ROLE)->pluck('id')->all();
     }
 
     private function cacheKey(string $token): string

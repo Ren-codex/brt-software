@@ -187,7 +187,7 @@
                     <SupervisorGate
                         ref="bounceGate"
                         action="checks.bounce"
-                        prompt="Recording a bounce puts the rep back on the hook for this money. An administrator must authorize it."
+                        prompt="Recording a bounce puts the rep back on the hook for this money. Someone authorized for this must approve it."
                         @update:token="bounce.token = $event"
                     />
 

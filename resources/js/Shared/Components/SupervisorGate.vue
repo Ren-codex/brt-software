@@ -11,7 +11,7 @@
                     v-model.trim="username"
                     type="text"
                     class="form-control"
-                    placeholder="Administrator username"
+                    placeholder="Username"
                     autocomplete="off"
                     :disabled="checking"
                     @keyup.enter="authorize"
@@ -59,7 +59,7 @@ export default {
         action: { type: String, required: true },
         prompt: {
             type: String,
-            default: 'An administrator must authorize this. Ask them to enter their credentials.',
+            default: 'Someone authorized for this must approve it. Ask them to enter their credentials.',
         },
     },
     emits: ['update:token'],
