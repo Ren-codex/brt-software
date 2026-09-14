@@ -68,6 +68,82 @@ class SupervisorAuthorizationTest extends TestCase
         $this->authorize('nobody', 'secret-password');
     }
 
+    public function test_an_email_authorizes_as_well_as_a_username(): void
+    {
+        $admin = $this->userWithRole('Administrator', 'admin01');
+        $admin->update(['email' => 'boss@bouyant-trading.com']);
+
+        $this->assertNotEmpty($this->authorize('boss@bouyant-trading.com', 'secret-password'));
+    }
+
+    public function test_an_email_is_matched_whatever_its_case(): void
+    {
+        // Nobody retypes their own address in the casing it was stored in.
+        $admin = $this->userWithRole('Administrator', 'admin01');
+        $admin->update(['email' => 'boss@bouyant-trading.com']);
+
+        $this->assertNotEmpty($this->authorize('BOSS@Bouyant-Trading.com', 'secret-password'));
+    }
+
+    public function test_an_email_shared_by_two_accounts_is_refused(): void
+    {
+        // users.email carries no unique index, so this is possible. Resolving it
+        // to whichever row came back first would record the approval against a
+        // person who never gave it.
+        $first = $this->userWithRole('Administrator', 'admin01');
+        $second = $this->userWithRole('Administrator', 'admin02');
+        $first->update(['email' => 'shared@bouyant-trading.com']);
+        $second->update(['email' => 'shared@bouyant-trading.com']);
+
+        $this->expectException(ValidationException::class);
+        $this->authorize('shared@bouyant-trading.com', 'secret-password');
+    }
+
+    public function test_a_username_still_wins_over_another_account_email(): void
+    {
+        // Contrived, but the unique column must be the one that decides.
+        $named = $this->userWithRole('Administrator', 'chief', 'named-password');
+        $other = $this->userWithRole('Administrator', 'admin01');
+        $other->update(['email' => 'chief']);
+
+        $token = $this->authorize('chief', 'named-password');
+
+        $this->assertSame(
+            $named->id,
+            app(SupervisorAuthorization::class)->consume($token, self::ACTION)
+        );
+    }
+
+    public function test_username_and_email_share_one_throttle_bucket(): void
+    {
+        // Otherwise adding email would hand an attacker a second set of tries
+        // for the same account just by switching how they spell it.
+        $admin = $this->userWithRole('Administrator', 'admin01');
+        $admin->update(['email' => 'boss@bouyant-trading.com']);
+
+        foreach (range(1, 3) as $ignored) {
+            try {
+                $this->authorize('admin01', 'wrong');
+            } catch (ValidationException) {
+            }
+        }
+
+        foreach (range(1, 2) as $ignored) {
+            try {
+                $this->authorize('boss@bouyant-trading.com', 'wrong');
+            } catch (ValidationException) {
+            }
+        }
+
+        // Five failures between them: the right password must now be locked out.
+        try {
+            $this->authorize('admin01', 'secret-password');
+            $this->fail('Expected the account to be throttled after five failures.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('Too many attempts', $e->getMessage());
+        }
+    }
+
     public function test_a_non_administrator_is_refused_even_with_the_right_password(): void
     {
         // The whole point: valid credentials are not authority.

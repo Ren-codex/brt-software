@@ -20,7 +20,7 @@
                 <div class="modal-body">
                     <p class="gate-lead">{{ prompt }}</p>
 
-                    <label class="form-label" :for="usernameId">Username</label>
+                    <label class="form-label" :for="usernameId">Username or email</label>
                     <input
                         :id="usernameId"
                         ref="usernameField"

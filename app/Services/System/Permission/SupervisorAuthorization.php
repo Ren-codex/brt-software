@@ -50,9 +50,19 @@ class SupervisorAuthorization
      */
     private const ALWAYS_ALLOWED_ROLE = 'Super Admin';
 
-    public function issue(string $username, string $password, string $action, ?string $ip = null): string
+    /**
+     * @param  string  $identifier  The supervisor's username or their email.
+     */
+    public function issue(string $identifier, string $password, string $action, ?string $ip = null): string
     {
-        $key = $this->throttleKey($username, $ip);
+        $identifier = trim($identifier);
+        $user = $this->findSupervisor($identifier);
+
+        // Throttle the account itself whenever we can name it, so alternating
+        // between a username and that same account's email cannot buy a second
+        // set of attempts. Only an identifier matching nobody throttles on the
+        // typed text.
+        $key = $this->throttleKey($user ? 'id:' . $user->id : $identifier, $ip);
 
         if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
             throw ValidationException::withMessages([
@@ -61,10 +71,8 @@ class SupervisorAuthorization
             ]);
         }
 
-        $user = User::where('username', $username)->first();
-
-        // One message for a bad username and a bad password: saying which was
-        // wrong tells an attacker which administrator accounts exist.
+        // One message for an unknown account and a bad password: saying which
+        // was wrong tells an attacker which administrator accounts exist.
         if (!$user || !Hash::check($password, $user->password)) {
             RateLimiter::hit($key, 900);
 
@@ -161,13 +169,40 @@ class SupervisorAuthorization
         return \App\Models\ListRole::where('name', self::DEFAULT_ROLE)->pluck('id')->all();
     }
 
+    /**
+     * The account behind a typed username or email.
+     *
+     * Username first: that column is unique, so it answers deterministically.
+     * Email has no unique index on this table, so two accounts can carry the
+     * same address -- and an ambiguous email is refused rather than resolved to
+     * whichever row came back first, which would record the approval against
+     * the wrong person.
+     */
+    private function findSupervisor(string $identifier): ?User
+    {
+        if ($identifier === '') {
+            return null;
+        }
+
+        $user = User::where('username', $identifier)->first();
+
+        if ($user) {
+            return $user;
+        }
+
+        $matches = User::whereRaw('LOWER(email) = ?', [Str::lower($identifier)])->limit(2)->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
+
     private function cacheKey(string $token): string
     {
         return 'supervisor-auth:' . hash('sha256', $token);
     }
 
-    private function throttleKey(string $username, ?string $ip): string
+    /** @param  string  $subject  A resolved account ("id:7") or the typed text. */
+    private function throttleKey(string $subject, ?string $ip): string
     {
-        return 'supervisor|' . Str::lower($username) . '|' . ($ip ?? 'unknown');
+        return 'supervisor|' . Str::lower($subject) . '|' . ($ip ?? 'unknown');
     }
 }

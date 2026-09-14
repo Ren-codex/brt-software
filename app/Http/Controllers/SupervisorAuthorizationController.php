@@ -17,6 +17,8 @@ class SupervisorAuthorizationController extends Controller
     public function store(Request $request, SupervisorAuthorization $authorizer)
     {
         $data = $request->validate([
+            // Carries a username or an email; the field keeps its original
+            // name so every caller's payload stays valid.
             'username' => 'required|string|max:255',
             'password' => 'required|string',
             'action' => 'required|string',
