@@ -72,6 +72,7 @@
                   @back="backToStockReturnsList"
                   @toast="showToast"
                   @refresh="fetchStockReturnDetails"
+                  @updated="applyStockReturnUpdate"
                 />
               </div>
 
@@ -727,6 +728,21 @@ export default {
           console.error(err);
           this.showToast('Failed to load inventory stock details');
         });
+    },
+
+    /**
+     * A write on the details screen answered with the updated record, so show
+     * that rather than asking the server for it again. The list behind it is
+     * refreshed too, so going back does not show the status it had before.
+     */
+    applyStockReturnUpdate(record) {
+      if (!record?.id) {
+        return;
+      }
+
+      this.selectedStockReturn = record;
+      this.currentView = 'stockReturnDetails';
+      this.fetchStockReturns(null, { force: true });
     },
 
     fetchStockReturnDetails(id) {

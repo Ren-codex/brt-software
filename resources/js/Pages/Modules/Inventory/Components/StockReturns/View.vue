@@ -219,7 +219,7 @@ import VoidStockReturnModal from '../../Modal/VoidStockReturnModal.vue';
 export default {
   name: 'StockReturnDetails',
   components: { TransactionLogs, ReceiveReturnItemModal, VoidStockReturnModal },
-  emits: ['back', 'toast', 'refresh'],
+  emits: ['back', 'toast', 'refresh', 'updated'],
   props: {
     stockReturn: Object,
   },
@@ -313,6 +313,24 @@ export default {
       }
       this.$emit('refresh', this.data.id);
     },
+    /**
+     * Put a write's own response on screen.
+     *
+     * Every one of these endpoints answers with the updated record, so the page
+     * can render it without asking for it again. Re-fetching still happens when
+     * a response somehow arrives without one, but it is the fallback now rather
+     * than the only path.
+     */
+    applyUpdate(response) {
+      const record = response?.data?.data;
+
+      if (record && record.id) {
+        this.$emit('updated', record);
+        return;
+      }
+
+      this.$emit('refresh', this.data.id);
+    },
     /** A failure has to look like one -- a plain string is toasted as success. */
     failToast(message) {
       this.$emit('toast', { message, type: 'error' });
@@ -387,9 +405,9 @@ export default {
           },
         );
 
-        this.$emit('toast', response?.data?.message || 'Return item received successfully');
         this.onReceiveCancel(true);
-        this.$emit('refresh', this.data.id);
+        this.applyUpdate(response);
+        this.$emit('toast', response?.data?.message || 'Return item received successfully');
       } catch (error) {
         this.failToast(this.serverMessage(error, 'Unable to receive return item'));
       } finally {
@@ -409,8 +427,13 @@ export default {
         });
         this.showModal = false;
         this.remarks = '';
+        // Show the updated record first, tell the user second. The response
+        // already carries it, so there is no second round trip to lose it in,
+        // and $emit runs handlers synchronously -- with the toast ahead of this
+        // anything that threw while showing the message left the screen on the
+        // old status with no sign that the approval had gone through.
+        this.applyUpdate(response);
         this.$emit('toast', response?.data?.message || 'Stock return updated successfully');
-        this.$emit('refresh', this.data.id);
       } catch (error) {
         // Keep the modal open and say why here. The server refuses an approval
         // for real reasons -- no stock left to send back, most often -- and a

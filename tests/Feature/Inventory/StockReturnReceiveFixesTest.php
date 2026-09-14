@@ -284,6 +284,38 @@ class StockReturnReceiveFixesTest extends TestCase
         $this->assertFalse($ids->contains($other->id));
     }
 
+    public function test_the_detail_endpoint_shows_the_new_status_straight_after_approving(): void
+    {
+        // The screen approves, then re-reads this endpoint. If the refreshed
+        // payload did not carry the new status, no amount of client wiring
+        // would ever show it.
+        $user = $this->approver();
+        ['stockReturn' => $r] = $this->scenario(10, approved: false);
+
+        $this->actingAs($user)
+            ->postJson("/stock-returns/{$r->id}/approve", ['status' => 'approved'])
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->getJson("/stock-returns/{$r->id}")
+            ->assertOk()
+            ->assertJsonPath('data.status.slug', 'approved');
+    }
+
+    public function test_the_approve_response_already_carries_the_updated_record(): void
+    {
+        // The screen can render straight from this instead of making a second
+        // round trip, which removes a step that can fail on its own.
+        $user = $this->approver();
+        ['stockReturn' => $r] = $this->scenario(10, approved: false);
+
+        $this->actingAs($user)
+            ->postJson("/stock-returns/{$r->id}/approve", ['status' => 'approved'])
+            ->assertOk()
+            ->assertJsonPath('data.id', $r->id)
+            ->assertJsonPath('data.status.slug', 'approved');
+    }
+
     public function test_a_replacement_goes_back_into_the_batch_the_return_took_it_from(): void
     {
         $user = $this->approver();
