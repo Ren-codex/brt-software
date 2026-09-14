@@ -82,16 +82,16 @@
                                 <TableLoadingRow v-if="loading" :colspan="9" message="Loading sales orders..." />
                                 <template v-else>
                                 <template v-for="(list, index) in lists" :key="list.id">
-                                    <tr @click="toggleRowExpansion(index)"
+                                    <tr @click="openOrder(list)"
                                         :class="{
-                                            'expanded-row': expandedRow === index,
+
                                             'bg-danger bg-opacity-25': isDueSoon(list),
                                             'cursor-pointer': true
                                         }" 
                                         class="main-table-row transition-all"
                                         style="transition: all 0.3s ease;">
                                         <td class="text-center">
-                                            <div class="expand-icon" :class="{ 'rotated': expandedRow === index }">
+                                            <div class="expand-icon" title="Open this order">
                                                 <i class="ri-arrow-right-s-line"></i>
                                             </div>
                                             {{ index + 1 }}
@@ -164,116 +164,6 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <!-- Expanded Details Row -->
-                                <Transition name="details-row">
-                                <tr v-if="expandedRow === index" class="details-row">
-                                    <td colspan="9" class="p-0">
-                                        <div class="details-container">
-                                            <div class="details-content">
-                                                <div class="row g-4">
-                                                    <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm ">
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Order
-                                                                    Information</h6>
-                                                                <p class="mb-1"><strong>Order Date:</strong> {{
-                                                                    list.order_date }}</p>
-                                                                <p class="mb-1"><strong>Added By:</strong> {{
-                                                                    list.added_by?.fullname || '-' }}</p>
-                                                                <p class="mb-1"><strong>Sales Rep:</strong> {{
-                                                                    list.sales_rep?.fullname || '-' }}</p>
-                                                                <p class="mb-0" :class="{ 'mb-1': list.status?.slug === 'cancelled' }"><strong>Transferred To:</strong> {{
-                                                                    list.transferred_to || '-' }}</p>
-                                                                <p v-if="list.status?.slug === 'cancelled' && list.cancellation_remarks" class="mb-0">
-                                                                    <strong>Void Reason:</strong> {{ list.cancellation_remarks }}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="info-card items-card">
-                                                            <div class="info-card-header">
-                                                                <i class="ri-shopping-bag-line"></i>
-                                                                <h6>Items</h6>
-                                                            </div>
-                                                            <div class="info-card-body">
-                                                                <div v-if="list.items && list.items.length > 0">
-                                                                    <table class="table table-sm table-borderless mb-0">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th class="fw-semibold">Product Name</th>
-                                                                                <th class="fw-semibold">Batch Code</th>
-                                                                                <th class="fw-semibold">Quantity</th>
-                                                                                <th class="fw-semibold">Price</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            <tr v-for="item in list.items" :key="item.id">
-                                                                                <td>{{ getProduct(item.product_id).name || 'Unknown Product' }}</td>
-                                                                                <td>{{ item.batch_code || '-' }}</td>
-                                                                                <td>
-                                                                                    <span class="badge bg-primary">{{ item.quantity }} {{ item.unit }}</span>
-                                                                                </td>
-                                                                                <td>₱{{ item.price }}</td>
-                                                                            </tr>
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                                <p v-else class="text-muted mb-0">No items found</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-12" v-if="list.invoices && list.invoices.some(inv => inv.receipts && inv.receipts.length > 0)">
-                                                        <div class="info-card">
-                                                            <div class="info-card-header">
-                                                                <i class="ri-receipt-line"></i>
-                                                                <h6>Payment History</h6>
-                                                            </div>
-                                                            <div class="info-card-body">
-                                                                <table class="table table-sm table-borderless mb-0">
-                                                                    <thead>
-                                                                        <tr>
-                                                                            <th class="fw-semibold">OR Number</th>
-                                                                            <th class="fw-semibold">Date</th>
-                                                                            <th class="fw-semibold">Sales Rep</th>
-                                                                            <th class="fw-semibold">Amount Paid</th>
-                                                                            <th class="fw-semibold">Mode</th>
-                                                                            <th class="fw-semibold">Type</th>
-                                                                            <th class="fw-semibold">Status</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        <template v-for="inv in list.invoices" :key="inv.id">
-                                                                            <tr v-for="receipt in inv.receipts" :key="receipt.id">
-                                                                                <td class="fw-semibold">{{ receipt.receipt_number }}</td>
-                                                                                <td>{{ receipt.receipt_date }}</td>
-                                                                                <td>{{ receipt.sales_rep?.fullname || list.sales_rep?.fullname || '-' }}</td>
-                                                                                <td>₱{{ receipt.amount_paid }}</td>
-                                                                                <td>{{ receipt.payment_mode || '-' }}</td>
-                                                                                <td>
-                                                                                    <span class="badge" :class="getReceiptTypeBadge(receipt.receipt_type)">
-                                                                                        {{ getReceiptTypeLabel(receipt.receipt_type) }}
-                                                                                    </span>
-                                                                                </td>
-                                                                                <td>
-                                                                                    <span v-if="receipt.status" class="status-badge" :class="statusTone(receipt.status)">
-                                                                                        {{ receipt.status.name }}
-                                                                                    </span>
-                                                                                </td>
-                                                                            </tr>
-                                                                        </template>
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </Transition>
                                 </template>
                                 <tr v-if="lists.length === 0">
                                     <td colspan="9">
@@ -301,6 +191,8 @@
     <Adjustment @update="fetch()" :dropdowns="dropdowns" ref="adjustment"/>
 
     
+
+    <ViewOrder :order="viewingOrder" :dropdowns="dropdowns" @close="viewingOrder = null" />
 </template>
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
@@ -310,6 +202,7 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Cancel from './Modals/Cancel.vue';
 import Create from './Modals/Create.vue';
+import ViewOrder from './Modals/ViewOrder.vue';
 import Adjustment from './Modals/Adjustment.vue';
 import Approval from './Modals/Approval.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
@@ -318,7 +211,7 @@ import { recordLockMixin } from '@/Shared/recordLock.js';
 
 
 export default {
-    components: { PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval, TableLoadingRow },
+    components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval, TableLoadingRow },
     mixins: [pollingMixin, recordLockMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
@@ -344,7 +237,7 @@ export default {
                 pending_orders: 0,
                 total_cancelled_orders: 0
             },
-            expandedRow: null
+            viewingOrder: null
         }
     },
     computed: {
@@ -427,7 +320,7 @@ export default {
                         this.meta = response.data.meta;
                         this.links = response.data.links;
                         if (!quiet) {
-                            this.expandedRow = null; // Reset expanded row when data changes
+                            this.viewingOrder = null; // Whatever was open is stale once the list reloads
                         }
                     }
                 })
@@ -488,13 +381,8 @@ export default {
             }
         },
 
-        toggleRowExpansion(index) {
-            // Toggle between opening and closing, only one row open at a time
-            if (this.expandedRow === index) {
-                this.expandedRow = null; // Close if clicking the same row
-            } else {
-                this.expandedRow = index; // Open new row, closing any previously opened one
-            }
+        openOrder(order) {
+            this.viewingOrder = order;
         },
 
         fetchMetrics() {
