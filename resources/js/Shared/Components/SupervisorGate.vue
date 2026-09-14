@@ -1,77 +1,146 @@
 <template>
-    <div class="supervisor-gate" :class="{ authorized: !!token }">
-        <template v-if="!token">
-            <p class="supervisor-gate-lead">
-                <i class="ri-shield-user-line"></i>
-                {{ prompt }}
-            </p>
+    <Teleport to="body">
+        <div
+            v-if="open"
+            class="modal-overlay modal-overlay-stacked active"
+            @click.self="cancel"
+        >
+            <div class="modal-container" style="max-width: 440px" @click.stop>
+                <div class="modal-header">
+                    <div class="modal-header-icon"><i class="ri-shield-user-line"></i></div>
+                    <div>
+                        <h5 class="modal-title">Authorization required</h5>
+                        <p class="modal-subtitle">Covers this one action only.</p>
+                    </div>
+                    <button type="button" class="close-btn ms-auto" @click="cancel">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
 
-            <div class="supervisor-gate-fields">
-                <input
-                    v-model.trim="username"
-                    type="text"
-                    class="form-control"
-                    placeholder="Username"
-                    autocomplete="off"
-                    :disabled="checking"
-                    @keyup.enter="authorize"
-                />
-                <input
-                    v-model="password"
-                    type="password"
-                    class="form-control"
-                    placeholder="Password"
-                    autocomplete="off"
-                    :disabled="checking"
-                    @keyup.enter="authorize"
-                />
-                <button type="button" class="btn btn-primary" :disabled="!canSubmit" @click="authorize">
-                    <i v-if="checking" class="ri-loader-4-line spin"></i>
-                    <span v-else>Authorize</span>
-                </button>
+                <div class="modal-body">
+                    <p class="gate-lead">{{ prompt }}</p>
+
+                    <label class="form-label" :for="usernameId">Username</label>
+                    <input
+                        :id="usernameId"
+                        ref="usernameField"
+                        v-model.trim="username"
+                        type="text"
+                        class="form-control mb-2"
+                        autocomplete="off"
+                        :disabled="checking"
+                        @keyup.enter="authorize"
+                    />
+
+                    <label class="form-label" :for="passwordId">Password</label>
+                    <input
+                        :id="passwordId"
+                        v-model="password"
+                        type="password"
+                        class="form-control"
+                        autocomplete="off"
+                        :disabled="checking"
+                        @keyup.enter="authorize"
+                    />
+
+                    <p v-if="error" class="gate-error">{{ error }}</p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" :disabled="checking" @click="cancel">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" :disabled="!canSubmit" @click="authorize">
+                        <i v-if="checking" class="ri-loader-4-line spin me-1"></i>
+                        {{ checking ? 'Checking...' : 'Authorize' }}
+                    </button>
+                </div>
             </div>
-
-            <small v-if="error" class="supervisor-gate-error">{{ error }}</small>
-        </template>
-
-        <p v-else class="supervisor-gate-done">
-            <i class="ri-shield-check-line"></i>
-            Authorized by <strong>{{ authorizedAs }}</strong>. This approval covers this one action.
-        </p>
-    </div>
+        </div>
+    </Teleport>
 </template>
 
 <script>
 import axios from 'axios';
 
 /**
- * An administrator authorises a sensitive action with their own credentials.
+ * Someone authorised for a sensitive action approves it with their own
+ * credentials, in a popup over whatever asked for it.
  *
  * The password goes only to /supervisor-authorization and is never held after
  * the exchange: what comes back is a single-use token for one action, which the
- * surrounding form submits. Nothing here decides whether the credentials are
- * good — the server does, and the action is refused without a token it issued.
+ * caller submits with its request. Nothing here decides whether the credentials
+ * are good -- the server does, and the action is refused without a token it
+ * issued.
+ *
+ * The caller opens this instead of performing the action, and performs it on
+ * @authorized. Closing it must therefore leave the action undone: a cancel that
+ * fell through to the action would hand out exactly the override the gate
+ * exists to withhold.
  */
+let gateSeq = 0;
+
 export default {
     name: 'SupervisorGate',
     props: {
-        /** Which action to authorise, e.g. 'sales.cancel_order'. */
+        /** Which action to authorise, e.g. 'sales.credit_sale'. */
         action: { type: String, required: true },
         prompt: {
             type: String,
-            default: 'Someone authorized for this must approve it. Ask them to enter their credentials.',
+            default: 'Someone authorized for this must approve it.',
         },
     },
-    emits: ['update:token'],
+    emits: ['authorized', 'cancelled'],
     data() {
-        return { username: '', password: '', token: '', authorizedAs: '', error: '', checking: false };
+        gateSeq += 1;
+
+        return {
+            open: false,
+            username: '',
+            password: '',
+            error: '',
+            checking: false,
+            uid: gateSeq,
+        };
     },
     computed: {
         canSubmit() {
-            return this.username && this.password && !this.checking;
+            return !!this.username && !!this.password && !this.checking;
+        },
+        usernameId() {
+            return `supervisor-gate-username-${this.uid}`;
+        },
+        passwordId() {
+            return `supervisor-gate-password-${this.uid}`;
         },
     },
+    watch: {
+        open(isOpen) {
+            if (!isOpen) return;
+            this.$nextTick(() => this.$refs.usernameField?.focus());
+        },
+    },
+    mounted() {
+        document.addEventListener('keydown', this.onKeydown);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this.onKeydown);
+    },
     methods: {
+        /** Ask for credentials. The caller acts on @authorized, not on this call. */
+        show() {
+            this.reset();
+            this.open = true;
+        },
+        cancel() {
+            if (this.checking) return;
+            this.open = false;
+            this.reset();
+            this.$emit('cancelled');
+        },
+        onKeydown(event) {
+            if (event.key === 'Escape' && this.open) this.cancel();
+        },
         authorize() {
             if (!this.canSubmit) return;
 
@@ -84,13 +153,16 @@ export default {
                 action: this.action,
             })
                 .then(({ data }) => {
-                    this.token = data.token;
-                    this.authorizedAs = this.username;
-                    this.$emit('update:token', this.token);
+                    this.open = false;
+                    const token = data.token;
+                    this.reset();
+                    this.$emit('authorized', token);
                 })
                 .catch((err) => {
                     const errors = err.response?.data?.errors;
-                    this.error = errors ? Object.values(errors).flat()[0] : 'Could not authorize. Try again.';
+                    this.error = errors
+                        ? Object.values(errors).flat()[0]
+                        : 'Could not authorize. Try again.';
                 })
                 .finally(() => {
                     // Never keep the password around, whatever the outcome.
@@ -99,61 +171,29 @@ export default {
                 });
         },
         reset() {
-            Object.assign(this, { username: '', password: '', token: '', authorizedAs: '', error: '', checking: false });
-            this.$emit('update:token', '');
+            this.username = '';
+            this.password = '';
+            this.error = '';
+            this.checking = false;
         },
     },
 };
 </script>
 
 <style scoped>
-.supervisor-gate {
-    margin-top: 1rem;
-    padding: 0.9rem 1rem;
-    border: 1px solid #d8e6e1;
-    border-radius: 10px;
-    background: #f7fbfa;
+/* Only content inside the body -- the modal chrome itself comes from
+   _library-modal.scss, which owns it for every modal in the app. */
+.gate-lead {
+    margin: 0 0 0.9rem;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    color: #4a6963;
 }
-.supervisor-gate.authorized {
-    border-color: #a8dcc8;
-    background: #e9f5f0;
-}
-
-.supervisor-gate-lead {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-    margin: 0 0 0.7rem;
-    font-size: 0.82rem;
-    color: #33564f;
-}
-.supervisor-gate-lead i { color: #3d8d7a; margin-top: 1px; }
-
-.supervisor-gate-fields {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto;
-    gap: 0.5rem;
-}
-@media (max-width: 560px) {
-    .supervisor-gate-fields { grid-template-columns: 1fr; }
-}
-
-.supervisor-gate-error {
-    display: block;
-    margin-top: 0.45rem;
+.gate-error {
+    margin: 0.6rem 0 0;
+    font-size: 0.79rem;
     color: #96231f;
-    font-size: 0.78rem;
 }
-
-.supervisor-gate-done {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
-    font-size: 0.82rem;
-    color: #1b6b4a;
-}
-
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

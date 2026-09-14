@@ -741,7 +741,7 @@
                     <div class="payment-section-heading payment-section-heading-sm">
                         <span class="payment-section-kicker">Step 2 of 2</span>
                         <h5>Confirm this credit sale</h5>
-                        <p>Review the details below, then have this approved to confirm.</p>
+                        <p>Review the details below. Confirming asks for an authorized approval.</p>
                     </div>
 
                     <div class="credit-verification-summary">
@@ -763,12 +763,6 @@
                         </div>
                     </div>
 
-                    <SupervisorGate
-                        ref="creditGate"
-                        action="sales.credit_sale"
-                        prompt="A credit sale commits the business to collecting later. Someone authorized for this must approve it."
-                        @update:token="onCreditAuthorized"
-                    />
                     <span class="error-message" v-if="creditVerificationError">{{ creditVerificationError }}</span>
                 </div>
             </div>
@@ -806,7 +800,7 @@
                     <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="creditStep = 1" :disabled="form.processing">
                         <i class="ri-arrow-left-line me-2"></i>Back
                     </button>
-                    <button type="button" class="btn btn-primary payment-modal-btn" @click="submitCreditSale" :disabled="form.processing || !isCreditVerificationMatched">
+                    <button type="button" class="btn btn-primary payment-modal-btn" @click="submitCreditSale" :disabled="form.processing">
                         <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
                         <i class="ri-check-line me-2" v-else></i>
                         {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
@@ -815,6 +809,13 @@
             </div>
         </div>
     </div>
+
+    <SupervisorGate
+        ref="creditGate"
+        action="sales.credit_sale"
+        prompt="A credit sale commits the business to collecting later. Someone authorized for this must approve it."
+        @authorized="onCreditAuthorized"
+    />
 
     <div v-if="showBankTransferModal" class="modal-overlay active order-review-modal" @click.self="closeBankTransferModal">
         <div class="modal-container modal-md" @click.stop>
@@ -1733,6 +1734,12 @@ export default {
                     this.showBankTransferModal = false;
                     this.showPaymentTypeModal = false;
                     this.showModal = true;
+
+                    // The server spends the token before it reaches the failure,
+                    // so it is gone whatever went wrong. Drop it, or a retry
+                    // resubmits a spent one and is refused for the wrong reason.
+                    this.supervisorToken = '';
+                    this.form.supervisor_token = '';
                 },
             });
         },
@@ -1793,20 +1800,29 @@ export default {
             this.bankTransferError = null;
             this.showPaymentTypeModal = true;
         },
+        /** Authorised: the sale the operator already confirmed now goes ahead. */
         onCreditAuthorized(token) {
             this.supervisorToken = token;
             this.creditVerificationError = null;
+            this.placeCreditSale();
         },
         submitCreditSale() {
             if (!this.form.due_date) {
                 this.form.errors.due_date = 'Please set a due date before continuing.';
                 return;
             }
+            this.creditVerificationError = null;
+
+            // Ask for approval instead of placing the sale. Cancelling the gate
+            // leaves the order unplaced, which is the whole point of it.
             if (this.creditNeedsAuthorization && !this.isCreditVerificationMatched) {
-                this.creditVerificationError = 'This credit sale must be authorized before it can go through.';
+                this.$refs.creditGate?.show();
                 return;
             }
-            this.creditVerificationError = null;
+
+            this.placeCreditSale();
+        },
+        placeCreditSale() {
             this.showCreditVerificationModal = false;
             this.submitOrderCreation();
         },

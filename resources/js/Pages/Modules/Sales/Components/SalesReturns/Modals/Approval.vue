@@ -163,12 +163,6 @@
                     </div>
                 </div>
 
-                <SupervisorGate
-                    ref="gate"
-                    action="sales.approve_return"
-                    prompt="Approving this return puts stock back and moves money. Someone authorized for this must approve it."
-                    @update:token="onAuthorized"
-                />
             </div>
 
             <div class="modal-footer pretty-footer">
@@ -179,6 +173,13 @@
                     {{ form.processing ? "Approving..." : "Approve Return" }}
                 </button>
             </div>
+
+            <SupervisorGate
+                ref="gate"
+                action="sales.approve_return"
+                prompt="Approving this return puts stock back and moves money. Someone authorized for this must approve it."
+                @authorized="onAuthorized"
+            />
         </div>
     </div>
 </template>
@@ -238,11 +239,8 @@ export default {
         replacementUndervalue() {
             return this.replacementRows.length > 0 && this.replacementTotal < this.selectedTotal;
         },
-        confirmTextValid() {
-            return !!this.form.supervisor_token;
-        },
         isValid() {
-            return this.selectedItems.length > 0 && this.confirmTextValid && !this.form.processing && !this.replacementUndervalue;
+            return this.selectedItems.length > 0 && !this.form.processing && !this.replacementUndervalue;
         }
     },
     methods: {
@@ -278,10 +276,19 @@ export default {
             }
         },
 
+        /** Authorised: the approval the operator already asked for now goes ahead. */
         onAuthorized(token) {
             this.form.supervisor_token = token;
+            this.performApproval();
         },
         submit(){
+            if (!this.isValid) return;
+
+            // Ask for approval instead of performing it. Cancelling the gate
+            // leaves the return unapproved, which is the whole point of it.
+            this.$refs.gate?.show();
+        },
+        performApproval(){
             if (!this.isValid) return;
 
             this.form.item_ids = this.selectedItems;

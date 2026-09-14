@@ -184,13 +184,6 @@
                     <label class="form-label">Why did it bounce? <span class="text-danger">*</span></label>
                     <input v-model.trim="bounce.reason" type="text" class="form-control" placeholder="e.g. Insufficient funds" />
 
-                    <SupervisorGate
-                        ref="bounceGate"
-                        action="checks.bounce"
-                        prompt="Recording a bounce puts the rep back on the hook for this money. Someone authorized for this must approve it."
-                        @update:token="bounce.token = $event"
-                    />
-
                     <div v-if="bounce.error" class="error-msg">{{ bounce.error }}</div>
                 </div>
                 <div class="modal-footer">
@@ -202,6 +195,13 @@
                 </div>
             </div>
         </div>
+
+        <SupervisorGate
+            ref="bounceGate"
+            action="checks.bounce"
+            prompt="Recording a bounce puts the rep back on the hook for this money. Someone authorized for this must approve it."
+            @authorized="onBounceAuthorized"
+        />
     </div>
 </template>
 
@@ -286,10 +286,15 @@ export default {
                 this.bounce.error = 'Say why it bounced — the rep needs it to chase the customer.';
                 return;
             }
-            if (!this.bounce.token) {
-                this.bounce.error = 'An administrator must authorize this before it can be recorded.';
-                return;
-            }
+            this.bounce.error = '';
+
+            // Ask for approval instead of recording it. Cancelling the gate
+            // leaves the check exactly as it was.
+            this.$refs.bounceGate?.show();
+        },
+        /** Authorised: record the bounce the operator already asked for. */
+        onBounceAuthorized(token) {
+            this.bounce.token = token;
             this.bounce.saving = true;
             axios.put(`/accounting/check-register/${this.bounce.check.id}/bounce`, {
                 bounce_reason: this.bounce.reason,
