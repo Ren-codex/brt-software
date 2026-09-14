@@ -19,6 +19,8 @@ use Illuminate\Http\Request;
  */
 class CheckRegisterController extends Controller
 {
+    use \App\Http\Controllers\Concerns\RequiresSupervisorAuthorization;
+
     public function __construct(
         private CheckRegisterClass $register,
         private CheckForecastClass $forecast,
@@ -67,6 +69,12 @@ class CheckRegisterController extends Controller
         ]);
 
         $check = Check::findOrFail($id);
+
+        // Bouncing posts nothing, so it leaves no ledger trail — yet it decides
+        // that money the customer appeared to pay never arrived, and puts the
+        // rep who took the check back on the hook. The audit row is the only
+        // record that it happened and who decided it.
+        $this->requireSupervisor($request, 'checks.bounce', Check::class, $check->id);
 
         $this->register->markBounced($check, $data['bounce_reason']);
 

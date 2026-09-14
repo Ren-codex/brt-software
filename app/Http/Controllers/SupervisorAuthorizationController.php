@@ -17,6 +17,7 @@ class SupervisorAuthorizationController extends Controller
     private const ACTIONS = [
         'sales.credit_sale',
         'sales.approve_return',
+        'checks.bounce',
     ];
 
     public function store(Request $request, SupervisorAuthorization $authorizer)

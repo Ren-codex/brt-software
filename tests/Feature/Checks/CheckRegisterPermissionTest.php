@@ -100,14 +100,54 @@ class CheckRegisterPermissionTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_an_approver_can_bounce(): void
+    public function test_bouncing_without_an_administrator_is_refused(): void
+    {
+        // Bouncing writes no ledger entry, so the audit row is the only trace.
+        $check = $this->pendingCheck();
+
+        $this->actingAs($this->userWith('accounting', 'check_register', 'approver'))
+            ->putJson('/accounting/check-register/' . $check->id . '/bounce', ['bounce_reason' => 'Insufficient funds'])
+            ->assertStatus(422);
+
+        $this->assertSame(Check::STATUS_PENDING, $check->fresh()->status, 'A rep must not be blamed without a name against the decision.');
+    }
+
+    public function test_an_approver_with_an_administrator_can_bounce(): void
     {
         $check = $this->pendingCheck();
 
         $this->actingAs($this->userWith('accounting', 'check_register', 'approver'))
-            ->put('/accounting/check-register/' . $check->id . '/bounce', ['bounce_reason' => 'Insufficient funds'])
+            ->putJson('/accounting/check-register/' . $check->id . '/bounce', [
+                'bounce_reason' => 'Insufficient funds',
+                'supervisor_token' => $this->supervisorToken('checks.bounce'),
+            ])
             ->assertOk();
 
         $this->assertSame(Check::STATUS_BOUNCED, $check->fresh()->status);
+    }
+
+    public function test_confirming_still_needs_no_administrator(): void
+    {
+        // Deliberately ungated: a wrong confirmation surfaces at bank
+        // reconciliation, whereas a wrong bounce quietly blames somebody.
+        $check = $this->pendingCheck();
+
+        $this->actingAs($this->userWith('accounting', 'check_register', 'approver'))
+            ->putJson('/accounting/check-register/' . $check->id . '/confirm')
+            ->assertStatus(422);   // fails on the missing bank name, not on authorisation
+    }
+
+    /** An administrator's authorisation, as the modal would obtain it. */
+    private function supervisorToken(string $action): string
+    {
+        $admin = User::factory()->create([
+            'username' => 'sup' . uniqid(),
+            'password' => \Illuminate\Support\Facades\Hash::make('secret-password'),
+        ]);
+        $role = ListRole::firstOrCreate(['name' => 'Administrator'], ['type' => 'role', 'definition' => 't', 'is_active' => true]);
+        UserRole::create(['user_id' => $admin->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $admin->id]);
+
+        return app(\App\Services\System\Permission\SupervisorAuthorization::class)
+            ->issue($admin->username, 'secret-password', $action, '127.0.0.1');
     }
 }

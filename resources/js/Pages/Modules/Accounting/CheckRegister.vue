@@ -183,6 +183,14 @@
                     </p>
                     <label class="form-label">Why did it bounce? <span class="text-danger">*</span></label>
                     <input v-model.trim="bounce.reason" type="text" class="form-control" placeholder="e.g. Insufficient funds" />
+
+                    <SupervisorGate
+                        ref="bounceGate"
+                        action="checks.bounce"
+                        prompt="Recording a bounce puts the rep back on the hook for this money. An administrator must authorize it."
+                        @update:token="bounce.token = $event"
+                    />
+
                     <div v-if="bounce.error" class="error-msg">{{ bounce.error }}</div>
                 </div>
                 <div class="modal-footer">
@@ -199,10 +207,12 @@
 
 <script>
 import axios from "axios";
+import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
 
 export default {
+    components: { SupervisorGate },
     layout: [MainLayout, AccountingLayout],
     props: {
         directions: { type: Array, default: () => [] },
@@ -213,7 +223,7 @@ export default {
             rows: [],
             loading: true,
             filters: { direction: '', status: '', keyword: '' },
-            bounce: { open: false, check: null, reason: '', error: '', saving: false },
+            bounce: { open: false, check: null, reason: '', error: '', saving: false, token: '' },
             forecast: { accounts: [], unassigned_received: 0 },
             forecastLoading: true,
             searchTimer: null,
@@ -268,15 +278,23 @@ export default {
                 .catch(err => alert(err.response?.data?.message || 'Could not confirm this check.'));
         },
         openBounce(check) {
-            this.bounce = { open: true, check, reason: '', error: '', saving: false };
+            this.bounce = { open: true, check, reason: '', error: '', saving: false, token: '' };
+            this.$nextTick(() => this.$refs.bounceGate?.reset());
         },
         submitBounce() {
             if (!this.bounce.reason) {
                 this.bounce.error = 'Say why it bounced — the rep needs it to chase the customer.';
                 return;
             }
+            if (!this.bounce.token) {
+                this.bounce.error = 'An administrator must authorize this before it can be recorded.';
+                return;
+            }
             this.bounce.saving = true;
-            axios.put(`/accounting/check-register/${this.bounce.check.id}/bounce`, { bounce_reason: this.bounce.reason })
+            axios.put(`/accounting/check-register/${this.bounce.check.id}/bounce`, {
+                bounce_reason: this.bounce.reason,
+                supervisor_token: this.bounce.token,
+            })
                 .then(() => { this.bounce.open = false; this.fetch(); this.fetchForecast(); })
                 .catch(err => { this.bounce.error = err.response?.data?.message || 'Could not record the bounce.'; })
                 .finally(() => { this.bounce.saving = false; });
