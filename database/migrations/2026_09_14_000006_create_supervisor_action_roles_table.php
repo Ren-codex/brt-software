@@ -23,7 +23,9 @@ return new class extends Migration
         Schema::create('supervisor_action_roles', function (Blueprint $table) {
             $table->increments('id');
             $table->string('action', 60);
-            $table->unsignedInteger('role_id');
+            // list_roles.id is a legacy tinyIncrements() (tinyint unsigned); a foreign
+            // key across mismatched integer widths is rejected outright by MySQL.
+            $table->unsignedTinyInteger('role_id');
             $table->timestamps();
 
             $table->unique(['action', 'role_id']);
