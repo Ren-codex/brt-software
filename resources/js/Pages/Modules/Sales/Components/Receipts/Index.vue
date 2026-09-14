@@ -119,7 +119,7 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <button @click.stop="onPrint(list.id)" class="action-btn info" title="Print">
+                                                <button @click.stop="onPrint(list.id)" class="action-btn info" v-b-tooltip.hover title="Print">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
                                             </div>

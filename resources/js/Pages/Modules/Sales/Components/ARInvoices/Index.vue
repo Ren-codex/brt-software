@@ -108,10 +108,10 @@
                                         <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <button @click.stop="onViewReceipts(list)" class="action-btn approve" title="View Receipts">
+                                                <button @click.stop="onViewReceipts(list)" class="action-btn approve" v-b-tooltip.hover title="View Receipts">
                                                     <i class="ri-file-3-line"></i>
                                                 </button>
-                                                <button @click.stop="onPrint(list.id)" class="action-btn info" title="Print">
+                                                <button @click.stop="onPrint(list.id)" class="action-btn info" v-b-tooltip.hover title="Print">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
                                                 <button

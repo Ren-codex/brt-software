@@ -139,26 +139,26 @@
                                             <div class="d-flex justify-content-center gap-1">
                                                 <button v-if="canApprove && list.requires_batch_approval && !list.approved_at"
                                                     @click.stop="onApproval(list.id)"
-                                                    class="action-btn success" title="Approve manually-selected batch">
+                                                    class="action-btn success" v-b-tooltip.hover title="Approve manually-selected batch">
                                                     <i class="ri-shield-check-line"></i>
                                                 </button>
                                                 <button v-if="list.status?.slug == 'for-payment' && can('sales', 'sales_orders', 'encoder')"
                                                     @click.stop="onSalesAdjustment(list)"
-                                                    class="action-btn warn" title="Sales Adjustment">
+                                                    class="action-btn warn" v-b-tooltip.hover title="Sales Adjustment">
                                                     <i class="ri-refund-line"></i>
                                                 </button>
                                                 <button @click.stop="onPrint(list.id)"
-                                                    class="action-btn info" title="Print Invoice">
+                                                    class="action-btn info" v-b-tooltip.hover title="Print Invoice">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
                                                 <button v-if="isEditableOrder(list) && can('sales', 'sales_orders', 'encoder')"
                                                     @click.stop="openEdit(list, index)"
-                                                    class="action-btn edit" title="Edit">
+                                                    class="action-btn edit" v-b-tooltip.hover title="Edit">
                                                     <i class="ri-pencil-fill"></i>
                                                 </button>
                                                 <button v-if="isCancellable(list) && (can('sales', 'sales_orders', 'void') || can('sales', 'sales_orders', 'approver'))"
                                                     @click.stop="onCancel(list)"
-                                                    class="action-btn delete" title="Cancel Order">
+                                                    class="action-btn delete" v-b-tooltip.hover title="Cancel Order">
                                                     <i class="ri-close-line"></i>
                                                 </button>
                                             </div>

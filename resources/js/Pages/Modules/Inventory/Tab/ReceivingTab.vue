@@ -110,7 +110,7 @@
                       <button
                         type="button"
                         class="action-btn view"
-                        title="View Details"
+                        v-b-tooltip.hover title="View Details"
                         @click="openDetailsModal(record)"
                       >
                         <i class="ri-eye-line"></i>
@@ -119,7 +119,7 @@
                         v-if="!record.is_voided"
                         type="button"
                         class="action-btn void"
-                        title="Void this received stock"
+                        v-b-tooltip.hover title="Void this received stock"
                         @click="openVoidModal(record)"
                       >
                         <i class="ri-close-circle-line"></i>

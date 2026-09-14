@@ -139,7 +139,7 @@
                             v-if="hasPendingItems(list) && list.status?.name !== 'Voided' && can('inventory', 'receiving', 'encoder')"
                             class="action-btn receive"
                             @click="openReceiveStock(list)"
-                            title="Receive Stock"
+                            v-b-tooltip.hover title="Receive Stock"
                           >
                             Receive Stock
                           </button>

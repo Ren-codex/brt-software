@@ -5,13 +5,13 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="text-primary mb-0">#{{ item.remittance_no }}</h6>
                     <div>
-                        <button @click.stop="openApprovalModal()" class="action-btn approve me-1" v-if="item.status?.slug === 'open'" title="Verify">
+                        <button @click.stop="openApprovalModal()" class="action-btn approve me-1" v-if="item.status?.slug === 'open'" v-b-tooltip.hover title="Verify">
                             <i class="ri-check-line"></i>
                         </button>
-                        <button @click.stop="onPrint(item.id)" class="action-btn info me-1" title="Print">
+                        <button @click.stop="onPrint(item.id)" class="action-btn info me-1" v-b-tooltip.hover title="Print">
                             <i class="ri-printer-line"></i>
                         </button>
-                        <button @click.stop="openDelete(item.id)" class="action-btn delete" v-if="item.status?.slug == 'open'" title="Delete">
+                        <button @click.stop="openDelete(item.id)" class="action-btn delete" v-if="item.status?.slug == 'open'" v-b-tooltip.hover title="Delete">
                             <i class="ri-delete-bin-line"></i>
                         </button>
                     </div>
@@ -58,7 +58,7 @@
                                     <span class="me-3">
                                         <strong>Total Receipt:</strong> {{ item.receipts.length || '-' }}
                                     </span>
-                                    <button @click="showReceiptsModal" class="action-btn approve" title="View Receipts">
+                                    <button @click="showReceiptsModal" class="action-btn approve" v-b-tooltip.hover title="View Receipts">
                                         <i class="ri-eye-line"></i>
                                     </button>
                                 </div><br>

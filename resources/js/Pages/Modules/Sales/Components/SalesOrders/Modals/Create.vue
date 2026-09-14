@@ -193,10 +193,10 @@
                                             <td class="text-center">{{ formatCurrency(calculateDiscountedTotal(list)) }}</td>
                                             <td class="text-center">
                                                 <div class="action-buttons">
-                                                    <button type="button" class="action-btn edit" @click.stop="editItem(list, index)" title="Edit">
+                                                    <button type="button" class="action-btn edit" @click.stop="editItem(list, index)" v-b-tooltip.hover title="Edit">
                                                         <i class="ri-edit-line"></i>
                                                     </button>
-                                                    <button type="button" class="action-btn delete" @click.stop="removeItem(list.id)" title="Remove">
+                                                    <button type="button" class="action-btn delete" @click.stop="removeItem(list.id)" v-b-tooltip.hover title="Remove">
                                                         <i class="ri-delete-bin-line"></i>
                                                     </button>
                                                 </div>

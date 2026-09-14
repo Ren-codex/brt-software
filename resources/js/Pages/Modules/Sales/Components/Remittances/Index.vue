@@ -134,7 +134,7 @@
                                                 </td>
                                                 <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                                 <td class="text-center">
-                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                    <button @click.stop="openView(item)" class="action-btn info" v-b-tooltip.hover title="View">
                                                         <i class="ri-eye-line"></i>
                                                     </button>
                                                 </td>
@@ -189,7 +189,7 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-center">
-                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                    <button @click.stop="openView(item)" class="action-btn info" v-b-tooltip.hover title="View">
                                                         <i class="ri-eye-line"></i>
                                                     </button>
                                                 </td>
@@ -234,7 +234,7 @@
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                                 <td class="text-center">
-                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                    <button @click.stop="openView(item)" class="action-btn info" v-b-tooltip.hover title="View">
                                                         <i class="ri-eye-line"></i>
                                                     </button>
                                                 </td>
@@ -279,7 +279,7 @@
                                                 <td class="text-end">{{ formatCurrency(item.total_amount) }}</td>
                                                 <td class="text-center">{{ item.created_by?.fullname || '-' }}</td>
                                                 <td class="text-center">
-                                                    <button @click.stop="openView(item)" class="action-btn info" title="View">
+                                                    <button @click.stop="openView(item)" class="action-btn info" v-b-tooltip.hover title="View">
                                                         <i class="ri-eye-line"></i>
                                                     </button>
                                                 </td>

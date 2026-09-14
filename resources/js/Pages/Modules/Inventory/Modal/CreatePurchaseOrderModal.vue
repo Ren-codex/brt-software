@@ -147,11 +147,11 @@
                                             <td class="text-center">
                                                 <div class="action-buttons">
                                                     <button type="button" class="action-btn info" @click="duplicateItem(index)"
-                                                        title="Duplicate">
+                                                        v-b-tooltip.hover title="Duplicate">
                                                         <i class="ri-file-copy-line"></i>
                                                     </button>
                                                     <button type="button" class="action-btn delete" @click="removeItem(index)"
-                                                        title="Remove">
+                                                        v-b-tooltip.hover title="Remove">
                                                         <i class="ri-delete-bin-line"></i>
                                                     </button>
                                                 </div>

@@ -132,10 +132,10 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <button @click.stop="onPrint(list)" class="action-btn info" title="Print">
+                                                <button @click.stop="onPrint(list)" class="action-btn info" v-b-tooltip.hover title="Print">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
-                                                <button @click.stop="onApprove(list)" v-if="canApprove && list.status?.slug == 'sales-return-approval'" class="action-btn approve" title="Approve">
+                                                <button @click.stop="onApprove(list)" v-if="canApprove && list.status?.slug == 'sales-return-approval'" class="action-btn approve" v-b-tooltip.hover title="Approve">
                                                     <i class="ri-check-line"></i>
                                                 </button>
                                             </div>
