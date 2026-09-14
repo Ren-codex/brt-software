@@ -72,6 +72,39 @@
               </template>
             </tbody>
           </table>
+
+          <section class="auth-section">
+            <div class="auth-section-head">
+              <h3><i class="ri-shield-user-line"></i> Can Authorize</h3>
+              <p>
+                These actions stop and ask for a username and password before they go through.
+                Tick one to let someone with this role be the person who approves it.
+              </p>
+            </div>
+
+            <label
+              v-for="action in authorizations"
+              :key="action.key"
+              class="auth-action"
+              :class="{ checked: action.assigned }"
+            >
+              <input type="checkbox" v-model="action.assigned">
+              <span class="auth-action-box"><i class="ri-check-line"></i></span>
+              <span class="auth-action-text">
+                <strong>{{ action.label }}</strong>
+                <span>{{ action.description }}</span>
+              </span>
+            </label>
+
+            <p class="auth-note">
+              <i class="ri-shield-check-line"></i>
+              <span>
+                A <strong>Super Admin</strong> can always authorize, whatever is ticked here, so nothing on
+                this screen can leave an action with nobody able to approve it. An action ticked for no role
+                at all falls back to <strong>Administrator</strong>.
+              </span>
+            </p>
+          </section>
           </template>
         </div>
         <div class="modal-footer">
@@ -103,6 +136,7 @@ export default {
       saving: false,
       role: null,
       modules: [],
+      authorizations: [],
       levelMeta: [
         { key: 'encoder', label: 'Encoder', icon: 'ri-edit-line' },
         { key: 'approver', label: 'Approver', icon: 'ri-checkbox-circle-line' },
@@ -132,6 +166,7 @@ export default {
       try {
         const res = await axios.get(`/libraries/roles/${this.role.id}/permissions`);
         this.modules = res.data.modules;
+        this.authorizations = res.data.authorizations ?? [];
       } finally {
         this.loading = false;
       }
@@ -168,7 +203,8 @@ export default {
       });
 
       try {
-        const res = await axios.post(`/libraries/roles/${this.role.id}/permissions`, { grants });
+        const authorizations = this.authorizations.filter((a) => a.assigned).map((a) => a.key);
+        const res = await axios.post(`/libraries/roles/${this.role.id}/permissions`, { grants, authorizations });
 
         // HandlesTransaction swallows the exception and still answers 200 with
         // status:false, so a resolved promise is not proof the grants were
@@ -332,4 +368,72 @@ export default {
   background-color: #a9cfc3;
   margin: 0 0.15rem -1px;
 }
+
+/* Who may approve somebody else's guarded action -- a different question from
+   the grants above, so it reads as its own block rather than another table row. */
+.auth-section {
+  margin-top: 1.4rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #e3ece9;
+}
+.auth-section-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #16322e;
+}
+.auth-section-head h3 i { color: #3d8d7a; }
+.auth-section-head p {
+  margin: 0 0 0.8rem;
+  font-size: 0.82rem;
+  color: #6b8c85;
+  line-height: 1.45;
+  max-width: 64ch;
+}
+.auth-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.4rem;
+  border: 1px solid #e3ece9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.auth-action:hover { border-color: #c4d9d2; background: #fbfdfc; }
+.auth-action.checked { border-color: #a9cfc3; background: #f4faf8; }
+.auth-action input { position: absolute; opacity: 0; pointer-events: none; }
+.auth-action-box {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.1rem;
+  border: 1.5px solid #c4d9d2;
+  border-radius: 5px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.auth-action-box i { font-size: 13px; color: #fff; opacity: 0; }
+.auth-action.checked .auth-action-box { background: #3d8d7a; border-color: #3d8d7a; }
+.auth-action.checked .auth-action-box i { opacity: 1; }
+.auth-action-text { display: flex; flex-direction: column; gap: 0.1rem; }
+.auth-action-text strong { font-size: 0.86rem; font-weight: 600; color: #16322e; }
+.auth-action-text span { font-size: 0.79rem; color: #6b8c85; line-height: 1.4; }
+.auth-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.7rem 0 0;
+  font-size: 0.79rem;
+  color: #4a6963;
+  line-height: 1.45;
+}
+.auth-note i { color: #3d8d7a; margin-top: 0.1rem; }
 </style>

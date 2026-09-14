@@ -22,8 +22,16 @@ class RolePermissionController extends Controller
 
     public function update(RolePermissionRequest $request, int $id)
     {
-        $result = $this->handleTransaction(function () use ($request, $id) {
-            return $this->rolePermission->save($id, $request->validated()['grants'] ?? []);
+        $data = $request->validated();
+
+        $result = $this->handleTransaction(function () use ($data, $id) {
+            // Pass null, not [], when the payload never mentioned authorizations
+            // -- the service reads null as "leave them as they are".
+            return $this->rolePermission->save(
+                $id,
+                $data['grants'] ?? [],
+                array_key_exists('authorizations', $data) ? $data['authorizations'] : null
+            );
         });
 
         return response()->json($result);

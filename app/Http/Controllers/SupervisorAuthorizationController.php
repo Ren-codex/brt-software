@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\System\Permission\SupervisorActions;
 use App\Services\System\Permission\SupervisorAuthorization;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -13,13 +14,6 @@ use Illuminate\Validation\ValidationException;
  */
 class SupervisorAuthorizationController extends Controller
 {
-    /** Actions an override can be granted for. An unlisted action is refused. */
-    private const ACTIONS = [
-        'sales.credit_sale',
-        'sales.approve_return',
-        'checks.bounce',
-    ];
-
     public function store(Request $request, SupervisorAuthorization $authorizer)
     {
         $data = $request->validate([
@@ -28,7 +22,9 @@ class SupervisorAuthorizationController extends Controller
             'action' => 'required|string',
         ]);
 
-        if (!in_array($data['action'], self::ACTIONS, true)) {
+        // An unlisted action is refused, so an override can never be minted for
+        // something nobody chose to guard.
+        if (!SupervisorActions::exists($data['action'])) {
             throw ValidationException::withMessages([
                 'action' => 'That action does not take a supervisor authorisation.',
             ]);

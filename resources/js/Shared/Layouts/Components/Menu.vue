@@ -206,14 +206,6 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item" v-if="can('libraries', 'roles', 'view')">
-                                <Link href="/libraries/authorization-settings" class="nav-link submenu-link"
-                                    :class="{ 'active': $page.url === '/libraries/authorization-settings' }" data-key="t-basic">
-                                <span class="submenu-dot"></span>
-                                <span class="submenu-text">Who Can Authorize</span>
-                                </Link>
-                            </li>
-
                     
                             <li class="nav-item submenu-item" v-if="canAny('employees')">
                                 <Link href="/libraries/positions" class="nav-link submenu-link"

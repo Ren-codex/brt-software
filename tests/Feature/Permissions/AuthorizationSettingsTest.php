@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Choosing who may authorise a guarded action. The screen decides who holds the
- * keys, so it needs the same care as the keys themselves.
+ * Choosing who may authorise a guarded action. This is set per role, alongside
+ * that role's other access, and decides who holds the keys -- so it needs the
+ * same care as the keys themselves.
  */
 class AuthorizationSettingsTest extends TestCase
 {
@@ -44,37 +45,53 @@ class AuthorizationSettingsTest extends TestCase
         return $user;
     }
 
-    public function test_the_screen_is_closed_without_a_grant(): void
+    private function subject(string $name = 'Area Business Manager'): ListRole
     {
-        $this->actingAs($this->userWith(null))
-            ->get('/libraries/authorization-settings')
-            ->assertForbidden();
+        return ListRole::create(['name' => $name, 'type' => 'role', 'definition' => 't', 'is_active' => true]);
+    }
+
+    public function test_the_actions_are_listed_with_the_role(): void
+    {
+        $role = $this->subject();
+        DB::table('supervisor_action_roles')->insert([
+            'action' => 'checks.bounce', 'role_id' => $role->id, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->userWith('view'))
+            ->getJson("/libraries/roles/{$role->id}/permissions")
+            ->assertOk();
+
+        $actions = collect($response->json('authorizations'))->keyBy('key');
+
+        $this->assertTrue($actions['checks.bounce']['assigned']);
+        $this->assertFalse($actions['sales.credit_sale']['assigned']);
+        $this->assertSame('Record a bounced check', $actions['checks.bounce']['label']);
     }
 
     public function test_a_viewer_cannot_change_who_authorizes(): void
     {
         // Whoever can widen this can hand themselves the keys to every guarded
         // action, so it answers to admin, not view.
-        $role = ListRole::create(['name' => 'Widened', 'type' => 'role', 'definition' => 't', 'is_active' => true]);
+        $role = $this->subject('Widened');
 
         $this->actingAs($this->userWith('view'))
-            ->putJson('/libraries/authorization-settings', [
-                'action' => 'checks.bounce',
-                'role_ids' => [$role->id],
+            ->postJson("/libraries/roles/{$role->id}/permissions", [
+                'grants' => [],
+                'authorizations' => ['checks.bounce'],
             ])
             ->assertForbidden();
 
         $this->assertDatabaseMissing('supervisor_action_roles', ['role_id' => $role->id]);
     }
 
-    public function test_an_admin_can_assign_a_role_to_an_action(): void
+    public function test_an_admin_can_assign_an_action_to_a_role(): void
     {
-        $role = ListRole::create(['name' => 'Area Business Manager', 'type' => 'role', 'definition' => 't', 'is_active' => true]);
+        $role = $this->subject();
 
         $this->actingAs($this->userWith('admin'))
-            ->putJson('/libraries/authorization-settings', [
-                'action' => 'checks.bounce',
-                'role_ids' => [$role->id],
+            ->postJson("/libraries/roles/{$role->id}/permissions", [
+                'grants' => [],
+                'authorizations' => ['checks.bounce'],
             ])
             ->assertOk();
 
@@ -86,30 +103,78 @@ class AuthorizationSettingsTest extends TestCase
 
     public function test_saving_replaces_rather_than_appends(): void
     {
-        $first = ListRole::create(['name' => 'First', 'type' => 'role', 'definition' => 't', 'is_active' => true]);
-        $second = ListRole::create(['name' => 'Second', 'type' => 'role', 'definition' => 't', 'is_active' => true]);
+        $role = $this->subject();
         $admin = $this->userWith('admin');
 
-        $this->actingAs($admin)->putJson('/libraries/authorization-settings', [
-            'action' => 'checks.bounce', 'role_ids' => [$first->id],
+        $this->actingAs($admin)->postJson("/libraries/roles/{$role->id}/permissions", [
+            'grants' => [], 'authorizations' => ['checks.bounce'],
         ])->assertOk();
 
-        $this->actingAs($admin)->putJson('/libraries/authorization-settings', [
-            'action' => 'checks.bounce', 'role_ids' => [$second->id],
+        $this->actingAs($admin)->postJson("/libraries/roles/{$role->id}/permissions", [
+            'grants' => [], 'authorizations' => ['sales.credit_sale'],
         ])->assertOk();
 
-        $this->assertDatabaseMissing('supervisor_action_roles', ['action' => 'checks.bounce', 'role_id' => $first->id]);
-        $this->assertDatabaseHas('supervisor_action_roles', ['action' => 'checks.bounce', 'role_id' => $second->id]);
+        $this->assertDatabaseMissing('supervisor_action_roles', ['action' => 'checks.bounce', 'role_id' => $role->id]);
+        $this->assertDatabaseHas('supervisor_action_roles', ['action' => 'sales.credit_sale', 'role_id' => $role->id]);
+    }
+
+    public function test_unticking_everything_clears_the_role(): void
+    {
+        $role = $this->subject();
+        $admin = $this->userWith('admin');
+
+        $this->actingAs($admin)->postJson("/libraries/roles/{$role->id}/permissions", [
+            'grants' => [], 'authorizations' => ['checks.bounce'],
+        ])->assertOk();
+
+        $this->actingAs($admin)->postJson("/libraries/roles/{$role->id}/permissions", [
+            'grants' => [], 'authorizations' => [],
+        ])->assertOk();
+
+        $this->assertSame(0, DB::table('supervisor_action_roles')->where('role_id', $role->id)->count());
+    }
+
+    public function test_saving_one_role_leaves_another_alone(): void
+    {
+        $mine = $this->subject('Mine');
+        $theirs = $this->subject('Theirs');
+        DB::table('supervisor_action_roles')->insert([
+            'action' => 'checks.bounce', 'role_id' => $theirs->id, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->actingAs($this->userWith('admin'))
+            ->postJson("/libraries/roles/{$mine->id}/permissions", [
+                'grants' => [], 'authorizations' => [],
+            ])->assertOk();
+
+        $this->assertDatabaseHas('supervisor_action_roles', ['action' => 'checks.bounce', 'role_id' => $theirs->id]);
+    }
+
+    public function test_a_payload_that_omits_authorizations_leaves_them_untouched(): void
+    {
+        // What a stale cached bundle posting the old payload shape looks like.
+        // Reading that silence as "none of them" would quietly strip a role's
+        // authorising rights on an unrelated permissions save.
+        $role = $this->subject();
+        DB::table('supervisor_action_roles')->insert([
+            'action' => 'checks.bounce', 'role_id' => $role->id, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->actingAs($this->userWith('admin'))
+            ->postJson("/libraries/roles/{$role->id}/permissions", ['grants' => []])
+            ->assertOk();
+
+        $this->assertDatabaseHas('supervisor_action_roles', ['action' => 'checks.bounce', 'role_id' => $role->id]);
     }
 
     public function test_an_unguarded_action_cannot_be_configured(): void
     {
-        $role = ListRole::create(['name' => 'Sneaky', 'type' => 'role', 'definition' => 't', 'is_active' => true]);
+        $role = $this->subject('Sneaky');
 
         $this->actingAs($this->userWith('admin'))
-            ->putJson('/libraries/authorization-settings', [
-                'action' => 'accounting.delete_everything',
-                'role_ids' => [$role->id],
+            ->postJson("/libraries/roles/{$role->id}/permissions", [
+                'grants' => [],
+                'authorizations' => ['accounting.delete_everything'],
             ])
             ->assertStatus(422);
 
