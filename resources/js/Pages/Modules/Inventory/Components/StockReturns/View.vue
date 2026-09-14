@@ -141,7 +141,7 @@
                       <td v-if="data.status.slug == 'approved' && Number(item.returned_quantity || 0) < Number(item.quantity || 0)">
                         <div class="action-buttons">
                           <button
-                            class="action-btn action-btn-receive"
+                            class="action-btn receive"
                             @click="receivedReturnItem(item)"
                             v-b-tooltip.hover
                             title="Receive Return Item"
@@ -438,28 +438,8 @@ export default {
   min-width: 120px;
 }
 
-.action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
 
-.action-btn-receive {
-  background-color: #2e7d32;
-  color: #e8f5e8;
-  width: 80%;
-}
 
-.action-btn-receive:hover {
-  background-color: #c8e6c9;
-  transform: translateY(-2px);
-}
 
 .void-btn {
   background-color: #c0392b !important;

@@ -193,10 +193,10 @@
                                             <td class="text-center">{{ formatCurrency(calculateDiscountedTotal(list)) }}</td>
                                             <td class="text-center">
                                                 <div class="action-buttons">
-                                                    <button type="button" class="table-action-btn" @click.stop="editItem(list, index)">
+                                                    <button type="button" class="action-btn edit" @click.stop="editItem(list, index)" title="Edit">
                                                         <i class="ri-edit-line"></i>
                                                     </button>
-                                                    <button type="button" class="table-action-btn danger" @click.stop="removeItem(list.id)">
+                                                    <button type="button" class="action-btn delete" @click.stop="removeItem(list.id)" title="Remove">
                                                         <i class="ri-delete-bin-line"></i>
                                                     </button>
                                                 </div>
@@ -3373,29 +3373,8 @@ export default {
     gap: 0.3rem;
 }
 
-.table-action-btn {
-    width: 27px;
-    height: 27px;
-    border-radius: 8px;
-    border: 1px solid #d7e5de;
-    background: #fff;
-    color: #355f55;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    font-size: 0.78rem;
-}
 
-.table-action-btn:hover {
-    background: #eff7f4;
-}
 
-.table-action-btn.danger:hover {
-    background: #e74c3c;
-    border-color: #e74c3c;
-    color: #fff;
-}
 
 tfoot .footer-label,
 tfoot .footer-value {

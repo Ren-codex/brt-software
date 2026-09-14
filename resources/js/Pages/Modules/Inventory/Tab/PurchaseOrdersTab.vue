@@ -137,7 +137,7 @@
                         <div class="action-buttons" @click.stop>
                           <button
                             v-if="hasPendingItems(list) && list.status?.name !== 'Voided' && can('inventory', 'receiving', 'encoder')"
-                            class="action-btn action-btn-receive"
+                            class="action-btn receive"
                             @click="openReceiveStock(list)"
                             title="Receive Stock"
                           >
@@ -638,58 +638,14 @@ tbody tr:hover {
   min-width: 120px;
 }
 
-.action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
 
-.action-btn-edit {
-  background-color: #e3f2fd;
-  color: #1976d2;
-}
 
-.action-btn-edit:hover {
-  background-color: #bbdefb;
-  transform: translateY(-2px);
-}
 
-.action-btn-delete {
-  background-color: #ffebee;
-  color: #d32f2f;
-}
 
-.action-btn-delete:hover {
-  background-color: #ffcdd2;
-  transform: translateY(-2px);
-}
 
-.action-btn-print {
-  background-color: #f3e5f5;
-  color: #7b1fa2;
-}
 
-.action-btn-print:hover {
-  background-color: #e1bee7;
-  transform: translateY(-2px);
-}
 
-.action-btn-receive {
-  background-color: #2e7d32;
-  color: #e8f5e8;
-  width: 80%;
-}
 
-.action-btn-receive:hover {
-  background-color: #c8e6c9;
-  transform: translateY(-2px);
-}
 
 /* Progress Bar */
 .progress-bar-container {
@@ -824,10 +780,6 @@ tbody tr:hover {
     gap: 4px;
   }
   
-  .action-btn {
-    width: 28px;
-    height: 28px;
-  }
   
   .status-badge {
     font-size: 10px;

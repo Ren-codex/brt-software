@@ -145,13 +145,21 @@ File: Main Css File
     font-size: 0.85rem;
 }
 
-/* Modern Action Buttons - Matching Landing Page Design */
+/* Legacy filled action buttons, kept for the screens still written with the
+   hyphenated variants (Libraries, Users, Accounting > Funds).
+   
+   The selector matches the VARIANT, not the base class, on purpose: the shared
+   outlined design in _inventory-index.scss is also called .action-btn, and this
+   block is imported after it. Written as a bare .action-btn it silently turned
+   off the border of every outlined button in the app -- which is why Sales and
+   Inventory rendered flat while screens carrying their own scoped copy did not.
+   Anything using a semantic modifier (.action-btn.edit) gets the shared design. */
 .action-buttons {
     display: inline-flex;
     gap: 0.4rem;
 }
 
-.action-btn {
+[class*="action-btn-"] {
     width: 28px;
     height: 28px;
     border-radius: 6px;

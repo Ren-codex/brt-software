@@ -109,7 +109,7 @@
                     <div class="action-buttons">
                       <button
                         type="button"
-                        class="action-btn action-btn-view"
+                        class="action-btn view"
                         title="View Details"
                         @click="openDetailsModal(record)"
                       >
@@ -118,7 +118,7 @@
                       <button
                         v-if="!record.is_voided"
                         type="button"
-                        class="action-btn action-btn-void"
+                        class="action-btn void"
                         title="Void this received stock"
                         @click="openVoidModal(record)"
                       >
@@ -589,37 +589,10 @@ export default {
   justify-content: flex-start;
 }
 
-.action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
 
-.action-btn-view {
-  background-color: #e3f2fd;
-  color: #1976d2;
-}
 
-.action-btn-view:hover {
-  background-color: #bbdefb;
-  transform: translateY(-2px);
-}
 
-.action-btn-void {
-  background-color: #ffebee;
-  color: #d32f2f;
-}
 
-.action-btn-void:hover {
-  background-color: #ffcdd2;
-  transform: translateY(-2px);
-}
 
 .voided-row {
   opacity: 0.6;

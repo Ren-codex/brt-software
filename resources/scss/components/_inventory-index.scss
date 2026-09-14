@@ -575,26 +575,55 @@
   }
 }
 
-/* ── Shared Action Buttons ──────────────────────────────────────── */
+/* ── Shared Action Buttons ──────────────────────────────────────────
+   The one row-action design, used across Sales and Inventory. An outlined
+   square that carries its meaning in the border colour rather than a fill, so
+   a row of them reads as a set instead of a row of competing chips.
+
+   Every modifier in use is defined here. A button whose modifier is missing
+   falls back to a currentColor border and looks broken rather than plain, so
+   add the modifier here before using it in markup. */
 .action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  border: 1px solid;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   background: transparent;
   transition: all 0.15s;
+  padding: 0;
 
-  &.edit        { border-color: #a8d5c4; color: #2f6b5c; &:hover { background: #e4f0eb; } }
-  &.info        { border-color: #bfdbfe; color: #1e40af; &:hover { background: #eff6ff; } }
-  &.approve     { border-color: #86efac; color: #166534; &:hover { background: #dcfce7; } }
-  &.delete      { border-color: #fca5a5; color: #991b1b; &:hover { background: #fee2e2; } }
-  &.warn        { border-color: #fde68a; color: #92400e; &:hover { background: #fffbeb; } }
+  /* Five roles, not fifteen colours. Names within a role are synonyms kept so
+     each screen can say what it means -- a button is "receive" or "approve"
+     depending on the row, and both are the same promise to the reader. */
+
+  /* Opens the record for changing. */
+  &.edit                      { border-color: #a8d5c4; color: #2f6b5c; &:hover { background: #e4f0eb; } }
+  /* Looks without touching. */
+  &.info, &.view              { border-color: #bfdbfe; color: #1e40af; &:hover { background: #eff6ff; } }
+  /* Leaves the system entirely -- no state changes, so it stays neutral. */
+  &.print                     { border-color: #d5d9e0; color: #475569; &:hover { background: #f1f5f9; } }
+  /* Moves the record forward. */
+  &.approve, &.receive, &.success { border-color: #86efac; color: #166534; &:hover { background: #dcfce7; } }
+  /* Reversible but consequential. */
+  &.warn                      { border-color: #fde68a; color: #92400e; &:hover { background: #fffbeb; } }
+  /* Takes something away. */
+  &.delete, &.void            { border-color: #fca5a5; color: #991b1b; &:hover { background: #fee2e2; } }
+
   &:disabled    { opacity: 0.45; cursor: not-allowed; }
+  &:disabled:hover { background: transparent; }
+}
+
+/* Row-action container, so the buttons sit as a set wherever they appear. */
+.action-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
 }
 
 /* ── Shared Sales Empty State ───────────────────────────────────── */

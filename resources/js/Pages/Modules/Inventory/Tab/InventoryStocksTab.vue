@@ -135,7 +135,7 @@
                           </td>
                           <td>
                             <div class="action-buttons" @click.stop>
-                              <button @click.stop="openView(list)" class="action-btn action-btn-view" v-b-tooltip.hover title="View">
+                              <button @click.stop="openView(list)" class="action-btn view" v-b-tooltip.hover title="View">
                                 <i class="ri-eye-fill"></i>
                               </button>
                             </div>
@@ -302,44 +302,12 @@ export default {
   gap: 6px;
 }
 
-.action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
 
-.action-btn-view {
-  background: #e7f3ff;
-  color: #0d6efd;
-}
 
-.action-btn-view:hover {
-  background: #d0e7ff;
-}
 
-.action-btn-price {
-  background: #e8f5e8;
-  color: #2e7d32;
-}
 
-.action-btn-price:hover {
-  background: #c8e6c9;
-}
 
-.action-btn-edit {
-  background: #fff3cd;
-  color: #ffc107;
-}
 
-.action-btn-edit:hover {
-  background: #ffeaa7;
-}
 
 .empty-state {
   color: #6c757d;
@@ -373,10 +341,6 @@ export default {
     flex-direction: column;
   }
   
-  .action-btn {
-    width: 28px;
-    height: 28px;
-  }
 }
 
 .status-badge {

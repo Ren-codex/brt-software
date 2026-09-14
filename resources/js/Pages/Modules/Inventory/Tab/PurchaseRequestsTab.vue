@@ -135,13 +135,13 @@
                       </td>
                       <td>
                         <div class="action-buttons" @click.stop>
-                          <button v-if="isEditable(list)" @click.stop="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                          <button v-if="isEditable(list)" @click.stop="openEdit(list, index)" class="action-btn edit" v-b-tooltip.hover title="Edit">
                             <i class="ri-pencil-line"></i>
                           </button>
-                          <button v-if="isEditable(list)" @click.stop="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                          <button v-if="isEditable(list)" @click.stop="onDelete(list.id)" class="action-btn delete" v-b-tooltip.hover title="Delete">
                             <i class="ri-delete-bin-line"></i>
                           </button>
-                          <button @click.stop="printPurchaseOrder(list.id)" class="action-btn action-btn-print" v-b-tooltip.hover title="Print">
+                          <button @click.stop="printPurchaseOrder(list.id)" class="action-btn print" v-b-tooltip.hover title="Print">
                             <i class="ri-printer-line"></i>
                           </button>
                         </div>
@@ -636,47 +636,12 @@ tbody tr:hover {
   min-width: 120px;
 }
 
-.action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
 
-.action-btn-edit {
-  background-color: #e3f2fd;
-  color: #1976d2;
-}
 
-.action-btn-edit:hover {
-  background-color: #bbdefb;
-  transform: translateY(-2px);
-}
 
-.action-btn-delete {
-  background-color: #ffebee;
-  color: #d32f2f;
-}
 
-.action-btn-delete:hover {
-  background-color: #ffcdd2;
-  transform: translateY(-2px);
-}
 
-.action-btn-print {
-  background-color: #f3e5f5;
-  color: #7b1fa2;
-}
 
-.action-btn-print:hover {
-  background-color: #e1bee7;
-  transform: translateY(-2px);
-}
 
 /* Empty State */
 .text-center {
@@ -780,10 +745,6 @@ tbody tr:hover {
     gap: 4px;
   }
   
-  .action-btn {
-    width: 28px;
-    height: 28px;
-  }
   
   .status-badge {
     font-size: 10px;

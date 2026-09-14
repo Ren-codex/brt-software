@@ -146,11 +146,11 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="action-buttons">
-                                                    <button type="button" class="table-action-btn" @click="duplicateItem(index)"
+                                                    <button type="button" class="action-btn info" @click="duplicateItem(index)"
                                                         title="Duplicate">
                                                         <i class="ri-file-copy-line"></i>
                                                     </button>
-                                                    <button type="button" class="table-action-btn danger" @click="removeItem(index)"
+                                                    <button type="button" class="action-btn delete" @click="removeItem(index)"
                                                         title="Remove">
                                                         <i class="ri-delete-bin-line"></i>
                                                     </button>
@@ -958,29 +958,8 @@ export default {
     gap: 0.3rem;
 }
 
-.table-action-btn {
-    width: 27px;
-    height: 27px;
-    border-radius: 8px;
-    border: 1px solid #d7e5de;
-    background: #fff;
-    color: #355f55;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    font-size: 0.78rem;
-}
 
-.table-action-btn:hover {
-    background: #eff7f4;
-}
 
-.table-action-btn.danger:hover {
-    background: #e74c3c;
-    border-color: #e74c3c;
-    color: #fff;
-}
 
 
 .empty-table {

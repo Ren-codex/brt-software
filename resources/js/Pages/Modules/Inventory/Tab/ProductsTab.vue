@@ -69,10 +69,10 @@
                       </td>
                       <td>
                         <div class="action-buttons">
-                          <button @click="openEdit(list, index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
+                          <button @click="openEdit(list, index)" class="action-btn edit" v-b-tooltip.hover title="Edit">
                             <i class="ri-pencil-line"></i>
                           </button>
-                          <!-- <button @click="onDelete(list.id)" class="action-btn action-btn-delete" v-b-tooltip.hover title="Delete">
+                          <!-- <button @click="onDelete(list.id)" class="action-btn delete" v-b-tooltip.hover title="Delete">
                             <i class="ri-delete-bin-line"></i>
                           </button> -->
                         </div>
