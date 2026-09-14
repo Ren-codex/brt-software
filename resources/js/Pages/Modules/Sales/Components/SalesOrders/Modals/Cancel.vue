@@ -58,23 +58,12 @@
                         </small>
                     </div>
 
-                    <div class="verification-card">
-                        <label class="verification-label" for="cancel_verification">
-                            Type <strong>CANCEL</strong> to continue
-                        </label>
-                        <input
-                            id="cancel_verification"
-                            v-model.trim="confirmationText"
-                            type="text"
-                            class="verification-input"
-                            :class="{ 'verification-input-error': form.errors.confirmation }"
-                            placeholder="Type CANCEL"
-                            @input="handleInput('confirmation')"
-                        />
-                        <small v-if="form.errors.confirmation" class="verification-error">
-                            {{ form.errors.confirmation }}
-                        </small>
-                    </div>
+                    <SupervisorGate
+                        ref="gate"
+                        action="sales.cancel_order"
+                        prompt="Cancelling reverses this order's accounting. An administrator must authorize it."
+                        @update:token="onAuthorized"
+                    />
                 </div>
             </div>
 
@@ -91,10 +80,11 @@
 </template>
 <script>
 
+import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 import { useForm } from '@inertiajs/vue3';
 
 export default {
-    components: { },
+    components: { SupervisorGate, },
     props: [],
     data(){
         return {
@@ -107,13 +97,12 @@ export default {
             title: null,
             table: null,
             showModal: false,
-            confirmationText: '',
             hasPayments: false,
         }
     },
     computed: {
         isVerificationMatched() {
-            return this.confirmationText.toUpperCase() === 'CANCEL';
+            return !!this.form.supervisor_token;
         }
     },
     methods: { 
@@ -122,12 +111,16 @@ export default {
             this.form.id = id;
             this.title = title;
             this.route = route;
-            this.confirmationText = '';
+            this.form.supervisor_token = '';
+            this.$refs.gate?.reset();
             this.form.remarks = '';
             this.hasPayments = hasPayments;
             this.form.clearErrors();
         },
 
+        onAuthorized(token) {
+            this.form.supervisor_token = token;
+        },
         submit(){
             if (!this.isVerificationMatched) {
                 this.form.errors.confirmation = 'Please type CANCEL to verify this action.';
@@ -155,7 +148,8 @@ export default {
         hide(){
             this.editable = false;
             this.showModal = false;
-            this.confirmationText = '';
+            this.form.supervisor_token = '';
+            this.$refs.gate?.reset();
             this.form.remarks = '';
             this.form.clearErrors();
         },

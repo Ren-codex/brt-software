@@ -759,20 +759,12 @@
                         </div>
                     </div>
 
-                    <label for="credit_verification_input" class="form-label mt-3">Type <strong>CREDIT</strong> to confirm</label>
-                    <div class="input-wrapper">
-                        <i class="ri-edit-2-line input-icon"></i>
-                        <input
-                            id="credit_verification_input"
-                            v-model.trim="creditVerificationText"
-                            type="text"
-                            class="form-control"
-                            :class="{ 'input-error': creditVerificationError }"
-                            placeholder="Type CREDIT"
-                            @input="creditVerificationError = null"
-                            autocomplete="off"
-                        />
-                    </div>
+                    <SupervisorGate
+                        ref="creditGate"
+                        action="sales.credit_sale"
+                        prompt="A credit sale commits the business to collecting later. An administrator must authorize it."
+                        @update:token="onCreditAuthorized"
+                    />
                     <span class="error-message" v-if="creditVerificationError">{{ creditVerificationError }}</span>
                 </div>
             </div>
@@ -1013,6 +1005,7 @@
 </template>
 
 <script>
+import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 import { useForm } from '@inertiajs/vue3';
 import Multiselect from '@vueform/multiselect';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
@@ -1022,7 +1015,7 @@ import PaymentPromptModal from '@/Pages/Modules/Sales/Components/SalesOrders/Mod
 import PaymentLines from '@/Shared/Components/PaymentLines.vue';
 
 export default {
-    components: { TextInput, Item, Customer, PaymentPromptModal, Multiselect, PaymentLines },
+    components: { SupervisorGate, TextInput, Item, Customer, PaymentPromptModal, Multiselect, PaymentLines },
     emits: ['add'],
     props: ['dropdowns', 'user'],
     data() {
@@ -1073,6 +1066,7 @@ export default {
             cashReceivedAmount: null,
             cashChargeError: null,
             creditVerificationText: '',
+            supervisorToken: '',
             creditVerificationError: null,
             bankTransferError: null,
             bankAccounts: [],
@@ -1234,7 +1228,7 @@ export default {
             return !Number.isFinite(received) || received < this.cashLineAmount;
         },
         isCreditVerificationMatched() {
-            return this.creditVerificationText.trim().toUpperCase() === 'CREDIT';
+            return !!this.supervisorToken;
         },
         customerOutstandingBalance() {
             return Number(this.selectedCustomer?.outstanding_balance || 0);
@@ -1411,6 +1405,8 @@ export default {
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
             this.creditVerificationText = '';
+            this.supervisorToken = '';
+            this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
             this.resetBankTransferDetails();
             this.selectedReviewPaymentType = null;
@@ -1465,6 +1461,8 @@ export default {
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
             this.creditVerificationText = '';
+            this.supervisorToken = '';
+            this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
             this.resetBankTransferDetails();
             this.selectedReviewPaymentType = null;
@@ -1552,6 +1550,8 @@ export default {
                 this.showPaymentTypeModal = false;
                 this.showCreditVerificationModal = true;
                 this.creditVerificationText = '';
+            this.supervisorToken = '';
+            this.$refs.creditGate?.reset();
                 this.creditVerificationError = null;
                 this.creditStep = 1;
                 this.creditPreset = 1;
@@ -1632,6 +1632,8 @@ export default {
         },
         submitOrderCreation() {
             this.form.action = null;
+            // Only a credit sale needs one; the server asks for it only then.
+            this.form.supervisor_token = this.supervisorToken;
             this.form.post('/sales-orders', {
                 preserveScroll: true,
                 onSuccess: (response) => {
@@ -1751,6 +1753,8 @@ export default {
         closeCreditVerificationModal() {
             this.showCreditVerificationModal = false;
             this.creditVerificationText = '';
+            this.supervisorToken = '';
+            this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
             this.creditStep = 1;
             this.showPaymentTypeModal = true;
@@ -1760,9 +1764,13 @@ export default {
             this.bankTransferError = null;
             this.showPaymentTypeModal = true;
         },
+        onCreditAuthorized(token) {
+            this.supervisorToken = token;
+            this.creditVerificationError = null;
+        },
         submitCreditSale() {
             if (!this.isCreditVerificationMatched) {
-                this.creditVerificationError = 'Please type CREDIT to confirm this credit sale.';
+                this.creditVerificationError = 'An administrator must authorize this credit sale.';
                 return;
             }
             this.creditVerificationError = null;
@@ -1909,6 +1917,8 @@ export default {
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
             this.creditVerificationText = '';
+            this.supervisorToken = '';
+            this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
             this.resetBankTransferDetails();
             this.selectedReviewPaymentType = null;

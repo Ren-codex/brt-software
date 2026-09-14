@@ -41,6 +41,12 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::get('/suppliers/{id}/stock-return-summary', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturnSummary']);
     Route::get('/suppliers/{id}/stock-returns', [App\Http\Controllers\Libraries\SupplierController::class, 'stockReturns']);
     Route::resource('/receipts', App\Http\Controllers\Modules\ReceiptController::class)->except(['create', 'edit']);
+    // A supervisor authorises a sensitive action with their own credentials.
+    // Throttled at the route as well as in the service: this is the one endpoint
+    // that takes a password from an already-logged-in session.
+    Route::post('/supervisor-authorization', [App\Http\Controllers\SupervisorAuthorizationController::class, 'store'])
+        ->middleware('throttle:10,1');
+
     Route::put('/receipts/{id}/confirm-check', [App\Http\Controllers\Modules\ReceiptController::class, 'confirmCheck']);
 
     // A rep's read-only view of the checks they took. No actions here: clearing

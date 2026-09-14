@@ -15,6 +15,8 @@ use App\Http\Requests\Modules\SalesOrderRequest;
 
 class SalesOrderController extends Controller
 {
+    use \App\Http\Controllers\Concerns\RequiresSupervisorAuthorization;
+
     use HandlesTransaction;
     use \App\Traits\AuthorizesPermission;
 
@@ -69,7 +71,14 @@ class SalesOrderController extends Controller
     }
 
     public function store(SalesOrderRequest $request){
-     
+
+        // A credit sale commits the business to collecting later, so an
+        // administrator authorises it with their own credentials. This replaces
+        // the "type CREDIT" box, which only ever existed in the browser.
+        if (in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true)) {
+            $this->requireSupervisor($request, 'sales.credit_sale');
+        }
+
         $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);
         });
@@ -101,6 +110,8 @@ class SalesOrderController extends Controller
                         return $this->sales_order->update($request);
                     break;
                     case 'approve':
+                        // Approving a return moves stock and money back.
+                        $this->requireSupervisor($request, 'sales.approve_return', \App\Models\SalesOrder::class, (int) $id);
                         $request->merge(['id' => $id]);
                         return $this->sales_order->approve($request->id, $request->item_ids ?? [], $request->replacement_items ?? []);
                     break;
@@ -163,6 +174,7 @@ class SalesOrderController extends Controller
         // Cancelling is the void-holder's job — a sales rep who raised the order
         // can pull it back — but an approver may do it too, so neither loses out.
         $this->authorizeAnyPermission('sales', 'sales_orders', ['void', 'approver']);
+        $this->requireSupervisor($request, 'sales.cancel_order', \App\Models\SalesOrder::class, (int) $id);
 
         $result = $this->handleTransaction(function () use ($request, $id) {
             return $this->sales_order->cancel($id, $request->remarks);

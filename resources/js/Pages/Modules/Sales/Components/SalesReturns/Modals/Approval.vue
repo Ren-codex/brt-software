@@ -163,18 +163,12 @@
                     </div>
                 </div>
 
-                <div class="confirm-box mt-4">
-                    <label for="confirm" class="form-label fw-semibold">Type <code>CONFIRM</code> to proceed</label>
-                    <TextInput
-                        type="text"
-                        id="confirm"
-                        v-model="text_confirm"
-                        class="form-control text-center"
-                        :class="{ 'input-error': text_confirm && !confirmTextValid }"
-                        placeholder="CONFIRM"
-                    />
-                    <small v-if="text_confirm && !confirmTextValid" class="text-danger">Confirmation text does not match.</small>
-                </div>
+                <SupervisorGate
+                    ref="gate"
+                    action="sales.approve_return"
+                    prompt="Approving this return puts stock back and moves money. An administrator must authorize it."
+                    @update:token="onAuthorized"
+                />
             </div>
 
             <div class="modal-footer pretty-footer">
@@ -190,11 +184,12 @@
 </template>
 
 <script>
+import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 import { useForm } from '@inertiajs/vue3';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 
 export default {
-    components: { TextInput },
+    components: { SupervisorGate, TextInput },
     props: ['products'],
     data(){
         return {
@@ -203,6 +198,9 @@ export default {
                 action: 'approve',
                 item_ids: [],
                 replacement_items: [],
+                // The server refuses the approval without an authorisation it
+                // issued; this carries it.
+                supervisor_token: '',
             }),
             so_number: null,
             paymentMode: '',
@@ -241,7 +239,7 @@ export default {
             return this.replacementRows.length > 0 && this.replacementTotal < this.selectedTotal;
         },
         confirmTextValid() {
-            return (this.text_confirm || '').trim().toUpperCase() === 'CONFIRM';
+            return !!this.form.supervisor_token;
         },
         isValid() {
             return this.selectedItems.length > 0 && this.confirmTextValid && !this.form.processing && !this.replacementUndervalue;
@@ -263,7 +261,8 @@ export default {
             this.selectedItems = preselectedItemIds.length > 0
                 ? preselectedItemIds
                 : items.map(item => item.id);
-            this.text_confirm = '';
+            this.form.supervisor_token = '';
+            this.$refs.gate?.reset();
         },
 
         addReplacementRow() {
@@ -279,6 +278,9 @@ export default {
             }
         },
 
+        onAuthorized(token) {
+            this.form.supervisor_token = token;
+        },
         submit(){
             if (!this.isValid) return;
 
@@ -308,7 +310,8 @@ export default {
             this.returnConditions = {};
             this.replacementRows = [];
             this.paymentMode = '';
-            this.text_confirm = '';
+            this.form.supervisor_token = '';
+            this.$refs.gate?.reset();
         },
         toggleAll(){
             if(this.allItemsSelected){

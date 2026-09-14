@@ -95,6 +95,9 @@ class SalesOrderRequest extends FormRequest
                 'payment_lines.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
                 'payment_lines.*.reference_number' => 'nullable|string|max:255',
                 'payment_lines.*.check_date' => 'nullable|date',
+                // Declared so a later switch to validated() cannot silently drop
+                // it and disarm the supervisor check that reads it.
+                'supervisor_token' => 'nullable|string',
             ];
 
             if ($this->input('is_external')) {
