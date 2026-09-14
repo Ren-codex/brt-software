@@ -206,7 +206,7 @@
     "src": "public/images/sidebar/img-4.jpg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-8XRZfySt.js",
+    "file": "assets/app-CmzU9BHD.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -215,7 +215,7 @@
       "node_modules/vue3-apexcharts/dist/apexcharts.ssr.esm-fe46cd2d.js"
     ],
     "css": [
-      "assets/app-D-J5Mf9n.css"
+      "assets/app-BJ-a8z7v.css"
     ],
     "assets": [
       "assets/official-logo-D8VPb1Z4.png",

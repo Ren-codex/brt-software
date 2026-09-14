@@ -181,6 +181,10 @@
             placeholder="Enter your remarks here..."
           ></textarea>
         </div>
+        <p v-if="approveError" class="approve-error">
+          <i class="ri-error-warning-line"></i>
+          <span>{{ approveError }}</span>
+        </p>
         <div class="form-actions">
           <button class="btn btn-cancel" @click="onCancel" :disabled="approving">Cancel</button>
           <button class="btn btn-cancel" @click="updateStatus('disapproved')" :disabled="approving">Disapprove</button>
@@ -223,6 +227,7 @@ export default {
     return {
       approving: false,
       showModal: false,
+      approveError: '',
       remarks: '',
       receiving: false,
       showReceiveModal: false,
@@ -287,11 +292,13 @@ export default {
     },
     approveStockReturn() {
       if (!this.data?.id || this.approving || !this.isPending) return;
+      this.approveError = '';
       this.showModal = true;
     },
     onCancel() {
       this.showModal = false;
       this.remarks = '';
+      this.approveError = '';
     },
     openVoidModal() {
       if (!this.canVoid) return;
@@ -305,6 +312,16 @@ export default {
         return;
       }
       this.$emit('refresh', this.data.id);
+    },
+    /** A failure has to look like one -- a plain string is toasted as success. */
+    failToast(message) {
+      this.$emit('toast', { message, type: 'error' });
+    },
+    serverMessage(error, fallback) {
+      const data = error?.response?.data;
+      if (data?.message) return data.message;
+      const firstError = data?.errors ? Object.values(data.errors).flat()[0] : null;
+      return firstError || fallback;
     },
     isItemFinalized(item) {
       const statusSlug = String(item?.status?.slug || '').toLowerCase();
@@ -345,17 +362,17 @@ export default {
       const lossQty = Number(this.receiveForm.loss_quantity || 0);
 
       if (Number.isNaN(replacedQty) || Number.isNaN(lossQty) || replacedQty < 0 || lossQty < 0) {
-        this.$emit('toast', 'Replacement and loss quantity must be 0 or greater');
+        this.failToast('Replacement and loss quantity must be 0 or greater');
         return;
       }
       if (replacedQty + lossQty > maxQty) {
-        this.$emit('toast', `Replacement and loss together cannot be more than the remaining ${maxQty}`);
+        this.failToast(`Replacement and loss together cannot be more than the remaining ${maxQty}`);
         return;
       }
       // An item is only finished once replacement plus loss covers what went
       // back, so a receipt of nothing would leave the return open forever.
       if (replacedQty + lossQty === 0) {
-        this.$emit('toast', 'Enter how many were replaced, written off as a loss, or both');
+        this.failToast('Enter how many were replaced, written off as a loss, or both');
         return;
       }
 
@@ -374,7 +391,7 @@ export default {
         this.onReceiveCancel(true);
         this.$emit('refresh', this.data.id);
       } catch (error) {
-        this.$emit('toast', error?.response?.data?.message || 'Unable to receive return item');
+        this.failToast(this.serverMessage(error, 'Unable to receive return item'));
       } finally {
         this.receiving = false;
       }
@@ -384,6 +401,7 @@ export default {
       if (!['approved', 'disapproved'].includes(String(status))) return;
 
       this.approving = true;
+      this.approveError = '';
       try {
         const response = await axios.post(`/stock-returns/${this.data.id}/approve`, {
           status,
@@ -394,7 +412,12 @@ export default {
         this.$emit('toast', response?.data?.message || 'Stock return updated successfully');
         this.$emit('refresh', this.data.id);
       } catch (error) {
-        this.$emit('toast', error?.response?.data?.message || 'Unable to update stock return');
+        // Keep the modal open and say why here. The server refuses an approval
+        // for real reasons -- no stock left to send back, most often -- and a
+        // toast alone left the screen looking like the click did nothing.
+        const message = this.serverMessage(error, 'Unable to update stock return');
+        this.approveError = message;
+        this.failToast(message);
       } finally {
         this.approving = false;
       }
@@ -414,6 +437,21 @@ export default {
 </script>
 
 <style scoped>
+.approve-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0 0 0.9rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+.approve-error i { margin-top: 0.1rem; }
+
 .info-item {
   transition: transform 0.2s ease;
   padding: 0.5rem;

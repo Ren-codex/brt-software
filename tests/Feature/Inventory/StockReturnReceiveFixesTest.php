@@ -55,11 +55,16 @@ class StockReturnReceiveFixesTest extends TestCase
         UserRole::create(['user_id' => $user->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $user->id]);
 
         $module = Module::where('key', 'inventory')->firstOrFail();
-        RolePermission::create([
-            'role_id' => $role->id, 'module_id' => $module->id,
-            'submodule_id' => $module->submodules()->where('key', 'stock_returns')->firstOrFail()->id,
-            'access_level' => 'approver',
-        ]);
+        $submoduleId = $module->submodules()->where('key', 'stock_returns')->firstOrFail()->id;
+
+        // Raising a return needs encoder; approving it needs approver. These
+        // tests walk the whole path, so the user holds both.
+        foreach (['encoder', 'approver'] as $level) {
+            RolePermission::create([
+                'role_id' => $role->id, 'module_id' => $module->id,
+                'submodule_id' => $submoduleId, 'access_level' => $level,
+            ]);
+        }
 
         return $user;
     }
@@ -214,6 +219,47 @@ class StockReturnReceiveFixesTest extends TestCase
         $this->assertEquals(10, $poItem->received_quantity);
         // 10 of 20 left: the line cannot still claim it was received in full.
         $this->assertEquals('pending', $poItem->status);
+    }
+
+    public function test_a_return_cannot_be_raised_for_stock_that_is_not_there(): void
+    {
+        // The real report: a purchase order line claiming 100,000 received with
+        // nothing behind it in inventory. Approval refused it every time, so the
+        // return could be created but never finished. Refuse it at the door.
+        $user = $this->approver();
+        ['poItem' => $poItem, 'first' => $first, 'second' => $second] = $this->scenario(10);
+
+        $first->update(['quantity' => 0]);
+        $second->update(['quantity' => 0]);
+
+        $response = $this->actingAs($user)->postJson('/stock-returns', [
+            'reason' => 'Damaged',
+            'items' => [['po_item_id' => $poItem->id, 'quantity' => 5]],
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('left in stock', $response->json('message'));
+    }
+
+    public function test_a_refusal_names_the_product_it_is_about(): void
+    {
+        // products has no name column; the label is composed from brand, weight
+        // and unit. Reading ->name off the model always gave null, so every one
+        // of these messages used to say "selected item".
+        $user = $this->approver();
+        ['poItem' => $poItem, 'first' => $first, 'second' => $second] = $this->scenario(10);
+
+        $first->update(['quantity' => 0]);
+        $second->update(['quantity' => 0]);
+
+        $response = $this->actingAs($user)->postJson('/stock-returns', [
+            'reason' => 'Damaged',
+            'items' => [['po_item_id' => $poItem->id, 'quantity' => 5]],
+        ]);
+
+        $message = $response->json('message');
+        $this->assertStringContainsString('Brand 10 Sack', $message);
+        $this->assertStringNotContainsString('selected item', $message);
     }
 
     public function test_a_replacement_goes_back_into_the_batch_the_return_took_it_from(): void

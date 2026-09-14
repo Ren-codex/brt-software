@@ -132,8 +132,21 @@ class StockReturnClass
                 }
 
                 if ($returnQty > (int) $poItem->received_quantity) {
-                    $productName = $poItem->product?->name ?? 'selected item';
+                    $productName = $this->productLabel($poItem->product);
                     $this->fail("Return quantity exceeds received quantity for {$productName}.");
+                }
+
+                // Approval is what actually pulls the units out of inventory, and it
+                // checks the real stock -- so without the same check here a return
+                // could be raised that approval would refuse forever, with no hint of
+                // why until somebody tried to approve it.
+                $availableQty = $this->availableInventoryFor((int) $poItem->id);
+                if ($returnQty > $availableQty) {
+                    $productName = $this->productLabel($poItem->product);
+                    $this->fail(
+                        "Only {$availableQty} of {$productName} are left in stock, so {$returnQty} cannot be returned."
+                        .' The purchase order may say more were received than ever reached inventory.'
+                    );
                 }
 
                 $totalReturnQuantity += $returnQty;
@@ -238,7 +251,7 @@ class StockReturnClass
                     }
 
                     if ($returnQty > (int) $poItem->received_quantity) {
-                        $productName = $poItem->product?->name ?? 'selected item';
+                        $productName = $this->productLabel($poItem->product);
                         $this->fail("Return quantity exceeds received quantity for {$productName}.");
                     }
 
@@ -252,7 +265,7 @@ class StockReturnClass
 
                     $totalInventoryQty = (int) $inventoryStocks->sum('quantity');
                     if ($returnQty > $totalInventoryQty) {
-                        $productName = $poItem->product?->name ?? 'selected item';
+                        $productName = $this->productLabel($poItem->product);
                         $this->fail("Return quantity exceeds available inventory stock for {$productName}.");
                     }
 
@@ -495,7 +508,7 @@ class StockReturnClass
 
             $stockReturnItem->save();
 
-            $productName = $stockReturnItem->purchaseOrderItem?->product?->name ?? "Item #{$stockReturnItem->id}";
+            $productName = $this->productLabel($stockReturnItem->purchaseOrderItem?->product);
             StockReturnLog::create([
                 'stock_return_id' => $stockReturn->id,
                 'user_id' => Auth::id(),
@@ -731,6 +744,38 @@ class StockReturnClass
             ->orderBy('id')
             ->lockForUpdate()
             ->first();
+    }
+
+    /**
+     * What to call a product in a message people read.
+     *
+     * Product has no name column and no accessor -- the label is composed in
+     * ProductResource from brand, weight and unit. Reading ->name off the model
+     * therefore always yielded null, so every message meant to name the product
+     * said "selected item" instead, which is no help at all when you are trying
+     * to work out which line is blocking an approval.
+     */
+    protected function productLabel($product): string
+    {
+        if (! $product) {
+            return 'selected item';
+        }
+
+        $composed = trim(implode(' ', array_filter([
+            $product->brand?->name,
+            $product->weight,
+            $product->unit?->name,
+        ])));
+
+        return $composed !== '' ? $composed : ((string) $product->code ?: 'selected item');
+    }
+
+    /** Units of this purchase order line still sitting in inventory. */
+    protected function availableInventoryFor(int $poItemId): int
+    {
+        return (int) InventoryStocks::whereHas('receivedItem', fn ($query) => $query->where('po_item_id', $poItemId))
+            ->where('quantity', '>', 0)
+            ->sum('quantity');
     }
 
     protected function getStatusIdBySlug($slug)
