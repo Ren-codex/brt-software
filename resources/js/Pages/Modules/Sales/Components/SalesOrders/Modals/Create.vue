@@ -661,8 +661,11 @@
                 <div>
                     <h4 class="mb-0">Credit Sales Verification</h4>
                     <p class="header-subtitle mb-0">
-                        Step {{ creditStep }} of 2 —
-                        {{ creditStep === 1 ? 'Set payment terms' : 'Verify & confirm' }}
+                        <template v-if="creditNeedsAuthorization">
+                            Step {{ creditStep }} of 2 —
+                            {{ creditStep === 1 ? 'Set payment terms' : 'Verify &amp; confirm' }}
+                        </template>
+                        <template v-else>Set payment terms</template>
                     </p>
                 </div>
                 <button class="close-btn ms-auto" @click="closeCreditVerificationModal">
@@ -674,9 +677,10 @@
             <div v-if="creditStep === 1" class="modal-body p-4 payment-type-modal-body">
                 <div class="payment-success-card text-start">
                     <div class="payment-section-heading payment-section-heading-sm">
-                        <span class="payment-section-kicker">Step 1 of 2</span>
+                        <span class="payment-section-kicker" v-if="creditNeedsAuthorization">Step 1 of 2</span>
                         <h5>Set credit terms</h5>
-                        <p>Choose the due date before confirming this sale.</p>
+                        <p v-if="creditNeedsAuthorization">Choose the due date before confirming this sale.</p>
+                        <p v-else>Payment is due today, so nothing is being deferred — no approval needed.</p>
                     </div>
 
                     <div class="credit-verification-summary">
@@ -737,7 +741,7 @@
                     <div class="payment-section-heading payment-section-heading-sm">
                         <span class="payment-section-kicker">Step 2 of 2</span>
                         <h5>Confirm this credit sale</h5>
-                        <p>Review the details below, then type CREDIT to confirm.</p>
+                        <p>Review the details below, then have this approved to confirm.</p>
                     </div>
 
                     <div class="credit-verification-summary">
@@ -776,8 +780,25 @@
                     <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeCreditVerificationModal">
                         <i class="ri-arrow-left-line me-2"></i>Back
                     </button>
-                    <button type="button" class="btn btn-primary payment-modal-btn" @click="creditNextStep" :disabled="!form.due_date">
+                    <button
+                        v-if="creditNeedsAuthorization"
+                        type="button"
+                        class="btn btn-primary payment-modal-btn"
+                        @click="creditNextStep"
+                        :disabled="!form.due_date"
+                    >
                         Next <i class="ri-arrow-right-line ms-2"></i>
+                    </button>
+                    <button
+                        v-else
+                        type="button"
+                        class="btn btn-primary payment-modal-btn"
+                        @click="submitCreditSale"
+                        :disabled="form.processing || !form.due_date"
+                    >
+                        <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
+                        <i class="ri-check-line me-2" v-else></i>
+                        {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
                     </button>
                 </template>
                 <!-- Step 2 footer -->
@@ -1065,7 +1086,6 @@ export default {
             showPrintPrompt: false,
             cashReceivedAmount: null,
             cashChargeError: null,
-            creditVerificationText: '',
             supervisorToken: '',
             creditVerificationError: null,
             bankTransferError: null,
@@ -1236,8 +1256,14 @@ export default {
         hasCustomerOutstandingBalance() {
             return this.customerOutstandingBalance > 0;
         },
-        canSubmitCreditSale() {
-            return this.isCreditVerificationMatched && !!this.form.due_date;
+        /**
+         * A credit sale needs approval only when it actually defers payment.
+         * Due today commits the business to nothing, so it goes through as a
+         * single step. The server applies the same rule -- this only decides
+         * what the screen shows.
+         */
+        creditNeedsAuthorization() {
+            return !this.form.due_date || this.form.due_date > this.today;
         },
         today() {
             return new Date().toISOString().slice(0, 10);
@@ -1404,7 +1430,6 @@ export default {
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
-            this.creditVerificationText = '';
             this.supervisorToken = '';
             this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
@@ -1460,7 +1485,6 @@ export default {
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
-            this.creditVerificationText = '';
             this.supervisorToken = '';
             this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
@@ -1549,8 +1573,7 @@ export default {
                 this.form.payment_mode = 'Credit Sales';
                 this.showPaymentTypeModal = false;
                 this.showCreditVerificationModal = true;
-                this.creditVerificationText = '';
-            this.supervisorToken = '';
+                this.supervisorToken = '';
             this.$refs.creditGate?.reset();
                 this.creditVerificationError = null;
                 this.creditStep = 1;
@@ -1748,11 +1771,17 @@ export default {
                 return;
             }
             this.form.errors.due_date = null;
+
+            // Due today needs no approval, so there is no second step to go to.
+            if (!this.creditNeedsAuthorization) {
+                this.submitCreditSale();
+                return;
+            }
+
             this.creditStep = 2;
         },
         closeCreditVerificationModal() {
             this.showCreditVerificationModal = false;
-            this.creditVerificationText = '';
             this.supervisorToken = '';
             this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
@@ -1769,8 +1798,12 @@ export default {
             this.creditVerificationError = null;
         },
         submitCreditSale() {
-            if (!this.isCreditVerificationMatched) {
-                this.creditVerificationError = 'An administrator must authorize this credit sale.';
+            if (!this.form.due_date) {
+                this.form.errors.due_date = 'Please set a due date before continuing.';
+                return;
+            }
+            if (this.creditNeedsAuthorization && !this.isCreditVerificationMatched) {
+                this.creditVerificationError = 'This credit sale must be authorized before it can go through.';
                 return;
             }
             this.creditVerificationError = null;
@@ -1916,7 +1949,6 @@ export default {
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
-            this.creditVerificationText = '';
             this.supervisorToken = '';
             this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
