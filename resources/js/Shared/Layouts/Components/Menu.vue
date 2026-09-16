@@ -17,7 +17,7 @@
 
             <!-- ── MANAGEMENT ── -->
             <li class="nav-group-label"
-                v-if="$page.props.roles.includes('HR Manager') || $page.props.roles.includes('Super Admin') || $page.props.roles.includes('Human Resource Officer') || $page.props.roles.includes('Warehouse Manager') || $page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Mini Admin') || $page.props.roles.includes('Administrator')">
+                v-if="canAny('employees') || canAny('user_management') || canAny('inventory') || canAny('sales') || canAny('customers') || canAny('libraries')">
                 Management
             </li>
 
@@ -34,8 +34,13 @@
                 </li>
             </template>
 
-            <template
-                v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Sales Rep') || $page.props.roles.includes('Warehouse Manager') || $page.props.roles.includes('HR Manager') || $page.props.roles.includes('Accountant') || $page.props.roles.includes('Super Admin')">
+            <!-- No role gate here on purpose. Every item below decides for itself
+                 with canAny()/can(), which is what the Roles screen actually edits.
+                 This used to list role NAMES, and a role named differently in one
+                 database than another (production calls HR "Human Resource Officer",
+                 local calls it "HR Manager") silently lost this whole section no
+                 matter what it had been granted. -->
+            <template>
                 <li class="nav-item"
                     v-if="canAny('user_management')">
                     <Link href="/users" class="nav-link menu-link"
@@ -79,7 +84,7 @@
                     </Link>
                 </li>
 
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Super Admin')">
+                <li class="nav-item" v-if="canAny('libraries')">
                     <Link href="/suppliers" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/libraries/suppliers') }">
                     <i class="ri-money-dollar-circle-fill"></i>
@@ -91,7 +96,7 @@
 
                 <!-- ── FINANCE ── -->
                 <li class="nav-group-label"
-                    v-if="$page.props.roles.includes('Super Admin') || $page.props.roles.includes('Accountant') || $page.props.roles.includes('HR Manager')">
+                    v-if="canAny('accounting') || canAny('payroll')">
                     Finance
                 </li>
 
@@ -136,7 +141,7 @@
                     </Link>
                 </li>
 
-                <li class="nav-item" v-if="$page.props.roles.includes('Administrator') || $page.props.roles.includes('Super Admin')">
+                <li class="nav-item" v-if="canAny('libraries')">
                    <BLink class="nav-link menu-link" href="#sidebarDashboards"
                     :class="{'active': $page.url.startsWith('/libraries') }"
                     data-bs-toggle="collapse" role="button" :aria-expanded="$page.url.startsWith('/libraries')" aria-controls="sidebarDashboards">
@@ -149,7 +154,7 @@
 
                     <div class="collapse menu-dropdown" id="sidebarDashboards">
                         <ul class="nav nav-sm flex-column">
-                            <li class="nav-item submenu-item">
+                            <li class="nav-item submenu-item" v-if="can('libraries', 'products', 'view')">
                                 <Link href="/libraries/products" class="nav-link submenu-link"
                                     :class="{ 'active': $page.url === '/libraries/products' }" data-key="t-basic">
                                 <span class="submenu-dot"></span>
@@ -157,7 +162,7 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item">
+                            <li class="nav-item submenu-item" v-if="can('libraries', 'statuses', 'view')">
                                 <Link href="/libraries/statuses" class="nav-link submenu-link"
                                     :class="{ 'active': $page.url === '/libraries/statuses' }" data-key="t-basic">
                                 <span class="submenu-dot"></span>
@@ -165,7 +170,7 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item">
+                            <li class="nav-item submenu-item" v-if="can('libraries', 'brands', 'view')">
                                 <Link href="/libraries/brands" class="nav-link submenu-link"
                                     :class="{ 'active': $page.url === '/libraries/brands' }" data-key="t-basic">
                                 <span class="submenu-dot"></span>
@@ -173,7 +178,7 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item">
+                            <li class="nav-item submenu-item" v-if="can('libraries', 'units', 'view')">
                                 <Link href="/libraries/units" class="nav-link submenu-link"
                                     :class="{ 'active': $page.url === '/libraries/units' }" data-key="t-basic">
                                 <span class="submenu-dot"></span>
@@ -181,7 +186,7 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item">
+                            <li class="nav-item submenu-item" v-if="can('libraries', 'packagings', 'view')">
                                 <Link href="/libraries/packagings" class="nav-link submenu-link"
                                     :class="{ 'active': $page.url === '/libraries/packagings' }" data-key="t-basic">
                                 <span class="submenu-dot"></span>
@@ -189,7 +194,7 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item">
+                            <li class="nav-item submenu-item" v-if="can('libraries', 'locations', 'view')">
                                 <Link href="/libraries/locations" class="nav-link submenu-link"
                                     :class="{'active': $page.url === '/libraries/locations' }"
                                     data-key="t-basic">
@@ -198,7 +203,7 @@
                                 </Link>
                             </li>
 
-                            <li class="nav-item submenu-item">
+                            <li class="nav-item submenu-item" v-if="can('libraries', 'roles', 'view')">
                                 <Link href="/libraries/roles" class="nav-link submenu-link"
                                     :class="{ 'active': $page.url === '/libraries/roles' }" data-key="t-basic">
                                 <span class="submenu-dot"></span>
