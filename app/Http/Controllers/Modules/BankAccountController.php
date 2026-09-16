@@ -3,47 +3,27 @@
 namespace App\Http\Controllers\Modules;
 
 use App\Http\Controllers\Controller;
-use App\Models\Account;
 use App\Models\BankAccount;
+use App\Services\Accounting\BankLedgerService;
 use App\Services\Accounting\CashManagementService;
 use App\Services\System\Permission\PermissionService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class BankAccountController extends Controller
 {
-    /**
-     * GL codes hardcoded in JournalEntryService::ensureAccount() calls for
-     * system-generated accounts (Cash, Cash in Bank, Card Clearing, Accounts
-     * Receivable/Payable, revenue/expense accounts, etc.). A bank account must
-     * never reuse one of these — ensureAccount() falls back to matching by
-     * code when the slug isn't found, so a collision would silently post a
-     * bank's transactions into the wrong system account.
-     */
-    private const RESERVED_SYSTEM_CODES = [
-        '1000', '1011', '1012', '1050', '1090', '1100', '1200',
-        '2000', '2100',
-        '4100', '4110', '4200',
-        '5100', '5200', '5201', '5202', '5300', '5310', '5311', '5320', '5341', '5370', '5390', '5400', '5900',
-    ];
+    public function __construct(
+        private CashManagementService $cashManagementService,
+        private BankLedgerService $ledger,
+    ) {}
 
-    public function __construct(private CashManagementService $cashManagementService) {}
-
-    private function glCodeRules(?int $ignoreBankAccountId = null, ?string $currentGlCode = null): array
+    /** Only what a person names. The GL code is assigned, never typed. */
+    private function detailRules(): array
     {
         return [
-            'required',
-            'string',
-            'max:20',
-            Rule::unique('bank_accounts', 'gl_code')->ignore($ignoreBankAccountId),
-            function ($attribute, $value, $fail) use ($currentGlCode) {
-                if ($value === $currentGlCode) {
-                    return;
-                }
-                if (in_array($value, self::RESERVED_SYSTEM_CODES, true) || Account::where('code', $value)->exists()) {
-                    $fail('This GL code is reserved for an existing or system ledger account. Choose a different code.');
-                }
-            },
+            'bank_name'      => 'required|string|max:100',
+            'account_name'   => 'required|string|max:150',
+            'account_number' => 'nullable|string|max:50',
         ];
     }
 
@@ -64,32 +44,40 @@ class BankAccountController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'bank_name'      => 'required|string|max:100',
-            'account_name'   => 'required|string|max:150',
-            'account_number' => 'nullable|string|max:50',
-            'gl_code'        => $this->glCodeRules(),
+        // A gl_code in the request is ignored: validated() drops it. Letting
+        // people type one is how six banks ended up pointing at codes the chart
+        // had never heard of.
+        $data = $request->validate($this->detailRules());
+
+        $bank = DB::transaction(function () use ($data) {
+            $bank = BankAccount::create($data + [
+                'gl_code'       => $this->ledger->nextGlCode(),
+                'created_by_id' => auth()->id(),
+            ]);
+
+            $this->ledger->syncLedgerAccount($bank);
+
+            return $bank;
+        });
+
+        return response()->json([
+            'message' => "Bank account created with GL code {$bank->gl_code}.",
+            'gl_code' => $bank->gl_code,
         ]);
-
-        $data['created_by_id'] = auth()->id();
-
-        BankAccount::create($data);
-
-        return response()->json(['message' => 'Bank account created.']);
     }
 
     public function update(Request $request, int $id)
     {
         $account = BankAccount::findOrFail($id);
 
-        $data = $request->validate([
-            'bank_name'      => 'required|string|max:100',
-            'account_name'   => 'required|string|max:150',
-            'account_number' => 'nullable|string|max:50',
-            'gl_code'        => $this->glCodeRules($id, $account->gl_code),
-        ]);
+        // The code is fixed once assigned: moving it would strand every entry
+        // already posted under the old one.
+        $data = $request->validate($this->detailRules());
 
-        $account->update($data);
+        DB::transaction(function () use ($account, $data) {
+            $account->update($data);
+            $this->ledger->syncLedgerAccount($account);
+        });
 
         return response()->json(['message' => 'Bank account updated.']);
     }

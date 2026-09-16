@@ -305,10 +305,14 @@
                                 <div v-if="bank.errors.bank_name" class="error-message">{{ bank.errors.bank_name }}</div>
                             </div>
                             <div class="col-12 col-sm-6">
-                                <label class="form-label">GL Code <span class="text-danger">*</span></label>
-                                <input v-model="bank.form.gl_code" type="text" class="form-control font-monospace" placeholder="e.g. 1011" :disabled="bank.modal.isEdit" />
-                                <div class="form-text">Must be unique. Cannot be changed after creation.</div>
-                                <div v-if="bank.errors.gl_code" class="error-message">{{ bank.errors.gl_code }}</div>
+                                <label class="form-label">GL Code</label>
+                                <input v-if="bank.modal.isEdit" :value="bank.form.gl_code" type="text" class="form-control font-monospace" disabled />
+                                <input v-else value="Assigned on save" type="text" class="form-control" disabled />
+                                <div class="form-text">
+                                    {{ bank.modal.isEdit
+                                        ? 'Fixed once assigned, so posted entries stay with this bank.'
+                                        : 'The next free code from 1020 is assigned, with a matching Chart of Accounts entry.' }}
+                                </div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Account Name <span class="text-danger">*</span></label>
@@ -342,6 +346,7 @@ import Swal from "sweetalert2";
 import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
 
+// gl_code is display-only: the server assigns it and ignores anything sent.
 const emptyBankForm = () => ({ bank_name: '', account_name: '', account_number: '', gl_code: '' });
 const emptyCoaForm  = () => ({ code: '', name: '', type: '', subtype: '', is_active: true });
 
@@ -476,10 +481,11 @@ export default {
             this.bank.saving = true;
             this.bank.errors = {};
             try {
+                const { gl_code, ...details } = this.bank.form;
                 if (this.bank.modal.isEdit) {
-                    await axios.put(`/accounting/bank-accounts/${this.bank.modal.id}`, this.bank.form);
+                    await axios.put(`/accounting/bank-accounts/${this.bank.modal.id}`, details);
                 } else {
-                    await axios.post('/accounting/bank-accounts', this.bank.form);
+                    await axios.post('/accounting/bank-accounts', details);
                 }
                 this.closeBankModal();
                 router.reload({ preserveScroll: true });

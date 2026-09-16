@@ -17,6 +17,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class AccountingController extends Controller
 {
+    /** The shared Cash in Bank pool that automatic check postings use. */
+    private const CASH_IN_BANK_CODE = '1011';
+
     private const JOURNAL_ENTRY_COLUMNS = [
         'reversal_of_id',
         'reversed_at',
@@ -143,6 +146,9 @@ class AccountingController extends Controller
         $accounts = $this->hasCoreAccountingTables()
             ? DB::table('accounts')
                 ->where('is_active', true)
+                // Cash in Bank is left off the manual entry picker: see
+                // storeManualJournal() for why money posted there goes missing.
+                ->where('code', '!=', self::CASH_IN_BANK_CODE)
                 ->orderBy('code')
                 ->get(['id', 'code', 'name', 'type'])
                 ->map(fn ($a) => ['id' => $a->id, 'code' => $a->code, 'name' => $a->name, 'type' => $a->type])
@@ -184,12 +190,19 @@ class AccountingController extends Controller
             ], 422);
         }
 
-        $cashInBankAccountId = Account::where('code', '1011')->value('id');
+        // Every bank has its own ledger account, and Cash Management reads each
+        // bank's balance from that account alone. Cash in Bank is a shared pool
+        // it never splits by bank, so a manual line there -- even one tagged with
+        // a bank -- vanished from every bank's balance. Point people at the
+        // bank's own account instead.
+        $cashInBankAccountId = Account::where('code', self::CASH_IN_BANK_CODE)->value('id');
         foreach ($data['lines'] as $order => $line) {
-            if ($cashInBankAccountId && (int) $line['account_id'] === (int) $cashInBankAccountId && empty($line['bank_account_id'])) {
+            if ($cashInBankAccountId && (int) $line['account_id'] === (int) $cashInBankAccountId) {
                 return response()->json([
-                    'message' => 'Select which bank account applies to each Cash in Bank line.',
-                    'errors'  => ["lines.{$order}.bank_account_id" => ['A bank account is required for Cash in Bank lines.']],
+                    'message' => 'Post bank money to the bank\'s own account, not Cash in Bank.',
+                    'errors'  => ["lines.{$order}.account_id" => [
+                        'Choose the specific bank\'s account (for example 1020 — BDO). Cash in Bank is not shown per bank in Cash Management.',
+                    ]],
                 ], 422);
             }
         }
