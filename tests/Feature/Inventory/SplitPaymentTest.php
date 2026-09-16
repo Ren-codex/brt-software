@@ -405,4 +405,144 @@ class SplitPaymentTest extends TestCase
     {
         $this->assertSame('1011', $this->clearSupplierCheck(null));
     }
+
+    // ── Paying at the point of receipt: each peso leaves once ────────────────
+
+    /** Receive a 10,000 delivery with the given payment, and return it. */
+    private function receiveDelivery(array $payment): ReceivedStock
+    {
+        $po = PurchaseOrder::create([
+            'po_date' => now()->toDateString(), 'total_amount' => 10000,
+            'status_id' => ListStatus::where('slug', 'pending')->first()->id,
+            'supplier_id' => $this->received->supplier_id, 'created_by_id' => $this->user->id,
+        ]);
+        $product = Product::first();
+        $poItem = PurchaseOrderItem::create([
+            'po_id' => $po->id, 'product_id' => $product->id,
+            'quantity' => 20, 'unit_cost' => 500, 'total_cost' => 10000,
+        ]);
+
+        $this->actingAs($this->user)->postJson('/received-stocks', array_merge([
+            'po_id' => $po->id,
+            'supplier_id' => $this->received->supplier_id,
+            'received_date' => now()->toDateString(),
+            'items' => [[
+                'product_id' => $product->id, 'product_name' => 'Test', 'quantity' => 20,
+                'unit_cost' => 500, 'total_cost' => 10000, 'to_received_quantity' => 20,
+                'po_item_id' => $poItem->id, 'retail_price' => 600, 'wholesale_price' => 550,
+                'expiration_date' => null,
+            ]],
+        ], $payment))->assertSuccessful();
+
+        return ReceivedStock::where('po_id', $po->id)->firstOrFail();
+    }
+
+    /** @return array<string, float> net movement (debit +) per account code, for lines after $sinceId */
+    private function movementSince(int $sinceId): array
+    {
+        return JournalEntryLine::with('account')->where('id', '>', $sinceId)->get()
+            ->groupBy(fn ($l) => $l->account->code)
+            ->map(fn ($g) => round($g->sum(fn ($l) => $l->line_type === 'debit' ? (float) $l->amount : -(float) $l->amount), 2))
+            ->filter(fn ($v) => abs($v) > 0.001)
+            ->sortKeys()
+            ->all();
+    }
+
+    private function lastLineId(): int
+    {
+        return (int) JournalEntryLine::max('id');
+    }
+
+    public function test_a_split_paid_at_receipt_moves_each_peso_once(): void
+    {
+        // Used to credit Cash 14,000 and leave Accounts Payable 10,000 in debit.
+        $since = $this->lastLineId();
+
+        $this->receiveDelivery([
+            'payment_mode' => 'Split',
+            'payment_lines' => [
+                ['payment_mode' => 'Cash on Hand', 'payment_amount' => 4000],
+                ['payment_mode' => 'Bank Transfer', 'payment_amount' => 6000, 'bank_account_id' => $this->bank->id, 'bank_name' => 'BDO', 'reference_number' => 'TRN-R1'],
+            ],
+        ]);
+
+        $this->assertEquals(['1000' => -4000.0, '1020' => -6000.0, '1200' => 10000.0], $this->movementSince($since),
+            'Cash and BDO each leave once, inventory arrives, and nothing is left owed.');
+    }
+
+    public function test_a_single_method_payment_at_receipt_moves_the_money_once(): void
+    {
+        $since = $this->lastLineId();
+
+        $this->receiveDelivery(['payment_mode' => 'Cash', 'amount_paid' => 10000]);
+
+        $this->assertEquals(['1000' => -10000.0, '1200' => 10000.0], $this->movementSince($since));
+    }
+
+    public function test_a_check_at_receipt_leaves_the_bill_owed_until_it_clears(): void
+    {
+        $since = $this->lastLineId();
+
+        $this->receiveDelivery([
+            'payment_mode' => 'Split',
+            'payment_lines' => [[
+                'payment_mode' => 'Check', 'payment_amount' => 10000, 'reference_number' => 'CHK-R1',
+                'bank_account_id' => $this->bank->id, 'check_date' => now()->addDays(5)->toDateString(),
+            ]],
+        ]);
+
+        // A written check is a promise: nothing has left the bank, so the supplier is still owed.
+        $this->assertEquals(['1200' => 10000.0, '2000' => -10000.0], $this->movementSince($since));
+
+        $this->actingAs($this->user);
+        app(\App\Services\Modules\CheckRegisterClass::class)->markCleared(\App\Models\Check::issued()->latest('id')->firstOrFail());
+
+        // Cleared: BDO pays it, once. Previously Cash had already been credited at receipt as well.
+        $this->assertEquals(['1020' => -10000.0, '1200' => 10000.0], $this->movementSince($since));
+    }
+
+    public function test_a_credit_delivery_still_records_the_full_amount_owed(): void
+    {
+        $since = $this->lastLineId();
+
+        $this->receiveDelivery(['payment_mode' => 'Credit', 'due_date' => now()->addDays(30)->toDateString()]);
+
+        $this->assertEquals(['1200' => 10000.0, '2000' => -10000.0], $this->movementSince($since));
+    }
+
+    public function test_voiding_a_delivery_paid_at_receipt_undoes_all_of_it(): void
+    {
+        $since = $this->lastLineId();
+
+        $received = $this->receiveDelivery([
+            'payment_mode' => 'Split',
+            'payment_lines' => [
+                ['payment_mode' => 'Cash on Hand', 'payment_amount' => 4000],
+                ['payment_mode' => 'Bank Transfer', 'payment_amount' => 6000, 'bank_account_id' => $this->bank->id, 'bank_name' => 'BDO', 'reference_number' => 'TRN-V1'],
+            ],
+        ]);
+
+        $this->actingAs($this->user);
+        app(\App\Services\ReceivedStockService::class)->void($received->id, 'Entered twice');
+
+        $this->assertSame([], $this->movementSince($since));
+    }
+
+    public function test_editing_a_delivery_reposts_its_payment_once(): void
+    {
+        $received = $this->receiveDelivery(['payment_mode' => 'Cash', 'amount_paid' => 10000]);
+        $since = $this->lastLineId();
+
+        // The update endpoint reverses everything and posts again.
+        $this->actingAs($this->user)->putJson("/received-stocks/{$received->id}", [
+            'payment_mode' => 'Cash',
+            'amount_paid' => 10000,
+            'received_date' => now()->toDateString(),
+        ])->assertSuccessful();
+
+        // Old entries reversed, new ones posted: the net change is nothing, and
+        // the delivery as a whole still shows one payment and nothing owed.
+        $this->assertSame([], $this->movementSince($since));
+        $this->assertCount(1, $received->fresh()->payments);
+    }
 }

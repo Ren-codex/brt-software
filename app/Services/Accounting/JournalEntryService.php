@@ -526,6 +526,21 @@ class JournalEntryService
         };
     }
 
+    /**
+     * Receiving the goods: DR Inventory / CR Accounts Payable, for the full cost.
+     *
+     * Always the full payable, however the delivery was paid. Payment is posted
+     * separately, one entry per payment line (recordReceivedStockPaymentEntry),
+     * settling this payable against whatever actually funded it -- the same
+     * shape as paying a Credit delivery later.
+     *
+     * This entry used to credit Cash for the amount paid at receipt as well.
+     * Since the payment lines were also posted against Accounts Payable, the
+     * same money left twice: a P10,000 delivery paid P4,000 cash and P6,000 by
+     * transfer credited Cash P14,000 and left Accounts Payable P10,000 in debit,
+     * as though the supplier owed us. A check paid at receipt was worse still --
+     * Cash was credited on the spot, and the bank again when the check cleared.
+     */
     public function recordReceivedStockEntry(ReceivedStock $receivedStock): ?JournalEntry
     {
         $receivedStock->loadMissing(['items.purchaseOrderItem', 'purchaseOrder']);
@@ -536,64 +551,32 @@ class JournalEntryService
         }
 
         $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
-        $paymentMode = trim((string) ($receivedStock->payment_mode ?? 'Credit'));
-        $isCreditPurchase = strtolower($paymentMode) === 'credit';
-        $amountPaid = $isCreditPurchase ? 0 : round((float) ($receivedStock->amount_paid ?? 0), 2);
-        $cashPaid = min($amountPaid, $amount);
-        $remainingPayable = round(max($amount - $cashPaid, 0), 2);
         $payableAccount = $this->ensureAccount('2000', 'accounts_payable', 'Accounts Payable', 'liability', 'current_liability');
-        $cashAccount = $isCreditPurchase ? null : $this->resolveCashAccountByPaymentMode($paymentMode, $receivedStock->bank_account_id ?? null);
-        $entryType = ($isCreditPurchase || $remainingPayable > 0) ? 'purchase_receipt' : 'purchase_receipt_cash';
+        $paymentMode = trim((string) ($receivedStock->payment_mode ?? 'Credit'));
         $purchaseOrder = $receivedStock->purchaseOrder;
-        $memo = 'Received stock ' . $receivedStock->received_no . ' posted from supplier delivery via ' . $paymentMode . '.';
-        if (strtolower($paymentMode) === 'bank transfer') {
-            $bankDetails = array_filter([
-                $receivedStock->bank_name ? 'Bank: ' . $receivedStock->bank_name : null,
-                $receivedStock->reference_number ? 'Ref#: ' . $receivedStock->reference_number : null,
-            ]);
 
-            if (!empty($bankDetails)) {
-                $memo .= ' ' . implode(', ', $bankDetails) . '.';
-            }
-        }
-        if (strtolower($paymentMode) === 'check' && $receivedStock->reference_number) {
-            $memo .= ' Ref#: ' . $receivedStock->reference_number . '.';
-        }
-        $lines = [
-            [
-                'account_id' => $inventoryAccount->id,
-                'line_type' => 'debit',
-                'amount' => $amount,
-                'description' => 'Increase inventory for received goods.',
-            ],
-        ];
-
-        if ($cashPaid > 0 && $cashAccount) {
-            $lines[] = [
-                'account_id' => $cashAccount->id,
-                'line_type' => 'credit',
-                'amount' => $cashPaid,
-                'description' => 'Record immediate payment for received goods via ' . strtolower($paymentMode) . '.',
-            ];
-        }
-
-        if ($isCreditPurchase || $remainingPayable > 0) {
-            $lines[] = [
-                'account_id' => $payableAccount->id,
-                'line_type' => 'credit',
-                'amount' => $isCreditPurchase ? $amount : $remainingPayable,
-                'description' => $isCreditPurchase
-                    ? 'Recognize supplier payable for received goods.'
-                    : 'Recognize remaining supplier payable after partial payment.',
-            ];
-        }
+        $memo = 'Received stock ' . $receivedStock->received_no . ' posted from supplier delivery'
+            . (strcasecmp($paymentMode, 'Credit') === 0 ? ' on credit.' : ', paid via ' . $paymentMode . ' (see the payment entries).');
 
         return $this->createEntry(
             $receivedStock,
             $receivedStock->received_date,
-            $entryType,
+            'purchase_receipt',
             $memo,
-            $lines,
+            [
+                [
+                    'account_id' => $inventoryAccount->id,
+                    'line_type' => 'debit',
+                    'amount' => $amount,
+                    'description' => 'Increase inventory for received goods.',
+                ],
+                [
+                    'account_id' => $payableAccount->id,
+                    'line_type' => 'credit',
+                    'amount' => $amount,
+                    'description' => 'Recognize supplier payable for received goods.',
+                ],
+            ],
             $purchaseOrder ? ('PO#' . ($purchaseOrder->po_number ?: $purchaseOrder->pr_number) . ' - ' . $memo) : $memo
         );
     }

@@ -250,21 +250,29 @@ class ReceivedStockService
             }
             $receivedStock->update($data);
 
+            $receivedStock = $receivedStock->load(['purchaseOrder', 'supplier', 'items', 'receivedBy']);
+
+            // The receipt posts the full payable; the payment, if any, settles it
+            // through the same recorder creation uses. This path used to write
+            // the payment row without posting it and let the receipt entry credit
+            // the cash instead -- a second, different way to book one payment,
+            // and one that never put a check in the register to be cleared.
+            $this->journalEntryService->recordReceivedStockEntry($receivedStock);
+
             $paymentMode = $receivedStock->payment_mode;
             $amountPaid = round((float) ($receivedStock->amount_paid ?? 0), 2);
             if ($paymentMode !== 'Credit' && $amountPaid > 0) {
-                $receivedStock->payments()->create([
-                    'payment_date' => $receivedStock->received_date,
-                    'payment_mode' => $paymentMode,
-                    'amount_paid' => $amountPaid,
-                    'bank_name' => $receivedStock->bank_name,
+                $this->recordPaymentLines($receivedStock, [[
+                    'payment_mode'     => $paymentMode,
+                    'payment_amount'   => $amountPaid,
+                    'bank_account_id'  => $receivedStock->bank_account_id,
+                    'bank_name'        => $receivedStock->bank_name,
                     'reference_number' => $receivedStock->reference_number,
-                    'created_by_id' => Auth::id(),
-                ]);
+                    'check_date'       => $data['check_date'] ?? null,
+                ]]);
             }
 
-            $receivedStock = $receivedStock->load(['purchaseOrder', 'supplier', 'items', 'receivedBy', 'payments.createdBy']);
-            $this->journalEntryService->recordReceivedStockEntry($receivedStock);
+            $receivedStock->load('payments.createdBy');
 
             return $receivedStock;
         });
