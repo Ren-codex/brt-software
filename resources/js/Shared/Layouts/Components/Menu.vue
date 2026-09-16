@@ -34,13 +34,12 @@
                 </li>
             </template>
 
-            <!-- No role gate here on purpose. Every item below decides for itself
-                 with canAny()/can(), which is what the Roles screen actually edits.
-                 This used to list role NAMES, and a role named differently in one
-                 database than another (production calls HR "Human Resource Officer",
-                 local calls it "HR Manager") silently lost this whole section no
-                 matter what it had been granted. -->
-            <template>
+            <!-- These items each decide for themselves with canAny()/can(), which is
+                 what the Roles screen edits. They used to sit inside one <template>
+                 gated on role NAMES: production calls the HR role "Human Resource
+                 Officer" while the gate listed "HR Manager", so everything granted to
+                 it stayed hidden. No wrapper now -- a <template> without v-if renders
+                 as a real HTML <template>, whose contents the browser never shows. -->
                 <li class="nav-item"
                     v-if="canAny('user_management')">
                     <Link href="/users" class="nav-link menu-link"
@@ -223,7 +222,6 @@
                         </ul>
                     </div>
                 </li>
-            </template>
         </ul>
     </BContainer>
 </template>
