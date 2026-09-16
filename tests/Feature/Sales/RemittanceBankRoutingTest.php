@@ -120,6 +120,23 @@ class RemittanceBankRoutingTest extends TestCase
         $this->assertArrayNotHasKey('1011', $debits, 'Should no longer fall back to generic Cash in Bank.');
     }
 
+    public function test_a_customer_check_stays_in_cash_in_bank_even_when_the_receipt_names_a_bank(): void
+    {
+        // A customer's check is in none of our banks at verification: it only
+        // reaches one once deposited and cleared. Posting it to BDO here would
+        // overstate BDO, and a bounce would have to be clawed back out of it.
+        $remittance = $this->remittanceWith(
+            [['payment_mode' => 'Check', 'amount_paid' => 2500, 'bank_account_id' => $this->bdo->id, 'reference_number' => 'CUST-1']],
+            ['Check' => 2500]
+        );
+
+        $entry = app(JournalEntryService::class)->recordRemittanceApprovalEntry($remittance);
+        $debits = $this->debitsByAccount($entry->fresh('lines.account'));
+
+        $this->assertEquals(2500.0, $debits['1011'] ?? null);
+        $this->assertArrayNotHasKey('1020', $debits);
+    }
+
     public function test_transfers_to_different_banks_are_posted_separately(): void
     {
         $remittance = $this->remittanceWith([

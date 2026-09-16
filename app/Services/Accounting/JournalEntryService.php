@@ -1245,7 +1245,15 @@ class JournalEntryService
         // leftover discrepancy.
         foreach ($receivedByMode as $mode => $amount) {
             foreach ($this->allocateAcrossBanks($mode, $amount, $expectedByModeAndBank->get($mode)) as [$bankAccountId, $portion]) {
-                $targetAccount = $this->resolveCashAccountByPaymentMode($mode, $bankAccountId);
+                // A customer's check is not in any of our banks when a remittance
+                // is verified -- it reaches one only once deposited and cleared,
+                // and a bounce would otherwise have to be clawed back out of a
+                // bank balance. So it stays in Cash in Bank whatever bank the
+                // receipt happens to name.
+                $targetAccount = $this->resolveCashAccountByPaymentMode(
+                    $mode,
+                    strcasecmp((string) $mode, 'Check') === 0 ? null : $bankAccountId
+                );
                 $lines[] = [
                     'account_id' => $targetAccount->id,
                     'line_type' => 'debit',
@@ -1535,20 +1543,22 @@ class JournalEntryService
 
     private function resolveCashAccountByPaymentMode(?string $paymentMode, ?int $bankAccountId = null): Account
     {
-        if ($bankAccountId && strtolower((string) $paymentMode) === 'bank transfer') {
+        $mode = strtolower((string) $paymentMode);
+
+        // A transfer, or a check drawn on a known account, moves that account's
+        // money, so it posts to that bank's own ledger account. Checks used to
+        // skip this and always land in 1011 Cash in Bank -- even with "Drawn on"
+        // filled in -- so a cleared supplier check never reduced the balance of
+        // the bank it was written against, which Cash Management reads per bank.
+        if ($bankAccountId && in_array($mode, ['bank transfer', 'check'], true)) {
             $bankAccount = BankAccount::find($bankAccountId);
             if ($bankAccount) {
-                return $this->ensureAccount(
-                    $bankAccount->gl_code,
-                    'bank_' . $bankAccount->gl_code,
-                    $bankAccount->bank_name . ' — ' . $bankAccount->account_name,
-                    'asset',
-                    'current_asset'
-                );
+                return $this->resolveBankAccountGl($bankAccount);
             }
         }
 
-        return match (strtolower((string) $paymentMode)) {
+        // No bank known: the shared pool, which should sit at zero in normal use.
+        return match ($mode) {
             'bank transfer', 'check' => $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash'),
             'credit card', 'debit card' => $this->ensureAccount('1090', 'card_clearing', 'Card Clearing', 'asset', 'current_asset'),
             'gcash' => $this->ensureAccount('1012', 'gcash', 'GCash', 'asset', 'cash'),

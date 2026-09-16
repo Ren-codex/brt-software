@@ -374,4 +374,35 @@ class SplitPaymentTest extends TestCase
             ]],
         ])->assertStatus(422);
     }
+
+    /** Pay the open delivery with one check, clear it, and return the clearing entry's credit account code. */
+    private function clearSupplierCheck(?int $bankAccountId): string
+    {
+        $line = ['payment_mode' => 'Check', 'payment_amount' => 3000, 'reference_number' => 'CHK-CLR-'.uniqid(), 'check_date' => now()->toDateString()];
+        if ($bankAccountId) {
+            $line['bank_account_id'] = $bankAccountId;
+        }
+        $this->pay(['lines' => [$line]])->assertOk();
+
+        $check = \App\Models\Check::issued()->latest('id')->firstOrFail();
+        $this->actingAs($this->user);
+        app(\App\Services\Modules\CheckRegisterClass::class)->markCleared($check);
+
+        $entry = JournalEntry::with('lines.account')
+            ->where('entry_type', 'accounts_payable_payment')->latest('id')->firstOrFail();
+
+        return $entry->lines->firstWhere('line_type', 'credit')->account->code;
+    }
+
+    public function test_a_cleared_check_reduces_the_bank_it_was_drawn_on(): void
+    {
+        // It used to credit 1011 Cash in Bank whatever "Drawn on" said, so the
+        // bank's own balance in Cash Management never went down.
+        $this->assertSame('1020', $this->clearSupplierCheck($this->bank->id));
+    }
+
+    public function test_a_cleared_check_with_no_bank_falls_back_to_cash_in_bank(): void
+    {
+        $this->assertSame('1011', $this->clearSupplierCheck(null));
+    }
 }

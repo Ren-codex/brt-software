@@ -96,16 +96,16 @@ class IssuedCheckClearingTest extends TestCase
     }
 
     /**
-     * Net balance of the bank GL account a check payment actually posts
-     * against. Unlike a bank-transfer payment, resolveCashAccountByPaymentMode()
-     * never looks at bank_account_id for a check — every check posts to the
-     * generic 1011 "Cash in Bank" account regardless of which BankAccount row
-     * the payment references — so this checks 1011, not the fixture's 1020
-     * BankAccount GL code.
+     * Net balance of the bank the fixture's checks are drawn on (BDO, 1020).
+     *
+     * This used to read 1011 Cash in Bank, because every check posted there
+     * whatever bank the payment named -- which is exactly why a cleared check
+     * never reduced its own bank's balance in Cash Management. A check drawn on
+     * a known account now posts to that account.
      */
     private function bankBalance(): float
     {
-        $account = Account::where('code', '1011')->first();
+        $account = Account::where('code', '1020')->first();
         if (!$account) {
             return 0.0;   // the GL account is created lazily on first posting
         }
