@@ -581,6 +581,40 @@ class JournalEntryService
         );
     }
 
+    /**
+     * Stock that was already on the shelf when the system started: DR Inventory
+     * / CR Opening Balance Equity.
+     *
+     * Not a purchase in this period, so it creates no supplier debt and moves no
+     * cash -- recordReceivedStockEntry() would book the full cost to Accounts
+     * Payable, which is exactly wrong here. Posted against the receipt so that
+     * voiding the receipt reverses it through the ordinary void path.
+     */
+    public function recordOpeningStockReceipt(ReceivedStock $receivedStock): ?JournalEntry
+    {
+        $receivedStock->loadMissing('items');
+
+        $amount = round((float) $receivedStock->items->sum('total_cost'), 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $inventoryAccount = $this->ensureAccount('1200', 'rice_inventory', 'Rice Inventory', 'asset', 'inventory');
+        $equityAccount = $this->ensureAccount('3900', 'opening_balance_equity', 'Opening Balance Equity', 'equity', 'opening_balance');
+        $memo = 'Opening stock ' . $receivedStock->received_no . ' brought into the books.';
+
+        return $this->createEntry(
+            $receivedStock,
+            $receivedStock->received_date,
+            'opening_entry',
+            $memo,
+            [
+                ['account_id' => $inventoryAccount->id, 'line_type' => 'debit', 'amount' => $amount, 'description' => 'Stock on hand at the start.'],
+                ['account_id' => $equityAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Opening balance of inventory.'],
+            ]
+        );
+    }
+
     public function recordReceivedStockPaymentEntry(ReceivedStock $receivedStock, ReceivedStockPayment $payment): ?JournalEntry
     {
         // The owner post-dates supplier checks to the day she expects funds, so
