@@ -13,7 +13,7 @@
             <h1 class="company-name">BOUYANT RICE TRADING</h1>
             Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
         </td>
-        <td class="order-info" style="width: 120px;">
+        <td class="order-info" style="width: 150px;">
             @isset($copyLabel)
                 <div class="copy-label">{{ $copyLabel }}</div>
             @endisset
@@ -45,8 +45,8 @@
         {!! nl2br(e($sales_order->customer->address ?? '---')) !!}
     </div>
     <div class="total-block">
-        <div style="text-align: left; font-weight: bold; font-size: 11px;">TOTAL</div>
-        <div style="font-size: 16px; font-weight: bold;">PHP {{ number_format($sales_order->total_amount, 2) }}</div>
+        <div style="text-align: left; font-weight: bold; font-size: 13px;">TOTAL</div>
+        <div style="font-size: 19px; font-weight: bold;">PHP {{ number_format($sales_order->total_amount, 2) }}</div>
     </div>
 </div>
 

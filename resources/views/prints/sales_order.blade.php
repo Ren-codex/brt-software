@@ -7,7 +7,7 @@
         body { margin: 0; padding: 0; }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 9px;
+            font-size: 11px;
             color: #333;
             line-height: 1.3;
         }
@@ -17,7 +17,7 @@
            the cut line. Content that's too long for one page simply flows onto a second
            page rather than being clipped. */
         .copy-cell { width: 100%; }
-        .cut-line { width: 100%; margin: 14mm 0; border-top: 1px dashed #999; }
+        .cut-line { width: 100%; margin: 6mm 0; border-top: 1px dashed #999; }
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -39,18 +39,18 @@
             background-color: #C0392B;
             border-radius: 4px;
         }
-        .company-name { font-size: 15px; font-weight: bold; color: #1a1a1a; margin: 0; }
-        .order-title { font-size: 19px; font-weight: bold; text-align: right; margin: 0 0 6px 0; }
-        .order-info { text-align: right; font-size: 10px; }
+        .company-name { font-size: 17px; font-weight: bold; color: #1a1a1a; margin: 0; }
+        .order-title { font-size: 22px; font-weight: bold; text-align: right; margin: 0 0 6px 0; white-space: nowrap; }
+        .order-info { text-align: right; font-size: 12px; }
         .order-meta-table { width: 100%; border-collapse: collapse; }
         .order-meta-label {
-            font-size: 8px;
+            font-size: 10px;
             font-weight: bold;
             text-align: right;
             border-bottom: 1px solid #333;
             padding-bottom: 2px;
         }
-        .order-meta-value { text-align: right; font-size: 10px; padding: 2px 0 5px 0; }
+        .order-meta-value { text-align: right; font-size: 12px; padding: 2px 0 5px 0; }
 
         /* Address & Total Section */
         .summary-container { width: 100%; display: table; margin-bottom: 10px; }
@@ -79,7 +79,7 @@
             background-color: #D5DBDB;
             border: 1px solid #BDC3C7;
         }
-        .meta-table th { font-size: 8px; padding: 3px; text-align: center; width: 20%; }
+        .meta-table th { font-size: 10px; padding: 3px; text-align: center; width: 20%; }
         .meta-table td { background-color: white; text-align: center; padding: 4px; border: 1px solid #BDC3C7; }
 
         /* Items Table */
@@ -98,14 +98,14 @@
         }
 
         /* Signature Section */
-        .signature-section { width: 100%; margin-top: 16px; display: table; }
+        .signature-section { width: 100%; margin-top: 8px; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
         .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 24px; padding-bottom: 4px; }
 
         /* Copy label */
         .copy-label {
             display: inline-block;
-            font-size: 8px;
+            font-size: 10px;
             font-weight: bold;
             letter-spacing: 0.5px;
             text-transform: uppercase;
