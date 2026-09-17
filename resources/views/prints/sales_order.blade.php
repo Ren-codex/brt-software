@@ -87,6 +87,7 @@
         .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 5px; text-align: left; }
         .items-table td { padding: 5px; border-bottom: 1px solid #eee; }
         .text-right { text-align: right; }
+        .items-table .text-center { text-align: center; }
 
         /* Footer */
         .footer-table { width: 100%; margin-top: 14px; }

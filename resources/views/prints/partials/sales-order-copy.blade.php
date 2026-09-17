@@ -77,8 +77,8 @@
             <th>Item #</th>
             <th>Product</th>
             <th>Batch Code</th>
-            <th>Unit of Measurement</th>
-            <th class="text-right">Quantity</th>
+            <th class="text-center">Unit of Measurement</th>
+            <th class="text-center">Quantity</th>
             <th class="text-right">Unit Price</th>
             <th class="text-right">Total</th>
         </tr>
@@ -89,8 +89,8 @@
             <td>{{ $index + 1 }}</td>
             <td><strong>{{ $item->product->brand->name ?? '' }} {{ $item->product->weight }}</strong></td>
             <td>{{ $item->batch_code ?? '---' }}</td>
-            <td>{{ $item->product->unit->name ?? '' }}</td>
-            <td class="text-right">{{ number_format($item->quantity) }}</td>
+            <td class="text-center">{{ $item->product->unit->name ?? '' }}</td>
+            <td class="text-center">{{ number_format($item->quantity) }}</td>
             <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
             <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>
         </tr>
