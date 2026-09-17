@@ -14,10 +14,13 @@
 
         /* Two-copies-per-sheet layout — each copy takes only the height its content needs
            (no forced fixed height), so short documents don't leave a large dead gap before
-           the cut line. Content that's too long for one page simply flows onto a second
-           page rather than being clipped. */
+           the cut line. Orders too long to share a sheet start the second copy on a new
+           sheet (.new-sheet) so neither copy is split across the cut; a copy longer than
+           one page still flows onto the next page rather than being clipped. */
         .copy-cell { width: 100%; }
         .cut-line { width: 100%; margin: 6mm 0; border-top: 1px dashed #999; }
+        .new-sheet { page-break-before: always; }
+        .keep-whole { page-break-inside: avoid; }
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -121,15 +124,20 @@
 <body>
     @php
         $logoPath = public_path('images/official-logo-mini.png');
+        // Both copies fit on one A4 sheet up to 3 items; past that the second copy
+        // would split across sheets, so each copy gets its own sheet instead.
+        $copiesShareSheet = count($items) <= 3;
     @endphp
 
     <div class="copy-cell">
         @include('prints.partials.sales-order-copy', ['copyLabel' => 'Customer Copy'])
     </div>
 
-    <div class="cut-line"></div>
+    @if($copiesShareSheet)
+        <div class="cut-line"></div>
+    @endif
 
-    <div class="copy-cell">
+    <div class="copy-cell {{ $copiesShareSheet ? 'keep-whole' : 'new-sheet' }}">
         @include('prints.partials.sales-order-copy', ['copyLabel' => 'BRT Copy'])
     </div>
 
