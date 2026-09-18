@@ -240,10 +240,13 @@ class ArInvoiceClass
             ]);
         }
 
-        // A check isn't real money until someone confirms it cleared (see
-        // confirmCheck()) — only non-check splits are recognized against the
-        // invoice balance immediately. Cash and Bank Transfer are unaffected.
-        $immediateTotal = round((float) $splits->reject(fn ($s) => $s['payment_mode'] === 'Check')->sum('amount'), 2);
+        // Neither a check nor a transfer collected in the field is real money
+        // until someone confirms it cleared (see confirmReceipt()) — only the
+        // rest is recognized against the invoice balance immediately. A
+        // transfer taken at the counter settles on the spot as before.
+        $immediateTotal = round((float) $splits
+            ->reject(fn ($s) => $this->awaitsBankConfirmation($s['payment_mode'], $ar_invoice))
+            ->sum('amount'), 2);
 
         if ($immediateTotal > 0) {
             $this->applyPaymentToInvoice($ar_invoice, $immediateTotal);
@@ -255,6 +258,7 @@ class ArInvoiceClass
 
         foreach ($splits as $split) {
             $isCheck = $split['payment_mode'] === 'Check';
+            $awaitsConfirmation = $this->awaitsBankConfirmation($split['payment_mode'], $ar_invoice);
 
             $receipt = Receipt::create([
                 'receipt_number' => Receipt::generateReceiptNumber(),
@@ -363,25 +367,52 @@ class ArInvoiceClass
      * (punch-list #12) — before this, the check sits "on hand" and the
      * customer's balance still reflects it as unpaid.
      */
+    /**
+     * Money a driver reported is only money once the office has seen it in the
+     * bank. A check has always worked this way; a transfer collected in the
+     * field now does too.
+     */
+    private function awaitsBankConfirmation(?string $paymentMode, ?ArInvoice $invoice): bool
+    {
+        $mode = strtolower(trim((string) $paymentMode));
+
+        if ($mode === 'check') {
+            return true;
+        }
+
+        if ($mode !== 'bank transfer') {
+            return false;
+        }
+
+        // Only COD is collected away from the office. A credit customer paying
+        // by transfer sends it bank to bank, where the office sees it anyway.
+        return SalesOrder::isCod(optional(optional($invoice)->sales_order)->payment_mode);
+    }
+
     public function confirmCheck($receiptId, $bankName, $checkDate = null)
+    {
+        return $this->confirmReceipt($receiptId, $bankName, $checkDate);
+    }
+
+    public function confirmReceipt($receiptId, $bankName, $checkDate = null)
     {
         $receipt = Receipt::with('arInvoice.sales_order')->findOrFail($receiptId);
 
-        if (strcasecmp((string) $receipt->payment_mode, 'Check') !== 0) {
+        if (! $this->awaitsBankConfirmation($receipt->payment_mode, $receipt->arInvoice)) {
             throw ValidationException::withMessages([
-                'payment_mode' => 'Only check receipts can be confirmed this way.',
+                'payment_mode' => 'Only a check, or a transfer collected in the field, is confirmed this way.',
             ]);
         }
 
         if ($receipt->confirmed_at) {
             throw ValidationException::withMessages([
-                'confirmed_at' => 'This check has already been confirmed.',
+                'confirmed_at' => 'This payment has already been confirmed.',
             ]);
         }
 
         if (blank($bankName)) {
             throw ValidationException::withMessages([
-                'bank_name' => 'Enter the bank name to confirm this check.',
+                'bank_name' => 'Enter the bank name to confirm this payment.',
             ]);
         }
 
@@ -399,8 +430,11 @@ class ArInvoiceClass
         // moment both the ledger and the invoice move, so they cannot drift.
         $this->journalEntryService->recordCheckCollectionEntry($receipt);
 
-        // A date corrected at confirmation has to reach the register too.
-        app(CheckRegisterClass::class)->syncCheckDate($receipt, $checkDate ?: $receipt->check_date);
+        // Only a check lives in the check register.
+        if (strcasecmp((string) $receipt->payment_mode, 'Check') === 0) {
+            // A date corrected at confirmation has to reach the register too.
+            app(CheckRegisterClass::class)->syncCheckDate($receipt, $checkDate ?: $receipt->check_date);
+        }
 
         $receipt->update([
             'bank_name' => $bankName,
@@ -412,8 +446,8 @@ class ArInvoiceClass
 
         return [
             'data' => new ArInvoiceResource($ar_invoice->fresh()),
-            'message' => 'Check confirmed and payment applied to the invoice balance.',
-            'info' => "Check from {$bankName} confirmed successfully.",
+            'message' => 'Payment confirmed and applied to the invoice balance.',
+            'info' => "Payment through {$bankName} confirmed successfully.",
         ];
     }
 

@@ -109,6 +109,18 @@ trait BuildsCodOrders
         ], ['access_level' => 'encoder']);
     }
 
+    private function grantReceiptAccess(User $user): void
+    {
+        $module = Module::where('key', 'sales')->firstOrFail();
+        $roleId = UserRole::where('user_id', $user->id)->value('role_id');
+
+        RolePermission::firstOrCreate([
+            'role_id' => $roleId,
+            'module_id' => $module->id,
+            'submodule_id' => $module->submodules()->where('key', 'receipts')->firstOrFail()->id,
+        ], ['access_level' => 'encoder']);
+    }
+
     private function grantRemittanceAccess(User $user): void
     {
         $module = Module::where('key', 'sales')->firstOrFail();
