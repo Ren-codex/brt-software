@@ -48,4 +48,22 @@ class EmployeeFullnameTest extends TestCase
     {
         $this->assertSame('Ana Cruz', $this->employee(['lastname' => ' Cruz '])->fullname);
     }
+
+    public function test_every_word_of_a_multi_word_name_is_capitalized(): void
+    {
+        $employee = $this->employee(['firstname' => 'maria clara', 'lastname' => 'dela cruz']);
+
+        $this->assertSame('Maria Clara Dela Cruz', $employee->fullname);
+    }
+
+    public function test_hyphenated_and_apostrophe_names_are_capitalized_after_the_mark(): void
+    {
+        $this->assertSame('Ana Reyes-Lim', $this->employee(['lastname' => 'reyes-lim'])->fullname);
+        $this->assertSame("Ana O'Brien", $this->employee(['lastname' => "o'brien"])->fullname);
+    }
+
+    public function test_a_name_typed_in_capitals_is_normalized(): void
+    {
+        $this->assertSame('Ana Dela Cruz', $this->employee(['lastname' => 'DELA CRUZ'])->fullname);
+    }
 }

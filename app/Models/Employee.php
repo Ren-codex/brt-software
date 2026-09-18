@@ -57,9 +57,11 @@ class Employee extends Model
     public function setAttribute($key, $value)
     {
         if (in_array($key, ['firstname', 'middlename', 'lastname']) && !is_null($value)) {
-            // Trim first: ucfirst() on a leading space capitalizes the space,
-            // so " cruz " was stored lowercase.
-            $value = ucfirst(strtolower(trim($value)));
+            // Capitalize every word, not just the first: ucfirst() stored
+            // "Dela Cruz" as "Dela cruz". The extra delimiters keep hyphenated
+            // and apostrophe names right ("Reyes-Lim", "O'Brien"). Trim first,
+            // because capitalizing a leading space left the name lowercase.
+            $value = ucwords(strtolower(trim($value)), " -'");
         }
 
         return parent::setAttribute($key, $value);
