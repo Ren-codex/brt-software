@@ -43,7 +43,11 @@ class Employee extends Model
     public function getFullnameAttribute()
     {
         $middleInitial = $this->middlename ? strtoupper($this->middlename[0]) . '.' : '';
-        $name = trim("{$this->firstname} {$middleInitial} {$this->lastname}");
+        // Joined from the parts that are actually there — interpolating a blank
+        // middle initial left a double space in the name of every employee
+        // without a middle name.
+        $parts = array_filter(array_map('trim', [$this->firstname, $middleInitial, $this->lastname]), 'strlen');
+        $name = implode(' ', $parts);
         if ($this->suffix) {
             $name .= ', ' . $this->suffix;
         }
@@ -53,7 +57,9 @@ class Employee extends Model
     public function setAttribute($key, $value)
     {
         if (in_array($key, ['firstname', 'middlename', 'lastname']) && !is_null($value)) {
-            $value = ucfirst(strtolower($value));
+            // Trim first: ucfirst() on a leading space capitalizes the space,
+            // so " cruz " was stored lowercase.
+            $value = ucfirst(strtolower(trim($value)));
         }
 
         return parent::setAttribute($key, $value);
