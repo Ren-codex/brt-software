@@ -1,0 +1,227 @@
+<template>
+    <div class="field-collections">
+        <div class="fc-head">
+            <div>
+                <h3>Cash in the Field</h3>
+                <p>
+                    Collected but not yet turned in. A city run should clear the same day, so
+                    anything with days on it is worth a phone call.
+                </p>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @click="fetch" :disabled="loading">
+                <i class="ri-refresh-line me-1"></i>{{ loading ? 'Loading...' : 'Refresh' }}
+            </button>
+        </div>
+
+        <div v-if="!loading && rows.length === 0" class="fc-empty">
+            <i class="ri-checkbox-circle-line"></i>
+            <p>Nothing is out. Every collection has been turned in.</p>
+        </div>
+
+        <div v-for="group in grouped" :key="group.holder" class="fc-group">
+            <div class="fc-group-head">
+                <span class="fc-holder">{{ group.holder }}</span>
+                <span class="fc-total">{{ formatCurrency(group.total) }}</span>
+            </div>
+            <table class="fc-table">
+                <thead>
+                    <tr>
+                        <th>Days out</th>
+                        <th>Sales Order</th>
+                        <th>Customer</th>
+                        <th>Mode</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="row in group.rows" :key="row.receipt_id">
+                        <td>
+                            <span class="fc-days" :class="{ 'fc-days-late': row.days_out >= 1 && !row.is_external }">
+                                {{ row.days_out }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ row.so_number }}
+                            <span v-if="row.is_external" class="fc-ext" title="Out-of-town delivery">EXT</span>
+                        </td>
+                        <td>{{ row.customer || '-' }}</td>
+                        <td>
+                            {{ row.payment_mode }}
+                            <span v-if="!row.confirmed" class="fc-unconfirmed" title="Not yet matched in the bank">
+                                unconfirmed
+                            </span>
+                        </td>
+                        <td class="text-end">{{ formatCurrency(row.amount) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+    data() {
+        return {
+            rows: [],
+            loading: false,
+        };
+    },
+    computed: {
+        /** Grouped by holder, each person's oldest collection first. */
+        grouped() {
+            const byHolder = new Map();
+
+            this.rows.forEach((row) => {
+                if (!byHolder.has(row.holder)) {
+                    byHolder.set(row.holder, { holder: row.holder, rows: [], total: 0 });
+                }
+                const group = byHolder.get(row.holder);
+                group.rows.push(row);
+                group.total += Number(row.amount) || 0;
+            });
+
+            return Array.from(byHolder.values())
+                .sort((a, b) => (b.rows[0]?.days_out ?? 0) - (a.rows[0]?.days_out ?? 0));
+        },
+    },
+    mounted() {
+        this.fetch();
+    },
+    methods: {
+        fetch() {
+            this.loading = true;
+            axios.get('/remittances', { params: { option: 'field-collections' } })
+                .then((res) => { this.rows = Array.isArray(res.data) ? res.data : []; })
+                .catch((err) => console.error(err))
+                .finally(() => { this.loading = false; });
+        },
+        formatCurrency(value) {
+            return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value) || 0);
+        },
+    },
+};
+</script>
+
+<style scoped>
+.field-collections {
+    padding: 1rem 0;
+}
+
+.fc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.fc-head h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #16322e;
+    margin: 0 0 0.2rem;
+}
+
+.fc-head p {
+    color: #6b8c85;
+    font-size: 0.85rem;
+    margin: 0;
+    max-width: 52ch;
+}
+
+.fc-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #6b8c85;
+}
+
+.fc-empty i {
+    font-size: 1.8rem;
+    color: #3d8d7a;
+}
+
+.fc-group {
+    border: 1px solid #c4d9d2;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.fc-group-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0.9rem;
+    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+}
+
+.fc-holder {
+    font-weight: 600;
+    color: #16322e;
+}
+
+.fc-total {
+    font-weight: 600;
+    color: #16322e;
+    font-variant-numeric: tabular-nums;
+}
+
+.fc-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.fc-table th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b8c85;
+    text-align: left;
+    padding: 0.5rem 0.9rem;
+    border-bottom: 1px solid #edf6f2;
+}
+
+.fc-table td {
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid #f1f7f4;
+    font-size: 0.88rem;
+    color: #16322e;
+}
+
+.fc-days {
+    display: inline-block;
+    min-width: 28px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.fc-days-late {
+    color: #b0702a;
+    font-weight: 600;
+}
+
+.fc-ext,
+.fc-unconfirmed {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.fc-ext {
+    background: #edf6f2;
+    color: #3d8d7a;
+}
+
+.fc-unconfirmed {
+    background: #f7ecdd;
+    color: #b0702a;
+}
+</style>
