@@ -61,6 +61,7 @@
                 <select v-model="form.payment_mode" class="filter-input" @change="fetchReports">
                   <option value="all">All</option>
                   <option value="cash">Cash</option>
+                  <option value="cod">COD</option>
                   <option value="credit">Credit</option>
                 </select>
               </div>
@@ -102,6 +103,15 @@
               <div class="summary-details">
                 <span class="summary-label">Cash Sales</span>
                 <span class="summary-value">{{ formatCurrency(report?.payment_summary?.cash?.total_sales || 0) }}</span>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon cod">
+                <i class="ri-truck-line"></i>
+              </div>
+              <div class="summary-details">
+                <span class="summary-label">COD Sales</span>
+                <span class="summary-value">{{ formatCurrency(report?.payment_summary?.cod?.total_sales || 0) }}</span>
               </div>
             </div>
             <div class="summary-card">
@@ -442,6 +452,15 @@
                 <div class="summary-details">
                   <span class="summary-label">Cash Sales</span>
                   <span class="summary-value">{{ formatCurrency(report?.payment_summary?.cash?.total_sales || 0) }}</span>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon cod">
+                  <i class="ri-truck-line"></i>
+                </div>
+                <div class="summary-details">
+                  <span class="summary-label">COD Sales</span>
+                  <span class="summary-value">{{ formatCurrency(report?.payment_summary?.cod?.total_sales || 0) }}</span>
                 </div>
               </div>
               <div class="summary-card">
@@ -989,6 +1008,11 @@ export default {
 .summary-icon.cash {
   background: rgba(61, 141, 122, 0.12);
   color: #3d8d7a;
+}
+
+.summary-icon.cod {
+  background: #e6f0ea;
+  color: #1f6b52;
 }
 
 .summary-icon.credit {

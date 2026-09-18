@@ -312,6 +312,7 @@ class ReportClass
 
         return [
             'cash' => $rows->get('cash'),
+            'cod' => $rows->get('cod'),
             'credit' => $rows->get('credit'),
             'other' => $rows->get('other'),
             'grand_total_sales' => $rows->sum(fn ($row) => (float) $row->total_sales),
@@ -704,15 +705,26 @@ class ReportClass
             return;
         }
 
-        if ($paymentMode === 'credit') {
-            $query->whereRaw($this->normalizedPaymentModeSql()." = 'credit'");
+        if (in_array($paymentMode, ['cod', 'credit'], true)) {
+            $query->whereRaw($this->normalizedPaymentModeSql()." = '".$paymentMode."'");
         }
     }
 
+    /**
+     * Three ways a sale is settled, by when the money arrives rather than by
+     * the method: at the counter (whatever the customer paid with — cash, a
+     * transfer, a cheque, or a split across several), at the door on delivery,
+     * or on a term the business granted.
+     *
+     * Counter methods used to fall into 'other' alongside anything
+     * unrecognised, which made 'cash' mean the literal word rather than the
+     * kind of sale.
+     */
     private function normalizedPaymentModeSql(): string
     {
         return "CASE
-            WHEN LOWER(COALESCE(so.payment_mode, 'cash')) IN ('cash', 'cash sales') THEN 'cash'
+            WHEN LOWER(COALESCE(so.payment_mode, 'cash')) IN ('cash', 'cash sales', 'bank transfer', 'check', 'cheque', 'split') THEN 'cash'
+            WHEN LOWER(COALESCE(so.payment_mode, 'cash')) = 'cod' THEN 'cod'
             WHEN LOWER(COALESCE(so.payment_mode, 'cash')) IN ('credit', 'credit sales') THEN 'credit'
             ELSE 'other'
         END";

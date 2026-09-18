@@ -87,7 +87,7 @@ class ReportsController extends Controller
             'day' => $day,
             'limit' => max(1, min($limit, 50)),
             'location_id' => $locationId > 0 ? $locationId : null,
-            'payment_mode' => in_array($paymentMode, ['all', 'cash', 'credit'], true) ? $paymentMode : 'all',
+            'payment_mode' => in_array($paymentMode, ['all', 'cash', 'cod', 'credit'], true) ? $paymentMode : 'all',
             'report_type' => in_array($reportType, [
                 'sales-summary',
                 'sales-by-item',
