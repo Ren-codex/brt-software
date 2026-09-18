@@ -19,12 +19,20 @@ what actually arrived. Two gaps follow:
    customer accepted, which loses the fact that goods came back from a
    customer's door — so refusals cannot be counted per customer or per product.
 
+3. **Money collected in the field is only half-watched.** A cheque cannot
+   reduce an invoice until someone confirms it with the bank, and its custody
+   runs on-hand → released → matured. A bank transfer, by contrast, counts as
+   paid the moment a reference number is typed, with nothing checking that it
+   landed. And for cash or cheque alike, nothing records *which* driver or rep
+   is holding it.
+
 ## Scope
 
-Recording what the customer accepted, at the moment the office learns it.
+Recording what the customer accepted, and watching the money collected at the
+door until it reaches the office.
 
-Not in scope: the "cash in the field" view, per-hand-off custody of collected
-money, driver logins, proof of delivery.
+Not in scope: driver logins, proof of delivery such as signatures or photos,
+per-hand-off approval of cash passed between staff.
 
 ## The action
 
@@ -96,6 +104,44 @@ Recording a payment against a COD order stamps `delivered_at` if it is still
 empty. Money cannot come back unless the goods went out, and it saves recording
 one event twice.
 
+## Field collection
+
+A COD collection reaches the office by one of three routes, and each is watched
+differently. What the customer pays is the accepted total, since acceptance has
+already resized the invoice.
+
+### Cash and cheque: who is holding it
+
+One nullable column on `receipts`, `held_by_employee_id`: the person physically
+holding the money or the cheque. Set when the collection is recorded — the
+order's driver for a field collection, otherwise whoever took it. A "turned
+over to" action moves it on; the remittance that carries the receipt clears it.
+
+On a local run the collection and the turnover happen the same afternoon and
+nobody needs the action. On an out-of-town run the cash travels for days, and
+this is what answers "who has it right now".
+
+Cheque custody keeps its existing on-hand → released → matured lifecycle. The
+holder is the separate question of whose hands it is in.
+
+### Bank transfer: confirmed, not claimed
+
+`ArInvoiceClass::confirmCheck()` becomes `confirmReceipt()`, keeping cheque
+behaviour and adding bank transfers **collected in the field**. Such a receipt
+records its reference but does not reduce the invoice until someone matches it
+in the bank account, exactly as a cheque does not. A transfer taken at the
+counter is unchanged: the cashier is already looking at the confirmation.
+
+So a driver phoning in a reference number no longer marks an invoice paid on
+their word alone, and the order stays on the to-collect list until the money is
+seen.
+
+### Cash in the field
+
+A view of pending receipts grouped by holder, oldest first, showing which are
+SO-EXT. Local rows should disappear the same day, so anything lingering is worth
+a phone call. This doubles as the to-collect list: delivered, not yet settled.
+
 ## Screen
 
 In the order's row actions: **Mark Delivered** while unmarked, otherwise
@@ -115,10 +161,16 @@ short line.
 - Acceptance is refused once a payment exists.
 - Recording a COD collection stamps `delivered_at` when it is empty.
 - A view-only user cannot mark delivered.
+- A field collection in cash is held by the order's driver, and the remittance
+  clears the holder.
+- A field-collected bank transfer leaves the invoice unpaid until it is
+  confirmed, and confirming releases it.
+- A counter bank transfer still settles immediately.
+- A cheque behaves exactly as it does today.
 
 ## Deployment
 
-Two migrations, on top of the shipping and delivery dates migration that is
-already waiting for production. All three are additive. They must be applied
+Three migrations, on top of the shipping and delivery dates migration that is
+already waiting for production. All four are additive. They must be applied
 immediately after the deploy that carries them, since deploys here do not run
 migrations.
