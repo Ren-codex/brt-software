@@ -307,14 +307,30 @@ class DropdownClass
         return $data;
     }
 
+    /**
+     * Driver positions are named per truck and route ("Driver 1 Wingvan",
+     * "WV Driver 2", "Driver 2 ST", ...), so an exact "Driver" title matches
+     * nothing and the dropdown comes back empty. Match any position with
+     * "driver" in its title instead, and label each name with the position so
+     * drivers on different trucks can be told apart.
+     */
     public function drivers()
     {
-        $data = Employee::where('position_id', ListPosition::getID('Driver'))->get()->map(function ($item) {
-            return [
-                'value' => $item->id,
-                'name' => $item->fullname,
-            ];
-        });
+        $positionIds = ListPosition::whereRaw('LOWER(title) LIKE ?', ['%driver%'])->pluck('id');
+
+        $data = Employee::with('position')
+            ->whereIn('position_id', $positionIds)
+            ->get()
+            ->sortBy(fn ($item) => [$item->position->title ?? '', $item->fullname])
+            ->values()
+            ->map(function ($item) {
+                $position = $item->position ? $item->position->title : null;
+
+                return [
+                    'value' => $item->id,
+                    'name' => $position ? $item->fullname.' — '.$position : $item->fullname,
+                ];
+            });
 
         return $data;
     }
