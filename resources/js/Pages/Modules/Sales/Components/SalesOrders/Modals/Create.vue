@@ -121,6 +121,39 @@
                                     </small>
                                     <span class="error-message" v-if="form.errors.delivery_location">{{ form.errors.delivery_location }}</span>
                                 </div>
+
+                                <div class="form-group">
+                                    <label for="shipping_date" class="form-label">Shipping Date</label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-truck-line input-icon"></i>
+                                        <text-input
+                                            id="shipping_date"
+                                            type="date"
+                                            v-model="form.shipping_date"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors.shipping_date }"
+                                            @input="handleInput('shipping_date')"
+                                        />
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.shipping_date">{{ form.errors.shipping_date }}</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="delivery_date" class="form-label">Delivery Date</label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-calendar-check-line input-icon"></i>
+                                        <text-input
+                                            id="delivery_date"
+                                            type="date"
+                                            v-model="form.delivery_date"
+                                            :min="form.shipping_date || null"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors.delivery_date }"
+                                            @input="handleInput('delivery_date')"
+                                        />
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.delivery_date">{{ form.errors.delivery_date }}</span>
+                                </div>
                             </div>
 
                             <div class="section-divider">
@@ -419,6 +452,14 @@
                             <div class="review-info-item">
                                 <span>Location</span>
                                 <strong>{{ form.delivery_location || '-' }}</strong>
+                            </div>
+                            <div class="review-info-item">
+                                <span>Shipping Date</span>
+                                <strong>{{ form.shipping_date || '-' }}</strong>
+                            </div>
+                            <div class="review-info-item">
+                                <span>Delivery Date</span>
+                                <strong>{{ form.delivery_date || '-' }}</strong>
                             </div>
                         </div>
                     </div>
@@ -1047,6 +1088,8 @@ export default {
                 id: null,
                 order_date: new Date().toISOString().slice(0, 10),  // current date
                 due_date: null,
+                shipping_date: null,
+                delivery_date: null,
                 customer_id: null,
                 sales_rep_id: null,
                 driver_id: null,
@@ -1444,6 +1487,8 @@ export default {
             this.form.delivery_location = '';
             this.form.order_date = new Date().toISOString().slice(0, 10);
             this.form.due_date = null;
+            this.form.shipping_date = null;
+            this.form.delivery_date = null;
             // Default sales rep should be the logged-in employee (not user id).
             if (this.currentEmployeeId) {
                 this.form.sales_rep_id = this.currentEmployeeId;
@@ -1468,6 +1513,8 @@ export default {
             this.form.status_id = data.status_id;
             this.form.payment_mode = data.payment_mode;
             this.form.due_date = data.due_date_raw || null;
+            this.form.shipping_date = data.shipping_date_raw || null;
+            this.form.delivery_date = data.delivery_date_raw || null;
             this.form.items = data.items.map(item => ({
                 id: item.id || Date.now(), // ensure each item has a unique ID
                 product_id: item.product_id,

@@ -62,9 +62,9 @@
     </thead>
     <tbody>
         <tr>
-            <td>{{ $sales_order->location->name ?? '---' }}</td>
-            <td>---</td>
-            <td>---</td>
+            <td>{{ $sales_order->delivery_location ?: ($sales_order->location->name ?? '---') }}</td>
+            <td>{{ $sales_order->shipping_date ? \Carbon\Carbon::parse($sales_order->shipping_date)->format('m/d/Y') : '---' }}</td>
+            <td>{{ $sales_order->delivery_date ? \Carbon\Carbon::parse($sales_order->delivery_date)->format('m/d/Y') : '---' }}</td>
             <td>{{ $sales_order->payment_mode ?? '---' }}</td>
             <td>{{ $sales_order->due_date ? \Carbon\Carbon::parse($sales_order->due_date)->format('m/d/Y') : '---' }}</td>
         </tr>

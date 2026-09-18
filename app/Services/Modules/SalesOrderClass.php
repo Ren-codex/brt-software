@@ -176,6 +176,8 @@ class SalesOrderClass
             $candidate->payment_mode = $paymentMode;
             $candidate->payment_lines = $paymentLines ?: null;
             $candidate->due_date = $isCreditMode ? $request->due_date : null;
+            $candidate->shipping_date = $request->shipping_date;
+            $candidate->delivery_date = $request->delivery_date;
             $candidate->location_id = $locationId;
             $candidate->delivery_location = $locationText;
             $candidate->added_by_id = auth()->user()->id;
@@ -313,6 +315,8 @@ class SalesOrderClass
             'driver_id' => $request->driver_id,
             'payment_mode' => $request->payment_mode,
             'due_date' => in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true) ? $request->due_date : null,
+            'shipping_date' => $request->shipping_date,
+            'delivery_date' => $request->delivery_date,
             'location_id' => $locationId,
             'delivery_location' => $locationText,
             'requires_batch_approval' => $requiresBatchApproval || $data->requires_batch_approval,

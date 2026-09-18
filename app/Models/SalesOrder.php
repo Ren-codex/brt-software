@@ -25,6 +25,8 @@ class SalesOrder extends Model
         'payment_mode',
         'payment_lines',
         'due_date',
+        'shipping_date',
+        'delivery_date',
         'location_id',
         'delivery_location',
         'cancellation_remarks',
@@ -34,6 +36,8 @@ class SalesOrder extends Model
     protected $casts = [
         'order_date' => 'date',
         'due_date' => 'date',
+        'shipping_date' => 'date',
+        'delivery_date' => 'date',
         'transferred_at' => 'date',
         'approved_at' => 'date',
         'total_amount' => 'decimal:2',

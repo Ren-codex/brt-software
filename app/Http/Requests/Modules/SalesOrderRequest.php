@@ -75,6 +75,10 @@ class SalesOrderRequest extends FormRequest
                 'driver_id' => 'nullable|exists:employees,id',
                 'payment_mode' => 'required|string',
                 'due_date' => 'nullable|date|required_if:payment_mode,Credit',
+                // Planned dates, both optional. Delivering before shipping is
+                // the one combination that can only be a typo.
+                'shipping_date' => 'nullable|date',
+                'delivery_date' => 'nullable|date|after_or_equal:shipping_date',
                 'location_id' => 'nullable|exists:list_locations,id',
                 'delivery_location' => 'nullable|string|max:255|required_with:customer_id',
                 'items' => 'required|array|min:1',
