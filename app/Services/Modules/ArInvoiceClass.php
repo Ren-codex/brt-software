@@ -331,8 +331,11 @@ class ArInvoiceClass
                 'status_id' => ListStatus::getBySlug('closed')->id,
             ]);
 
+            // No rep on the order means nobody to credit. The incentive row
+            // demands one, so creating it anyway threw and took the whole
+            // payment down with it.
             $existingIncentive = SalesOrderIncentive::where('sales_order_id', $sales_order->id)->first();
-            if (!$existingIncentive) {
+            if (!$existingIncentive && $sales_order->sales_rep_id) {
                 $sold_quantity    = $sales_order->items->sum('quantity');
                 $product_total_kg = $sales_order->items->sum(fn($item) => ($item->product->weight ?? 0) * $item->quantity);
 

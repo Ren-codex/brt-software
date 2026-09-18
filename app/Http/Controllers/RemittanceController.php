@@ -124,6 +124,12 @@ class RemittanceController extends Controller
             return $this->remittance->save($request);
         });
 
+        // A rolled-back remittance is not a remittance. Reporting it as one
+        // leaves the rep believing they have handed the money in.
+        if (! ($result['status'] ?? false)) {
+            return back()->withErrors(['receipts' => $result['info'] ?? 'Unable to save this remittance.']);
+        }
+
         return back()->with([
             'data' => $result['data'],
             'message' => $result['message'],
