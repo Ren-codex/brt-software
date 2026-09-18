@@ -579,6 +579,38 @@ class SalesOrderClass
      * @return array{0: bool, 1: ?int, 2: ?string}
      */
     /**
+     * The goods reached the customer. Recorded by the office, usually when the
+     * driver returns with the signed delivery receipt.
+     *
+     * Marking twice keeps the first stamp: a stray second click must not
+     * rewrite when the delivery happened.
+     */
+    public function markDelivered($request)
+    {
+        $data = SalesOrder::findOrFail($request->id);
+
+        if (optional($data->status)->slug === 'cancelled') {
+            throw ValidationException::withMessages([
+                'delivered_at' => 'A cancelled order cannot be marked delivered.',
+            ]);
+        }
+
+        if (! $data->delivered_at) {
+            $data->update([
+                'delivered_at' => now(),
+                'delivered_by_id' => auth()->user()->id,
+            ]);
+        }
+
+        return [
+            'data' => new SalesOrderResource($data->fresh(['items', 'customer', 'status', 'arInvoices'])),
+            'message' => 'Delivery recorded!',
+            'info' => 'This order is marked delivered.',
+            'status' => true,
+        ];
+    }
+
+    /**
      * When the money falls due: the agreed term for a credit sale, the delivery
      * day for COD — it is collected at the door, so the two can never disagree —
      * and nothing at all for a cash sale, which is settled on the spot.

@@ -140,6 +140,12 @@ class SalesOrderController extends Controller
                         $request->merge(['id' => $id]);
                         return $this->sales_order->approve($request->id, $request->item_ids ?? [], $request->replacement_items ?? []);
                     break;
+                    case 'mark-delivered':
+                        $this->authorizePermission('sales', 'sales_orders', 'encoder');
+                        $request->merge(['id' => $id]);
+
+                        return $this->sales_order->markDelivered($request);
+                    break;
                     case 'adjustment':
                         $request->merge(['id' => $id]);
                         return $this->sales_order->adjustment($request);

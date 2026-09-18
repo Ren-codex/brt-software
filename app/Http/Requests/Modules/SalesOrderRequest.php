@@ -62,6 +62,11 @@ class SalesOrderRequest extends FormRequest
                 'item_ids.*' => 'integer|exists:sales_order_items,id',
             ];
         }
+        else if($action == 'mark-delivered'){
+            return [
+                'id' => 'nullable|exists:sales_orders,id',
+            ];
+        }
         else if($action == 'cancel'){
             return [
                 'id' => 'required|exists:sales_orders,id',
