@@ -20,14 +20,21 @@ class NotifyUnpaidSameDaySalesOrders extends Command
 
     public function handle(): void
     {
-        // "COD" orders in this system are Cash sales — normally auto-collected and
-        // closed the instant they're saved, so the only way one is still sitting
-        // unpaid this afternoon is a batch-approval hold (see requires_batch_approval)
-        // that's still awaiting sign-off. Credit sales are the more common case:
-        // they legitimately carry a balance until the customer pays.
+        // A cash sale auto-collects and closes on save, so one still unpaid this
+        // afternoon is held by a batch approval (see requires_batch_approval).
+        // Credit sales legitimately carry a balance until the customer pays.
+        //
+        // COD is unpaid by design until the driver returns, so it is only worth
+        // chasing once its delivery day has arrived — an order delivering on
+        // Friday is not late on Monday.
         $salesOrders = SalesOrder::with(['customer', 'salesRep.user', 'arInvoices'])
             ->whereDate('order_date', today())
             ->whereIn(DB::raw('LOWER(payment_mode)'), ['cash', 'cod', 'credit', 'credit sales'])
+            ->where(function ($query) {
+                $query->whereNotIn(DB::raw('LOWER(payment_mode)'), ['cod'])
+                    ->orWhereNull('delivery_date')
+                    ->orWhereDate('delivery_date', '<=', today());
+            })
             ->whereHas('status', fn ($q) => $q->whereNotIn('slug', ['cancelled']))
             ->whereHas('arInvoices', fn ($q) => $q->where('balance_due', '>', 0))
             ->get();

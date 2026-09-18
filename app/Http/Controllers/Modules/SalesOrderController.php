@@ -99,7 +99,7 @@ class SalesOrderController extends Controller
         //
         // Due today is the exception: nothing is being deferred, so there is no
         // commitment to approve.
-        if (in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true)
+        if (\App\Models\SalesOrder::isTermCredit($request->payment_mode)
             && $this->creditIsDeferred($request->input('due_date'))) {
             $this->requireSupervisor($request, 'sales.credit_sale');
         }

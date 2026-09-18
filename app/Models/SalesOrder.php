@@ -45,6 +45,36 @@ class SalesOrder extends Model
         'payment_lines' => 'array',
     ];
 
+    /**
+     * Modes where the goods leave before the money arrives, so the sale is a
+     * receivable and the order stays open until someone collects. COD belongs
+     * here: booking it as cash would record collected money and close the order
+     * before the driver has left.
+     */
+    public const ON_ACCOUNT_MODES = ['credit', 'credit sales', 'cod'];
+
+    /**
+     * Credit the business actually extends — a term granted to the customer.
+     * COD is not this: payment happens at the handover, so it needs no
+     * supervisor and no credit limit.
+     */
+    public const TERM_CREDIT_MODES = ['credit', 'credit sales'];
+
+    public static function isOnAccount(?string $paymentMode): bool
+    {
+        return in_array(strtolower(trim((string) $paymentMode)), self::ON_ACCOUNT_MODES, true);
+    }
+
+    public static function isTermCredit(?string $paymentMode): bool
+    {
+        return in_array(strtolower(trim((string) $paymentMode)), self::TERM_CREDIT_MODES, true);
+    }
+
+    public static function isCod(?string $paymentMode): bool
+    {
+        return strtolower(trim((string) $paymentMode)) === 'cod';
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);

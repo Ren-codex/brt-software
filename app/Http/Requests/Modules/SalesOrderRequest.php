@@ -76,9 +76,10 @@ class SalesOrderRequest extends FormRequest
                 'payment_mode' => 'required|string',
                 'due_date' => 'nullable|date|required_if:payment_mode,Credit',
                 // Planned dates, both optional. Delivering before shipping is
-                // the one combination that can only be a typo.
+                // the one combination that can only be a typo. COD is due on
+                // delivery, so it cannot be encoded without that date.
                 'shipping_date' => 'nullable|date',
-                'delivery_date' => 'nullable|date|after_or_equal:shipping_date',
+                'delivery_date' => 'nullable|date|after_or_equal:shipping_date|required_if:payment_mode,COD',
                 'location_id' => 'nullable|exists:list_locations,id',
                 'delivery_location' => 'nullable|string|max:255|required_with:customer_id',
                 'items' => 'required|array|min:1',

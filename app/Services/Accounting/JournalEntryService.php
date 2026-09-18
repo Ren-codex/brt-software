@@ -37,7 +37,7 @@ class JournalEntryService
         $revenueAmount = round((float) $salesOrder->total_amount, 2);
         $costAmount = round($this->calculateCostOfGoodsSold($salesOrder), 2);
         $paymentMode = strtolower((string) $salesOrder->payment_mode);
-        $isCreditSale = in_array($paymentMode, ['credit', 'credit sales'], true);
+        $isCreditSale = \App\Models\SalesOrder::isOnAccount($paymentMode);
 
         // A cash sale isn't recognized as real Cash/GCash/Bank until its
         // remittance is verified — the sales rep may still be holding it, or
@@ -227,7 +227,7 @@ class JournalEntryService
         $salesOrder->loadMissing(['items']);
 
         $paymentMode = strtolower((string) $salesOrder->payment_mode);
-        $isCreditSale = in_array($paymentMode, ['credit', 'credit sales'], true);
+        $isCreditSale = \App\Models\SalesOrder::isOnAccount($paymentMode);
         $refundAccount = $this->ensureAccount('4110', 'sales_returns_allowances', 'Sales Returns And Allowances', 'revenue', 'contra_revenue');
         $creditAccount = $isCreditSale
             ? $this->ensureAccount('1100', 'accounts_receivable', 'Accounts Receivable', 'asset', 'current_asset')

@@ -327,6 +327,18 @@
                                 <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
                             </div>
 
+                            <div v-if="editable && selectedEditablePaymentType === 'COD'" class="summary-card">
+                                <div class="summary-card-header">
+                                    <h4>Collection</h4>
+                                </div>
+                                <p class="form-hint mb-0">
+                                    The driver collects on the delivery date, so this order stays unpaid
+                                    until the collection is recorded.
+                                    <strong v-if="form.delivery_date">Due {{ form.delivery_date }}.</strong>
+                                    <strong v-else class="text-danger">Set a Delivery Date above.</strong>
+                                </p>
+                            </div>
+
                             <div v-if="editable && selectedEditablePaymentType === 'Credit'" class="summary-card">
                                 <div class="summary-card-header">
                                     <h4>Credit Schedule</h4>
@@ -576,7 +588,7 @@
                     <div v-for="type in review_payment_types" :key="type"
                         :class="{
                             'selected-payment-mode': selectedPaymentType === type,
-                            'payment-choice-disabled': type === 'Credit Sales' && isWalkInCustomer
+                            'payment-choice-disabled': ['Credit Sales', 'COD'].includes(type) && isWalkInCustomer
                         }"
                         class="payment-mode-card payment-choice-card" @click="selectPaymentType(type)">
                         <div class="payment-choice-icon-wrap">
@@ -584,7 +596,7 @@
                         </div>
                         <span class="payment-label">{{ type }}</span>
                         <small class="payment-choice-copy">
-                            {{ type === 'Cash Sales' ? 'Collect payment right away' : (isWalkInCustomer ? 'Unavailable for walk-in customers' : 'Settle on a later due date') }}
+                            {{ paymentChoiceCopy(type) }}
                         </small>
                     </div>
                 </div>
@@ -1153,10 +1165,12 @@ export default {
             customerSelection: null,
             payment_types: [
                 'Cash',
+                'COD',
                 'Credit',
             ],
             review_payment_types: [
                 'Cash Sales',
+                'COD',
                 'Credit Sales',
             ],
             cash_payment_modes: [
@@ -1257,12 +1271,14 @@ export default {
             if (this.selectedReviewPaymentType) return this.selectedReviewPaymentType;
             const paymentMode = String(this.form.payment_mode || '').trim().toLowerCase();
             if (['credit', 'credit sales'].includes(paymentMode)) return 'Credit Sales';
+            if (paymentMode === 'cod') return 'COD';
             if (paymentMode) return 'Cash Sales';
             return null;
         },
         selectedEditablePaymentType() {
             const paymentMode = String(this.form.payment_mode || '').trim().toLowerCase();
             if (['credit', 'credit sales'].includes(paymentMode)) return 'Credit';
+            if (paymentMode === 'cod') return 'COD';
             if (paymentMode) return 'Cash';
             return null;
         },
@@ -1581,6 +1597,10 @@ export default {
             if (!this.isWalkInCustomer && !String(this.form.delivery_location || '').trim()) {
                 errors.delivery_location = 'Location is required.';
             }
+            // COD falls due on the day the driver delivers, so that day has to be known.
+            if (String(this.form.payment_mode || '').trim().toLowerCase() === 'cod' && !this.form.delivery_date) {
+                errors.delivery_date = 'Delivery date is required for COD.';
+            }
             if (!this.form.items.length) {
                 errors.items = 'Add at least one item before reviewing the order.';
             } else {
@@ -1617,6 +1637,13 @@ export default {
             this.selectedReviewPaymentType = this.selectedPaymentType;
         },
         confirmCreateOrder() {
+            if (this.selectedPaymentType === 'COD') {
+                this.form.payment_mode = 'COD';
+                this.form.payment_lines = [];
+                this.submitOrderCreation();
+                return;
+            }
+
             if (this.selectedPaymentType === 'Credit Sales') {
                 this.form.payment_mode = 'Credit Sales';
                 this.showPaymentTypeModal = false;
@@ -1712,9 +1739,10 @@ export default {
                     const paymentMode = this.form.payment_mode;
                     const flashData = response?.props?.flash?.data ?? this.$page?.props?.flash?.data ?? null;
                     const createdOrder = flashData?.data || flashData;
-                    // Anything that isn't a credit sale settles at the counter —
+                    // Anything that isn't settled later settles at the counter —
                     // including 'Split', which no single mode name describes.
-                    const isCashSale = !['credit', 'credit sales'].includes((paymentMode || '').toLowerCase());
+                    // COD is collected by the driver, so it settles at neither.
+                    const isCashSale = !['credit', 'credit sales', 'cod'].includes((paymentMode || '').toLowerCase());
                     // Whether physical cash crossed the counter, which decides
                     // between the change screen and the plain print prompt. Read
                     // before form.reset() clears what it derives from.
@@ -2135,6 +2163,23 @@ export default {
 
 
         selectPaymentType(type) {
+            // COD is collected by the driver at the door, so nothing is settled
+            // here and no payment lines are built. It is due on the delivery date.
+            if (type === 'COD') {
+                if (this.isWalkInCustomer) {
+                    this.form.errors.payment_mode = 'COD needs a named customer to deliver to.';
+                    return;
+                }
+                this.selectedReviewPaymentType = 'COD';
+                this.form.payment_mode = 'COD';
+                this.paymentLines = [];
+                this.form.payment_lines = [];
+                this.cashReceivedAmount = null;
+                this.cashChargeError = null;
+                this.handleInput('payment_mode');
+                return;
+            }
+
             if (type === 'Credit' || type === 'Credit Sales') {
                 if (this.isWalkInCustomer) {
                     this.form.errors.payment_mode = 'Credit sales are not allowed for walk-in customers.';
@@ -2186,6 +2231,12 @@ export default {
             this.handleInput('payment_mode');
         },
 
+        paymentChoiceCopy(type) {
+            if (type === 'Cash Sales') return 'Collect payment right away';
+            if (this.isWalkInCustomer) return 'Unavailable for walk-in customers';
+            return type === 'COD' ? 'Driver collects on the delivery date' : 'Settle on a later due date';
+        },
+
         getPaymentModeIcon(mode) {
             const icons = {
                 'Cash': 'ri-money-dollar-circle-line',
@@ -2193,6 +2244,7 @@ export default {
                 'Cash Sales': 'ri-money-dollar-circle-line',
                 'Credit Sales': 'ri-bank-card-line',
                 'Bank Transfer': 'ri-exchange-funds-line',
+                'COD': 'ri-truck-line',
             };
             return icons[mode] || 'ri-money-dollar-circle-line';
         },

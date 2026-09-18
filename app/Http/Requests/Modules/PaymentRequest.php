@@ -60,7 +60,7 @@ class PaymentRequest extends FormRequest
             }
 
             $paymentMode = strtolower(trim((string) optional($invoice?->sales_order)->payment_mode));
-            $isCredit = in_array($paymentMode, ['credit', 'credit sales'], true);
+            $isCredit = \App\Models\SalesOrder::isOnAccount($paymentMode);
 
             if (!$isCredit && abs($total - $balanceDue) > 0.00001) {
                 $validator->errors()->add($field, 'Partial payment is only allowed for credit sales. Cash sales must be paid in full.');

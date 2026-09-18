@@ -127,8 +127,11 @@ class SalesOrderClass
             }
         }
 
-        // Enforce credit limit for credit sales
-        $isCreditMode = in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true);
+        // Enforce credit limit for credit sales. COD is excluded on purpose:
+        // the driver collects at the door, so nothing is extended.
+        $isCreditMode = SalesOrder::isTermCredit($request->payment_mode);
+        // Nothing is settled at the counter for an on-account sale, COD included.
+        $isOnAccount = SalesOrder::isOnAccount($request->payment_mode);
         if ($isCreditMode) {
             $customer = \App\Models\Customer::find($request->customer_id);
             if ($customer && $customer->credit_limit > 0) {
@@ -159,7 +162,7 @@ class SalesOrderClass
         // The cashier may settle a cash sale with more than one method at once.
         // 'Split' keeps the order out of every credit-sale branch while making it
         // obvious on the record that no single mode describes how it was paid.
-        $paymentLines = $isCreditMode ? [] : $this->normalisePaymentLines($request);
+        $paymentLines = $isOnAccount ? [] : $this->normalisePaymentLines($request);
         $paymentMode = count($paymentLines) > 1 ? 'Split' : ($paymentLines[0]['payment_mode'] ?? $request->payment_mode);
 
         [$isExternal, $locationId, $locationText] = $this->resolveLocation($request);
@@ -175,7 +178,7 @@ class SalesOrderClass
             $candidate->driver_id = $request->driver_id;
             $candidate->payment_mode = $paymentMode;
             $candidate->payment_lines = $paymentLines ?: null;
-            $candidate->due_date = $isCreditMode ? $request->due_date : null;
+            $candidate->due_date = $this->resolveDueDate($request);
             $candidate->shipping_date = $request->shipping_date;
             $candidate->delivery_date = $request->delivery_date;
             $candidate->location_id = $locationId;
@@ -227,7 +230,7 @@ class SalesOrderClass
             'total_discount' => $totalDiscount,
         ]);
 
-        $isCreditSale = in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+        $isCreditSale = SalesOrder::isOnAccount($data->payment_mode);
 
         // A cash sale settled by several methods must still be settled in full —
         // the order closes on save, so anything short would leave it closed and
@@ -290,9 +293,9 @@ class SalesOrderClass
 
         // Once a credit sale has collected a payment, switching it to Cash mid-edit
         // isn't safe — the Credit→Cash sync below assumes no prior receipts exist.
-        $wasCreditSale = in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+        $wasCreditSale = SalesOrder::isOnAccount($data->payment_mode);
         $existingAmountPaidBeforeEdit = round((float) optional($data->arInvoices->first())->amount_paid, 2);
-        $willBeCreditSale = in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true);
+        $willBeCreditSale = SalesOrder::isOnAccount($request->payment_mode);
         if ($wasCreditSale && !$willBeCreditSale && $existingAmountPaidBeforeEdit > 0) {
             throw ValidationException::withMessages([
                 'payment_mode' => 'This order already has a recorded payment of ₱' . number_format($existingAmountPaidBeforeEdit, 2) . '. It cannot be switched to Cash while editing — cancel and recreate it instead if the payment terms changed.',
@@ -314,7 +317,7 @@ class SalesOrderClass
             'sales_rep_id' => $request->sales_rep_id,
             'driver_id' => $request->driver_id,
             'payment_mode' => $request->payment_mode,
-            'due_date' => in_array(strtolower((string) $request->payment_mode), ['credit', 'credit sales'], true) ? $request->due_date : null,
+            'due_date' => $this->resolveDueDate($request),
             'shipping_date' => $request->shipping_date,
             'delivery_date' => $request->delivery_date,
             'location_id' => $locationId,
@@ -362,7 +365,7 @@ class SalesOrderClass
         ]);
 
         $invoice = $data->arInvoices()->first();
-        $isCreditSaleNow = in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+        $isCreditSaleNow = SalesOrder::isOnAccount($data->payment_mode);
 
         $soStatusSlug = $isCreditSaleNow ? 'for-payment' : 'closed';
 
@@ -575,6 +578,20 @@ class SalesOrderClass
      *
      * @return array{0: bool, 1: ?int, 2: ?string}
      */
+    /**
+     * When the money falls due: the agreed term for a credit sale, the delivery
+     * day for COD — it is collected at the door, so the two can never disagree —
+     * and nothing at all for a cash sale, which is settled on the spot.
+     */
+    private function resolveDueDate($request)
+    {
+        if (SalesOrder::isTermCredit($request->payment_mode)) {
+            return $request->due_date;
+        }
+
+        return SalesOrder::isCod($request->payment_mode) ? $request->delivery_date : null;
+    }
+
     private function resolveLocation($request): array
     {
         $locationText = trim((string) $request->delivery_location);
@@ -677,7 +694,7 @@ class SalesOrderClass
                 $effectivePrice = max(0, (float) $item->price - (float) $item->discount_per_unit);
                 return min($returnQuantity, (int) $item->quantity) * $effectivePrice;
             });
-            $isCashSale = !in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+            $isCashSale = !SalesOrder::isOnAccount($data->payment_mode);
             $refundReceipt = null;
             $updatedReceipt = null;
             $extraReceipt = null;
@@ -811,7 +828,7 @@ class SalesOrderClass
                 // The batch-override hold deferred the cash auto-receipt/close at
                 // save() time — run it now that an approver has signed off.
                 // Credit sales just resume their normal for-payment flow.
-                $isCashSale = !in_array(strtolower((string) $data->payment_mode), ['credit', 'credit sales'], true);
+                $isCashSale = !SalesOrder::isOnAccount($data->payment_mode);
                 $invoice = $data->arInvoices()->first();
                 if ($isCashSale && $invoice && !$invoice->receipts()->exists()) {
                     $autoReceiptId = $this->finalizeCashSale($data, $invoice);

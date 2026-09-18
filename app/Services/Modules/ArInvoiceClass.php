@@ -35,7 +35,7 @@ class ArInvoiceClass
         $data = ArInvoiceResource::collection(
             ArInvoice::with(['sales_order.customer', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status'])
                 ->whereHas('sales_order', function ($q) {
-                    $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), ['credit', 'credit sales']);
+                    $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), \App\Models\SalesOrder::ON_ACCOUNT_MODES);
                 })
                 ->when($employeeId, function ($query) use ($employeeId) {
                     $query->whereHas('sales_order', function ($soQuery) use ($employeeId) {
@@ -85,7 +85,7 @@ class ArInvoiceClass
         $data = ArInvoiceResource::collection(
             ArInvoice::with(['sales_order.customer', 'sales_order.salesRep', 'status'])
                 ->whereHas('sales_order', function ($q) {
-                    $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), ['credit', 'credit sales']);
+                    $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), \App\Models\SalesOrder::ON_ACCOUNT_MODES);
                 })
                 ->where('balance_due', '>', 0)
                 ->when($employeeId, function ($query) use ($employeeId) {
