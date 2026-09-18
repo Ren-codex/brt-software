@@ -56,6 +56,22 @@ class MarkDeliveredTest extends TestCase
         $this->assertEquals($first, $order->fresh()->delivered_at);
     }
 
+    public function test_the_list_carries_the_delivery_for_the_screen(): void
+    {
+        // The row badge and the modal read these; a value the resource never
+        // sends is a blank badge no compile check would catch.
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::firstOrFail();
+        $this->markDelivered($order)->assertSessionHasNoErrors();
+
+        $response = $this->actingAs($this->user)->getJson('/sales-orders?option=lists&count=10');
+
+        $response->assertOk();
+        $row = collect($response->json('data'))->firstWhere('id', $order->id);
+        $this->assertNotNull($row['delivered_at']);
+        $this->assertNotNull($row['delivered_by']);
+    }
+
     public function test_a_cancelled_order_cannot_be_marked_delivered(): void
     {
         $this->postCod()->assertSessionHasNoErrors();
