@@ -273,6 +273,10 @@ class ArInvoiceClass
                 'ar_invoice_id'  => $ar_invoice->id,
                 'check_status'   => $isCheck ? 'on_hand' : null,
                 'check_date'     => $isCheck ? $split['check_date'] : null,
+                // Whoever took the money is carrying it until a remittance
+                // clears them: the driver on a delivery, else the rep.
+                'held_by_employee_id' => optional($ar_invoice->sales_order)->driver_id
+                    ?? optional($ar_invoice->sales_order)->sales_rep_id,
             ]);
 
             $this->journalEntryService->recordReceiptEntry($receipt);
@@ -286,6 +290,16 @@ class ArInvoiceClass
 
             $receiptIds[] = $receipt->id;
             $lastReceipt = $receipt;
+        }
+
+        // Money cannot come back unless the goods went out, so a COD collection
+        // fills in a delivery nobody recorded. An explicit stamp always wins.
+        $order = $ar_invoice->sales_order;
+        if ($order && ! $order->delivered_at && \App\Models\SalesOrder::isCod($order->payment_mode)) {
+            $order->update([
+                'delivered_at' => now(),
+                'delivered_by_id' => Auth::id(),
+            ]);
         }
 
         return [

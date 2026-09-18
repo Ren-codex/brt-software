@@ -93,6 +93,34 @@ trait BuildsCodOrders
         return $user;
     }
 
+    /**
+     * Recording a collection lives in the AR Invoices submodule, so a test that
+     * collects has to grant it too.
+     */
+    private function grantArInvoiceAccess(User $user): void
+    {
+        $module = Module::where('key', 'sales')->firstOrFail();
+        $roleId = UserRole::where('user_id', $user->id)->value('role_id');
+
+        RolePermission::firstOrCreate([
+            'role_id' => $roleId,
+            'module_id' => $module->id,
+            'submodule_id' => $module->submodules()->where('key', 'ar_invoices')->firstOrFail()->id,
+        ], ['access_level' => 'encoder']);
+    }
+
+    private function grantRemittanceAccess(User $user): void
+    {
+        $module = Module::where('key', 'sales')->firstOrFail();
+        $roleId = UserRole::where('user_id', $user->id)->value('role_id');
+
+        RolePermission::firstOrCreate([
+            'role_id' => $roleId,
+            'module_id' => $module->id,
+            'submodule_id' => $module->submodules()->where('key', 'remittances')->firstOrFail()->id,
+        ], ['access_level' => 'encoder']);
+    }
+
     private function payload(array $overrides = []): array
     {
         return array_merge([

@@ -222,6 +222,8 @@ class RemittanceClass
         Receipt::whereIn('id', $receiptIds)->update([
             'status_id'     => $forVerificationStatusId,
             'remittance_id' => $data->id,
+            // Handed in: nobody is carrying this money any more.
+            'held_by_employee_id' => null,
         ]);
 
         return [

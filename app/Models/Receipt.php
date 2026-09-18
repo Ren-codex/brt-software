@@ -21,6 +21,7 @@ class Receipt extends Model
         'ar_invoice_id',
         'source_receipt_id',
         'remittance_id',
+        'held_by_employee_id',
         'notes',
         'check_date',
         'check_status',
@@ -35,6 +36,11 @@ class Receipt extends Model
         'released_at' => 'datetime',
         'confirmed_at' => 'datetime',
     ];
+
+    public function heldBy()
+    {
+        return $this->belongsTo(Employee::class, 'held_by_employee_id');
+    }
 
     public function arInvoice()
     {
