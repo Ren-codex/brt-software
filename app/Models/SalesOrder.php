@@ -27,6 +27,8 @@ class SalesOrder extends Model
         'due_date',
         'shipping_date',
         'delivery_date',
+        'delivered_at',
+        'delivered_by_id',
         'location_id',
         'delivery_location',
         'cancellation_remarks',
@@ -38,6 +40,7 @@ class SalesOrder extends Model
         'due_date' => 'date',
         'shipping_date' => 'date',
         'delivery_date' => 'date',
+        'delivered_at' => 'datetime',
         'transferred_at' => 'date',
         'approved_at' => 'date',
         'total_amount' => 'decimal:2',
@@ -73,6 +76,11 @@ class SalesOrder extends Model
     public static function isCod(?string $paymentMode): bool
     {
         return strtolower(trim((string) $paymentMode)) === 'cod';
+    }
+
+    public function deliveredBy()
+    {
+        return $this->belongsTo(User::class, 'delivered_by_id');
     }
 
     public function customer()
@@ -133,6 +141,11 @@ class SalesOrder extends Model
     public function arInvoices()
     {
         return $this->hasMany(ArInvoice::class);
+    }
+
+    public function deliveryRefusals()
+    {
+        return $this->hasMany(SalesOrderDeliveryRefusal::class);
     }
 
     public function returnReplacements()

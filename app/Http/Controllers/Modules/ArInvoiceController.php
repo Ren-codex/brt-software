@@ -71,6 +71,18 @@ class ArInvoiceController extends Controller
             }
         });
 
+        // A rolled-back transaction is not a saved payment. Without this the
+        // page redirected back looking successful while nothing was recorded.
+        if (! ($result['status'] ?? false)) {
+            $message = $result['info'] ?? 'Unable to record this payment.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message, 'status' => false], 422);
+            }
+
+            return back()->withErrors(['payment' => $message]);
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'data' => $result['data'],

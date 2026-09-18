@@ -122,6 +122,10 @@
                                             <span class="badge-stack">
                                                 {{ list.due_date }}
                                                 <span v-if="isDueSoon(list)" class="badge bg-danger">Due Soon</span>
+                                                <span v-if="list.delivered_at" class="badge bg-success-subtle text-success-emphasis"
+                                                    v-b-tooltip.hover :title="`Recorded by ${list.delivered_by || 'staff'}`">
+                                                    Delivered {{ list.delivered_at }}
+                                                </span>
                                             </span>
                                         </td>
                                         <td class="text-center">
@@ -146,6 +150,11 @@
                                                     @click.stop="onSalesAdjustment(list)"
                                                     class="action-btn warn" v-b-tooltip.hover title="Sales Adjustment">
                                                     <i class="ri-refund-line"></i>
+                                                </button>
+                                                <button v-if="canMarkDelivered(list)"
+                                                    @click.stop="onMarkDelivered(list)"
+                                                    class="action-btn success" v-b-tooltip.hover title="Mark Delivered">
+                                                    <i class="ri-truck-line"></i>
                                                 </button>
                                                 <button @click.stop="onPrint(list.id)"
                                                     class="action-btn info" v-b-tooltip.hover title="Print Invoice">
@@ -187,6 +196,7 @@
     </div>
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
+    <MarkDelivered @delivered="fetch()" ref="markDelivered"/>
      <Approval @approve="fetch()" ref="approval"/>
     <Adjustment @update="fetch()" :dropdowns="dropdowns" ref="adjustment"/>
 
@@ -201,6 +211,7 @@ import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Cancel from './Modals/Cancel.vue';
+import MarkDelivered from './Modals/MarkDelivered.vue';
 import Create from './Modals/Create.vue';
 import ViewOrder from './Modals/ViewOrder.vue';
 import Adjustment from './Modals/Adjustment.vue';
@@ -211,7 +222,7 @@ import { recordLockMixin } from '@/Shared/recordLock.js';
 
 
 export default {
-    components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, Adjustment, Approval, TableLoadingRow },
+    components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, MarkDelivered, Adjustment, Approval, TableLoadingRow },
     mixins: [pollingMixin, recordLockMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
@@ -337,6 +348,19 @@ export default {
         openEdit(data, index) {
             this.selectedRow = index;
             this.$refs.create.edit(data, index);
+        },
+
+        /**
+         * Only worth offering while there is something to record: an order the
+         * driver could still be out with, and not one already cancelled.
+         */
+        canMarkDelivered(order) {
+            return !order.delivered_at
+                && order.status?.slug !== 'cancelled'
+                && this.can('sales', 'sales_orders', 'encoder');
+        },
+        onMarkDelivered(order) {
+            this.$refs.markDelivered.show(order);
         },
 
         onCancel(list) {

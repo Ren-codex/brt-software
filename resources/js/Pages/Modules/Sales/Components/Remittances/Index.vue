@@ -296,6 +296,8 @@
                     </div>
                 </div>
             </div>
+            <FieldCollections ref="fieldCollections" />
+
             <Create @add="fetch" ref="create" />
         </template>
 
@@ -321,11 +323,12 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
 import View from './View.vue';
 import SummaryView from './SummaryView.vue';
+import FieldCollections from './FieldCollections.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import { pollingMixin } from '@/Shared/polling.js';
 
 export default {
-    components: { Pagination, Create, View, SummaryView, TableLoadingRow },
+    components: { Pagination, Create, View, SummaryView, FieldCollections, TableLoadingRow },
     mixins: [pollingMixin],
     props: ['dropdowns'],
     data() {

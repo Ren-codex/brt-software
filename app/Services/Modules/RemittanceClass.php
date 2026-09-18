@@ -93,6 +93,46 @@ class RemittanceClass
         );
     }
 
+    /**
+     * Money collected but not yet turned in, by the person carrying it.
+     *
+     * A city run clears the same afternoon, so anything with days on it is
+     * worth a phone call — and an out-of-town order legitimately takes longer,
+     * which is why each row says whether it is one.
+     */
+    public function fieldCollections($request)
+    {
+        return Receipt::with(['heldBy', 'customer', 'arInvoice.sales_order'])
+            ->whereNull('remittance_id')
+            ->whereNotNull('held_by_employee_id')
+            ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
+            ->orderBy('receipt_date')
+            ->get()
+            ->map(function ($receipt) {
+                $order = optional($receipt->arInvoice)->sales_order;
+                $collectedAt = $receipt->receipt_date ? Carbon::parse($receipt->receipt_date) : null;
+                $mode = strtolower(trim((string) $receipt->payment_mode));
+
+                return [
+                    'receipt_id' => $receipt->id,
+                    'holder' => optional($receipt->heldBy)->fullname ?? 'Unassigned',
+                    'receipt_number' => $receipt->receipt_number,
+                    'so_number' => optional($order)->so_number,
+                    'customer' => optional($receipt->customer)->name,
+                    'amount' => (float) $receipt->amount_paid,
+                    'payment_mode' => $receipt->payment_mode,
+                    'collected_at' => $collectedAt?->toDateString(),
+                    'days_out' => $collectedAt ? (int) $collectedAt->startOfDay()->diffInDays(now()->startOfDay()) : null,
+                    'is_external' => str_starts_with((string) optional($order)->so_number, 'SO-EXT'),
+                    // A cheque or a COD transfer is not money until the bank
+                    // says so, and that is worth seeing beside who holds it.
+                    'confirmed' => ! in_array($mode, ['check', 'cheque', 'bank transfer'], true)
+                        || ! is_null($receipt->confirmed_at),
+                ];
+            })
+            ->values();
+    }
+
     public function undepositedSummary($request)
     {
         $user = Auth::user();
@@ -222,6 +262,8 @@ class RemittanceClass
         Receipt::whereIn('id', $receiptIds)->update([
             'status_id'     => $forVerificationStatusId,
             'remittance_id' => $data->id,
+            // Handed in: nobody is carrying this money any more.
+            'held_by_employee_id' => null,
         ]);
 
         return [

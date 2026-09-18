@@ -10,6 +10,7 @@ use Illuminate\Database\QueryException;
 
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
+use App\Models\SalesOrderDeliveryRefusal;
 use App\Models\ArInvoice;
 use App\Models\Receipt;
 use App\Models\InventoryStocks;
@@ -578,6 +579,134 @@ class SalesOrderClass
      *
      * @return array{0: bool, 1: ?int, 2: ?string}
      */
+    /**
+     * The goods reached the customer. Recorded by the office, usually when the
+     * driver returns with the signed delivery receipt.
+     *
+     * Marking twice keeps the first stamp: a stray second click must not
+     * rewrite when the delivery happened.
+     */
+    public function markDelivered($request)
+    {
+        $data = SalesOrder::findOrFail($request->id);
+
+        if (optional($data->status)->slug === 'cancelled') {
+            throw ValidationException::withMessages([
+                'delivered_at' => 'A cancelled order cannot be marked delivered.',
+            ]);
+        }
+
+        $accepted = collect($request->accepted_quantities ?? [])
+            ->mapWithKeys(fn ($qty, $itemId) => [(int) $itemId => (int) $qty]);
+        $reasons = collect($request->refusal_reasons ?? [])
+            ->mapWithKeys(fn ($reason, $itemId) => [(int) $itemId => (string) $reason]);
+
+        if ($accepted->isNotEmpty() && ! $data->delivered_at) {
+            $invoice = $data->arInvoices()->first();
+
+            // Goods coming back after money changed hands is a return, refund
+            // and all — not a doorstep refusal.
+            if ($invoice && round((float) $invoice->amount_paid, 2) > 0) {
+                throw ValidationException::withMessages([
+                    'accepted_quantities' => 'This order already has a recorded payment. Record a sales return instead.',
+                ]);
+            }
+
+            $this->applyAcceptedQuantities($data, $accepted, $reasons);
+        }
+
+        if (! $data->delivered_at) {
+            $data->update([
+                'delivered_at' => now(),
+                'delivered_by_id' => auth()->user()->id,
+            ]);
+        }
+
+        return [
+            'data' => new SalesOrderResource($data->fresh(['items', 'customer', 'status', 'arInvoices'])),
+            'message' => 'Delivery recorded!',
+            'info' => 'This order is marked delivered.',
+            'status' => true,
+        ];
+    }
+
+    /**
+     * Resize the order to what the customer kept: refused stock goes back to
+     * its own batch, the invoice drops to the accepted total, and the sale's
+     * ledger entries are reversed and re-posted at that figure.
+     *
+     * Nothing is refunded, because no money has moved yet — that is what
+     * separates a doorstep refusal from a sales return.
+     */
+    private function applyAcceptedQuantities(SalesOrder $data, $accepted, $reasons): void
+    {
+        $data->loadMissing('items');
+
+        foreach ($data->items as $item) {
+            if (! $accepted->has($item->id)) {
+                continue;
+            }
+
+            $acceptedQty = $accepted->get($item->id);
+
+            if ($acceptedQty < 0 || $acceptedQty > (int) $item->quantity) {
+                throw ValidationException::withMessages([
+                    'accepted_quantities' => 'Accepted quantity must be between 0 and the quantity ordered.',
+                ]);
+            }
+
+            $refusedQty = (int) $item->quantity - $acceptedQty;
+
+            if ($refusedQty === 0) {
+                continue;
+            }
+
+            SalesOrderDeliveryRefusal::create([
+                'sales_order_id' => $data->id,
+                'sales_order_item_id' => $item->id,
+                'product_id' => $item->product_id,
+                'ordered_quantity' => (int) $item->quantity,
+                'accepted_quantity' => $acceptedQty,
+                'refused_quantity' => $refusedQty,
+                'batch_code' => $item->batch_code,
+                'reason' => $reasons->get($item->id),
+                'recorded_by_id' => auth()->user()->id,
+                'recorded_at' => now(),
+            ]);
+
+            $this->inventoryService->addStock(
+                $item->product_id,
+                $refusedQty,
+                'Refused on delivery - SO#'.$data->so_number,
+                $item->batch_code
+            );
+
+            if ($acceptedQty === 0) {
+                $item->delete();
+            } else {
+                $item->update(['quantity' => $acceptedQty]);
+            }
+        }
+
+        $data->load('items');
+
+        $totalAmount = $data->items->sum(fn ($item) => ((float) $item->price - (float) $item->discount_per_unit) * (int) $item->quantity);
+        $totalDiscount = $data->items->sum(fn ($item) => (float) $item->discount_per_unit * (int) $item->quantity);
+
+        $data->update(['total_amount' => $totalAmount, 'total_discount' => $totalDiscount]);
+
+        if ($invoice = $data->arInvoices()->first()) {
+            $invoice->update([
+                'amount_due' => $totalAmount,
+                'balance_due' => $totalAmount,
+                'total_discount' => $totalDiscount,
+            ]);
+        }
+
+        $this->journalEntryService->recordSalesOrderUpdateEntries($data);
+        $this->journalEntryService->recordSaleEntries($data->load('items'));
+    }
+
     /**
      * When the money falls due: the agreed term for a credit sale, the delivery
      * day for COD — it is collected at the door, so the two can never disagree —

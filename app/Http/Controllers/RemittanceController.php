@@ -37,6 +37,9 @@ class RemittanceController extends Controller
             case 'my_holdings':
                 return $this->remittance->myHoldings();
             break;
+            case 'field-collections':
+                return $this->remittance->fieldCollections($request);
+            break;
             case 'undeposited_summary':
                 return $this->remittance->undepositedSummary($request);
             break;
@@ -123,6 +126,12 @@ class RemittanceController extends Controller
         $result = $this->handleTransaction(function () use ($request) {
             return $this->remittance->save($request);
         });
+
+        // A rolled-back remittance is not a remittance. Reporting it as one
+        // leaves the rep believing they have handed the money in.
+        if (! ($result['status'] ?? false)) {
+            return back()->withErrors(['receipts' => $result['info'] ?? 'Unable to save this remittance.']);
+        }
 
         return back()->with([
             'data' => $result['data'],
