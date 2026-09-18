@@ -143,6 +143,11 @@ class SalesOrder extends Model
         return $this->hasMany(ArInvoice::class);
     }
 
+    public function deliveryRefusals()
+    {
+        return $this->hasMany(SalesOrderDeliveryRefusal::class);
+    }
+
     public function returnReplacements()
     {
         return $this->hasMany(\App\Models\SalesReturnReplacement::class);

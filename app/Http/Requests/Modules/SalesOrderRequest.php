@@ -65,6 +65,10 @@ class SalesOrderRequest extends FormRequest
         else if($action == 'mark-delivered'){
             return [
                 'id' => 'nullable|exists:sales_orders,id',
+                'accepted_quantities' => 'nullable|array',
+                'accepted_quantities.*' => 'integer|min:0',
+                'refusal_reasons' => 'nullable|array',
+                'refusal_reasons.*' => 'nullable|string|max:255',
             ];
         }
         else if($action == 'cancel'){
