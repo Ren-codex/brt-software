@@ -56,7 +56,8 @@ class SalesOrderClass
 
         $query = SalesOrder::with([
             'items.salesReturnItems',
-            'items.product',
+            'items.product.brand',
+            'items.product.unit',
             'arInvoices.receipts.status',
             'customer',
             'status',
@@ -601,7 +602,15 @@ class SalesOrderClass
         $reasons = collect($request->refusal_reasons ?? [])
             ->mapWithKeys(fn ($reason, $itemId) => [(int) $itemId => (string) $reason]);
 
-        if ($accepted->isNotEmpty() && ! $data->delivered_at) {
+        // Only a shortfall resizes anything. Accepting every line in full — the
+        // common case, and the only one available on an order already settled —
+        // just records the delivery.
+        $data->loadMissing('items');
+        $isShort = $data->items->contains(
+            fn ($item) => $accepted->has($item->id) && $accepted->get($item->id) < (int) $item->quantity
+        );
+
+        if ($isShort && ! $data->delivered_at) {
             $invoice = $data->arInvoices()->first();
 
             // Goods coming back after money changed hands is a return, refund
@@ -613,6 +622,15 @@ class SalesOrderClass
             }
 
             $this->applyAcceptedQuantities($data, $accepted, $reasons);
+        }
+
+        // An accepted quantity above what was ordered is a typo either way.
+        foreach ($data->items as $item) {
+            if ($accepted->has($item->id) && $accepted->get($item->id) > (int) $item->quantity) {
+                throw ValidationException::withMessages([
+                    'accepted_quantities' => 'Accepted quantity must be between 0 and the quantity ordered.',
+                ]);
+            }
         }
 
         if (! $data->delivered_at) {

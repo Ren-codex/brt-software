@@ -113,6 +113,19 @@ class DeliveryAcceptanceTest extends TestCase
         $this->assertSame(3000.0, (float) $order->fresh()->total_amount);
     }
 
+    public function test_a_paid_order_can_still_be_marked_delivered(): void
+    {
+        // Backfilling a delivery on an order already settled is not a refusal:
+        // every line was accepted, so there is nothing to resize.
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::with('items')->firstOrFail();
+        ArInvoice::firstOrFail()->update(['amount_paid' => 3000, 'balance_due' => 0]);
+
+        $this->deliver($order, [$order->items->first()->id => 2])->assertSessionHasNoErrors();
+
+        $this->assertNotNull($order->fresh()->delivered_at);
+    }
+
     public function test_the_sale_is_re_posted_at_the_accepted_amount(): void
     {
         $this->postCod()->assertSessionHasNoErrors();

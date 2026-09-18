@@ -70,6 +70,9 @@ class MarkDeliveredTest extends TestCase
         $row = collect($response->json('data'))->firstWhere('id', $order->id);
         $this->assertNotNull($row['delivered_at']);
         $this->assertNotNull($row['delivered_by']);
+        // The modal names each line; products have no name column of their own,
+        // so it is built from brand, weight and unit.
+        $this->assertSame('Test Brand 25 Sack', $row['items'][0]['product_name']);
     }
 
     public function test_a_cancelled_order_cannot_be_marked_delivered(): void

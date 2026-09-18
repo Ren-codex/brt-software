@@ -57,7 +57,13 @@ class SalesOrderResource extends JsonResource
             'items' => $this->items->map(fn($item) => [
                 'id'                 => $item->id,
                 'product_id'         => $item->product_id,
-                'product_name'       => $item->product?->name,
+                // Products carry no name of their own — a line is named by its
+                // brand, weight and unit, the way the printed order names it.
+                'product_name'       => trim(
+                    ($item->product?->brand?->name ?? '').' '
+                    .($item->product?->weight ?? '').' '
+                    .($item->product?->unit?->name ?? '')
+                ) ?: $item->product?->name,
                 'quantity'           => $item->quantity,
                 'returned_quantity'  => (int) ($item->returned_quantity ?? 0),
                 'price'              => $item->price,
