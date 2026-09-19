@@ -105,9 +105,6 @@
                                                     <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
                                                     {{ list.status ? list.status.name : '' }}
                                                 </span>
-                                                <span v-if="list.requires_batch_approval && !list.approved_at" class="badge bg-warning text-dark" v-b-tooltip.hover title="A manually selected batch needs approver sign-off">
-                                                    Pending Batch Approval
-                                                </span>
                                             </span>
                                         </td>
                                           <!-- <td class="text-center">
@@ -141,11 +138,6 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <button v-if="canApprove && list.requires_batch_approval && !list.approved_at"
-                                                    @click.stop="onApproval(list.id)"
-                                                    class="action-btn success" v-b-tooltip.hover title="Approve manually-selected batch">
-                                                    <i class="ri-shield-check-line"></i>
-                                                </button>
                                                 <button v-if="list.status?.slug == 'for-payment' && can('sales', 'sales_orders', 'encoder')"
                                                     @click.stop="onSalesAdjustment(list)"
                                                     class="action-btn warn" v-b-tooltip.hover title="Sales Adjustment">
@@ -197,7 +189,6 @@
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
     <MarkDelivered @delivered="fetch()" ref="markDelivered"/>
-     <Approval @approve="fetch()" ref="approval"/>
     <Adjustment @update="fetch()" :dropdowns="dropdowns" ref="adjustment"/>
 
     
@@ -215,14 +206,13 @@ import MarkDelivered from './Modals/MarkDelivered.vue';
 import Create from './Modals/Create.vue';
 import ViewOrder from './Modals/ViewOrder.vue';
 import Adjustment from './Modals/Adjustment.vue';
-import Approval from './Modals/Approval.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import { pollingMixin } from '@/Shared/polling.js';
 import { recordLockMixin } from '@/Shared/recordLock.js';
 
 
 export default {
-    components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, MarkDelivered, Adjustment, Approval, TableLoadingRow },
+    components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, MarkDelivered, Adjustment, TableLoadingRow },
     mixins: [pollingMixin, recordLockMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
@@ -252,9 +242,6 @@ export default {
         }
     },
     computed: {
-        canApprove() {
-            return this.can('sales', 'sales_orders', 'approver');
-        },
         statusTabs() {
             const relevant = ['for-payment', 'partially-paid', 'closed', 'cancelled'];
             const bySlug = Object.fromEntries((this.dropdowns.sales_statuses || []).map(s => [s.slug, s]));
@@ -381,11 +368,6 @@ export default {
         isEditableOrder(list) {
             // Credit/COD orders stay editable until fully paid, not just at creation.
             return ['for-payment', 'partially-paid'].includes(list.status?.slug);
-        },
-        onApproval(id) {
-            let title = "Sales Order";
-            let url = '/sales-orders';
-            this.$refs.approval.show(id, title, url);
         },
         onPrint(id) {
             let url =  '/sales-orders';

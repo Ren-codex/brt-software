@@ -156,10 +156,10 @@ class SalesOrderClass
             }
         }
 
-        // A manually overridden (non-FIFO) batch selection on any item holds the
-        // order for approver sign-off before it can finalize — even a cash sale
-        // won't auto-close/auto-receipt until it's approved.
-        $requiresBatchApproval = collect($request->items)->contains(fn ($item) => !empty($item['is_batch_override']));
+        // Picking a batch other than the oldest no longer holds the order: the
+        // deviation is recorded on the line (is_batch_override) and the sale
+        // finalizes like any other. Nothing sets requires_batch_approval now;
+        // the column stays for the orders flagged before this changed.
 
         // The cashier may settle a cash sale with more than one method at once.
         // 'Split' keeps the order out of every credit-sale branch while making it
@@ -187,7 +187,7 @@ class SalesOrderClass
             $candidate->delivery_location = $locationText;
             $candidate->added_by_id = auth()->user()->id;
             $candidate->status_id = ListStatus::getBySlug('for-payment')?->id;
-            $candidate->requires_batch_approval = $requiresBatchApproval;
+            $candidate->requires_batch_approval = false;
 
             try {
                 $candidate->save();
@@ -266,7 +266,7 @@ class SalesOrderClass
         $invoice->save();
 
         $autoReceiptId = null;
-        if (!$isCreditSale && !$requiresBatchApproval) {
+        if (!$isCreditSale) {
             $autoReceiptId = $this->finalizeCashSale($data, $invoice);
         }
 
@@ -311,7 +311,6 @@ class SalesOrderClass
         }
 
         [, $locationId, $locationText] = $this->resolveLocation($request);
-        $requiresBatchApproval = collect($request->items)->contains(fn ($item) => !empty($item['is_batch_override']));
 
         $data->update([
             'customer_id' => $request->customer_id,
@@ -324,7 +323,7 @@ class SalesOrderClass
             'delivery_date' => $request->delivery_date,
             'location_id' => $locationId,
             'delivery_location' => $locationText,
-            'requires_batch_approval' => $requiresBatchApproval || $data->requires_batch_approval,
+            'requires_batch_approval' => (bool) $data->requires_batch_approval,
             'updated_by_id' => auth()->user()->id,
         ]);
 

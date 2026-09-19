@@ -118,7 +118,7 @@
                                 </p>
                                 <small v-if="isBatchOverride" class="batch-override-warning">
                                     <i class="ri-alert-line"></i>
-                                    Not the oldest available batch — this order will require approval.
+                                    Not the oldest available batch.
                                 </small>
                             </div>
 

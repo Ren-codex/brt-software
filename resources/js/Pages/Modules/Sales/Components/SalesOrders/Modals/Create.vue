@@ -210,7 +210,7 @@
                                             </td>
                                             <td class="text-center">
                                                 {{ list.batch_code || '-' }}
-                                                <i v-if="list.is_batch_override" class="ri-alert-line batch-override-icon" v-b-tooltip.hover title="Manually overridden batch — requires approval"></i>
+                                                <i v-if="list.is_batch_override" class="ri-alert-line batch-override-icon" v-b-tooltip.hover title="Not the oldest available batch"></i>
                                             </td>
                                             <td class="text-center"><span class="metric-pill">{{ list.quantity }}</span></td>
                                             <td class="text-center">
