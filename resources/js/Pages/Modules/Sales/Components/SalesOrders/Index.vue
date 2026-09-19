@@ -25,10 +25,10 @@
                     <div class="status-tab-bar">
                         <button
                             v-for="tab in statusTabs"
-                            :key="tab.slug || 'all'"
+                            :key="tab.key"
                             class="status-tab-btn"
-                            :class="{ active: filter.status === tab.slug }"
-                            @click="filter.status = tab.slug"
+                            :class="{ active: activeTab === tab.key }"
+                            @click="selectTab(tab)"
                         >
                             {{ tab.label }}
                         </button>
@@ -232,7 +232,8 @@ export default {
             filter: {
                 keyword: null,
                 location_id: null,
-                status: null
+                status: null,
+                delivery: null
             },
             index: null,
             selectedRow: null,
@@ -253,9 +254,18 @@ export default {
             const bySlug = Object.fromEntries((this.dropdowns.sales_statuses || []).map(s => [s.slug, s]));
 
             return [
-                { slug: null, label: 'All' },
-                ...relevant.filter(slug => bySlug[slug]).map(slug => ({ slug, label: bySlug[slug].name })),
+                { key: 'all', label: 'All', slug: null, delivery: null },
+                ...relevant.filter(slug => bySlug[slug]).map(slug => ({
+                    key: slug, label: bySlug[slug].name, slug, delivery: null,
+                })),
+                // Goods outstanding, not money: a paid order can still be sitting
+                // in the warehouse, so this tab cuts across every status.
+                { key: 'undelivered', label: 'Undelivered', slug: null, delivery: 'undelivered' },
             ];
+        },
+        activeTab() {
+            if (this.filter.delivery === 'undelivered') return 'undelivered';
+            return this.filter.status || 'all';
         },
     },
     watch: {
@@ -265,7 +275,9 @@ export default {
         "filter.location_id"() {
             this.fetch();
         },
-        "filter.status"() {
+        // One watcher for the tab bar: a tab sets both the status and the
+        // delivery filter, and two watchers would fetch the list twice.
+        activeTab() {
             this.fetch();
         },
     },
@@ -314,6 +326,7 @@ export default {
                     keyword: this.filter.keyword,
                     location_id: this.filter.location_id,
                     status: this.filter.status,
+                    delivery: this.filter.delivery,
                     count: 10,
                     option: 'lists'
                 }
@@ -394,6 +407,10 @@ export default {
                 return `Cash · ${String(mode).trim()}`;
             }
             return 'Cash';
+        },
+        selectTab(tab) {
+            this.filter.status = tab.slug;
+            this.filter.delivery = tab.delivery;
         },
         onPrint(id) {
             let url =  '/sales-orders';

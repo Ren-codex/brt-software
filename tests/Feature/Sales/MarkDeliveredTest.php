@@ -75,6 +75,38 @@ class MarkDeliveredTest extends TestCase
         $this->assertSame('Test Brand 25 Sack', $row['items'][0]['product_name']);
     }
 
+    public function test_the_undelivered_filter_lists_only_orders_still_owed_goods(): void
+    {
+        // Paid is not delivered: a cash sale closes on save while the sacks are
+        // still in the warehouse, so the worklist cannot key off status.
+        $this->postCod()->assertSessionHasNoErrors();
+        $delivered = SalesOrder::firstOrFail();
+        $this->markDelivered($delivered)->assertSessionHasNoErrors();
+
+        $this->postCod(['delivery_date' => now()->addDays(4)->toDateString()])->assertSessionHasNoErrors();
+        $stillOut = SalesOrder::where('id', '!=', $delivered->id)->firstOrFail();
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/sales-orders?option=lists&count=20&delivery=undelivered');
+
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($stillOut->id, $ids);
+        $this->assertNotContains($delivered->id, $ids);
+    }
+
+    public function test_a_cancelled_order_is_not_on_the_undelivered_worklist(): void
+    {
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::firstOrFail();
+        $order->update(['status_id' => ListStatus::where('slug', 'cancelled')->value('id')]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/sales-orders?option=lists&count=20&delivery=undelivered');
+
+        $this->assertNotContains($order->id, collect($response->json('data'))->pluck('id')->all());
+    }
+
     public function test_a_cancelled_order_cannot_be_marked_delivered(): void
     {
         $this->postCod()->assertSessionHasNoErrors();

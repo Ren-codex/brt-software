@@ -100,6 +100,13 @@ class SalesOrderClass
             ->when($request->location_id, function ($query, $location_id) {
                 $query->where('location_id', $location_id);
             })
+            // Goods outstanding, which is a different question from money
+            // outstanding: a cash sale closes on save while the sacks are still
+            // in the warehouse, so this cannot key off status.
+            ->when($request->delivery === 'undelivered', function ($query) {
+                $query->whereNull('delivered_at')
+                    ->whereDoesntHave('status', fn ($q) => $q->where('slug', 'cancelled'));
+            })
             ->when($request->status_id, function ($query, $status_id) {
                 $query->where('status_id', $status_id);
             })
