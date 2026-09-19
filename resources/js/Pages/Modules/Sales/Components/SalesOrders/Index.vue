@@ -72,6 +72,7 @@
                                     <th>Customer</th>
                                     <th>Date</th>
                                     <th>Status</th>
+                                    <th>Payment</th>
                                     <th class="text-end">Total Amount</th>
                                     <th>Due Date</th>
                                     <th class="text-center">Paid %</th>
@@ -79,7 +80,7 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <TableLoadingRow v-if="loading" :colspan="9" message="Loading sales orders..." />
+                                <TableLoadingRow v-if="loading" :colspan="10" message="Loading sales orders..." />
                                 <template v-else>
                                 <template v-for="(list, index) in lists" :key="list.id">
                                     <tr @click="openOrder(list)"
@@ -114,6 +115,11 @@
                                                 {{ list.sub_status?.name  }}
                                             </span>
                                         </td> -->
+                                        <td class="text-center">
+                                            <span class="payment-pill" :class="paymentTone(list.payment_mode)">
+                                                {{ paymentLabel(list.payment_mode) }}
+                                            </span>
+                                        </td>
                                         <td class="text-end fw-semibold">{{ formatCurrency(list.total_amount) }}</td>
                                         <td class="text-center">
                                             <span class="badge-stack">
@@ -167,7 +173,7 @@
                                     </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="9">
+                                    <td colspan="10">
                                         <div class="sales-empty-state">
                                             <i class="ri-shopping-cart-line"></i>
                                             <p class="mb-1">No sales orders found</p>
@@ -368,6 +374,26 @@ export default {
         isEditableOrder(list) {
             // Credit/COD orders stay editable until fully paid, not just at creation.
             return ['for-payment', 'partially-paid'].includes(list.status?.slug);
+        },
+        /**
+         * How the sale settles, not the method used: a cash sale paid by
+         * transfer or split is still a cash sale to anyone scanning the list.
+         */
+        paymentTone(mode) {
+            const value = String(mode || 'cash').trim().toLowerCase();
+            if (['credit', 'credit sales'].includes(value)) return 'is-credit';
+            if (value === 'cod') return 'is-cod';
+            return 'is-cash';
+        },
+        paymentLabel(mode) {
+            const value = String(mode || 'cash').trim().toLowerCase();
+            if (['credit', 'credit sales'].includes(value)) return 'Credit';
+            if (value === 'cod') return 'COD';
+            if (value === 'split') return 'Cash · Split';
+            if (['bank transfer', 'check', 'cheque', 'gcash'].includes(value)) {
+                return `Cash · ${String(mode).trim()}`;
+            }
+            return 'Cash';
         },
         onPrint(id) {
             let url =  '/sales-orders';
@@ -682,4 +708,30 @@ export default {
             width: 100%;
         }
     }
+
+/* How the sale settles: cash at the counter, cash at the door, or on terms. */
+.payment-pill {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.payment-pill.is-cash {
+    background: rgba(61, 141, 122, 0.12);
+    color: #2f6f60;
+}
+
+.payment-pill.is-cod {
+    background: #e8f1ff;
+    color: #2456a6;
+}
+
+.payment-pill.is-credit {
+    background: #fef3c7;
+    color: #92400e;
+}
 </style>

@@ -776,6 +776,7 @@ export default {
       const value = String(mode || 'cash').toLowerCase();
       if (['cash', 'cash sales'].includes(value)) return 'cash';
       if (['credit', 'credit sales'].includes(value)) return 'credit';
+      if (value === 'cod') return 'cod';
       return 'other';
     },
     formatDate(date) {
@@ -1200,6 +1201,11 @@ tbody tr:hover td {
 .so-number {
   font-weight: 700;
   color: #2f7666;
+}
+
+.payment-badge.cod {
+  background: #e8f1ff;
+  color: #2456a6;
 }
 
 .payment-badge {
