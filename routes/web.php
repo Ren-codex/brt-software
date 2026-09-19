@@ -48,6 +48,7 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         ->middleware('throttle:10,1');
 
     Route::put('/receipts/{id}/confirm-check', [App\Http\Controllers\Modules\ReceiptController::class, 'confirmCheck']);
+    Route::put('/receipts/{id}/turn-over', [App\Http\Controllers\Modules\ReceiptController::class, 'turnOver']);
 
     // A rep's read-only view of the checks they took. No actions here: clearing
     // a check belongs to Accounting, and a rep must not discharge their own.

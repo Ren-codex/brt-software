@@ -115,6 +115,70 @@ class ReceiptCustodyTest extends TestCase
         $this->assertNull($receipt->fresh()->held_by_employee_id);
     }
 
+    public function test_turning_over_moves_the_money_to_its_new_holder(): void
+    {
+        $driver = $this->driver();
+        $order = $this->codOrderWithDriver($driver);
+        $this->collect($order);
+        $receipt = Receipt::firstOrFail();
+        $rep = Employee::where('firstname', 'Bea')->firstOrFail();
+
+        $this->grantReceiptAccess($this->user);
+
+        $this->actingAs($this->user)
+            ->put('/receipts/'.$receipt->id.'/turn-over', ['held_by_employee_id' => $rep->id])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame($rep->id, $receipt->fresh()->held_by_employee_id);
+    }
+
+    public function test_the_handover_is_recorded_in_the_activity_log(): void
+    {
+        // Who had the money and when is the whole point of tracking custody.
+        $driver = $this->driver();
+        $order = $this->codOrderWithDriver($driver);
+        $this->collect($order);
+        $receipt = Receipt::firstOrFail();
+        $rep = Employee::where('firstname', 'Bea')->firstOrFail();
+
+        $this->grantReceiptAccess($this->user);
+        $this->actingAs($this->user)
+            ->put('/receipts/'.$receipt->id.'/turn-over', ['held_by_employee_id' => $rep->id]);
+
+        $logged = \Spatie\Activitylog\Models\Activity::where('subject_type', Receipt::class)
+            ->where('subject_id', $receipt->id)
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($logged, 'The handover should leave a trail.');
+        $this->assertSame($rep->id, (int) data_get($logged->properties, 'attributes.held_by_employee_id'));
+        $this->assertSame($driver->id, (int) data_get($logged->properties, 'old.held_by_employee_id'));
+    }
+
+    public function test_a_remitted_receipt_cannot_be_turned_over(): void
+    {
+        $driver = $this->driver();
+        $order = $this->codOrderWithDriver($driver);
+        $this->collect($order);
+        $receipt = Receipt::firstOrFail();
+
+        $remittance = \App\Models\Remittance::create([
+            'remittance_no' => 'RM-'.uniqid(),
+            'remittance_date' => now()->toDateString(),
+            'summary' => [],
+            'total_amount' => 3000,
+            'status_id' => \App\Models\ListStatus::where('slug', 'pending')->value('id'),
+            'created_by_id' => $this->user->id,
+        ]);
+        $receipt->update(['held_by_employee_id' => null, 'remittance_id' => $remittance->id]);
+
+        $this->grantReceiptAccess($this->user);
+
+        $this->actingAs($this->user)
+            ->put('/receipts/'.$receipt->id.'/turn-over', ['held_by_employee_id' => $driver->id])
+            ->assertSessionHasErrors();
+    }
+
     public function test_recording_a_cod_collection_stamps_the_delivery(): void
     {
         // Money cannot come back unless the goods went out.

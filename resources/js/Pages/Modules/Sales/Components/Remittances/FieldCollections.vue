@@ -13,6 +13,8 @@
             </button>
         </div>
 
+        <div v-if="error" class="fc-error">{{ error }}</div>
+
         <div v-if="!loading && rows.length === 0" class="fc-empty">
             <i class="ri-checkbox-circle-line"></i>
             <p>Nothing is out. Every collection has been turned in.</p>
@@ -31,6 +33,7 @@
                         <th>Customer</th>
                         <th>Mode</th>
                         <th class="text-end">Amount</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,6 +55,21 @@
                             </span>
                         </td>
                         <td class="text-end">{{ formatCurrency(row.amount) }}</td>
+                        <td class="text-end">
+                            <template v-if="handingOver === row.receipt_id">
+                                <select v-model="newHolder" class="fc-select" :id="`holder_${row.receipt_id}`">
+                                    <option :value="null" disabled>Who has it now?</option>
+                                    <option v-for="person in holders" :key="person.value" :value="person.value">
+                                        {{ person.name }}
+                                    </option>
+                                </select>
+                                <button class="fc-link" :disabled="!newHolder || saving" @click="saveHandover(row)">
+                                    {{ saving ? 'Saving...' : 'Save' }}
+                                </button>
+                                <button class="fc-link fc-link-quiet" @click="cancelHandover">Cancel</button>
+                            </template>
+                            <button v-else class="fc-link" @click="startHandover(row)">Hand over</button>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -63,13 +81,30 @@
 import axios from 'axios';
 
 export default {
+    props: ['dropdowns'],
     data() {
         return {
             rows: [],
             loading: false,
+            handingOver: null,
+            newHolder: null,
+            saving: false,
+            error: null,
         };
     },
     computed: {
+        /** Anyone who can carry money: the drivers and the reps. */
+        holders() {
+            const drivers = Array.isArray(this.dropdowns?.drivers) ? this.dropdowns.drivers : [];
+            const reps = Array.isArray(this.dropdowns?.sales_reps) ? this.dropdowns.sales_reps : [];
+            const seen = new Set();
+
+            return [...drivers, ...reps].filter((person) => {
+                if (seen.has(person.value)) return false;
+                seen.add(person.value);
+                return true;
+            });
+        },
         /** Grouped by holder, each person's oldest collection first. */
         grouped() {
             const byHolder = new Map();
@@ -97,6 +132,22 @@ export default {
                 .then((res) => { this.rows = Array.isArray(res.data) ? res.data : []; })
                 .catch((err) => console.error(err))
                 .finally(() => { this.loading = false; });
+        },
+        startHandover(row) {
+            this.handingOver = row.receipt_id;
+            this.newHolder = null;
+            this.error = null;
+        },
+        cancelHandover() {
+            this.handingOver = null;
+            this.newHolder = null;
+        },
+        saveHandover(row) {
+            this.saving = true;
+            axios.put(`/receipts/${row.receipt_id}/turn-over`, { held_by_employee_id: this.newHolder })
+                .then(() => { this.cancelHandover(); this.fetch(); })
+                .catch((err) => { this.error = err?.response?.data?.message || 'Unable to record this handover.'; })
+                .finally(() => { this.saving = false; });
         },
         formatCurrency(value) {
             return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value) || 0);
@@ -223,5 +274,42 @@ export default {
 .fc-unconfirmed {
     background: #f7ecdd;
     color: #b0702a;
+}
+
+.fc-link {
+    background: none;
+    border: none;
+    color: #3d8d7a;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0 0.3rem;
+    cursor: pointer;
+}
+
+.fc-link:disabled {
+    color: #9bb5ad;
+    cursor: default;
+}
+
+.fc-link-quiet {
+    color: #6b8c85;
+    font-weight: 500;
+}
+
+.fc-select {
+    font-size: 0.82rem;
+    padding: 0.2rem 0.4rem;
+    border: 1px solid #c4d9d2;
+    border-radius: 6px;
+    margin-right: 0.3rem;
+}
+
+.fc-error {
+    margin-bottom: 0.8rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    background: #fdecea;
+    color: #9b1c1c;
+    font-size: 0.85rem;
 }
 </style>

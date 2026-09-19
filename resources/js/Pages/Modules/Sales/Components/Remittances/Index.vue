@@ -296,7 +296,7 @@
                     </div>
                 </div>
             </div>
-            <FieldCollections ref="fieldCollections" />
+            <FieldCollections :dropdowns="dropdowns" ref="fieldCollections" />
 
             <Create @add="fetch" ref="create" />
         </template>

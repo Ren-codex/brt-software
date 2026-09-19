@@ -3,9 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Receipt extends Model
 {
+    use LogsActivity;
+
+    /**
+     * Custody only. Who was carrying this money, and when it changed hands, is
+     * what a shortfall is traced through — the rest of a receipt never moves.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['held_by_employee_id'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
     protected $fillable = [
         'receipt_number',
         'receipt_date',

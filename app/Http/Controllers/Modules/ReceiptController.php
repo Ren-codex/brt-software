@@ -92,6 +92,46 @@ class ReceiptController extends Controller
         ]);
     }
 
+    public function turnOver($id, Request $request)
+    {
+        $this->authorizePermission('sales', 'receipts', 'encoder');
+
+        $request->validate([
+            'held_by_employee_id' => 'required|exists:employees,id',
+        ]);
+
+        $result = $this->handleTransaction(function () use ($id, $request) {
+            return app(\App\Services\Modules\RemittanceClass::class)
+                ->turnOver($id, $request->input('held_by_employee_id'));
+        });
+
+        if (! ($result['status'] ?? false)) {
+            $message = $result['info'] ?? 'Unable to record this handover.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message, 'status' => false], 422);
+            }
+
+            return back()->withErrors(['held_by_employee_id' => $message]);
+        }
+
+        // The panel that calls this is a plain table, not an Inertia page, so it
+        // asks for JSON and refreshes itself.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $result['message'],
+                'info' => $result['info'],
+                'status' => true,
+            ]);
+        }
+
+        return back()->with([
+            'message' => $result['message'],
+            'info' => $result['info'],
+            'status' => $result['status'],
+        ]);
+    }
+
     public function confirmCheck($id, Request $request)
     {
         $this->authorizePermission('sales', 'receipts', 'encoder');

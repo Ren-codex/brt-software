@@ -133,6 +133,33 @@ class RemittanceClass
             ->values();
     }
 
+    /**
+     * Hand the money on: the driver gives it to the rep, or the rep to whoever
+     * carries it next. Only the holder changes — the collection itself is
+     * already recorded, and the remittance is what finally clears it.
+     */
+    public function turnOver($receiptId, $employeeId)
+    {
+        $receipt = Receipt::with('status')->findOrFail($receiptId);
+
+        if ($receipt->remittance_id || optional($receipt->status)->slug !== 'pending') {
+            throw ValidationException::withMessages([
+                'held_by_employee_id' => 'This collection has already been remitted.',
+            ]);
+        }
+
+        $employee = Employee::findOrFail($employeeId);
+
+        $receipt->update(['held_by_employee_id' => $employee->id]);
+
+        return [
+            'data' => $receipt->fresh('heldBy'),
+            'message' => 'Handover recorded!',
+            'info' => $employee->fullname.' is now holding this collection.',
+            'status' => true,
+        ];
+    }
+
     public function undepositedSummary($request)
     {
         $user = Auth::user();
