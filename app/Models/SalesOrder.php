@@ -78,6 +78,51 @@ class SalesOrder extends Model
         return strtolower(trim((string) $paymentMode)) === 'cod';
     }
 
+    /**
+     * Goods promised to travel: someone to carry them, or a day to arrive.
+     * Everything else is a counter sale the customer carries out themselves.
+     */
+    public function isDelivery(): bool
+    {
+        return $this->driver_id !== null || $this->delivery_date !== null;
+    }
+
+    /**
+     * Handing sacks across the counter is a delivery too — it just happens as
+     * the customer pays, so nobody records it separately. Stamping it here is
+     * what keeps "closed means delivered" true without taxing every walk-in.
+     */
+    public function stampCounterDelivery(): void
+    {
+        if ($this->delivered_at || $this->isDelivery()) {
+            return;
+        }
+
+        $this->forceFill([
+            'delivered_at' => now(),
+            'delivered_by_id' => auth()->id(),
+        ])->save();
+    }
+
+    /**
+     * Where a fully paid order lands. Closed says the business is finished with
+     * it, which is only true once the goods have actually arrived; until then
+     * the money is in and the sacks are not, which is For Release.
+     */
+    public function settledStatusSlug(): string
+    {
+        return $this->delivered_at ? 'closed' : 'for-release';
+    }
+
+    /**
+     * The status id to move a settled order to, or null when that status row is
+     * missing — better to leave an order where it is than to blank its status.
+     */
+    public function settledStatusId(): ?int
+    {
+        return ListStatus::getBySlug($this->settledStatusSlug())?->id;
+    }
+
     public function deliveredBy()
     {
         return $this->belongsTo(User::class, 'delivered_by_id');

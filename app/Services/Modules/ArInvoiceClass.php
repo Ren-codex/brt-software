@@ -248,6 +248,19 @@ class ArInvoiceClass
             ->reject(fn ($s) => $this->awaitsBankConfirmation($s['payment_mode'], $ar_invoice))
             ->sum('amount'), 2);
 
+        // Money cannot come back unless the goods went out, so a COD collection
+        // fills in a delivery nobody recorded. Stamped before the payment is
+        // applied, because whether the order can close depends on it. An
+        // explicit stamp always wins.
+        $order = $ar_invoice->sales_order;
+        if ($order && ! $order->delivered_at && SalesOrder::isCod($order->payment_mode)) {
+            $order->update([
+                'delivered_at' => now(),
+                'delivered_by_id' => Auth::id(),
+            ]);
+            $ar_invoice->load('sales_order');
+        }
+
         if ($immediateTotal > 0) {
             $this->applyPaymentToInvoice($ar_invoice, $immediateTotal);
         }
@@ -296,16 +309,6 @@ class ArInvoiceClass
             $lastReceipt = $receipt;
         }
 
-        // Money cannot come back unless the goods went out, so a COD collection
-        // fills in a delivery nobody recorded. An explicit stamp always wins.
-        $order = $ar_invoice->sales_order;
-        if ($order && ! $order->delivered_at && \App\Models\SalesOrder::isCod($order->payment_mode)) {
-            $order->update([
-                'delivered_at' => now(),
-                'delivered_by_id' => Auth::id(),
-            ]);
-        }
-
         return [
             'data' => new ArInvoiceResource($ar_invoice),
             'receipt_id' => $lastReceipt?->id,
@@ -331,9 +334,10 @@ class ArInvoiceClass
 
         if ($ar_invoice->balance_due <= 0) {
             $ar_invoice->status_id = ListStatus::getBySlug('paid')->id;
-            $sales_order->update([
-                'status_id' => ListStatus::getBySlug('closed')->id,
-            ]);
+            $sales_order->stampCounterDelivery();
+            if ($settledStatusId = $sales_order->settledStatusId()) {
+                $sales_order->update(['status_id' => $settledStatusId]);
+            }
 
             // No rep on the order means nobody to credit. The incentive row
             // demands one, so creating it anyway threw and took the whole

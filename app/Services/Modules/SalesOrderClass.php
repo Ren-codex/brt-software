@@ -500,7 +500,10 @@ class SalesOrderClass
             $lastReceiptId = $receipt->id;
         }
 
-        $data->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+        $data->stampCounterDelivery();
+        if ($settledStatusId = $data->settledStatusId()) {
+            $data->update(['status_id' => $settledStatusId]);
+        }
 
         return $lastReceiptId;
     }
@@ -644,6 +647,13 @@ class SalesOrderClass
                 'delivered_at' => now(),
                 'delivered_by_id' => auth()->user()->id,
             ]);
+
+            // The money was already in and the order was only waiting on this.
+            $invoice = $data->arInvoices()->first();
+            if ($invoice && round((float) $invoice->balance_due, 2) <= 0
+                && ! in_array(optional($data->status)->slug, ['cancelled', 'sales-returned', 'partially-returned'], true)) {
+                $data->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+            }
         }
 
         return [

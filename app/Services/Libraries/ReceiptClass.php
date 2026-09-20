@@ -157,7 +157,10 @@ class ReceiptClass
 
                 if ($arInvoice->balance_due <= 0) {
                     if (!$isFullyReturned) {
-                        $salesOrder->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+                        $salesOrder->stampCounterDelivery();
+                        if ($settledStatusId = $salesOrder->settledStatusId()) {
+                            $salesOrder->update(['status_id' => $settledStatusId]);
+                        }
 
                         if ($salesOrder->sales_rep_id && !SalesOrderIncentive::where('sales_order_id', $salesOrder->id)->exists()) {
                             $sold_quantity    = $salesOrder->items->sum('quantity');
@@ -239,7 +242,10 @@ class ReceiptClass
 
             if ($arInvoice->balance_due <= 0) {
                 if (!$isFullyReturned) {
-                    $salesOrder->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+                    $salesOrder->stampCounterDelivery();
+                    if ($settledStatusId = $salesOrder->settledStatusId()) {
+                        $salesOrder->update(['status_id' => $settledStatusId]);
+                    }
                 }
             } elseif (!$isFullyReturned && !$isPartialReturned) {
                 if ($arInvoice->amount_paid > 0) {

@@ -39,6 +39,7 @@ trait BuildsCodOrders
             'pending' => 'Pending', 'unpaid' => 'Unpaid', 'for-payment' => 'For Payment',
             'paid' => 'Paid', 'partially-paid' => 'Partially Paid', 'closed' => 'Closed',
             'approved' => 'Approved', 'cancelled' => 'Cancelled',
+            'for-release' => 'For Release',
         ];
 
         foreach ($statuses as $slug => $name) {
