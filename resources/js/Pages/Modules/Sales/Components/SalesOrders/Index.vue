@@ -203,6 +203,7 @@
 </template>
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
+import { paymentTone, paymentLabel } from '@/Shared/utils/paymentType.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
@@ -389,26 +390,8 @@ export default {
             // Credit/COD orders stay editable until fully paid, not just at creation.
             return ['for-payment', 'partially-paid'].includes(list.status?.slug);
         },
-        /**
-         * How the sale settles, not the method used: a cash sale paid by
-         * transfer or split is still a cash sale to anyone scanning the list.
-         */
-        paymentTone(mode) {
-            const value = String(mode || 'cash').trim().toLowerCase();
-            if (['credit', 'credit sales'].includes(value)) return 'is-credit';
-            if (value === 'cod') return 'is-cod';
-            return 'is-cash';
-        },
-        paymentLabel(mode) {
-            const value = String(mode || 'cash').trim().toLowerCase();
-            if (['credit', 'credit sales'].includes(value)) return 'Credit';
-            if (value === 'cod') return 'COD';
-            if (value === 'split') return 'Cash · Split';
-            if (['bank transfer', 'check', 'cheque', 'gcash'].includes(value)) {
-                return `Cash · ${String(mode).trim()}`;
-            }
-            return 'Cash';
-        },
+        paymentTone,
+        paymentLabel,
         selectTab(tab) {
             this.filter.status = tab.slug;
             this.filter.delivery = tab.delivery;
@@ -727,29 +710,4 @@ export default {
         }
     }
 
-/* How the sale settles: cash at the counter, cash at the door, or on terms. */
-.payment-pill {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-}
-
-.payment-pill.is-cash {
-    background: rgba(61, 141, 122, 0.12);
-    color: #2f6f60;
-}
-
-.payment-pill.is-cod {
-    background: #e8f1ff;
-    color: #2456a6;
-}
-
-.payment-pill.is-credit {
-    background: #fef3c7;
-    color: #92400e;
-}
 </style>

@@ -63,6 +63,7 @@
                                     <th class="text-center" style="width:12%">Customer</th>
                                     <th class="text-center" style="width:12%">Sales Rep</th>
                                     <th class="text-center" style="width:12%">Payment Date</th>
+                                    <th class="text-center" style="width:10%">Sale</th>
                                     <th class="text-center" style="width:10%">Type</th>
                                     <th class="text-center" style="width:12%">Amount Balance</th>
                                     <th class="text-end" style="width:12%">Amount Paid</th>
@@ -72,10 +73,10 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <TableLoadingRow v-if="loading" :colspan="11" message="Loading receipts..." />
+                                <TableLoadingRow v-if="loading" :colspan="12" message="Loading receipts..." />
                                 <template v-else>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="11">
+                                    <td colspan="12">
                                         <div class="sales-empty-state">
                                             <i class="ri-shopping-cart-line"></i>
                                             <p>No receipts found.</p>
@@ -99,6 +100,11 @@
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.sales_rep?.fullname || list.sales_order?.sales_rep?.fullname || '-' }}</td>
                                         <td class="text-center">{{ list.receipt_date }}</td>
+                                        <td class="text-center">
+                                            <span class="payment-pill" :class="paymentTone(list.sales_order?.payment_mode)">
+                                                {{ paymentLabel(list.sales_order?.payment_mode) }}
+                                            </span>
+                                        </td>
                                         <td class="text-center">
                                             <span class="badge" :class="getReceiptTypeClass(list.receipt_type)">
                                                 {{ getReceiptTypeLabel(list.receipt_type) }}
@@ -175,6 +181,7 @@
 </template>
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
+import { paymentTone, paymentLabel } from '@/Shared/utils/paymentType.js';
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
@@ -237,6 +244,8 @@ export default {
         });
     },
     methods: {
+        paymentTone,
+        paymentLabel,
         // Tone comes from what the status means — see Shared/utils/statusTone.js
         statusTone,
 

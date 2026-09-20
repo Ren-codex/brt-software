@@ -61,6 +61,7 @@
                                     <th class="text-center" style="width:12%">Customer</th>
                                     <th class="text-center" style="width:12%">Sales Rep</th>
                                     <th class="text-center" style="width:12%">Invoice Date</th>
+                                    <th class="text-center" style="width:10%">Type</th>
                                     <th class="text-center" style="width:12%">Status</th>
                                     <th class="text-end" style="width:12%">Balance Due</th>
                                     <th class="text-end" style="width:12%">Amount Paid</th>
@@ -68,7 +69,7 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <TableLoadingRow v-if="loading" :colspan="10" message="Loading AR invoices..." />
+                                <TableLoadingRow v-if="loading" :colspan="11" message="Loading AR invoices..." />
                                 <template v-else>
                                 <template v-for="(list, index) in lists" :key="index">
                                     <tr @click="toggleRowExpansion(index)" :class="{
@@ -88,6 +89,11 @@
                                         </td>
                                         <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
                                         <td class="text-center">{{ list.sales_order?.so_number || '-' }}</td>
+                                        <td class="text-center">
+                                            <span class="payment-pill" :class="paymentTone(list.sales_order?.payment_mode)">
+                                                {{ paymentLabel(list.sales_order?.payment_mode) }}
+                                            </span>
+                                        </td>
                                         <td class="text-center">{{ list.sales_order?.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.sales_rep?.fullname || '-' }}</td>
                                         <td class="text-center">{{ list.invoice_date }}</td>
@@ -222,7 +228,7 @@
                                     </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="10">
+                                    <td colspan="11">
                                         <div class="sales-empty-state">
                                             <i class="ri-inbox-line"></i>
                                             <p>No invoices found.</p>
@@ -248,6 +254,7 @@
 
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
+import { paymentTone, paymentLabel } from '@/Shared/utils/paymentType.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
@@ -293,6 +300,8 @@ export default {
         this.fetchMetrics();
     },
     methods: {
+        paymentTone,
+        paymentLabel,
         // Tone comes from what the status means — see Shared/utils/statusTone.js
         statusTone,
 

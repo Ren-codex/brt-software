@@ -73,6 +73,9 @@ class ReceiptResource extends JsonResource
             'sales_order' => $salesOrder ? [
                 'id' => $salesOrder->id,
                 'so_number' => $salesOrder->so_number,
+                // How the sale settles, as distinct from the receipt's own
+                // payment_mode, which is how this money arrived.
+                'payment_mode' => $salesOrder->payment_mode,
                 'order_date' => optional($salesOrder->order_date)->format('Y-m-d'),
                 'status' => $salesOrder->status,
                 'customer' => $salesOrder->customer,

@@ -1,0 +1,27 @@
+// How a sale settles — cash at the counter, cash at the door, or on terms.
+// Global because the same pill appears on sales orders, AR invoices and
+// receipts, and the three must never drift apart.
+.payment-pill {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+
+    &.is-cash {
+        background: rgba(61, 141, 122, 0.12);
+        color: #2f6f60;
+    }
+
+    &.is-cod {
+        background: #e8f1ff;
+        color: #2456a6;
+    }
+
+    &.is-credit {
+        background: #fef3c7;
+        color: #92400e;
+    }
+}
