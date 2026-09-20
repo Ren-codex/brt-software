@@ -32,7 +32,9 @@
                         :max="today"
                         :min="order?.order_date_raw"
                     />
-                    <small class="delivery-date-hint">The day the goods arrived, not the day you record it.</small>
+                    <small class="delivery-date-hint">
+                        The day the goods arrived, not the day you record it. Taken from the order's delivery date.
+                    </small>
                 </div>
 
                 <div v-if="form.errors.delivered_at" class="error-alert">
@@ -146,9 +148,7 @@ export default {
             this.order = order;
             this.items = Array.isArray(order?.items) ? order.items : [];
             this.form.clearErrors();
-            // Most deliveries are recorded the same day or the morning after,
-            // so today is the useful default and the date stays editable.
-            this.form.delivered_at = this.today;
+            this.form.delivered_at = this.defaultDeliveredAt(order);
             // Prefilled with the full quantity: accepting everything, the common
             // case, stays a single click.
             this.form.accepted_quantities = {};
@@ -157,6 +157,19 @@ export default {
                 this.form.accepted_quantities[item.id] = Number(item.quantity);
             });
             this.showModal = true;
+        },
+        /**
+         * The date planned when the order was encoded is usually the day it
+         * actually arrived, so it is the default. A plan still in the future
+         * cannot be a delivery that happened, and nothing can predate the
+         * order, so either way it falls back to today.
+         */
+        defaultDeliveredAt(order) {
+            const planned = order?.delivery_date_raw;
+            if (!planned) return this.today;
+            if (planned > this.today) return this.today;
+            if (order?.order_date_raw && planned < order.order_date_raw) return this.today;
+            return planned;
         },
         isShort(item) {
             return Number(this.form.accepted_quantities[item.id] ?? item.quantity) < Number(item.quantity);
