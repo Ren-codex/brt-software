@@ -101,6 +101,19 @@ class FieldCollectionsListTest extends TestCase
         $this->assertTrue($this->rows()[0]['is_external']);
     }
 
+    public function test_a_collection_with_nobody_named_still_shows(): void
+    {
+        // Money nobody is accountable for is exactly what must not fall off
+        // this list.
+        $receipt = $this->pendingReceipt($this->holder('Ana'), now()->toDateString());
+        $receipt->update(['held_by_employee_id' => null]);
+
+        $rows = $this->rows();
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('Unassigned', $rows[0]['holder']);
+    }
+
     public function test_a_remitted_receipt_drops_off_the_list(): void
     {
         $receipt = $this->pendingReceipt($this->holder('Ana'), now()->toDateString());

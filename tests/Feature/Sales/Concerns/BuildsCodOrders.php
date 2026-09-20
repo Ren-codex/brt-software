@@ -3,6 +3,7 @@
 namespace Tests\Feature\Sales\Concerns;
 
 use App\Models\Customer;
+use App\Models\Employee;
 use App\Models\InventoryStocks;
 use App\Models\ListBrand;
 use App\Models\ListRole;
@@ -30,6 +31,8 @@ trait BuildsCodOrders
     private Product $product;
 
     private Customer $customer;
+
+    private Employee $fixtureDriver;
 
     private function seedCodFixture(): void
     {
@@ -75,6 +78,12 @@ trait BuildsCodOrders
             'name' => 'ABC Trading', 'address' => 'Zamboanga City',
             'contact_number' => '09170000000', 'is_active' => 1,
             'added_by_id' => $this->user->id,
+        ]);
+
+        // COD cannot be encoded without someone to carry the goods.
+        $this->fixtureDriver = Employee::create([
+            'firstname' => 'Fixture', 'lastname' => 'Driver', 'mobile' => '09170000009',
+            'birthdate' => '1990-01-01', 'sex' => 'Male', 'religion' => 'None',
         ]);
     }
 
@@ -142,6 +151,7 @@ trait BuildsCodOrders
             'payment_mode' => 'COD',
             'delivery_location' => 'Zamboanga City',
             'delivery_date' => now()->addDays(2)->toDateString(),
+            'driver_id' => $this->fixtureDriver->id,
             'items' => [[
                 'product_id' => $this->product->id, 'quantity' => 2, 'price' => 1500,
                 'price_type' => 'retail', 'batch_code' => 'BATCH-001', 'discount_per_unit' => 0,

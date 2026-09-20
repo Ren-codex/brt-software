@@ -104,7 +104,6 @@ class RemittanceClass
     {
         return Receipt::with(['heldBy', 'customer', 'arInvoice.sales_order'])
             ->whereNull('remittance_id')
-            ->whereNotNull('held_by_employee_id')
             ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
             ->orderBy('receipt_date')
             ->get()

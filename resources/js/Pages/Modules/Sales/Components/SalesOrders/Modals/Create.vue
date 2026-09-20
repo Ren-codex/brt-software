@@ -84,7 +84,9 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="driver_id" class="form-label">Assigned To (Driver)</label>
+                                    <label for="driver_id" class="form-label">
+                                        Assigned To (Driver)<span v-if="isCod" class="text-danger">*</span>
+                                    </label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
                                         <Multiselect
@@ -1275,6 +1277,9 @@ export default {
             if (paymentMode) return 'Cash Sales';
             return null;
         },
+        isCod() {
+            return String(this.form.payment_mode || '').trim().toLowerCase() === 'cod';
+        },
         selectedEditablePaymentType() {
             const paymentMode = String(this.form.payment_mode || '').trim().toLowerCase();
             if (['credit', 'credit sales'].includes(paymentMode)) return 'Credit';
@@ -1597,9 +1602,13 @@ export default {
             if (!this.isWalkInCustomer && !String(this.form.delivery_location || '').trim()) {
                 errors.delivery_location = 'Location is required.';
             }
-            // COD falls due on the day the driver delivers, so that day has to be known.
-            if (String(this.form.payment_mode || '').trim().toLowerCase() === 'cod' && !this.form.delivery_date) {
+            // COD falls due on the day the driver delivers, so that day has to be
+            // known — and so does who is taking the goods out.
+            if (this.isCod && !this.form.delivery_date) {
                 errors.delivery_date = 'Delivery date is required for COD.';
+            }
+            if (this.isCod && !this.form.driver_id) {
+                errors.driver_id = 'A driver is required for COD.';
             }
             if (!this.form.items.length) {
                 errors.items = 'Add at least one item before reviewing the order.';

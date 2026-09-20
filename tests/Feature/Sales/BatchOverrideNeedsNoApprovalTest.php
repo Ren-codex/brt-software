@@ -30,6 +30,8 @@ class BatchOverrideNeedsNoApprovalTest extends TestCase
         $payload = $this->payload([
             'payment_mode' => 'Cash',
             'delivery_date' => null,
+            // A counter sale, so it settles and closes on save.
+            'driver_id' => null,
             'payment_lines' => [[
                 'payment_mode' => 'Cash',
                 'payment_amount' => 3000,

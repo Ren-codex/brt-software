@@ -52,6 +52,8 @@ class ClosingNeedsDeliveryTest extends TestCase
         return $this->payload(array_merge([
             'payment_mode' => 'Cash',
             'delivery_date' => null,
+            // A counter sale has neither: the customer carries it out.
+            'driver_id' => null,
             'payment_lines' => [['payment_mode' => 'Cash', 'payment_amount' => 3000]],
         ], $overrides));
     }

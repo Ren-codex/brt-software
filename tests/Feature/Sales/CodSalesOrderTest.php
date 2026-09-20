@@ -100,6 +100,17 @@ class CodSalesOrderTest extends TestCase
         $this->assertSame(0, SalesOrder::count());
     }
 
+    public function test_cod_requires_a_driver_to_carry_the_goods(): void
+    {
+        // Somebody has to take the sacks out and bring the cash back. Naming
+        // them is what makes the money traceable to a person.
+        $this->actingAs($this->user)
+            ->post('/sales-orders', $this->payload(['driver_id' => null]))
+            ->assertSessionHasErrors('driver_id');
+
+        $this->assertSame(0, SalesOrder::count());
+    }
+
     public function test_a_credit_limit_does_not_block_a_cod_order(): void
     {
         // Nothing is extended: the customer pays the driver at the door.

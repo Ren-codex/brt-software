@@ -81,7 +81,9 @@ class SalesOrderRequest extends FormRequest
                 'order_date' => 'required|date',
                 'customer_id' => 'nullable|exists:customers,id',
                 'sales_rep_id' => 'nullable|exists:employees,id',
-                'driver_id' => 'nullable|exists:employees,id',
+                // COD sends goods out to be paid for at the door, so somebody
+                // has to carry them and bring the money back.
+                'driver_id' => 'nullable|exists:employees,id|required_if:payment_mode,COD',
                 'payment_mode' => 'required|string',
                 'due_date' => 'nullable|date|required_if:payment_mode,Credit',
                 // Planned dates, both optional. Delivering before shipping is
