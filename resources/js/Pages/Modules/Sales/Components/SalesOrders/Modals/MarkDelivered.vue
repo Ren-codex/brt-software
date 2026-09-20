@@ -22,6 +22,23 @@
                     invoice drops to match, so the driver collects the right amount.
                 </p>
 
+                <div class="delivery-date-row">
+                    <label class="delivery-date-label" for="delivered_at">Date delivered</label>
+                    <input
+                        id="delivered_at"
+                        type="date"
+                        class="form-control delivery-date-input"
+                        v-model="form.delivered_at"
+                        :max="today"
+                        :min="order?.order_date_raw"
+                    />
+                    <small class="delivery-date-hint">The day the goods arrived, not the day you record it.</small>
+                </div>
+
+                <div v-if="form.errors.delivered_at" class="error-alert">
+                    <i class="ri-error-warning-line me-1"></i> {{ form.errors.delivered_at }}
+                </div>
+
                 <div v-if="form.errors.accepted_quantities" class="error-alert">
                     <i class="ri-error-warning-line me-1"></i> {{ form.errors.accepted_quantities }}
                 </div>
@@ -100,12 +117,16 @@ export default {
             items: [],
             form: useForm({
                 action: 'mark-delivered',
+                delivered_at: null,
                 accepted_quantities: {},
                 refusal_reasons: {},
             }),
         };
     },
     computed: {
+        today() {
+            return new Date().toISOString().slice(0, 10);
+        },
         acceptedTotal() {
             return this.items.reduce((total, item) => {
                 const accepted = Number(this.form.accepted_quantities[item.id] ?? item.quantity);
@@ -125,6 +146,9 @@ export default {
             this.order = order;
             this.items = Array.isArray(order?.items) ? order.items : [];
             this.form.clearErrors();
+            // Most deliveries are recorded the same day or the morning after,
+            // so today is the useful default and the date stays editable.
+            this.form.delivered_at = this.today;
             // Prefilled with the full quantity: accepting everything, the common
             // case, stays a single click.
             this.form.accepted_quantities = {};
@@ -159,6 +183,31 @@ export default {
 </script>
 
 <style scoped>
+.delivery-date-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.delivery-date-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #16322e;
+    margin: 0;
+}
+
+.delivery-date-input {
+    width: auto;
+    min-width: 165px;
+}
+
+.delivery-date-hint {
+    color: #6b8c85;
+    font-size: 0.78rem;
+}
+
 .delivery-intro {
     color: #6b8c85;
     font-size: 0.9rem;

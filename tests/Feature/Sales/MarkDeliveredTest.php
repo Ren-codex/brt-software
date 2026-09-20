@@ -107,6 +107,52 @@ class MarkDeliveredTest extends TestCase
         $this->assertNotContains($order->id, collect($response->json('data'))->pluck('id')->all());
     }
 
+    public function test_the_delivery_date_can_be_backdated(): void
+    {
+        // The driver reports back the next morning with yesterday's receipt.
+        $this->postCod(['order_date' => now()->subDays(3)->toDateString()])
+            ->assertSessionHasNoErrors();
+        $order = SalesOrder::firstOrFail();
+        $yesterday = now()->subDay()->toDateString();
+
+        $this->markDelivered($order, ['delivered_at' => $yesterday])->assertSessionHasNoErrors();
+
+        $this->assertSame($yesterday, $order->fresh()->delivered_at->toDateString());
+    }
+
+    public function test_without_a_date_it_stamps_now(): void
+    {
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::firstOrFail();
+
+        $this->markDelivered($order)->assertSessionHasNoErrors();
+
+        $this->assertSame(now()->toDateString(), $order->fresh()->delivered_at->toDateString());
+    }
+
+    public function test_a_delivery_cannot_be_dated_in_the_future(): void
+    {
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::firstOrFail();
+
+        $this->markDelivered($order, ['delivered_at' => now()->addDay()->toDateString()])
+            ->assertSessionHasErrors('delivered_at');
+
+        $this->assertNull($order->fresh()->delivered_at);
+    }
+
+    public function test_a_delivery_cannot_predate_the_order(): void
+    {
+        // Goods cannot arrive before they were sold.
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::firstOrFail();
+
+        $this->markDelivered($order, ['delivered_at' => now()->subDays(5)->toDateString()])
+            ->assertSessionHasErrors('delivered_at');
+
+        $this->assertNull($order->fresh()->delivered_at);
+    }
+
     public function test_a_cancelled_order_cannot_be_marked_delivered(): void
     {
         $this->postCod()->assertSessionHasNoErrors();

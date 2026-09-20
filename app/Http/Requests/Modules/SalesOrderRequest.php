@@ -65,6 +65,9 @@ class SalesOrderRequest extends FormRequest
         else if($action == 'mark-delivered'){
             return [
                 'id' => 'nullable|exists:sales_orders,id',
+                // The day the goods actually arrived, which is often the day
+                // before the office hears about it. Never a future one.
+                'delivered_at' => 'nullable|date|before_or_equal:today',
                 'accepted_quantities' => 'nullable|array',
                 'accepted_quantities.*' => 'integer|min:0',
                 'refusal_reasons' => 'nullable|array',

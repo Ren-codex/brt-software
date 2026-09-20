@@ -644,7 +644,7 @@ class SalesOrderClass
 
         if (! $data->delivered_at) {
             $data->update([
-                'delivered_at' => now(),
+                'delivered_at' => $this->resolveDeliveredAt($request, $data),
                 'delivered_by_id' => auth()->user()->id,
             ]);
 
@@ -662,6 +662,28 @@ class SalesOrderClass
             'info' => 'This order is marked delivered.',
             'status' => true,
         ];
+    }
+
+    /**
+     * When the goods actually arrived. The office often hears the next morning,
+     * so the date is theirs to set; today keeps its real time, a backdated one
+     * is stored as that day. Goods cannot arrive before they were sold.
+     */
+    private function resolveDeliveredAt($request, SalesOrder $data)
+    {
+        if (blank($request->delivered_at)) {
+            return now();
+        }
+
+        $delivered = Carbon::parse($request->delivered_at);
+
+        if ($data->order_date && $delivered->lt(Carbon::parse($data->order_date)->startOfDay())) {
+            throw ValidationException::withMessages([
+                'delivered_at' => 'A delivery cannot be dated before the order itself.',
+            ]);
+        }
+
+        return $delivered->isToday() ? now() : $delivered->startOfDay();
     }
 
     /**
