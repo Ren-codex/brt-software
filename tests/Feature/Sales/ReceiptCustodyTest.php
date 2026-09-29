@@ -97,7 +97,15 @@ class ReceiptCustodyTest extends TestCase
         $receipt = Receipt::firstOrFail();
         $this->assertSame($driver->id, $receipt->held_by_employee_id);
 
+        $this->grantReceiptAccess($this->user);
         $this->grantRemittanceAccess($this->user);
+
+        // The rep can only remit what they are holding, so the driver hands
+        // it over first.
+        $rep = Employee::where('firstname', 'Bea')->firstOrFail();
+        $this->actingAs($this->user)
+            ->put('/receipts/'.$receipt->id.'/turn-over', ['held_by_employee_id' => $rep->id])
+            ->assertSessionHasNoErrors();
         // The remittance number comes from the series table, which the test
         // database has no row for.
         \App\Models\Series::firstOrCreate(['slug' => 'remittance'], [

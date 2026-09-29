@@ -94,6 +94,30 @@ class RemittanceClass
     }
 
     /**
+     * Pending collections this employee is answerable for.
+     *
+     * Whoever is holding the money answers for it: a driver's COD cash is the
+     * driver's until they hand it over, not the rep's because their name is on
+     * the order. Receipts recorded before custody was tracked have no holder,
+     * so they stay with the order's rep rather than being stranded.
+     */
+    private function heldByScope($query, int $employeeId)
+    {
+        return $query->whereNull('remittance_id')
+            ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
+            ->where(function ($q) {
+                $q->whereNull('receipt_type')->orWhere('receipt_type', '!=', 'refund');
+            })
+            ->where(function ($q) use ($employeeId) {
+                $q->where('held_by_employee_id', $employeeId)
+                    ->orWhere(function ($legacy) use ($employeeId) {
+                        $legacy->whereNull('held_by_employee_id')
+                            ->whereHas('arInvoice.sales_order', fn ($so) => $so->where('sales_rep_id', $employeeId));
+                    });
+            });
+    }
+
+    /**
      * Money collected but not yet turned in, by the person carrying it.
      *
      * A city run clears the same afternoon, so anything with days on it is
@@ -224,16 +248,7 @@ class RemittanceClass
         $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         if ($employeeId) {
-            $ownPendingReceiptIds = Receipt::whereNull('remittance_id')
-                ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
-                ->where(function ($query) {
-                    $query->whereNull('receipt_type')
-                        ->orWhere('receipt_type', '!=', 'refund');
-                })
-                ->whereHas('arInvoice.sales_order', function ($q) use ($employeeId) {
-                    $q->where('sales_rep_id', $employeeId);
-                })
-                ->pluck('id');
+            $ownPendingReceiptIds = $this->heldByScope(Receipt::query(), $employeeId)->pluck('id');
 
             if ($receiptIds->diff($ownPendingReceiptIds)->isNotEmpty()) {
                 throw ValidationException::withMessages([
@@ -418,21 +433,7 @@ class RemittanceClass
             return response()->json(['total_amount' => 0, 'receipt_count' => 0]);
         }
 
-        $receipts = Receipt::whereNull('remittance_id')
-            ->whereHas('status', function ($q) {
-                $q->where('slug', 'pending');
-            })
-            ->where(function ($query) {
-                $query->whereNull('receipt_type')
-                    ->orWhere('receipt_type', '!=', 'refund');
-            })
-            ->whereHas('arInvoice.sales_order', function ($q) use ($employee) {
-                $q->where(function ($salesOrderQuery) use ($employee) {
-                    $salesOrderQuery
-                        ->where('added_by_id', $employee->id)
-                        ->orWhere('sales_rep_id', $employee->id);
-                });
-            })
+        $receipts = $this->heldByScope(Receipt::query(), $employee->id)
             ->selectRaw('COUNT(*) as receipt_count, SUM(amount_paid) as total_amount')
             ->first();
 
