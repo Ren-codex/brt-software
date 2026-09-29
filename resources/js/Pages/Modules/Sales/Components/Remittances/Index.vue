@@ -2,6 +2,8 @@
     <div>
         <template v-if="currentView === 'list'">
             <div>
+                <FieldCollections :dropdowns="dropdowns" ref="fieldCollections" />
+
                 <div class="col-md-12 mb-4">
                     <div class="library-card">
                         <div class="library-card-header">
@@ -296,8 +298,6 @@
                     </div>
                 </div>
             </div>
-            <FieldCollections :dropdowns="dropdowns" ref="fieldCollections" />
-
             <Create @add="fetch" ref="create" />
         </template>
 

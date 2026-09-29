@@ -158,7 +158,11 @@ export default {
 
 <style scoped>
 .field-collections {
-    padding: 1rem 0;
+    background: #fff;
+    border: 1px solid #c4d9d2;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
 .fc-head {
