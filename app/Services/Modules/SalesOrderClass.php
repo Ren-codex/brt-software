@@ -135,6 +135,103 @@ class SalesOrderClass
     }
 
 
+    /**
+     * One board for the life of a delivery, in the order the day runs: out for
+     * delivery, delivered but unpaid, collected but still in someone's hands,
+     * handed in but not yet counted.
+     *
+     * Every column is the same facts the tabs show, arranged so a rep does not
+     * have to visit four screens to find what needs chasing. Scoped like every
+     * other sales list: your own orders, or everything for an administrator.
+     */
+    public function deliveryBoard($request)
+    {
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId(Auth::user());
+
+        $mine = function ($query) use ($employeeId) {
+            return $query->when($employeeId, function ($q) use ($employeeId) {
+                $q->where(function ($inner) use ($employeeId) {
+                    $inner->where('sales_rep_id', $employeeId)
+                        ->orWhere('added_by_id', Auth::id() ?? -1);
+                });
+            });
+        };
+
+        $days = fn ($date) => $date ? (int) Carbon::parse($date)->startOfDay()->diffInDays(now()->startOfDay()) : null;
+
+        // Goods still to go: promised to travel, and not recorded as arrived.
+        $outForDelivery = $mine(SalesOrder::with('customer', 'driver')
+            ->whereNull('delivered_at')
+            ->whereDoesntHave('status', fn ($q) => $q->where('slug', 'cancelled'))
+            ->where(function ($q) {
+                $q->whereNotNull('driver_id')->orWhereNotNull('delivery_date');
+            }))
+            ->orderByRaw('delivery_date is null, delivery_date')
+            ->get()
+            ->map(fn ($order) => [
+                'id' => $order->id,
+                'reference' => $order->so_number,
+                'customer' => optional($order->customer)->name,
+                'amount' => (float) $order->total_amount,
+                'person' => optional($order->driver)->fullname,
+                'due' => optional($order->delivery_date)->toDateString(),
+                'days' => $days($order->delivery_date),
+            ]);
+
+        // Delivered, nothing collected: the moment to ask the driver.
+        $toCollect = $mine(SalesOrder::with('customer', 'driver', 'arInvoices')
+            ->whereNotNull('delivered_at')
+            ->whereDoesntHave('status', fn ($q) => $q->whereIn('slug', ['cancelled', 'sales-returned']))
+            ->whereHas('arInvoices', fn ($q) => $q->where('balance_due', '>', 0)))
+            ->orderBy('delivered_at')
+            ->get()
+            ->map(function ($order) use ($days) {
+                $invoice = $order->arInvoices->first();
+
+                return [
+                    'id' => $order->id,
+                    'reference' => $order->so_number,
+                    'customer' => optional($order->customer)->name,
+                    'amount' => (float) optional($invoice)->balance_due,
+                    'person' => optional($order->driver)->fullname,
+                    'invoice_id' => optional($invoice)->id,
+                    'days' => $days($order->delivered_at),
+                ];
+            });
+
+        // Collected, not handed in.
+        $withDriver = Receipt::with('heldBy', 'customer', 'arInvoice.sales_order')
+            ->whereNull('remittance_id')
+            ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('arInvoice.sales_order', function ($so) use ($employeeId) {
+                    $so->where(function ($inner) use ($employeeId) {
+                        $inner->where('sales_rep_id', $employeeId)
+                            ->orWhere('added_by_id', Auth::id() ?? -1);
+                    });
+                });
+            })
+            ->orderBy('receipt_date')
+            ->get()
+            ->map(fn ($receipt) => [
+                'id' => $receipt->id,
+                'reference' => $receipt->receipt_number,
+                'customer' => optional($receipt->customer)->name,
+                'amount' => (float) $receipt->amount_paid,
+                'person' => optional($receipt->heldBy)->fullname ?? 'Unassigned',
+                'mode' => $receipt->payment_mode,
+                'confirmed' => ! in_array(strtolower((string) $receipt->payment_mode), ['check', 'cheque', 'bank transfer'], true)
+                    || ! is_null($receipt->confirmed_at),
+                'days' => $days($receipt->receipt_date),
+            ]);
+
+        return response()->json([
+            'out_for_delivery' => $outForDelivery->values(),
+            'to_collect' => $toCollect->values(),
+            'with_driver' => $withDriver->values(),
+        ]);
+    }
+
     public function save($request){
 
         // Validate stock availability for all items

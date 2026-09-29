@@ -38,6 +38,9 @@ class SalesOrderController extends Controller
             case 'dashboard':
                 return $this->sales_order->dashboard();
             break;
+            case 'delivery-board':
+                return $this->sales_order->deliveryBoard($request);
+            break;
             case 'stock':
                 return $this->sales_order->stockAvailability();
             break;

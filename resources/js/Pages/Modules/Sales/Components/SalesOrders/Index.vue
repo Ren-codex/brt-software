@@ -1,5 +1,8 @@
 <template>
     <div>
+    <DeliveryBoard v-if="showBoard" @back="onBoardClosed" />
+
+    <template v-else>
         <div class="library-card">
             <div class="library-card-header">
                     <div class="d-flex align-items-center gap-3">
@@ -15,6 +18,9 @@
                         <span v-if="lastUpdatedAt" class="poll-indicator" :title="'This list refreshes automatically'">
                             <i class="ri-refresh-line"></i> {{ lastUpdatedLabel() }}
                         </span>
+                        <button class="acct-btn-secondary" @click="showBoard = true">
+                            <i class="ri-truck-line me-1"></i>Deliveries
+                        </button>
                         <button v-if="can('sales', 'sales_orders', 'encoder')" class="acct-btn-primary" @click="openCreate">
                             <i class="ri-add-line me-1"></i>Create Order
                         </button>
@@ -191,7 +197,8 @@
                         :links="links" :pagination="meta" />
                 </div>
             </div>
-    </div>
+    </template>
+
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
     <MarkDelivered @delivered="fetch()" ref="markDelivered"/>
@@ -200,6 +207,7 @@
     
 
     <ViewOrder :order="viewingOrder" :dropdowns="dropdowns" @close="viewingOrder = null" />
+    </div>
 </template>
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
@@ -210,6 +218,7 @@ import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Cancel from './Modals/Cancel.vue';
 import MarkDelivered from './Modals/MarkDelivered.vue';
+import DeliveryBoard from './DeliveryBoard.vue';
 import Create from './Modals/Create.vue';
 import ViewOrder from './Modals/ViewOrder.vue';
 import Adjustment from './Modals/Adjustment.vue';
@@ -219,12 +228,13 @@ import { recordLockMixin } from '@/Shared/recordLock.js';
 
 
 export default {
-    components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, MarkDelivered, Adjustment, TableLoadingRow },
+    components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, MarkDelivered, DeliveryBoard, Adjustment, TableLoadingRow },
     mixins: [pollingMixin, recordLockMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
         return {
             currentUrl: window.location.origin,
+            showBoard: false,
             currentPageUrl: null,
             loading: false,
             lists: [],
@@ -395,6 +405,10 @@ export default {
         },
         paymentTone,
         paymentLabel,
+        onBoardClosed() {
+            this.showBoard = false;
+            this.fetch();
+        },
         selectTab(tab) {
             this.filter.status = tab.slug;
             this.filter.delivery = tab.delivery;
