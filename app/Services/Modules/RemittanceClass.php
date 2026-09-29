@@ -126,9 +126,24 @@ class RemittanceClass
      */
     public function fieldCollections($request)
     {
+        // null = a sales administrator, unrestricted. Any other value filters,
+        // and -1 matches nothing: a user with no employee record sees no one's
+        // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId(Auth::user());
+
         return Receipt::with(['heldBy', 'customer', 'arInvoice.sales_order'])
             ->whereNull('remittance_id')
             ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
+            // A rep sees their own orders, including the money a driver is
+            // still carrying for them — that is theirs to chase.
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('arInvoice.sales_order', function ($so) use ($employeeId) {
+                    $so->where(function ($inner) use ($employeeId) {
+                        $inner->where('sales_rep_id', $employeeId)
+                            ->orWhere('added_by_id', Auth::id() ?? -1);
+                    });
+                });
+            })
             ->orderBy('receipt_date')
             ->get()
             ->map(function ($receipt) {
