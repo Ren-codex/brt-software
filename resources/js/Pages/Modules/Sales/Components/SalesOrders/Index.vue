@@ -263,10 +263,13 @@ export default {
                 // Goods outstanding, not money: a paid order can still be sitting
                 // in the warehouse, so this tab cuts across every status.
                 { key: 'undelivered', label: 'Undelivered', slug: null, delivery: 'undelivered' },
+                // The mirror image: goods delivered, money not in. Oldest
+                // delivery first, because that is who to ask about first.
+                { key: 'to-collect', label: 'To Collect', slug: null, delivery: 'to-collect' },
             ];
         },
         activeTab() {
-            if (this.filter.delivery === 'undelivered') return 'undelivered';
+            if (this.filter.delivery) return this.filter.delivery;
             return this.filter.status || 'all';
         },
     },

@@ -107,6 +107,15 @@ class SalesOrderClass
                 $query->whereNull('delivered_at')
                     ->whereDoesntHave('status', fn ($q) => $q->where('slug', 'cancelled'));
             })
+            // The other half: goods with the customer and nothing collected.
+            // Money may be in a driver's hands with nobody having recorded it,
+            // which is exactly when to ask them.
+            ->when($request->delivery === 'to-collect', function ($query) {
+                $query->whereNotNull('delivered_at')
+                    ->whereDoesntHave('status', fn ($q) => $q->whereIn('slug', ['cancelled', 'sales-returned']))
+                    ->whereHas('arInvoices', fn ($q) => $q->where('balance_due', '>', 0))
+                    ->orderBy('delivered_at');
+            })
             ->when($request->status_id, function ($query, $status_id) {
                 $query->where('status_id', $status_id);
             })

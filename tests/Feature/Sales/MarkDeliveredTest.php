@@ -95,6 +95,49 @@ class MarkDeliveredTest extends TestCase
         $this->assertNotContains($delivered->id, $ids);
     }
 
+    public function test_to_collect_lists_delivered_orders_still_owing(): void
+    {
+        // Goods with the customer, nothing recorded against the invoice: the
+        // moment to ask the driver what happened.
+        $this->postCod()->assertSessionHasNoErrors();
+        $delivered = SalesOrder::firstOrFail();
+        $this->markDelivered($delivered)->assertSessionHasNoErrors();
+
+        $this->postCod(['delivery_date' => now()->addDays(4)->toDateString()])->assertSessionHasNoErrors();
+        $stillOut = SalesOrder::where('id', '!=', $delivered->id)->firstOrFail();
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/sales-orders?option=lists&count=20&delivery=to-collect');
+
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($delivered->id, $ids, 'Delivered and unpaid belongs here.');
+        $this->assertNotContains($stillOut->id, $ids, 'Not delivered yet is the other list.');
+    }
+
+    public function test_a_collected_order_drops_off_to_collect(): void
+    {
+        $this->grantArInvoiceAccess($this->user);
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::firstOrFail();
+        $this->markDelivered($order)->assertSessionHasNoErrors();
+
+        $invoice = \App\Models\ArInvoice::firstOrFail();
+        $this->actingAs($this->user)->put('/ar-invoices/'.$invoice->id, [
+            'id' => $invoice->id,
+            'option' => 'payment',
+            'balance_due' => (float) $invoice->balance_due,
+            'amount_paid' => (float) $invoice->balance_due,
+            'payment_date' => now()->toDateString(),
+            'payment_mode' => 'Cash',
+        ])->assertSessionHasNoErrors();
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/sales-orders?option=lists&count=20&delivery=to-collect');
+
+        $this->assertNotContains($order->id, collect($response->json('data'))->pluck('id')->all());
+    }
+
     public function test_a_cancelled_order_is_not_on_the_undelivered_worklist(): void
     {
         $this->postCod()->assertSessionHasNoErrors();
