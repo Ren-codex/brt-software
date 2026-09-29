@@ -2,8 +2,6 @@
     <div>
         <template v-if="currentView === 'list'">
             <div>
-                <FieldCollections :dropdowns="dropdowns" ref="fieldCollections" />
-
                 <div class="col-md-12 mb-4">
                     <div class="library-card">
                         <div class="library-card-header">
@@ -31,10 +29,17 @@
                                         <strong class="cash-on-hand-value">{{ formatCurrency(undepositedSummary.total_amount) }}</strong>
                                         <span class="cash-on-hand-sub">{{ undepositedSummary.count }} liquidated remittance{{ undepositedSummary.count !== 1 ? 's' : '' }} awaiting deposit</span>
                                     </div>
-                                    <button class="acct-btn-secondary" @click="currentView = 'summary'">
-                                        <i class="ri-bar-chart-grouped-line"></i>
-                                        Pending Collections
-                                    </button>
+                                    <!-- The two views of money not yet remitted, kept together -->
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="acct-btn-secondary" @click="currentView = 'field'">
+                                            <i class="ri-truck-line"></i>
+                                            Cash in the Field
+                                        </button>
+                                        <button class="acct-btn-secondary" @click="currentView = 'summary'">
+                                            <i class="ri-bar-chart-grouped-line"></i>
+                                            Pending Collections
+                                        </button>
+                                    </div>
                                     <button v-if="can('sales', 'remittances', 'encoder')" class="acct-btn-primary" @click="openCreate">
                                         <i class="ri-add-line"></i>
                                         Prepare Remittance
@@ -311,6 +316,12 @@
 
         <SummaryView
             v-else-if="currentView === 'summary'"
+            @back="currentView = 'list'"
+        />
+
+        <FieldCollections
+            v-else-if="currentView === 'field'"
+            :dropdowns="dropdowns"
             @back="currentView = 'list'"
         />
     </div>

@@ -8,9 +8,14 @@
                     anything with days on it is worth a phone call.
                 </p>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" @click="fetch" :disabled="loading">
-                <i class="ri-refresh-line me-1"></i>{{ loading ? 'Loading...' : 'Refresh' }}
-            </button>
+            <div class="fc-head-actions">
+                <button class="btn btn-sm btn-outline-secondary" @click="fetch" :disabled="loading">
+                    <i class="ri-refresh-line me-1"></i>{{ loading ? 'Loading...' : 'Refresh' }}
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" @click="$emit('back')">
+                    <i class="ri-arrow-left-line me-1"></i>Back
+                </button>
+            </div>
         </div>
 
         <div v-if="error" class="fc-error">{{ error }}</div>
@@ -82,6 +87,7 @@ import axios from 'axios';
 
 export default {
     props: ['dropdowns'],
+    emits: ['back'],
     data() {
         return {
             rows: [],
@@ -163,6 +169,11 @@ export default {
     border-radius: 12px;
     padding: 1.1rem 1.25rem;
     margin-bottom: 1.5rem;
+}
+
+.fc-head-actions {
+    display: flex;
+    gap: 0.4rem;
 }
 
 .fc-head {
