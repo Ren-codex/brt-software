@@ -70,39 +70,10 @@ class SalesOrderController extends Controller
         }
     }
 
-    /**
-     * Is this credit sale actually deferring payment?
-     *
-     * Compared against today rather than the order date: the due date says when
-     * the money becomes collectible, and a backdated order picked as "due today"
-     * is still collectible today. A missing or unreadable date counts as
-     * deferred, so a payload that simply omits it cannot slip past the approval.
-     */
-    private function creditIsDeferred(mixed $dueDate): bool
-    {
-        if (blank($dueDate)) {
-            return true;
-        }
-
-        try {
-            return \Illuminate\Support\Carbon::parse($dueDate)->startOfDay()->isAfter(now()->startOfDay());
-        } catch (\Throwable) {
-            return true;
-        }
-    }
-
     public function store(SalesOrderRequest $request){
 
-        // A credit sale commits the business to collecting later, so somebody
-        // authorised for it approves with their own credentials. This replaces
-        // the "type CREDIT" box, which only ever existed in the browser.
-        //
-        // Due today is the exception: nothing is being deferred, so there is no
-        // commitment to approve.
-        if (\App\Models\SalesOrder::isTermCredit($request->payment_mode)
-            && $this->creditIsDeferred($request->input('due_date'))) {
-            $this->requireSupervisor($request, 'sales.credit_sale');
-        }
+        // A credit sale used to need a supervisor's credentials whenever it
+        // deferred payment. The customer's credit limit is the control now.
 
         $result = $this->handleTransaction(function () use ($request) {
             return $this->sales_order->save($request);

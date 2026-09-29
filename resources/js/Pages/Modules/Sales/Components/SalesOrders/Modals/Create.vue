@@ -715,13 +715,7 @@
                 </div>
                 <div>
                     <h4 class="mb-0">Credit Sales Verification</h4>
-                    <p class="header-subtitle mb-0">
-                        <template v-if="creditNeedsAuthorization">
-                            Step {{ creditStep }} of 2 —
-                            {{ creditStep === 1 ? 'Set payment terms' : 'Verify &amp; confirm' }}
-                        </template>
-                        <template v-else>Set payment terms</template>
-                    </p>
+                    <p class="header-subtitle mb-0">Set payment terms</p>
                 </div>
                 <button class="close-btn ms-auto" @click="closeCreditVerificationModal">
                     <i class="ri-close-line fs-20"></i>
@@ -729,13 +723,11 @@
             </div>
 
             <!-- Step 1: Credit Terms -->
-            <div v-if="creditStep === 1" class="modal-body p-4 payment-type-modal-body">
+            <div class="modal-body p-4 payment-type-modal-body">
                 <div class="payment-success-card text-start">
                     <div class="payment-section-heading payment-section-heading-sm">
-                        <span class="payment-section-kicker" v-if="creditNeedsAuthorization">Step 1 of 2</span>
                         <h5>Set credit terms</h5>
-                        <p v-if="creditNeedsAuthorization">Choose the due date before confirming this sale.</p>
-                        <p v-else>Payment is due today, so nothing is being deferred — no approval needed.</p>
+                        <p>Choose the due date, then confirm. The customer's credit limit still applies.</p>
                     </div>
 
                     <div class="credit-verification-summary">
@@ -791,86 +783,24 @@
             </div>
 
             <!-- Step 2: Verify & Confirm -->
-            <div v-if="creditStep === 2" class="modal-body p-4 payment-type-modal-body">
-                <div class="payment-success-card text-start">
-                    <div class="payment-section-heading payment-section-heading-sm">
-                        <span class="payment-section-kicker">Step 2 of 2</span>
-                        <h5>Confirm this credit sale</h5>
-                        <p>Review the details below. Confirming asks for an authorized approval.</p>
-                    </div>
-
-                    <div class="credit-verification-summary">
-                        <div class="credit-balance-callout" :class="{ 'has-balance': hasCustomerOutstandingBalance }">
-                            <span class="credit-balance-callout-label">Existing Credit Balance</span>
-                            <strong class="credit-balance-callout-value">{{ formatCurrency(customerOutstandingBalance) }}</strong>
-                        </div>
-                        <div class="payment-success-row">
-                            <span>Customer</span>
-                            <strong>{{ selectedCustomer?.name || 'Walk-in Customer' }}</strong>
-                        </div>
-                        <div class="payment-success-row">
-                            <span>Amount Due</span>
-                            <strong>{{ formatCurrency(grandTotal) }}</strong>
-                        </div>
-                        <div class="payment-success-row">
-                            <span>Due Date</span>
-                            <strong class="text-success">{{ form.due_date }}</strong>
-                        </div>
-                    </div>
-
-                    <span class="error-message" v-if="creditVerificationError">{{ creditVerificationError }}</span>
-                </div>
-            </div>
-
             <!-- Footer -->
             <div class="modal-footer bg-light border-0 p-4">
-                <!-- Step 1 footer -->
-                <template v-if="creditStep === 1">
-                    <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeCreditVerificationModal">
-                        <i class="ri-arrow-left-line me-2"></i>Back
-                    </button>
-                    <button
-                        v-if="creditNeedsAuthorization"
-                        type="button"
-                        class="btn btn-primary payment-modal-btn"
-                        @click="creditNextStep"
-                        :disabled="!form.due_date"
-                    >
-                        Next <i class="ri-arrow-right-line ms-2"></i>
-                    </button>
-                    <button
-                        v-else
-                        type="button"
-                        class="btn btn-primary payment-modal-btn"
-                        @click="submitCreditSale"
-                        :disabled="form.processing || !form.due_date"
-                    >
-                        <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
-                        <i class="ri-check-line me-2" v-else></i>
-                        {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
-                    </button>
-                </template>
-                <!-- Step 2 footer -->
-                <template v-if="creditStep === 2">
-                    <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="creditStep = 1" :disabled="form.processing">
-                        <i class="ri-arrow-left-line me-2"></i>Back
-                    </button>
-                    <button type="button" class="btn btn-primary payment-modal-btn" @click="submitCreditSale" :disabled="form.processing">
-                        <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
-                        <i class="ri-check-line me-2" v-else></i>
-                        {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
-                    </button>
-                </template>
+                <button type="button" class="btn btn-outline-secondary payment-modal-btn me-3" @click="closeCreditVerificationModal">
+                    <i class="ri-arrow-left-line me-2"></i>Back
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-primary payment-modal-btn"
+                    @click="submitCreditSale"
+                    :disabled="form.processing || !form.due_date"
+                >
+                    <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
+                    <i class="ri-check-line me-2" v-else></i>
+                    {{ form.processing ? 'Processing...' : 'Confirm Credit Sale' }}
+                </button>
             </div>
         </div>
     </div>
-
-    <SupervisorGate
-        ref="creditGate"
-        action="sales.credit_sale"
-        prompt="A credit sale commits the business to collecting later. Someone authorized for this must approve it."
-        @authorized="onCreditAuthorized"
-    />
 
     <div v-if="showBankTransferModal" class="modal-overlay active order-review-modal" @click.self="closeBankTransferModal">
         <div class="modal-container modal-md" @click.stop>
@@ -1082,7 +1012,6 @@
 </template>
 
 <script>
-import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 import { useForm } from '@inertiajs/vue3';
 import Multiselect from '@vueform/multiselect';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
@@ -1092,7 +1021,7 @@ import PaymentPromptModal from '@/Pages/Modules/Sales/Components/SalesOrders/Mod
 import PaymentLines from '@/Shared/Components/PaymentLines.vue';
 
 export default {
-    components: { SupervisorGate, TextInput, Item, Customer, PaymentPromptModal, Multiselect, PaymentLines },
+    components: { TextInput, Item, Customer, PaymentPromptModal, Multiselect, PaymentLines },
     emits: ['add'],
     props: ['dropdowns', 'user'],
     data() {
@@ -1137,14 +1066,12 @@ export default {
             showPaymentTypeModal: false,
             showCashReceivedModal: false,
             showCreditVerificationModal: false,
-            creditStep: 1,
             creditPreset: 1,
             showBankTransferModal: false,
             showChargeSuccessModal: false,
             showPrintPrompt: false,
             cashReceivedAmount: null,
             cashChargeError: null,
-            supervisorToken: '',
             creditVerificationError: null,
             bankTransferError: null,
             bankAccounts: [],
@@ -1312,9 +1239,6 @@ export default {
             const received = Number(this.cashReceivedAmount);
             return !Number.isFinite(received) || received < this.cashLineAmount;
         },
-        isCreditVerificationMatched() {
-            return !!this.supervisorToken;
-        },
         customerOutstandingBalance() {
             return Number(this.selectedCustomer?.outstanding_balance || 0);
         },
@@ -1327,9 +1251,6 @@ export default {
          * single step. The server applies the same rule -- this only decides
          * what the screen shows.
          */
-        creditNeedsAuthorization() {
-            return !this.form.due_date || this.form.due_date > this.today;
-        },
         today() {
             return new Date().toISOString().slice(0, 10);
         },
@@ -1489,14 +1410,11 @@ export default {
             this.showPaymentTypeModal = false;
             this.showCashReceivedModal = false;
             this.showCreditVerificationModal = false;
-            this.creditStep = 1;
             this.creditPreset = 1;
             this.showBankTransferModal = false;
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
-            this.supervisorToken = '';
-            this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
             this.resetBankTransferDetails();
             this.selectedReviewPaymentType = null;
@@ -1554,8 +1472,6 @@ export default {
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
-            this.supervisorToken = '';
-            this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
             this.resetBankTransferDetails();
             this.selectedReviewPaymentType = null;
@@ -1657,10 +1573,7 @@ export default {
                 this.form.payment_mode = 'Credit Sales';
                 this.showPaymentTypeModal = false;
                 this.showCreditVerificationModal = true;
-                this.supervisorToken = '';
-            this.$refs.creditGate?.reset();
                 this.creditVerificationError = null;
-                this.creditStep = 1;
                 this.creditPreset = 1;
                 this.setDueDatePreset(1);
                 return;
@@ -1739,8 +1652,6 @@ export default {
         },
         submitOrderCreation() {
             this.form.action = null;
-            // Only a credit sale needs one; the server asks for it only then.
-            this.form.supervisor_token = this.supervisorToken;
             this.form.post('/sales-orders', {
                 preserveScroll: true,
                 onSuccess: (response) => {
@@ -1822,7 +1733,6 @@ export default {
                     // The server spends the token before it reaches the failure,
                     // so it is gone whatever went wrong. Drop it, or a retry
                     // resubmits a spent one and is refused for the wrong reason.
-                    this.supervisorToken = '';
                     this.form.supervisor_token = '';
                 },
             });
@@ -1862,21 +1772,11 @@ export default {
                 return;
             }
             this.form.errors.due_date = null;
-
-            // Due today needs no approval, so there is no second step to go to.
-            if (!this.creditNeedsAuthorization) {
-                this.submitCreditSale();
-                return;
-            }
-
-            this.creditStep = 2;
+            this.submitCreditSale();
         },
         closeCreditVerificationModal() {
             this.showCreditVerificationModal = false;
-            this.supervisorToken = '';
-            this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
-            this.creditStep = 1;
             this.showPaymentTypeModal = true;
         },
         closeBankTransferModal() {
@@ -1884,26 +1784,12 @@ export default {
             this.bankTransferError = null;
             this.showPaymentTypeModal = true;
         },
-        /** Authorised: the sale the operator already confirmed now goes ahead. */
-        onCreditAuthorized(token) {
-            this.supervisorToken = token;
-            this.creditVerificationError = null;
-            this.placeCreditSale();
-        },
         submitCreditSale() {
             if (!this.form.due_date) {
                 this.form.errors.due_date = 'Please set a due date before continuing.';
                 return;
             }
             this.creditVerificationError = null;
-
-            // Ask for approval instead of placing the sale. Cancelling the gate
-            // leaves the order unplaced, which is the whole point of it.
-            if (this.creditNeedsAuthorization && !this.isCreditVerificationMatched) {
-                this.$refs.creditGate?.show();
-                return;
-            }
-
             this.placeCreditSale();
         },
         placeCreditSale() {
@@ -2049,8 +1935,6 @@ export default {
             this.showChargeSuccessModal = false;
             this.cashReceivedAmount = null;
             this.cashChargeError = null;
-            this.supervisorToken = '';
-            this.$refs.creditGate?.reset();
             this.creditVerificationError = null;
             this.resetBankTransferDetails();
             this.selectedReviewPaymentType = null;

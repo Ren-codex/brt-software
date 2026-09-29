@@ -22,12 +22,12 @@ use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
- * A credit sale asks for a supervisor's approval because it commits the
- * business to collecting later. Due today defers nothing, so there is nothing
- * to approve and the sale goes straight through.
+ * A credit sale used to need a supervisor's credentials whenever it deferred
+ * payment. That approval is gone: a credit sale saves like any other, and the
+ * customer's credit limit is what refuses one now.
  *
- * These post over HTTP on purpose: the rule lives in the controller, past the
- * FormRequest, and a service-level test would not reach it.
+ * These post over HTTP on purpose: the rule lived in the controller, past the
+ * FormRequest, and a service-level test would not have reached it.
  */
 class CreditSaleDueTodayTest extends TestCase
 {
@@ -94,19 +94,6 @@ class CreditSaleDueTodayTest extends TestCase
         return $user;
     }
 
-    private function supervisorToken(): string
-    {
-        $admin = User::factory()->create([
-            'username' => 'sup' . uniqid(),
-            'password' => Hash::make('secret-password'),
-        ]);
-        $role = ListRole::firstOrCreate(['name' => 'Administrator'], ['type' => 'role', 'definition' => 't', 'is_active' => true]);
-        UserRole::create(['user_id' => $admin->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $admin->id]);
-
-        return app(SupervisorAuthorization::class)
-            ->issue($admin->username, 'secret-password', 'sales.credit_sale', '127.0.0.1');
-    }
-
     private function payload(array $overrides = []): array
     {
         return array_merge([
@@ -122,7 +109,7 @@ class CreditSaleDueTodayTest extends TestCase
         ], $overrides);
     }
 
-    public function test_a_credit_sale_due_today_needs_no_authorization(): void
+    public function test_a_credit_sale_saves_without_any_approval(): void
     {
         $this->actingAs($this->user)
             ->post('/sales-orders', $this->payload())
@@ -131,45 +118,34 @@ class CreditSaleDueTodayTest extends TestCase
         $this->assertSame(1, SalesOrder::count());
     }
 
-    public function test_a_credit_sale_due_later_is_refused_without_authorization(): void
+    public function test_a_credit_sale_due_much_later_needs_no_approval_either(): void
     {
+        // A supervisor used to have to sign anything deferred. The credit limit
+        // is the control now.
         $this->actingAs($this->user)
-            ->post('/sales-orders', $this->payload(['due_date' => now()->addDay()->toDateString()]))
-            ->assertSessionHasErrors('supervisor_token');
-
-        $this->assertSame(0, SalesOrder::count());
-    }
-
-    public function test_a_credit_sale_due_later_goes_through_once_authorized(): void
-    {
-        $this->actingAs($this->user)
-            ->post('/sales-orders', $this->payload([
-                'due_date' => now()->addDays(30)->toDateString(),
-                'supervisor_token' => $this->supervisorToken(),
-            ]))
+            ->post('/sales-orders', $this->payload(['due_date' => now()->addDays(30)->toDateString()]))
             ->assertSessionHasNoErrors();
 
         $this->assertSame(1, SalesOrder::count());
     }
 
-    public function test_a_due_date_already_past_defers_nothing_either(): void
+    public function test_open_ended_credit_saves_too(): void
     {
-        // Money already collectible is not a fresh commitment, and backdating
-        // only makes the invoice overdue sooner -- it is no way around approval.
-        $this->actingAs($this->user)
-            ->post('/sales-orders', $this->payload(['due_date' => now()->subDay()->toDateString()]))
-            ->assertSessionHasNoErrors();
-
-        $this->assertSame(1, SalesOrder::count());
-    }
-
-    public function test_a_credit_sale_with_no_due_date_still_needs_authorization(): void
-    {
-        // Open-ended credit is the most deferred kind there is. Reading a
-        // missing date as "due today" would turn the exemption into a bypass.
         $this->actingAs($this->user)
             ->post('/sales-orders', $this->payload(['payment_mode' => 'Credit Sales', 'due_date' => null]))
-            ->assertSessionHasErrors('supervisor_token');
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, SalesOrder::count());
+    }
+
+    public function test_the_credit_limit_still_refuses_an_order_beyond_it(): void
+    {
+        // What stops a credit sale now is the customer's own limit.
+        $this->customer->update(['credit_limit' => 1000]);
+
+        $this->actingAs($this->user)
+            ->post('/sales-orders', $this->payload(['due_date' => now()->addDays(30)->toDateString()]))
+            ->assertSessionHasErrors('credit_limit');
 
         $this->assertSame(0, SalesOrder::count());
     }
