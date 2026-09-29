@@ -16,7 +16,9 @@
                                 </div>
                                 <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
                                     <div class="cash-on-hand-card" v-if="isSalesRep">
-                                        <span class="cash-on-hand-label">My Cash on Hand</span>
+                                        <!-- What this rep is holding themselves. Money a driver
+                                             still carries is not in their drawer. -->
+                                        <span class="cash-on-hand-label">Cash on Drawer</span>
                                         <strong class="cash-on-hand-value">{{ formatCurrency(myHoldings.total_amount) }}</strong>
                                         <span class="cash-on-hand-sub">{{ myHoldings.receipt_count }} unremitted receipt{{ myHoldings.receipt_count !== 1 ? 's' : '' }}</span>
                                     </div>
