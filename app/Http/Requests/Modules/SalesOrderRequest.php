@@ -72,6 +72,12 @@ class SalesOrderRequest extends FormRequest
                 'accepted_quantities.*' => 'integer|min:0',
                 'refusal_reasons' => 'nullable|array',
                 'refusal_reasons.*' => 'nullable|string|max:255',
+                // Delivering and collecting are one event on a real run, so the
+                // money can be recorded here rather than on a second screen.
+                'collected_amount' => 'nullable|numeric|min:0.01',
+                'collected_mode' => 'nullable|string|required_with:collected_amount|in:Cash,Bank Transfer,Check',
+                'collected_reference' => 'nullable|string|max:255',
+                'collected_check_date' => 'nullable|date',
             ];
         }
         else if($action == 'cancel'){

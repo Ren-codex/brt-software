@@ -126,6 +126,73 @@ class DeliveryAcceptanceTest extends TestCase
         $this->assertNotNull($order->fresh()->delivered_at);
     }
 
+    public function test_the_driver_can_deliver_and_collect_in_one_step(): void
+    {
+        // On a real run these are one event: "he took both sacks and paid."
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::with('items')->firstOrFail();
+
+        $this->actingAs($this->user)->put('/sales-orders/'.$order->id, [
+            'action' => 'mark-delivered',
+            'accepted_quantities' => [$order->items->first()->id => 2],
+            'collected_amount' => 3000,
+            'collected_mode' => 'Cash',
+        ])->assertSessionHasNoErrors();
+
+        $invoice = ArInvoice::firstOrFail();
+        $this->assertSame(0.0, (float) $invoice->balance_due);
+        $this->assertTrue($invoice->receipts()->exists());
+        $this->assertNotNull($order->fresh()->delivered_at);
+        $this->assertSame('closed', $order->fresh()->status->slug);
+    }
+
+    public function test_collecting_less_than_the_accepted_total_leaves_a_balance(): void
+    {
+        // Half the sacks refused, and the customer paid for one of the two kept.
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::with('items')->firstOrFail();
+
+        $this->actingAs($this->user)->put('/sales-orders/'.$order->id, [
+            'action' => 'mark-delivered',
+            'accepted_quantities' => [$order->items->first()->id => 1],
+            'collected_amount' => 500,
+            'collected_mode' => 'Cash',
+        ])->assertSessionHasNoErrors();
+
+        $invoice = ArInvoice::firstOrFail();
+        $this->assertSame(1500.0, (float) $invoice->amount_due, 'Resized to the one sack kept.');
+        $this->assertSame(1000.0, (float) $invoice->balance_due, 'Still owed after a part payment.');
+    }
+
+    public function test_collecting_more_than_is_owed_is_refused(): void
+    {
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::with('items')->firstOrFail();
+
+        $this->actingAs($this->user)->put('/sales-orders/'.$order->id, [
+            'action' => 'mark-delivered',
+            'accepted_quantities' => [$order->items->first()->id => 1],
+            'collected_amount' => 5000,
+            'collected_mode' => 'Cash',
+        ])->assertSessionHasErrors('collected_amount');
+
+        $this->assertNull($order->fresh()->delivered_at);
+    }
+
+    public function test_a_delivery_with_nothing_collected_still_works(): void
+    {
+        $this->postCod()->assertSessionHasNoErrors();
+        $order = SalesOrder::with('items')->firstOrFail();
+
+        $this->actingAs($this->user)->put('/sales-orders/'.$order->id, [
+            'action' => 'mark-delivered',
+            'accepted_quantities' => [$order->items->first()->id => 2],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNotNull($order->fresh()->delivered_at);
+        $this->assertSame(3000.0, (float) ArInvoice::firstOrFail()->balance_due);
+    }
+
     public function test_the_sale_is_re_posted_at_the_accepted_amount(): void
     {
         $this->postCod()->assertSessionHasNoErrors();

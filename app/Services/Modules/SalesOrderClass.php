@@ -665,12 +665,62 @@ class SalesOrderClass
             }
         }
 
+        $receiptId = $this->collectAtTheDoor($request, $data);
+
         return [
             'data' => new SalesOrderResource($data->fresh(['items', 'customer', 'status', 'arInvoices'])),
-            'message' => 'Delivery recorded!',
-            'info' => 'This order is marked delivered.',
+            'message' => $receiptId ? 'Delivery and collection recorded!' : 'Delivery recorded!',
+            'info' => $receiptId
+                ? 'This order is marked delivered and the payment is recorded.'
+                : 'This order is marked delivered.',
             'status' => true,
+            'receipt_id' => $receiptId,
         ];
+    }
+
+    /**
+     * The money the driver came back with, recorded with the delivery itself.
+     *
+     * Handed to the same service the AR Invoice screen uses, so a doorstep
+     * collection is the ordinary one: it writes a receipt held by the driver,
+     * a cheque or COD transfer still waits for the bank, and the order closes
+     * only if the balance is cleared.
+     */
+    private function collectAtTheDoor($request, SalesOrder $data): ?int
+    {
+        $amount = round((float) $request->collected_amount, 2);
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $invoice = $data->arInvoices()->first();
+
+        if (! $invoice) {
+            throw ValidationException::withMessages([
+                'collected_amount' => 'This order has no invoice to collect against.',
+            ]);
+        }
+
+        // Checked against the balance after any refusal resized it.
+        if ($amount > round((float) $invoice->fresh()->balance_due, 2)) {
+            throw ValidationException::withMessages([
+                'collected_amount' => 'That is more than this order still owes.',
+            ]);
+        }
+
+        $payment = new \Illuminate\Http\Request([
+            'id' => $invoice->id,
+            'payment_date' => optional($data->delivered_at)->toDateString() ?: now()->toDateString(),
+            'amount_paid' => $amount,
+            'payment_mode' => $request->collected_mode,
+            'reference_number' => $request->collected_reference,
+            'check_date' => $request->collected_check_date,
+        ]);
+
+        $result = app(\App\Services\Modules\ArInvoiceClass::class)->payment($payment, $invoice->id);
+
+        return $result['receipt_id'] ?? null;
     }
 
     /**
