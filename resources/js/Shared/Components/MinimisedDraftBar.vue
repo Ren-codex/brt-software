@@ -23,7 +23,10 @@ import { router } from '@inertiajs/vue3';
 export default {
     computed: {
         draft() {
-            return this.$store.getters.purchaseRequestDraft;
+            // Hidden while the form itself is open: there is nothing to return to.
+            return this.$store.getters.purchaseRequestMinimised
+                ? this.$store.getters.purchaseRequestDraft
+                : null;
         },
         summary() {
             const supplier = this.draft?.supplier_name || 'No supplier yet';

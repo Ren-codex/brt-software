@@ -314,6 +314,9 @@ export default {
     },
     beforeUnmount() {
         document.removeEventListener('keydown', this._onEscape);
+        // Leaving the page takes the form with it, so a kept draft is
+        // minimised again by definition and the bar should come back.
+        this.$store.dispatch('purchaseRequestClosed');
     },
     methods: {
         _onEscape(e) {
@@ -354,6 +357,7 @@ export default {
                 supplier_name: this.supplierName,
                 items: this.form.items,
             });
+            this.$store.dispatch('purchaseRequestClosed');
             this.showModal = false;
         },
         /** Reopen a minimised draft exactly as it was left. */
@@ -371,6 +375,7 @@ export default {
             this.form.items = Array.isArray(draft.items) && draft.items.length
                 ? draft.items
                 : [{ product_id: null, quantity: 0, unit_cost: '', total_cost: 0 }];
+            this.$store.dispatch('purchaseRequestOpened');
             this.showModal = true;
         },
         show() {
@@ -388,6 +393,7 @@ export default {
             ];
             this.editable = false;
             this.saveSuccess = false;
+            this.$store.dispatch('purchaseRequestOpened');
             this.showModal = true;
         },
 
@@ -406,6 +412,7 @@ export default {
 
             this.editable = true;
             this.saveSuccess = false;
+            this.$store.dispatch('purchaseRequestOpened');
             this.showModal = true;
         },
 
@@ -507,6 +514,7 @@ export default {
         hide() {
             // Closing outright is not minimising: the draft goes with it.
             this.$store.dispatch('discardPurchaseRequest');
+            this.$store.dispatch('purchaseRequestClosed');
             this.form.reset();
             this.form.clearErrors();
             this.editable = false;

@@ -33,17 +33,26 @@ const write = (draft) => {
 
 const state = {
     purchaseRequest: read(),
+    // Whether the form is on screen right now. Not persisted: a page change
+    // destroys the modal, so on the next page it is closed again by definition.
+    purchaseRequestOpen: false,
 };
 
 const getters = {
     purchaseRequestDraft: (state) => state.purchaseRequest,
     hasPurchaseRequestDraft: (state) => !!state.purchaseRequest,
+    // The bar is a way back to a form you cannot see; while it is open there
+    // is nothing to go back to.
+    purchaseRequestMinimised: (state) => !!state.purchaseRequest && ! state.purchaseRequestOpen,
 };
 
 const mutations = {
     setPurchaseRequestDraft(state, draft) {
         state.purchaseRequest = draft;
         write(draft);
+    },
+    setPurchaseRequestOpen(state, open) {
+        state.purchaseRequestOpen = open;
     },
 };
 
@@ -53,6 +62,13 @@ const actions = {
     },
     discardPurchaseRequest({ commit }) {
         commit('setPurchaseRequestDraft', null);
+        commit('setPurchaseRequestOpen', false);
+    },
+    purchaseRequestOpened({ commit }) {
+        commit('setPurchaseRequestOpen', true);
+    },
+    purchaseRequestClosed({ commit }) {
+        commit('setPurchaseRequestOpen', false);
     },
 };
 
