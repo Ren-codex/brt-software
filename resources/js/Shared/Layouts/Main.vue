@@ -3,11 +3,13 @@ import { layoutComputed } from "@/Shared/State/helpers";
 import Vertical from "./Vertical.vue";
 import Horizontal from "./Horizontal.vue";
 import TwoColumns from "./Twocolumn.vue";
+import MinimisedDraftBar from "@/Shared/Components/MinimisedDraftBar.vue";
 export default {
     components: {
         Vertical,
         Horizontal,
         TwoColumns,
+        MinimisedDraftBar,
     },
     props: { 
         surveyQuestions: Array
@@ -47,6 +49,9 @@ export default {
         <TwoColumns v-if="layoutType === 'twocolumn'" :layout="layoutType">
             <slot />
         </TwoColumns>
+
+        <!-- A form someone set aside, following them wherever they go next. -->
+        <MinimisedDraftBar />
     </div>
     <!-- <div v-if="message" class="flash-modal-overlay" @click.self="check()">
         <div class="flash-modal">

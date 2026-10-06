@@ -258,6 +258,14 @@ export default {
       this.sortDirection = newVal;
     }
   },
+  mounted() {
+    // A draft minimised earlier, resumed from the floating bar.
+    this.resumeHandler = () => this.$refs.createModal?.resumeDraft();
+    window.addEventListener('resume-purchase-request', this.resumeHandler);
+  },
+  beforeUnmount() {
+    window.removeEventListener('resume-purchase-request', this.resumeHandler);
+  },
   methods: {
     setActiveTab(tab) {
       this.activeTab = tab;

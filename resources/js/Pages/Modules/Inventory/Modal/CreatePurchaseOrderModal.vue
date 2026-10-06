@@ -7,9 +7,14 @@
                     <i :class="editable ? 'ri-edit-box-line' : 'ri-shopping-bag-3-line'"></i>
                     <h2>{{ editable ? 'Update Purchase Request' : 'Create Purchase Request' }}</h2>
                 </div>
-                <button class="close-btn" @click="hide">
-                    <i class="ri-close-line"></i>
-                </button>
+                <div class="header-actions">
+                    <button v-if="!editable" class="close-btn" title="Minimise and come back to it" @click="minimise">
+                        <i class="ri-subtract-line"></i>
+                    </button>
+                    <button class="close-btn" title="Close" @click="hide">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
             </div>
             <div class="modal-body modal-body-lg">
                 <form @submit.prevent="submit" class="purchase-order-form">
@@ -286,6 +291,13 @@ export default {
         };
     },
     computed: {
+        /** Named on the floating bar, so a minimised draft says whose it is. */
+        supplierName() {
+            const supplier = (this.dropdowns?.suppliers ?? [])
+                .find((option) => String(option.value) === String(this.form.supplier_id));
+
+            return supplier?.name ?? null;
+        },
         totalAmount() {
             return this.form.items.reduce((sum, item) => sum + (parseFloat(item.total_cost) || 0), 0);
         },
@@ -330,6 +342,36 @@ export default {
                 return 'border-color: #d97706 !important; background: #fffbeb !important;';
             }
             return '';
+        },
+        /**
+         * Set this aside without losing it: the draft goes to the store, which
+         * keeps it in localStorage, and the floating bar carries it to
+         * whatever page they open next.
+         */
+        minimise() {
+            this.$store.dispatch('keepPurchaseRequest', {
+                supplier_id: this.form.supplier_id,
+                supplier_name: this.supplierName,
+                items: this.form.items,
+            });
+            this.showModal = false;
+        },
+        /** Reopen a minimised draft exactly as it was left. */
+        resumeDraft() {
+            const draft = this.$store.getters.purchaseRequestDraft;
+            if (!draft) {
+                return;
+            }
+
+            this.form.clearErrors();
+            this.submitError = '';
+            this.editable = false;
+            this.form.id = null;
+            this.form.supplier_id = draft.supplier_id ?? null;
+            this.form.items = Array.isArray(draft.items) && draft.items.length
+                ? draft.items
+                : [{ product_id: null, quantity: 0, unit_cost: '', total_cost: 0 }];
+            this.showModal = true;
         },
         show() {
             this.form.reset();
@@ -463,6 +505,8 @@ export default {
         },
 
         hide() {
+            // Closing outright is not minimising: the draft goes with it.
+            this.$store.dispatch('discardPurchaseRequest');
             this.form.reset();
             this.form.clearErrors();
             this.editable = false;
@@ -575,6 +619,12 @@ export default {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 .modal-header {

@@ -417,6 +417,17 @@ export default {
       this.fetchAccountsPayableData();
     }
   },
+  mounted() {
+    // Sent here by the floating bar: show the right tab, then let the tab
+    // reopen the draft once it has rendered.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('resume')) {
+      this.activeTab = 'purchaseRequests';
+      this.$nextTick(() => {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('resume-purchase-request')), 300);
+      });
+    }
+  },
   methods: {
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
