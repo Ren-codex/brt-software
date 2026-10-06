@@ -107,6 +107,11 @@
             <div class="sales-rep-box">
                 <strong>Sales Rep:</strong> {{ $sales_order->salesRep->fullname ?? '---' }}
             </div>
+            {{-- Whoever carries the goods belongs on the copy the customer
+                 signs for, beside whoever sold them. --}}
+            <div class="sales-rep-box">
+                <strong>Driver:</strong> {{ $sales_order->driver->fullname ?? '---' }}
+            </div>
         </td>
         <td style="width: 220px;">
             <table style="width: 100%; border-collapse: collapse;">

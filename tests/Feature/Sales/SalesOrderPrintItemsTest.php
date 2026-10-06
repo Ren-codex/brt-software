@@ -3,6 +3,7 @@
 namespace Tests\Feature\Sales;
 
 use App\Models\Customer;
+use App\Models\Employee;
 use App\Models\ListBrand;
 use App\Models\ListPackaging;
 use App\Models\ListUnit;
@@ -22,7 +23,25 @@ class SalesOrderPrintItemsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function render(?string $packaging = 'Sack'): string
+    private function order(): SalesOrder
+    {
+        $order = new SalesOrder([
+            'so_number' => 'SO-EXT-202610-0001',
+            'order_date' => '2026-10-07',
+            'payment_mode' => 'Credit Sales',
+            'total_amount' => 3750,
+            'total_discount' => 0,
+            'delivery_location' => 'Gusu',
+        ]);
+        $order->setRelation('customer', new Customer(['name' => 'Nora', 'address' => 'Gusu']));
+        $order->setRelation('location', null);
+        $order->setRelation('salesRep', null);
+        $order->setRelation('driver', null);
+
+        return $order;
+    }
+
+    private function item(?string $packaging = 'Sack'): SalesOrderItem
     {
         $brand = ListBrand::create(['name' => 'Jasmine Rice', 'is_active' => 1]);
 
@@ -35,18 +54,6 @@ class SalesOrderPrintItemsTest extends TestCase
             'is_active' => 1,
         ]);
 
-        $order = new SalesOrder([
-            'so_number' => 'SO-EXT-202610-0001',
-            'order_date' => '2026-10-07',
-            'payment_mode' => 'Credit Sales',
-            'total_amount' => 3750,
-            'total_discount' => 0,
-            'delivery_location' => 'Gusu',
-        ]);
-        $order->setRelation('customer', new Customer(['name' => 'Nora', 'address' => 'Gusu']));
-        $order->setRelation('location', null);
-        $order->setRelation('salesRep', null);
-
         $item = new SalesOrderItem([
             'batch_code' => 'B2026000007',
             'quantity' => 3,
@@ -55,10 +62,20 @@ class SalesOrderPrintItemsTest extends TestCase
         ]);
         $item->setRelation('product', $product->fresh()->load('brand', 'unit', 'packaging'));
 
+        return $item;
+    }
+
+    private function renderOrder(SalesOrder $order, ?SalesOrderItem $item = null): string
+    {
         return view('prints.sales_order', [
             'sales_order' => $order,
-            'items' => collect([$item]),
+            'items' => collect([$item ?? $this->item()]),
         ])->render();
+    }
+
+    private function render(?string $packaging = 'Sack'): string
+    {
+        return $this->renderOrder($this->order(), $this->item($packaging));
     }
 
     private function itemCells(string $html): array
@@ -93,6 +110,27 @@ class SalesOrderPrintItemsTest extends TestCase
     {
         // Rather than an empty cell that reads as a rendering fault.
         $this->assertSame('---', $this->itemCells($this->render(packaging: null))[3]);
+    }
+
+    public function test_it_names_the_driver_beside_the_sales_rep(): void
+    {
+        $order = $this->order();
+        $order->setRelation('driver', new Employee(['firstname' => 'Jane', 'lastname' => 'Reyes']));
+
+        $html = $this->renderOrder($order);
+
+        $this->assertStringContainsString('<strong>Driver:</strong>', $html);
+        $this->assertStringContainsString('Reyes', $html);
+    }
+
+    public function test_an_order_nobody_is_driving_prints_a_dash(): void
+    {
+        // A counter sale has no driver, and an empty box reads as a fault.
+        $order = $this->order();
+        $order->setRelation('driver', null);
+
+        preg_match('/<strong>Driver:<\/strong>([^<]*)</', $this->renderOrder($order), $m);
+        $this->assertSame('---', trim($m[1]));
     }
 
     public function test_the_first_copy_takes_exactly_half_the_sheet(): void

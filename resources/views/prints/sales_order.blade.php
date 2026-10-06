@@ -107,6 +107,7 @@
             display: inline-block;
             border: 1px solid #BDC3C7;
             padding: 5px 9px;
+            margin-right: 6px;
         }
 
         /* Signature Section */
