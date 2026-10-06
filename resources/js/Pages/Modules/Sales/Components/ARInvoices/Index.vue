@@ -108,9 +108,19 @@
                                                 <span v-if="isDueSoon(list)" class="due-soon-badge">
                                                     Due Soon
                                                 </span>
+                                                <span v-if="list.uncleared" class="held-badge" :title="heldLabel(list)">
+                                                    {{ list.uncleared.mode === 'Check' ? 'Check Held' : 'Unconfirmed' }}
+                                                </span>
                                             </span>
                                         </td>
-                                        <td class="text-center">₱{{ list.balance_due?.toFixed(2) }}</td>
+                                        <td class="text-center">
+                                            ₱{{ list.balance_due?.toFixed(2) }}
+                                            <!-- The balance says nothing about a
+                                                 check already sitting against it,
+                                                 which is how a second payment gets
+                                                 taken for money already promised. -->
+                                            <small v-if="list.uncleared" class="held-note">{{ heldLabel(list) }}</small>
+                                        </td>
                                         <td class="text-center">₱{{ list.amount_paid?.toFixed(2) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
@@ -304,6 +314,20 @@ export default {
         paymentLabel,
         // Tone comes from what the status means — see Shared/utils/statusTone.js
         statusTone,
+
+        /** e.g. "₱3,750.00 check, Oct 10 — not yet cleared" */
+        heldLabel(list) {
+            const held = list?.uncleared;
+            if (!held) return '';
+
+            const amount = `₱${Number(held.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const what = (held.mode || '').toLowerCase() === 'check' ? 'check' : 'transfer';
+            const dated = held.date
+                ? `, ${new Date(`${held.date}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}`
+                : '';
+
+            return `${amount} ${what}${dated} — not yet cleared`;
+        },
 
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
@@ -664,6 +688,28 @@ export default {
     border: 1px solid rgba(236, 72, 153, 0.28);
     line-height: 1.2;
     white-space: nowrap;
+}
+
+.held-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #2456a6;
+    background: rgba(37, 86, 166, 0.14);
+    border: 1px solid rgba(37, 86, 166, 0.28);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.held-note {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.25;
+    color: #2456a6;
 }
 
 .overdue-badge {

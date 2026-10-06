@@ -33,7 +33,7 @@ class ArInvoiceClass
         $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         $data = ArInvoiceResource::collection(
-            ArInvoice::with(['sales_order.customer', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status'])
+            ArInvoice::with(['sales_order.customer', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status', 'receipts.registerCheck'])
                 ->whereHas('sales_order', function ($q) {
                     $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), \App\Models\SalesOrder::ON_ACCOUNT_MODES);
                 })
@@ -166,13 +166,26 @@ class ArInvoiceClass
     {
         $invoice = ArInvoice::with('status')->findOrFail($id);
 
+        // A balance alone is not the whole truth while a check is waiting to
+        // clear: it reads as collectable when part of it is already spoken for.
+        $held = $this->unclearedReceipts($invoice);
+        $uncleared = round((float) $held->sum('amount_paid'), 2);
+        $balance = round((float) $invoice->balance_due, 2);
+
         return [
             'id'            => $invoice->id,
             'amount_due'    => round((float) $invoice->amount_due, 2),
             'amount_paid'   => round((float) $invoice->amount_paid, 2),
-            'balance_due'   => round((float) $invoice->balance_due, 2),
+            'balance_due'   => $balance,
             'status'        => optional($invoice->status)->name,
-            'is_settled'    => round((float) $invoice->balance_due, 2) <= 0,
+            'is_settled'    => $balance <= 0,
+            'uncleared'     => $uncleared > 0 ? [
+                'amount' => $uncleared,
+                'count'  => $held->count(),
+                'mode'   => $held->first()->payment_mode,
+                'date'   => $held->first()->check_date?->format('Y-m-d'),
+            ] : null,
+            'collectable'   => max(0, round($balance - $uncleared, 2)),
         ];
     }
 
@@ -237,6 +250,27 @@ class ArInvoiceClass
         if ($totalPayment > (float) $ar_invoice->balance_due) {
             throw ValidationException::withMessages([
                 'amount_paid' => 'Payment of ₱' . number_format($totalPayment, 2) . ' exceeds the outstanding balance of ₱' . number_format((float) $ar_invoice->balance_due, 2) . '.',
+            ]);
+        }
+
+        // The balance still shows the full amount while a check is waiting to
+        // clear, which is honest about the money but says nothing about the
+        // promise. Collecting against it again is how a customer ends up
+        // credited twice — once in cash now, once when the check clears.
+        $uncleared = $this->unclearedTotal($ar_invoice);
+
+        if ($uncleared > 0 && $totalPayment > round((float) $ar_invoice->balance_due - $uncleared, 2)) {
+            $held = $this->unclearedReceipts($ar_invoice)->first();
+            $dated = $held?->check_date
+                ? ' dated ' . \Illuminate\Support\Carbon::parse($held->check_date)->format('M j, Y')
+                : '';
+
+            throw ValidationException::withMessages([
+                'amount_paid' => '₱' . number_format($uncleared, 2) . ' of this invoice is already covered by a '
+                    . strtolower((string) $held?->payment_mode) . $dated
+                    . ' that has not cleared yet, so only ₱'
+                    . number_format(max(0, round((float) $ar_invoice->balance_due - $uncleared, 2)), 2)
+                    . ' can be collected again. Confirm or bounce it first.',
             ]);
         }
 
@@ -378,19 +412,31 @@ class ArInvoiceClass
      */
     private function awaitsBankConfirmation(?string $paymentMode, ?ArInvoice $invoice): bool
     {
-        $mode = strtolower(trim((string) $paymentMode));
+        return Receipt::modeAwaitsBankConfirmation(
+            $paymentMode,
+            optional(optional($invoice)->sales_order)->payment_mode
+        );
+    }
 
-        if ($mode === 'check') {
-            return true;
-        }
+    /**
+     * What this invoice is already counting on but has not received: checks
+     * waiting to clear, transfers collected in the field nobody has confirmed.
+     * The balance does not know about them — that is the point of holding them
+     * back — so anything that moves money has to ask separately.
+     */
+    public function unclearedReceipts(ArInvoice $ar_invoice)
+    {
+        $ar_invoice->loadMissing(['sales_order', 'receipts.registerCheck']);
+        $orderMode = optional($ar_invoice->sales_order)->payment_mode;
 
-        if ($mode !== 'bank transfer') {
-            return false;
-        }
+        return $ar_invoice->receipts
+            ->filter(fn (Receipt $receipt) => $receipt->isUnclearedFor($orderMode))
+            ->values();
+    }
 
-        // Only COD is collected away from the office. A credit customer paying
-        // by transfer sends it bank to bank, where the office sees it anyway.
-        return SalesOrder::isCod(optional(optional($invoice)->sales_order)->payment_mode);
+    public function unclearedTotal(ArInvoice $ar_invoice): float
+    {
+        return round((float) $this->unclearedReceipts($ar_invoice)->sum('amount_paid'), 2);
     }
 
     public function confirmCheck($receiptId, $bankName, $checkDate = null)
@@ -427,7 +473,21 @@ class ArInvoiceClass
             ]);
         }
 
-        $this->applyPaymentToInvoice($ar_invoice, (float) $receipt->amount_paid);
+        // Confirming is the one irreversible thing this screen does: it moves
+        // the balance and posts to the ledger in the same breath. If the money
+        // already arrived another way, this check is not a payment any more.
+        $outstanding = round((float) $ar_invoice->balance_due, 2);
+        $amount = round((float) $receipt->amount_paid, 2);
+
+        if ($outstanding <= 0 || $amount > $outstanding) {
+            throw ValidationException::withMessages([
+                'receipt' => $outstanding <= 0
+                    ? 'Invoice ' . $ar_invoice->invoice_number . ' has already been paid in full by another payment. Confirming this would credit the customer twice — bounce it or hand it back instead.'
+                    : 'Confirming ₱' . number_format($amount, 2) . ' would exceed the ₱' . number_format($outstanding, 2) . ' still outstanding on invoice ' . $ar_invoice->invoice_number . '. Settle the difference before confirming.',
+            ]);
+        }
+
+        $this->applyPaymentToInvoice($ar_invoice, $amount);
 
         // The receipt posted nothing when it was recorded (see
         // JournalEntryService::recordReceiptEntry). Confirmation is the single

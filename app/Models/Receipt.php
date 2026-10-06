@@ -63,6 +63,53 @@ class Receipt extends Model
         return $this->belongsTo('App\Models\ArInvoice', 'ar_invoice_id');
     }
 
+    /** The check register's own row for this receipt, if it was paid by check. */
+    public function registerCheck()
+    {
+        return $this->morphOne(Check::class, 'source');
+    }
+
+    /**
+     * Whether a payment in this mode is a promise rather than money. A check
+     * is, until the bank says otherwise. A transfer is only if it was taken in
+     * the field on a COD run — a credit customer transferring bank to bank is
+     * seen by the office anyway.
+     *
+     * This is the single definition; everything that needs the rule asks here.
+     */
+    public static function modeAwaitsBankConfirmation(?string $paymentMode, ?string $orderPaymentMode): bool
+    {
+        $mode = strtolower(trim((string) $paymentMode));
+
+        if ($mode === 'check') {
+            return true;
+        }
+
+        if ($mode !== 'bank transfer') {
+            return false;
+        }
+
+        return SalesOrder::isCod($orderPaymentMode);
+    }
+
+    /**
+     * Money this receipt promises but has not delivered: still waiting on the
+     * bank, and not written off. A bounced check is not uncleared — it never
+     * was money and never will be, so it holds nothing against the invoice.
+     */
+    public function isUnclearedFor(?string $orderPaymentMode): bool
+    {
+        if ($this->confirmed_at || $this->receipt_type !== 'payment') {
+            return false;
+        }
+
+        if (! self::modeAwaitsBankConfirmation($this->payment_mode, $orderPaymentMode)) {
+            return false;
+        }
+
+        return optional($this->registerCheck)->status !== Check::STATUS_BOUNCED;
+    }
+
     public function status()
     {
         return $this->belongsTo('App\Models\ListStatus', 'status_id');

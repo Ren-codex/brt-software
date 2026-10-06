@@ -59,6 +59,21 @@
                     </div>
                 </div>
 
+                <!-- The balance reads as fully collectable while a check is
+                     waiting to clear. Say so here, where the second payment
+                     would otherwise be taken. -->
+                <div v-if="uncleared" class="held-warning">
+                    <i class="ri-time-line"></i>
+                    <div>
+                        <strong>{{ numberFormat(uncleared.amount) }} is already promised</strong>
+                        <span>
+                            A {{ (uncleared.mode || '').toLowerCase() }}<template v-if="uncleared.date"> dated {{ heldDate }}</template>
+                            has not cleared yet. Only {{ numberFormat(collectable) }} can be collected again —
+                            confirm or bounce it first.
+                        </span>
+                    </div>
+                </div>
+
                 <!-- Payment Information -->
                 <p class="section-label mt-4"><i class="ri-bank-card-2-line"></i> Payment Information</p>
                 <div class="payment-card">
@@ -275,6 +290,11 @@ import { useForm } from '@inertiajs/vue3';
 export default {
     props: [ ],
     computed: {
+        heldDate() {
+            if (!this.uncleared?.date) return '';
+            return new Date(`${this.uncleared.date}T00:00:00`)
+                .toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+        },
         normalizedPaymentMode() {
             return String(this.invoice?.sales_order?.payment_mode || '').trim().toLowerCase();
         },
@@ -350,6 +370,8 @@ export default {
             loadingBalance: false,
             balanceStale: false,
             settled: false,
+            uncleared: null,
+            collectable: null,
             title: null,
             showModal: false,
             invoice: null,
@@ -372,6 +394,8 @@ export default {
             this.title = title;
             this.route = route;
             this.balanceStale = false;
+            this.uncleared = null;
+            this.collectable = null;
             this.loadingBalance = true;
 
             // Start from the row so the screen is never blank, then correct it
@@ -402,6 +426,8 @@ export default {
                 }
 
                 this.settled = !!data.is_settled;
+                this.uncleared = data.uncleared || null;
+                this.collectable = data.collectable ?? fresh;
             } catch {
                 // Keep the row's figure and let the server have the final word.
                 this.balanceStale = false;
@@ -520,6 +546,15 @@ export default {
                 return;
             }
 
+            // Mirrors the server guard, so the warning above is not something
+            // you can simply submit past.
+            if (this.uncleared && total > Number(this.collectable ?? 0) + 0.009) {
+                this.form.errors.splits = `${this.numberFormat(this.uncleared.amount)} is already covered by a `
+                    + `${(this.uncleared.mode || '').toLowerCase()} that has not cleared. `
+                    + `Only ${this.numberFormat(this.collectable ?? 0)} can be collected again.`;
+                return;
+            }
+
             this.form.splits = splits;
 
             this.form.put(`${this.route}/${this.form.id}`,{
@@ -582,6 +617,36 @@ export default {
 }
 </script>
 <style scoped>
+.held-warning {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    margin: 0 0 1rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid rgba(37, 86, 166, 0.28);
+    background: rgba(37, 86, 166, 0.08);
+    border-radius: 10px;
+    color: #2456a6;
+}
+
+.held-warning i {
+    font-size: 1.05rem;
+    line-height: 1.3;
+    flex-shrink: 0;
+}
+
+.held-warning strong {
+    display: block;
+    font-size: 0.85rem;
+}
+
+.held-warning span {
+    display: block;
+    font-size: 0.79rem;
+    line-height: 1.4;
+    color: #37507a;
+}
+
 .balance-note {
     margin: 0.25rem 0 0;
     font-size: 0.68rem;

@@ -13,6 +13,9 @@ class ArInvoiceResource extends JsonResource
         $salesRep = $salesOrder?->salesRep
             ?? $salesOrder?->created_by?->employee
             ?? null;
+        // Whether a transfer waits on the bank depends on how the order was
+        // sold, so the rule needs the order's own mode.
+        $orderPaymentMode = $salesOrder?->payment_mode;
 
         return [
             'id' => $this->id,
@@ -34,8 +37,8 @@ class ArInvoiceResource extends JsonResource
                 'lastname' => $salesRep->lastname ?? null,
             ] : null,
             'status' => $this->status,
-            'receipts' => $this->whenLoaded('receipts', function () {
-                return $this->receipts->map(function ($receipt) {
+            'receipts' => $this->whenLoaded('receipts', function () use ($orderPaymentMode) {
+                return $this->receipts->map(function ($receipt) use ($orderPaymentMode) {
                     return [
                         'id' => $receipt->id,
                         'receipt_number' => $receipt->receipt_number,
@@ -43,9 +46,30 @@ class ArInvoiceResource extends JsonResource
                         'amount_paid' => (float) $receipt->amount_paid,
                         'balance_due' => (float) ($receipt->balance_due ?? 0),
                         'status' => $receipt->status,
+                        // Without these the row cannot say that a payment is
+                        // only a promise, and nothing warns before a second one.
+                        'payment_mode' => $receipt->payment_mode,
+                        'check_date' => $receipt->check_date?->format('Y-m-d'),
+                        'confirmed_at' => $receipt->confirmed_at?->format('Y-m-d'),
+                        'is_uncleared' => $receipt->isUnclearedFor($orderPaymentMode),
                     ];
                 })->values();
             }, []),
+            // What this invoice is waiting on: money promised, not received.
+            'uncleared' => $this->whenLoaded('receipts', function () use ($orderPaymentMode) {
+                $held = $this->receipts->filter(fn ($receipt) => $receipt->isUnclearedFor($orderPaymentMode));
+
+                if ($held->isEmpty()) {
+                    return null;
+                }
+
+                return [
+                    'amount' => (float) $held->sum('amount_paid'),
+                    'count' => $held->count(),
+                    'mode' => $held->first()->payment_mode,
+                    'date' => $held->first()->check_date?->format('Y-m-d'),
+                ];
+            }),
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at?->format('F d, Y'),
         ];
