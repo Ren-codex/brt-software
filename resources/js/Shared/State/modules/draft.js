@@ -60,12 +60,15 @@ const state = {
 const getters = {
     draftFor: (state) => (kind) => state.drafts[kind] ?? null,
     /**
-     * The bar is a way back to a form you cannot see, so a form that is open
-     * is not on it.
+     * The bar is a way back to a form you cannot see. Any open form hides the
+     * whole bar, not just its own card: a purchase request card floating over
+     * an open sales order is in the way of the work being done.
      */
-    minimisedDrafts: (state) => Object.entries(state.drafts)
-        .filter(([kind, draft]) => draft && ! state.open[kind])
-        .map(([kind, draft]) => ({ kind, ...DRAFT_KINDS[kind], ...draft })),
+    minimisedDrafts: (state) => Object.values(state.open).some(Boolean)
+        ? []
+        : Object.entries(state.drafts)
+            .filter(([, draft]) => draft)
+            .map(([kind, draft]) => ({ kind, ...DRAFT_KINDS[kind], ...draft })),
 };
 
 const mutations = {

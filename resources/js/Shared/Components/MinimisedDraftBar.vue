@@ -1,5 +1,5 @@
 <template>
-    <div v-if="drafts.length" class="draft-stack">
+    <div v-if="drafts.length && !modalOpen" class="draft-stack">
         <div v-for="draft in drafts" :key="draft.kind" class="draft-bar" role="status">
             <div class="draft-bar-icon"><i class="ri-draft-line"></i></div>
             <div class="draft-bar-body">
@@ -23,12 +23,54 @@ import { router } from '@inertiajs/vue3';
  * reopens it with everything still filled in.
  */
 export default {
+    data() {
+        return {
+            // Every modal in this system is a `.modal-overlay.active`, open or
+            // not depending on that class. The bar outranks them all on
+            // z-index, so rather than fight the cascade it steps aside while
+            // one is up — any modal, not only the forms it carries.
+            modalOpen: false,
+        };
+    },
     computed: {
         drafts() {
             return this.$store.getters.minimisedDrafts;
         },
     },
+    mounted() {
+        this.syncModalOpen();
+        this.observer = new MutationObserver(() => this.scheduleSync());
+        this.observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    },
+    beforeUnmount() {
+        this.observer?.disconnect();
+        if (this.syncPending) {
+            cancelAnimationFrame(this.syncPending);
+        }
+    },
     methods: {
+        /**
+         * Modals open and close inside bursts of DOM work, so coalesce to one
+         * look per frame rather than one per mutation.
+         */
+        scheduleSync() {
+            if (this.syncPending) {
+                return;
+            }
+
+            this.syncPending = requestAnimationFrame(() => {
+                this.syncPending = null;
+                this.syncModalOpen();
+            });
+        },
+        syncModalOpen() {
+            this.modalOpen = document.querySelector('.modal-overlay.active') !== null;
+        },
         resume(draft) {
             if (draft.belongsTo(window.location.pathname)) {
                 // Already on the right page: the screen listens for this.
