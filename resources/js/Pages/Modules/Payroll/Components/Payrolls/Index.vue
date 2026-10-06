@@ -87,7 +87,10 @@
                                             </td>
                                         </tr>
                                     </template>
-                                    <tr v-if="!payrolls.length">
+                                    <tr v-if="loadError">
+                                        <td colspan="8" class="text-center text-danger">{{ loadError }}</td>
+                                    </tr>
+                                    <tr v-else-if="!payrolls.length">
                                         <td colspan="8" class="text-center">No data available</td>
                                     </tr>
                                 </template>
@@ -125,8 +128,11 @@ export default {
   data() {
     return {
       payrolls: [],
-      meta: {},
+      // Null until a response says otherwise, so the pagination control is
+      // not rendered against an envelope that is not there yet.
+      meta: null,
       links: {},
+      loadError: null,
       filter: {
         keyword: null
       },
@@ -148,9 +154,10 @@ export default {
   methods: {
     checkSearchStr: _.debounce(function (string) {
     }, 300),
-    async fetchPayrolls() {
+    async fetchPayrolls(page_url) {
       this.loading = true;
-      axios.get('/payrolls', {
+      this.loadError = null;
+      axios.get(page_url || '/payrolls', {
         params: {
           keyword: this.filter.keyword,
           count: 10,
@@ -158,14 +165,22 @@ export default {
         }
       })
         .then(response => {
-          if (response.data) {
-            this.payrolls = response.data;
-
-            this.meta = response.data.meta;
-            this.links = response.data.links;
-          }
+          // The rows live under `data`; the envelope beside them is what the
+          // pagination control runs on.
+          this.payrolls = response.data?.data ?? [];
+          this.meta = response.data?.meta ?? null;
+          this.links = response.data?.links ?? {};
         })
-        .catch(err => console.log(err))
+        .catch(err => {
+          // Swallowing this is how a payroll that saved looked like one that
+          // never did: the list failed and the screen said nothing.
+          console.error(err);
+          this.payrolls = [];
+          this.meta = null;
+          this.loadError = err.response?.status === 403
+            ? 'You do not have permission to view payrolls.'
+            : 'Could not load payrolls. Reload the page to try again.';
+        })
         .finally(() => {
           this.loading = false;
         });

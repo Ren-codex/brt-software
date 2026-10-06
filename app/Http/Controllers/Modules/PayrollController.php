@@ -42,9 +42,10 @@ class PayrollController extends Controller
                     'You do not have permission to perform this action.'
                 );
 
-                $payrolls = $this->payroll->lists($request);
-
-                return response()->json($payrolls);
+                // Returned directly, not through response()->json(): wrapping a
+                // resource collection flattens it to a bare array and loses the
+                // meta and links the pagination control needs to exist at all.
+                return $this->payroll->lists($request);
                 break;
             default:
                 return inertia('Modules/Payroll/Index', [

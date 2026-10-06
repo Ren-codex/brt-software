@@ -36,6 +36,9 @@ class PayrollClass
                         ->orWhere('email', 'like', '%'.$request->keyword.'%');
                     });
                 })
+                // Unordered, the newest payroll lands on the last page, which
+                // reads as "it did not save".
+                ->orderBy('created_at', 'DESC')
                 ->paginate($request->count ?? 10);
 
         return PayrollResource::collection($payrolls);

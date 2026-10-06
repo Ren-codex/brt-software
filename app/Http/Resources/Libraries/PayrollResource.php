@@ -19,7 +19,10 @@ class PayrollResource extends JsonResource
             'total_amount' => $this->total_amount,
             'status' => $this->status,
             'payroll_name' => $this->template ? $this->template->name : null,
-            'created_by' => $this->creator ? $this->creator->employee->fullname : null,
+            // A user need not have an employee record. Reaching through one
+            // that is not there threw, and a single such payroll took the
+            // whole list down with it — see approved_by, four lines down.
+            'created_by' => $this->creator?->employee?->fullname ?? $this->creator?->username,
             'created_by_id' => $this->created_by,
             'approved_by_id' => $this->approved_by_id,
             'approved_at' => $this->approved_at?->format('F d, Y h:i A'),
