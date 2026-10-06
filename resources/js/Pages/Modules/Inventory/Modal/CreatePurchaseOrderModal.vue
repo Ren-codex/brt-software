@@ -26,15 +26,20 @@
                                 <label class="form-label">Select Supplier</label>
                                 <div class="input-wrapper">
                                     <i class="ri-store-line input-icon"></i>
-                                    <select v-model="form.supplier_id" class="form-control"
-                                        :class="{ 'input-error': form.errors.supplier_id }"
-                                        @change="handleInput('supplier_id')">
-                                        <option value="" disabled>Choose a supplier...</option>
-                                        <option v-for="supplier in dropdowns.suppliers" :value="supplier.value"
-                                            :key="supplier.value">
-                                            {{ supplier.name }}
-                                        </option>
-                                    </select>
+                                    <Multiselect
+                                        v-model="form.supplier_id"
+                                        :options="dropdowns.suppliers"
+                                        label="name"
+                                        value-prop="value"
+                                        track-by="name"
+                                        :searchable="true"
+                                        :can-clear="false"
+                                        :append-to-body="true"
+                                        placeholder="Type to search a supplier..."
+                                        class="form-control supplier-multiselect"
+                                        :style="supplierSelectStyle()"
+                                        @change="handleInput('supplier_id')"
+                                    />
                                 </div>
                                 <span class="error-message" v-if="form.errors.supplier_id">{{ form.errors.supplier_id }}</span>
                             </div>
@@ -306,6 +311,12 @@ export default {
             const productId = this.form.items[index]?.product_id;
             if (!productId) return false;
             return this.form.items.some((other, i) => i !== index && other.product_id === productId);
+        },
+        supplierSelectStyle() {
+            // Same reason as productSelectStyle: the library and the global
+            // theme both set border-color with !important, so only an inline
+            // style shows the error.
+            return this.form.errors.supplier_id ? 'border-color: #e74c3c !important;' : '';
         },
         productSelectStyle(index) {
             // The @vueform/multiselect library and a global theme rule both set
@@ -922,6 +933,23 @@ export default {
 .table-select {
     min-width: 160px;
     font-size: 0.8rem;
+}
+
+/* The supplier field is a searchable dropdown sitting behind the wrapper's
+   icon, so its own text has to clear it the way a plain input's padding did. */
+.supplier-multiselect {
+    padding: 0 !important;
+}
+
+.supplier-multiselect :deep(.multiselect-wrapper) {
+    min-height: 38px !important;
+}
+
+.supplier-multiselect :deep(.multiselect-single-label),
+.supplier-multiselect :deep(.multiselect-search),
+.supplier-multiselect :deep(.multiselect-placeholder) {
+    padding-left: 2.3rem;
+    font-size: 0.82rem;
 }
 
 .table-multiselect {
