@@ -302,6 +302,12 @@ export default {
     mounted() {
         this.startPolling(() => this.fetch(this.currentPageUrl, { quiet: true }));
         this.fetchMetrics();
+        // An order minimised earlier, resumed from the floating bar.
+        this.resumeHandler = () => this.$refs.create?.resumeDraft();
+        window.addEventListener('resume-sales-order', this.resumeHandler);
+    },
+    beforeUnmount() {
+        window.removeEventListener('resume-sales-order', this.resumeHandler);
     },
     methods: {
         // Tone comes from what the status means — see Shared/utils/statusTone.js

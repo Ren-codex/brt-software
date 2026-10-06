@@ -6,9 +6,14 @@
                     <i :class="editable ? 'ri-edit-box-line' : 'ri-shopping-cart-2-line'"></i>
                     <h2>{{ editable ? 'Update Sales Order' : 'Add Sales Order' }}</h2>
                 </div>
-                <button class="close-btn" @click="hide">
-                    <i class="ri-close-line"></i>
-                </button>
+                <div class="header-actions">
+                    <button v-if="!editable" class="close-btn" title="Minimise and come back to it" @click="minimise">
+                        <i class="ri-subtract-line"></i>
+                    </button>
+                    <button class="close-btn" title="Close" @click="hide">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
             </div>
             <div class="modal-body modal-body-lg">
                 <form @submit.prevent="submit">
@@ -1283,6 +1288,11 @@ export default {
         },
 
     },
+    beforeUnmount() {
+        // Leaving the page takes the form with it, so a kept draft is
+        // minimised again by definition and the bar should come back.
+        this.$store.dispatch('draftClosed', 'sales-order');
+    },
     methods: {
         async loadBankAccounts() {
             try {
@@ -1422,6 +1432,7 @@ export default {
             this.pendingCashChange = 0;
             this.pendingCashPaid = 0;
             this.pendingCashReceived = 0;
+            this.$store.dispatch('draftOpened', 'sales-order');
             this.showModal = true;
             this.form.delivery_location = '';
             this.form.order_date = new Date().toISOString().slice(0, 10);
@@ -1478,6 +1489,7 @@ export default {
             this.pendingCashChange = 0;
             this.pendingCashPaid = 0;
             this.pendingCashReceived = 0;
+            this.$store.dispatch('draftOpened', 'sales-order');
             this.showModal = true;
         },
         submit() {
@@ -1922,7 +1934,53 @@ export default {
         handleInput(field) {
             this.form.errors[field] = false;
         },
+        /**
+         * Set this aside without losing it. The whole form goes to the store,
+         * which keeps it in localStorage, and the floating bar carries it to
+         * whatever page they open next.
+         */
+        minimise() {
+            const count = this.form.items.length;
+            const customer = this.selectedCustomer?.name
+                || (this.isWalkInCustomer ? 'Walk-in customer' : 'No customer yet');
+
+            this.$store.dispatch('keepDraft', {
+                kind: 'sales-order',
+                summary: `${customer} · ${count} item${count === 1 ? '' : 's'}`,
+                payload: { form: this.form.data(), customerSelection: this.customerSelection },
+            });
+
+            // The review and payment steps are separate overlays sitting on top
+            // of this one; leaving one up would strand it over the page.
+            this.showOrderReview = false;
+            this.showPaymentTypeModal = false;
+            this.showCashReceivedModal = false;
+            this.showCreditVerificationModal = false;
+            this.showBankTransferModal = false;
+            this.showChargeSuccessModal = false;
+            this.showModal = false;
+        },
+        /** Reopen a minimised order exactly as it was left. */
+        resumeDraft() {
+            const draft = this.$store.getters.draftFor('sales-order');
+            if (!draft?.payload?.form) {
+                return;
+            }
+
+            this.form.clearErrors();
+            this.editable = false;
+            Object.entries(draft.payload.form).forEach(([key, value]) => {
+                this.form[key] = value;
+            });
+            this.form.id = null;
+            this.customerSelection = draft.payload.customerSelection ?? null;
+            this.$store.dispatch('draftOpened', 'sales-order');
+            this.showModal = true;
+        },
         hide() {
+            // Closing outright is not minimising: the draft goes with it.
+            this.$store.dispatch('discardDraft', 'sales-order');
+            this.$store.dispatch('draftClosed', 'sales-order');
             this.form.reset();
             this.form.clearErrors();
             this.editable = false;

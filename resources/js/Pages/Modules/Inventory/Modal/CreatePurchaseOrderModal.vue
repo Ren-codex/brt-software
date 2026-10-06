@@ -316,7 +316,7 @@ export default {
         document.removeEventListener('keydown', this._onEscape);
         // Leaving the page takes the form with it, so a kept draft is
         // minimised again by definition and the bar should come back.
-        this.$store.dispatch('purchaseRequestClosed');
+        this.$store.dispatch('draftClosed', 'purchase-request');
     },
     methods: {
         _onEscape(e) {
@@ -352,30 +352,32 @@ export default {
          * whatever page they open next.
          */
         minimise() {
-            this.$store.dispatch('keepPurchaseRequest', {
-                supplier_id: this.form.supplier_id,
-                supplier_name: this.supplierName,
-                items: this.form.items,
+            const count = this.form.items.length;
+            this.$store.dispatch('keepDraft', {
+                kind: 'purchase-request',
+                summary: `${this.supplierName || 'No supplier yet'} · ${count} item${count === 1 ? '' : 's'}`,
+                payload: { supplier_id: this.form.supplier_id, items: this.form.items },
             });
-            this.$store.dispatch('purchaseRequestClosed');
             this.showModal = false;
         },
         /** Reopen a minimised draft exactly as it was left. */
         resumeDraft() {
-            const draft = this.$store.getters.purchaseRequestDraft;
+            const draft = this.$store.getters.draftFor('purchase-request');
             if (!draft) {
                 return;
             }
+
+            const kept = draft.payload ?? {};
 
             this.form.clearErrors();
             this.submitError = '';
             this.editable = false;
             this.form.id = null;
-            this.form.supplier_id = draft.supplier_id ?? null;
-            this.form.items = Array.isArray(draft.items) && draft.items.length
-                ? draft.items
+            this.form.supplier_id = kept.supplier_id ?? null;
+            this.form.items = Array.isArray(kept.items) && kept.items.length
+                ? kept.items
                 : [{ product_id: null, quantity: 0, unit_cost: '', total_cost: 0 }];
-            this.$store.dispatch('purchaseRequestOpened');
+            this.$store.dispatch('draftOpened', 'purchase-request');
             this.showModal = true;
         },
         show() {
@@ -393,7 +395,7 @@ export default {
             ];
             this.editable = false;
             this.saveSuccess = false;
-            this.$store.dispatch('purchaseRequestOpened');
+            this.$store.dispatch('draftOpened', 'purchase-request');
             this.showModal = true;
         },
 
@@ -412,7 +414,7 @@ export default {
 
             this.editable = true;
             this.saveSuccess = false;
-            this.$store.dispatch('purchaseRequestOpened');
+            this.$store.dispatch('draftOpened', 'purchase-request');
             this.showModal = true;
         },
 
@@ -513,8 +515,8 @@ export default {
 
         hide() {
             // Closing outright is not minimising: the draft goes with it.
-            this.$store.dispatch('discardPurchaseRequest');
-            this.$store.dispatch('purchaseRequestClosed');
+            this.$store.dispatch('discardDraft', 'purchase-request');
+            this.$store.dispatch('draftClosed', 'purchase-request');
             this.form.reset();
             this.form.clearErrors();
             this.editable = false;

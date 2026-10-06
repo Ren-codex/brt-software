@@ -1,14 +1,16 @@
 <template>
-    <div v-if="draft" class="draft-bar" role="status">
-        <div class="draft-bar-icon"><i class="ri-draft-line"></i></div>
-        <div class="draft-bar-body">
-            <span class="draft-bar-title">Purchase request draft</span>
-            <span class="draft-bar-detail">{{ summary }}</span>
+    <div v-if="drafts.length" class="draft-stack">
+        <div v-for="draft in drafts" :key="draft.kind" class="draft-bar" role="status">
+            <div class="draft-bar-icon"><i class="ri-draft-line"></i></div>
+            <div class="draft-bar-body">
+                <span class="draft-bar-title">{{ draft.title }}</span>
+                <span class="draft-bar-detail">{{ draft.summary }}</span>
+            </div>
+            <button class="draft-bar-resume" @click="resume(draft)">Resume</button>
+            <button class="draft-bar-discard" title="Discard this draft" @click="discard(draft)">
+                <i class="ri-close-line"></i>
+            </button>
         </div>
-        <button class="draft-bar-resume" @click="resume">Resume</button>
-        <button class="draft-bar-discard" title="Discard this draft" @click="discard">
-            <i class="ri-close-line"></i>
-        </button>
     </div>
 </template>
 
@@ -16,47 +18,47 @@
 import { router } from '@inertiajs/vue3';
 
 /**
- * A draft someone minimised, following them around the system so they can
- * carry on wherever they ended up. Clicking Resume goes back to Purchase
- * Requests and reopens the form with everything still filled in.
+ * Forms someone minimised, following them around the system so they can carry
+ * on wherever they ended up. Resume goes back to where the form lives and
+ * reopens it with everything still filled in.
  */
 export default {
     computed: {
-        draft() {
-            // Hidden while the form itself is open: there is nothing to return to.
-            return this.$store.getters.purchaseRequestMinimised
-                ? this.$store.getters.purchaseRequestDraft
-                : null;
-        },
-        summary() {
-            const supplier = this.draft?.supplier_name || 'No supplier yet';
-            const count = this.draft?.items?.length ?? 0;
-
-            return `${supplier} · ${count} item${count === 1 ? '' : 's'}`;
+        drafts() {
+            return this.$store.getters.minimisedDrafts;
         },
     },
     methods: {
-        resume() {
-            // Already on the right page: the tab listens for this.
-            window.dispatchEvent(new CustomEvent('resume-purchase-request'));
+        resume(draft) {
+            if (draft.belongsTo(window.location.pathname)) {
+                // Already on the right page: the screen listens for this.
+                window.dispatchEvent(new CustomEvent(draft.event));
 
-            if (!window.location.pathname.startsWith('/inventory')) {
-                router.visit('/inventory?tab=purchase-request&resume=1');
+                return;
             }
+
+            router.visit(draft.path);
         },
-        discard() {
-            this.$store.dispatch('discardPurchaseRequest');
+        discard(draft) {
+            this.$store.dispatch('discardDraft', draft.kind);
         },
     },
 };
 </script>
 
 <style scoped>
-.draft-bar {
+.draft-stack {
     position: fixed;
     right: 1.25rem;
     bottom: 1.25rem;
     z-index: 1080;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+.draft-bar {
     display: flex;
     align-items: center;
     gap: 0.7rem;

@@ -306,6 +306,17 @@ export default {
       this.changeTab(this.activeTab);
     }
   },
+  mounted() {
+    // Sent here by the floating bar: show the orders tab, then let the tab
+    // reopen the draft once it has rendered.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('resume')) {
+      this.activeTab = 'sales_orders';
+      this.$nextTick(() => {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('resume-sales-order')), 300);
+      });
+    }
+  },
   methods: {
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
