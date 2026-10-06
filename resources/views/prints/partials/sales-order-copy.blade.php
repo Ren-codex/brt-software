@@ -110,14 +110,6 @@
         </td>
         <td style="width: 220px;">
             <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 4px 0;">Subtotal</td>
-                    <td class="text-right">PHP {{ number_format($sales_order->total_amount + $sales_order->total_discount, 2) }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 4px 0;">Discount</td>
-                    <td class="text-right">PHP {{ number_format($sales_order->total_discount, 2) }}</td>
-                </tr>
                 <tr class="grand-total-box">
                     <td style="padding: 7px 5px;">TOTAL</td>
                     <td class="text-right" style="padding: 7px 5px;">PHP {{ number_format($sales_order->total_amount, 2) }}</td>

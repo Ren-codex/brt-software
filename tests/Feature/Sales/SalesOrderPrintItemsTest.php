@@ -94,4 +94,16 @@ class SalesOrderPrintItemsTest extends TestCase
         // Rather than an empty cell that reads as a rendering fault.
         $this->assertSame('---', $this->itemCells($this->render(packaging: null))[3]);
     }
+
+    public function test_the_totals_block_shows_the_total_and_nothing_else(): void
+    {
+        // Subtotal and Discount restated the same figure twice over on an
+        // order that rarely carries a discount at all.
+        $html = $this->render();
+
+        preg_match('/<td style="width: 220px;">(.*?)<\/td>\s*<\/tr>/s', $html, $block);
+        $totals = trim(preg_replace('/\s+/', ' ', strip_tags($block[1])));
+
+        $this->assertSame('TOTAL PHP 3,750.00', $totals);
+    }
 }
