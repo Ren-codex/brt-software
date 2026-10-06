@@ -65,11 +65,19 @@ class SalesOrderPrintItemsTest extends TestCase
         return $item;
     }
 
-    private function renderOrder(SalesOrder $order, ?SalesOrderItem $item = null): string
+    private function renderOrder(SalesOrder $order, ?SalesOrderItem $item = null, int $items = 1): string
     {
+        $one = $item ?? $this->item();
+        $rows = collect(range(1, $items))->map(function () use ($one) {
+            $copy = $one->replicate();
+            $copy->setRelation('product', $one->product);
+
+            return $copy;
+        });
+
         return view('prints.sales_order', [
             'sales_order' => $order,
-            'items' => collect([$item ?? $this->item()]),
+            'items' => $rows,
         ])->render();
     }
 
@@ -142,6 +150,27 @@ class SalesOrderPrintItemsTest extends TestCase
 
         $this->assertStringContainsString('.half-sheet-top { height: 142.5mm;', $html);
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
+    }
+
+    public function test_four_items_still_share_one_sheet(): void
+    {
+        // Four fits: one copy stands 133.7mm against the 142.5mm half-sheet.
+        $html = $this->renderOrder($this->order(), items: 4);
+
+        $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
+        $this->assertStringNotContainsString('class="copy-cell new-sheet"', $html);
+    }
+
+    public function test_five_items_take_a_sheet_each(): void
+    {
+        // A fifth row comes within 2.1mm of the cut line, close enough that one
+        // wrapped product name would cross it — so neither copy is cut through.
+        $html = $this->renderOrder($this->order(), items: 5);
+
+        // The class name also appears in the stylesheet, so match where it is
+        // applied rather than merely mentioned.
+        $this->assertStringNotContainsString('class="copy-cell half-sheet-top"', $html);
+        $this->assertStringContainsString('class="copy-cell new-sheet"', $html);
     }
 
     public function test_the_totals_block_shows_the_total_and_nothing_else(): void

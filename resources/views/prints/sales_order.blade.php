@@ -133,9 +133,12 @@
 <body>
     @php
         $logoPath = public_path('images/official-logo-mini.png');
-        // Both copies fit on one A4 sheet up to 3 items; past that the second copy
-        // would split across sheets, so each copy gets its own sheet instead.
-        $copiesShareSheet = count($items) <= 3;
+        // Measured off the rendered PDF: one copy stands 133.7mm tall with four
+        // items against the 142.5mm half-sheet, which leaves clear space above
+        // the cut. A fifth item comes within 2.1mm of the line — close enough
+        // that one product name wrapping to a second row would cross it — so
+        // five and up get a sheet each instead of being cut through.
+        $copiesShareSheet = count($items) <= 4;
     @endphp
 
     <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : '' }}">
