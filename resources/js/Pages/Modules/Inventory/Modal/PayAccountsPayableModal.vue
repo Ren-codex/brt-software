@@ -269,15 +269,25 @@ export default {
       this.form.payment_mode = mode;
       this.errors.payment_mode = null;
 
-      if (mode !== 'Bank Transfer') {
+      // Each field is cleared by the mode that actually uses it. A check draws
+      // on an account and carries a reference just as a transfer does, so
+      // switching between the two no longer throws away what was typed.
+      const drawsOnAnAccount = mode === 'Bank Transfer' || mode === 'Check';
+
+      if (!drawsOnAnAccount) {
         this.form.bank_account_id = '';
-      this.form.check_date = '';
-        this.form.bank_name = '';
         this.errors.bank_account_id = null;
-      }
-      if (mode !== 'Bank Transfer' && mode !== 'Check') {
         this.form.reference_number = '';
         this.errors.reference_number = null;
+      }
+
+      if (mode !== 'Bank Transfer') {
+        this.form.bank_name = '';
+      }
+
+      if (mode !== 'Check') {
+        this.form.check_date = '';
+        this.errors.check_date = null;
       }
     },
     formatCurrency,

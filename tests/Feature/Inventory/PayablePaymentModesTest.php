@@ -23,6 +23,7 @@ use App\Models\RolePermission;
 use App\Models\User;
 use App\Models\UserRole;
 use App\Services\Accounting\CashManagementService;
+use App\Services\ReceivedStockService;
 use Database\Seeders\ModulesAndSubmodulesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -316,6 +317,28 @@ class PayablePaymentModesTest extends TestCase
         $this->pay(['payment_mode' => 'GCash', 'payment_amount' => 100])
             ->assertStatus(422)
             ->assertJsonValidationErrors('lines.0.payment_mode');
+    }
+
+    public function test_a_single_check_payment_keeps_its_date_without_a_lines_array(): void
+    {
+        // The HTTP request always builds a `lines` list, but the service is
+        // callable without one. That fallback dropped the check date, so a
+        // caller supplying it was still refused for not supplying it.
+        $stock = app(ReceivedStockService::class)->applyPayment($this->stock, [
+            'payment_mode' => 'Check',
+            'payment_amount' => 2500,
+            'bank_account_id' => $this->bank->id,
+            'reference_number' => 'CHK-0100',
+            'check_date' => now()->addDays(20)->toDateString(),
+        ]);
+
+        $payment = ReceivedStockPayment::firstOrFail();
+        $this->assertEquals(2500, $stock->amount_paid);
+
+        $check = Check::where('source_type', ReceivedStockPayment::class)
+            ->where('source_id', $payment->id)->firstOrFail();
+        $this->assertSame(now()->addDays(20)->toDateString(), $check->check_date->toDateString());
+        $this->assertSame($this->bank->id, $payment->bank_account_id);
     }
 
     public function test_a_split_across_two_modes_is_recorded_as_two_payments(): void

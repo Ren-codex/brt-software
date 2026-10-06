@@ -107,9 +107,15 @@ class ReceivedStockService
                     $lines = [[
                         'payment_mode'     => $paymentMode,
                         'payment_amount'   => $amountPaid,
-                        'bank_account_id'  => $bankAccountId,
+                        // A check draws on an account and carries its own date.
+                        // Leaving either out of this line rejected the payment
+                        // for want of a date the caller had in fact supplied.
+                        'bank_account_id'  => $isCheck
+                            ? ((int) ($data['bank_account_id'] ?? 0) ?: null)
+                            : $bankAccountId,
                         'bank_name'        => $bankName,
                         'reference_number' => $referenceNumber,
+                        'check_date'       => $isCheck ? ($data['check_date'] ?? null) : null,
                     ]];
                 }
 
@@ -365,6 +371,9 @@ class ReceivedStockService
                 'bank_account_id'  => $data['bank_account_id'] ?? null,
                 'bank_name'        => $data['bank_name'] ?? null,
                 'reference_number' => $data['reference_number'] ?? null,
+                // Without this a caller that passes a single check payment is
+                // refused for a missing date it did supply.
+                'check_date'       => $data['check_date'] ?? null,
             ]];
 
             [$paidNow, $lastMode] = $this->recordPaymentLines($receivedStock, $lines);
