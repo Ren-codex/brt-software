@@ -67,9 +67,8 @@
                     <div>
                         <strong>{{ numberFormat(uncleared.amount) }} is already promised</strong>
                         <span>
-                            A {{ (uncleared.mode || '').toLowerCase() }}<template v-if="uncleared.date"> dated {{ heldDate }}</template>
-                            has not cleared yet. Only {{ numberFormat(collectable) }} can be collected again —
-                            confirm or bounce it first.
+                            {{ heldDescription }} Only {{ numberFormat(collectable) }} can be collected again —
+                            confirm or bounce {{ uncleared.count > 1 ? 'them' : 'it' }} first.
                         </span>
                     </div>
                 </div>
@@ -290,10 +289,21 @@ import { useForm } from '@inertiajs/vue3';
 export default {
     props: [ ],
     computed: {
-        heldDate() {
-            if (!this.uncleared?.date) return '';
-            return new Date(`${this.uncleared.date}T00:00:00`)
-                .toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+        heldDescription() {
+            const held = this.uncleared;
+            if (!held) return '';
+
+            const noun = (held.mode || '').toLowerCase() === 'check' ? 'check' : 'transfer';
+
+            if (held.count > 1) {
+                return `${held.count} ${noun}s have not cleared yet.`;
+            }
+
+            const dated = held.date
+                ? ` dated ${new Date(`${held.date}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                : '';
+
+            return `A ${noun}${dated} has not cleared yet.`;
         },
         normalizedPaymentMode() {
             return String(this.invoice?.sales_order?.payment_mode || '').trim().toLowerCase();
@@ -549,8 +559,8 @@ export default {
             // Mirrors the server guard, so the warning above is not something
             // you can simply submit past.
             if (this.uncleared && total > Number(this.collectable ?? 0) + 0.009) {
-                this.form.errors.splits = `${this.numberFormat(this.uncleared.amount)} is already covered by a `
-                    + `${(this.uncleared.mode || '').toLowerCase()} that has not cleared. `
+                this.form.errors.splits = `${this.numberFormat(this.uncleared.amount)} is already covered by `
+                    + `${this.heldDescription.replace(/^A /, 'a ').replace(/\.$/, '')}. `
                     + `Only ${this.numberFormat(this.collectable ?? 0)} can be collected again.`;
                 return;
             }

@@ -214,6 +214,75 @@ class UnclearedCheckTest extends TestCase
         $this->assertEquals(2000, $balance['collectable'], 'What can be taken again today.');
     }
 
+    public function test_an_invoice_paid_by_instalments_settles_once_every_check_clears(): void
+    {
+        // Part cash now, the rest promised by two checks dated weeks apart.
+        $invoice = $this->creditInvoice();
+        $service = app(ArInvoiceClass::class);
+
+        $this->pay($invoice, ['payment_mode' => 'Cash', 'amount' => 1000])->assertSessionHasNoErrors();
+        $this->payByCheck($invoice, 1000, now()->addDays(10)->toDateString())->assertSessionHasNoErrors();
+        $this->payByCheck($invoice, 1000, now()->addDays(20)->toDateString())->assertSessionHasNoErrors();
+
+        $invoice->refresh();
+        $this->assertEquals(2000, $invoice->balance_due, 'Only the cash was recognised.');
+        $this->assertEquals(1000, $invoice->amount_paid);
+        $this->assertEquals(2000, $service->unclearedTotal($invoice), 'Both checks are counted.');
+
+        // Nothing is left to collect: the rest is promised, not missing.
+        $this->pay($invoice, ['payment_mode' => 'Cash', 'amount' => 500])
+            ->assertSessionHasErrors('amount_paid');
+
+        $checks = Receipt::where('ar_invoice_id', $invoice->id)
+            ->where('payment_mode', 'Check')->orderBy('id')->get();
+
+        $service->confirmReceipt($checks[0]->id, 'BPI');
+        $invoice->refresh();
+        $this->assertEquals(1000, $invoice->balance_due, 'One cleared, one still outstanding.');
+        $this->assertEquals(1000, $service->unclearedTotal($invoice));
+
+        $service->confirmReceipt($checks[1]->id, 'BDO');
+        $invoice->refresh();
+        $this->assertEquals(0, $invoice->balance_due);
+        $this->assertEquals(3000, $invoice->amount_paid, 'Paid once over, not twice.');
+        $this->assertSame('Paid', $invoice->status->name);
+    }
+
+    public function test_a_bounced_instalment_can_be_replaced_without_disturbing_the_rest(): void
+    {
+        $invoice = $this->creditInvoice();
+        $service = app(ArInvoiceClass::class);
+
+        $this->pay($invoice, ['payment_mode' => 'Cash', 'amount' => 1000])->assertSessionHasNoErrors();
+        $this->payByCheck($invoice, 1000, now()->addDays(10)->toDateString())->assertSessionHasNoErrors();
+        $this->payByCheck($invoice, 1000, now()->addDays(20)->toDateString())->assertSessionHasNoErrors();
+
+        $checks = Receipt::where('ar_invoice_id', $invoice->id)
+            ->where('payment_mode', 'Check')->orderBy('id')->get();
+
+        Check::where('source_type', Receipt::class)->where('source_id', $checks[0]->id)
+            ->update(['status' => Check::STATUS_BOUNCED, 'bounced_at' => now()]);
+
+        // The bounced one frees its share, and only its share.
+        $this->assertEquals(1000, $service->unclearedTotal($invoice->fresh()));
+        $this->pay($invoice, ['payment_mode' => 'Cash', 'amount' => 1000])->assertSessionHasNoErrors();
+
+        $service->confirmReceipt($checks[1]->id, 'BDO');
+        $invoice->refresh();
+        $this->assertEquals(0, $invoice->balance_due);
+        $this->assertEquals(3000, $invoice->amount_paid);
+    }
+
+    public function test_the_refusal_counts_the_checks_rather_than_naming_one(): void
+    {
+        $invoice = $this->creditInvoice();
+        $this->payByCheck($invoice, 1000, now()->addDays(10)->toDateString())->assertSessionHasNoErrors();
+        $this->payByCheck($invoice, 1000, now()->addDays(20)->toDateString())->assertSessionHasNoErrors();
+
+        $this->pay($invoice, ['payment_mode' => 'Cash', 'amount' => 1500])
+            ->assertSessionHasErrors(['amount_paid' => '₱2,000.00 of this invoice is already covered by 2 payments that have not cleared, so only ₱1,000.00 can be collected again. Confirm or bounce them first.']);
+    }
+
     public function test_an_ordinary_cash_payment_is_untouched(): void
     {
         $invoice = $this->creditInvoice();

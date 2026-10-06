@@ -260,17 +260,14 @@ class ArInvoiceClass
         $uncleared = $this->unclearedTotal($ar_invoice);
 
         if ($uncleared > 0 && $totalPayment > round((float) $ar_invoice->balance_due - $uncleared, 2)) {
-            $held = $this->unclearedReceipts($ar_invoice)->first();
-            $dated = $held?->check_date
-                ? ' dated ' . \Illuminate\Support\Carbon::parse($held->check_date)->format('M j, Y')
-                : '';
+            $held = $this->unclearedReceipts($ar_invoice);
 
             throw ValidationException::withMessages([
-                'amount_paid' => '₱' . number_format($uncleared, 2) . ' of this invoice is already covered by a '
-                    . strtolower((string) $held?->payment_mode) . $dated
-                    . ' that has not cleared yet, so only ₱'
+                'amount_paid' => '₱' . number_format($uncleared, 2) . ' of this invoice is already covered by '
+                    . $this->describeHeld($held) . ', so only ₱'
                     . number_format(max(0, round((float) $ar_invoice->balance_due - $uncleared, 2)), 2)
-                    . ' can be collected again. Confirm or bounce it first.',
+                    . ' can be collected again. Confirm or bounce '
+                    . ($held->count() > 1 ? 'them' : 'it') . ' first.',
             ]);
         }
 
@@ -437,6 +434,24 @@ class ArInvoiceClass
     public function unclearedTotal(ArInvoice $ar_invoice): float
     {
         return round((float) $this->unclearedReceipts($ar_invoice)->sum('amount_paid'), 2);
+    }
+
+    /**
+     * How to name what is being held. Naming one check's date when two are
+     * held reads as though the other does not exist.
+     */
+    private function describeHeld($held): string
+    {
+        if ($held->count() > 1) {
+            return $held->count() . ' payments that have not cleared';
+        }
+
+        $one = $held->first();
+        $dated = $one?->check_date
+            ? ' dated ' . \Illuminate\Support\Carbon::parse($one->check_date)->format('M j, Y')
+            : '';
+
+        return 'a ' . strtolower((string) $one?->payment_mode) . $dated . ' that has not cleared yet';
     }
 
     public function confirmCheck($receiptId, $bankName, $checkDate = null)

@@ -109,7 +109,7 @@
                                                     Due Soon
                                                 </span>
                                                 <span v-if="list.uncleared" class="held-badge" :title="heldLabel(list)">
-                                                    {{ list.uncleared.mode === 'Check' ? 'Check Held' : 'Unconfirmed' }}
+                                                    {{ heldBadge(list.uncleared) }}
                                                 </span>
                                             </span>
                                         </td>
@@ -315,18 +315,31 @@ export default {
         // Tone comes from what the status means — see Shared/utils/statusTone.js
         statusTone,
 
-        /** e.g. "₱3,750.00 check, Oct 10 — not yet cleared" */
+        heldBadge(held) {
+            if ((held?.mode || '') !== 'Check') return 'Unconfirmed';
+
+            return held.count > 1 ? `${held.count} Checks Held` : 'Check Held';
+        },
+
+        /** e.g. "₱3,750.00 check, Oct 10 — not yet cleared", or "₱2,000.00 in 2 checks" */
         heldLabel(list) {
             const held = list?.uncleared;
             if (!held) return '';
 
             const amount = `₱${Number(held.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            const what = (held.mode || '').toLowerCase() === 'check' ? 'check' : 'transfer';
+            const noun = (held.mode || '').toLowerCase() === 'check' ? 'check' : 'transfer';
+
+            // One of them can name its date; several cannot without implying
+            // the rest are not there.
+            if (held.count > 1) {
+                return `${amount} in ${held.count} ${noun}s — not yet cleared`;
+            }
+
             const dated = held.date
                 ? `, ${new Date(`${held.date}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}`
                 : '';
 
-            return `${amount} ${what}${dated} — not yet cleared`;
+            return `${amount} ${noun}${dated} — not yet cleared`;
         },
 
         checkSearchStr: _.debounce(function (string) {
