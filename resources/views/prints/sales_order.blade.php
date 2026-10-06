@@ -12,13 +12,21 @@
             line-height: 1.3;
         }
 
-        /* Two-copies-per-sheet layout — each copy takes only the height its content needs
-           (no forced fixed height), so short documents don't leave a large dead gap before
-           the cut line. Orders too long to share a sheet start the second copy on a new
-           sheet (.new-sheet) so neither copy is split across the cut; a copy longer than
-           one page still flows onto the next page rather than being clipped. */
+        /* Two-copies-per-sheet layout. The sheet is cut in half with scissors, so
+           the first copy is given exactly half the printable height and carries
+           the cut line on its own bottom edge: A4 is 297mm, the page margin takes
+           6mm off each end, so half of what is left is 142.5mm — and 6mm + 142.5mm
+           is 148.5mm, the middle of the paper itself. A separate spacer element
+           for the line would add its own height and move the cut off centre.
+
+           Orders too long to share a sheet start the second copy on a new sheet
+           (.new-sheet) so neither copy is split across the cut; those are not
+           halved, since there is nothing to cut. */
         .copy-cell { width: 100%; }
-        .cut-line { width: 100%; margin: 6mm 0; border-top: 1px dashed #999; }
+        /* Only the top copy is measured. Giving the bottom one a height too
+           made the pair a fraction taller than the page once the dashed border
+           was counted, and it fell onto a second sheet. */
+        .half-sheet-top { height: 142.5mm; box-sizing: border-box; border-bottom: 1px dashed #999; }
         .new-sheet { page-break-before: always; }
         .keep-whole { page-break-inside: avoid; }
 
@@ -129,13 +137,9 @@
         $copiesShareSheet = count($items) <= 3;
     @endphp
 
-    <div class="copy-cell">
+    <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : '' }}">
         @include('prints.partials.sales-order-copy', ['copyLabel' => 'Customer Copy'])
     </div>
-
-    @if($copiesShareSheet)
-        <div class="cut-line"></div>
-    @endif
 
     <div class="copy-cell {{ $copiesShareSheet ? 'keep-whole' : 'new-sheet' }}">
         @include('prints.partials.sales-order-copy', ['copyLabel' => 'BRT Copy'])

@@ -95,6 +95,17 @@ class SalesOrderPrintItemsTest extends TestCase
         $this->assertSame('---', $this->itemCells($this->render(packaging: null))[3]);
     }
 
+    public function test_the_first_copy_takes_exactly_half_the_sheet(): void
+    {
+        // The sheet is cut in half with scissors, so the line has to land on
+        // the paper's midpoint rather than wherever the content happens to end.
+        // A4 is 297mm, the page margin takes 6mm off each end: 6 + 142.5 = 148.5.
+        $html = $this->render();
+
+        $this->assertStringContainsString('.half-sheet-top { height: 142.5mm;', $html);
+        $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
+    }
+
     public function test_the_totals_block_shows_the_total_and_nothing_else(): void
     {
         // Subtotal and Discount restated the same figure twice over on an
