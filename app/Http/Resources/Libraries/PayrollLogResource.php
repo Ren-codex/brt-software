@@ -15,7 +15,13 @@ class PayrollLogResource extends JsonResource
             'id' => $this->id,
             'payroll_id' => $this->payroll_id,
             'action' => $this->action,
-            'actioned_by' => $this->actionedBy ? $this->actionedBy->employee->full_name : null,
+            // Two faults in one line: the employee was not checked for before
+            // being reached through, which took the whole payroll list down
+            // with a 500 whenever a log was written by a user who has no
+            // employee record — and every payroll has a log. The attribute was
+            // also misspelt (the accessor is `fullname`), so even where an
+            // employee existed this showed nothing.
+            'actioned_by' => $this->actionedBy?->employee?->fullname ?? $this->actionedBy?->username,
             'created_at' => $this->created_at ? $this->created_at->toDateTimeString() : null,
             'remarks' => $this->remarks,
         ];

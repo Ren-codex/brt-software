@@ -7,6 +7,7 @@ use App\Models\ListRole;
 use App\Models\ListStatus;
 use App\Models\Module;
 use App\Models\Payroll;
+use App\Models\PayrollLog;
 use App\Models\RolePermission;
 use App\Models\User;
 use App\Models\UserRole;
@@ -72,6 +73,14 @@ class PayrollListTest extends TestCase
             // created_at is not fillable, so it has to be set after the fact
             // for these to be distinguishable by age at all.
             $payroll->forceFill(['created_at' => now()->subDays(60 - $i)])->saveQuietly();
+
+            // Every real payroll carries one of these — store() writes it — so
+            // a fixture without one does not exercise what the list renders.
+            PayrollLog::create([
+                'payroll_id' => $payroll->id,
+                'action' => 'created',
+                'actioned_by_id' => $creator->id,
+            ]);
         }
     }
 
@@ -127,6 +136,36 @@ class PayrollListTest extends TestCase
         $this->assertCount(3, $body['data']);
         $this->assertSame($this->user->username, $body['data'][0]['created_by'],
             'With no employee record, the username stands in rather than nothing at all.');
+    }
+
+    public function test_the_creation_log_names_whoever_wrote_it(): void
+    {
+        // Every payroll carries a log, so a log that cannot render is a list
+        // that cannot render — this is what kept the page broken.
+        $this->makePayrolls($this->user, 1);
+
+        $log = $this->list()->assertOk()->json('data.0.logs.0');
+
+        $this->assertSame('created', $log['action']);
+        $this->assertSame($this->user->username, $log['actioned_by'],
+            'With no employee record, the username stands in.');
+    }
+
+    public function test_the_log_names_the_employee_when_there_is_one(): void
+    {
+        Employee::create([
+            'firstname' => 'Ben', 'lastname' => 'Santos', 'mobile' => '09170000001',
+            'birthdate' => '1990-01-01', 'sex' => 'Male', 'religion' => 'None',
+            'user_id' => $this->user->id,
+        ]);
+        $this->makePayrolls($this->user->fresh(), 1);
+
+        $named = $this->list()->assertOk()->json('data.0.logs.0.actioned_by');
+
+        // It read `full_name` where the accessor is `fullname`, so this was
+        // blank even when the employee was there.
+        $this->assertStringContainsString('Ben', $named);
+        $this->assertStringContainsString('Santos', $named);
     }
 
     public function test_a_creator_with_an_employee_record_is_named(): void
