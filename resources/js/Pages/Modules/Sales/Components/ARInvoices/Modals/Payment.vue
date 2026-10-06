@@ -476,6 +476,10 @@ export default {
                     // whichever bank it is deposited to, so it carries a number only.
                     bank_account_id: s.payment_mode === 'Bank Transfer' ? (s.bank_account_id || null) : null,
                     reference_number: this.needsBankDetails(s) ? (s.reference_number || '') : null,
+                    // Only a check has a date of its own, and it has to travel:
+                    // dropping it here both failed the server's check and wiped
+                    // the field the user had just filled in.
+                    check_date: s.payment_mode === 'Check' ? (s.check_date || '') : null,
                 }))
                 .filter(s => s.amount > 0);
 
@@ -495,6 +499,12 @@ export default {
                 this.form.errors.splits = missingReference.payment_mode === 'Check'
                     ? 'Enter the check number for the check payment.'
                     : 'Enter the reference number for the bank transfer.';
+                return;
+            }
+
+            const missingCheckDate = splits.find(s => s.payment_mode === 'Check' && !s.check_date);
+            if (missingCheckDate) {
+                this.form.errors.splits = 'Enter the date written on the check.';
                 return;
             }
 
