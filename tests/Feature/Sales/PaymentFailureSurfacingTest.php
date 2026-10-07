@@ -55,7 +55,7 @@ class PaymentFailureSurfacingTest extends TestCase
         $invoice = ArInvoice::firstOrFail();
         $this->assertSame(0.0, (float) $invoice->balance_due);
         $this->assertSame('paid', $invoice->status->slug);
-        $this->assertSame('closed', SalesOrder::firstOrFail()->status->slug);
+        $this->assertSame('for-turnover', SalesOrder::firstOrFail()->status->slug);
         $this->assertSame(0, SalesOrderIncentive::count(), 'No rep, so nobody to credit.');
     }
 

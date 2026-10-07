@@ -843,6 +843,9 @@ class SalesOrderClass
             'payment_mode' => $request->collected_mode,
             'reference_number' => $request->collected_reference,
             'check_date' => $request->collected_check_date,
+            // Taken at the door, so the driver is carrying it until they hand
+            // it in — which is what keeps the order out of Closed.
+            'collected_by_driver' => true,
         ]);
 
         $result = app(\App\Services\Modules\ArInvoiceClass::class)->payment($payment, $invoice->id);

@@ -105,13 +105,42 @@ class SalesOrder extends Model
     }
 
     /**
-     * Where a fully paid order lands. Closed says the business is finished with
-     * it, which is only true once the goods have actually arrived; until then
-     * the money is in and the sacks are not, which is For Release.
+     * Whether the money a driver collected has reached the office.
+     *
+     * Only a collection taken in the field is ever out: a counter sale or a
+     * payment made at the office is in the moment it is recorded. A field
+     * collection stays out until the driver hands it over, which moves the
+     * receipt to somebody else.
+     */
+    public function moneyIsIn(): bool
+    {
+        if (! $this->driver_id) {
+            return true;
+        }
+
+        return ! Receipt::whereIn('ar_invoice_id', $this->arInvoices()->select('id'))
+            ->where('receipt_type', 'payment')
+            ->where('held_by_employee_id', $this->driver_id)
+            ->whereNull('remittance_id')
+            ->exists();
+    }
+
+    /**
+     * Where a fully paid order lands.
+     *
+     * Three things have to be true before the business is finished with an
+     * order: the money is recorded, the sacks have arrived, and the money has
+     * actually reached the office. Paid but not delivered is For Release.
+     * Delivered and paid, with the cash still in the driver's pocket, is For
+     * Turnover — Closed would say the business has money it has not seen.
      */
     public function settledStatusSlug(): string
     {
-        return $this->delivered_at ? 'closed' : 'for-release';
+        if (! $this->delivered_at) {
+            return 'for-release';
+        }
+
+        return $this->moneyIsIn() ? 'closed' : 'for-turnover';
     }
 
     /**

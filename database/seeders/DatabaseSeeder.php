@@ -15,6 +15,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(ListRolesTableSeeder::class);
         $this->call(ListStatusesTableSeeder::class);
+        // Added after the fixed list above was written, so it has its own
+        // idempotent seeder rather than an id in the middle of that one.
+        $this->call(ForTurnoverStatusSeeder::class);
         $this->call(ChartOfAccountsSeeder::class);
         $this->call(ModulesAndSubmodulesSeeder::class);
         $this->call(SalesDefaultPermissionsSeeder::class);

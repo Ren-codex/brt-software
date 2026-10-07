@@ -240,8 +240,10 @@ export default {
     },
     computed: {
         statusTabs() {
-            // For Release sits between paid and finished: money in, goods not gone.
-            const relevant = ['for-payment', 'partially-paid', 'for-release', 'closed', 'cancelled'];
+            // Two states sit between paid and finished. For Release is money in,
+            // goods not gone. For Turnover is the mirror: goods gone and paid
+            // for, but the cash is still in the driver's pocket.
+            const relevant = ['for-payment', 'partially-paid', 'for-release', 'for-turnover', 'closed', 'cancelled'];
             const bySlug = Object.fromEntries((this.dropdowns.sales_statuses || []).map(s => [s.slug, s]));
 
             return [

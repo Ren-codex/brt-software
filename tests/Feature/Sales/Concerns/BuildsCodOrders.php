@@ -43,6 +43,8 @@ trait BuildsCodOrders
             'paid' => 'Paid', 'partially-paid' => 'Partially Paid', 'closed' => 'Closed',
             'approved' => 'Approved', 'cancelled' => 'Cancelled',
             'for-release' => 'For Release',
+            // Delivered and paid, with the cash still out with the driver.
+            'for-turnover' => 'For Turnover',
         ];
 
         foreach ($statuses as $slug => $name) {

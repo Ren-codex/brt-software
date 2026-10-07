@@ -185,7 +185,7 @@ class RemittanceClass
      */
     public function turnOver($receiptId, $employeeId)
     {
-        $receipt = Receipt::with('status')->findOrFail($receiptId);
+        $receipt = Receipt::with(['status', 'arInvoice.sales_order.status'])->findOrFail($receiptId);
 
         if ($receipt->remittance_id || optional($receipt->status)->slug !== 'pending') {
             throw ValidationException::withMessages([
@@ -196,6 +196,19 @@ class RemittanceClass
         $employee = Employee::findOrFail($employeeId);
 
         $receipt->update(['held_by_employee_id' => $employee->id]);
+
+        // The handover is what finishes a delivered, paid order: until now the
+        // money was out with the driver, so the order sat in For Turnover
+        // rather than claiming the business had it.
+        // Deliberately narrow: this only takes an order out of For Turnover.
+        // Re-deriving any other status here would drag old records backwards —
+        // orders closed before the delivery rules existed have no delivery
+        // stamp, so they would read as For Release and leave Closed for a
+        // handover that has nothing to do with them.
+        $order = optional($receipt->arInvoice)->sales_order;
+        if ($order && optional($order->status)->slug === 'for-turnover' && ($statusId = $order->fresh()->settledStatusId())) {
+            $order->update(['status_id' => $statusId]);
+        }
 
         return [
             'data' => $receipt->fresh('heldBy'),

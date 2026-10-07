@@ -297,6 +297,13 @@ class ArInvoiceClass
         }
 
         $pendingStatusId = ListStatus::getBySlug('pending')?->id;
+        // COD money changes hands at the door, so a driver is carrying it
+        // whichever screen recorded it — the office often types up what the
+        // driver phoned in. Anything else was paid to the office itself, and
+        // blaming a driver for money they never touched would leave the order
+        // waiting on a handover that cannot happen.
+        $collectedInField = (bool) $request->collected_by_driver
+            || SalesOrder::isCod(optional($ar_invoice->sales_order)->payment_mode);
         $lastReceipt = null;
         $receiptIds = [];
 
@@ -322,9 +329,15 @@ class ArInvoiceClass
                 'check_status'   => $isCheck ? 'on_hand' : null,
                 'check_date'     => $isCheck ? $split['check_date'] : null,
                 // Whoever took the money is carrying it until a remittance
-                // clears them: the driver on a delivery, else the rep.
-                'held_by_employee_id' => optional($ar_invoice->sales_order)->driver_id
-                    ?? optional($ar_invoice->sales_order)->sales_rep_id,
+                // clears them. The driver only when the collection happened at
+                // the door: a customer paying at the office later hands it to
+                // the office, and blaming the driver for money they never
+                // touched would leave the order waiting on a handover that
+                // cannot happen.
+                'held_by_employee_id' => $collectedInField
+                    ? (optional($ar_invoice->sales_order)->driver_id
+                        ?? optional($ar_invoice->sales_order)->sales_rep_id)
+                    : optional($ar_invoice->sales_order)->sales_rep_id,
             ]);
 
             $this->journalEntryService->recordReceiptEntry($receipt);
@@ -338,6 +351,17 @@ class ArInvoiceClass
 
             $receiptIds[] = $receipt->id;
             $lastReceipt = $receipt;
+        }
+
+        // Re-derived here because applyPaymentToInvoice ran before these
+        // receipts existed, and where an order lands now depends on who is
+        // holding the money: with no receipt to find, it read as already in
+        // and closed an order whose cash was still in the truck.
+        if ($order && round((float) $ar_invoice->fresh()->balance_due, 2) <= 0
+            && ! in_array(optional($order->status)->slug, ['cancelled', 'sales-returned', 'partially-returned'], true)) {
+            if ($settledStatusId = $order->fresh()->settledStatusId()) {
+                $order->update(['status_id' => $settledStatusId]);
+            }
         }
 
         return [

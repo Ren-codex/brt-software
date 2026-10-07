@@ -143,7 +143,8 @@ class DeliveryAcceptanceTest extends TestCase
         $this->assertSame(0.0, (float) $invoice->balance_due);
         $this->assertTrue($invoice->receipts()->exists());
         $this->assertNotNull($order->fresh()->delivered_at);
-        $this->assertSame('closed', $order->fresh()->status->slug);
+        // Not Closed: the driver is still carrying what they just collected.
+        $this->assertSame('for-turnover', $order->fresh()->status->slug);
     }
 
     public function test_collecting_less_than_the_accepted_total_leaves_a_balance(): void

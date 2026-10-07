@@ -103,7 +103,7 @@ class ClosingNeedsDeliveryTest extends TestCase
         $this->assertSame('for-payment', SalesOrder::firstOrFail()->status->slug);
     }
 
-    public function test_collecting_a_cod_delivery_closes_it_because_the_goods_went_out(): void
+    public function test_collecting_a_cod_delivery_takes_it_past_for_release(): void
     {
         $driver = $this->driver();
         $rep = Employee::create([
@@ -125,7 +125,10 @@ class ClosingNeedsDeliveryTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $order = SalesOrder::firstOrFail();
+        // The collection stamped the delivery, so this is past For Release. It
+        // stops at For Turnover rather than Closed because the cash is still
+        // with the driver.
         $this->assertNotNull($order->delivered_at);
-        $this->assertSame('closed', $order->status->slug);
+        $this->assertSame('for-turnover', $order->status->slug);
     }
 }
