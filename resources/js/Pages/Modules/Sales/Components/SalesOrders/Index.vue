@@ -137,11 +137,10 @@
                                                     class="action-btn warn" v-b-tooltip.hover title="Sales Adjustment">
                                                     <i class="ri-refund-line"></i>
                                                 </button>
-                                                <button v-if="canMarkDelivered(list)"
-                                                    @click.stop="onMarkDelivered(list)"
-                                                    class="action-btn success" v-b-tooltip.hover title="Mark Delivered">
-                                                    <i class="ri-truck-line"></i>
-                                                </button>
+                                                <!-- Marking delivered belongs to the Deliveries tab, which is
+                                                     built around that job and shows how long each one has
+                                                     been waiting. Offering it here as well meant two places
+                                                     to do the same thing and neither one the obvious place. -->
                                                 <button @click.stop="onPrint(list.id)"
                                                     class="action-btn info" v-b-tooltip.hover title="Print Invoice">
                                                     <i class="ri-printer-line"></i>
@@ -183,7 +182,6 @@
 
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
-    <MarkDelivered @delivered="fetch()" ref="markDelivered"/>
     <Adjustment @update="fetch()" :dropdowns="dropdowns" ref="adjustment"/>
 
     
@@ -198,7 +196,6 @@ import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Cancel from './Modals/Cancel.vue';
-import MarkDelivered from './Modals/MarkDelivered.vue';
 import DeliveryBoard from './DeliveryBoard.vue';
 import Create from './Modals/Create.vue';
 import ViewOrder from './Modals/ViewOrder.vue';
@@ -210,7 +207,7 @@ import { recordLockMixin } from '@/Shared/recordLock.js';
 
 import printDocument from '@/Shared/utils/printDocument';
 export default {
-    components: { ViewOrder, Pagination, Multiselect , Create, Cancel, MarkDelivered, DeliveryBoard, Adjustment, TableLoadingRow },
+    components: { ViewOrder, Pagination, Multiselect , Create, Cancel, DeliveryBoard, Adjustment, TableLoadingRow },
     mixins: [pollingMixin, recordLockMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
@@ -357,19 +354,6 @@ export default {
         openEdit(data, index) {
             this.selectedRow = index;
             this.$refs.create.edit(data, index);
-        },
-
-        /**
-         * Only worth offering while there is something to record: an order the
-         * driver could still be out with, and not one already cancelled.
-         */
-        canMarkDelivered(order) {
-            return !order.delivered_at
-                && order.status?.slug !== 'cancelled'
-                && this.can('sales', 'sales_orders', 'encoder');
-        },
-        onMarkDelivered(order) {
-            this.$refs.markDelivered.show(order);
         },
 
         onCancel(list) {
