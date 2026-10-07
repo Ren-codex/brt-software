@@ -1012,6 +1012,37 @@
         </div>
     </div>
 
+    <!-- A delivered order travels with the driver, so the moment it is created
+         is the moment it needs printing. A counter sale is not delivered and
+         keeps its receipt prompt instead. -->
+    <div v-if="showOrderPrintPrompt" class="modal-overlay active order-review-modal" @click.self="skipOrderPrint">
+        <div class="modal-container modal-sm" @click.stop>
+            <div class="modal-header">
+                <div class="header-title">
+                    <i class="ri-printer-line"></i>
+                    <h2>Order Created</h2>
+                </div>
+                <button class="close-btn" @click="skipOrderPrint">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="order-print-lead">
+                    <strong>{{ createdOrderNumber || 'The order' }}</strong> has been saved.
+                    Print it for the driver to take on the delivery?
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" @click="skipOrderPrint">
+                    <i class="ri-close-line me-1"></i>Not Now
+                </button>
+                <button type="button" class="btn btn-save" @click="printOrderNow" :disabled="!createdOrderId">
+                    <i class="ri-printer-line me-1"></i>Print Sales Order
+                </button>
+            </div>
+        </div>
+    </div>
+
     <Item :dropdowns="dropdowns" :items="form.items" @items="storeItem" @update="updateItem" ref="item" />
     <Customer :dropdowns="dropdowns" ref="createCustomer" />
 </template>
@@ -1076,6 +1107,9 @@ export default {
             showBankTransferModal: false,
             showChargeSuccessModal: false,
             showPrintPrompt: false,
+            showOrderPrintPrompt: false,
+            createdOrderId: null,
+            createdOrderNumber: null,
             cashReceivedAmount: null,
             cashChargeError: null,
             creditVerificationError: null,
@@ -1733,9 +1767,15 @@ export default {
                     }
 
                     this.saveSuccess = true;
-                    setTimeout(() => {
-                        this.$emit('add', true);
-                    }, 300);
+                    this.$emit('add', true);
+
+                    // Credit and COD are both delivered; the driver cannot
+                    // leave without the paperwork.
+                    if (createdOrder?.id) {
+                        this.createdOrderId = createdOrder.id;
+                        this.createdOrderNumber = createdOrder.so_number || null;
+                        this.showOrderPrintPrompt = true;
+                    }
                 },
                 onError: () => {
                     this.showCashReceivedModal = false;
@@ -1884,6 +1924,17 @@ export default {
             this.pendingCashChange = 0;
             this.paymentForm.reset();
             this.$emit('add', true);
+        },
+        printOrderNow() {
+            if (this.createdOrderId) {
+                printDocument(`/sales-orders/${this.createdOrderId}?option=print&type=sales_order`);
+            }
+            this.skipOrderPrint();
+        },
+        skipOrderPrint() {
+            this.showOrderPrintPrompt = false;
+            this.createdOrderId = null;
+            this.createdOrderNumber = null;
         },
         printReceiptNow() {
             if (this.pendingReceiptId) {
@@ -2209,6 +2260,19 @@ export default {
 </script>
 
 <style scoped>
+/* Content inside the body only — the modal chrome itself comes from
+   _library-modal.scss and must not be redefined here. */
+.order-print-lead {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #4d6b64;
+}
+
+.order-print-lead strong {
+    color: #16322e;
+}
+
 .print-review-modal .modal-container {
     max-width: 700px;
     width: 92%;
