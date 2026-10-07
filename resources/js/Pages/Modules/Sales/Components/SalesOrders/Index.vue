@@ -62,12 +62,10 @@
                         <table class="table sales-table mb-0">
                             <thead>
                                 <tr>
-                                    <th>#</th>
                                     <th>Order Number</th>
                                     <th>Customer</th>
                                     <th>Date</th>
                                     <th>Status</th>
-                                    <th>Payment</th>
                                     <th class="text-end">Total Amount</th>
                                     <th>Due Date</th>
                                     <th class="text-center">Paid %</th>
@@ -75,44 +73,36 @@
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <TableLoadingRow v-if="loading" :colspan="10" message="Loading sales orders..." />
+                                <TableLoadingRow v-if="loading" :colspan="8" message="Loading sales orders..." />
                                 <template v-else>
                                 <template v-for="(list, index) in lists" :key="list.id">
                                     <tr @click="openOrder(list)"
                                         :class="{
 
-                                            'bg-danger bg-opacity-25': isDueSoon(list),
+                                            'row-due-soon': isDueSoon(list),
                                             'cursor-pointer': true
                                         }" 
                                         class="main-table-row transition-all"
                                         style="transition: all 0.3s ease;">
-                                        <td class="text-center">
+                                        <td class="order-number-cell fw-semibold">
                                             <div class="expand-icon" title="Open this order">
                                                 <i class="ri-arrow-right-s-line"></i>
                                             </div>
-                                            {{ index + 1 }}
+                                            {{ list.so_number }}
                                         </td>
-                                        <td class="text-center fw-semibold">{{ list.so_number }}</td>
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.created_at }}</td>
+                                        <!-- Status and payment are one fact about the order — "For Payment,
+                                             COD" — so they share a cell instead of two columns of pills. -->
                                         <td class="text-center">
-                                            <span class="badge-stack">
+                                            <span class="state-stack">
                                                 <span class="status-badge" :class="statusTone(list.status)">
                                                     <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
                                                     {{ list.status ? list.status.name : '' }}
                                                 </span>
-                                            </span>
-                                        </td>
-                                          <!-- <td class="text-center">
-                                            <span
-                                                v-if="list.sub_status?.name"
-                                                class="status-badge" :class="statusTone(list.sub_status)">
-                                                {{ list.sub_status?.name  }}
-                                            </span>
-                                        </td> -->
-                                        <td class="text-center">
-                                            <span class="payment-pill" :class="paymentTone(list.payment_mode)">
-                                                {{ paymentLabel(list.payment_mode) }}
+                                                <span class="payment-pill" :class="paymentTone(list.payment_mode)">
+                                                    {{ paymentLabel(list.payment_mode) }}
+                                                </span>
                                             </span>
                                         </td>
                                         <td class="text-end fw-semibold">{{ formatCurrency(list.total_amount) }}</td>
@@ -120,7 +110,10 @@
                                             <span class="badge-stack">
                                                 {{ list.due_date }}
                                                 <span v-if="isDueSoon(list)" class="badge bg-danger">Due Soon</span>
-                                                <span v-if="list.delivered_at" class="badge bg-success-subtle text-success-emphasis"
+                                                <!-- On a closed order the badge restates the status, so it
+                                                     only shows where it is news: goods out, money not in. -->
+                                                <span v-if="list.delivered_at && list.status?.slug !== 'closed'"
+                                                    class="badge bg-success-subtle text-success-emphasis"
                                                     v-b-tooltip.hover :title="`Recorded by ${list.delivered_by || 'staff'}`">
                                                     Delivered {{ list.delivered_at }}
                                                 </span>
@@ -168,7 +161,7 @@
                                     </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
-                                    <td colspan="10">
+                                    <td colspan="8">
                                         <div class="sales-empty-state">
                                             <i class="ri-shopping-cart-line"></i>
                                             <p class="mb-1">No sales orders found</p>
@@ -543,6 +536,41 @@ export default {
    needs a full 1.5rem of air above them. */
 .library-card-body {
     padding-top: 0.9rem;
+}
+
+/* The chevron leads the order number now that the row counter is gone. That
+   counter numbered rows within the current page, so the same order was "1" on
+   page one and "11" on page two — it identified nothing. */
+/* Kept a plain table cell on purpose: display:flex here would take the td out
+   of table layout, and its border would then be drawn to the content instead
+   of across the row. nowrap is all it needs to hold the chevron and the
+   number on one line. */
+.order-number-cell {
+    white-space: nowrap;
+    text-align: left;
+}
+
+/* Status and payment read as one phrase and stay on one line, so every row is
+   the same height. Letting them wrap made a Credit row twice as tall as the
+   COD row above it. */
+.state-stack {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+/* Due soon used to wash the whole row in red, which made the order that most
+   needs reading the hardest to read. The edge says the same thing and leaves
+   the text alone. */
+.row-due-soon > td:first-child {
+    box-shadow: inset 3px 0 0 #c0392b;
+}
+
+.row-due-soon {
+    background: rgba(192, 57, 43, 0.045);
 }
 
 .status-tab-bar {
