@@ -179,6 +179,7 @@ import Delete from "@/Shared/Components/Modals/Delete.vue";
 import CreatePurchaseOrderModal from '../Modal/CreatePurchaseOrderModal.vue';
 import { recordLockMixin } from '@/Shared/recordLock.js';
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
   name: "PurchaseOrdersTab",
   components: { Pagination, Delete, CreatePurchaseOrderModal },
@@ -289,7 +290,7 @@ export default {
     },
     
     printPurchaseOrder(id) {
-        window.open(`/purchase-orders/${id}/print?type=purchase_order`, '_blank');
+        printDocument(`/purchase-orders/${id}/print?type=purchase_order`);
     },
     
     updateKeyword(keyword) {

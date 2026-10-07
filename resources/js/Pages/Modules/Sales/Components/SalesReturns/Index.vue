@@ -372,6 +372,7 @@ import ReturnHistory from './ReturnHistory.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
     components: { PageHeader, Pagination, Multiselect, CreateFromReceipt, Cancel, Adjustment, Approval, ReturnHistory, TableLoadingRow },
     props: ['dropdowns', 'invoices', 'user', 'isExternal', 'returnGracePeriod'],
@@ -476,12 +477,12 @@ export default {
 
         onPrint(list) {
             if (list?.refund_receipt_id) {
-                window.open(`/receipts/${list.refund_receipt_id}?option=print&type=receipt`);
+                printDocument(`/receipts/${list.refund_receipt_id}?option=print&type=receipt`);
                 return;
             }
 
             let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
-            window.open(`${url}/${list.id}?option=print&type=sales_order`);
+            printDocument(`${url}/${list.id}?option=print&type=sales_order`);
         },
 
         onApprove(data) {

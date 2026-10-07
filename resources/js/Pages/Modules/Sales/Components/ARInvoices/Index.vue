@@ -273,6 +273,7 @@ import Payment from '../ARInvoices/Modals/Payment.vue';
 import ReceiptsList from '../ARInvoices/Modals/ReceiptsList.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
     components: { PageHeader, Pagination, Multiselect, Payment, ReceiptsList, TableLoadingRow },
     props: ['dropdowns', 'isExternal'],
@@ -380,7 +381,7 @@ export default {
         },
 
         onPrint(id) {
-            window.open(`/ar-invoices/${id}?option=print&type=ar_invoice`);
+            printDocument(`/ar-invoices/${id}?option=print&type=ar_invoice`);
         },
 
         toggleRowExpansion(index) {

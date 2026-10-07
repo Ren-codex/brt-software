@@ -276,6 +276,7 @@
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 import { recordLockMixin } from '@/Shared/recordLock.js';
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
   name: "PurchaseOrderDetails",
   components: { TransactionLogs },
@@ -382,7 +383,7 @@ export default {
     
     printPurchaseOrder() {
       if (this.purchaseOrder) {
-        window.open(`/purchase-orders/${this.purchaseOrder.id}/print?type=purchase_order`, '_blank');
+        printDocument(`/purchase-orders/${this.purchaseOrder.id}/print?type=purchase_order`);
       }
     },
 

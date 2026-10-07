@@ -96,6 +96,8 @@
 </template>
 
 <script>
+import printDocument from '@/Shared/utils/printDocument';
+
 export default {
     computed: {
         totalPaid() {
@@ -129,7 +131,7 @@ export default {
         },
         onPrint(id) {
             if (!id) return;
-            window.open(`/receipts/${id}?option=print&type=receipt`);
+            printDocument(`/receipts/${id}?option=print&type=receipt`);
         }
     }
 };

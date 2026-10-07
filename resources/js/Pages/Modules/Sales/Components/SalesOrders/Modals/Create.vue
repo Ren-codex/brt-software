@@ -1025,6 +1025,7 @@ import Customer from '@/Pages/Modules/Customers/Modals/Create.vue'
 import PaymentPromptModal from '@/Pages/Modules/Sales/Components/SalesOrders/Modals/PaymentPromptModal.vue';
 import PaymentLines from '@/Shared/Components/PaymentLines.vue';
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
     components: { TextInput, Item, Customer, PaymentPromptModal, Multiselect, PaymentLines },
     emits: ['add'],
@@ -1886,7 +1887,7 @@ export default {
         },
         printReceiptNow() {
             if (this.pendingReceiptId) {
-                window.open(`/receipts/${this.pendingReceiptId}?option=print&type=receipt`, '_blank');
+                printDocument(`/receipts/${this.pendingReceiptId}?option=print&type=receipt`);
             }
             this.showPrintPrompt = false;
             this.pendingReceiptId = null;

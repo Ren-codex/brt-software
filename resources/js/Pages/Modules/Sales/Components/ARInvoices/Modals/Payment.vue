@@ -286,6 +286,7 @@
 
 import { useForm } from '@inertiajs/vue3';
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
     props: [ ],
     computed: {
@@ -611,7 +612,7 @@ export default {
 
         printReceipt() {
             if (this.successPayment.receiptId) {
-                window.open(`/receipts/${this.successPayment.receiptId}?option=print&type=receipt`, '_blank');
+                printDocument(`/receipts/${this.successPayment.receiptId}?option=print&type=receipt`);
             }
             this.showSuccessModal = false;
         },

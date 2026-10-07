@@ -189,6 +189,7 @@ import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 import { useForm } from '@inertiajs/vue3';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
     components: { SupervisorGate, TextInput },
     props: ['products'],
@@ -301,7 +302,7 @@ export default {
                     this.form.reset();
                     this.hide();
                     if (receiptId) {
-                        window.open(`/receipts/${receiptId}?option=print&type=receipt`, '_blank');
+                        printDocument(`/receipts/${receiptId}?option=print&type=receipt`);
                     }
                 },
             });

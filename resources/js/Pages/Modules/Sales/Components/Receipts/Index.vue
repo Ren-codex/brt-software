@@ -190,6 +190,7 @@ import { pollingMixin } from '@/Shared/polling.js';
 
 
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
     components: { PageHeader, Pagination, TableLoadingRow },
     mixins: [pollingMixin],
@@ -304,7 +305,7 @@ export default {
         },
 
         onPrint(id) {
-            window.open(`/receipts/${id}?option=print&type=receipt`);
+            printDocument(`/receipts/${id}?option=print&type=receipt`);
         },
         getReceiptTypeLabel(type) {
             if (type === 'updated') return 'Adjusted Payment';

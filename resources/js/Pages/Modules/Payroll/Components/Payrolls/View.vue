@@ -222,6 +222,7 @@ import Swal from 'sweetalert2';
 import PayrollModal from './Modal.vue'
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
   name: "PayrollView",
   components: { PayrollModal, TransactionLogs },
@@ -371,7 +372,7 @@ export default {
     
     printPayroll() {
       if (this.payroll) {
-        window.open(`/payrolls/${this.payroll.id}/print`, '_blank');
+        printDocument(`/payrolls/${this.payroll.id}/print`);
       }
     },
 

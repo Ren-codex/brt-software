@@ -122,6 +122,7 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Swal from 'sweetalert2';
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
   components: { PayrollModal, Pagination, TableLoadingRow },
   props: ['dropdowns'],
@@ -192,7 +193,7 @@ export default {
       this.$emit('view', payroll)
     },
     printPayroll(payroll) {
-      window.open(`/payrolls/${payroll.id}/print`, '_blank');
+      printDocument(`/payrolls/${payroll.id}/print`);
     },
   
     closeModal() {

@@ -227,6 +227,7 @@ import { pollingMixin } from '@/Shared/polling.js';
 import { recordLockMixin } from '@/Shared/recordLock.js';
 
 
+import printDocument from '@/Shared/utils/printDocument';
 export default {
     components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, MarkDelivered, DeliveryBoard, Adjustment, TableLoadingRow },
     mixins: [pollingMixin, recordLockMixin],
@@ -421,7 +422,7 @@ export default {
         },
         onPrint(id) {
             let url =  '/sales-orders';
-            window.open(`${url}/${id}?option=print&type=sales_order`);
+            printDocument(`${url}/${id}?option=print&type=sales_order`);
         },
     
 
