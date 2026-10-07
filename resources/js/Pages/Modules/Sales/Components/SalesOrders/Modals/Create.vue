@@ -1472,13 +1472,30 @@ export default {
             this.form.delivery_location = '';
             this.form.order_date = new Date().toISOString().slice(0, 10);
             this.form.due_date = null;
-            this.form.shipping_date = null;
-            this.form.delivery_date = null;
+            // Goods normally go out the day the order is taken and arrive the
+            // next, so the form starts there rather than empty. Both stay
+            // editable for anything that does not.
+            this.form.shipping_date = this.localDate(0);
+            this.form.delivery_date = this.localDate(1);
             // Default sales rep should be the logged-in employee (not user id).
             if (this.currentEmployeeId) {
                 this.form.sales_rep_id = this.currentEmployeeId;
             }
 
+        },
+        /**
+         * A date input wants YYYY-MM-DD in the user's own day. toISOString()
+         * gives it in UTC, which here is eight hours behind — before 8am it
+         * would offer yesterday.
+         */
+        localDate(daysAhead = 0) {
+            const d = new Date();
+            d.setDate(d.getDate() + daysAhead);
+
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+
+            return `${d.getFullYear()}-${month}-${day}`;
         },
         getDefaultLocationId() {
             if (!Array.isArray(this.dropdowns?.locations)) return null;
