@@ -1,92 +1,105 @@
 <template>
-    <div class="board">
-        <div class="board-head">
-            <div>
-                <h3>Deliveries</h3>
-                <p>
-                    Everything on the road or still owed on goods that went out. Longest wait at
-                    the top, with whatever needs doing next on the row itself.
-                </p>
+    <!-- Same chrome as the Sales Orders list: library card, gradient header,
+         status pills, shared .sales-table. Nothing here restyles those. -->
+    <div class="library-card">
+        <div class="library-card-header">
+            <div class="d-flex align-items-center gap-3">
+                <div class="header-icon">
+                    <i class="ri-truck-line"></i>
+                </div>
+                <h4 class="header-title mb-0">Deliveries</h4>
             </div>
-            <div class="board-head-actions">
-                <button class="btn btn-sm btn-outline-secondary" @click="fetch" :disabled="loading">
+            <div class="d-flex align-items-center gap-2">
+                <span class="delivery-hint d-none d-xl-inline">{{ currentStage.hint }}</span>
+                <button class="acct-btn-secondary" @click="fetch" :disabled="loading">
                     <i class="ri-refresh-line me-1"></i>{{ loading ? 'Loading...' : 'Refresh' }}
                 </button>
-                <!-- Only when the board was opened from inside the Sales Orders
-                     tab. As a sidebar tab of its own there is no list behind it
-                     to go back to. -->
-                <button v-if="showBack" class="btn btn-sm btn-outline-secondary" @click="$emit('back')">
+                <!-- Only when opened from inside the Sales Orders tab. As a
+                     sidebar tab of its own there is no list behind it. -->
+                <button v-if="showBack" class="acct-btn-secondary" @click="$emit('back')">
                     <i class="ri-arrow-left-line me-1"></i>Back to list
                 </button>
             </div>
         </div>
 
-        <!-- One stage at a time, the same pill pattern the Sales Orders list
-             uses. The three stages carry the same fields, so they share a
-             table rather than needing one each. -->
-        <div class="stage-bar">
-            <button
-                v-for="stage in stages"
-                :key="stage.key"
-                class="stage-btn"
-                :class="{ active: activeStage === stage.key }"
-                @click="activeStage = stage.key"
-            >
-                {{ stage.label }}
-                <span class="stage-count">{{ stage.rows.length }}</span>
-            </button>
-        </div>
+        <div class="library-card-body">
+            <div class="status-tab-bar">
+                <button
+                    v-for="stage in stages"
+                    :key="stage.key"
+                    class="status-tab-btn"
+                    :class="{ active: activeStage === stage.key }"
+                    @click="activeStage = stage.key"
+                >
+                    {{ stage.label }}
+                    <span class="stage-count">{{ stage.rows.length }}</span>
+                </button>
+            </div>
 
-        <p class="stage-hint">{{ currentStage.hint }}</p>
-
-        <div class="table-responsive">
-            <table class="table delivery-table mb-0">
-                <thead>
-                    <tr>
-                        <th>Reference</th>
-                        <th>Customer</th>
-                        <th v-if="activeStage === 'all'">Stage</th>
-                        <th>With</th>
-                        <th class="text-end">Amount</th>
-                        <th class="text-center">Waiting</th>
-                        <th class="text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-if="loading">
-                        <td :colspan="activeStage === 'all' ? 7 : 6" class="delivery-empty">Loading deliveries...</td>
-                    </tr>
-                    <tr v-else-if="visibleRows.length === 0">
-                        <td :colspan="activeStage === 'all' ? 7 : 6" class="delivery-empty">{{ currentStage.empty }}</td>
-                    </tr>
-                    <tr v-for="row in visibleRows" :key="row.stage + row.id" class="delivery-row">
-                        <td class="delivery-ref">{{ row.reference }}</td>
-                        <td>{{ row.customer || 'Walk-in customer' }}</td>
-                        <td v-if="activeStage === 'all'">
-                            <span class="stage-pill" :class="row.tone">{{ row.stageLabel }}</span>
-                        </td>
-                        <td :class="{ 'text-muted': !row.person }">
-                            {{ row.person || 'Nobody named' }}
-                            <span v-if="row.mode" class="mode-note">
-                                {{ row.mode }}<span v-if="!row.confirmed" class="unconfirmed">unconfirmed</span>
-                            </span>
-                        </td>
-                        <td class="text-end delivery-amount">{{ formatCurrency(row.amount) }}</td>
-                        <td class="text-center">
-                            <span v-if="row.days !== null" class="delivery-age" :class="{ 'is-late': row.days >= 2 }">
-                                {{ ageLabel(row.days) }}
-                            </span>
-                            <span v-else class="text-muted">&mdash;</span>
-                        </td>
-                        <td class="text-center">
-                            <button v-if="row.action" class="delivery-action" @click="row.action.run(row)">
-                                {{ row.action.label }}
-                            </button>
-                            <span v-else class="text-muted">&mdash;</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table sales-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Customer</th>
+                            <th v-if="activeStage === 'all'">Stage</th>
+                            <th>With</th>
+                            <th class="text-end">Amount</th>
+                            <th class="text-center">Waiting</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="fs-12">
+                        <tr v-if="loading">
+                            <td :colspan="activeStage === 'all' ? 7 : 6" class="delivery-empty">Loading deliveries...</td>
+                        </tr>
+                        <tr v-else-if="visibleRows.length === 0">
+                            <td :colspan="activeStage === 'all' ? 7 : 6" class="delivery-empty">{{ currentStage.empty }}</td>
+                        </tr>
+                        <tr v-for="row in visibleRows" :key="row.stage + row.id" class="main-table-row">
+                            <td class="fw-semibold text-nowrap">{{ row.reference }}</td>
+                            <td>{{ row.customer || 'Walk-in customer' }}</td>
+                            <td v-if="activeStage === 'all'">
+                                <span class="stage-pill" :class="row.tone">{{ row.stageLabel }}</span>
+                            </td>
+                            <td :class="{ 'text-muted': !row.person }">
+                                {{ row.person || 'Nobody named' }}
+                                <span v-if="row.mode" class="mode-note">
+                                    {{ row.mode }}<span v-if="!row.confirmed" class="unconfirmed">unconfirmed</span>
+                                </span>
+                            </td>
+                            <td class="text-end fw-semibold text-nowrap">{{ formatCurrency(row.amount) }}</td>
+                            <td class="text-center">
+                                <span v-if="row.days !== null" class="delivery-age" :class="{ 'is-late': row.days >= 2 }">
+                                    {{ ageLabel(row.days) }}
+                                </span>
+                                <span v-else class="text-muted">&mdash;</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <button
+                                        v-if="row.stage === 'out'"
+                                        class="action-btn success"
+                                        v-b-tooltip.hover title="Mark Delivered"
+                                        @click="openDelivery(row)"
+                                    >
+                                        <i class="ri-truck-line"></i>
+                                    </button>
+                                    <button
+                                        v-else-if="row.stage === 'collect'"
+                                        class="action-btn edit"
+                                        v-b-tooltip.hover title="Record Collection"
+                                        @click="openPayment(row)"
+                                    >
+                                        <i class="ri-money-dollar-circle-fill"></i>
+                                    </button>
+                                    <span v-else class="text-muted">&mdash;</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <MarkDelivered @delivered="fetch" ref="markDelivered" />
@@ -240,54 +253,20 @@ export default {
 </script>
 
 <style scoped>
-.board {
-    background: #fff;
-    border: 1px solid #c4d9d2;
-    border-radius: 12px;
-    padding: 1.2rem 1.35rem 1.5rem;
-}
-
-.board-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.board-head h3 {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: #16322e;
-    margin: 0 0 0.2rem;
-}
-
-.board-head p {
-    color: #6b8c85;
-    font-size: 0.85rem;
-    margin: 0;
-    max-width: 58ch;
-}
-
-.board-head-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-
-/* Same pill bar as the Sales Orders list, so the two read as one system. */
-.stage-bar {
+/* The pills are the Sales Orders bar, repeated here because that bar lives in
+   that component's scoped styles rather than in a shared partial. */
+.status-tab-bar {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.85rem;
 }
 
-.stage-btn {
+.status-tab-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 6px 14px;
+    padding: 6px 16px;
     border-radius: 8px;
     border: 1px solid #c4d9d2;
     background: #fff;
@@ -298,8 +277,8 @@ export default {
     transition: all 0.2s ease;
 }
 
-.stage-btn:hover { background: #edf6f2; color: #16322e; }
-.stage-btn.active { background: #3D8D7A; border-color: #3D8D7A; color: #fff; }
+.status-tab-btn:hover { background: #edf6f2; color: #16322e; }
+.status-tab-btn.active { background: #3D8D7A; border-color: #3D8D7A; color: #fff; }
 
 .stage-count {
     font-size: 11px;
@@ -307,53 +286,15 @@ export default {
     opacity: 0.75;
 }
 
-.stage-hint {
+/* What the chosen stage means, kept beside the controls so it costs no row. */
+.delivery-hint {
+    font-size: 0.76rem;
     color: #6b8c85;
-    font-size: 0.8rem;
-    margin: 0 0 0.75rem;
+    margin-right: 0.3rem;
 }
 
-.delivery-table {
-    font-size: 0.8125rem;
-}
-
-.delivery-table thead th {
-    font-size: 0.7rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #6b8c85;
-    font-weight: 600;
-    background: #edf6f2;
-    border-bottom: 1px solid #c4d9d2;
-    white-space: nowrap;
-    padding: 0.55rem 0.7rem;
-}
-
-.delivery-table tbody td {
-    padding: 0.55rem 0.7rem;
-    vertical-align: middle;
-    border-bottom: 1px solid #eef4f2;
-}
-
-.delivery-row:hover { background: #f6fbf9; }
-
-.delivery-ref {
-    font-weight: 600;
-    color: #16322e;
-    white-space: nowrap;
-}
-
-.delivery-amount {
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.delivery-empty {
-    text-align: center;
-    color: #8aa49d;
-    padding: 1.6rem 0;
-    font-size: 0.85rem;
+.library-card-body {
+    padding-top: 0.9rem;
 }
 
 /* Which stage a row sits in, only shown when the stages are mixed. */
@@ -397,23 +338,10 @@ export default {
     font-weight: 600;
 }
 
-.delivery-action {
-    border: 1px solid #3D8D7A;
-    background: #fff;
-    color: #3D8D7A;
-    border-radius: 6px;
-    padding: 3px 11px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.delivery-action:hover { background: #3D8D7A; color: #fff; }
-
-@media (max-width: 767px) {
-    .board { padding: 1rem; }
-    .board-head { flex-direction: column; }
+.delivery-empty {
+    text-align: center;
+    color: #8aa49d;
+    padding: 1.6rem 0;
+    font-size: 0.85rem;
 }
 </style>
