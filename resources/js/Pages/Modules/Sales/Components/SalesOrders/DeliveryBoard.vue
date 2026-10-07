@@ -93,12 +93,65 @@
                                     >
                                         <i class="ri-money-dollar-circle-fill"></i>
                                     </button>
-                                    <span v-else class="text-muted">&mdash;</span>
+                                    <!-- The driver hands the money in. Only the holder
+                                         changes — the collection was recorded at the door,
+                                         and the remittance is what finally clears it. -->
+                                    <button
+                                        v-else
+                                        class="action-btn approve"
+                                        v-b-tooltip.hover title="Record Handover"
+                                        @click="openHandover(row)"
+                                    >
+                                        <i class="ri-hand-coin-line"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Modal chrome comes from _library-modal.scss; nothing here restyles it. -->
+        <div v-if="handover.open" class="modal-overlay active" @click.self="closeHandover">
+            <div class="modal-container" style="max-width: 460px">
+                <div class="modal-header">
+                    <div class="modal-header-icon"><i class="ri-hand-coin-line"></i></div>
+                    <div>
+                        <h5 class="modal-title">Record handover</h5>
+                        <p class="modal-subtitle">
+                            {{ handover.row?.reference }} &middot; {{ formatCurrency(handover.row?.amount) }}
+                            &middot; carried by {{ handover.row?.person || 'nobody named' }}
+                        </p>
+                    </div>
+                    <button class="close-btn ms-auto" @click="closeHandover" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="handover_holder">Who has the money now?</label>
+                    <select id="handover_holder" v-model="handover.holder" class="form-control">
+                        <option :value="null" disabled>Select the person receiving it</option>
+                        <option v-for="person in holders" :key="person.value" :value="person.value">
+                            {{ person.name }}
+                        </option>
+                    </select>
+                    <p v-if="handover.error" class="handover-error">{{ handover.error }}</p>
+                    <p class="handover-note">
+                        This records who is accountable for the money. It does not remit it —
+                        the remittance is what finally clears it.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="acct-btn-secondary" @click="closeHandover">Cancel</button>
+                    <button
+                        class="acct-btn-primary"
+                        :disabled="!handover.holder || handover.saving"
+                        @click="saveHandover"
+                    >
+                        {{ handover.saving ? 'Saving…' : 'Record handover' }}
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -117,15 +170,29 @@ export default {
     emits: ['back'],
     props: {
         showBack: { type: Boolean, default: true },
+        dropdowns: { type: Object, default: () => ({}) },
     },
     data() {
         return {
             loading: false,
             activeStage: 'all',
             board: { out_for_delivery: [], to_collect: [], with_driver: [] },
+            handover: { open: false, row: null, holder: null, error: '', saving: false },
         };
     },
     computed: {
+        /** Anyone who can carry money: the drivers and the reps. */
+        holders() {
+            const drivers = Array.isArray(this.dropdowns?.drivers) ? this.dropdowns.drivers : [];
+            const reps = Array.isArray(this.dropdowns?.sales_reps) ? this.dropdowns.sales_reps : [];
+            const seen = new Set();
+
+            return [...drivers, ...reps].filter((person) => {
+                if (seen.has(person.value)) return false;
+                seen.add(person.value);
+                return true;
+            });
+        },
         /** The three stages of a delivery, in the order one passes through them. */
         stages() {
             return [
@@ -238,6 +305,34 @@ export default {
                 })
                 .catch((err) => console.error(err));
         },
+        openHandover(row) {
+            this.handover = { open: true, row, holder: null, error: '', saving: false };
+        },
+        closeHandover() {
+            this.handover.open = false;
+        },
+        saveHandover() {
+            if (!this.handover.holder) {
+                this.handover.error = 'Name who is taking it — that is the whole point of the record.';
+                return;
+            }
+
+            this.handover.saving = true;
+            this.handover.error = '';
+
+            axios.put(`/receipts/${this.handover.row.id}/turn-over`, {
+                held_by_employee_id: this.handover.holder,
+            })
+                .then(() => {
+                    this.handover.open = false;
+                    this.fetch();
+                })
+                .catch((err) => {
+                    this.handover.error = err.response?.data?.message
+                        || 'Could not record the handover.';
+                })
+                .finally(() => { this.handover.saving = false; });
+        },
         openPayment(row) {
             this.$refs.payment.show(
                 { id: row.invoice_id, balance_due: row.amount },
@@ -344,4 +439,17 @@ export default {
     padding: 1.6rem 0;
     font-size: 0.85rem;
 }
+
+.handover-note {
+    margin: 0.75rem 0 0;
+    font-size: 0.78rem;
+    color: #6b8c85;
+}
+
+.handover-error {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: #b02a1b;
+}
+
 </style>

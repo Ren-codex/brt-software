@@ -69,7 +69,7 @@
                    unless you already knew it was there. -->
               <div v-if="activeTab === 'deliveries'" class="row">
                 <div class="col-md-12">
-                  <DeliveryBoard :show-back="false" />
+                  <DeliveryBoard :show-back="false" :dropdowns="dropdowns" />
                 </div>
               </div>
 

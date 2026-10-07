@@ -1,6 +1,6 @@
 <template>
     <div>
-    <DeliveryBoard v-if="showBoard" @back="onBoardClosed" />
+    <DeliveryBoard v-if="showBoard" :dropdowns="dropdowns" @back="onBoardClosed" />
 
     <template v-else>
         <div class="library-card">
