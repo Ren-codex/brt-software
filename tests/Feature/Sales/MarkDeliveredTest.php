@@ -32,7 +32,7 @@ class MarkDeliveredTest extends TestCase
 
     public function test_marking_an_order_delivered_stamps_when_and_who(): void
     {
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::firstOrFail();
 
         $this->markDelivered($order)->assertSessionHasNoErrors();
@@ -44,7 +44,7 @@ class MarkDeliveredTest extends TestCase
 
     public function test_a_second_mark_keeps_the_first_timestamp(): void
     {
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::firstOrFail();
 
         $this->markDelivered($order)->assertSessionHasNoErrors();
@@ -60,7 +60,7 @@ class MarkDeliveredTest extends TestCase
     {
         // The row badge and the modal read these; a value the resource never
         // sends is a blank badge no compile check would catch.
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::firstOrFail();
         $this->markDelivered($order)->assertSessionHasNoErrors();
 
@@ -79,11 +79,11 @@ class MarkDeliveredTest extends TestCase
     {
         // Paid is not delivered: a cash sale closes on save while the sacks are
         // still in the warehouse, so the worklist cannot key off status.
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $delivered = SalesOrder::firstOrFail();
         $this->markDelivered($delivered)->assertSessionHasNoErrors();
 
-        $this->postCod(['delivery_date' => now()->addDays(4)->toDateString()])->assertSessionHasNoErrors();
+        $this->postCredit(['delivery_date' => now()->addDays(4)->toDateString()])->assertSessionHasNoErrors();
         $stillOut = SalesOrder::where('id', '!=', $delivered->id)->firstOrFail();
 
         $response = $this->actingAs($this->user)
@@ -99,11 +99,11 @@ class MarkDeliveredTest extends TestCase
     {
         // Goods with the customer, nothing recorded against the invoice: the
         // moment to ask the driver what happened.
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $delivered = SalesOrder::firstOrFail();
         $this->markDelivered($delivered)->assertSessionHasNoErrors();
 
-        $this->postCod(['delivery_date' => now()->addDays(4)->toDateString()])->assertSessionHasNoErrors();
+        $this->postCredit(['delivery_date' => now()->addDays(4)->toDateString()])->assertSessionHasNoErrors();
         $stillOut = SalesOrder::where('id', '!=', $delivered->id)->firstOrFail();
 
         $response = $this->actingAs($this->user)
@@ -118,7 +118,7 @@ class MarkDeliveredTest extends TestCase
     public function test_a_collected_order_drops_off_to_collect(): void
     {
         $this->grantArInvoiceAccess($this->user);
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::firstOrFail();
         $this->markDelivered($order)->assertSessionHasNoErrors();
 
@@ -153,7 +153,7 @@ class MarkDeliveredTest extends TestCase
     public function test_the_delivery_date_can_be_backdated(): void
     {
         // The driver reports back the next morning with yesterday's receipt.
-        $this->postCod(['order_date' => now()->subDays(3)->toDateString()])
+        $this->postCredit(['order_date' => now()->subDays(3)->toDateString()])
             ->assertSessionHasNoErrors();
         $order = SalesOrder::firstOrFail();
         $yesterday = now()->subDay()->toDateString();
@@ -165,7 +165,7 @@ class MarkDeliveredTest extends TestCase
 
     public function test_without_a_date_it_stamps_now(): void
     {
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::firstOrFail();
 
         $this->markDelivered($order)->assertSessionHasNoErrors();
@@ -187,7 +187,7 @@ class MarkDeliveredTest extends TestCase
     public function test_a_delivery_cannot_predate_the_order(): void
     {
         // Goods cannot arrive before they were sold.
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::firstOrFail();
 
         $this->markDelivered($order, ['delivered_at' => now()->subDays(5)->toDateString()])

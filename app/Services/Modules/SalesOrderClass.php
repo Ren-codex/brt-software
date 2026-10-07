@@ -753,6 +753,31 @@ class SalesOrderClass
             }
         }
 
+        // COD means the sacks do not leave the truck unless the money does.
+        // Whatever the customer refuses has already gone back to its batch
+        // above and come off the invoice, so what is left here is exactly what
+        // they kept — and that is what they have to pay for.
+        //
+        // Measured against what was handed over at the door, not against the
+        // invoice balance: a cheque or a transfer leaves the balance at its
+        // full figure until the bank confirms it, so reading the balance would
+        // reject a customer who had just paid in full by cheque.
+        if (! $data->delivered_at && SalesOrder::isCod($data->payment_mode)) {
+            $invoice = $data->arInvoices()->first();
+            $outstanding = $invoice ? round((float) $invoice->fresh()->balance_due, 2) : 0.0;
+            $collected = round((float) $request->collected_amount, 2);
+
+            if ($outstanding > 0 && $collected < $outstanding) {
+                throw ValidationException::withMessages([
+                    'collected_amount' => $collected > 0
+                        ? 'This is a COD order, so what the customer keeps has to be paid in full. ₱'
+                            . number_format($outstanding, 2) . ' is owed and ₱' . number_format($collected, 2)
+                            . ' was collected. Reduce the accepted quantities to what they are paying for — the rest goes back to the warehouse.'
+                        : 'This is a COD order: nothing can be handed over until it is paid. Record the collection, or reduce the accepted quantities to what the customer is taking and paying for.',
+                ]);
+            }
+        }
+
         if (! $data->delivered_at) {
             $data->update([
                 'delivered_at' => $this->resolveDeliveredAt($request, $data),

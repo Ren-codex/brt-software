@@ -90,10 +90,25 @@
                 </table>
 
                 <div class="collect-box">
+                    <!-- On a COD order this is not optional: the goods only
+                         leave the truck if the money does. Anything the
+                         customer is not paying for comes off the accepted
+                         quantities above and goes back to the warehouse. -->
                     <label class="collect-toggle">
-                        <input type="checkbox" id="collected_now" v-model="collectedNow" />
-                        <span>The driver collected payment at the door</span>
+                        <input
+                            type="checkbox"
+                            id="collected_now"
+                            v-model="collectedNow"
+                            :disabled="isCod"
+                        />
+                        <span v-if="isCod">Payment collected at the door &mdash; required for COD</span>
+                        <span v-else>The driver collected payment at the door</span>
                     </label>
+                    <p v-if="isCod" class="collect-rule">
+                        COD is paid on handover. If the customer is taking less than was loaded,
+                        reduce the accepted quantities &mdash; the rest returns to the warehouse and
+                        comes off what they owe.
+                    </p>
 
                     <div v-if="collectedNow" class="collect-fields">
                         <div class="collect-field">
@@ -182,6 +197,10 @@ export default {
         today() {
             return new Date().toISOString().slice(0, 10);
         },
+        /** COD is paid on handover, so the collection is not optional. */
+        isCod() {
+            return String(this.order?.payment_mode || '').trim().toLowerCase() === 'cod';
+        },
         /**
          * What the customer still owes, from the invoice rather than recomputed
          * from item prices: a part payment may already have been recorded.
@@ -224,7 +243,9 @@ export default {
             this.items = Array.isArray(order?.items) ? order.items : [];
             this.form.clearErrors();
             this.form.delivered_at = this.defaultDeliveredAt(order);
-            this.collectedNow = false;
+            // COD cannot be delivered unpaid, so it opens with the collection
+            // already on rather than asking a question with only one answer.
+            this.collectedNow = String(order?.payment_mode || '').trim().toLowerCase() === 'cod';
             this.form.collected_amount = null;
             this.form.collected_mode = 'Cash';
             this.form.collected_reference = null;
@@ -236,6 +257,13 @@ export default {
             this.items.forEach((item) => {
                 this.form.accepted_quantities[item.id] = Number(item.quantity);
             });
+            // Set here rather than leaving it to the collectedNow watcher: that
+            // only fires when the flag changes, so opening a COD order straight
+            // after another one left the amount blank. Last, because
+            // collectableTotal reads the accepted quantities set just above.
+            if (this.collectedNow) {
+                this.form.collected_amount = Number(this.collectableTotal.toFixed(2));
+            }
             this.showModal = true;
         },
         /**
@@ -399,6 +427,13 @@ export default {
     margin: 0;
     color: #b0702a;
     font-size: 0.8rem;
+}
+
+/* Why the collection cannot be switched off on a COD order. */
+.collect-rule {
+    margin: 0.45rem 0 0;
+    color: #6b8c85;
+    font-size: 0.78rem;
 }
 
 .refusal-note {

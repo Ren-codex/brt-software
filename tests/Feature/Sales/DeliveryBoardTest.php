@@ -57,7 +57,7 @@ class DeliveryBoardTest extends TestCase
 
     public function test_once_delivered_it_moves_to_the_collecting_column(): void
     {
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::firstOrFail();
 
         $this->markDelivered($order)->assertSessionHasNoErrors();

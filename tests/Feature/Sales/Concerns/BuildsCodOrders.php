@@ -181,4 +181,33 @@ trait BuildsCodOrders
     {
         return $this->actingAs($this->user)->post('/sales-orders', $this->payload($overrides));
     }
+
+    /**
+     * The same order on credit terms instead.
+     *
+     * For anything whose subject is a delivered order still owing money, this
+     * is the fixture to use: COD cannot reach that state, because the goods
+     * only leave the truck once they are paid for. Credit is where goods go
+     * out first and the money follows.
+     */
+    private function postCredit(array $overrides = [])
+    {
+        return $this->postCod(array_merge([
+            'payment_mode' => 'Credit',
+            'due_date' => now()->addDays(30)->toDateString(),
+            'delivery_date' => null,
+        ], $overrides));
+    }
+
+    /**
+     * Mark-delivered payload that pays the order off at the door, for tests
+     * whose subject is the delivery mechanics rather than the money.
+     */
+    private function paidOnHandover(float $amount = 3000, array $overrides = []): array
+    {
+        return array_merge([
+            'collected_amount' => $amount,
+            'collected_mode' => 'Cash',
+        ], $overrides);
+    }
 }

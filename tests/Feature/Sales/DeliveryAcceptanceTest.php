@@ -43,7 +43,7 @@ class DeliveryAcceptanceTest extends TestCase
 
     public function test_a_short_quantity_returns_stock_and_shrinks_the_invoice(): void
     {
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::with('items')->firstOrFail();
         $item = $order->items->first();
         $stockBefore = $this->batchQuantity();
@@ -63,7 +63,7 @@ class DeliveryAcceptanceTest extends TestCase
 
     public function test_accepting_everything_changes_nothing(): void
     {
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::with('items')->firstOrFail();
         $stockBefore = $this->batchQuantity();
 
@@ -149,7 +149,7 @@ class DeliveryAcceptanceTest extends TestCase
     public function test_collecting_less_than_the_accepted_total_leaves_a_balance(): void
     {
         // Half the sacks refused, and the customer paid for one of the two kept.
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::with('items')->firstOrFail();
 
         $this->actingAs($this->user)->put('/sales-orders/'.$order->id, [
@@ -181,7 +181,7 @@ class DeliveryAcceptanceTest extends TestCase
 
     public function test_a_delivery_with_nothing_collected_still_works(): void
     {
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::with('items')->firstOrFail();
 
         $this->actingAs($this->user)->put('/sales-orders/'.$order->id, [
@@ -195,7 +195,7 @@ class DeliveryAcceptanceTest extends TestCase
 
     public function test_the_sale_is_re_posted_at_the_accepted_amount(): void
     {
-        $this->postCod()->assertSessionHasNoErrors();
+        $this->postCredit()->assertSessionHasNoErrors();
         $order = SalesOrder::with('items')->firstOrFail();
 
         $this->deliver($order, [$order->items->first()->id => 1])->assertSessionHasNoErrors();
