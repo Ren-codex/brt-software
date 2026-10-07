@@ -72,6 +72,113 @@
             </div>
         </div>
 
+        <!-- Transfers a driver reported. Not register rows and never written as
+             any: the forecast above sums pending checks by maturity, and a
+             transfer has none. But until someone here says the money landed,
+             the invoice holds its balance open and nothing posts. -->
+        <div v-if="transfers.length" class="library-card mb-3">
+            <div class="library-card-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="header-icon"><i class="ri-bank-card-line"></i></div>
+                    <div>
+                        <h4 class="header-title mb-0">Transfers awaiting the bank</h4>
+                        <p class="header-subtitle mb-0">
+                            Collected in the field and reported, but not yet matched in the bank.
+                        </p>
+                    </div>
+                </div>
+                <span class="tr-total">{{ money(transfersTotal) }} held</span>
+            </div>
+            <div class="library-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table cm-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Customer</th>
+                                <th>Order</th>
+                                <th>Collected by</th>
+                                <th>Collected</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Waiting</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="t in transfers" :key="t.receipt_id">
+                                <td class="font-monospace">{{ t.reference_number || '—' }}</td>
+                                <td>{{ t.customer || 'Walk-in customer' }}</td>
+                                <td class="font-monospace text-muted">{{ t.so_number || '—' }}</td>
+                                <td>{{ t.collected_by || 'Nobody named' }}</td>
+                                <td class="text-nowrap text-muted">{{ t.collected_at || '—' }}</td>
+                                <td class="text-end fw-semibold">{{ money(t.amount) }}</td>
+                                <td class="text-center">
+                                    <span class="tr-age" :class="{ 'is-late': t.days_waiting >= 2 }">
+                                        {{ t.days_waiting === null ? '—' : t.days_waiting === 0 ? 'today' : t.days_waiting + 'd' }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button
+                                        v-if="canApprove"
+                                        class="action-btn confirm"
+                                        title="Confirm the money reached the bank"
+                                        @click="openTransferConfirm(t)"
+                                    >
+                                        <i class="ri-check-line"></i>
+                                    </button>
+                                    <span v-else class="text-muted">—</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Which bank it arrived in is the one thing the receipt cannot know,
+             so confirming asks for it rather than guessing. -->
+        <div v-if="transferConfirm.open" class="modal-overlay active" @click.self="transferConfirm.open = false">
+            <div class="modal-container" style="max-width: 440px">
+                <div class="modal-header">
+                    <div class="modal-header-icon"><i class="ri-bank-line"></i></div>
+                    <div>
+                        <h5 class="modal-title">Confirm transfer</h5>
+                        <p class="modal-subtitle">
+                            {{ transferConfirm.row?.reference_number }} &middot;
+                            {{ money(transferConfirm.row?.amount) }}
+                        </p>
+                    </div>
+                    <button class="close-btn ms-auto" @click="transferConfirm.open = false" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="transfer_bank_name">Which bank did it reach?</label>
+                    <input
+                        id="transfer_bank_name"
+                        v-model="transferConfirm.bankName"
+                        type="text"
+                        class="form-control"
+                        placeholder="e.g. BPI"
+                    />
+                    <p v-if="transferConfirm.error" class="tr-error">{{ transferConfirm.error }}</p>
+                    <p class="tr-note">
+                        This applies the amount to the invoice and posts the collection. It cannot be undone here.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="acct-btn-secondary" @click="transferConfirm.open = false">Cancel</button>
+                    <button
+                        class="acct-btn-primary"
+                        :disabled="transferConfirm.saving || !transferConfirm.bankName"
+                        @click="submitTransferConfirm"
+                    >
+                        {{ transferConfirm.saving ? 'Confirming…' : 'Confirm' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="library-card">
             <div class="library-card-header">
                 <div class="d-flex align-items-center gap-3">
@@ -227,18 +334,58 @@ export default {
             forecast: { accounts: [], unassigned_received: 0 },
             forecastLoading: true,
             searchTimer: null,
+            transfers: [],
+            transferConfirm: { open: false, row: null, bankName: '', error: '', saving: false },
         };
     },
     computed: {
         canApprove() {
             return this.can('accounting', 'check_register', 'approver');
         },
+        transfersTotal() {
+            return this.transfers.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+        },
     },
     mounted() {
         this.fetch();
         this.fetchForecast();
+        this.fetchTransfers();
     },
     methods: {
+        fetchTransfers() {
+            axios.get('/accounting/check-register', { params: { option: 'field-transfers', keyword: this.filters.keyword } })
+                .then(({ data }) => { this.transfers = data ?? []; })
+                .catch(() => { this.transfers = []; });
+        },
+        openTransferConfirm(row) {
+            this.transferConfirm = { open: true, row, bankName: '', error: '', saving: false };
+        },
+        submitTransferConfirm() {
+            if (!this.transferConfirm.bankName) {
+                this.transferConfirm.error = 'Name the bank it reached — that is what the confirmation records.';
+                return;
+            }
+
+            this.transferConfirm.saving = true;
+            this.transferConfirm.error = '';
+
+            axios.put(`/accounting/check-register/transfers/${this.transferConfirm.row.receipt_id}/confirm`, {
+                bank_name: this.transferConfirm.bankName,
+            })
+                .then(() => {
+                    this.transferConfirm.open = false;
+                    // Confirming posts the collection, so the register and the
+                    // forecast can both have moved.
+                    this.fetchTransfers();
+                    this.fetch();
+                    this.fetchForecast();
+                })
+                .catch(err => {
+                    this.transferConfirm.error = err.response?.data?.message
+                        || 'Could not confirm this transfer.';
+                })
+                .finally(() => { this.transferConfirm.saving = false; });
+        },
         fetch() {
             this.loading = true;
             axios.get('/accounting/check-register', { params: { option: 'lists', ...this.filters } })
@@ -362,4 +509,43 @@ export default {
 .action-btn.confirm { color: #1b6b4a; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Transfers awaiting the bank */
+.tr-total {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #8a5414;
+    background: rgba(169, 104, 26, 0.1);
+    border: 1px solid rgba(169, 104, 26, 0.3);
+    border-radius: 6px;
+    padding: 3px 10px;
+    white-space: nowrap;
+}
+
+.tr-age {
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: #6b8c85;
+    white-space: nowrap;
+}
+
+/* Two days is the point where somebody should be asking the bank. */
+.tr-age.is-late {
+    color: #a9681a;
+    font-weight: 600;
+}
+
+.tr-note {
+    margin: 0.75rem 0 0;
+    font-size: 0.78rem;
+    color: #6b8c85;
+}
+
+.tr-error {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: #b02a1b;
+}
+
 </style>

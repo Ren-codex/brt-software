@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Modules;
 
 use App\Http\Controllers\Controller;
 use App\Models\Check;
+use App\Services\Modules\ArInvoiceClass;
 use App\Services\Modules\CheckForecastClass;
 use App\Services\Modules\CheckRegisterClass;
+use App\Traits\HandlesTransaction;
 use Illuminate\Http\Request;
 
 /**
@@ -19,6 +21,7 @@ use Illuminate\Http\Request;
  */
 class CheckRegisterController extends Controller
 {
+    use HandlesTransaction;
     use \App\Http\Controllers\Concerns\RequiresSupervisorAuthorization;
 
     public function __construct(
@@ -43,6 +46,10 @@ class CheckRegisterController extends Controller
             return response()->json($this->forecast->build());
         }
 
+        if ($request->input('option') === 'field-transfers') {
+            return response()->json($this->register->fieldTransfersAwaitingConfirmation($filters));
+        }
+
         return inertia('Modules/Accounting/CheckRegister', [
             'directions' => [Check::DIRECTION_RECEIVED, Check::DIRECTION_ISSUED],
             'statuses' => [Check::STATUS_PENDING, Check::STATUS_CLEARED, Check::STATUS_BOUNCED],
@@ -60,6 +67,30 @@ class CheckRegisterController extends Controller
             'message' => 'Check confirmed cleared.',
             'info' => 'The amount has been posted to the bank.',
         ]);
+    }
+
+    /**
+     * Confirm a field bank transfer: the step that releases it into the invoice
+     * balance and posts the collection. Separate from confirm() because this
+     * one has no register row behind it — the receipt is the record.
+     */
+    public function confirmTransfer(int $receiptId, Request $request)
+    {
+        $data = $request->validate([
+            'bank_name' => 'required|string|max:255',
+        ]);
+
+        $result = $this->handleTransaction(function () use ($receiptId, $data) {
+            return app(ArInvoiceClass::class)->confirmReceipt($receiptId, $data['bank_name']);
+        });
+
+        return response()->json([
+            'data' => $result['data'] ?? null,
+            'message' => $result['message'] ?? null,
+            'info' => $result['info'] ?? null,
+            'status' => $result['status'],
+            'errors' => $result['errors'] ?? null,
+        ], $result['status'] ? 200 : 422);
     }
 
     public function bounce(int $id, Request $request)

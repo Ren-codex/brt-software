@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\BouncedCheckNotification;
 use App\Services\Accounting\CashManagementService;
 use App\Services\Accounting\JournalEntryService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -44,6 +45,63 @@ class CheckRegisterClass
             ->orderBy('check_date')
             ->orderByDesc('id')
             ->paginate($filters['count'] ?? 15);
+    }
+
+    /**
+     * Bank transfers a driver reported that nobody has matched in the bank yet.
+     *
+     * These are not register rows and deliberately never become any: a check
+     * has a maturity date and the forecast sums pending checks by it, while a
+     * transfer either arrived or did not. Writing one into `checks` would show
+     * it falling due on the day it was collected and inflate the forecast by
+     * its amount.
+     *
+     * They still have to be confirmable somewhere, though, because until
+     * someone says the money landed the invoice holds the balance open and the
+     * ledger posts nothing — so they are listed alongside the register and
+     * confirmed through the same screen.
+     */
+    public function fieldTransfersAwaitingConfirmation(array $filters = [])
+    {
+        $keyword = $filters['keyword'] ?? null;
+
+        return Receipt::query()
+            ->with(['customer', 'arInvoice.sales_order.salesRep', 'heldBy', 'registerCheck'])
+            ->whereNull('confirmed_at')
+            ->where('receipt_type', 'payment')
+            ->whereRaw('LOWER(TRIM(payment_mode)) = ?', ['bank transfer'])
+            ->when($keyword, fn ($q, $kw) => $q->where(function ($inner) use ($kw) {
+                $inner->where('reference_number', 'LIKE', "%{$kw}%")
+                    ->orWhere('receipt_number', 'LIKE', "%{$kw}%");
+            }))
+            ->orderBy('receipt_date')
+            ->get()
+            // One definition of "awaiting the bank" for the whole system, on
+            // the Receipt itself — a transfer waits only on a COD order.
+            ->filter(fn (Receipt $receipt) => $receipt->isUnclearedFor(
+                optional(optional($receipt->arInvoice)->sales_order)->payment_mode
+            ))
+            ->map(function (Receipt $receipt) {
+                // receipt_date is not cast on the model, so it arrives as a
+                // string and has to be parsed rather than treated as a date.
+                $collectedAt = $receipt->receipt_date ? Carbon::parse($receipt->receipt_date) : null;
+
+                return [
+                    'receipt_id' => $receipt->id,
+                    'receipt_number' => $receipt->receipt_number,
+                    'reference_number' => $receipt->reference_number,
+                    'customer' => optional($receipt->customer)->name,
+                    'so_number' => optional(optional($receipt->arInvoice)->sales_order)->so_number,
+                    'amount' => (float) $receipt->amount_paid,
+                    'collected_at' => $collectedAt?->toDateString(),
+                    'days_waiting' => $collectedAt
+                        ? (int) $collectedAt->startOfDay()->diffInDays(now()->startOfDay())
+                        : null,
+                    'collected_by' => optional($receipt->heldBy)->fullname
+                        ?? optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->fullname,
+                ];
+            })
+            ->values();
     }
 
     public function registerReceived(Receipt $receipt, array $attributes = []): Check

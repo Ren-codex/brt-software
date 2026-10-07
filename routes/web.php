@@ -335,6 +335,10 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
             ->middleware('permission:accounting,check_register,approver');
         Route::put('/accounting/check-register/{id}/bounce', [App\Http\Controllers\Modules\CheckRegisterController::class, 'bounce'])
             ->middleware('permission:accounting,check_register,approver');
+        // A field transfer is confirmed by receipt id, not by a register row —
+        // same act, same gate as confirming a check.
+        Route::put('/accounting/check-register/transfers/{receiptId}/confirm', [App\Http\Controllers\Modules\CheckRegisterController::class, 'confirmTransfer'])
+            ->middleware('permission:accounting,check_register,approver');
         Route::get('/accounting/petty-cash', [App\Http\Controllers\Modules\PettyCashController::class, 'index'])
             ->middleware('permission:accounting,petty_cash,view');
         Route::post('/accounting/petty-cash/vouchers', [App\Http\Controllers\Modules\PettyCashController::class, 'storeVoucher'])

@@ -164,8 +164,15 @@ class RemittanceClass
                     'is_external' => str_starts_with((string) optional($order)->so_number, 'SO-EXT'),
                     // A cheque or a COD transfer is not money until the bank
                     // says so, and that is worth seeing beside who holds it.
-                    'confirmed' => ! in_array($mode, ['check', 'cheque', 'bank transfer'], true)
-                        || ! is_null($receipt->confirmed_at),
+                    //
+                    // Asks the shared rule rather than matching the mode alone:
+                    // a transfer waits only on a COD order. Listing every mode
+                    // marked a credit sale's transfer unconfirmed for good,
+                    // which reads as money stuck when nothing is.
+                    'confirmed' => ! Receipt::modeAwaitsBankConfirmation(
+                        $receipt->payment_mode,
+                        optional($order)->payment_mode
+                    ) || ! is_null($receipt->confirmed_at),
                 ];
             })
             ->values();

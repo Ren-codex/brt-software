@@ -220,8 +220,13 @@ class SalesOrderClass
                 'amount' => (float) $receipt->amount_paid,
                 'person' => optional($receipt->heldBy)->fullname ?? 'Unassigned',
                 'mode' => $receipt->payment_mode,
-                'confirmed' => ! in_array(strtolower((string) $receipt->payment_mode), ['check', 'cheque', 'bank transfer'], true)
-                    || ! is_null($receipt->confirmed_at),
+                // The shared rule, not a list of modes: a transfer waits only
+                // on a COD order, so a credit sale's transfer is not pending
+                // anything and must not be shown as though it were.
+                'confirmed' => ! Receipt::modeAwaitsBankConfirmation(
+                    $receipt->payment_mode,
+                    optional(optional($receipt->arInvoice)->sales_order)->payment_mode
+                ) || ! is_null($receipt->confirmed_at),
                 'days' => $days($receipt->receipt_date),
             ]);
 
