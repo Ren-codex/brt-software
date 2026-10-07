@@ -28,6 +28,8 @@ class FieldTransferConfirmationTest extends TestCase
         $this->seedCodFixture();
         $this->grantArInvoiceAccess($this->user);
         $this->grantReceiptAccess($this->user);
+        // One test here confirms a transfer, which an encoder may no longer do.
+        $this->grantReceiptApproval($this->user);
     }
 
     private function payByTransfer(): ArInvoice

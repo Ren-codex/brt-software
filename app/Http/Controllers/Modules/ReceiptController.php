@@ -134,7 +134,12 @@ class ReceiptController extends Controller
 
     public function confirmCheck($id, Request $request)
     {
-        $this->authorizePermission('sales', 'receipts', 'encoder');
+        // Confirming is the one irreversible step here: it moves the invoice
+        // balance and posts to the ledger in the same breath. Saying the money
+        // arrived in the bank is not the same job as collecting it, and the rep
+        // who chased the payment should not also be the one who vouches for it
+        // — so this asks for approver rather than the encoder grant a rep has.
+        $this->authorizePermission('sales', 'receipts', 'approver');
 
         $result = $this->handleTransaction(function () use ($id, $request) {
             return $this->arInvoice->confirmCheck($id, $request->input('bank_name'), $request->input('check_date'));

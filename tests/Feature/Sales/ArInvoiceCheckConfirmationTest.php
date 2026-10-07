@@ -46,17 +46,18 @@ class ArInvoiceCheckConfirmationTest extends TestCase
         $role = ListRole::create(['name' => 'R'.uniqid(), 'type' => 'role', 'definition' => 't', 'is_active' => true]);
         UserRole::create(['user_id' => $this->user->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $this->user->id]);
         $module = Module::where('key', 'sales')->firstOrFail();
+        // 'approver' as well as 'encoder': recording a payment is an encoder's
+        // job, but confirming one cleared the bank now asks for approver, so
+        // these mechanics tests need both. Which levels confirming accepts is
+        // pinned by ConfirmReceiptPermissionTest, not here.
         foreach (['ar_invoices', 'receipts'] as $submoduleKey) {
-            RolePermission::create([
-                'role_id' => $role->id, 'module_id' => $module->id,
-                'submodule_id' => $module->submodules()->where('key', $submoduleKey)->firstOrFail()->id,
-                'access_level' => 'encoder',
-            ]);
-            RolePermission::create([
-                'role_id' => $role->id, 'module_id' => $module->id,
-                'submodule_id' => $module->submodules()->where('key', $submoduleKey)->firstOrFail()->id,
-                'access_level' => 'view',
-            ]);
+            foreach (['encoder', 'approver', 'view'] as $level) {
+                RolePermission::create([
+                    'role_id' => $role->id, 'module_id' => $module->id,
+                    'submodule_id' => $module->submodules()->where('key', $submoduleKey)->firstOrFail()->id,
+                    'access_level' => $level,
+                ]);
+            }
         }
 
         $customer = Customer::create([

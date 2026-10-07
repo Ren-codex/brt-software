@@ -131,6 +131,24 @@ trait BuildsCodOrders
         ], ['access_level' => 'encoder']);
     }
 
+    /**
+     * Confirming that money reached the bank asks for approver, not the encoder
+     * grant a rep carries. Kept separate from grantReceiptAccess so the tests
+     * that only record a handover stay gated where a rep really sits.
+     */
+    private function grantReceiptApproval(User $user): void
+    {
+        $module = Module::where('key', 'sales')->firstOrFail();
+        $roleId = UserRole::where('user_id', $user->id)->value('role_id');
+
+        RolePermission::firstOrCreate([
+            'role_id' => $roleId,
+            'module_id' => $module->id,
+            'submodule_id' => $module->submodules()->where('key', 'receipts')->firstOrFail()->id,
+            'access_level' => 'approver',
+        ]);
+    }
+
     private function grantRemittanceAccess(User $user): void
     {
         $module = Module::where('key', 'sales')->firstOrFail();
