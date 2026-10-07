@@ -6,7 +6,7 @@
         {{ ($receipt->receipt_type ?? 'payment') === 'updated' ? 'Updated Receipt' : (($receipt->receipt_type ?? 'payment') === 'refund' ? 'Refund Receipt' : 'Receipt') }} - {{ $receipt->receipt_number ?? 'N/A' }}
     </title>
     <style>
-        @page { size: A4 portrait; margin: 6mm 10mm; }
+        @page { size: 215.9mm 330.2mm; margin: 6mm 10mm; }
         body { margin: 0; padding: 0; }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;

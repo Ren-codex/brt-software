@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>AR Invoice - {{ $ar_invoice->invoice_number }}</title>
     <style>
-        @page { size: A4 portrait; margin: 6mm 10mm; }
+        @page { size: 215.9mm 330.2mm; margin: 6mm 10mm; }
         body { margin: 0; padding: 0; }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;

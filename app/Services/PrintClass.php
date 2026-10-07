@@ -8,7 +8,14 @@ use App\Models\SalesOrder;
 use Illuminate\Support\Facades\DB;
 
 class PrintClass
-{  
+{
+    /**
+     * 8½ × 13 inches in points, at 72 to the inch: Philippine long bond, the
+     * paper these documents are actually printed on. DomPDF takes the page box
+     * from here, so the @page rule in each view only has to agree with it.
+     */
+    private const LONG_BOND = [0, 0, 612, 936];
+
 
     public function print($id, $request){
 
@@ -43,7 +50,7 @@ class PrintClass
             'items' => $items,
         ];
 
-        $pdf = \PDF::loadView('prints.sales_order',$array)->setPaper('A4', 'portrait');
+        $pdf = \PDF::loadView('prints.sales_order',$array)->setPaper(self::LONG_BOND);
         return $pdf->stream($sales_order->so_number.'.pdf');
 
     }
@@ -58,7 +65,7 @@ class PrintClass
         ];
 
 
-        $pdf = \PDF::loadView('prints.purchase-order',$array)->setPaper('A4', 'landscape');
+        $pdf = \PDF::loadView('prints.purchase-order',$array)->setPaper(self::LONG_BOND, 'landscape');
         return $pdf->stream('purchase-order-'.$purchase_order->po_number.'.pdf');
 
     }
@@ -72,7 +79,7 @@ class PrintClass
             'receipts' => $receipts,
         ];
 
-        $pdf = \PDF::loadView('prints.remittance',$array)->setPaper('A4', 'portrait');
+        $pdf = \PDF::loadView('prints.remittance',$array)->setPaper(self::LONG_BOND);
         return $pdf->stream('remittance-'.$remittance->remittance_no.'.pdf');
 
     }
@@ -88,7 +95,7 @@ class PrintClass
             'items' => $items,
         ];
 
-        $pdf = \PDF::loadView('prints.ar_invoice',$array)->setPaper('A4', 'portrait');
+        $pdf = \PDF::loadView('prints.ar_invoice',$array)->setPaper(self::LONG_BOND);
         return $pdf->stream($ar_invoice->invoice_number.'.pdf');
 
     }
@@ -160,7 +167,7 @@ class PrintClass
         ];
 
 
-        $pdf = \PDF::loadView('prints.receipt',$array)->setPaper('A4', 'portrait');
+        $pdf = \PDF::loadView('prints.receipt',$array)->setPaper(self::LONG_BOND);
         return $pdf->stream($receipt->receipt_number.'.pdf');
 
     }
@@ -174,7 +181,7 @@ class PrintClass
             'items' => $items,
         ];
 
-        $pdf = \PDF::loadView('prints.payroll',$array)->setPaper('A4', 'portrait');
+        $pdf = \PDF::loadView('prints.payroll',$array)->setPaper(self::LONG_BOND);
         return $pdf->stream($payroll->payroll_no.'.pdf');
 
     }

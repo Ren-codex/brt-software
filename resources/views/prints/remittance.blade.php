@@ -6,7 +6,7 @@
     <title>Remittance #{{ $remittance->remittance_no }}</title>
     <style>
         @page {
-            size: A4 portrait;
+            size: 215.9mm 330.2mm;
             margin: 0.5in;
         }
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        @page { size: A4 portrait; margin: 6mm 10mm; }
+        @page { size: 215.9mm 330.2mm; margin: 6mm 10mm; }
         body { margin: 0; padding: 0; }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
@@ -14,10 +14,11 @@
 
         /* Two-copies-per-sheet layout. The sheet is cut in half with scissors, so
            the first copy is given exactly half the printable height and carries
-           the cut line on its own bottom edge: A4 is 297mm, the page margin takes
-           6mm off each end, so half of what is left is 142.5mm — and 6mm + 142.5mm
-           is 148.5mm, the middle of the paper itself. A separate spacer element
-           for the line would add its own height and move the cut off centre.
+           the cut line on its own bottom edge: long bond is 330.2mm tall, the
+           page margin takes 6mm off each end, so half of what is left is
+           159.1mm — and 6mm + 159.1mm is 165.1mm, the middle of the paper
+           itself. A separate spacer element for the line would add its own
+           height and move the cut off centre.
 
            Orders too long to share a sheet start the second copy on a new sheet
            (.new-sheet) so neither copy is split across the cut; those are not
@@ -26,7 +27,7 @@
         /* Only the top copy is measured. Giving the bottom one a height too
            made the pair a fraction taller than the page once the dashed border
            was counted, and it fell onto a second sheet. */
-        .half-sheet-top { height: 142.5mm; box-sizing: border-box; border-bottom: 1px dashed #999; }
+        .half-sheet-top { height: 159.1mm; box-sizing: border-box; border-bottom: 1px dashed #999; }
         .new-sheet { page-break-before: always; }
         .keep-whole { page-break-inside: avoid; }
 
@@ -133,12 +134,13 @@
 <body>
     @php
         $logoPath = public_path('images/official-logo-mini.png');
-        // Measured off the rendered PDF: one copy stands 133.7mm tall with four
-        // items against the 142.5mm half-sheet, which leaves clear space above
-        // the cut. A fifth item comes within 2.1mm of the line — close enough
-        // that one product name wrapping to a second row would cross it — so
-        // five and up get a sheet each instead of being cut through.
-        $copiesShareSheet = count($items) <= 4;
+        // Measured off the rendered PDF on long bond: one copy stands 150.0mm
+        // tall with seven items against the 159.1mm half-sheet, which leaves
+        // clear space above the cut. An eighth comes within 2.3mm of the line —
+        // close enough that one product name wrapping to a second row would
+        // cross it — so eight and up get a sheet each instead of being cut
+        // through.
+        $copiesShareSheet = count($items) <= 7;
     @endphp
 
     <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : '' }}">

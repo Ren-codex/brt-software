@@ -141,31 +141,39 @@ class SalesOrderPrintItemsTest extends TestCase
         $this->assertSame('---', trim($m[1]));
     }
 
+    public function test_it_prints_on_long_bond(): void
+    {
+        // 8½ × 13 inches, the paper these are actually run on.
+        $this->assertStringContainsString('size: 215.9mm 330.2mm;', $this->render());
+    }
+
     public function test_the_first_copy_takes_exactly_half_the_sheet(): void
     {
         // The sheet is cut in half with scissors, so the line has to land on
         // the paper's midpoint rather than wherever the content happens to end.
-        // A4 is 297mm, the page margin takes 6mm off each end: 6 + 142.5 = 148.5.
+        // Long bond is 330.2mm, the margin takes 6mm off each end:
+        // 6 + 159.1 = 165.1.
         $html = $this->render();
 
-        $this->assertStringContainsString('.half-sheet-top { height: 142.5mm;', $html);
+        $this->assertStringContainsString('.half-sheet-top { height: 159.1mm;', $html);
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
     }
 
-    public function test_four_items_still_share_one_sheet(): void
+    public function test_seven_items_still_share_one_sheet(): void
     {
-        // Four fits: one copy stands 133.7mm against the 142.5mm half-sheet.
-        $html = $this->renderOrder($this->order(), items: 4);
+        // Seven fits: one copy stands 150.0mm against the 159.1mm half-sheet.
+        $html = $this->renderOrder($this->order(), items: 7);
 
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
         $this->assertStringNotContainsString('class="copy-cell new-sheet"', $html);
     }
 
-    public function test_five_items_take_a_sheet_each(): void
+    public function test_eight_items_take_a_sheet_each(): void
     {
-        // A fifth row comes within 2.1mm of the cut line, close enough that one
-        // wrapped product name would cross it — so neither copy is cut through.
-        $html = $this->renderOrder($this->order(), items: 5);
+        // An eighth row comes within 2.3mm of the cut line, close enough that
+        // one wrapped product name would cross it — so neither copy is cut
+        // through.
+        $html = $this->renderOrder($this->order(), items: 8);
 
         // The class name also appears in the stylesheet, so match where it is
         // applied rather than merely mentioned.

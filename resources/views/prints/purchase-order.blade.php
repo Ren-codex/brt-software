@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        @page { size: A4 portrait; margin: 10mm; }
+        @page { size: 330.2mm 215.9mm; margin: 10mm; }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 11px;
