@@ -4,17 +4,35 @@
 
     <template v-else>
         <div class="library-card">
-            <div class="library-card-header">
+            <div class="library-card-header library-card-header--tools">
                     <div class="d-flex align-items-center gap-3">
                         <div class="header-icon">
                             <i class="ri-shopping-cart-line"></i>
                         </div>
-                        <div>
-                            <h4 class="header-title mb-0">Sales Orders</h4>
-                            <p class="header-subtitle mb-0">Manage and track all sales orders.</p>
-                        </div>
+                        <h4 class="header-title mb-0">Sales Orders</h4>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
+                    <!-- The filters live up here with the buttons, so the page opens
+                         on orders instead of on four stacked bands of chrome. -->
+                    <div class="header-tools search-section">
+                        <div class="search-wrapper">
+                            <i class="ri-search-line search-icon"></i>
+                            <input type="text" v-model="filter.keyword"
+                                placeholder="Search sales order..." class="search-input">
+                        </div>
+                        <div class="search-wrapper filter-multiselect-wrapper">
+                            <i class="ri-map-pin-line search-icon"></i>
+                            <Multiselect
+                                v-model="filter.location_id"
+                                :options="dropdowns.locations"
+                                label="name"
+                                value-prop="value"
+                                track-by="name"
+                                :searchable="true"
+                                :can-clear="true"
+                                placeholder="All Locations"
+                                class="search-input filter-multiselect"
+                            />
+                        </div>
                         <span v-if="lastUpdatedAt" class="poll-indicator" :title="'This list refreshes automatically'">
                             <i class="ri-refresh-line"></i> {{ lastUpdatedLabel() }}
                         </span>
@@ -38,35 +56,6 @@
                         >
                             {{ tab.label }}
                         </button>
-                    </div>
-
-                    <div class="search-section">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="search-wrapper">
-                                    <i class="ri-search-line search-icon"></i>
-                                    <input type="text"  v-model="filter.keyword"
-                                        placeholder="Search sales order..." class="search-input">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="search-wrapper filter-multiselect-wrapper">
-                                    <i class="ri-map-pin-line search-icon"></i>
-                                    <Multiselect
-                                        v-model="filter.location_id"
-                                        :options="dropdowns.locations"
-                                        label="name"
-                                        value-prop="value"
-                                        track-by="name"
-                                        :searchable="true"
-                                        :can-clear="true"
-                                        placeholder="All Locations"
-                                        class="search-input filter-multiselect"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
 
                     <div class="table-responsive">
@@ -214,7 +203,6 @@ import { statusTone } from '@/Shared/utils/statusTone.js';
 import { paymentTone, paymentLabel } from '@/Shared/utils/paymentType.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
-import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Cancel from './Modals/Cancel.vue';
 import MarkDelivered from './Modals/MarkDelivered.vue';
@@ -229,7 +217,7 @@ import { recordLockMixin } from '@/Shared/recordLock.js';
 
 import printDocument from '@/Shared/utils/printDocument';
 export default {
-    components: { ViewOrder, PageHeader, Pagination, Multiselect , Create, Cancel, MarkDelivered, DeliveryBoard, Adjustment, TableLoadingRow },
+    components: { ViewOrder, Pagination, Multiselect , Create, Cancel, MarkDelivered, DeliveryBoard, Adjustment, TableLoadingRow },
     mixins: [pollingMixin, recordLockMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
@@ -501,11 +489,67 @@ export default {
 }
 </script>
 <style scoped>
+/* The header holds the title, the filters and the buttons on one line. Four
+   separate bands used to stack above the table, and 116px of the page was the
+   gaps between them — more than two rows of orders spent on air. */
+.library-card-header--tools {
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+}
+
+.header-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
+    /* .search-section carries a 1.5rem bottom margin for its old position
+       below the header; in here that would reopen the gap it just closed. */
+    margin-bottom: 0;
+}
+
+/* The shared rule caps these at 350px for a full-width row. Up here they are
+   sized to leave the title its space. */
+.header-tools .search-wrapper {
+    max-width: none;
+    flex: 0 1 215px;
+}
+
+/* Wide enough that "All Locations" stays on one line once the icon's 2.5rem
+   of left padding and the clear/caret buttons have taken their share. */
+.header-tools .search-wrapper.filter-multiselect-wrapper {
+    flex: 0 1 200px;
+}
+
+/* The fields shrink before they wrap, so they stay beside the title down to
+   laptop width. Below that they take their own line rather than squeezing the
+   search box down to nothing. */
+@media (max-width: 1199px) {
+    .header-tools {
+        flex: 1 1 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 575px) {
+    .header-tools .search-wrapper,
+    .header-tools .search-wrapper.filter-multiselect-wrapper {
+        flex: 1 1 100%;
+    }
+}
+
+/* The pills are the first thing under the header now, so the body no longer
+   needs a full 1.5rem of air above them. */
+.library-card-body {
+    padding-top: 0.9rem;
+}
+
 .status-tab-bar {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.85rem;
 }
 
 .status-tab-btn {

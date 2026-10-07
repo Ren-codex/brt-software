@@ -1,9 +1,6 @@
 <template>
   <div>
     <Head title="Sales" />
-    <PageHeader title="Sales Management" pageTitle="List" />
-
-
 
     <div class="inventory-container">
       <!-- Minimal Vertical Tabs -->
@@ -165,7 +162,6 @@
 
 <script>
 import _ from 'lodash';
-import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import SalesOrders from "@/Pages/Modules/Sales/Components/SalesOrders/Index.vue";
 import SalesReturns from "@/Pages/Modules/Sales/Components/SalesReturns/Index.vue";
@@ -178,7 +174,7 @@ import StockSidebar from "@/Pages/Modules/Sales/Components/StockSidebar.vue";
 import CheckMonitoring from "@/Pages/Modules/Sales/Components/CheckMonitoring/Index.vue";
 
 export default {
-  components: { PageHeader, Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar, StockSidebar, CheckMonitoring },
+  components: { Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar, StockSidebar, CheckMonitoring },
   props: ['dropdowns', 'return_grace_period'],
   data() {
     return {
