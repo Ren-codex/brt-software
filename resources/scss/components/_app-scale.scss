@@ -1,0 +1,27 @@
+// How large the whole interface renders.
+//
+// Everyone was pressing Cmd+- to fit more rows on screen, which is a setting
+// per machine that resets. This makes that the system's own default.
+//
+// 1 is the browser's normal size; 0.9 matches Chrome at 90%. It is a true
+// zoom rather than a font-size change on purpose: roughly a fifth of this
+// codebase sizes things in px rather than rem, so shrinking the root font
+// would scale some text and spacing and leave the rest where it was.
+//
+// This is the one number to change. Raise it towards 1 for larger.
+$app-scale: 0.9 !default;
+
+html {
+    zoom: $app-scale;
+}
+
+// Anything positioned against the viewport is measured in the zoomed
+// coordinate space, so a full-height panel has to be told the un-zoomed
+// height or it stops short of the bottom of the window.
+@if $app-scale != 1 {
+    .modal-overlay,
+    .offcanvas,
+    .app-menu {
+        min-height: calc(100vh / #{$app-scale});
+    }
+}

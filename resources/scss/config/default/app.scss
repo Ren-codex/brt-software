@@ -69,6 +69,8 @@ File: Main Css File
 @import "../../components/form-control";
 @import "../../components/list-group";
 @import "../../components/payment-pill";
+// Last, so the interface scale is not undone by anything above it.
+@import "../../components/app-scale";
 
 // Plugins
 @import "../../plugins/custom-scrollbar";
