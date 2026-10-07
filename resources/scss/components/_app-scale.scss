@@ -15,13 +15,21 @@ html {
     zoom: $app-scale;
 }
 
-// Anything positioned against the viewport is measured in the zoomed
-// coordinate space, so a full-height panel has to be told the un-zoomed
-// height or it stops short of the bottom of the window.
+// Anything sized against the viewport is measured in the zoomed coordinate
+// space, so 100vh covers only $app-scale of the real window and leaves a strip
+// of bare page below it — which is what put a white band under the login
+// screen's green background.
+//
+// Use var(--app-vh) instead of 100vh wherever a full window height is meant.
+// It resolves to 100vh when the scale is 1, so it is safe to use unconditionally.
+:root {
+    --app-vh: calc(100vh / #{$app-scale});
+}
+
 @if $app-scale != 1 {
     .modal-overlay,
     .offcanvas,
     .app-menu {
-        min-height: calc(100vh / #{$app-scale});
+        min-height: var(--app-vh);
     }
 }

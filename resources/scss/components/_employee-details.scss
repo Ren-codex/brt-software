@@ -34,7 +34,7 @@
 
 .emp-profile-container {
     background: #f8f9fa;
-    min-height: 100vh;
+    min-height: var(--app-vh, 100vh);
     padding: 24px;
 }
 

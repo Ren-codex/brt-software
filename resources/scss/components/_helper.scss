@@ -186,7 +186,7 @@ code {
     @media (max-width: 1699.98px) {
         display: none;
         position: fixed !important;
-        height: 100vh;
+        height: var(--app-vh, 100vh);
         right: 0px;
         top: 0px;
         bottom: 0px;

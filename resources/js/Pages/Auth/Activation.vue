@@ -134,7 +134,7 @@ export default {
 
 <style scoped>
 .activation-page {
-    min-height: 100vh;
+    min-height: var(--app-vh, 100vh);
     display: flex;
     align-items: center;
     justify-content: center;
