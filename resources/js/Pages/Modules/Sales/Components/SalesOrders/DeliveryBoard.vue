@@ -12,7 +12,10 @@
                 <button class="btn btn-sm btn-outline-secondary" @click="fetch" :disabled="loading">
                     <i class="ri-refresh-line me-1"></i>{{ loading ? 'Loading...' : 'Refresh' }}
                 </button>
-                <button class="btn btn-sm btn-outline-secondary" @click="$emit('back')">
+                <!-- Only when the board was opened from inside the Sales Orders
+                     tab. As a sidebar tab of its own there is no list behind it
+                     to go back to. -->
+                <button v-if="showBack" class="btn btn-sm btn-outline-secondary" @click="$emit('back')">
                     <i class="ri-arrow-left-line me-1"></i>Back to list
                 </button>
             </div>
@@ -39,7 +42,7 @@
                             <i class="ri-user-line"></i>{{ row.person || 'Nobody named' }}
                         </span>
                         <span v-if="row.days !== null" class="board-age" :class="{ 'is-late': row.days >= 2 }">
-                            {{ row.days === 0 ? 'today' : row.days + 'd' }}
+                            {{ ageLabel(row.days) }}
                         </span>
                     </div>
                     <div v-if="row.mode" class="board-card-mode">
@@ -66,6 +69,9 @@ import Payment from '../ARInvoices/Modals/Payment.vue';
 export default {
     components: { MarkDelivered, Payment },
     emits: ['back'],
+    props: {
+        showBack: { type: Boolean, default: true },
+    },
     data() {
         return {
             loading: false,
@@ -109,6 +115,18 @@ export default {
         this.fetch();
     },
     methods: {
+        /**
+         * How long a card has been waiting. The day count is signed, so an
+         * order promised for a date still ahead comes back negative — which
+         * read as "-2d" on the card and meant nothing to anyone. A delivery due
+         * on Friday is waiting for Friday, not overdue by minus two days.
+         */
+        ageLabel(days) {
+            if (days === 0) return 'today';
+            if (days === -1) return 'tomorrow';
+            if (days < 0) return `in ${Math.abs(days)}d`;
+            return `${days}d`;
+        },
         fetch() {
             this.loading = true;
             axios.get('/sales-orders', { params: { option: 'delivery-board' } })

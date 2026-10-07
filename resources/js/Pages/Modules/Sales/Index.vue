@@ -64,6 +64,15 @@
                 </div>
               </div>
 
+              <!-- Deliveries: the same board the Sales Orders header opens, as a
+                   destination of its own. Behind that button it was unfindable
+                   unless you already knew it was there. -->
+              <div v-if="activeTab === 'deliveries'" class="row">
+                <div class="col-md-12">
+                  <DeliveryBoard :show-back="false" />
+                </div>
+              </div>
+
               <!-- Sales Returns -->
               <div v-if="activeTab === 'sales_returns'" class="row">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
@@ -172,9 +181,10 @@ import SalesReports from "@/Pages/Modules/Sales/Components/SalesReports/Index.vu
 import QuickStatsSidebar from "@/Pages/Modules/Sales/Components/QuickStatsSidebar.vue";
 import StockSidebar from "@/Pages/Modules/Sales/Components/StockSidebar.vue";
 import CheckMonitoring from "@/Pages/Modules/Sales/Components/CheckMonitoring/Index.vue";
+import DeliveryBoard from "@/Pages/Modules/Sales/Components/SalesOrders/DeliveryBoard.vue";
 
 export default {
-  components: { Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar, StockSidebar, CheckMonitoring },
+  components: { Pagination, SalesOrders, SalesReturns, ARInvoices, Receipts, Remittances, SalesReports, QuickStatsSidebar, StockSidebar, CheckMonitoring, DeliveryBoard },
   props: ['dropdowns', 'return_grace_period'],
   data() {
     return {
@@ -221,6 +231,12 @@ export default {
           label: 'Sales Orders',
           icon: 'ri-shopping-bag-line',
           description: 'Manage sales orders'
+        },
+        {
+          id: 'deliveries',
+          label: 'Deliveries',
+          icon: 'ri-truck-line',
+          description: 'Mark delivered and chase what is owed'
         },
         {
           id: 'ar_invoices',
@@ -273,6 +289,12 @@ export default {
       return this.tabs.filter((tab) => {
         if (tab.id === 'remittance') {
           return this.canAny('sales', 'remittances');
+        }
+        // The delivery board reads sales orders and acts on them — marking
+        // delivered, recording a collection — so it answers to the same
+        // permission rather than one of its own.
+        if (tab.id === 'deliveries') {
+          return this.canAny('sales', 'sales_orders');
         }
         if (!salesGatedTabIds.includes(tab.id)) {
           return true;
