@@ -5,6 +5,7 @@ namespace App\Services\Modules;
 
 use App\Models\Remittance;
 use App\Models\Receipt;
+use App\Models\SalesOrder;
 use App\Models\ArInvoice;
 use App\Models\Employee;
 use App\Models\ListStatus;
@@ -355,6 +356,23 @@ class RemittanceClass
             // Handed in: nobody is carrying this money any more.
             'held_by_employee_id' => null,
         ]);
+
+        // Remitting is itself proof the money arrived, so it finishes any order
+        // that was only waiting on that. Without this, an administrator taking
+        // cash straight from a driver left the order in For Turnover for good:
+        // the handover is what normally closes it, and there was no handover.
+        //
+        // Same narrow guard as the handover — only out of For Turnover, never
+        // re-deriving a status that would drag an older record backwards.
+        $affected = SalesOrder::whereHas('arInvoices.receipts', fn ($q) => $q->whereIn('receipts.id', $receiptIds))
+            ->whereHas('status', fn ($q) => $q->where('slug', 'for-turnover'))
+            ->get();
+
+        foreach ($affected as $order) {
+            if ($statusId = $order->settledStatusId()) {
+                $order->update(['status_id' => $statusId]);
+            }
+        }
 
         return [
             'data'    => new RemittanceResource($data->fresh('receipts')),
