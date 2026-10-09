@@ -596,6 +596,12 @@ class SalesOrderClass
                 'reference_number' => $line['reference_number'],
                 'check_status'     => strcasecmp(trim((string) $line['payment_mode']), 'Check') === 0 ? 'on_hand' : null,
                 'check_date'       => $line['check_date'] ?? null,
+                // The cashier took the money across the counter, so the till is
+                // theirs to account for. Left empty, as it was, the receipt
+                // belongs to nobody: it shows as Unassigned in Cash in the
+                // Field and falls outside every scoped user's own pending set,
+                // which makes it unremittable by anyone but an administrator.
+                'held_by_employee_id' => auth()->user()?->employee?->id ?? $data->sales_rep_id,
             ]);
 
             // A customer paying at the counter by check is the same instrument
