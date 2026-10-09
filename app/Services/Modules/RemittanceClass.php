@@ -108,11 +108,25 @@ class RemittanceClass
             ->where(function ($q) {
                 $q->whereNull('receipt_type')->orWhere('receipt_type', '!=', 'refund');
             })
+            // Two conditions, both required.
+            //
+            // In my hands: you cannot remit cash a driver is still carrying,
+            // whoever's sale it is. A null holder is an old record from before
+            // custody was tracked — nobody knows where it is, and refusing it
+            // would strand it with no way to ever clear it.
             ->where(function ($q) use ($employeeId) {
                 $q->where('held_by_employee_id', $employeeId)
-                    ->orWhere(function ($legacy) use ($employeeId) {
-                        $legacy->whereNull('held_by_employee_id')
-                            ->whereHas('arInvoice.sales_order', fn ($so) => $so->where('sales_rep_id', $employeeId));
+                    ->orWhereNull('held_by_employee_id');
+            })
+            // And my sale: the rep on the order answers for it the whole way
+            // through to the remittance. Whoever typed the order in does not
+            // come into it — except on a walk-in booked with no rep at all,
+            // which would otherwise belong to nobody and could never clear.
+            ->whereHas('arInvoice.sales_order', function ($so) use ($employeeId) {
+                $so->where('sales_rep_id', $employeeId)
+                    ->orWhere(function ($unrepped) {
+                        $unrepped->whereNull('sales_rep_id')
+                            ->where('added_by_id', Auth::id() ?? -1);
                     });
             });
     }
