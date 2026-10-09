@@ -30,7 +30,7 @@ class ReceiptClass
         $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         return ReceiptResource::collection(
-            Receipt::with(['arInvoice.sales_order.customer', 'status', 'sourceReceipt'])
+            Receipt::with(['arInvoice.sales_order.customer', 'arInvoice.sales_order.salesRep', 'heldBy', 'status', 'sourceReceipt'])
                 ->where(function ($query) {
                     $query->whereNull('receipt_type')
                         ->orWhere('receipt_type', '!=', 'refund');

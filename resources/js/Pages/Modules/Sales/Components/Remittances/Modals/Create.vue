@@ -34,6 +34,9 @@
                                         <th>#</th>
                                         <th>Receipt No.</th>
                                         <th>Customer</th>
+                                        <!-- Who is carrying it, not whose sale it is. An admin taking
+                                             cash in from a driver has to see whose money each row is. -->
+                                        <th v-if="!isSalesRep">Held by</th>
                                         <th class="text-end">Amount</th>
                                         <th>Payment</th>
                                         <th>Date</th>
@@ -45,12 +48,15 @@
                                         <td>{{ idx + 1 }}</td>
                                         <td>{{ order.receipt_number || '-' }}</td>
                                         <td>{{ getCustomerName(order) }}</td>
+                                        <td v-if="!isSalesRep" :class="{ 'text-muted': !order.held_by }">
+                                            {{ order.held_by?.fullname || 'Nobody named' }}
+                                        </td>
                                         <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
                                         <td>{{ getPaymentMode(order) || '-' }}</td>
                                         <td>{{ formatDate(order.created_at) }}</td>
                                     </tr>
                                     <tr v-if="orders.length === 0">
-                                        <td :colspan="isSalesRep ? 6 : 7" class="text-center text-muted">No pending sales orders found.</td>
+                                        <td :colspan="isSalesRep ? 6 : 8" class="text-center text-muted">No pending sales orders found.</td>
                                     </tr>
                                 </tbody>
                             </table>

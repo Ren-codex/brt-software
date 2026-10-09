@@ -62,6 +62,13 @@ class ReceiptResource extends JsonResource
                 'id' => $salesOrder->salesRep->id,
                 'fullname' => $salesOrder->salesRep->fullname ?? trim(($salesOrder->salesRep->firstname ?? '') . ' ' . ($salesOrder->salesRep->lastname ?? '')),
             ] : null,
+            // Who is physically carrying this, which is not the same question
+            // as whose sale it is. An administrator taking cash in from a
+            // driver needs to see it to know whose money they are accepting.
+            'held_by' => $this->heldBy ? [
+                'id' => $this->heldBy->id,
+                'fullname' => $this->heldBy->fullname ?? trim(($this->heldBy->firstname ?? '') . ' ' . ($this->heldBy->lastname ?? '')),
+            ] : null,
             'return_policy' => [
                 'window_days' => $returnWindowDays,
                 'days_since_receipt' => $daysSinceReceipt,
