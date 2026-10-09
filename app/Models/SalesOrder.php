@@ -146,10 +146,30 @@ class SalesOrder extends Model
     /**
      * The status id to move a settled order to, or null when that status row is
      * missing — better to leave an order where it is than to blank its status.
+     *
+     * For Turnover arrived after the original status list was written, and that
+     * list is a seeder which deletes the whole table before rebuilding it from
+     * fixed ids. It cannot be re-run on a live database, so the row has to come
+     * from somewhere else: it is created here on first use rather than waiting
+     * for somebody to ssh in and seed it. Same approach as
+     * JournalEntryService::ensureAccount, which conjures the ledger accounts a
+     * new feature needs instead of requiring a migration for each one.
      */
     public function settledStatusId(): ?int
     {
-        return ListStatus::getBySlug($this->settledStatusSlug())?->id;
+        $slug = $this->settledStatusSlug();
+
+        if ($slug === 'for-turnover' && ! ListStatus::getBySlug($slug)) {
+            ListStatus::create([
+                'name' => 'For Turnover',
+                'slug' => 'for-turnover',
+                'description' => 'Delivered and paid, money not yet handed in',
+                'text_color' => '#ffffff',
+                'bg_color' => '#b0702a',
+            ]);
+        }
+
+        return ListStatus::getBySlug($slug)?->id;
     }
 
     public function deliveredBy()
