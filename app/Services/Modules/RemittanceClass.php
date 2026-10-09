@@ -350,12 +350,21 @@ class RemittanceClass
             'created_by_id'   => Auth::id(),
         ]);
 
-        Receipt::whereIn('id', $receiptIds)->update([
-            'status_id'     => $forVerificationStatusId,
-            'remittance_id' => $data->id,
-            // Handed in: nobody is carrying this money any more.
-            'held_by_employee_id' => null,
-        ]);
+        // Saved one at a time on purpose. A mass update through the query
+        // builder skips model events, and the receipt's only activity-log
+        // field is held_by_employee_id — so clearing custody in bulk emptied
+        // it silently. The trail then read "the driver has it" and stopped,
+        // with nothing to say the money ever left them. A remittance covers a
+        // day's collections, so the extra writes are cheap next to losing the
+        // one record of who passed what to whom.
+        foreach (Receipt::whereIn('id', $receiptIds)->get() as $receipt) {
+            $receipt->update([
+                'status_id'     => $forVerificationStatusId,
+                'remittance_id' => $data->id,
+                // Handed in: nobody is carrying this money any more.
+                'held_by_employee_id' => null,
+            ]);
+        }
 
         // Remitting is itself proof the money arrived, so it finishes any order
         // that was only waiting on that. Without this, an administrator taking
