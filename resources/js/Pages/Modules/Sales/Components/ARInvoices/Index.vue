@@ -58,10 +58,14 @@
                                     <th style="width:3%">#</th>
                                     <th class="text-center" style="width:12%">Invoice Number</th>
                                     <th class="text-center" style="width:12%">Sales Order</th>
+                                    <!-- Type sits here because the row does: the payment pill is
+                                         the cell straight after the sales order. The header used
+                                         to carry it four columns later, so every label from
+                                         Customer to Type named the column to its left. -->
+                                    <th class="text-center" style="width:10%">Type</th>
                                     <th class="text-center" style="width:12%">Customer</th>
                                     <th class="text-center" style="width:12%">Sales Rep</th>
                                     <th class="text-center" style="width:12%">Invoice Date</th>
-                                    <th class="text-center" style="width:10%">Type</th>
                                     <th class="text-center" style="width:12%">Status</th>
                                     <th class="text-end" style="width:12%">Balance Due</th>
                                     <th class="text-end" style="width:12%">Amount Paid</th>
