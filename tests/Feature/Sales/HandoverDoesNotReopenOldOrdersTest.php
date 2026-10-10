@@ -57,13 +57,14 @@ class HandoverDoesNotReopenOldOrdersTest extends TestCase
             'held_by_employee_id' => $order->driver_id,
         ]);
 
+        $officeRep = \App\Models\Employee::firstOrCreate(
+            ['mobile' => '09170000222'],
+            ['firstname' => 'Office', 'lastname' => 'Rep', 'birthdate' => '1990-01-01', 'sex' => 'Female', 'religion' => 'None']
+        );
+        $order->update(['sales_rep_id' => $officeRep->id]);
+
         $this->actingAs($this->user)
-            ->putJson('/receipts/'.$receipt->id.'/turn-over', [
-                'held_by_employee_id' => \App\Models\Employee::firstOrCreate(
-                    ['mobile' => '09170000222'],
-                    ['firstname' => 'Office', 'lastname' => 'Rep', 'birthdate' => '1990-01-01', 'sex' => 'Female', 'religion' => 'None']
-                )->id,
-            ])
+            ->putJson('/receipts/'.$receipt->id.'/turn-over', ['held_by_employee_id' => $officeRep->id])
             ->assertOk();
 
         $this->assertSame('closed', $order->fresh('status')->status->slug);

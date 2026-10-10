@@ -105,6 +105,8 @@ class CustodyTrailTest extends TestCase
         ]);
 
         $receipt = $this->collectedAtTheDoor();
+        // Only this order's rep may take it, so make that this person.
+        SalesOrder::latest('id')->firstOrFail()->update(['sales_rep_id' => $office->id]);
         $this->actingAs($this->user)
             ->putJson('/receipts/'.$receipt->id.'/turn-over', ['held_by_employee_id' => $office->id])
             ->assertOk();

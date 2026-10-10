@@ -204,7 +204,7 @@ class SalesOrderClass
             });
 
         // Collected, not handed in.
-        $withDriver = Receipt::with('heldBy', 'customer', 'arInvoice.sales_order')
+        $withDriver = Receipt::with('heldBy', 'customer', 'arInvoice.sales_order.salesRep')
             ->whereNull('remittance_id')
             ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
             ->when($employeeId, function ($query) use ($employeeId) {
@@ -224,6 +224,9 @@ class SalesOrderClass
                 'amount' => (float) $receipt->amount_paid,
                 'person' => optional($receipt->heldBy)->fullname ?? 'Unassigned',
                 'mode' => $receipt->payment_mode,
+                // Who the money may be handed to: the rep whose sale it is.
+                'rep_id' => optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->id,
+                'rep_name' => optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->fullname,
                 // The shared rule, not a list of modes: a transfer waits only
                 // on a COD order, so a credit sale's transfer is not pending
                 // anything and must not be shown as though it were.

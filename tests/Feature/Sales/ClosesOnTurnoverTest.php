@@ -36,6 +36,8 @@ class ClosesOnTurnoverTest extends TestCase
     private function deliverAndCollect(): SalesOrder
     {
         $order = SalesOrder::firstOrFail();
+        // The money can only go to this order's own rep, so the order needs one.
+        $order->update(['sales_rep_id' => $this->salesRepId()]);
 
         $this->actingAs($this->user)->put('/sales-orders/'.$order->id, [
             'action' => 'mark-delivered',
@@ -84,23 +86,17 @@ class ClosesOnTurnoverTest extends TestCase
         $this->assertTrue(SalesOrder::firstOrFail()->moneyIsIn());
     }
 
-    public function test_handing_it_back_to_the_driver_leaves_it_closed(): void
+    public function test_it_cannot_be_handed_back_to_the_driver(): void
     {
         $this->postCod()->assertSessionHasNoErrors();
         $this->deliverAndCollect();
         $this->handOverTo($this->salesRepId())->assertOk();
 
-        $this->handOverTo($this->fixtureDriverId())->assertOk();
+        // Money goes to the rep whose sale it is, never back out to the driver.
+        $this->handOverTo($this->fixtureDriverId())->assertStatus(422);
 
-        // A handover only ever takes an order out of For Turnover. Reopening a
-        // closed order would be the more literal reading, but the same code
-        // would then drag orders closed before deliveries were tracked back
-        // into the worklist, since those carry no delivery stamp. Protecting
-        // the real records beats handling a handover that runs backwards.
         $this->assertSame('closed', SalesOrder::firstOrFail()->fresh('status')->status->slug);
-        // The custody record still follows the money, which is what the
-        // remittance and Cash in the Field read.
-        $this->assertSame($this->fixtureDriverId(), Receipt::firstOrFail()->held_by_employee_id);
+        $this->assertSame($this->salesRepId(), Receipt::firstOrFail()->held_by_employee_id);
     }
 
     public function test_a_counter_sale_closes_without_a_handover(): void

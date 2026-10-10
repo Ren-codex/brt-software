@@ -133,13 +133,18 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <label class="form-label" for="handover_holder">Who has the money now?</label>
-                    <select id="handover_holder" v-model="handover.holder" class="form-control">
-                        <option :value="null" disabled>Select the person receiving it</option>
-                        <option v-for="person in holders" :key="person.value" :value="person.value">
-                            {{ person.name }}
-                        </option>
-                    </select>
+                    <template v-if="holders.length">
+                        <label class="form-label" for="handover_holder">Who has the money now?</label>
+                        <select id="handover_holder" v-model="handover.holder" class="form-control">
+                            <option v-for="person in holders" :key="person.value" :value="person.value">
+                                {{ person.name }}
+                            </option>
+                        </select>
+                    </template>
+                    <p v-else class="handover-note">
+                        This order has no sales rep, so there is nobody for the driver to hand it to.
+                        An administrator can take it in by recording the remittance directly.
+                    </p>
                     <p v-if="handover.error" class="handover-error">{{ handover.error }}</p>
                     <p class="handover-note">
                         This records who is accountable for the money. It does not remit it —
@@ -185,17 +190,21 @@ export default {
         };
     },
     computed: {
-        /** Anyone who can carry money: the drivers and the reps. */
+        /**
+         * Who this particular collection may go to: the rep whose sale it is,
+         * and nobody else. Offering every driver and rep invited the one
+         * mistake that strands the money — a third person can neither remit a
+         * sale that is not theirs nor hand it on, so only an administrator
+         * could ever clear it.
+         *
+         * An administrator taking it in does not need this: they remit it
+         * straight from the driver.
+         */
         holders() {
-            const drivers = Array.isArray(this.dropdowns?.drivers) ? this.dropdowns.drivers : [];
-            const reps = Array.isArray(this.dropdowns?.sales_reps) ? this.dropdowns.sales_reps : [];
-            const seen = new Set();
+            const row = this.handover.row;
+            if (!row?.rep_id) return [];
 
-            return [...drivers, ...reps].filter((person) => {
-                if (seen.has(person.value)) return false;
-                seen.add(person.value);
-                return true;
-            });
+            return [{ value: row.rep_id, name: row.rep_name || 'the order\'s sales rep' }];
         },
         /** The three stages of a delivery, in the order one passes through them. */
         stages() {
@@ -334,7 +343,8 @@ export default {
                 .catch((err) => console.error(err));
         },
         openHandover(row) {
-            this.handover = { open: true, row, holder: null, error: '', saving: false };
+            // One option, so there is nothing to choose: preselect it.
+            this.handover = { open: true, row, holder: row.rep_id ?? null, error: '', saving: false };
         },
         closeHandover() {
             this.handover.open = false;

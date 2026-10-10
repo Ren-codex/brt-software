@@ -200,7 +200,7 @@ class RemittanceClass
      */
     public function turnOver($receiptId, $employeeId)
     {
-        $receipt = Receipt::with(['status', 'arInvoice.sales_order.status'])->findOrFail($receiptId);
+        $receipt = Receipt::with(['status', 'arInvoice.sales_order.status', 'arInvoice.sales_order.salesRep'])->findOrFail($receiptId);
 
         if ($receipt->remittance_id || optional($receipt->status)->slug !== 'pending') {
             throw ValidationException::withMessages([
@@ -208,7 +208,28 @@ class RemittanceClass
             ]);
         }
 
-        $employee = Employee::findOrFail($employeeId);
+        $employee = Employee::with('user')->findOrFail($employeeId);
+
+        // Money goes to the rep whose sale it is, or to an administrator when
+        // that rep is away. Handing it to anyone else strands it: they cannot
+        // remit a sale that is not theirs, and the rep cannot remit money they
+        // are not holding, so only an administrator could ever clear it.
+        $order = optional($receipt->arInvoice)->sales_order;
+        if ($order) {
+            $isTheRep = $order->sales_rep_id && (int) $employee->id === (int) $order->sales_rep_id;
+            $isTheBooker = ! $order->sales_rep_id && $employee->user_id
+                && (int) $employee->user_id === (int) $order->added_by_id;
+            $isAdmin = $employee->user
+                && app(PermissionService::class)->userHasAccess($employee->user, 'sales', null, 'admin');
+
+            if (! $isTheRep && ! $isTheBooker && ! $isAdmin) {
+                throw ValidationException::withMessages([
+                    'held_by_employee_id' => $employee->fullname.' cannot take this one. It belongs to '
+                        .(optional($order->salesRep)->fullname ?? 'the person who booked it')
+                        .', so it goes to them or to an administrator.',
+                ]);
+            }
+        }
 
         $receipt->update(['held_by_employee_id' => $employee->id]);
 
