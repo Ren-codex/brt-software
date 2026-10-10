@@ -247,6 +247,49 @@ class SalesOrderClass
         ]);
     }
 
+    /**
+     * Refuse a credit sale that would put the customer over their limit.
+     *
+     * COD is excluded on purpose: the driver collects at the door, so nothing
+     * is extended. Checked on edit as well as on creation — booking an order
+     * as COD and then switching it to Credit used to walk straight past this,
+     * so the limit only bound people who declared credit up front.
+     *
+     * $excludingOrderId keeps an edit from being measured against its own
+     * balance, which would read as the order arriving twice.
+     */
+    private function assertWithinCreditLimit($request, ?int $excludingOrderId = null): void
+    {
+        if (! SalesOrder::isTermCredit($request->payment_mode)) {
+            return;
+        }
+
+        $customer = \App\Models\Customer::find($request->customer_id);
+        if (! $customer || $customer->credit_limit <= 0) {
+            return;
+        }
+
+        $orderTotal = collect($request->items)->sum(function ($item) {
+            return ($item['price'] * $item['quantity']) - (($item['discount_per_unit'] ?? 0) * $item['quantity']);
+        });
+
+        $outstanding = ArInvoice::whereHas('sales_order', fn($q) => $q->where('customer_id', $request->customer_id))
+            ->when($excludingOrderId, fn($q) => $q->where('sales_order_id', '!=', $excludingOrderId))
+            ->where('balance_due', '>', 0)
+            ->sum('balance_due');
+
+        if (($outstanding + $orderTotal) > $customer->credit_limit) {
+            throw ValidationException::withMessages([
+                'credit_limit' => sprintf(
+                    'Credit limit exceeded. Limit: ₱%s | Outstanding: ₱%s | This order: ₱%s',
+                    number_format($customer->credit_limit, 2),
+                    number_format($outstanding, 2),
+                    number_format($orderTotal, 2)
+                ),
+            ]);
+        }
+    }
+
     public function save($request){
 
         // Validate stock availability for all items
@@ -257,32 +300,10 @@ class SalesOrderClass
             }
         }
 
-        // Enforce credit limit for credit sales. COD is excluded on purpose:
-        // the driver collects at the door, so nothing is extended.
-        $isCreditMode = SalesOrder::isTermCredit($request->payment_mode);
         // Nothing is settled at the counter for an on-account sale, COD included.
         $isOnAccount = SalesOrder::isOnAccount($request->payment_mode);
-        if ($isCreditMode) {
-            $customer = \App\Models\Customer::find($request->customer_id);
-            if ($customer && $customer->credit_limit > 0) {
-                $orderTotal = collect($request->items)->sum(function ($item) {
-                    return ($item['price'] * $item['quantity']) - (($item['discount_per_unit'] ?? 0) * $item['quantity']);
-                });
-                $outstanding = ArInvoice::whereHas('sales_order', fn($q) => $q->where('customer_id', $request->customer_id))
-                    ->where('balance_due', '>', 0)
-                    ->sum('balance_due');
-                if (($outstanding + $orderTotal) > $customer->credit_limit) {
-                    throw ValidationException::withMessages([
-                        'credit_limit' => sprintf(
-                            'Credit limit exceeded. Limit: ₱%s | Outstanding: ₱%s | This order: ₱%s',
-                            number_format($customer->credit_limit, 2),
-                            number_format($outstanding, 2),
-                            number_format($orderTotal, 2)
-                        ),
-                    ]);
-                }
-            }
-        }
+
+        $this->assertWithinCreditLimit($request);
 
         // Picking a batch other than the oldest no longer holds the order: the
         // deviation is recorded on the line (is_batch_override) and the sale
@@ -420,6 +441,11 @@ class SalesOrderClass
         $data->load(['items', 'arInvoices', 'status']);
 
         \App\Support\RecordLock::assertEditable($data, 'This sales order', 'edited');
+
+        // The same gate as creation. An order booked as COD and then switched
+        // to Credit here is the owner extending credit at the door, and it
+        // counts against the customer's limit like any other credit sale.
+        $this->assertWithinCreditLimit($request, $data->id);
 
         // Once a credit sale has collected a payment, switching it to Cash mid-edit
         // isn't safe — the Credit→Cash sync below assumes no prior receipts exist.
