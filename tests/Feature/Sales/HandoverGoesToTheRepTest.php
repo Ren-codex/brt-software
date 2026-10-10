@@ -117,4 +117,31 @@ class HandoverGoesToTheRepTest extends TestCase
 
         $this->handTo($receipt, $otherDriver->id)->assertStatus(422);
     }
+
+    public function test_it_records_whoever_is_signed_in_when_nobody_is_named(): void
+    {
+        // The rep is signed in and taking the money, so there is nothing to
+        // choose — the screen sends no holder and the server fills it in.
+        $rep = $this->person('Remy', $this->user->id);
+        $receipt = $this->collected($rep);
+
+        $this->actingAs($this->user)
+            ->putJson('/receipts/'.$receipt->id.'/turn-over', [])
+            ->assertOk();
+
+        $this->assertSame($rep->id, $receipt->fresh()->held_by_employee_id);
+    }
+
+    public function test_signing_in_as_the_wrong_person_is_still_refused(): void
+    {
+        // Defaulting to the signed-in user must not become a way around the
+        // rule: it is checked the same as a named one.
+        $rep = $this->person('Remy');
+        $receipt = $this->collected($rep);
+        $this->person('Nosey', $this->user->id);
+
+        $this->actingAs($this->user)
+            ->putJson('/receipts/'.$receipt->id.'/turn-over', [])
+            ->assertStatus(422);
+    }
 }

@@ -133,17 +133,11 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <template v-if="holders.length">
-                        <label class="form-label" for="handover_holder">Who has the money now?</label>
-                        <select id="handover_holder" v-model="handover.holder" class="form-control">
-                            <option v-for="person in holders" :key="person.value" :value="person.value">
-                                {{ person.name }}
-                            </option>
-                        </select>
-                    </template>
-                    <p v-else class="handover-note">
-                        This order has no sales rep, so there is nobody for the driver to hand it to.
-                        An administrator can take it in by recording the remittance directly.
+                    <!-- Nothing to choose: you are signed in, so you are the one
+                         taking it, and it is recorded against your name. -->
+                    <p class="handover-confirm">
+                        Recording that <strong>you</strong> received this from
+                        {{ handover.row?.person || 'the driver' }}.
                     </p>
                     <p v-if="handover.error" class="handover-error">{{ handover.error }}</p>
                     <p class="handover-note">
@@ -155,7 +149,7 @@
                     <button class="acct-btn-secondary" @click="closeHandover">Cancel</button>
                     <button
                         class="acct-btn-primary"
-                        :disabled="!handover.holder || handover.saving"
+                        :disabled="handover.saving"
                         @click="saveHandover"
                     >
                         {{ handover.saving ? 'Saving…' : 'Record handover' }}
@@ -190,22 +184,6 @@ export default {
         };
     },
     computed: {
-        /**
-         * Who this particular collection may go to: the rep whose sale it is,
-         * and nobody else. Offering every driver and rep invited the one
-         * mistake that strands the money — a third person can neither remit a
-         * sale that is not theirs nor hand it on, so only an administrator
-         * could ever clear it.
-         *
-         * An administrator taking it in does not need this: they remit it
-         * straight from the driver.
-         */
-        holders() {
-            const row = this.handover.row;
-            if (!row?.rep_id) return [];
-
-            return [{ value: row.rep_id, name: row.rep_name || 'the order\'s sales rep' }];
-        },
         /** The three stages of a delivery, in the order one passes through them. */
         stages() {
             return [
@@ -343,24 +321,17 @@ export default {
                 .catch((err) => console.error(err));
         },
         openHandover(row) {
-            // One option, so there is nothing to choose: preselect it.
-            this.handover = { open: true, row, holder: row.rep_id ?? null, error: '', saving: false };
+            this.handover = { open: true, row, error: '', saving: false };
         },
         closeHandover() {
             this.handover.open = false;
         },
         saveHandover() {
-            if (!this.handover.holder) {
-                this.handover.error = 'Name who is taking it — that is the whole point of the record.';
-                return;
-            }
-
             this.handover.saving = true;
             this.handover.error = '';
 
-            axios.put(`/receipts/${this.handover.row.id}/turn-over`, {
-                held_by_employee_id: this.handover.holder,
-            })
+            // No holder sent: the server records it against whoever is signed in.
+            axios.put(`/receipts/${this.handover.row.id}/turn-over`, {})
                 .then(() => {
                     this.handover.open = false;
                     this.fetch();
@@ -499,6 +470,13 @@ export default {
     color: #a3b8b2;
     white-space: nowrap;
     margin-top: 1px;
+}
+
+
+.handover-confirm {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #16322e;
 }
 
 </style>

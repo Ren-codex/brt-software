@@ -97,12 +97,25 @@ class ReceiptController extends Controller
         $this->authorizePermission('sales', 'receipts', 'encoder');
 
         $request->validate([
-            'held_by_employee_id' => 'required|exists:employees,id',
+            'held_by_employee_id' => 'nullable|exists:employees,id',
         ]);
 
-        $result = $this->handleTransaction(function () use ($id, $request) {
-            return app(\App\Services\Modules\RemittanceClass::class)
-                ->turnOver($id, $request->input('held_by_employee_id'));
+        // Whoever is signed in is the one taking the money: it is their
+        // account recording it and their name the transaction sits under, so
+        // there is nothing to choose. An id may still be passed for an
+        // administrator recording a handover between two other people.
+        $holder = $request->input('held_by_employee_id') ?: optional(auth()->user()->employee)->id;
+
+        if (! $holder) {
+            $message = 'Your account is not linked to an employee, so the money cannot be recorded against you.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message, 'status' => false], 422)
+                : back()->withErrors(['held_by_employee_id' => $message]);
+        }
+
+        $result = $this->handleTransaction(function () use ($id, $holder) {
+            return app(\App\Services\Modules\RemittanceClass::class)->turnOver($id, $holder);
         });
 
         if (! ($result['status'] ?? false)) {
