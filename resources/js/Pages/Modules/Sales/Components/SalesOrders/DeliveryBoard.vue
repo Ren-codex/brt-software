@@ -74,6 +74,10 @@
                                     {{ ageLabel(row.days) }}
                                 </span>
                                 <span v-else class="text-muted">&mdash;</span>
+                                <!-- The list is ordered by this, so it has to be
+                                     on the row: sorting by something invisible
+                                     just looks like no order at all. -->
+                                <span v-if="row.updated_at" class="delivery-updated">{{ updatedLabel(row.updated_at) }}</span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
@@ -199,7 +203,7 @@ export default {
                 {
                     key: 'all',
                     label: 'All',
-                    hint: 'Everything on the road or still owed, oldest first.',
+                    hint: 'Everything on the road or still owed, most recently updated first.',
                     empty: 'Nothing out and nothing owed.',
                     tone: 'tone-neutral',
                     rows: [...this.stageRows('out'), ...this.stageRows('collect'), ...this.stageRows('money')],
@@ -233,9 +237,23 @@ export default {
         currentStage() {
             return this.stages.find((s) => s.key === this.activeStage) ?? this.stages[0];
         },
-        /** Longest-waiting first, so whoever to chase sits at the top. */
+        /**
+         * Most recently changed first. Waiting time was the old order, but
+         * nearly every row reads the same number of days, so it sorted them
+         * into an order nobody could account for. What moved last is at least
+         * a question the list can answer.
+         *
+         * Falls back to waiting time where a row has no timestamp.
+         */
         visibleRows() {
-            return [...this.currentStage.rows].sort((a, b) => (b.days ?? -999) - (a.days ?? -999));
+            return [...this.currentStage.rows].sort((a, b) => {
+                const at = a.updated_at ? Date.parse(a.updated_at) : null;
+                const bt = b.updated_at ? Date.parse(b.updated_at) : null;
+                if (at && bt && at !== bt) return bt - at;
+                if (at && !bt) return -1;
+                if (bt && !at) return 1;
+                return (b.days ?? -999) - (a.days ?? -999);
+            });
         },
     },
     mounted() {
@@ -283,6 +301,16 @@ export default {
          * read as "-2d" on the card and meant nothing to anyone. A delivery due
          * on Friday is waiting for Friday, not overdue by minus two days.
          */
+        /** When the row last changed, short enough to sit under the wait. */
+        updatedLabel(iso) {
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return '';
+            const today = new Date();
+            const sameDay = d.toDateString() === today.toDateString();
+            return sameDay
+                ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+                : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        },
         ageLabel(days) {
             if (days === 0) return 'today';
             if (days === -1) return 'tomorrow';
@@ -450,6 +478,17 @@ export default {
     margin: 0.5rem 0 0;
     font-size: 0.8rem;
     color: #b02a1b;
+}
+
+
+/* The timestamp the list is ordered by. Quiet, because the wait above it is
+   the number people act on. */
+.delivery-updated {
+    display: block;
+    font-size: 0.65rem;
+    color: #a3b8b2;
+    white-space: nowrap;
+    margin-top: 1px;
 }
 
 </style>

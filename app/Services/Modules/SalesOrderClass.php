@@ -176,6 +176,9 @@ class SalesOrderClass
                 'person' => optional($order->driver)->fullname,
                 'due' => optional($order->delivery_date)->toDateString(),
                 'days' => $days($order->delivery_date),
+                // What the board sorts on: the last time anything about this
+                // row changed, so whatever was just worked on comes to the top.
+                'updated_at' => optional($order->updated_at)->toIso8601String(),
             ]);
 
         // Delivered, nothing collected: the moment to ask the driver.
@@ -196,6 +199,7 @@ class SalesOrderClass
                     'person' => optional($order->driver)->fullname,
                     'invoice_id' => optional($invoice)->id,
                     'days' => $days($order->delivered_at),
+                    'updated_at' => optional($order->updated_at)->toIso8601String(),
                 ];
             });
 
@@ -228,6 +232,9 @@ class SalesOrderClass
                     optional(optional($receipt->arInvoice)->sales_order)->payment_mode
                 ) || ! is_null($receipt->confirmed_at),
                 'days' => $days($receipt->receipt_date),
+                // The receipt's own, not the order's: a handover changes the
+                // receipt and that is the event worth surfacing here.
+                'updated_at' => optional($receipt->updated_at)->toIso8601String(),
             ]);
 
         return response()->json([
