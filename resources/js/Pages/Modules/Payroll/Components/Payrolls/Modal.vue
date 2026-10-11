@@ -38,7 +38,7 @@
                         :class="{ 'input-error': form.errors.pay_period_start }" 
                         @input="handleInput('pay_period_start')" 
                         required
-                        :disabled="isEdit && form.status == 'approval'">
+                        :disabled="isEdit && form.status == 'approval' && !keepStatus">
                     </div>
                     <span class="error-message" v-if="form.errors.pay_period_start">{{ form.errors.pay_period_start }}</span>
                   </div>
@@ -53,7 +53,7 @@
                         :class="{ 'input-error': form.errors.pay_period_end }" 
                         @input="handleInput('pay_period_end')" 
                         required
-                        :disabled="isEdit && form.status == 'approval'">
+                        :disabled="isEdit && form.status == 'approval' && !keepStatus">
                     </div>
                     <span class="error-message" v-if="form.errors.pay_period_end">{{ form.errors.pay_period_end }}</span>
                   </div>
@@ -148,6 +148,13 @@
           <i class="ri-close-line"></i>
           Cancel
         </button>
+        <!-- Correcting a submitted payroll: saved where it stands, so it does
+             not have to travel back through approval for a typo. -->
+        <button type="button" class="btn btn-save" :disabled="loading" @click="saveKeepingStatus" v-if="keepStatus">
+          <i class="ri-save-line" v-if="!loading"></i>
+          <i class="ri-loader-4-line spinner" v-else></i>
+          {{ loading ? 'Saving...' : 'Save Changes' }}
+        </button>
         <button type="button" class="btn btn-draft" :disabled="loading" @click="saveDraft">
           <i class="ri-draft-line" v-if="!loading"></i>
           <i class="ri-loader-4-line spinner" v-else></i>
@@ -188,6 +195,8 @@ export default {
   props: {
     payroll: Object,
     isEdit: Boolean,
+    // True when editing a payroll that is past draft (Super Admin only).
+    keepStatus: { type: Boolean, default: false },
     dropdowns: Object,
   },
 
@@ -227,6 +236,7 @@ export default {
       currentIndividualEmployee: null,
       payrollTemplates: [],
       makeStateDraft: false,
+      keepCurrentStatus: false,
 
     }
   },
@@ -439,7 +449,9 @@ export default {
           };
         }),
         total_amount: parseFloat(this.calculateTotalSalary().toFixed(2)),
-        status: this.makeStateDraft == true ? "draft" : "approval",
+        status: this.keepCurrentStatus
+          ? this.payroll.status.slug
+          : (this.makeStateDraft == true ? "draft" : "approval"),
       }
 
       try {
@@ -477,7 +489,14 @@ export default {
     },
 
     async saveDraft() {
+      this.keepCurrentStatus = false;
       this.makeStateDraft = true;
+      await this.savePayroll();
+    },
+
+    async saveKeepingStatus() {
+      this.makeStateDraft = false;
+      this.keepCurrentStatus = true;
       await this.savePayroll();
     },
 
@@ -597,7 +616,7 @@ export default {
 }
 
 .section-title i {
-  color: #3D8D7A;
+  color: var(--brt-primary);
   font-size: 1.1rem;
 }
 
@@ -616,7 +635,7 @@ export default {
 .table thead th {
   background: white;
   font-weight: 600;
-  color: #3D8D7A;
+  color: var(--brt-primary);
   font-size: 0.85rem;
   padding: 1rem 0.75rem;
   text-transform: uppercase;
@@ -663,7 +682,7 @@ export default {
 }
 
 .salary-cell {
-  color: #3D8D7A;
+  color: var(--brt-primary);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -675,7 +694,7 @@ export default {
 }
 
 .incentive-value {
-  color: #3D8D7A;
+  color: var(--brt-primary);
   font-weight: 500;
   flex: 1;
 }
@@ -696,8 +715,8 @@ export default {
 
 .form-control-sm:focus {
   outline: none;
-  border-color: #3D8D7A;
-  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.1);
+  border-color: var(--brt-primary);
+  box-shadow: 0 0 0 3px rgba(var(--brt-primary-rgb), 0.1);
 }
 
 /* Formula Section */
@@ -707,7 +726,7 @@ export default {
 }
 
 .formula-toggle {
-  color: #3D8D7A;
+  color: var(--brt-primary);
   font-weight: 600;
   font-size: 0.85rem;
   padding: 0;
@@ -721,7 +740,7 @@ export default {
 }
 
 .formula-toggle:hover {
-  color: #2d6d5e;
+  color: var(--brt-c-2d6d5e);
   text-decoration: none;
 }
 
@@ -749,7 +768,7 @@ export default {
 .formula-item label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #3D8D7A;
+  color: var(--brt-primary);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -762,7 +781,7 @@ export default {
   border-radius: 6px;
   color: #2c3e50;
   word-break: break-word;
-  border-left: 3px solid #3D8D7A;
+  border-left: 3px solid var(--brt-primary);
 }
 
 /* Transitions */
@@ -778,15 +797,15 @@ export default {
 .btn-outline-primary {
   padding: 0.4rem 0.6rem;
   font-size: 0.75rem;
-  border: 1px solid #3D8D7A;
-  color: #3D8D7A;
+  border: 1px solid var(--brt-primary);
+  color: var(--brt-primary);
   transition: all 0.2s ease;
 }
 
 .btn-outline-primary:hover {
-  background: #f0f7f6;
-  border-color: #2d6d5e;
-  color: #2d6d5e;
+  background: var(--brt-c-f0f7f6);
+  border-color: var(--brt-c-2d6d5e);
+  color: var(--brt-c-2d6d5e);
 }
 
 .btn-draft {
@@ -817,15 +836,15 @@ export default {
 
 /* Total Row */
 .total-row {
-  background: linear-gradient(135deg, #f0f7f6 0%, #e8f4f2 100%);
+  background: linear-gradient(135deg, var(--brt-c-f0f7f6) 0%, var(--brt-c-e8f4f2) 100%);
   font-weight: 700;
-  border-top: 2px solid #3D8D7A;
-  border-bottom: 2px solid #3D8D7A;
+  border-top: 2px solid var(--brt-primary);
+  border-bottom: 2px solid var(--brt-primary);
 }
 
 .total-row td {
   padding: 1rem 0.75rem !important;
-  color: #2d9b8c;
+  color: var(--brt-c-2d9b8c);
 }
 
 .total-label {
@@ -848,7 +867,7 @@ export default {
 }
 
 .loan-icon {
-  color: #3D8D7A;
+  color: var(--brt-primary);
   cursor: pointer;
   font-size: 1rem;
   margin-left: 0.5rem;
@@ -891,7 +910,7 @@ export default {
 }
 
 .loan-detail strong {
-  color: #3D8D7A;
+  color: var(--brt-primary);
 }
 
 /* Responsive */

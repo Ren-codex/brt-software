@@ -46,16 +46,21 @@
             </div>
             <div class="library-card-body">
                    
-                    <div class="status-tab-bar">
-                        <button
-                            v-for="tab in statusTabs"
-                            :key="tab.key"
-                            class="status-tab-btn"
-                            :class="{ active: activeTab === tab.key }"
-                            @click="selectTab(tab)"
-                        >
-                            {{ tab.label }}
-                        </button>
+                    <!-- Status pills on the left, sort on the right. The sort used to sit in
+                         the header, where it pushed the tools onto a second line. -->
+                    <div class="status-row">
+                        <div class="status-tab-bar">
+                            <button
+                                v-for="tab in statusTabs"
+                                :key="tab.key"
+                                class="status-tab-btn"
+                                :class="{ active: activeTab === tab.key }"
+                                @click="selectTab(tab)"
+                            >
+                                {{ tab.label }}
+                            </button>
+                        </div>
+                        <SortSelect v-model="sortOption" :fields="[{ field: 'so_number', label: 'SO no.' }, { field: 'order_date', label: 'Order date', type: 'date' }, { field: 'total_amount', label: 'Amount', type: 'number' }]" @change="fetch()" />
                     </div>
 
                     <div class="table-responsive">
@@ -112,6 +117,20 @@
                                                 <span v-if="isDueSoon(list)" class="badge bg-danger">Due Soon</span>
                                                 <!-- On a closed order the badge restates the status, so it
                                                      only shows where it is news: goods out, money not in. -->
+                                                <!-- An approver can go straight to it; for everyone
+                                                     else it only explains why the order is not moving. -->
+                                                <a v-if="list.credit_pending && can('sales', 'sales_orders', 'approver')"
+                                                    :href="`/approvals?source=credit_order&focus=${list.id}`"
+                                                    class="badge bg-warning-subtle text-warning-emphasis text-decoration-none"
+                                                    @click.stop>
+                                                    For credit approval &rarr;
+                                                </a>
+                                                <span v-else-if="list.credit_pending" class="badge bg-warning-subtle text-warning-emphasis">
+                                                    For credit approval
+                                                </span>
+                                                <span v-if="list.delivery_pending" class="badge bg-warning-subtle text-warning-emphasis">
+                                                    Delivery pending approval
+                                                </span>
                                                 <span v-if="list.delivered_at && list.status?.slug !== 'closed'"
                                                     class="badge bg-success-subtle text-success-emphasis"
                                                     v-b-tooltip.hover :title="`Recorded by ${list.delivered_by || 'staff'}`">
@@ -141,6 +160,10 @@
                                                      built around that job and shows how long each one has
                                                      been waiting. Offering it here as well meant two places
                                                      to do the same thing and neither one the obvious place. -->
+                                                <button @click.stop="$refs.timeline.show(list.id)"
+                                                    class="action-btn info" v-b-tooltip.hover title="Status Timeline">
+                                                    <i class="ri-route-line"></i>
+                                                </button>
                                                 <button @click.stop="onPrint(list.id)"
                                                     class="action-btn info" v-b-tooltip.hover title="Print Invoice">
                                                     <i class="ri-printer-line"></i>
@@ -182,6 +205,7 @@
 
     <Create @add="fetch()" :dropdowns="dropdowns" :user="user" ref="create"/>
     <Cancel @cancel="fetch()" ref="cancel"/>
+    <StatusTimeline ref="timeline"/>
     <Adjustment @update="fetch()" :dropdowns="dropdowns" ref="adjustment"/>
 
     
@@ -191,11 +215,13 @@
 </template>
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
+import { listSortMixin } from '@/Shared/listSort.js';
 import { paymentTone, paymentLabel } from '@/Shared/utils/paymentType.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Cancel from './Modals/Cancel.vue';
+import StatusTimeline from './Modals/StatusTimeline.vue';
 import DeliveryBoard from './DeliveryBoard.vue';
 import Create from './Modals/Create.vue';
 import ViewOrder from './Modals/ViewOrder.vue';
@@ -205,10 +231,10 @@ import { pollingMixin } from '@/Shared/polling.js';
 import { recordLockMixin } from '@/Shared/recordLock.js';
 
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
-    components: { ViewOrder, Pagination, Multiselect , Create, Cancel, DeliveryBoard, Adjustment, TableLoadingRow },
-    mixins: [pollingMixin, recordLockMixin],
+    components: { ViewOrder, Pagination, Multiselect , Create, Cancel, StatusTimeline, DeliveryBoard, Adjustment, TableLoadingRow },
+    mixins: [listSortMixin, pollingMixin, recordLockMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal'],
     data(){
         return {
@@ -330,7 +356,7 @@ export default {
                     status: this.filter.status,
                     delivery: this.filter.delivery,
                     count: 10,
-                    option: 'lists'
+                    ...this.sortParams, option: 'lists'
                 }
             })
                 .then(response => {
@@ -389,7 +415,7 @@ export default {
         },
         onPrint(id) {
             let url =  '/sales-orders';
-            printDocument(`${url}/${id}?option=print&type=sales_order`);
+            openOrPrint(`${url}/${id}?option=print&type=sales_order`);
         },
     
 
@@ -559,6 +585,20 @@ export default {
     background: rgba(192, 57, 43, 0.045);
 }
 
+.status-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+
+.status-row .status-tab-bar {
+    flex: 1 1 320px;
+    margin-bottom: 0;
+}
+
 .status-tab-bar {
     display: flex;
     flex-wrap: wrap;
@@ -569,17 +609,17 @@ export default {
 .status-tab-btn {
     padding: 6px 16px;
     border-radius: 8px;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     background: #fff;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.status-tab-btn:hover { background: #edf6f2; color: #16322e; }
-.status-tab-btn.active { background: #3D8D7A; border-color: #3D8D7A; color: #fff; }
+.status-tab-btn:hover { background: var(--brt-tint-2); color: var(--brt-ink); }
+.status-tab-btn.active { background: var(--brt-primary); border-color: var(--brt-primary); color: #fff; }
 
 /* Quiet "this screen keeps itself current" hint. */
 .poll-indicator {
@@ -587,7 +627,7 @@ export default {
     align-items: center;
     gap: 0.3rem;
     font-size: 0.72rem;
-    color: #7f9a92;
+    color: var(--brt-c-7f9a92);
     white-space: nowrap;
     user-select: none;
 }
@@ -600,8 +640,8 @@ export default {
         --ms-bg: #f9fafb;
         --ms-border-color: #e5e7eb;
         --ms-border-width: 2px;
-        --ms-border-color-active: #2e8b57;
-        --ms-ring-color: rgba(46, 139, 87, 0.1);
+        --ms-border-color-active: var(--brt-focus);
+        --ms-ring-color: rgba(var(--brt-focus-rgb), 0.1);
         --ms-ring-width: 3px;
         --ms-placeholder-color: #9ca3af;
     }
@@ -629,13 +669,13 @@ export default {
     }
 
     .main-table-row:hover {
-        background-color: rgba(61, 141, 122, 0.05) !important;
-        border-left-color: #3D8D7A;
+        background-color: rgba(var(--brt-primary-rgb), 0.05) !important;
+        border-left-color: var(--brt-primary);
     }
 
     .main-table-row.expanded-row {
-        background: linear-gradient(90deg, rgba(61, 141, 122, 0.08) 0%, rgba(61, 141, 122, 0.02) 100%);
-        border-left-color: #3D8D7A;
+        background: linear-gradient(90deg, rgba(var(--brt-primary-rgb), 0.08) 0%, rgba(var(--brt-primary-rgb), 0.02) 100%);
+        border-left-color: var(--brt-primary);
     }
 
     .expand-icon {
@@ -652,7 +692,7 @@ export default {
 
     .expand-icon.rotated {
         transform: rotate(90deg);
-        color: #3D8D7A;
+        color: var(--brt-primary);
     }
 
     /* Details Row Styles */
@@ -696,9 +736,9 @@ export default {
     }
 
     .info-card:hover {
-        box-shadow: 0 8px 25px rgba(61, 141, 122, 0.15);
+        box-shadow: 0 8px 25px rgba(var(--brt-primary-rgb), 0.15);
         transform: translateY(-2px);
-        border-color: #3D8D7A;
+        border-color: var(--brt-primary);
     }
 
     .info-card-header {
@@ -713,8 +753,8 @@ export default {
 
     .info-card-header i {
         font-size: 1.25rem;
-        color: #3D8D7A;
-        background: rgba(61, 141, 122, 0.1);
+        color: var(--brt-primary);
+        background: rgba(var(--brt-primary-rgb), 0.1);
         padding: 0.5rem;
         border-radius: 8px;
         width: 40px;
@@ -765,7 +805,7 @@ export default {
         content: '';
         width: 6px;
         height: 6px;
-        background: #C4DAD2;
+        background: var(--brt-c-c4dad2);
         border-radius: 50%;
     }
 

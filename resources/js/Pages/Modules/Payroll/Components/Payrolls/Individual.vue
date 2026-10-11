@@ -487,7 +487,7 @@ export default {
 }
 
 .payroll-header {
-  background: linear-gradient(90deg, #3D8D7A, #2d6d5e);
+  background: linear-gradient(90deg, var(--brt-primary), #2d6d5e);
   color: white;
 }
 
@@ -553,17 +553,17 @@ export default {
 }
 
 .summary-box {
-  border: 1px solid #3D8D7A;
+  border: 1px solid var(--brt-primary);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
-  background: #f4fbf9;
+  background: var(--brt-c-f4fbf9);
 }
 
 .summary-title {
   font-weight: 700;
   margin-bottom: 0.75rem;
-  color: #3D8D7A;
+  color: var(--brt-primary);
 }
 
 .summary-row {
@@ -574,7 +574,7 @@ export default {
 }
 
 .summary-row.total {
-  border-top: 1px solid #3D8D7A;
+  border-top: 1px solid var(--brt-primary);
   padding-top: 0.5rem;
   font-weight: 600;
 }
@@ -582,7 +582,7 @@ export default {
 .summary-row.highlight {
   font-size: 1rem;
   font-weight: 700;
-  color: #2d6d5e;
+  color: var(--brt-c-2d6d5e);
 }
 
 .summary-input {
@@ -606,7 +606,7 @@ export default {
   border: 1px solid #ccc;
   border-radius: 4px;
   background: #f8f9fa;
-  color: #3D8D7A;
+  color: var(--brt-primary);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -616,32 +616,32 @@ export default {
 }
 
 .stepper-btn:hover {
-  background: #3D8D7A;
+  background: var(--brt-primary);
   color: white;
-  border-color: #3D8D7A;
+  border-color: var(--brt-primary);
 }
 
 .stepper-btn:active {
-  background: #2d6d5e;
-  border-color: #2d6d5e;
+  background: var(--brt-c-2d6d5e);
+  border-color: var(--brt-c-2d6d5e);
 }
 
 .btn-mini {
   font-size: 0.75rem;
   padding: 0.3rem 0.6rem;
   border-radius: 4px;
-  background: #3D8D7A;
+  background: var(--brt-primary);
   color: white;
   border: none;
   cursor: pointer;
 }
 
 .btn-mini:hover {
-  background: #2d6d5e;
+  background: var(--brt-c-2d6d5e);
 }
 
 .btn-mini:disabled {
-  background: #a8bdb8;
+  background: var(--brt-c-a8bdb8);
   cursor: not-allowed;
 }
 
@@ -667,7 +667,7 @@ export default {
 
 .overtime-amount {
   font-weight: 700;
-  color: #3D8D7A;
+  color: var(--brt-primary);
   padding: 0.3rem 0;
 }
 
@@ -688,11 +688,11 @@ export default {
 }
 
 .btn-edit {
-  color: #3D8D7A;
+  color: var(--brt-primary);
 }
 
 .btn-edit:hover {
-  color: #2d6d5e;
+  color: var(--brt-c-2d6d5e);
 }
 
 .btn-delete {

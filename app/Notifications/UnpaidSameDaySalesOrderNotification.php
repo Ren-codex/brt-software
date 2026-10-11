@@ -4,11 +4,11 @@ namespace App\Notifications;
 
 use App\Models\SalesOrder;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class UnpaidSameDaySalesOrderNotification extends Notification implements ShouldBroadcast
+class UnpaidSameDaySalesOrderNotification extends Notification implements ShouldBroadcastNow
 {
     use Queueable;
 
@@ -28,6 +28,7 @@ class UnpaidSameDaySalesOrderNotification extends Notification implements Should
     {
         return [
             'type'            => 'unpaid_same_day_sales_order',
+            'url'             => '/sales-orders',
             'sales_order_id'  => $this->salesOrder->id,
             'so_number'       => $this->salesOrder->so_number,
             'customer_name'   => $this->salesOrder->customer->name,

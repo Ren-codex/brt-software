@@ -96,6 +96,16 @@ class PayrollController extends Controller
         return app(PrintClass::class)->print($id, $request);
     }
 
+    public function printStatement($id, $employeeId)
+    {
+        return app(PrintClass::class)->printPayrollStatement($id, $employeeId);
+    }
+
+    public function printPayslips($id, Request $request)
+    {
+        return app(PrintClass::class)->printPayslips($id, $request->query('employee_id'));
+    }
+
     public function updateStatus(Request $request, $id)
     {
         $result = $this->payroll->updateStatus($request, $id);

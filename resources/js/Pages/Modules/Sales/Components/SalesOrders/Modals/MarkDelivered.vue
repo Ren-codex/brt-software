@@ -1,6 +1,8 @@
 <template>
     <div v-show="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="hide">
-        <div class="modal-container" @click.stop>
+        <!-- Wide enough for the items table and the payment lines to sit on
+             one row each; still the full screen width on a phone. -->
+        <div class="modal-container" style="width: min(860px, 96vw); max-width: 96vw;" @click.stop>
             <div class="modal-header">
                 <div class="modal-title-wrap">
                     <div class="modal-header-icon">
@@ -164,7 +166,7 @@
                 <button class="btn btn-primary" @click="submit" :disabled="form.processing">
                     <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
                     <i class="ri-check-line" v-else></i>
-                    {{ form.processing ? 'Recording...' : 'Record Delivery' }}
+                    {{ form.processing ? 'Saving...' : (order?.delivered_at ? 'Record Collection' : 'Submit for Approval') }}
                 </button>
             </div>
         </div>
@@ -319,7 +321,7 @@ export default {
 .delivery-date-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #16322e;
+    color: var(--brt-ink);
     margin: 0;
 }
 
@@ -329,12 +331,12 @@ export default {
 }
 
 .delivery-date-hint {
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.78rem;
 }
 
 .delivery-intro {
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.9rem;
     margin-bottom: 1rem;
 }
@@ -348,21 +350,21 @@ export default {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #6b8c85;
-    border-bottom: 1px solid #c4d9d2;
+    color: var(--brt-muted);
+    border-bottom: 1px solid var(--brt-border);
     padding: 0.5rem 0.6rem;
     text-align: left;
 }
 
 .delivery-table td {
     padding: 0.7rem 0.6rem;
-    border-bottom: 1px solid #edf6f2;
+    border-bottom: 1px solid var(--brt-tint-2);
     vertical-align: middle;
 }
 
 .batch-note {
     display: block;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.75rem;
 }
 
@@ -373,14 +375,14 @@ export default {
 }
 
 .all-taken {
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.8rem;
 }
 
 .collect-box {
     margin-top: 1rem;
     padding: 0.85rem 1rem;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     border-radius: 10px;
     background: #f7fbf9;
 }
@@ -391,7 +393,7 @@ export default {
     gap: 0.5rem;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #16322e;
+    color: var(--brt-ink);
     margin: 0;
     cursor: pointer;
 }
@@ -414,11 +416,11 @@ export default {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
 .collect-field small {
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.72rem;
 }
 
@@ -432,7 +434,7 @@ export default {
 /* Why the collection cannot be switched off on a COD order. */
 .collect-rule {
     margin: 0.45rem 0 0;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.78rem;
 }
 
@@ -440,8 +442,8 @@ export default {
     margin-top: 1rem;
     padding: 0.7rem 0.9rem;
     border-radius: 10px;
-    background: rgba(61, 141, 122, 0.08);
-    color: #16322e;
+    background: rgba(var(--brt-primary-rgb), 0.08);
+    color: var(--brt-ink);
     font-size: 0.9rem;
 }
 

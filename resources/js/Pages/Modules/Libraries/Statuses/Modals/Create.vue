@@ -531,13 +531,13 @@ export default {
 }
 
 .color-preset:hover {
-    border-color: #2e8b57;
+    border-color: var(--brt-focus);
     background: #f8f9fa;
 }
 
 .color-preset.active {
-    border-color: #2e8b57;
-    background: rgba(46, 139, 87, 0.1);
+    border-color: var(--brt-focus);
+    background: rgba(var(--brt-focus-rgb), 0.1);
 }
 
 .preset-dot {

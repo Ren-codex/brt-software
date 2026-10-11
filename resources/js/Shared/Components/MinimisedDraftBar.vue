@@ -106,9 +106,9 @@ export default {
     gap: 0.7rem;
     padding: 0.6rem 0.75rem;
     background: #fff;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     border-radius: 12px;
-    box-shadow: 0 10px 28px rgba(22, 50, 46, 0.16);
+    box-shadow: 0 10px 28px rgba(var(--brt-c-16322e-rgb), 0.16);
     max-width: min(420px, calc(100vw - 2.5rem));
 }
 
@@ -118,8 +118,8 @@ export default {
     width: 32px;
     height: 32px;
     border-radius: 9px;
-    background: rgba(61, 141, 122, 0.12);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.12);
+    color: var(--brt-primary);
     flex-shrink: 0;
 }
 
@@ -132,22 +132,22 @@ export default {
 .draft-bar-title {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #16322e;
+    color: var(--brt-ink);
     white-space: nowrap;
 }
 
 .draft-bar-detail {
     font-size: 0.74rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .draft-bar-resume {
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     background: #fff;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     font-size: 0.78rem;
     font-weight: 600;
     border-radius: 8px;
@@ -157,13 +157,13 @@ export default {
 }
 
 .draft-bar-resume:hover {
-    background: #f2f9f6;
+    background: var(--brt-c-f2f9f6);
 }
 
 .draft-bar-discard {
     border: none;
     background: none;
-    color: #9bb5ad;
+    color: var(--brt-c-9bb5ad);
     font-size: 1rem;
     line-height: 1;
     cursor: pointer;

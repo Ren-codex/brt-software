@@ -194,7 +194,7 @@ export default {
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.summary-card.restockable { border-left: 4px solid #3D8D7A; }
+.summary-card.restockable { border-left: 4px solid var(--brt-primary); }
 .summary-card.damaged     { border-left: 4px solid #e67e22; }
 .summary-card.loss        { border-left: 4px solid #e74c3c; }
 
@@ -208,7 +208,7 @@ export default {
     border-radius: 10px;
     flex-shrink: 0;
 }
-.restockable .summary-icon { background: rgba(61,141,122,0.1); color: #3D8D7A; }
+.restockable .summary-icon { background: rgba(var(--brt-primary-rgb),0.1); color: var(--brt-primary); }
 .damaged     .summary-icon { background: rgba(230,126,34,0.1); color: #e67e22; }
 .loss        .summary-icon { background: rgba(231,76,60,0.1);  color: #e74c3c; }
 
@@ -223,7 +223,7 @@ export default {
     font-size: 11px;
     font-weight: 600;
 }
-.condition-badge.restockable { background: rgba(61,141,122,0.12); color: #3D8D7A; }
+.condition-badge.restockable { background: rgba(var(--brt-primary-rgb),0.12); color: var(--brt-primary); }
 .condition-badge.damaged     { background: rgba(230,126,34,0.12); color: #e67e22; }
 .condition-badge.loss        { background: rgba(231,76,60,0.12);  color: #e74c3c; }
 </style>

@@ -3,7 +3,7 @@
         <div class="modal-container modal-lg" @click.stop>
             <div class="modal-header">
                 <h4 class="mb-0">
-                    <i class="ri-money-dollar-circle-line me-2"></i>
+                    <i class="ri-money-peso-circle-line me-2"></i>
                     Proceed Payment
                 </h4>
                 <button type="button" class="close-btn" @click="$emit('cancel')">
@@ -30,6 +30,7 @@
                             <div class="col-md-6">
                                 <p class="mb-1"><strong>Sales Rep:</strong> {{ getSalesRepName(salesOrder?.sales_rep_id) }}</p>
                                 <p class="mb-1"><strong>Driver:</strong> {{ getDriverName(salesOrder?.driver_id) }}</p>
+                                <p class="mb-1" v-if="salesOrder?.checker"><strong>Checker:</strong> {{ salesOrder.checker.fullname }}</p>
                                 <p class="mb-1"><strong>Invoice #:</strong> {{ invoice?.invoice_number || '-' }}</p>
                                 <p class="mb-1"><strong>Invoice Date:</strong> {{ invoice?.invoice_date || '-' }}</p>
                                 <p class="mb-0"><strong>Amount Due:</strong> {{ formatCurrency(invoice?.balance_due || 0) }}</p>

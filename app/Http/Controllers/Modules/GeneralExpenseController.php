@@ -7,11 +7,13 @@ use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\Expense;
 use App\Services\Accounting\CashManagementService;
+use App\Services\Accounting\GeneralExpenseApprover;
 use App\Services\Accounting\JournalEntryService;
 use App\Services\SeriesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class GeneralExpenseController extends Controller
 {
@@ -19,6 +21,7 @@ class GeneralExpenseController extends Controller
         private JournalEntryService $journal,
         private SeriesService $series,
         private CashManagementService $cashManagement,
+        private GeneralExpenseApprover $approver,
     ) {}
 
     public function index()
@@ -135,54 +138,23 @@ class GeneralExpenseController extends Controller
         ]);
     }
 
+    /**
+     * The balance checks and journal posting live in GeneralExpenseApprover so
+     * the unified approvals page runs exactly the same rules.
+     */
     public function approve(int $id)
     {
-        $expense = Expense::whereNull('fund_id')->findOrFail($id);
-
-        if ($expense->status !== 'draft') {
-            return response()->json(['message' => 'Only draft expenses can be approved.'], 422);
+        try {
+            $expense = $this->approver->approve($id);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => collect($e->errors())->flatten()->first(),
+            ], 422);
         }
-
-        $amount = round((float) $expense->amount, 2);
-
-        if ($expense->payment_method === 'cash') {
-            $cashOnHand = $this->cashManagement->getCashOnHandBalance();
-            if ($amount > $cashOnHand) {
-                return response()->json([
-                    'message' => 'Amount exceeds available Cash on Hand (₱' . number_format($cashOnHand, 2) . '). Reduce the amount or use Bank Transfer instead.',
-                ], 422);
-            }
-        }
-
-        if (in_array($expense->payment_method, ['check', 'bank_transfer'], true)) {
-            if ($expense->bank_account_id) {
-                $bankBalance = $this->cashManagement->getBankAccountBalance($expense->bank_account_id);
-                if ($amount > $bankBalance) {
-                    return response()->json([
-                        'message' => 'Amount exceeds this bank account\'s available balance (₱' . number_format($bankBalance, 2) . ').',
-                    ], 422);
-                }
-            } else {
-                $cashInBank = $this->cashManagement->getCashInBankBalance();
-                if ($amount > $cashInBank) {
-                    return response()->json([
-                        'message' => 'Amount exceeds available Cash in Bank (₱' . number_format($cashInBank, 2) . '). Reduce the amount or select a specific bank account with sufficient balance.',
-                    ], 422);
-                }
-            }
-        }
-
-        $expense->update([
-            'status'         => 'approved',
-            'approved_by_id' => Auth::id(),
-            'approved_at'    => now(),
-        ]);
-
-        $this->journal->recordGeneralExpenseEntry($expense->fresh(['glAccount', 'bankAccount']));
 
         return response()->json([
             'message' => 'Expense approved. Journal entry posted.',
-            'data'    => $this->format($expense->fresh(['glAccount', 'bankAccount', 'added_by', 'approvedBy'])),
+            'data'    => $this->format($expense),
         ]);
     }
 

@@ -33,6 +33,7 @@ class CheckMonitoringClass
                     });
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count ?: 15)
         );
 

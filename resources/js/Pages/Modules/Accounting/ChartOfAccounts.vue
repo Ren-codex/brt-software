@@ -278,7 +278,7 @@ export default {
     gap: 0.4rem;
     padding: 0.5rem 1rem;
     border-radius: 10px;
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: #fff;
     font-weight: 700;
     font-size: 0.85rem;
@@ -286,11 +286,11 @@ export default {
     cursor: pointer;
     transition: background 0.2s;
 }
-.new-account-btn:hover { background: #347a6a; }
+.new-account-btn:hover { background: var(--brt-primary-hover); }
 
 .coa-table thead th {
-    background: #edf5f2;
-    color: #527267;
+    background: var(--brt-c-edf5f2);
+    color: var(--brt-c-527267);
     font-size: 0.78rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -321,7 +321,7 @@ export default {
     font-size: 0.72rem;
     font-weight: 700;
 }
-.status-chip.active   { background: #e7f7f2; color: #277660; }
+.status-chip.active   { background: var(--brt-c-e7f7f2); color: var(--brt-c-277660); }
 .status-chip.inactive { background: #fff1f1; color: #b15050; }
 
 .action-group { display: flex; align-items: center; justify-content: center; gap: 0.3rem; }
@@ -339,23 +339,23 @@ export default {
     background: transparent;
     transition: all 0.15s;
 }
-.action-btn.edit           { color: #3d6b5f; border-color: #c8e3da; }
-.action-btn.edit:hover     { background: #e7f4ef; }
+.action-btn.edit           { color: var(--brt-c-3d6b5f); border-color: var(--brt-c-c8e3da); }
+.action-btn.edit:hover     { background: var(--brt-c-e7f4ef); }
 .action-btn.deactivate     { color: #b15050; border-color: #ffd5d5; }
 .action-btn.deactivate:hover { background: #fff1f1; }
-.action-btn.activate       { color: #277660; border-color: #c8e3da; }
-.action-btn.activate:hover { background: #e7f4ef; }
+.action-btn.activate       { color: var(--brt-c-277660); border-color: var(--brt-c-c8e3da); }
+.action-btn.activate:hover { background: var(--brt-c-e7f4ef); }
 
 .modal-kicker {
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
-.btn-save { background: #3d8d7a; color: #fff; border: none; font-weight: 700; }
-.btn-save:hover:not(:disabled) { background: #347a6a; color: #fff; }
+.btn-save { background: var(--brt-primary); color: #fff; border: none; font-weight: 700; }
+.btn-save:hover:not(:disabled) { background: var(--brt-primary-hover); color: #fff; }
 .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .spin { display: inline-block; animation: spin 0.8s linear infinite; }

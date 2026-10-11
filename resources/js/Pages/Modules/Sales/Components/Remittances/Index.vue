@@ -50,58 +50,65 @@
                         </div>
 
                         <div class="library-card-body">
-                            <div class="search-section">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="search-wrapper">
-                                            <i class="ri-search-line search-icon"></i>
-                                            <input
-                                                type="text"
-                                                v-model="filter.keyword"
-                                                @input="debouncedSearch"
-                                                placeholder="Search remittance..."
-                                                class="search-input"
-                                            >
+                            <!-- Search, location, status tabs and sort share one row; they
+                                 wrap only when the screen is too narrow to hold them. -->
+                            <div class="tabs-search-row">
+                                <div class="tabs-section">
+                                    <div class="filter-segment">
+                                        <button :class="['filter-segment-btn', activeTab === 'for-verification' ? 'active' : '']" @click="switchTab('for-verification')">
+                                            <i class="ri-shield-check-line"></i>
+                                            <span>For Verification</span>
+                                            <span v-if="activeTab === 'for-verification'" class="seg-count">{{ meta.total ?? 0 }}</span>
+                                        </button>
+                                        <button :class="['filter-segment-btn', activeTab === 'liquidated' ? 'active' : '']" @click="switchTab('liquidated')">
+                                            <i class="ri-checkbox-circle-line"></i>
+                                            <span>Liquidated</span>
+                                            <span v-if="activeTab === 'liquidated'" class="seg-count">{{ meta.total ?? 0 }}</span>
+                                        </button>
+                                        <button :class="['filter-segment-btn', activeTab === 'disapproved' ? 'active' : '']" @click="switchTab('disapproved')">
+                                            <i class="ri-close-circle-line"></i>
+                                            <span>Disapproved</span>
+                                            <span v-if="activeTab === 'disapproved'" class="seg-count">{{ meta.total ?? 0 }}</span>
+                                        </button>
+                                        <button v-if="!isSalesRep" :class="['filter-segment-btn', activeTab === 'undeposited' ? 'active' : '']" @click="switchTab('undeposited')">
+                                            <i class="ri-time-line"></i>
+                                            <span>Undeposited</span>
+                                            <span v-if="activeTab === 'undeposited'" class="seg-count">{{ meta.total ?? 0 }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="search-section">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="search-wrapper">
+                                                <i class="ri-search-line search-icon"></i>
+                                                <input
+                                                    type="text"
+                                                    v-model="filter.keyword"
+                                                    @input="debouncedSearch"
+                                                    placeholder="Search remittance..."
+                                                    class="search-input"
+                                                >
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="search-wrapper">
+                                                <i class="ri-map-pin-line search-icon"></i>
+                                                <select v-model.number="filter.location_id" @change="fetch" class="search-input">
+                                                    <option :value="null">All Locations</option>
+                                                    <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
+                                                        {{ location.name }}
+                                                    </option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="search-wrapper">
-                                            <i class="ri-map-pin-line search-icon"></i>
-                                            <select v-model.number="filter.location_id" @change="fetch" class="search-input">
-                                                <option :value="null">All Locations</option>
-                                                <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
-                                                    {{ location.name }}
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
+                                    <SortSelect v-model="sortOption" :fields="[{ field: 'remittance_no', label: 'Remittance no.' }, { field: 'remittance_date', label: 'Remittance date', type: 'date' }, { field: 'total_amount', label: 'Amount', type: 'number' }]" @change="fetch()" />
                                 </div>
                             </div>
 
                             <div class="mt-3">
-                                <div class="filter-segment">
-                                    <button :class="['filter-segment-btn', activeTab === 'for-verification' ? 'active' : '']" @click="switchTab('for-verification')">
-                                        <i class="ri-shield-check-line"></i>
-                                        <span>For Verification</span>
-                                        <span v-if="activeTab === 'for-verification'" class="seg-count">{{ meta.total ?? 0 }}</span>
-                                    </button>
-                                    <button :class="['filter-segment-btn', activeTab === 'liquidated' ? 'active' : '']" @click="switchTab('liquidated')">
-                                        <i class="ri-checkbox-circle-line"></i>
-                                        <span>Liquidated</span>
-                                        <span v-if="activeTab === 'liquidated'" class="seg-count">{{ meta.total ?? 0 }}</span>
-                                    </button>
-                                    <button :class="['filter-segment-btn', activeTab === 'disapproved' ? 'active' : '']" @click="switchTab('disapproved')">
-                                        <i class="ri-close-circle-line"></i>
-                                        <span>Disapproved</span>
-                                        <span v-if="activeTab === 'disapproved'" class="seg-count">{{ meta.total ?? 0 }}</span>
-                                    </button>
-                                    <button v-if="!isSalesRep" :class="['filter-segment-btn', activeTab === 'undeposited' ? 'active' : '']" @click="switchTab('undeposited')">
-                                        <i class="ri-time-line"></i>
-                                        <span>Undeposited</span>
-                                        <span v-if="activeTab === 'undeposited'" class="seg-count">{{ meta.total ?? 0 }}</span>
-                                    </button>
-                                </div>
-
                                 <div v-show="activeTab === 'for-verification'" class="table-responsive">
                                     <table class="table sales-table mb-0">
                                         <thead>
@@ -331,6 +338,7 @@
 
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
+import { listSortMixin } from '@/Shared/listSort.js';
 import _ from 'lodash';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
@@ -342,7 +350,7 @@ import { pollingMixin } from '@/Shared/polling.js';
 
 export default {
     components: { Pagination, Create, View, SummaryView, FieldCollections, TableLoadingRow },
-    mixins: [pollingMixin],
+    mixins: [listSortMixin, pollingMixin],
     props: ['dropdowns'],
     data() {
         return {
@@ -453,7 +461,7 @@ export default {
                     location_id: this.filter.location_id === null || this.filter.location_id === '' ? null : Number(this.filter.location_id),
                     status: this.filter.status,
                     count: 10,
-                    option: 'lists'
+                    ...this.sortParams, option: 'lists'
                 }
             })
             .then(response => {
@@ -536,7 +544,7 @@ export default {
 
 .filter-segment {
     display: inline-flex;
-    background: #eaf2f0;
+    background: var(--brt-c-eaf2f0);
     border-radius: 10px;
     padding: 3px;
     gap: 2px;
@@ -549,7 +557,7 @@ export default {
     gap: 6px;
     border: none;
     background: transparent;
-    color: #4a7a70;
+    color: var(--brt-c-4a7a70);
     font-weight: 600;
     font-size: 0.8rem;
     padding: 0.38rem 0.85rem;
@@ -562,14 +570,14 @@ export default {
 .filter-segment-btn i { font-size: 0.95rem; }
 
 .filter-segment-btn:hover:not(.active) {
-    background: rgba(61, 141, 122, 0.1);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.1);
+    color: var(--brt-primary);
 }
 
 .filter-segment-btn.active {
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+    box-shadow: 0 2px 8px rgba(var(--brt-primary-rgb), 0.28);
 }
 
 .seg-count {
@@ -582,8 +590,8 @@ export default {
     border-radius: 8px;
     font-size: 10px;
     font-weight: 700;
-    background: rgba(61, 141, 122, 0.15);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.15);
+    color: var(--brt-primary);
 }
 
 .filter-segment-btn.active .seg-count {
@@ -595,9 +603,9 @@ export default {
     min-width: 220px;
     padding: 0.75rem 1rem;
     border-radius: 14px;
-    background: linear-gradient(135deg, #f4fbf8 0%, #e7f6ef 100%);
-    border: 1px solid rgba(22, 66, 60, 0.12);
-    box-shadow: 0 8px 18px rgba(22, 66, 60, 0.08);
+    background: linear-gradient(135deg, var(--brt-c-f4fbf8) 0%, var(--brt-c-e7f6ef) 100%);
+    border: 1px solid rgba(var(--brt-c-16423c-rgb), 0.12);
+    box-shadow: 0 8px 18px rgba(var(--brt-c-16423c-rgb), 0.08);
     text-align: left;
 }
 
@@ -616,7 +624,7 @@ export default {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #5f7f77;
+    color: var(--brt-c-5f7f77);
 }
 
 .cash-on-hand-value {
@@ -624,7 +632,7 @@ export default {
     margin-top: 0.3rem;
     font-size: 1.2rem;
     font-weight: 700;
-    color: #16423c;
+    color: var(--brt-c-16423c);
     line-height: 1.3;
 }
 
@@ -632,6 +640,6 @@ export default {
     display: block;
     margin-top: 0.15rem;
     font-size: 0.72rem;
-    color: #5f7f77;
+    color: var(--brt-c-5f7f77);
 }
 </style>

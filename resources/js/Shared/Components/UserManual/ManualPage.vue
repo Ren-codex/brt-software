@@ -416,7 +416,7 @@ export default {
     padding: 2rem;
     background:
         radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.16), transparent 55%),
-        linear-gradient(150deg, #2f6d4f 0%, #1d4835 45%, #12301f 100%);
+        linear-gradient(150deg, var(--brt-c-2f6d4f) 0%, var(--brt-c-1d4835) 45%, #12301f 100%);
     color: #f3ead9;
 }
 
@@ -495,7 +495,7 @@ export default {
 .mp--back {
     background:
         radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.1), transparent 55%),
-        linear-gradient(150deg, #12301f 0%, #1d4835 55%, #2f6d4f 100%);
+        linear-gradient(150deg, #12301f 0%, var(--brt-c-1d4835) 55%, var(--brt-c-2f6d4f) 100%);
 }
 
 /* --------------------------------------------------------- part divider */

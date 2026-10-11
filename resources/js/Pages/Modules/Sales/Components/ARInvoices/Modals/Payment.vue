@@ -148,10 +148,16 @@
                                  and checks have anything to reconcile, so only
                                  they ask. -->
                             <div v-if="needsBankDetails(split)" class="split-bank-details">
-                                <div v-if="split.payment_mode === 'Bank Transfer'" class="split-bank-field">
-                                    <label class="split-bank-label">Bank account <span class="text-danger">*</span></label>
+                                <!-- A check names its bank too, as it does when
+                                     paying a supplier: here it is the account the
+                                     check will be deposited to. -->
+                                <div v-if="split.payment_mode === 'Bank Transfer' || (split.payment_mode === 'Check' && bankAccounts.length)" class="split-bank-field">
+                                    <label class="split-bank-label">
+                                        {{ split.payment_mode === 'Check' ? 'Deposit to bank' : 'Bank account' }}
+                                        <span class="text-danger">*</span>
+                                    </label>
                                     <select class="field-select" v-model="split.bank_account_id" @change="handleInput('splits')">
-                                        <option :value="null">Select bank account</option>
+                                        <option :value="null">{{ split.payment_mode === 'Check' ? 'Select bank' : 'Select bank account' }}</option>
                                         <option v-for="bank in bankAccounts" :key="bank.id" :value="bank.id">
                                             {{ bank.bank_name }} — {{ bank.account_name }}
                                         </option>
@@ -286,7 +292,7 @@
 
 import { useForm } from '@inertiajs/vue3';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     props: [ ],
     computed: {
@@ -494,7 +500,7 @@ export default {
 
         modeIcon(mode) {
             const map = {
-                'Cash': 'ri-money-dollar-circle-line',
+                'Cash': 'ri-money-peso-circle-line',
                 'GCash': 'ri-smartphone-line',
                 'Bank Transfer': 'ri-bank-line',
                 'Check': 'ri-file-list-3-line',
@@ -509,9 +515,9 @@ export default {
                 .map(s => ({
                     payment_mode: s.payment_mode,
                     amount: Number(s.amount) || 0,
-                    // Only a transfer names an account; a check clears through
-                    // whichever bank it is deposited to, so it carries a number only.
-                    bank_account_id: s.payment_mode === 'Bank Transfer' ? (s.bank_account_id || null) : null,
+                    // A transfer names the account it landed in; a check names
+                    // the account it will be deposited to.
+                    bank_account_id: this.needsBankDetails(s) ? (s.bank_account_id || null) : null,
                     reference_number: this.needsBankDetails(s) ? (s.reference_number || '') : null,
                     // Only a check has a date of its own, and it has to travel:
                     // dropping it here both failed the server's check and wiped
@@ -528,6 +534,16 @@ export default {
             const missingBank = splits.find(s => s.payment_mode === 'Bank Transfer' && !s.bank_account_id);
             if (missingBank) {
                 this.form.errors.splits = 'Choose which bank account the transfer landed in.';
+                return;
+            }
+
+            // Asked only when there are accounts to choose from: someone who
+            // may not see the bank list can still take a check, as with a
+            // supplier payment.
+            const missingCheckBank = this.bankAccounts.length
+                && splits.find(s => s.payment_mode === 'Check' && !s.bank_account_id);
+            if (missingCheckBank) {
+                this.form.errors.splits = 'Select the bank the check will be deposited to.';
                 return;
             }
 
@@ -612,7 +628,7 @@ export default {
 
         printReceipt() {
             if (this.successPayment.receiptId) {
-                printDocument(`/receipts/${this.successPayment.receiptId}?option=print&type=receipt`);
+                openOrPrint(`/receipts/${this.successPayment.receiptId}?option=print&type=receipt`);
             }
             this.showSuccessModal = false;
         },
@@ -671,7 +687,7 @@ export default {
 
 .modal-subtitle {
     font-size: 0.78rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-weight: 500;
 }
 
@@ -726,7 +742,7 @@ export default {
 
 .overview-value {
     margin: 0;
-    color: #16322e;
+    color: var(--brt-ink);
     font-weight: 700;
     font-size: 0.92rem;
 }
@@ -748,7 +764,7 @@ export default {
     flex: 0 0 230px;
     border-radius: 12px;
     padding: 1rem 1.1rem;
-    background: linear-gradient(135deg, #e4f3ec 0%, #f3faf7 100%);
+    background: linear-gradient(135deg, var(--brt-c-e4f3ec) 0%, var(--brt-c-f3faf7) 100%);
 }
 
 .balance-decor {
@@ -756,7 +772,7 @@ export default {
     right: -0.4rem;
     bottom: -0.6rem;
     font-size: 3rem;
-    color: rgba(61, 141, 122, 0.15);
+    color: rgba(var(--brt-primary-rgb), 0.15);
 }
 
 .balance-label {
@@ -770,7 +786,7 @@ export default {
 
 .balance-value {
     margin: 0;
-    color: #16322e;
+    color: var(--brt-ink);
     font-weight: 800;
     font-size: 1.35rem;
 }
@@ -818,8 +834,8 @@ export default {
 .field-input:focus,
 .field-select:focus {
     outline: none;
-    border-color: #2e8b57;
-    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+    border-color: var(--brt-focus);
+    box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
 }
 
 .field-input:disabled {
@@ -891,7 +907,7 @@ export default {
 }
 
 .payment-table-row {
-    border-top: 1px solid #eef2f1;
+    border-top: 1px solid var(--brt-c-eef2f1);
 }
 
 /* Bank details sit on their own row beneath the split they belong to,
@@ -925,7 +941,7 @@ export default {
 
 .split-check-hint {
     display: block;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.7rem;
     margin-top: 0.2rem;
 }
@@ -950,7 +966,7 @@ export default {
     left: 0.7rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #3D8D7A;
+    color: var(--brt-primary);
     font-size: 0.95rem;
     pointer-events: none;
 }
@@ -985,7 +1001,7 @@ export default {
     width: 100%;
     margin-top: 0.75rem;
     padding: 0.6rem;
-    border: 1px dashed #c4d9d2;
+    border: 1px dashed var(--brt-border);
     border-radius: 10px;
     background: transparent;
     color: #267A4C;
@@ -999,7 +1015,7 @@ export default {
 }
 
 .add-split-btn:hover {
-    background: #f0f7f4;
+    background: var(--brt-c-f0f7f4);
 }
 
 .cash-note {
@@ -1019,15 +1035,15 @@ export default {
     margin-top: 1rem;
     padding: 0.85rem 1rem;
     border-radius: 12px;
-    background: #f3faf7;
+    background: var(--brt-c-f3faf7);
 }
 
 .summary-icon {
     width: 34px;
     height: 34px;
     border-radius: 9px;
-    background: rgba(61, 141, 122, 0.12);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.12);
+    color: var(--brt-primary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1048,7 +1064,7 @@ export default {
 
 .summary-value {
     margin: 0;
-    color: #16322e;
+    color: var(--brt-ink);
     font-weight: 800;
     font-size: 0.95rem;
 }
@@ -1060,7 +1076,7 @@ export default {
 .summary-divider {
     width: 1px;
     align-self: stretch;
-    background: #dbe7e2;
+    background: var(--brt-c-dbe7e2);
 }
 
 .summary-status {
@@ -1102,14 +1118,14 @@ export default {
 }
 
 .footer-btn.primary {
-    background: #3D8D7A;
+    background: var(--brt-primary);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--brt-primary-rgb), 0.3);
 }
 
 .footer-btn.primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(61, 141, 122, 0.4);
+    box-shadow: 0 6px 20px rgba(var(--brt-primary-rgb), 0.4);
 }
 
 /* Payment success modal */
@@ -1132,9 +1148,9 @@ export default {
     border-radius: 50%;
     display: block;
     stroke-width: 3;
-    stroke: #3d8d7a;
+    stroke: var(--brt-primary);
     stroke-miterlimit: 10;
-    box-shadow: inset 0 0 0 #3d8d7a;
+    box-shadow: inset 0 0 0 var(--brt-primary);
     animation: successCheckmarkFill 0.4s ease-in-out 0.4s forwards, successCheckmarkScale 0.3s ease-in-out 0.9s both;
 }
 
@@ -1143,7 +1159,7 @@ export default {
     stroke-dashoffset: 166;
     stroke-width: 3;
     stroke-miterlimit: 10;
-    stroke: #3d8d7a;
+    stroke: var(--brt-primary);
     fill: none;
     animation: successCheckmarkStroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
 }
@@ -1169,19 +1185,19 @@ export default {
 }
 
 @keyframes successCheckmarkFill {
-    100% { box-shadow: inset 0 0 0 30px #3d8d7a; }
+    100% { box-shadow: inset 0 0 0 30px var(--brt-primary); }
 }
 
 .payment-success-card h5 {
     margin: 0;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .payment-success-card p {
     margin: 0.3rem 0 0;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.8rem;
 }
 
@@ -1212,13 +1228,13 @@ export default {
 }
 
 .payment-success-row strong {
-    color: #16322e;
+    color: var(--brt-ink);
     font-size: 0.86rem;
     font-weight: 700;
 }
 
 .payment-success-row-highlight {
-    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
+    background: linear-gradient(135deg, var(--brt-c-e6f7ee) 0%, #d8f2e3 100%);
     border-color: #b9e6ca;
 }
 
@@ -1246,13 +1262,13 @@ export default {
 }
 
 .success-footer-btn-print {
-    background: #3D8D7A;
+    background: var(--brt-primary);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--brt-primary-rgb), 0.3);
 }
 
 .success-footer-btn-print:hover:not(:disabled) {
-    background: #2f6f5f;
+    background: var(--brt-c-2f6f5f);
 }
 
 .success-footer-btn-print:disabled {

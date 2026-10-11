@@ -96,7 +96,7 @@
 </template>
 
 <script>
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 
 export default {
     computed: {
@@ -131,7 +131,7 @@ export default {
         },
         onPrint(id) {
             if (!id) return;
-            printDocument(`/receipts/${id}?option=print&type=receipt`);
+            openOrPrint(`/receipts/${id}?option=print&type=receipt`);
         }
     }
 };
@@ -144,32 +144,32 @@ export default {
 }
 
 .summary-card {
-    border: 1px solid #d6e5df;
+    border: 1px solid var(--brt-c-d6e5df);
     border-radius: 12px;
-    background: #f7faf9;
+    background: var(--brt-c-f7faf9);
     padding: 10px 12px;
 }
 
 .summary-label {
-    color: #5f756d;
+    color: var(--brt-c-5f756d);
     font-size: 12px;
 }
 
 .summary-value {
     display: block;
-    color: #2a3f37;
+    color: var(--brt-c-2a3f37);
     margin-top: 2px;
 }
 
 .table-wrap {
-    border: 1px solid #dce8e3;
+    border: 1px solid var(--brt-c-dce8e3);
     border-radius: 12px;
     overflow: hidden;
 }
 
 .pretty-table thead th {
-    background: #edf4f1;
-    color: #49655b;
+    background: var(--brt-c-edf4f1);
+    color: var(--brt-c-49655b);
     font-size: 12px;
     font-weight: 700;
 }
@@ -179,15 +179,15 @@ export default {
 }
 
 .btn-print {
-    border-color: #3a8674;
-    color: #2f705f;
+    border-color: var(--brt-c-3a8674);
+    color: var(--brt-c-2f705f);
     background: #ffffff;
     margin: 2px 4px;
     min-width: 78px;
 }
 
 .btn-print:hover {
-    background: #3a8674;
+    background: var(--brt-c-3a8674);
     color: #ffffff;
 }
 

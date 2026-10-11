@@ -72,7 +72,7 @@
 
         <div class="stat-card">
           <div class="stat-icon stat-icon-success">
-            <i class="ri-money-dollar-circle-line"></i>
+            <i class="ri-money-peso-circle-line"></i>
           </div>
           <div class="stat-info">
             <span class="stat-label">Total Revenue</span>
@@ -135,7 +135,7 @@
 
         <div class="stat-card">
           <div class="stat-icon stat-icon-success">
-            <i class="ri-money-dollar-circle-line"></i>
+            <i class="ri-money-peso-circle-line"></i>
           </div>
           <div class="stat-info">
             <span class="stat-label">Total Refunded</span>
@@ -183,7 +183,7 @@
 
             <div class="stat-card mb-3">
               <div class="stat-icon stat-icon-success">
-                <i class="ri-money-dollar-circle-line"></i>
+                <i class="ri-money-peso-circle-line"></i>
               </div>
               <div class="stat-info">
                 <span class="stat-label">Outstanding Balance</span>
@@ -246,7 +246,7 @@
 
           <div class="stat-card mb-3">
             <div class="stat-icon stat-icon-success">
-              <i class="ri-money-dollar-circle-line"></i>
+              <i class="ri-money-peso-circle-line"></i>
             </div>
             <div class="stat-info">
               <span class="stat-label">Total Collected</span>
@@ -309,7 +309,7 @@
 
         <div class="stat-card">
           <div class="stat-icon stat-icon-success">
-            <i class="ri-money-dollar-circle-line"></i>
+            <i class="ri-money-peso-circle-line"></i>
           </div>
           <div class="stat-info">
             <span class="stat-label">Total Amount Remitted</span>
@@ -372,7 +372,7 @@
 
               <div class="stat-card">
                 <div class="stat-icon stat-icon-success">
-                  <i class="ri-money-dollar-circle-line"></i>
+                  <i class="ri-money-peso-circle-line"></i>
                 </div>
                 <div class="stat-info">
                   <span class="stat-label">Total Revenue</span>
@@ -499,7 +499,7 @@ export default {
 
 .card-header-modern h4 i {
   font-size: 1.25rem;
-  color: #2e8b57;
+  color: var(--brt-focus);
 }
 
 .card-body-custom {

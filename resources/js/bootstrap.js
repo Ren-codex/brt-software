@@ -18,4 +18,4 @@ import 'leaflet/dist/leaflet.css';
  * allow your team to quickly build robust real-time web applications.
  */
 
-// import './echo';
+import './echo';

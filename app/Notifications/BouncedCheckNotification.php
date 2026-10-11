@@ -4,11 +4,11 @@ namespace App\Notifications;
 
 use App\Models\Check;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class BouncedCheckNotification extends Notification implements ShouldBroadcast
+class BouncedCheckNotification extends Notification implements ShouldBroadcastNow
 {
     use Queueable;
 
@@ -28,6 +28,7 @@ class BouncedCheckNotification extends Notification implements ShouldBroadcast
     {
         return [
             'type' => 'bounced_check',
+            'url'  => '/sales/check-monitoring',
             'check_id' => $this->check->id,
             'check_number' => $this->check->check_number,
             'amount' => (float) $this->check->amount,

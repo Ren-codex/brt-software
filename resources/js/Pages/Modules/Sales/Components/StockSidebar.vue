@@ -132,9 +132,9 @@ export default {
 .stock-toggle-btn {
     position: static;
     width: 100%;
-    border: 1px solid #d5e4df;
+    border: 1px solid var(--brt-c-d5e4df);
     border-radius: 12px;
-    background: linear-gradient(135deg, #f9fcfb 0%, #eef6f3 100%);
+    background: linear-gradient(135deg, #f9fcfb 0%, var(--brt-c-eef6f3) 100%);
     padding: 0.7rem 1rem;
     display: flex;
     flex-direction: row;
@@ -148,9 +148,9 @@ export default {
 }
 
 .stock-toggle-btn:hover {
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: #fff;
-    border-color: #3d8d7a;
+    border-color: var(--brt-primary);
 }
 
 .stock-toggle-label {
@@ -180,11 +180,11 @@ export default {
 }
 
 .stock-dashboard-card {
-    border: 1px solid #dce7e2;
+    border: 1px solid var(--brt-c-dce7e2);
     border-radius: 14px;
     background: #ffffff;
     padding: 1rem;
-    box-shadow: 0 8px 24px rgba(61, 141, 122, 0.08);
+    box-shadow: 0 8px 24px rgba(var(--brt-primary-rgb), 0.08);
 }
 
 .stock-floating-panel {
@@ -201,7 +201,7 @@ export default {
     justify-content: space-between;
     gap: 1rem;
     margin-bottom: 1rem;
-    border-bottom: 1px solid #edf2f0;
+    border-bottom: 1px solid var(--brt-c-edf2f0);
     padding-bottom: 1rem;
 }
 
@@ -215,7 +215,7 @@ export default {
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: rgba(61, 141, 122, 0.14);
+    background: rgba(var(--brt-primary-rgb), 0.14);
     color: #267a4c;
     display: flex;
     align-items: center;
@@ -234,7 +234,7 @@ export default {
 }
 
 .stock-header-pill {
-    background: rgba(61, 141, 122, 0.12);
+    background: rgba(var(--brt-primary-rgb), 0.12);
     color: #267a4c;
     border-radius: 20px;
     padding: 0.35rem 0.7rem;
@@ -245,7 +245,7 @@ export default {
 
 .stock-metric-card {
     background: #f8fbfa;
-    border: 1px solid #e5efeb;
+    border: 1px solid var(--brt-c-e5efeb);
     border-radius: 12px;
     padding: 0.85rem;
     height: 100%;
@@ -254,8 +254,8 @@ export default {
 
 .stock-metric-card:hover {
     transform: translateY(-2px);
-    border-color: #cde0d9;
-    box-shadow: 0 8px 18px rgba(44, 122, 93, 0.12);
+    border-color: var(--brt-c-cde0d9);
+    box-shadow: 0 8px 18px rgba(var(--brt-c-2c7a5d-rgb), 0.12);
 }
 
 .stock-metric-icon {
@@ -310,7 +310,7 @@ export default {
 }
 
 .stock-brand-card {
-    border: 1px solid #e5efeb;
+    border: 1px solid var(--brt-c-e5efeb);
     border-radius: 12px;
     background: #fbfdfc;
     padding: 0.85rem;
@@ -336,7 +336,7 @@ export default {
     font-size: 0.7rem;
     padding: 0.25rem 0.6rem;
     border-radius: 12px;
-    background: #eaf4f0;
+    background: var(--brt-c-eaf4f0);
     color: #267a4c;
     font-weight: 600;
 }
@@ -352,7 +352,7 @@ export default {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    border: 1px solid #edf2f0;
+    border: 1px solid var(--brt-c-edf2f0);
     background: #ffffff;
     border-radius: 10px;
     padding: 0.5rem 0.65rem;
@@ -366,7 +366,7 @@ export default {
 
 .stock-product-meta {
     color: #5d6472;
-    background: #f4f7f6;
+    background: var(--brt-c-f4f7f6);
     border-radius: 10px;
     padding: 0.25rem 0.45rem;
     font-size: 0.72rem;
@@ -378,9 +378,9 @@ export default {
         position: static;
         transform: none;
         width: 100%;
-        border-right: 1px solid #d5e4df;
+        border-right: 1px solid var(--brt-c-d5e4df);
         border-radius: 12px;
-        background: linear-gradient(135deg, #f9fcfb 0%, #eef6f3 100%);
+        background: linear-gradient(135deg, #f9fcfb 0%, var(--brt-c-eef6f3) 100%);
         padding: 0.7rem 1rem;
         display: flex;
         flex-direction: row;
@@ -452,7 +452,7 @@ export default {
 }
 
 .card-header-modern h4 i {
-    color: #2e8b57;
+    color: var(--brt-focus);
 }
 
 .card-body-custom {

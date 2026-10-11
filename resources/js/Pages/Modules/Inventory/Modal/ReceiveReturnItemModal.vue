@@ -227,7 +227,7 @@ export default {
 }
 
 .btn-save {
-  background: #2e8b57;
+  background: var(--brt-focus);
   color: #fff;
 }
 
@@ -241,7 +241,7 @@ export default {
   margin-top: 0.3rem;
   font-size: 0.74rem;
   line-height: 1.4;
-  color: #6b8c85;
+  color: var(--brt-muted);
 }
 
 .error-message {

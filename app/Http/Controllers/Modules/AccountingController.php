@@ -1992,6 +1992,7 @@ class AccountingController extends Controller
             })
             ->orderByDesc('created_at')
             ->orderByDesc('id')
+            ->sortFromRequest()
             ->paginate($request->count ?? 15);
 
         // Build source ref map in at most one query per distinct source type on this page.

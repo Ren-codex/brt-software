@@ -21,9 +21,11 @@
               v-model.trim="localKeyword"
               type="text"
               class="receiving-search-input"
-              placeholder="Search PR number, PO number, supplier, bank, or reference..."
+              placeholder="Search received stocks..."
+              title="Search by PR number, PO number, received number, supplier, bank or reference"
             />
           </div>
+
 
           <div class="filter-segment">
             <button
@@ -38,6 +40,14 @@
               <span>{{ option.label }}</span>
             </button>
           </div>
+          <!-- Last in the toolbar, so it sits at the top-right corner above the table. Sorted in the browser: this tab loads every received stock at
+               once, so the sort already covers all of them. -->
+          <SortSelect v-model="sortOption" :added="false" :fields="[
+            { field: 'received_date', label: 'Received date', type: 'date' },
+            { field: 'received_no', label: 'Received no.' },
+            { field: 'supplier', label: 'Supplier' },
+            { field: 'amount_paid', label: 'Amount paid', type: 'number' },
+          ]" />
         </div>
 
         <div class="table-responsive receiving-table-wrap">
@@ -175,6 +185,8 @@ export default {
   data() {
     return {
       localKeyword: '',
+      // "field:direction"; empty is the default, newest received first.
+      sortOption: '',
       currentPage: 1,
       pageSize: 15,
       selectedPaymentFilter: 'all',
@@ -230,9 +242,28 @@ export default {
           return haystack.includes(keyword);
         })
         .slice()
-        .sort((left, right) => {
-          return new Date(right?.received_date || 0) - new Date(left?.received_date || 0);
-        });
+        .sort(this.recordComparator);
+    },
+    /** Compares two records by the chosen sort; newest received first by default. */
+    recordComparator() {
+      const [field, direction] = (this.sortOption || 'received_date:desc').split(':');
+      const sign = direction === 'asc' ? 1 : -1;
+
+      const value = (record) => {
+        if (field === 'received_date') return new Date(record?.received_date || 0).getTime();
+        if (field === 'amount_paid') return Number(record?.amount_paid) || 0;
+        if (field === 'supplier') return String(record?.supplier?.name || '').toLowerCase();
+        return String(record?.[field] || '').toLowerCase();
+      };
+
+      return (left, right) => {
+        const a = value(left);
+        const b = value(right);
+        if (a < b) return -1 * sign;
+        if (a > b) return 1 * sign;
+        // Ties fall back to newest first, so the order never shuffles.
+        return new Date(right?.received_date || 0) - new Date(left?.received_date || 0);
+      };
     },
     totalPages() {
       return Math.max(1, Math.ceil(this.filteredRecords.length / this.pageSize));
@@ -255,6 +286,9 @@ export default {
       this.currentPage = 1;
     },
     selectedPaymentFilter() {
+      this.currentPage = 1;
+    },
+    sortOption() {
       this.currentPage = 1;
     },
     listReceivedStocks() {
@@ -353,8 +387,8 @@ export default {
 
 .receiving-card-header {
   padding: 0.75rem 1.1rem;
-  border-bottom: 1px solid #c4d9d2;
-  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+  border-bottom: 1px solid var(--brt-border);
+  background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
 }
 
 .receiving-header-copy {
@@ -370,23 +404,23 @@ export default {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(61, 141, 122, 0.12);
-  border: 1px solid rgba(61, 141, 122, 0.16);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--brt-primary-rgb), 0.16);
+  color: var(--brt-primary);
   font-size: 18px;
   flex-shrink: 0;
 }
 
 .receiving-title {
   margin: 0;
-  color: #16322e;
+  color: var(--brt-ink);
   font-size: 0.95rem;
   font-weight: 700;
 }
 
 .receiving-subtitle {
   margin: 0;
-  color: #6b8c85;
+  color: var(--brt-muted);
   font-size: 0.76rem;
 }
 
@@ -403,9 +437,12 @@ export default {
   flex-wrap: wrap;
 }
 
+/* A fixed, modest width. It used to stretch across the whole toolbar, which
+   left no room beside it for the sort and payment filters. */
 .receiving-search {
   position: relative;
-  flex: 1 1 340px;
+  flex: 0 1 280px;
+  max-width: 100%;
 }
 
 .receiving-search i {
@@ -428,13 +465,13 @@ export default {
 
 .receiving-search-input:focus {
   outline: none;
-  border-color: #4c9a85;
-  box-shadow: 0 0 0 4px rgba(76, 154, 133, 0.12);
+  border-color: var(--brt-c-4c9a85);
+  box-shadow: 0 0 0 4px rgba(var(--brt-c-4c9a85-rgb), 0.12);
 }
 
 .filter-segment {
   display: inline-flex;
-  background: #eaf2f0;
+  background: var(--brt-c-eaf2f0);
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
@@ -446,7 +483,7 @@ export default {
   gap: 6px;
   border: none;
   background: transparent;
-  color: #4a7a70;
+  color: var(--brt-c-4a7a70);
   font-weight: 600;
   font-size: 0.8rem;
   padding: 0.38rem 0.85rem;
@@ -460,14 +497,14 @@ export default {
 }
 
 .filter-segment-btn:hover:not(.active) {
-  background: rgba(61, 141, 122, 0.1);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.1);
+  color: var(--brt-primary);
 }
 
 .filter-segment-btn.active {
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+  box-shadow: 0 2px 8px rgba(var(--brt-primary-rgb), 0.28);
 }
 
 .receiving-table-wrap {

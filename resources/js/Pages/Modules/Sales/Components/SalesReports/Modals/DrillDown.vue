@@ -221,7 +221,7 @@ export default {
 
 .dd-state i {
   font-size: 1.75rem;
-  color: #b9c7c2;
+  color: var(--brt-c-b9c7c2);
 }
 
 .dd-state-error i {
@@ -245,7 +245,7 @@ export default {
 
 .dd-meta-item {
   background: #f8fbfa;
-  border: 1px solid #e4efeb;
+  border: 1px solid var(--brt-c-e4efeb);
   border-radius: 9px;
   padding: 0.5rem 0.7rem;
 }
@@ -255,14 +255,14 @@ export default {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #7f9a92;
+  color: var(--brt-c-7f9a92);
   margin-bottom: 0.15rem;
 }
 
 .dd-meta-value {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e3530;
+  color: var(--brt-c-1e3530);
 }
 
 .dd-totals {
@@ -275,14 +275,14 @@ export default {
 .dd-total {
   flex: 1;
   min-width: 120px;
-  background: #f4faf8;
-  border: 1px solid #d9ebe4;
+  background: var(--brt-c-f4faf8);
+  border: 1px solid var(--brt-c-d9ebe4);
   border-radius: 10px;
   padding: 0.6rem 0.8rem;
 }
 
 .dd-total-accent {
-  background: linear-gradient(135deg, #eaf5f1 0%, #f6fbf9 100%);
+  background: linear-gradient(135deg, var(--brt-c-eaf5f1) 0%, var(--brt-c-f6fbf9) 100%);
 }
 
 .dd-total-label {
@@ -290,18 +290,18 @@ export default {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #6b8c85;
+  color: var(--brt-muted);
 }
 
 .dd-total-value {
   font-size: 1.05rem;
-  color: #16322e;
+  color: var(--brt-ink);
 }
 
 .dd-table {
   max-height: 45vh;
   overflow: auto;
-  border: 1px solid #e4efeb;
+  border: 1px solid var(--brt-c-e4efeb);
   border-radius: 10px;
 }
 
@@ -314,20 +314,20 @@ export default {
 .dd-table thead th {
   position: sticky;
   top: 0;
-  background: #f4faf8;
-  color: #4a6b63;
+  background: var(--brt-c-f4faf8);
+  color: var(--brt-c-4a6b63);
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.55rem 0.7rem;
   text-align: left;
-  border-bottom: 1px solid #e4efeb;
+  border-bottom: 1px solid var(--brt-c-e4efeb);
 }
 
 .dd-table tbody td {
   padding: 0.5rem 0.7rem;
-  border-bottom: 1px solid #f0f6f4;
-  color: #22403a;
+  border-bottom: 1px solid var(--brt-c-f0f6f4);
+  color: var(--brt-c-22403a);
 }
 
 .dd-table tbody tr:last-child td {
@@ -344,7 +344,7 @@ export default {
 }
 
 .dd-muted {
-  color: #7f9a92;
+  color: var(--brt-c-7f9a92);
   text-transform: capitalize;
 }
 

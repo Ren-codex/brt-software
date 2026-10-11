@@ -282,6 +282,57 @@
                     </div>
                 </div>
 
+                <!-- Returns and disapprovals. Only there when there is something
+                     to show: a customer with a clean record gets no empty box. -->
+                <div class="details-card" v-if="issueHistory.length">
+                    <div class="details-card-header details-card-header-between">
+                        <h3>
+                            <i class="ri-error-warning-line"></i>
+                            Returns &amp; Disapproved
+                        </h3>
+                        <span class="records-count">
+                            <template v-if="issueCounts.return">{{ issueCounts.return }} returned</template>
+                            <template v-if="issueCounts.return && (issueCounts.refusal || issueCounts.disapproved)"> &middot; </template>
+                            <template v-if="issueCounts.refusal">{{ issueCounts.refusal }} refused</template>
+                            <template v-if="issueCounts.refusal && issueCounts.disapproved"> &middot; </template>
+                            <template v-if="issueCounts.disapproved">{{ issueCounts.disapproved }} disapproved</template>
+                        </span>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>SO #</th>
+                                        <th>What happened</th>
+                                        <th>Details</th>
+                                        <th>Reason / note</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="row in issueHistory" :key="row.key" class="table-row">
+                                        <td>{{ row.date ? formatDate(row.date) : '-' }}</td>
+                                        <td>{{ row.so_number || '-' }}</td>
+                                        <td><span class="issue-pill" :class="`issue-${row.type}`">{{ row.label }}</span></td>
+                                        <td>{{ row.detail }}</td>
+                                        <td>{{ row.note || '-' }}</td>
+                                        <td class="text-end">
+                                            <template v-if="row.amount !== null">₱{{ formatCurrencyNumeric(row.amount) }}</template>
+                                            <template v-else>-</template>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <p v-if="issueTotal > issueHistory.length" class="issue-more">
+                        Showing the latest {{ issueHistory.length }} of {{ issueTotal }}.
+                    </p>
+                </div>
+
                 <!-- Payment Due Dates -->
                 <div class="details-card">
                     <div class="details-card-header details-card-header-between">
@@ -446,6 +497,9 @@ export default {
             purchaseHistoryLoading: false,
             purchaseHistoryMeta: null,
             purchaseHistoryLinks: null,
+            issueHistory: [],
+            issueCounts: { return: 0, refusal: 0, disapproved: 0 },
+            issueTotal: 0,
             latestPurchaseOrder: null,
             selectedYear: null,
             selectedMonth: null,
@@ -459,6 +513,7 @@ export default {
                 this.initializePeriodFilter();
                 this.fetchOrderSummary();
                 this.fetchPurchaseHistory();
+                this.fetchIssueHistory();
             }
         },
         years: {
@@ -542,6 +597,26 @@ export default {
                         rice_trend: '0%',
                         amount_trend: '0%',
                     };
+                });
+        },
+        /** Returns, doorstep refusals and refused credit — all of it, not one month's. */
+        fetchIssueHistory() {
+            this.issueHistory = [];
+            this.issueCounts = { return: 0, refusal: 0, disapproved: 0 };
+            this.issueTotal = 0;
+            if (!this.customer?.id) return;
+
+            const customerId = this.customer.id;
+            axios.get(`/customers/${customerId}/issue-history`)
+                .then((response) => {
+                    // The profile may have moved on to another customer meanwhile.
+                    if (this.customer?.id !== customerId) return;
+                    this.issueHistory = Array.isArray(response.data?.data) ? response.data.data : [];
+                    this.issueCounts = { return: 0, refusal: 0, disapproved: 0, ...(response.data?.counts || {}) };
+                    this.issueTotal = Number(response.data?.total) || this.issueHistory.length;
+                })
+                .catch(() => {
+                    this.issueHistory = [];
                 });
         },
         fetchPurchaseHistory(page_url) {
@@ -927,6 +1002,24 @@ export default {
 }
 </script>
 
-<style scoped src="@/Shared/Styles/employee-details-layout.css"></style>
+<style scoped src="@/Shared/Styles/employee-details-layout.css">.issue-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.issue-return { background: #fdf0dd; color: #8a6412; }
+.issue-refusal { background: #e5eef8; color: #2a5b86; }
+.issue-disapproved { background: #fdeaea; color: #96231f; }
+
+.issue-more {
+    margin: 0.6rem 1rem 0.9rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+</style>
 
 

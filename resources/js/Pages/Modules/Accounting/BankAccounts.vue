@@ -196,8 +196,8 @@ export default {
 
 <style scoped>
 .ba-table thead th {
-    background: #edf5f2;
-    color: #527267;
+    background: var(--brt-c-edf5f2);
+    color: var(--brt-c-527267);
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -210,12 +210,12 @@ export default {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 6px;
-    background: #f0f5f3;
-    color: #335c52;
+    background: var(--brt-c-f0f5f3);
+    color: var(--brt-c-335c52);
     font-family: monospace;
     font-size: 0.8rem;
     font-weight: 700;
-    border: 1px solid #c8e3da;
+    border: 1px solid var(--brt-c-c8e3da);
 }
 
 .status-chip {
@@ -236,8 +236,8 @@ export default {
     cursor: pointer; font-size: 0.9rem; background: transparent;
     transition: all 0.15s;
 }
-.action-btn.edit       { border-color: #c4d9d2; color: #335c52; }
-.action-btn.edit:hover { background: #edf5f2; }
+.action-btn.edit       { border-color: var(--brt-border); color: #335c52; }
+.action-btn.edit:hover { background: var(--brt-c-edf5f2); }
 .action-btn.deactivate       { border-color: #fca5a5; color: #991b1b; }
 .action-btn.deactivate:hover { background: #fee2e2; }
 .action-btn.activate         { border-color: #86efac; color: #166534; }
@@ -250,11 +250,11 @@ export default {
 }
 .empty-state i {
     font-size: 2.5rem;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     display: block;
     margin-bottom: 0.75rem;
 }
 
-.modal-subtitle { font-size: 0.82rem; color: #6b8c85; margin: 0; }
+.modal-subtitle { font-size: 0.82rem; color: var(--brt-muted); margin: 0; }
 .error-message  { font-size: 0.78rem; color: #dc2626; margin-top: 3px; }
 </style>

@@ -19,32 +19,37 @@
         </div>
 
         <div class="library-card-body">
-          <div class="search-section">
-            <div class="search-wrapper">
-              <i class="ri-search-line search-icon"></i>
-              <input
-                v-model="localKeyword"
-                type="text"
-                class="search-input"
-                placeholder="Search stock returns..."
-                @input="updateKeyword(localKeyword)"
-              >
+          <!-- Status tabs, search and sort on one row; they wrap onto more
+               lines only when the screen is too narrow to hold them. -->
+          <div class="tabs-search-row">
+            <div class="tabs-section">
+              <div class="filter-segment">
+                <button
+                  v-for="tab in statusTabs"
+                  :key="tab.value"
+                  type="button"
+                  class="filter-segment-btn"
+                  :class="{ active: activeTab === tab.value }"
+                  @click="setActiveTab(tab.value)"
+                >
+                  <i :class="tab.icon"></i>
+                  <span>{{ tab.label }}</span>
+                </button>
+              </div>
             </div>
-          </div>
-          
-          <div class="tabs-section">
-            <div class="filter-segment">
-              <button
-                v-for="tab in statusTabs"
-                :key="tab.value"
-                type="button"
-                class="filter-segment-btn"
-                :class="{ active: activeTab === tab.value }"
-                @click="setActiveTab(tab.value)"
-              >
-                <i :class="tab.icon"></i>
-                <span>{{ tab.label }}</span>
-              </button>
+
+            <div class="search-section">
+              <div class="search-wrapper">
+                <i class="ri-search-line search-icon"></i>
+                <input
+                  v-model="localKeyword"
+                  type="text"
+                  class="search-input"
+                  placeholder="Search stock returns..."
+                  @input="updateKeyword(localKeyword)"
+                >
+              </div>
+              <SortSelect v-model="sortOption" :fields="[{ field: 'stock_return_no', label: 'Return no.' }]" @change="$emit('update-sort', sortParams)" />
             </div>
           </div>
 
@@ -147,12 +152,14 @@
 
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
+import { listSortMixin } from '@/Shared/listSort.js';
 import ReturnPurchaseOrderModal from '../Modal/ReturnPurchaseOrderModal.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
   name: 'StockReturnsTab',
   components: { Pagination, ReturnPurchaseOrderModal, TableLoadingRow },
+  mixins: [listSortMixin],
   props: {
     listStockReturns: {
       type: Array,
@@ -179,7 +186,7 @@ export default {
       default: false,
     },
   },
-  emits: ['fetch', 'refresh', 'update-keyword', 'toast', 'view-details'],
+  emits: ['fetch', 'update-sort', 'refresh', 'update-keyword', 'toast', 'view-details'],
   data() {
     return {
       localKeyword: this.filter.keyword || '',
@@ -345,7 +352,7 @@ export default {
 
 .return-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #2e8b57 0%, #3dbb77 100%);
+  background: linear-gradient(90deg, var(--brt-focus) 0%, #3dbb77 100%);
   transition: width 0.25s ease;
 }
 
@@ -364,7 +371,7 @@ export default {
 
 .filter-segment {
   display: inline-flex;
-  background: #eaf2f0;
+  background: var(--brt-c-eaf2f0);
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
@@ -376,7 +383,7 @@ export default {
   gap: 6px;
   border: none;
   background: transparent;
-  color: #4a7a70;
+  color: var(--brt-c-4a7a70);
   font-weight: 600;
   font-size: 0.8rem;
   padding: 0.38rem 0.85rem;
@@ -391,14 +398,14 @@ export default {
 }
 
 .filter-segment-btn:hover:not(.active) {
-  background: rgba(61, 141, 122, 0.1);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.1);
+  color: var(--brt-primary);
 }
 
 .filter-segment-btn.active {
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+  box-shadow: 0 2px 8px rgba(var(--brt-primary-rgb), 0.28);
 }
 
 tbody tr {
@@ -406,23 +413,23 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background-color: var(--hover-color, rgba(46, 139, 87, 0.05)) !important;
+  background-color: var(--hover-color, rgba(var(--brt-focus-rgb), 0.05)) !important;
 }
 
 /* Card Header */
 .library-card-header {
   padding: 0.75rem 1.1rem;
-  border-bottom: 1px solid #c4d9d2;
-  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+  border-bottom: 1px solid var(--brt-border);
+  background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
 }
 
 .header-icon {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(61, 141, 122, 0.12);
-  border: 1px solid rgba(61, 141, 122, 0.16);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--brt-primary-rgb), 0.16);
+  color: var(--brt-primary);
   font-size: 18px;
   flex-shrink: 0;
   display: inline-flex;
@@ -433,13 +440,13 @@ tbody tr:hover {
 .header-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #16322e;
+  color: var(--brt-ink);
   margin: 0;
 }
 
 .header-subtitle {
   font-size: 0.76rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
   margin: 0;
 }
 

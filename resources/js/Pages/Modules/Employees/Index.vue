@@ -27,6 +27,19 @@
                             <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
                                 placeholder="Search employee..." class="search-input">
                         </div>
+                        <div class="sort-wrapper">
+                            <label for="employee-sort" class="sort-label"><i class="ri-sort-desc"></i> Sort by</label>
+                            <select id="employee-sort" class="sort-select" :value="sortOption" @change="applySortOption($event.target.value)">
+                                <option value="created_at:desc">Latest added</option>
+                                <option value="created_at:asc">Oldest added</option>
+                                <option value="fullname:asc">Name (A–Z)</option>
+                                <option value="fullname:desc">Name (Z–A)</option>
+                                <option value="position:asc">Position (A–Z)</option>
+                                <option value="position:desc">Position (Z–A)</option>
+                                <option value="email:asc">Email (A–Z)</option>
+                                <option value="email:desc">Email (Z–A)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="table-section">
@@ -208,8 +221,13 @@ export default {
         }
     },
     computed: {
+        // The server sorts across every page, so the rows are shown as they
+        // arrive. Re-sorting here would only reorder the current ten.
         filteredAndSortedList() {
-            return this.sortList(this.lists);
+            return this.lists;
+        },
+        sortOption() {
+            return `${this.sortBy}:${this.sortDirection}`;
         }
     },
     watch: {
@@ -245,38 +263,14 @@ export default {
                 this.sortBy = field;
                 this.sortDirection = 'asc';
             }
+            this.fetch();
         },
-        
-        sortList(list) {
-            return [...list].sort((a, b) => {
-                let aValue, bValue;
-                
-                switch (this.sortBy) {
-                    case 'fullname':
-                        aValue = a.fullname || '';
-                        bValue = b.fullname || '';
-                        break;
-                    case 'position':
-                        aValue = a.position ? a.position.title : '';
-                        bValue = b.position ? b.position.title : '';
-                        break;
-                    case 'email':
-                        aValue = a.email || '';
-                        bValue = b.email || '';
-                        break;
-                    case 'created_at':
-                        aValue = new Date(a.created_at || 0);
-                        bValue = new Date(b.created_at || 0);
-                        break;
-                    default:
-                        aValue = a[this.sortBy] || '';
-                        bValue = b[this.sortBy] || '';
-                }
-                
-                if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
-                if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
-                return 0;
-            });
+
+        applySortOption(option) {
+            const [field, direction] = option.split(':');
+            this.sortBy = field;
+            this.sortDirection = direction;
+            this.fetch();
         },
         
         getRowStyle(list) {
@@ -299,6 +293,8 @@ export default {
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
+                    sort_by: this.sortBy,
+                    sort_direction: this.sortDirection,
                     count: 10,
                     option: 'lists'
                 }
@@ -410,6 +406,49 @@ export default {
 
 <style scoped>
 /* Sortable Header */
+.search-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.search-section .search-wrapper {
+    flex: 1 1 260px;
+}
+
+.sort-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sort-label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.sort-select {
+    padding: 0.55rem 2rem 0.55rem 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    font-size: 0.8125rem;
+    color: #374151;
+    cursor: pointer;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: var(--brt-focus);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
+}
+
 .sortable-header {
     display: flex;
     align-items: center;
@@ -420,7 +459,7 @@ export default {
 }
 
 .sortable-header:hover {
-    color: #2e8b57;
+    color: var(--brt-focus);
 }
 
 .sortable-header i {
@@ -434,7 +473,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-    background-color: var(--hover-color, rgba(46, 139, 87, 0.05)) !important;
+    background-color: var(--hover-color, rgba(var(--brt-focus-rgb), 0.05)) !important;
 }
 
 /* Action Buttons */

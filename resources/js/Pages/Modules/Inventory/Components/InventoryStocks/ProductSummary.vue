@@ -531,8 +531,8 @@ export default {
 .table-loading-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #d7e5de;
-  border-top-color: #3d8d7a;
+  border: 3px solid var(--brt-c-d7e5de);
+  border-top-color: var(--brt-primary);
   border-radius: 50%;
   animation: table-loading-spin 0.8s linear infinite;
 }
@@ -610,7 +610,7 @@ export default {
 .search-input {
   width: 100%;
   padding: 8px 16px 8px 40px;
-  border: 1px solid #dee6e3;
+  border: 1px solid var(--brt-c-dee6e3);
   border-radius: 6px;
 }
 
@@ -640,14 +640,14 @@ export default {
 }
 
 .inv-stock-table thead th {
-  background: #edf5f2;
-  color: #527267;
+  background: var(--brt-c-edf5f2);
+  color: var(--brt-c-527267);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   padding: 0.6rem 0.8rem;
-  border-bottom: 1px solid #c4d9d2;
+  border-bottom: 1px solid var(--brt-border);
 }
 
 .inv-stock-table tbody td {
@@ -676,7 +676,7 @@ export default {
 
 .batch-code {
   font-weight: 600;
-  color: #16322e;
+  color: var(--brt-ink);
 }
 
 .inv-chip-row {
@@ -696,7 +696,7 @@ export default {
   white-space: nowrap;
 }
 
-.inv-chip.converted { background: #e6f4f1; color: #16322e; }
+.inv-chip.converted { background: #e6f4f1; color: var(--brt-ink); }
 .inv-chip.expiring  { background: #fef9c3; color: #854d0e; }
 .inv-chip.normal    { background: #dcfce7; color: #166534; }
 .inv-chip.short     { background: #fee2e2; color: #991b1b; }
@@ -715,7 +715,7 @@ export default {
 .qty-secondary {
   display: block;
   font-size: 0.75rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
 }
 
 .qty-badge {
@@ -723,7 +723,7 @@ export default {
   padding: 4px 8px;
   border: 1px solid #bfe7cf;
   border-radius: 8px;
-  background: #e8f7ef;
+  background: var(--brt-c-e8f7ef);
   color: #146c43;
   text-align: center;
   line-height: 1.1;
@@ -785,7 +785,7 @@ export default {
   height: 18px;
   padding: 0 5px;
   margin-left: 5px;
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #fff;
   border-radius: 20px;
   font-size: 0.65rem;

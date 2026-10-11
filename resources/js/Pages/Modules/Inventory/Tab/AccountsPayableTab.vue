@@ -25,19 +25,34 @@
           </div>
 
           <div class="search-section">
-            <div class="row">
-              <div class="col-md-5">
-                <div class="search-wrapper">
-                  <i class="ri-search-line search-icon"></i>
-                  <input
-                    v-model.trim="localKeyword"
-                    type="text"
-                    placeholder="Search payable no., supplier, PR, PO, or payment reference..."
-                    class="search-input"
-                  >
-                </div>
-              </div>
+            <div class="search-wrapper">
+              <i class="ri-search-line search-icon"></i>
+              <input
+                v-model.trim="localKeyword"
+                type="text"
+                placeholder="Search payables..."
+                title="Search by payable no., supplier, PR, PO or payment reference"
+                class="search-input"
+              >
             </div>
+            <!-- Built from the payables on the page, so only suppliers who are
+                 actually owed something are offered. -->
+            <select v-model="supplierFilter" class="payable-filter" aria-label="Filter by supplier">
+              <option value="">All suppliers</option>
+              <option v-for="name in supplierOptions" :key="name" :value="name">{{ name }}</option>
+            </select>
+            <select v-model="statusFilter" class="payable-filter" aria-label="Filter by status">
+              <option value="">All statuses</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="partial">Partially Paid</option>
+              <option value="overdue">Overdue</option>
+            </select>
+            <SortSelect v-model="sortOption" :added="false" :fields="[
+              { field: 'received_date', label: 'Received date', type: 'date' },
+              { field: 'due_date', label: 'Due date', type: 'date' },
+              { field: 'supplier', label: 'Supplier' },
+              { field: 'remaining_balance', label: 'Balance due', type: 'number' },
+            ]" />
           </div>
 
           <div class="table-responsive table-card">
@@ -113,7 +128,7 @@
                             class="table-action-btn pay-btn"
                             @click.stop="openPayModal(record)"
                           >
-                            <i class="ri-money-dollar-circle-line"></i>
+                            <i class="ri-money-peso-circle-line"></i>
                             <span>Pay</span>
                           </button>
                           <button
@@ -206,6 +221,10 @@ export default {
   data() {
     return {
       localKeyword: '',
+      supplierFilter: '',
+      statusFilter: '',
+      // "field:direction"; empty is the default, newest received first.
+      sortOption: '',
       currentPage: 1,
       pageSize: 15,
     };
@@ -217,10 +236,50 @@ export default {
         .slice()
         .sort((left, right) => new Date(right?.received_date || 0) - new Date(left?.received_date || 0));
     },
+    /** The suppliers who are owed something, A to Z, for the dropdown. */
+    supplierOptions() {
+      return [...new Set(this.creditPayables.map((record) => record?.supplier?.name).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b));
+    },
     filteredPayables() {
+      return this.matchingPayables.slice().sort(this.payableComparator);
+    },
+    /** Compares two payables by the chosen sort; newest received first by default. */
+    payableComparator() {
+      const [field, direction] = (this.sortOption || 'received_date:desc').split(':');
+      const sign = direction === 'asc' ? 1 : -1;
+
+      const value = (record) => {
+        if (field === 'received_date' || field === 'due_date') {
+          // A payable with no due date sorts after the ones that have one.
+          return record?.[field] ? new Date(record[field]).getTime() : (direction === 'asc' ? Infinity : -Infinity);
+        }
+        if (field === 'remaining_balance') return Number(record?.remaining_balance) || 0;
+        if (field === 'supplier') return String(record?.supplier?.name || '').toLowerCase();
+        return String(record?.[field] || '').toLowerCase();
+      };
+
+      return (left, right) => {
+        const a = value(left);
+        const b = value(right);
+        if (a < b) return -1 * sign;
+        if (a > b) return 1 * sign;
+        return new Date(right?.received_date || 0) - new Date(left?.received_date || 0);
+      };
+    },
+    /** Payables passing the search box and both dropdowns. */
+    matchingPayables() {
       const keyword = this.localKeyword.toLowerCase();
 
       return this.creditPayables.filter((record) => {
+        if (this.supplierFilter && record?.supplier?.name !== this.supplierFilter) return false;
+
+        // Overdue cuts across the other two: a payable can be unpaid and
+        // overdue, or partly paid and overdue.
+        if (this.statusFilter === 'unpaid' && !this.isUnpaid(record)) return false;
+        if (this.statusFilter === 'partial' && this.isUnpaid(record)) return false;
+        if (this.statusFilter === 'overdue' && !this.isOverdue(record)) return false;
+
         if (!keyword) return true;
 
         // requires eager-loaded `payments` on receivedStocks from the backend
@@ -263,6 +322,15 @@ export default {
   },
   watch: {
     localKeyword() {
+      this.currentPage = 1;
+    },
+    supplierFilter() {
+      this.currentPage = 1;
+    },
+    statusFilter() {
+      this.currentPage = 1;
+    },
+    sortOption() {
       this.currentPage = 1;
     },
     // A shorter list must not leave the reader on a page that no longer exists.
@@ -345,8 +413,8 @@ export default {
 
 .search-input:focus {
   outline: none;
-  border-color: #2e8b57;
-  box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+  border-color: var(--brt-focus);
+  box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
 }
 
 .credit-pill {
@@ -384,8 +452,8 @@ export default {
 }
 
 .main-table-row:hover {
-  background-color: rgba(61, 141, 122, 0.05) !important;
-  border-left-color: #3d8d7a;
+  background-color: rgba(var(--brt-primary-rgb), 0.05) !important;
+  border-left-color: var(--brt-primary);
 }
 
 .main-table-row.unpaid-row {
@@ -477,7 +545,7 @@ export default {
 .table-action-btn {
   border: 1px solid #d0d7de;
   background: #fff;
-  color: #2e8b57;
+  color: var(--brt-focus);
   border-radius: 8px;
   padding: 0.4rem 0.65rem;
   display: inline-flex;
@@ -490,7 +558,7 @@ export default {
 
 .table-action-btn:hover {
   background: #f0f9f4;
-  border-color: #9ad0b7;
+  border-color: var(--brt-c-9ad0b7);
 }
 
 .action-buttons-row {
@@ -502,14 +570,14 @@ export default {
 }
 
 .pay-btn {
-  background: #3d8d7a;
-  border-color: #3d8d7a;
+  background: var(--brt-primary);
+  border-color: var(--brt-primary);
   color: #fff;
 }
 
 .pay-btn:hover {
-  background: #347868;
-  border-color: #347868;
+  background: var(--brt-c-347868);
+  border-color: var(--brt-c-347868);
 }
 
 .void-btn {
@@ -538,17 +606,17 @@ export default {
 /* Card Header */
 .library-card-header {
   padding: 0.75rem 1.1rem;
-  border-bottom: 1px solid #c4d9d2;
-  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+  border-bottom: 1px solid var(--brt-border);
+  background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
 }
 
 .header-icon {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(61, 141, 122, 0.12);
-  border: 1px solid rgba(61, 141, 122, 0.16);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--brt-primary-rgb), 0.16);
+  color: var(--brt-primary);
   font-size: 18px;
   flex-shrink: 0;
   display: inline-flex;
@@ -559,13 +627,36 @@ export default {
 .header-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #16322e;
+  color: var(--brt-ink);
   margin: 0;
 }
 
 .header-subtitle {
   font-size: 0.76rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
   margin: 0;
+}
+.payable-filter {
+  padding: 0.55rem 2rem 0.55rem 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  font-size: 0.8125rem;
+  color: #374151;
+  cursor: pointer;
+  max-width: 220px;
+}
+
+.payable-filter:focus {
+  outline: none;
+  border-color: var(--brt-focus);
+  background-color: #fff;
+}
+
+@media (max-width: 767.98px) {
+  .payable-filter {
+    max-width: none;
+    flex: 1 1 100%;
+  }
 }
 </style>

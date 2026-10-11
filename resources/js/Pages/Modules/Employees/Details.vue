@@ -844,12 +844,12 @@ export default {
 <style scoped>
 .employee-details-page {
     zoom: 1.1;
-    --ink-900: #102723;
-    --ink-700: #35524d;
-    --ink-500: #5c7974;
-    --line-200: #d2e4df;
+    --ink-900: var(--brt-c-102723);
+    --ink-700: var(--brt-c-35524d);
+    --ink-500: var(--brt-c-5c7974);
+    --line-200: var(--brt-c-d2e4df);
     --mint-700: #1a7e67;
-    --mint-500: #2fa485;
+    --mint-500: var(--brt-c-2fa485);
     --surface: #ffffff;
     --surface-soft: #f7fcfa;
     --danger-600: #c44f47;
@@ -917,7 +917,7 @@ export default {
 .details-btn-outline {
     color: var(--ink-700);
     background: #fff;
-    border-color: #ceded9;
+    border-color: var(--brt-c-ceded9);
 }
 
 .details-btn-outline:hover {
@@ -946,8 +946,8 @@ export default {
     border: 1px solid var(--line-200);
     border-radius: 22px;
     padding: 20px;
-    background: linear-gradient(160deg, #f9fffd 0%, #eff9f6 100%);
-    box-shadow: 0 12px 32px rgba(28, 64, 56, 0.08);
+    background: linear-gradient(160deg, #f9fffd 0%, var(--brt-c-eff9f6) 100%);
+    box-shadow: 0 12px 32px rgba(var(--brt-c-1c4038-rgb), 0.08);
 }
 
 .profile-avatar-wrap {
@@ -963,7 +963,7 @@ export default {
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid #fff;
-    box-shadow: 0 10px 28px rgba(14, 47, 41, 0.2);
+    box-shadow: 0 10px 28px rgba(var(--brt-c-0e2f29-rgb), 0.2);
 }
 
 .profile-avatar-image {
@@ -979,7 +979,7 @@ export default {
     place-items: center;
     color: white;
     font-size: 42px;
-    background: linear-gradient(145deg, #2d947c 0%, #1d6454 100%);
+    background: linear-gradient(145deg, var(--brt-c-2d947c) 0%, var(--brt-c-1d6454) 100%);
 }
 
 .profile-avatar-btn {
@@ -991,7 +991,7 @@ export default {
     border-radius: 50%;
     border: 0;
     color: #fff;
-    background: #1f826b;
+    background: var(--brt-c-1f826b);
     display: grid;
     place-items: center;
 }
@@ -1023,8 +1023,8 @@ export default {
 }
 
 .profile-badge-primary {
-    background: #d9f0e8;
-    color: #1b6f5a;
+    background: var(--brt-c-d9f0e8);
+    color: var(--brt-c-1b6f5a);
 }
 
 .profile-badge-neutral {
@@ -1034,7 +1034,7 @@ export default {
 
 .profile-badge-success,
 .emp-status-success {
-    background: #dcf6eb;
+    background: var(--brt-c-dcf6eb);
     color: #157856;
 }
 
@@ -1045,12 +1045,12 @@ export default {
 }
 
 .profile-badge-dark {
-    background: #2e3a39;
+    background: var(--brt-c-2e3a39);
     color: #fff;
 }
 
 .profile-info-list {
-    border-top: 1px solid #d8e9e4;
+    border-top: 1px solid var(--brt-c-d8e9e4);
     padding-top: 12px;
 }
 
@@ -1084,7 +1084,7 @@ export default {
 
 .profile-subcard {
     margin-top: 12px;
-    border-top: 1px solid #d8e9e4;
+    border-top: 1px solid var(--brt-c-d8e9e4);
     padding-top: 12px;
 }
 
@@ -1093,7 +1093,7 @@ export default {
     align-items: center;
     gap: 7px;
     margin-bottom: 6px;
-    color: #1a6e5a;
+    color: var(--brt-c-1a6e5a);
 }
 
 .profile-subcard-header h3 {
@@ -1112,11 +1112,11 @@ export default {
 }
 
 .details-card {
-    border: 1px solid #dbe9e5;
+    border: 1px solid var(--brt-c-dbe9e5);
     border-radius: 20px;
     padding: 18px;
     background: var(--surface);
-    box-shadow: 0 8px 28px rgba(22, 58, 50, 0.06);
+    box-shadow: 0 8px 28px rgba(var(--brt-c-163a32-rgb), 0.06);
 }
 
 .details-card-header {
@@ -1144,7 +1144,7 @@ export default {
 .details-select {
     min-height: 36px;
     padding: 0 10px;
-    border: 1px solid #ccded8;
+    border: 1px solid var(--brt-c-ccded8);
     border-radius: 9px;
     background: #f8fdfb;
     color: var(--ink-700);
@@ -1158,7 +1158,7 @@ export default {
 }
 
 .details-stat {
-    border: 1px solid #e2eeeb;
+    border: 1px solid var(--brt-c-e2eeeb);
     border-radius: 15px;
     padding: 13px;
     background: var(--surface-soft);
@@ -1272,10 +1272,10 @@ export default {
 }
 
 .loan-balance {
-    border: 1px solid #d7e7e2;
+    border: 1px solid var(--brt-c-d7e7e2);
     border-radius: 14px;
     padding: 12px;
-    background: linear-gradient(135deg, #ecfaf5 0%, #e3f5ef 100%);
+    background: linear-gradient(135deg, var(--brt-c-ecfaf5) 0%, var(--brt-c-e3f5ef) 100%);
 }
 
 .loan-balance-title {
@@ -1287,12 +1287,12 @@ export default {
 .loan-balance-value {
     margin-top: 8px;
     font-size: 1.6rem;
-    color: #1c755d;
+    color: var(--brt-c-1c755d);
     font-weight: 800;
 }
 
 .loan-progress {
-    border: 1px solid #e0ece8;
+    border: 1px solid var(--brt-c-e0ece8);
     border-radius: 14px;
     padding: 12px;
 }
@@ -1309,13 +1309,13 @@ export default {
     margin-top: 9px;
     height: 10px;
     border-radius: 10px;
-    background: #e3eeeb;
+    background: var(--brt-c-e3eeeb);
     overflow: hidden;
 }
 
 .loan-progress-fill {
     height: 100%;
-    background: linear-gradient(120deg, #30a789 0%, #1a7c64 100%);
+    background: linear-gradient(120deg, var(--brt-c-30a789) 0%, #1a7c64 100%);
 }
 
 .loan-progress-meta {
@@ -1335,7 +1335,7 @@ export default {
 }
 
 .loan-detail-card {
-    border: 1px solid #e1ece8;
+    border: 1px solid var(--brt-c-e1ece8);
     border-radius: 13px;
     padding: 10px;
     background: #fbfffd;
@@ -1365,7 +1365,7 @@ export default {
 
 .loan-footer {
     margin-top: 12px;
-    border-top: 1px dashed #d5e4df;
+    border-top: 1px dashed var(--brt-c-d5e4df);
     padding-top: 10px;
     display: flex;
     flex-wrap: wrap;
@@ -1392,7 +1392,7 @@ export default {
 
 .loan-history-section {
     margin-top: 14px;
-    border-top: 1px dashed #d5e4df;
+    border-top: 1px dashed var(--brt-c-d5e4df);
     padding-top: 12px;
 }
 
@@ -1422,8 +1422,8 @@ export default {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--ink-700);
-    background: #edf7f4;
-    border: 1px solid #d6e8e2;
+    background: var(--brt-c-edf7f4);
+    border: 1px solid var(--brt-c-d6e8e2);
     border-radius: 999px;
     padding: 4px 9px;
 }
@@ -1436,7 +1436,7 @@ export default {
 }
 
 .loan-history-summary-card {
-    border: 1px solid #deebe7;
+    border: 1px solid var(--brt-c-deebe7);
     border-radius: 14px;
     background: #fbfffd;
     padding: 10px;
@@ -1470,7 +1470,7 @@ export default {
 }
 
 .loan-status-success {
-    background: #dcf6eb;
+    background: var(--brt-c-dcf6eb);
     color: #157856;
 }
 
@@ -1513,7 +1513,7 @@ export default {
 
 .loan-history-summary-footer {
     margin-top: 9px;
-    border-top: 1px dashed #d9e8e3;
+    border-top: 1px dashed var(--brt-c-d9e8e3);
     padding-top: 8px;
     display: flex;
     justify-content: space-between;
@@ -1526,7 +1526,7 @@ export default {
 
 .loan-history-table-wrap {
     margin-top: 10px;
-    border: 1px solid #deebe7;
+    border: 1px solid var(--brt-c-deebe7);
     border-radius: 12px;
     overflow: auto;
 }
@@ -1541,7 +1541,7 @@ export default {
 .loan-history-table td {
     padding: 9px 10px;
     font-size: 0.78rem;
-    border-bottom: 1px solid #e6f0ed;
+    border-bottom: 1px solid var(--brt-c-e6f0ed);
 }
 
 .loan-history-table th {
@@ -1572,7 +1572,7 @@ export default {
 
 .loan-history-empty {
     margin-top: 10px;
-    border: 1px dashed #d2e4df;
+    border: 1px dashed var(--brt-c-d2e4df);
     border-radius: 12px;
     padding: 14px;
     color: var(--ink-500);

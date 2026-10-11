@@ -595,10 +595,10 @@ export default {
 
         getPaymentModeIcon(mode) {
             const icons = {
-                'Cash Sales': 'ri-money-dollar-circle-line',
+                'Cash Sales': 'ri-money-peso-circle-line',
                 'Credit Sales': 'ri-bank-card-line',
             };
-            return icons[mode] || 'ri-money-dollar-circle-line';
+            return icons[mode] || 'ri-money-peso-circle-line';
         },
 
 

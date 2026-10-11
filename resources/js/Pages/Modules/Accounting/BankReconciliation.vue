@@ -396,23 +396,23 @@ export default {
 /* ── Back button ─────────────────────────────────────────────── */
 .back-btn {
     display: inline-flex; align-items: center; gap: 0.35rem;
-    padding: 0.35rem 0.85rem; border-radius: 8px; border: 1px solid #c4d9d2;
-    background: #fff; color: #335c52; font-size: 0.82rem; font-weight: 600;
+    padding: 0.35rem 0.85rem; border-radius: 8px; border: 1px solid var(--brt-border);
+    background: #fff; color: var(--brt-c-335c52); font-size: 0.82rem; font-weight: 600;
     cursor: pointer; transition: background 0.15s;
 }
-.back-btn:hover { background: #edf5f2; }
+.back-btn:hover { background: var(--brt-c-edf5f2); }
 
 /* ── Summary bar ─────────────────────────────────────────────── */
 .recon-summary-bar {
     display: flex; align-items: center; flex-wrap: wrap; gap: 0;
-    background: #f4faf8; border: 1px solid #c4d9d2; border-radius: 12px;
+    background: #f4faf8; border: 1px solid var(--brt-border); border-radius: 12px;
     padding: 0.85rem 1.25rem; transition: border-color 0.3s, background 0.3s;
 }
-.recon-summary-bar.reconciled { background: #edfaf4; border-color: #6dd4ab; }
+.recon-summary-bar.reconciled { background: var(--brt-c-edfaf4); border-color: var(--brt-c-6dd4ab); }
 .recon-summary-item { display: flex; flex-direction: column; align-items: flex-start; padding: 0 1.1rem; }
-.recon-summary-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #7a9e95; }
-.recon-summary-value { font-size: 0.95rem; font-weight: 700; color: #1a3830; margin-top: 2px; }
-.recon-summary-sep  { width: 1px; height: 36px; background: #c4d9d2; margin: 0; }
+.recon-summary-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--brt-c-7a9e95); }
+.recon-summary-value { font-size: 0.95rem; font-weight: 700; color: var(--brt-c-1a3830); margin-top: 2px; }
+.recon-summary-sep  { width: 1px; height: 36px; background: var(--brt-border); margin: 0; }
 
 /* ── Status chips ────────────────────────────────────────────── */
 .recon-status-chip {
@@ -436,7 +436,7 @@ export default {
 
 /* ── Table ───────────────────────────────────────────────────── */
 .recon-table thead th {
-    background: #edf5f2; color: #527267; font-size: 0.75rem;
+    background: var(--brt-c-edf5f2); color: var(--brt-c-527267); font-size: 0.75rem;
     font-weight: 700; text-transform: uppercase; white-space: nowrap;
 }
 .recon-table tbody td { font-size: 0.82rem; vertical-align: middle; }
@@ -445,16 +445,16 @@ export default {
 .entry-type-chip {
     display: inline-flex; align-items: center; padding: 2px 7px;
     border-radius: 6px; font-size: 0.68rem; font-weight: 700;
-    background: #e2ece9; color: #335c52;
+    background: var(--brt-c-e2ece9); color: var(--brt-c-335c52);
 }
 
 /* ── Filter chips ────────────────────────────────────────────── */
 .filter-chip {
     padding: 0.3rem 0.85rem; border-radius: 999px;
-    border: 1px solid #c4d9d2; background: #fff; color: #527267;
+    border: 1px solid var(--brt-border); background: #fff; color: #527267;
     font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
 }
-.filter-chip.active, .filter-chip:hover { background: #3d8d7a; color: #fff; border-color: #3d8d7a; }
+.filter-chip.active, .filter-chip:hover { background: var(--brt-primary); color: #fff; border-color: var(--brt-primary); }
 
 /* ── Actions ─────────────────────────────────────────────────── */
 .action-btn {
@@ -462,17 +462,17 @@ export default {
     width: 30px; height: 30px; border-radius: 8px; border: 1px solid;
     cursor: pointer; font-size: 0.9rem; background: transparent; transition: all 0.15s;
 }
-.action-btn.open         { border-color: #c4d9d2; color: #335c52; }
-.action-btn.open:hover   { background: #edf5f2; }
+.action-btn.open         { border-color: var(--brt-border); color: #335c52; }
+.action-btn.open:hover   { background: var(--brt-c-edf5f2); }
 .action-btn.delete       { border-color: #fca5a5; color: #991b1b; }
 .action-btn.delete:hover { background: #fee2e2; }
 
 /* ── Empty state ─────────────────────────────────────────────── */
 .cm-empty-state { padding: 2.5rem; text-align: center; color: #648b74; }
-.cm-empty-state i { font-size: 2.5rem; color: #3d8d7a; display: block; margin-bottom: 0.75rem; }
+.cm-empty-state i { font-size: 2.5rem; color: var(--brt-primary); display: block; margin-bottom: 0.75rem; }
 
 /* ── Modal misc ──────────────────────────────────────────────── */
-.modal-subtitle { font-size: 0.82rem; color: #6b8c85; margin: 0; }
+.modal-subtitle { font-size: 0.82rem; color: var(--brt-muted); margin: 0; }
 .error-msg      { font-size: 0.78rem; color: #dc2626; margin-top: 3px; }
 
 .spin { display: inline-block; animation: spin 0.8s linear infinite; }

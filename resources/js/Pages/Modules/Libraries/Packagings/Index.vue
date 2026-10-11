@@ -31,6 +31,7 @@
                                 class="search-input"
                             >
                         </div>
+                        <SortSelect v-model="sortOption" :fields="[{ field: 'name', label: 'Name' }]" @change="fetch()" />
                     </div>
 
                     <div class="table-section">
@@ -85,6 +86,7 @@
 
 <script>
 import _ from 'lodash';
+import { listSortMixin } from '@/Shared/listSort.js';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import Create from './Modals/Create.vue';
@@ -93,6 +95,7 @@ import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
     components: { PageHeader, Pagination, Create, TableLoadingRow },
+    mixins: [listSortMixin],
     data() {
         return {
             currentUrl: window.location.origin,
@@ -124,7 +127,7 @@ export default {
                 params: {
                     keyword: this.filter.keyword,
                     count: 10,
-                    option: 'lists',
+                    ...this.sortParams, option: 'lists',
                 },
             })
             .then(response => {

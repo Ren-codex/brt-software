@@ -44,7 +44,7 @@ class PermissionService
     /** Add the read access that working levels imply, for the shared map. */
     private function withImpliedLevels(array $granted): array
     {
-        if (array_intersect($granted, self::WORKING_LEVELS) && !in_array('view', $granted, true)) {
+        if (array_intersect($granted, self::WORKING_LEVELS) && ! in_array('view', $granted, true)) {
             $granted[] = 'view';
         }
 
@@ -66,7 +66,7 @@ class PermissionService
      */
     public function salesScopeEmployeeId(?User $user): ?int
     {
-        if (!$user) {
+        if (! $user) {
             return -1;
         }
 
@@ -89,16 +89,16 @@ class PermissionService
         }
 
         $module = Module::where('key', $moduleKey)->first();
-        if (!$module) {
+        if (! $module) {
             return false;
         }
 
         $anySubmodule = $submoduleKey === self::ANY_SUBMODULE;
 
         $submoduleId = null;
-        if ($submoduleKey !== null && !$anySubmodule) {
+        if ($submoduleKey !== null && ! $anySubmodule) {
             $submodule = $module->submodules()->where('key', $submoduleKey)->first();
-            if (!$submodule) {
+            if (! $submodule) {
                 return false;
             }
             $submoduleId = $submodule->id;
@@ -110,7 +110,7 @@ class PermissionService
 
         // ANY_SUBMODULE deliberately leaves the submodule column unconstrained,
         // so a grant on any tab of the module satisfies the check.
-        if (!$anySubmodule) {
+        if (! $anySubmodule) {
             $query->where(function ($inner) use ($submoduleId) {
                 $inner->whereNull('submodule_id');
                 if ($submoduleId !== null) {
@@ -127,6 +127,62 @@ class PermissionService
      * ['sales' => ['sales_orders' => ['view','encoder'], '_module' => ['admin']]]
      * '_module' holds module-wide (submodule_id null) grants.
      */
+    /**
+     * The users who could satisfy `userHasAccess(..., $level)` for this target —
+     * the inverse of that check, used to decide who to notify when something
+     * starts waiting for approval.
+     *
+     * Super Admins are always included: userHasAccess() short-circuits for them,
+     * so they hold the access without needing a role_permissions row to prove it.
+     * Only active role assignments count, matching activeRoleIds().
+     */
+    public function usersWithAccess(string $moduleKey, ?string $submoduleKey, string $level): Collection
+    {
+        $superAdmins = User::whereHas(
+            'roles',
+            fn ($q) => $q->where('user_roles.is_active', 1)->where('name', 'Super Admin')
+        )->get();
+
+        $module = Module::where('key', $moduleKey)->first();
+        if (! $module) {
+            return $superAdmins;
+        }
+
+        $submoduleId = null;
+        if ($submoduleKey !== null && $submoduleKey !== self::ANY_SUBMODULE) {
+            $submodule = $module->submodules()->where('key', $submoduleKey)->first();
+            if (! $submodule) {
+                return $superAdmins;
+            }
+            $submoduleId = $submodule->id;
+        }
+
+        $roleIds = RolePermission::where('module_id', $module->id)
+            ->whereIn('access_level', $this->levelsSatisfying($level))
+            ->when($submoduleKey !== self::ANY_SUBMODULE, function ($query) use ($submoduleId) {
+                // A module-wide grant (null submodule) covers every submodule.
+                $query->where(function ($inner) use ($submoduleId) {
+                    $inner->whereNull('submodule_id');
+                    if ($submoduleId !== null) {
+                        $inner->orWhere('submodule_id', $submoduleId);
+                    }
+                });
+            })
+            ->pluck('role_id')
+            ->unique();
+
+        if ($roleIds->isEmpty()) {
+            return $superAdmins;
+        }
+
+        $granted = User::whereHas(
+            'roles',
+            fn ($q) => $q->where('user_roles.is_active', 1)->whereIn('list_roles.id', $roleIds)
+        )->get();
+
+        return $granted->concat($superAdmins)->unique('id')->values();
+    }
+
     public function userPermissionMap(User $user): array
     {
         if ($this->isSuperAdmin($user)) {
@@ -144,7 +200,7 @@ class PermissionService
 
         $map = [];
         foreach ($grants as $grant) {
-            if (!$grant->module) {
+            if (! $grant->module) {
                 continue;
             }
             $moduleKey = $grant->module->key;

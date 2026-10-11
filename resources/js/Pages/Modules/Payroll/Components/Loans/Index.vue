@@ -27,6 +27,7 @@
             class="search-input"
           >
         </div>
+          <SortSelect v-model="sortOption" :fields="[{ field: 'loan_no', label: 'Loan no.' }, { field: 'amount', label: 'Amount', type: 'number' }, { field: 'remaining_balance', label: 'Balance', type: 'number' }]" @change="fetch()" />
       </div>
 
       <div class="table-responsive table-card" style="overflow: auto;">
@@ -124,6 +125,7 @@
 
 <script>
 import _ from 'lodash';
+import { listSortMixin } from '@/Shared/listSort.js';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
@@ -131,6 +133,7 @@ import Create from './Create.vue';
 
 export default {
   components: { Pagination, Create, DeleteModal, TableLoadingRow },
+  mixins: [listSortMixin],
   props: ['dropdowns'],
   emits: ['view'],
   data() {
@@ -162,7 +165,7 @@ export default {
         params: {
           keyword: this.filter.keyword,
           count: 10,
-          option: 'lists'
+          ...this.sortParams, option: 'lists'
         }
       })
       .then(response => {

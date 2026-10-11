@@ -31,7 +31,7 @@
                     <div class="form-group">
                         <label class="form-label">Value (x)</label>
                         <div class="input-wrapper">
-                            <i class="ri-money-dollar-circle-line input-icon"></i>
+                            <i class="ri-money-peso-circle-line input-icon"></i>
                             <input type="number" v-model="form.value" class="form-control" step="0.01" required>
                         </div>
                     </div>
@@ -167,8 +167,8 @@ export default {
 
 .form-control:focus {
     outline: none;
-    border-color: #2e8b57;
-    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+    border-color: var(--brt-focus);
+    box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
 }
 
 .form-control[readonly] {
@@ -209,14 +209,14 @@ export default {
 }
 
 .btn-save {
-    background: #3a8674;
+    background: var(--brt-c-3a8674);
     color: white;
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--brt-focus-rgb), 0.3);
 }
 
 .btn-save:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(46, 139, 87, 0.4);
+    box-shadow: 0 6px 20px rgba(var(--brt-focus-rgb), 0.4);
 }
 
 .btn-save:disabled {

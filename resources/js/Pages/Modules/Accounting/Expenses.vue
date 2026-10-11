@@ -466,7 +466,7 @@ export default {
     gap: 6px;
 }
 .ge-chip:hover { background: #e2e8f0; }
-.ge-chip.active { background: #e8f5f1; color: #16322e; border-color: #c4d9d2; }
+.ge-chip.active { background: #e8f5f1; color: var(--brt-ink); border-color: var(--brt-border); }
 .ge-chip-count { background: rgba(0,0,0,0.1); border-radius: 10px; padding: 0 7px; font-size: 0.75rem; }
 
 .ge-table th {
@@ -493,7 +493,7 @@ export default {
 .ge-status-chip.approved { background: #dcfce7; color: #15803d; }
 .ge-status-chip.voided   { background: #fee2e2; color: #b91c1c; }
 
-.ge-receipt-link { color: #3d8d7a; font-size: 1rem; }
+.ge-receipt-link { color: var(--brt-primary); font-size: 1rem; }
 
 .ge-action-btn {
     width: 28px; height: 28px;
@@ -507,7 +507,7 @@ export default {
     justify-content: center;
     transition: all 0.15s;
 }
-.ge-action-btn.edit:hover    { background: #e8f5f1; border-color: #3d8d7a; color: #3d8d7a; }
+.ge-action-btn.edit:hover    { background: #e8f5f1; border-color: var(--brt-primary); color: var(--brt-primary); }
 .ge-action-btn.approve:hover { background: #dcfce7; border-color: #15803d; color: #15803d; }
 .ge-action-btn.void:hover    { background: #fee2e2; border-color: #b91c1c; color: #b91c1c; }
 .ge-action-btn.delete:hover  { background: #fee2e2; border-color: #ef4444; color: #ef4444; }
@@ -517,7 +517,7 @@ export default {
     align-items: center;
     gap: 6px;
     padding: 7px 16px;
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -526,6 +526,6 @@ export default {
     cursor: pointer;
     transition: background 0.15s;
 }
-.acct-btn-primary:hover { background: #2d6d5e; }
+.acct-btn-primary:hover { background: var(--brt-c-2d6d5e); }
 .acct-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

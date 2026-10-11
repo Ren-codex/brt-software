@@ -18,10 +18,10 @@
         <!-- Inner tab bar -->
         <div class="cm-tab-bar mb-3">
             <button class="cm-tab-btn" :class="{ active: activeTab === 'cash_position' }" @click="activeTab = 'cash_position'">
-                <i class="ri-money-dollar-circle-line me-1"></i>Cash Position
+                <i class="ri-money-peso-circle-line me-1"></i>Cash Position
             </button>
             <button class="cm-tab-btn" :class="{ active: activeTab === 'fund_transfers' }" @click="activeTab = 'fund_transfers'">
-                <i class="ri-exchange-dollar-line me-1"></i>Fund Transfers
+                <i class="ri-exchange-funds-line me-1"></i>Fund Transfers
             </button>
             <button class="cm-tab-btn" :class="{ active: activeTab === 'bank_deposits' }" @click="activeTab = 'bank_deposits'">
                 <i class="ri-bank-card-2-line me-1"></i>Bank Deposits
@@ -164,7 +164,7 @@
             <div class="library-card">
                 <div class="library-card-header">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="header-icon"><i class="ri-exchange-dollar-line"></i></div>
+                            <div class="header-icon"><i class="ri-exchange-funds-line"></i></div>
                             <div>
                                 <h4 class="header-title mb-0">Fund Transfers</h4>
                                 <p class="header-subtitle mb-0">Move funds between bank accounts with automatic journal entries.</p>
@@ -176,7 +176,7 @@
                 </div>
                 <div class="library-card-body p-0">
                     <div v-if="transfers.length === 0" class="cm-empty-state">
-                        <i class="ri-exchange-dollar-line"></i>
+                        <i class="ri-exchange-funds-line"></i>
                         <p class="mb-1">No fund transfers recorded</p>
                         <small>Record your first bank-to-bank transfer.</small>
                     </div>
@@ -219,7 +219,7 @@
             <div v-if="ftModal.open" class="modal-overlay active" @click.self="ftModal.open = false">
                 <div class="modal-container" style="max-width:540px">
                     <div class="modal-header">
-                        <div class="modal-header-icon"><i class="ri-exchange-dollar-line"></i></div>
+                        <div class="modal-header-icon"><i class="ri-exchange-funds-line"></i></div>
                         <div>
                             <h5 class="modal-title">New Fund Transfer</h5>
                             <p class="modal-subtitle">Record a bank-to-bank transfer. A journal entry will be posted automatically.</p>
@@ -321,7 +321,7 @@
                                         <span v-if="d.deposit_type === 'check'" class="bd-type-chip check" :title="'Check ' + (d.check_number || '')">
                                             <i class="ri-bill-line"></i> Check
                                         </span>
-                                        <span v-else class="bd-type-chip cash"><i class="ri-money-dollar-circle-line"></i> Cash</span>
+                                        <span v-else class="bd-type-chip cash"><i class="ri-money-peso-circle-line"></i> Cash</span>
                                         <div v-if="d.deposit_type === 'check'" class="bd-check-meta">
                                             {{ d.check_number || '—' }} · {{ d.check_date || '—' }}
                                         </div>
@@ -961,7 +961,7 @@ export default {
 <style scoped>
 /* ── Cash Position ───────────────────────────────────────────── */
 .cash-total-card {
-    background: linear-gradient(135deg, #1a4d3d 0%, #2d7a5f 100%);
+    background: linear-gradient(135deg, var(--brt-c-1a4d3d) 0%, var(--brt-c-2d7a5f) 100%);
     border-radius: 14px;
     padding: 1.5rem 2rem;
     color: #fff;
@@ -969,17 +969,17 @@ export default {
 .cash-total-label  { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; opacity: 0.8; }
 .cash-total-value  { font-size: 2.2rem; font-weight: 800; color: #fff; }
 .cash-sub-label    { font-size: 0.72rem; font-weight: 600; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em; }
-.cash-sub-value    { font-size: 1.1rem; font-weight: 700; color: #a8e6cf; }
+.cash-sub-value    { font-size: 1.1rem; font-weight: 700; color: var(--brt-c-a8e6cf); }
 .gl-status-chip    { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
 .gl-status-chip.mapped   { background: #dcfce7; color: #166534; }
 .gl-status-chip.unmapped { background: #fef3c7; color: #92400e; }
-.total-row td { background: #f4faf8; font-size: 0.85rem; }
+.total-row td { background: var(--brt-c-f4faf8); font-size: 0.85rem; }
 
 /* ── Tab bar ─────────────────────────────────────────────────── */
 .cm-tab-bar {
     display: flex;
     gap: 0.5rem;
-    border-bottom: 2px solid #e2ece9;
+    border-bottom: 2px solid var(--brt-c-e2ece9);
     padding-bottom: 0;
 }
 .cm-tab-btn {
@@ -987,7 +987,7 @@ export default {
     border: none;
     border-bottom: 2px solid transparent;
     background: transparent;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
@@ -995,13 +995,13 @@ export default {
     border-radius: 6px 6px 0 0;
     transition: color 0.15s, border-color 0.15s;
 }
-.cm-tab-btn:hover  { color: #3d8d7a; }
-.cm-tab-btn.active { color: #3d8d7a; border-bottom-color: #3d8d7a; background: #f4faf8; }
+.cm-tab-btn:hover  { color: var(--brt-primary); }
+.cm-tab-btn.active { color: var(--brt-primary); border-bottom-color: var(--brt-primary); background: #f4faf8; }
 
 /* ── Table ───────────────────────────────────────────────────── */
 .cm-table thead th {
-    background: #edf5f2;
-    color: #527267;
+    background: var(--brt-c-edf5f2);
+    color: var(--brt-c-527267);
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -1019,7 +1019,7 @@ export default {
     white-space: nowrap;
 }
 .bank-chip.from { background: #fff0e9; color: #9a3b1b; border: 1px solid #f9c5a8; }
-.bank-chip.to   { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+.bank-chip.to   { background: var(--brt-c-e9f5f0); color: var(--brt-c-1b6b4a); border: 1px solid var(--brt-c-a8dcc8); }
 
 /* ── Deposit type / status chips ─────────────────────────────── */
 .bd-type-chip {
@@ -1032,13 +1032,13 @@ export default {
     font-weight: 600;
     white-space: nowrap;
 }
-.bd-type-chip.cash  { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+.bd-type-chip.cash  { background: var(--brt-c-e9f5f0); color: var(--brt-c-1b6b4a); border: 1px solid var(--brt-c-a8dcc8); }
 .bd-type-chip.check { background: #eef2fb; color: #29457e; border: 1px solid #b9caea; }
 
 .bd-check-meta {
     margin-top: 2px;
     font-size: 0.72rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
     white-space: nowrap;
 }
 
@@ -1050,7 +1050,7 @@ export default {
     font-weight: 600;
     white-space: nowrap;
 }
-.bd-status-chip.posted  { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+.bd-status-chip.posted  { background: var(--brt-c-e9f5f0); color: var(--brt-c-1b6b4a); border: 1px solid var(--brt-c-a8dcc8); }
 .bd-status-chip.pending { background: #fdf3e3; color: #8a5a10; border: 1px solid #f0d49a; }
 
 .bd-check-note {
@@ -1059,13 +1059,13 @@ export default {
     gap: 6px;
     padding: 8px 10px;
     border-radius: 8px;
-    background: #f4f8f7;
-    border: 1px solid #d8e6e1;
-    color: #33564f;
+    background: var(--brt-c-f4f8f7);
+    border: 1px solid var(--brt-c-d8e6e1);
+    color: var(--brt-c-33564f);
     font-size: 0.8rem;
     line-height: 1.4;
 }
-.bd-check-note i { color: #3d8d7a; margin-top: 1px; }
+.bd-check-note i { color: var(--brt-primary); margin-top: 1px; }
 
 /* ── Transaction type chip ───────────────────────────────────── */
 .txn-type-chip {
@@ -1081,24 +1081,24 @@ export default {
 
 /* ── Fund balance card ───────────────────────────────────────── */
 .fund-balance-card {
-    background: linear-gradient(135deg, #f0faf6 0%, #e4f5ee 100%);
-    border: 1px solid #c4dfd5;
+    background: linear-gradient(135deg, var(--brt-c-f0faf6) 0%, var(--brt-c-e4f5ee) 100%);
+    border: 1px solid var(--brt-c-c4dfd5);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
 }
 .fund-balance-icon {
     width: 48px; height: 48px;
     border-radius: 12px;
-    background: rgba(61,141,122,0.12);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb),0.12);
+    color: var(--brt-primary);
     display: flex; align-items: center; justify-content: center;
     font-size: 1.4rem;
     flex-shrink: 0;
 }
-.fund-name  { font-size: 1rem; font-weight: 700; color: #1a3830; }
-.fund-gl    { font-size: 0.78rem; color: #6b8c85; font-family: monospace; }
-.fund-balance-label { font-size: 0.75rem; color: #6b8c85; text-transform: uppercase; letter-spacing: 0.05em; }
-.fund-balance-value { font-size: 1.6rem; font-weight: 800; color: #1a4d3d; }
+.fund-name  { font-size: 1rem; font-weight: 700; color: var(--brt-c-1a3830); }
+.fund-gl    { font-size: 0.78rem; color: var(--brt-muted); font-family: monospace; }
+.fund-balance-label { font-size: 0.75rem; color: var(--brt-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.fund-balance-value { font-size: 1.6rem; font-weight: 800; color: var(--brt-c-1a4d3d); }
 
 /* ── Actions ─────────────────────────────────────────────────── */
 .action-btn {
@@ -1108,8 +1108,8 @@ export default {
 }
 .action-btn.delete       { border-color: #fca5a5; color: #991b1b; }
 .action-btn.delete:hover { background: #fee2e2; }
-.action-btn.view         { border-color: #a8d5c5; color: #1a6b4a; text-decoration: none; }
-.action-btn.view:hover   { background: #e9f5f0; }
+.action-btn.view         { border-color: var(--brt-c-a8d5c5); color: var(--brt-c-1a6b4a); text-decoration: none; }
+.action-btn.view:hover   { background: var(--brt-c-e9f5f0); }
 
 /* ── acct-btn-danger ─────────────────────────────────────────── */
 .acct-btn-danger {
@@ -1128,12 +1128,12 @@ export default {
     color: #648b74;
 }
 .cm-empty-state i {
-    font-size: 2.5rem; color: #3d8d7a;
+    font-size: 2.5rem; color: var(--brt-primary);
     display: block; margin-bottom: 0.75rem;
 }
 
 /* ── Modal misc ──────────────────────────────────────────────── */
-.modal-subtitle { font-size: 0.82rem; color: #6b8c85; margin: 0; }
+.modal-subtitle { font-size: 0.82rem; color: var(--brt-muted); margin: 0; }
 .error-msg      { font-size: 0.78rem; color: #dc2626; margin-top: 3px; }
 .cash-balance-hint { float: right; font-weight: 700; color: #16a34a; }
 .cash-balance-hint.over { color: #dc2626; }
@@ -1142,7 +1142,7 @@ export default {
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* ── Bank Deposits ───────────────────────────────────────────── */
-.deposit-no     { font-size: 0.78rem; font-weight: 700; color: #2f6b5c; font-family: monospace; }
+.deposit-no     { font-size: 0.78rem; font-weight: 700; color: var(--brt-c-2f6b5c); font-family: monospace; }
 .deposit-amount { color: #1e4d8c; }
 
 .remit-chip {
@@ -1154,7 +1154,7 @@ export default {
 
 .bd-remit-section {
     margin-top: 0.75rem; padding: 0.85rem 1rem;
-    background: #f7fbfa; border: 1px solid #e0eeea; border-radius: 10px;
+    background: #f7fbfa; border: 1px solid var(--brt-c-e0eeea); border-radius: 10px;
 }
 .bd-remit-list {
     max-height: 180px; overflow-y: auto;
@@ -1163,12 +1163,12 @@ export default {
 .bd-remit-row {
     display: flex; align-items: center; gap: 0.6rem;
     padding: 0.45rem 0.6rem; border-radius: 8px;
-    background: #fff; border: 1px solid #e5efec;
+    background: #fff; border: 1px solid var(--brt-c-e5efec);
     cursor: pointer; font-size: 0.82rem;
 }
-.bd-remit-row:hover { border-color: #a7d4c4; }
+.bd-remit-row:hover { border-color: var(--brt-c-a7d4c4); }
 .bd-remit-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.bd-remit-no  { font-weight: 700; color: #16322e; font-family: monospace; font-size: 0.78rem; }
-.bd-remit-rep { color: #6b8c85; font-size: 0.74rem; }
+.bd-remit-no  { font-weight: 700; color: var(--brt-ink); font-family: monospace; font-size: 0.78rem; }
+.bd-remit-rep { color: var(--brt-muted); font-size: 0.74rem; }
 .bd-remit-amount { font-weight: 700; color: #1e4d8c; white-space: nowrap; }
 </style>

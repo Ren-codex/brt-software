@@ -63,6 +63,7 @@ class SalesOrderController extends Controller
                         'batch_codes' => $this->dropdown->batch_codes(),
                         'sales_reps' => $this->dropdown->sales_reps(),
                         'drivers' => $this->dropdown->drivers(),
+                        'checkers' => $this->dropdown->checkers(),
                         'locations' => $this->dropdown->locations(),
                         'sales_statuses' => $this->dropdown->sales_statuses(),
                     ],
@@ -97,6 +98,43 @@ class SalesOrderController extends Controller
         ]);
     }
 
+
+    /**
+     * Approve or send back a delivery that was encoded and is waiting.
+     * Approving is what records the delivery and any money entered with it.
+     */
+    public function deliveryDecision(Request $request, $id)
+    {
+        $this->authorizePermission('sales', 'sales_orders', 'approver');
+
+        $request->validate([
+            'decision' => 'required|in:approved,disapproved',
+            'remarks' => 'nullable|string|max:300',
+        ]);
+
+        $result = $this->handleTransaction(fn () => $request->decision === 'approved'
+            ? $this->sales_order->approveDelivery($id)
+            : $this->sales_order->rejectDelivery($id, $request->remarks));
+
+        return response()->json($result, ($result['status'] ?? true) ? 200 : 422);
+    }
+
+    /** Approve a sale on credit, or refuse it — which cancels the order. */
+    public function creditDecision(Request $request, $id)
+    {
+        $this->authorizePermission('sales', 'sales_orders', 'approver');
+
+        $request->validate([
+            'decision' => 'required|in:approved,disapproved',
+            'remarks' => 'nullable|string|max:300',
+        ]);
+
+        $result = $this->handleTransaction(fn () => $request->decision === 'approved'
+            ? $this->sales_order->approveCredit($id)
+            : $this->sales_order->rejectCredit($id, $request->remarks));
+
+        return response()->json($result, ($result['status'] ?? true) ? 200 : 422);
+    }
 
     public function update(SalesOrderRequest $request, $id){
 
@@ -167,6 +205,26 @@ class SalesOrderController extends Controller
             'info'    => $result['info'],
             'status'  => $result['status'],
         ]);
+    }
+
+    /**
+     * The status timeline for one order.
+     *
+     * Held to the same visibility as the list: a rep sees their own orders, a
+     * sales administrator sees all of them. Without this check anyone with
+     * view access could read another rep's order by guessing its id.
+     */
+    public function timeline($id)
+    {
+        $this->authorizePermission('sales', 'sales_orders', 'view');
+
+        $order = \App\Models\SalesOrder::findOrFail($id);
+
+        $scope = app(\App\Services\System\Permission\PermissionService::class)->salesScopeEmployeeId(auth()->user());
+        $mine = (int) $order->sales_rep_id === (int) $scope || (int) $order->added_by_id === (int) auth()->id();
+        abort_if($scope !== null && ! $mine, 403, 'This order belongs to another sales rep.');
+
+        return response()->json(app(\App\Services\Modules\SalesOrderTimeline::class)->build($order));
     }
 
     public function show($id , Request $request){

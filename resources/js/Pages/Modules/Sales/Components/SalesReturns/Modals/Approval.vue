@@ -189,7 +189,7 @@ import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 import { useForm } from '@inertiajs/vue3';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     components: { SupervisorGate, TextInput },
     props: ['products'],
@@ -302,7 +302,7 @@ export default {
                     this.form.reset();
                     this.hide();
                     if (receiptId) {
-                        printDocument(`/receipts/${receiptId}?option=print&type=receipt`);
+                        openOrPrint(`/receipts/${receiptId}?option=print&type=receipt`);
                     }
                 },
             });
@@ -384,7 +384,7 @@ export default {
 
 .summary-card {
     background: #f8fbfa;
-    border: 1px solid #e3ece8;
+    border: 1px solid var(--brt-c-e3ece8);
     border-radius: 12px;
     padding: 12px;
 }
@@ -392,14 +392,14 @@ export default {
 .summary-label {
     margin: 0;
     font-size: 12px;
-    color: #6a7c74;
+    color: var(--brt-c-6a7c74);
 }
 
 .summary-value {
     margin: 4px 0 0;
     font-size: 20px;
     font-weight: 700;
-    color: #2a3b34;
+    color: var(--brt-c-2a3b34);
 }
 
 .notice-box {
@@ -416,7 +416,7 @@ export default {
 }
 
 .table-wrap {
-    border: 1px solid #e2e8e5;
+    border: 1px solid var(--brt-c-e2e8e5);
     border-radius: 12px;
     overflow: hidden;
 }
@@ -424,18 +424,18 @@ export default {
 .table-toolbar {
     padding: 10px 12px;
     background: #f8fbfa;
-    border-bottom: 1px solid #e2e8e5;
+    border-bottom: 1px solid var(--brt-c-e2e8e5);
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
 .pretty-table thead th {
-    background: #f5f8f7;
-    color: #4d6058;
+    background: var(--brt-c-f5f8f7);
+    color: var(--brt-c-4d6058);
     font-weight: 700;
     font-size: 12px;
-    border-bottom: 1px solid #dfe8e4;
+    border-bottom: 1px solid var(--brt-c-dfe8e4);
 }
 
 .pretty-table td,
@@ -453,7 +453,7 @@ export default {
 
 .confirm-box code {
     background: #f2f5f3;
-    color: #2f4a3f;
+    color: var(--brt-c-2f4a3f);
     border-radius: 6px;
     padding: 2px 6px;
 }
@@ -471,7 +471,7 @@ export default {
 }
 .cash-return-summary {
     background: #f8fbfa;
-    border: 1px solid #e2e8e5;
+    border: 1px solid var(--brt-c-e2e8e5);
     border-radius: 10px;
     padding: 12px 16px;
 }
@@ -481,7 +481,7 @@ export default {
     align-items: center;
     padding: 5px 0;
     font-size: 13px;
-    border-bottom: 1px dashed #e2e8e5;
+    border-bottom: 1px dashed var(--brt-c-e2e8e5);
 }
 .crs-row:last-child { border-bottom: none; }
 .crs-total {
@@ -492,7 +492,7 @@ export default {
 
 .pretty-footer {
     flex-shrink: 0;
-    border-top: 1px solid #e1e9e5;
+    border-top: 1px solid var(--brt-c-e1e9e5);
     background: #fbfdfc;
     padding: 14px 18px;
 }

@@ -138,7 +138,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(160deg, #0d3b2e 0%, #1a5c48 50%, #0f4a38 100%);
+    background: linear-gradient(160deg, #0d3b2e 0%, var(--brt-c-1a5c48) 50%, #0f4a38 100%);
     position: relative;
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -221,7 +221,7 @@ export default {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: linear-gradient(145deg, #3dbf98, #2d9478);
+    background: linear-gradient(145deg, var(--brt-c-3dbf98), var(--brt-c-2d9478));
     color: #fff;
     font-size: 1.1rem;
     font-weight: 700;
@@ -290,8 +290,8 @@ export default {
 }
 
 .glass-input:focus {
-    border-color: rgba(61, 191, 152, 0.6);
-    box-shadow: 0 0 0 3px rgba(61, 191, 152, 0.14);
+    border-color: rgba(var(--brt-c-3dbf98-rgb), 0.6);
+    box-shadow: 0 0 0 3px rgba(var(--brt-c-3dbf98-rgb), 0.14);
 }
 
 .input-wrap.input-error .glass-input {
@@ -327,7 +327,7 @@ export default {
     display: block;
     width: 100%;
     padding: 13px;
-    background: linear-gradient(135deg, #3dbf98 0%, #2a9478 100%);
+    background: linear-gradient(135deg, var(--brt-c-3dbf98) 0%, var(--brt-c-2a9478) 100%);
     color: #fff;
     border: none;
     border-radius: 12px;
@@ -381,7 +381,7 @@ export default {
 .glass-input:-webkit-autofill:hover,
 .glass-input:-webkit-autofill:focus,
 .glass-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px rgba(20, 75, 58, 0.95) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(var(--brt-c-144b3a-rgb), 0.95) inset !important;
     -webkit-text-fill-color: #fff !important;
     caret-color: #fff;
     transition: background-color 5000s ease-in-out 0s;

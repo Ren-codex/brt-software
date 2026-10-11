@@ -24,7 +24,15 @@ class CheckMonitoringController extends Controller
 
     public function index(Request $request)
     {
+        // The totals above the table. Still read-only, and scoped like the list.
+        if ($request->input('option') === 'summary') {
+            return response()->json($this->register->summary($this->ownEmployeeId()));
+        }
+
         $filters = [
+            // Only narrows what the caller may already see: a rep's list is
+            // held to cheques they received whatever is asked for here.
+            'direction' => $request->input('direction'),
             'status' => $request->input('status'),
             'keyword' => $request->input('keyword'),
             'count' => $request->input('count'),

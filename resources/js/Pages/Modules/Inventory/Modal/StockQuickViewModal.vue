@@ -151,30 +151,30 @@ export default {
 
 <style scoped>
 .sqv-container { max-width: 480px; }
-.sqv-subtitle  { font-size: 0.78rem; color: #6b8c85; font-family: 'Courier New', monospace; }
+.sqv-subtitle  { font-size: 0.78rem; color: var(--brt-muted); font-family: 'Courier New', monospace; }
 
 .sqv-loading {
   display: flex; align-items: center; justify-content: center;
-  gap: 8px; padding: 2rem 0; color: #6b8c85; font-size: 0.9rem;
+  gap: 8px; padding: 2rem 0; color: var(--brt-muted); font-size: 0.9rem;
 }
 .sqv-spin { animation: spin 0.9s linear infinite; font-size: 1.2rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .sqv-product-banner {
   display: flex; align-items: center; gap: 12px;
-  background: #f0f9f6; border: 1px solid #c4d9d2;
+  background: #f0f9f6; border: 1px solid var(--brt-border);
   border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;
 }
 .sqv-product-icon {
   width: 36px; height: 36px; border-radius: 8px;
-  background: rgba(61,141,122,0.12); color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb),0.12); color: var(--brt-primary);
   display: flex; align-items: center; justify-content: center;
   font-size: 1.1rem; flex-shrink: 0;
 }
-.sqv-product-name { font-size: 0.9rem; font-weight: 700; color: #16322e; }
-.sqv-batch-code   { font-size: 0.72rem; color: #6b8c85; font-family: 'Courier New', monospace; }
+.sqv-product-name { font-size: 0.9rem; font-weight: 700; color: var(--brt-ink); }
+.sqv-batch-code   { font-size: 0.72rem; color: var(--brt-muted); font-family: 'Courier New', monospace; }
 .sqv-qty-pill {
-  margin-left: auto; background: #3d8d7a; color: #fff;
+  margin-left: auto; background: var(--brt-primary); color: #fff;
   border-radius: 20px; padding: 0.25rem 0.75rem;
   font-size: 0.78rem; font-weight: 700; white-space: nowrap;
 }
@@ -192,8 +192,8 @@ export default {
   gap: 0.6rem 1rem;
 }
 .sqv-field { display: flex; flex-direction: column; gap: 2px; }
-.sqv-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b8c85; }
-.sqv-value { font-size: 0.85rem; font-weight: 600; color: #16322e; }
+.sqv-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--brt-muted); }
+.sqv-value { font-size: 0.85rem; font-weight: 600; color: var(--brt-ink); }
 
 .sqv-exp-badge {
   display: inline-block; font-size: 0.65rem; font-weight: 700;

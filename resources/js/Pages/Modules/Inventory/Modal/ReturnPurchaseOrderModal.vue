@@ -485,12 +485,12 @@ export default {
 }
 
 .checkbox-container:hover input ~ .checkmark {
-  border-color: #2e8b57;
+  border-color: var(--brt-focus);
 }
 
 .checkbox-container input:checked ~ .checkmark {
-  background-color: #2e8b57;
-  border-color: #2e8b57;
+  background-color: var(--brt-focus);
+  border-color: var(--brt-focus);
 }
 
 .checkmark:after {
@@ -577,8 +577,8 @@ export default {
 }
 
 .modern-input:focus {
-  border-color: #2e8b57;
-  box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.12);
+  border-color: var(--brt-focus);
+  box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.12);
   outline: none;
 }
 
@@ -609,8 +609,8 @@ export default {
 }
 
 .quantity-input:focus {
-  border-color: #2e8b57;
-  box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.12);
+  border-color: var(--brt-focus);
+  box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.12);
   outline: none;
 }
 
@@ -637,9 +637,9 @@ export default {
 }
 
 .qty-btn:hover:not(:disabled) {
-  background: #2e8b57;
+  background: var(--brt-focus);
   color: #ffffff;
-  border-color: #2e8b57;
+  border-color: var(--brt-focus);
 }
 
 .qty-btn:disabled {
@@ -656,7 +656,7 @@ export default {
 }
 
 .create-btn {
-  background: #2e8b57;
+  background: var(--brt-focus);
   border: none;
   border-radius: 8px;
   padding: 0.625rem 1.25rem;
@@ -664,7 +664,7 @@ export default {
   font-size: 0.9rem;
   color: #fff;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(46, 139, 87, 0.25);
+  box-shadow: 0 4px 12px rgba(var(--brt-focus-rgb), 0.25);
 }
 
 .create-btn:hover:not(:disabled) {

@@ -89,6 +89,11 @@ class CustomerController extends Controller
         );
     }
 
+    public function issueHistory($id)
+    {
+        return response()->json($this->customer->issueHistory($id));
+    }
+
     public function details($id)
     {
         return response()->json([

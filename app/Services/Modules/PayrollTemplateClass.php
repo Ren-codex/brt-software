@@ -18,7 +18,7 @@ class PayrollTemplateClass
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
 
-        return $query->paginate($request->count ?? 10);
+        return $query->sortFromRequest()->paginate($request->count ?? 10);
     }
 
     public function save($request)

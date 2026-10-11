@@ -4,11 +4,11 @@ namespace App\Notifications;
 
 use App\Models\PettyCashFund;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class LowBalanceFundNotification extends Notification implements ShouldBroadcast
+class LowBalanceFundNotification extends Notification implements ShouldBroadcastNow
 {
     use Queueable;
 
@@ -23,6 +23,7 @@ class LowBalanceFundNotification extends Notification implements ShouldBroadcast
     {
         return [
             'type'      => 'low_balance',
+            'url'       => '/accounting/petty-cash',
             'fund_id'   => $this->fund->id,
             'fund_name' => $this->fund->name,
             'balance'   => (float) $this->fund->balance,

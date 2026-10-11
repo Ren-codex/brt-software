@@ -335,6 +335,38 @@ class DropdownClass
         return $data;
     }
 
+    /**
+     * The checkers who ride with a driver and take the money at the door.
+     *
+     * Unlike drivers, a checker is picked by *user role*, not by position: it
+     * is a duty people take on alongside their real job, and an account can
+     * hold several roles at once where an employee has only one position. So a
+     * cashier or warehouse hand becomes selectable by being given the Checker
+     * role under Users, without changing what they are paid as.
+     *
+     * Only an active role assignment counts, matching how permissions read
+     * user_roles everywhere else.
+     */
+    public function checkers()
+    {
+        return Employee::with('position')
+            ->whereHas('user.roles', function ($role) {
+                $role->whereRaw('LOWER(list_roles.name) LIKE ?', ['%checker%'])
+                    ->where('user_roles.is_active', 1);
+            })
+            ->get()
+            ->sortBy(fn ($item) => $item->fullname)
+            ->values()
+            ->map(function ($item) {
+                $position = $item->position ? $item->position->title : null;
+
+                return [
+                    'value' => $item->id,
+                    'name' => $position ? $item->fullname.' — '.$position : $item->fullname,
+                ];
+            });
+    }
+
     public function locations()
     {
         $data = ListLocation::where('is_active', 1)->get()->map(function ($item) {

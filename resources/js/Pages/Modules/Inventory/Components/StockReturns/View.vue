@@ -603,7 +603,7 @@ export default {
 }
 
 .btn-save {
-  background: #2e8b57;
+  background: var(--brt-focus);
   color: #fff;
   border: none;
 }

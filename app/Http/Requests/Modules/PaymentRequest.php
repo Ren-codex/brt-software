@@ -31,6 +31,8 @@ class PaymentRequest extends FormRequest
             // A check carries its own date — the day it can be cashed, which is
             // what the register tracks and what the cash forecast reads.
             'splits.*.check_date' => 'nullable|date',
+            // The account a transfer landed in, or a check will be deposited to.
+            'splits.*.bank_account_id' => 'nullable|integer|exists:bank_accounts,id',
             'amount_paid' => [
                 'required_without:splits',
                 'nullable',

@@ -18,6 +18,7 @@ class PayrollSettingClass
                           ->orWhere('value', 'LIKE', "%{$keyword}%");
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count)
         );
         return $data;

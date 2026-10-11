@@ -233,7 +233,7 @@ import CreatePurchaseOrderModal from '../../Modal/CreatePurchaseOrderModal.vue';
 import CreateReceivedStockModal from '../../Modal/CreateReceivedStockModal.vue';
 import Delete from '@/Shared/Components/Modals/Delete.vue';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
   components: {
     CreatePurchaseOrderModal,
@@ -327,7 +327,7 @@ export default {
       }, 3000);
     },
     printPurchaseOrder() {
-      printDocument(`/purchase-orders/${this.data.id}/print?type=purchase_order`);
+      openOrPrint(`/purchase-orders/${this.data.id}/print?type=purchase_order`);
     },
   }
 };

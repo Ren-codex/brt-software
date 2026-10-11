@@ -93,7 +93,7 @@ import ReceiptDetails from './ReceiptDetails.vue';
 import ApprovalModal from '../Modals/ApprovalModal.vue';
 import Swal from 'sweetalert2';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     components: {
         ReceiptDetails,
@@ -213,7 +213,7 @@ export default {
             }
         },
         onPrint(id){
-            printDocument(`/remittances/${id}?option=print&type=remittance`);
+            openOrPrint(`/remittances/${id}?option=print&type=remittance`);
         },
         reload(){
             this.$emit('reload');

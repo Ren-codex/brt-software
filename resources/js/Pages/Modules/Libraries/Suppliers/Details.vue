@@ -424,12 +424,12 @@ export default {
 
 <style scoped>
 .employee-details-page {
-    --ink-900: #102723;
-    --ink-700: #35524d;
-    --ink-500: #5c7974;
-    --line-200: #d2e4df;
+    --ink-900: var(--brt-c-102723);
+    --ink-700: var(--brt-c-35524d);
+    --ink-500: var(--brt-c-5c7974);
+    --line-200: var(--brt-c-d2e4df);
     --mint-700: #1a7e67;
-    --mint-500: #2fa485;
+    --mint-500: var(--brt-c-2fa485);
     --surface: #ffffff;
     --surface-soft: #f7fcfa;
     --danger-600: #c44f47;
@@ -493,7 +493,7 @@ export default {
 .details-btn-outline {
     color: var(--ink-700);
     background: #fff;
-    border-color: #ceded9;
+    border-color: var(--brt-c-ceded9);
 }
 
 .details-btn-outline:hover {
@@ -522,16 +522,16 @@ export default {
     border: 1px solid var(--line-200);
     border-radius: 22px;
     padding: 0 20px 20px;
-    background: linear-gradient(160deg, #f9fffd 0%, #eff9f6 100%);
-    box-shadow: 0 12px 32px rgba(28, 64, 56, 0.08);
+    background: linear-gradient(160deg, #f9fffd 0%, var(--brt-c-eff9f6) 100%);
+    box-shadow: 0 12px 32px rgba(var(--brt-c-1c4038-rgb), 0.08);
     overflow: hidden;
 }
 
 .profile-card-banner {
     margin: 0 -20px 0;
     height: 64px;
-    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
-    border-bottom: 1px solid #c4d9d2;
+    background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
+    border-bottom: 1px solid var(--brt-border);
 }
 
 .profile-avatar-wrap {
@@ -548,7 +548,7 @@ export default {
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid #fff;
-    box-shadow: 0 10px 28px rgba(14, 47, 41, 0.2);
+    box-shadow: 0 10px 28px rgba(var(--brt-c-0e2f29-rgb), 0.2);
 }
 
 .profile-avatar-placeholder {
@@ -558,7 +558,7 @@ export default {
     place-items: center;
     color: white;
     font-size: 36px;
-    background: linear-gradient(145deg, #2d947c 0%, #1d6454 100%);
+    background: linear-gradient(145deg, var(--brt-c-2d947c) 0%, var(--brt-c-1d6454) 100%);
 }
 
 .profile-heading {
@@ -588,8 +588,8 @@ export default {
 }
 
 .profile-badge-primary {
-    background: #d9f0e8;
-    color: #1b6f5a;
+    background: var(--brt-c-d9f0e8);
+    color: var(--brt-c-1b6f5a);
 }
 
 .profile-badge-neutral {
@@ -599,7 +599,7 @@ export default {
 
 .profile-badge-success,
 .emp-status-success {
-    background: #dcf6eb;
+    background: var(--brt-c-dcf6eb);
     color: #157856;
 }
 
@@ -610,12 +610,12 @@ export default {
 }
 
 .profile-badge-dark {
-    background: #2e3a39;
+    background: var(--brt-c-2e3a39);
     color: #fff;
 }
 
 .profile-info-list {
-    border-top: 1px solid #d8e9e4;
+    border-top: 1px solid var(--brt-c-d8e9e4);
     padding-top: 12px;
 }
 
@@ -654,11 +654,11 @@ export default {
 }
 
 .details-card {
-    border: 1px solid #dbe9e5;
+    border: 1px solid var(--brt-c-dbe9e5);
     border-radius: 20px;
     padding: 18px;
     background: var(--surface);
-    box-shadow: 0 8px 28px rgba(22, 58, 50, 0.06);
+    box-shadow: 0 8px 28px rgba(var(--brt-c-163a32-rgb), 0.06);
 }
 
 .details-card-header {
@@ -685,7 +685,7 @@ export default {
 }
 
 .details-stat {
-    border: 1px solid #e2eeeb;
+    border: 1px solid var(--brt-c-e2eeeb);
     border-radius: 15px;
     padding: 13px;
     background: var(--surface-soft);
@@ -740,8 +740,8 @@ export default {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--ink-700);
-    background: #edf7f4;
-    border: 1px solid #d6e8e2;
+    background: var(--brt-c-edf7f4);
+    border: 1px solid var(--brt-c-d6e8e2);
     border-radius: 999px;
     padding: 4px 9px;
 }
@@ -749,7 +749,7 @@ export default {
 .table-wrapper {
     background: #fff;
     border-radius: 12px;
-    border: 1px solid #deebe7;
+    border: 1px solid var(--brt-c-deebe7);
     overflow: hidden;
     margin-bottom: 1rem;
 }
@@ -765,7 +765,7 @@ export default {
 
 .modern-table thead tr {
     background: #f6fcfa;
-    border-bottom: 1px solid #e6f0ed;
+    border-bottom: 1px solid var(--brt-c-e6f0ed);
 }
 
 .modern-table thead th {
@@ -780,7 +780,7 @@ export default {
 
 .modern-table tbody td {
     padding: 9px 10px;
-    border-bottom: 1px solid #e6f0ed;
+    border-bottom: 1px solid var(--brt-c-e6f0ed);
     color: var(--ink-900);
     font-size: 0.8rem;
 }
@@ -808,7 +808,7 @@ export default {
 
 .status-badge.completed,
 .status-badge.approved {
-    background: #dcf6eb;
+    background: var(--brt-c-dcf6eb);
     color: #157856;
 }
 
@@ -856,7 +856,7 @@ export default {
 }
 
 .date-cell i {
-    color: #1f826b;
+    color: var(--brt-c-1f826b);
 }
 
 .empty-state,
@@ -886,10 +886,10 @@ export default {
 }
 
 .loan-balance {
-    border: 1px solid #d7e7e2;
+    border: 1px solid var(--brt-c-d7e7e2);
     border-radius: 14px;
     padding: 12px;
-    background: linear-gradient(135deg, #ecfaf5 0%, #e3f5ef 100%);
+    background: linear-gradient(135deg, var(--brt-c-ecfaf5) 0%, var(--brt-c-e3f5ef) 100%);
 }
 
 .loan-balance-title {
@@ -901,12 +901,12 @@ export default {
 .loan-balance-value {
     margin-top: 8px;
     font-size: 1.6rem;
-    color: #1c755d;
+    color: var(--brt-c-1c755d);
     font-weight: 800;
 }
 
 .loan-progress {
-    border: 1px solid #e0ece8;
+    border: 1px solid var(--brt-c-e0ece8);
     border-radius: 14px;
     padding: 12px;
 }
@@ -923,13 +923,13 @@ export default {
     margin-top: 9px;
     height: 10px;
     border-radius: 10px;
-    background: #e3eeeb;
+    background: var(--brt-c-e3eeeb);
     overflow: hidden;
 }
 
 .loan-progress-fill {
     height: 100%;
-    background: linear-gradient(120deg, #30a789 0%, #1a7c64 100%);
+    background: linear-gradient(120deg, var(--brt-c-30a789) 0%, #1a7c64 100%);
 }
 
 .loan-progress-meta {

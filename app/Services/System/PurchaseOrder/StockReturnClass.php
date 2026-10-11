@@ -73,6 +73,7 @@ class StockReturnClass
                 });
             })
             ->orderByDesc('id')
+            ->sortFromRequest()
             ->paginate($request->count ?? 10);
 
         return StockReturnResource::collection($data);

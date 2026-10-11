@@ -67,6 +67,7 @@ class SalesOrderClass
             'location',
             'salesRep',
             'driver',
+            'checker',
             'returnReplacements.product',
         ])
             ->when($request->keyword, function ($query,$keyword) {
@@ -129,6 +130,7 @@ class SalesOrderClass
 
         $data = SalesOrderResource::collection(
             $query->orderBy('created_at', 'DESC')
+                  ->sortFromRequest()
                   ->paginate($request->count)
         );
         return $data;
@@ -162,6 +164,8 @@ class SalesOrderClass
         // Goods still to go: promised to travel, and not recorded as arrived.
         $outForDelivery = $mine(SalesOrder::with('customer', 'driver')
             ->whereNull('delivered_at')
+            // Encoded and waiting on an approver: that is its own stage below.
+            ->whereNull('delivery_submission')
             ->whereDoesntHave('status', fn ($q) => $q->where('slug', 'cancelled'))
             ->where(function ($q) {
                 $q->whereNotNull('driver_id')->orWhereNotNull('delivery_date');
@@ -175,11 +179,42 @@ class SalesOrderClass
                 'amount' => (float) $order->total_amount,
                 'person' => optional($order->driver)->fullname,
                 'due' => optional($order->delivery_date)->toDateString(),
+                // Why the last submission was sent back, so it can be put right.
+                'rejection' => $order->delivery_rejection,
+                'credit_pending' => $order->awaitsCreditApproval(),
                 'days' => $days($order->delivery_date),
                 // What the board sorts on: the last time anything about this
                 // row changed, so whatever was just worked on comes to the top.
                 'updated_at' => optional($order->updated_at)->toIso8601String(),
             ]);
+
+        // Encoded as delivered, not yet confirmed. Not delivered and not
+        // collectable until an approver says so.
+        $submitters = [];
+        $pendingApproval = $mine(SalesOrder::with('customer', 'driver')->awaitingDeliveryApproval())
+            ->orderBy('updated_at')
+            ->get()
+            ->map(function ($order) use ($days, &$submitters) {
+                $submission = $order->delivery_submission;
+                $byId = $submission['submitted_by_id'] ?? null;
+                if ($byId && ! array_key_exists($byId, $submitters)) {
+                    $user = \App\Models\User::with('employee')->find($byId);
+                    $submitters[$byId] = $user ? (optional($user->employee)->fullname ?? $user->name) : null;
+                }
+                $collected = round((float) ($submission['payload']['collected_amount'] ?? 0), 2);
+
+                return [
+                    'id' => $order->id,
+                    'reference' => $order->so_number,
+                    'customer' => optional($order->customer)->name,
+                    'amount' => (float) $order->total_amount,
+                    'person' => $byId ? ($submitters[$byId] ?? null) : null,
+                    'collected' => $collected,
+                    'collected_mode' => $collected > 0 ? ($submission['payload']['collected_mode'] ?? null) : null,
+                    'days' => $days($submission['submitted_at'] ?? $order->updated_at),
+                    'updated_at' => optional($order->updated_at)->toIso8601String(),
+                ];
+            });
 
         // Delivered, nothing collected: the moment to ask the driver.
         $toCollect = $mine(SalesOrder::with('customer', 'driver', 'arInvoices')
@@ -198,6 +233,9 @@ class SalesOrderClass
                     'amount' => (float) optional($invoice)->balance_due,
                     'person' => optional($order->driver)->fullname,
                     'invoice_id' => optional($invoice)->id,
+                    // The payment screen decides from this whether a part
+                    // payment is allowed: on credit yes, on COD no.
+                    'payment_mode' => $order->payment_mode,
                     'days' => $days($order->delivered_at),
                     'updated_at' => optional($order->updated_at)->toIso8601String(),
                 ];
@@ -242,6 +280,7 @@ class SalesOrderClass
 
         return response()->json([
             'out_for_delivery' => $outForDelivery->values(),
+            'pending_approval' => $pendingApproval->values(),
             'to_collect' => $toCollect->values(),
             'with_driver' => $withDriver->values(),
         ]);
@@ -327,6 +366,7 @@ class SalesOrderClass
             $candidate->customer_id = $request->customer_id;
             $candidate->sales_rep_id = $request->sales_rep_id;
             $candidate->driver_id = $request->driver_id;
+            $candidate->checker_id = $request->checker_id;
             $candidate->payment_mode = $paymentMode;
             $candidate->payment_lines = $paymentLines ?: null;
             $candidate->due_date = $this->resolveDueDate($request);
@@ -337,6 +377,8 @@ class SalesOrderClass
             $candidate->added_by_id = auth()->user()->id;
             $candidate->status_id = ListStatus::getBySlug('for-payment')?->id;
             $candidate->requires_batch_approval = false;
+            // A sale on credit waits for an approver before it can go out.
+            $candidate->credit_approval = SalesOrder::creditApprovalFor($paymentMode);
 
             try {
                 $candidate->save();
@@ -471,7 +513,11 @@ class SalesOrderClass
             'order_date' => $request->order_date,
             'sales_rep_id' => $request->sales_rep_id,
             'driver_id' => $request->driver_id,
+            'checker_id' => $request->checker_id,
             'payment_mode' => $request->payment_mode,
+            // Switching an order onto credit needs approving like any other
+            // credit sale; switching it off credit needs nothing.
+            'credit_approval' => SalesOrder::creditApprovalFor($request->payment_mode, $data->credit_approval),
             'due_date' => $this->resolveDueDate($request),
             'shipping_date' => $request->shipping_date,
             'delivery_date' => $request->delivery_date,
@@ -755,6 +801,212 @@ class SalesOrderClass
     public function markDelivered($request)
     {
         $data = SalesOrder::findOrFail($request->id);
+        $this->assertCreditApproved($data, 'delivered_at');
+
+        // Goods already recorded as delivered: this is only a later collection,
+        // which was never the thing being approved.
+        if ($data->delivered_at || ! config('sales.delivery_approval', true)) {
+            return $this->completeDelivery($request);
+        }
+
+        if ($data->awaitsDeliveryApproval()) {
+            throw ValidationException::withMessages([
+                'delivered_at' => 'This delivery has already been submitted and is waiting for approval.',
+            ]);
+        }
+
+        $this->totalDoorCollection($request);
+
+        $payload = [
+            'accepted_quantities' => $request->accepted_quantities ?? [],
+            'refusal_reasons' => $request->refusal_reasons ?? [],
+            'collected_amount' => $request->collected_amount,
+            'collected_mode' => $request->collected_mode,
+            'collected_bank_account_id' => $request->collected_bank_account_id,
+            'collected_splits' => $this->doorSplits($request),
+            'collected_reference' => $request->collected_reference,
+            'collected_check_date' => $request->collected_check_date,
+            // Pinned now: the goods arrived the day this was encoded, not the
+            // day somebody got round to approving it.
+            'delivered_at' => filled($request->delivered_at) ? $request->delivered_at : now()->toDateString(),
+        ];
+
+        // Rehearsed and undone. Everything that would refuse this delivery —
+        // a COD order not paid in full, more collected than is owed, a
+        // quantity above what was ordered — refuses it here, in front of the
+        // person who can fix it, rather than later in front of the approver.
+        DB::beginTransaction();
+        try {
+            $this->completeDelivery(new \Illuminate\Http\Request(['id' => $data->id] + $payload));
+        } finally {
+            DB::rollBack();
+        }
+
+        $data = SalesOrder::findOrFail($request->id);
+        $data->update([
+            'delivery_submission' => [
+                'payload' => $payload,
+                'submitted_by_id' => auth()->id(),
+                'submitted_at' => now()->toIso8601String(),
+            ],
+            'delivery_rejection' => null,
+        ]);
+
+        return [
+            'data' => new SalesOrderResource($data->fresh(['items', 'customer', 'status', 'arInvoices'])),
+            'message' => 'Delivery submitted for approval',
+            'info' => round((float) $request->collected_amount, 2) > 0
+                ? 'The delivery and the payment entered will be recorded once an approver confirms it.'
+                : 'The delivery will be recorded once an approver confirms it.',
+            'status' => true,
+            'receipt_id' => null,
+            'pending_approval' => true,
+        ];
+    }
+
+    /** Goods do not leave, and money is not taken, on credit nobody has approved. */
+    public function assertCreditApproved(SalesOrder $order, string $field = 'credit_approval'): void
+    {
+        if ($order->awaitsCreditApproval()) {
+            throw ValidationException::withMessages([
+                $field => 'This is a credit sale waiting for approval. It can be delivered and paid once an approver clears it.',
+            ]);
+        }
+    }
+
+    public function approveCredit($id)
+    {
+        $data = SalesOrder::findOrFail($id);
+
+        if (! $data->awaitsCreditApproval()) {
+            throw ValidationException::withMessages([
+                'credit_approval' => 'This order is not waiting for credit approval.',
+            ]);
+        }
+
+        $data->update([
+            'credit_approval' => 'approved',
+            'credit_approval_remarks' => null,
+            'credit_approved_by_id' => auth()->id(),
+            'credit_approved_at' => now(),
+        ]);
+
+        return [
+            'data' => new SalesOrderResource($data->fresh(['items', 'customer', 'status', 'arInvoices'])),
+            'message' => 'Credit approved',
+            'info' => 'The order can now go out for delivery.',
+            'status' => true,
+        ];
+    }
+
+    /**
+     * Refusing the credit cancels the order: the stock it was holding goes
+     * back, and the invoice is voided with it.
+     */
+    public function rejectCredit($id, ?string $remarks = null)
+    {
+        $data = SalesOrder::findOrFail($id);
+
+        if (! $data->awaitsCreditApproval()) {
+            throw ValidationException::withMessages([
+                'credit_approval' => 'This order is not waiting for credit approval.',
+            ]);
+        }
+
+        $reason = 'Credit not approved'.(filled($remarks) ? ': '.trim($remarks) : '');
+
+        $data->update([
+            'credit_approval' => 'rejected',
+            'credit_approval_remarks' => Str::limit($reason, 490),
+            'credit_approved_by_id' => auth()->id(),
+            'credit_approved_at' => now(),
+        ]);
+
+        $this->cancel($id, $reason);
+
+        return [
+            'data' => new SalesOrderResource($data->fresh(['items', 'customer', 'status', 'arInvoices'])),
+            'message' => 'Credit not approved',
+            'info' => 'The order has been cancelled and its stock returned.',
+            'status' => true,
+        ];
+    }
+
+    /**
+     * Confirm a submitted delivery: record it exactly as it was encoded,
+     * door collection included.
+     *
+     * It can still be refused here. The order may have changed while it
+     * waited — paid at the office, edited, cancelled — and the same rules that
+     * were checked at submission are checked again against what is true now.
+     */
+    public function approveDelivery($id)
+    {
+        $data = SalesOrder::findOrFail($id);
+
+        if (! $data->awaitsDeliveryApproval()) {
+            throw ValidationException::withMessages([
+                'delivery' => 'This delivery is not waiting for approval.',
+            ]);
+        }
+
+        $submission = $data->delivery_submission;
+        $result = $this->completeDelivery(
+            new \Illuminate\Http\Request(['id' => $data->id] + ($submission['payload'] ?? []))
+        );
+
+        // The delivery belongs to whoever encoded it; the approval to whoever
+        // confirmed it.
+        $data->fresh()->update([
+            'delivery_submission' => null,
+            'delivery_rejection' => null,
+            'delivered_by_id' => $submission['submitted_by_id'] ?? auth()->id(),
+            'delivery_approved_by_id' => auth()->id(),
+            'delivery_approved_at' => now(),
+        ]);
+
+        $result['data'] = new SalesOrderResource($data->fresh(['items', 'customer', 'status', 'arInvoices']));
+        $result['message'] = ! empty($result['receipt_id']) ? 'Delivery approved and payment recorded!' : 'Delivery approved!';
+
+        return $result;
+    }
+
+    /** Send a submitted delivery back: nothing was recorded, so nothing is undone. */
+    public function rejectDelivery($id, ?string $remarks = null)
+    {
+        $data = SalesOrder::findOrFail($id);
+
+        if (! $data->awaitsDeliveryApproval()) {
+            throw ValidationException::withMessages([
+                'delivery' => 'This delivery is not waiting for approval.',
+            ]);
+        }
+
+        $by = optional(auth()->user())->name ?: 'an approver';
+
+        $data->update([
+            'delivery_submission' => null,
+            'delivery_rejection' => Str::limit('Sent back by '.$by.(filled($remarks) ? ': '.trim($remarks) : ''), 490),
+        ]);
+
+        return [
+            'data' => new SalesOrderResource($data->fresh(['items', 'customer', 'status', 'arInvoices'])),
+            'message' => 'Delivery sent back',
+            'info' => 'Nothing was recorded. It is out for delivery again and can be encoded afresh.',
+            'status' => true,
+        ];
+    }
+
+    /**
+     * Record the delivery itself: what the customer kept, when it arrived, and
+     * whatever was collected at the door. markDelivered() is the way in from
+     * the screen; this is what runs once the delivery is approved.
+     */
+    public function completeDelivery($request)
+    {
+        $data = SalesOrder::findOrFail($request->id);
+        $this->assertCreditApproved($data, 'delivered_at');
+        $this->totalDoorCollection($request);
 
         if (optional($data->status)->slug === 'cancelled') {
             throw ValidationException::withMessages([
@@ -881,11 +1133,17 @@ class SalesOrderClass
             ]);
         }
 
+        $splits = $this->doorSplits($request);
+
         $payment = new \Illuminate\Http\Request([
             'id' => $invoice->id,
             'payment_date' => optional($data->delivered_at)->toDateString() ?: now()->toDateString(),
+            // Paid more than one way at the door — part cash, part transfer —
+            // goes in as the same split payment the AR screen records.
+            'splits' => $splits ?: null,
             'amount_paid' => $amount,
             'payment_mode' => $request->collected_mode,
+            'bank_account_id' => $request->collected_bank_account_id,
             'reference_number' => $request->collected_reference,
             'check_date' => $request->collected_check_date,
             // Taken at the door, so the driver is carrying it until they hand
@@ -896,6 +1154,52 @@ class SalesOrderClass
         $result = app(\App\Services\Modules\ArInvoiceClass::class)->payment($payment, $invoice->id);
 
         return $result['receipt_id'] ?? null;
+    }
+
+    /**
+     * The door collection as separate payment lines, when it was entered that
+     * way. Empty for the older single amount-and-mode form, which still works.
+     */
+    private function doorSplits($request): array
+    {
+        $splits = collect($request->collected_splits ?? [])
+            ->map(fn ($s) => [
+                'payment_mode' => (string) ($s['payment_mode'] ?? ''),
+                'amount' => round((float) ($s['amount'] ?? 0), 2),
+                'bank_account_id' => ! empty($s['bank_account_id']) ? (int) $s['bank_account_id'] : null,
+                'reference_number' => $s['reference_number'] ?? null,
+                'check_date' => $s['check_date'] ?? null,
+            ])
+            ->filter(fn ($s) => $s['amount'] > 0 && $s['payment_mode'] !== '')
+            ->values();
+
+        $bankIds = $splits->pluck('bank_account_id')->filter()->unique();
+        if ($bankIds->isNotEmpty()
+            && \App\Models\BankAccount::whereIn('id', $bankIds)->count() !== $bankIds->count()) {
+            throw ValidationException::withMessages([
+                'collected_amount' => 'One of the bank accounts chosen for this collection no longer exists.',
+            ]);
+        }
+
+        return $splits->all();
+    }
+
+    /**
+     * Where the collection came in as lines, what they add up to is the amount
+     * collected — every rule below reads that one figure.
+     */
+    private function totalDoorCollection($request): void
+    {
+        $splits = $this->doorSplits($request);
+
+        if (! $splits) {
+            return;
+        }
+
+        $request->merge([
+            'collected_amount' => round(collect($splits)->sum('amount'), 2),
+            'collected_mode' => count($splits) > 1 ? 'Split' : $splits[0]['payment_mode'],
+        ]);
     }
 
     /**

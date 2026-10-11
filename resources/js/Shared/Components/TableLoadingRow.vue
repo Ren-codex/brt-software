@@ -27,8 +27,8 @@ export default {
 .table-loading-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #d7e5de;
-  border-top-color: #3d8d7a;
+  border: 3px solid var(--brt-c-d7e5de);
+  border-top-color: var(--brt-primary);
   border-radius: 50%;
   margin: 0 auto 1rem;
   animation: table-loading-spin 0.8s linear infinite;

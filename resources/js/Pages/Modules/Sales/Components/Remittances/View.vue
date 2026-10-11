@@ -113,7 +113,7 @@
                                 <div class="profile-info-item">
                                     <div class="profile-label">Amount Received</div>
                                     <div class="profile-value">
-                                        <i class="ri-money-dollar-circle-line"></i>
+                                        <i class="ri-money-peso-circle-line"></i>
                                         {{ formatCurrency(item.received_amount) }}
                                     </div>
                                 </div>
@@ -242,7 +242,7 @@
 import ApprovalModal from './Modals/ApprovalModal.vue';
 import Swal from 'sweetalert2';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     name: 'RemittanceView',
     components: {
@@ -418,7 +418,7 @@ export default {
             }
         },
         onPrint(id) {
-            printDocument(`/remittances/${id}?option=print&type=remittance`);
+            openOrPrint(`/remittances/${id}?option=print&type=remittance`);
         },
         reload() {
             this.$emit('reload');
@@ -432,12 +432,12 @@ export default {
 
 <style scoped>
 .employee-details-page {
-    --ink-900: #102723;
-    --ink-700: #35524d;
-    --ink-500: #5c7974;
-    --line-200: #d2e4df;
+    --ink-900: var(--brt-c-102723);
+    --ink-700: var(--brt-c-35524d);
+    --ink-500: var(--brt-c-5c7974);
+    --line-200: var(--brt-c-d2e4df);
     --mint-700: #1a7e67;
-    --mint-500: #2fa485;
+    --mint-500: var(--brt-c-2fa485);
     --surface: #ffffff;
     --surface-soft: #f7fcfa;
     --danger-600: #c44f47;
@@ -479,7 +479,7 @@ export default {
 .details-btn-outline {
     color: var(--ink-700);
     background: #fff;
-    border-color: #ceded9;
+    border-color: var(--brt-c-ceded9);
 }
 
 .details-btn-outline:hover {
@@ -503,8 +503,8 @@ export default {
     border: 1px solid var(--line-200);
     border-radius: 22px;
     padding: 20px;
-    background: linear-gradient(160deg, #f9fffd 0%, #eff9f6 100%);
-    box-shadow: 0 12px 32px rgba(28, 64, 56, 0.08);
+    background: linear-gradient(160deg, #f9fffd 0%, var(--brt-c-eff9f6) 100%);
+    box-shadow: 0 12px 32px rgba(var(--brt-c-1c4038-rgb), 0.08);
 }
 
 .profile-avatar-wrap {
@@ -520,7 +520,7 @@ export default {
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid #fff;
-    box-shadow: 0 10px 28px rgba(14, 47, 41, 0.2);
+    box-shadow: 0 10px 28px rgba(var(--brt-c-0e2f29-rgb), 0.2);
 }
 
 .profile-avatar-placeholder {
@@ -530,7 +530,7 @@ export default {
     place-items: center;
     color: white;
     font-size: 42px;
-    background: linear-gradient(145deg, #2d947c 0%, #1d6454 100%);
+    background: linear-gradient(145deg, var(--brt-c-2d947c) 0%, var(--brt-c-1d6454) 100%);
 }
 
 .profile-heading {
@@ -560,8 +560,8 @@ export default {
 }
 
 .profile-badge-primary {
-    background: #d9f0e8;
-    color: #1b6f5a;
+    background: var(--brt-c-d9f0e8);
+    color: var(--brt-c-1b6f5a);
 }
 
 .profile-badge-neutral {
@@ -571,7 +571,7 @@ export default {
 
 .profile-badge-success,
 .emp-status-success {
-    background: #dcf6eb;
+    background: var(--brt-c-dcf6eb);
     color: #157856;
 }
 
@@ -635,7 +635,7 @@ export default {
     align-items: center;
     gap: 7px;
     margin-bottom: 6px;
-    color: #1a6e5a;
+    color: var(--brt-c-1a6e5a);
 }
 
 .profile-subcard-header h3 {
@@ -644,7 +644,7 @@ export default {
 }
 
 .remarks-card {
-    border: 1px solid #dbe9e5;
+    border: 1px solid var(--brt-c-dbe9e5);
     border-radius: 14px;
     padding: 12px;
     background: rgba(255, 255, 255, 0.7);
@@ -660,11 +660,11 @@ export default {
 }
 
 .details-card {
-    border: 1px solid #dbe9e5;
+    border: 1px solid var(--brt-c-dbe9e5);
     border-radius: 20px;
     padding: 18px;
     background: var(--surface);
-    box-shadow: 0 8px 28px rgba(22, 58, 50, 0.06);
+    box-shadow: 0 8px 28px rgba(var(--brt-c-163a32-rgb), 0.06);
 }
 
 .details-card-header {
@@ -707,7 +707,7 @@ export default {
 
 .details-stat,
 .info-panel-item {
-    border: 1px solid #e2eeeb;
+    border: 1px solid var(--brt-c-e2eeeb);
     border-radius: 15px;
     padding: 13px;
     background: var(--surface-soft);
@@ -760,15 +760,15 @@ export default {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--ink-700);
-    background: #edf7f4;
-    border: 1px solid #d6e8e2;
+    background: var(--brt-c-edf7f4);
+    border: 1px solid var(--brt-c-d6e8e2);
     border-radius: 999px;
     padding: 4px 9px;
 }
 
 .loan-history-table-wrap {
     margin-top: 10px;
-    border: 1px solid #deebe7;
+    border: 1px solid var(--brt-c-deebe7);
     border-radius: 12px;
     overflow: auto;
     -ms-overflow-style: none;
@@ -789,7 +789,7 @@ export default {
 .loan-history-table td {
     padding: 9px 10px;
     font-size: 0.78rem;
-    border-bottom: 1px solid #e6f0ed;
+    border-bottom: 1px solid var(--brt-c-e6f0ed);
 }
 
 .loan-history-table th {
@@ -821,7 +821,7 @@ export default {
 
 .loan-history-empty {
     margin-top: 10px;
-    border: 1px dashed #d2e4df;
+    border: 1px dashed var(--brt-c-d2e4df);
     border-radius: 12px;
     padding: 14px;
     color: var(--ink-500);
@@ -839,8 +839,8 @@ export default {
 }
 
 .payment-badge.cash {
-    background: #c4dad2;
-    color: #2c6b5c;
+    background: var(--brt-c-c4dad2);
+    color: var(--brt-c-2c6b5c);
 }
 
 .payment-badge.credit {

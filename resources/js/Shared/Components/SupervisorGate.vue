@@ -187,7 +187,7 @@ export default {
     margin: 0 0 0.9rem;
     font-size: 0.84rem;
     line-height: 1.5;
-    color: #4a6963;
+    color: var(--brt-c-4a6963);
 }
 .gate-error {
     margin: 0.6rem 0 0;

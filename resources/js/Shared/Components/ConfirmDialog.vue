@@ -90,7 +90,7 @@ export default {
 .cd-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 30, 28, 0.45);
+  background: rgba(var(--brt-c-0f1e1c-rgb), 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,7 +109,7 @@ export default {
   width: 100%;
   max-width: 420px;
   margin: 1rem;
-  box-shadow: 0 20px 60px rgba(15, 30, 28, 0.22);
+  box-shadow: 0 20px 60px rgba(var(--brt-c-0f1e1c-rgb), 0.22);
   animation: cd-slide-in 0.18s ease;
   overflow: hidden;
 }
@@ -121,20 +121,20 @@ export default {
 
 /* Header */
 .cd-header {
-  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
-  border-bottom: 1px solid #c4d9d2;
+  background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
+  border-bottom: 1px solid var(--brt-border);
   padding: 0.85rem 1.1rem;
 }
 
 .cd-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #16322e;
+  color: var(--brt-ink);
 }
 
 .cd-subtitle {
   font-size: 0.75rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
 }
 
 /* Icon */
@@ -162,9 +162,9 @@ export default {
 }
 
 .cd-icon--info {
-  background: rgba(61, 141, 122, 0.12);
-  border: 1px solid rgba(61, 141, 122, 0.16);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--brt-primary-rgb), 0.16);
+  color: var(--brt-primary);
 }
 
 .cd-icon--success {
@@ -180,7 +180,7 @@ export default {
 
 .cd-message {
   font-size: 0.9rem;
-  color: #16322e;
+  color: var(--brt-ink);
   margin: 0;
   line-height: 1.55;
 }
@@ -210,7 +210,7 @@ export default {
   justify-content: flex-end;
   gap: 0.6rem;
   padding: 0.75rem 1.25rem;
-  border-top: 1px solid #edf2f0;
+  border-top: 1px solid var(--brt-c-edf2f0);
   background: #f9fdfb;
 }
 
@@ -226,12 +226,12 @@ export default {
 
 .cd-btn-cancel {
   background: #fff;
-  color: #5f7f77;
-  border: 1px solid #c4d9d2;
+  color: var(--brt-c-5f7f77);
+  border: 1px solid var(--brt-border);
 }
 
 .cd-btn-cancel:hover {
-  background: #f0f7f5;
+  background: var(--brt-c-f0f7f5);
 }
 
 .cd-btn-confirm--danger {
@@ -253,12 +253,12 @@ export default {
 }
 
 .cd-btn-confirm--info {
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #fff;
 }
 
 .cd-btn-confirm--info:hover {
-  background: #2f7464;
+  background: var(--brt-c-2f7464);
 }
 
 .cd-btn-confirm--success {

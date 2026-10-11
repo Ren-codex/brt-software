@@ -4,11 +4,11 @@ namespace App\Notifications;
 
 use App\Models\ArInvoice;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class OverdueInvoiceNotification extends Notification implements ShouldBroadcast
+class OverdueInvoiceNotification extends Notification implements ShouldBroadcastNow
 {
     use Queueable;
 
@@ -28,6 +28,7 @@ class OverdueInvoiceNotification extends Notification implements ShouldBroadcast
     {
         return [
             'type'           => 'overdue_invoice',
+            'url'            => '/ar-invoices',
             'invoice_id'     => $this->invoice->id,
             'invoice_number' => $this->invoice->invoice_number,
             'customer_name'  => $this->invoice->sales_order->customer->name,

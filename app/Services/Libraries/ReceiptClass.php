@@ -73,6 +73,7 @@ class ReceiptClass
                     }
                 })
                 ->orderBy('created_at', 'desc')
+                ->sortFromRequest()
                 ->paginate($request->count ?? 10)
         );
     }

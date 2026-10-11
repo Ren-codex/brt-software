@@ -109,3 +109,38 @@ export async function printDocument(url, { onError } = {}) {
 }
 
 export default printDocument;
+
+/**
+ * Open a printable document in its own browser tab instead of raising the print
+ * dialog over the current page.
+ *
+ * For documents people want to look over, save or zoom before printing — a
+ * payroll, a payslip — where the tab's own PDF viewer (with its print and
+ * download buttons) is the better place to be. Called straight from the click
+ * handler, with nothing awaited first, so the browser treats it as the user's
+ * own action and does not block it as a pop-up.
+ */
+export function openDocument(url) {
+    // No 'noopener': with it the call always returns null, which would make
+    // every open look blocked. The document is this app's own, so it is safe.
+    const tab = window.open(url, '_blank');
+
+    // null only when a pop-up blocker stepped in anyway; tell the caller so it
+    // can say something rather than appear to have done nothing.
+    return tab !== null;
+}
+
+/**
+ * Open the document in a new tab, and only if the browser refuses, fall back to
+ * the print dialog.
+ *
+ * Some prints are triggered a moment after a save finishes rather than directly
+ * by a click, and a browser may block a new tab opened that way as a pop-up.
+ * Falling back means the document still reaches the person either way, instead
+ * of the click appearing to do nothing.
+ */
+export function openOrPrint(url) {
+    if (!openDocument(url)) {
+        printDocument(url);
+    }
+}

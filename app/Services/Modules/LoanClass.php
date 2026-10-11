@@ -45,6 +45,7 @@ class LoanClass
                     });
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count)
         );
 

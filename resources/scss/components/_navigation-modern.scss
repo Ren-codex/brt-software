@@ -3,7 +3,7 @@
    ============================================================================ */
 
 #page-topbar {
-    background: #3D8D7A;
+    background: var(--brt-primary);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -140,7 +140,7 @@
 
                 .dropdown-header {
                     background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-                    color: #2e8b57;
+                    color: var(--brt-focus);
                     font-weight: 700;
                     padding: 0.5rem 0.8rem;
                     border-radius: 10px 10px 0 0;
@@ -156,7 +156,7 @@
 
                     &:hover {
                         background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-                        color: #2e8b57;
+                        color: var(--brt-focus);
                         transform: translateX(5px);
                     }
 
@@ -165,7 +165,7 @@
                     }
 
                     &:hover i {
-                        color: #2e8b57 !important;
+                        color: var(--brt-focus) !important;
                     }
                 }
 
@@ -240,7 +240,7 @@
 // Dark Mode Adjustments
 [data-bs-theme="dark"] {
     #page-topbar {
-        background: linear-gradient(135deg, rgba(46, 139, 87, 0.9) 0%, rgba(31, 107, 65, 0.9) 100%);
+        background: linear-gradient(135deg, rgba(var(--brt-focus-rgb), 0.9) 0%, rgba(31, 107, 65, 0.9) 100%);
         border-bottom-color: rgba(255, 255, 255, 0.05);
 
         .navbar-header {
@@ -269,7 +269,7 @@
                     border-color: rgba(255, 255, 255, 0.1);
 
                     .dropdown-header {
-                        background: linear-gradient(135deg, rgba(46, 139, 87, 0.2) 0%, rgba(31, 107, 65, 0.2) 100%);
+                        background: linear-gradient(135deg, rgba(var(--brt-focus-rgb), 0.2) 0%, rgba(31, 107, 65, 0.2) 100%);
                         color: #4ade80;
                     }
 
@@ -277,7 +277,7 @@
                         color: #e5e7eb;
 
                         &:hover {
-                            background: linear-gradient(135deg, rgba(46, 139, 87, 0.2) 0%, rgba(31, 107, 65, 0.2) 100%);
+                            background: linear-gradient(135deg, rgba(var(--brt-focus-rgb), 0.2) 0%, rgba(31, 107, 65, 0.2) 100%);
                             color: #4ade80;
                         }
                     }

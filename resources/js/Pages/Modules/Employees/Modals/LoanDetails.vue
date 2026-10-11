@@ -203,9 +203,9 @@ export default {
 }
 
 .loan-terms-card {
-    border: 1px solid #d6e8e2;
+    border: 1px solid var(--brt-c-d6e8e2);
     border-radius: 12px;
-    background: linear-gradient(145deg, #f7fdfb 0%, #eef8f4 100%);
+    background: linear-gradient(145deg, #f7fdfb 0%, var(--brt-c-eef8f4) 100%);
     padding: 10px 12px;
 }
 
@@ -213,7 +213,7 @@ export default {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #1a5e4d;
+    color: var(--brt-c-1a5e4d);
     font-size: 0.85rem;
     font-weight: 700;
 }
@@ -229,9 +229,9 @@ export default {
     min-height: 26px;
     padding: 0 9px;
     border-radius: 999px;
-    border: 1px solid #cde1da;
+    border: 1px solid var(--brt-c-cde1da);
     background: #ffffff;
-    color: #2c4f48;
+    color: var(--brt-c-2c4f48);
     font-size: 0.76rem;
     font-weight: 700;
     display: inline-flex;
@@ -239,7 +239,7 @@ export default {
 }
 
 .loan-summary-item {
-    border: 1px solid #e0ece8;
+    border: 1px solid var(--brt-c-e0ece8);
     border-radius: 11px;
     background: #fbfefd;
     padding: 9px 10px;
@@ -250,7 +250,7 @@ export default {
 
 .loan-summary-item span {
     font-size: 0.72rem;
-    color: #5c7974;
+    color: var(--brt-c-5c7974);
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -258,25 +258,25 @@ export default {
 
 .loan-summary-item strong {
     font-size: 0.9rem;
-    color: #102723;
+    color: var(--brt-c-102723);
 }
 
 .loan-history {
-    border: 1px solid #e0ece8;
+    border: 1px solid var(--brt-c-e0ece8);
     border-radius: 12px;
     overflow: hidden;
 }
 
 .loan-history-header {
     padding: 10px 12px;
-    border-bottom: 1px solid #e0ece8;
+    border-bottom: 1px solid var(--brt-c-e0ece8);
     background: #f8fdfb;
 }
 
 .loan-history-header h4 {
     margin: 0;
     font-size: 0.88rem;
-    color: #1a3d37;
+    color: var(--brt-c-1a3d37);
 }
 
 .loan-history-table-wrap {
@@ -291,25 +291,25 @@ export default {
 .loan-history-table th,
 .loan-history-table td {
     padding: 10px 12px;
-    border-bottom: 1px solid #edf4f1;
+    border-bottom: 1px solid var(--brt-c-edf4f1);
     text-align: left;
     font-size: 0.83rem;
 }
 
 .loan-history-table th {
-    color: #4f6c66;
+    color: var(--brt-c-4f6c66);
     font-weight: 700;
     background: #fbfefd;
 }
 
 .loan-history-table td {
-    color: #17332f;
+    color: var(--brt-c-17332f);
 }
 
 .loan-empty-state {
     padding: 20px 12px;
     text-align: center;
-    color: #5c7974;
+    color: var(--brt-c-5c7974);
     font-size: 0.84rem;
 }
 

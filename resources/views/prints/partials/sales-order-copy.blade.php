@@ -74,11 +74,10 @@
 <table class="items-table">
     <thead>
         <tr>
-            <th>Item #</th>
+            <th>Quantity</th>
             <th>Product</th>
             <th>Batch Code</th>
             <th class="text-center">Packaging</th>
-            <th class="text-center">Quantity</th>
             <th class="text-right">Unit Price</th>
             <th class="text-right">Total</th>
         </tr>
@@ -86,14 +85,13 @@
     <tbody>
         @foreach($items as $index => $item)
         <tr>
-            <td>{{ $index + 1 }}</td>
+            <td><strong>{{ number_format($item->quantity) }}</strong></td>
             {{-- The unit belongs to the weight: "Princess Bea Red 25 Kg" is the
                  product's name, the way it is written everywhere else. What
                  goes in its own column is how it is packed. --}}
             <td><strong>{{ $item->product->brand->name ?? '' }} {{ $item->product->weight }}</strong> {{ $item->product->unit->name ?? '' }}</td>
             <td>{{ $item->batch_code ?? '---' }}</td>
             <td class="text-center">{{ $item->product->packaging->name ?? '---' }}</td>
-            <td class="text-center">{{ number_format($item->quantity) }}</td>
             <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
             <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>
         </tr>
@@ -112,6 +110,13 @@
             <div class="sales-rep-box">
                 <strong>Driver:</strong> {{ $sales_order->driver->fullname ?? '---' }}
             </div>
+            {{-- Only when one rides along: the customer pays the checker, so
+                 their name belongs on the copy the customer keeps. --}}
+            @if ($sales_order->checker)
+            <div class="sales-rep-box">
+                <strong>Checker:</strong> {{ $sales_order->checker->fullname }}
+            </div>
+            @endif
         </td>
         <td style="width: 220px;">
             <table style="width: 100%; border-collapse: collapse;">

@@ -154,8 +154,36 @@ class UserClass
                   });
             });
         })
+        ->tap(fn ($query) => $this->applySort($query, $request->sort_by, $request->sort_direction))
         ->paginate($request->count);
         return UserResource::collection($data);
+    }
+
+    /**
+     * Order the user list on the server, so it applies to every page.
+     *
+     * The list had no ordering at all before, which left the database free to
+     * return rows in any order and so to repeat or skip a user between pages.
+     * Inputs are checked against fixed lists; anything else is newest first.
+     */
+    private function applySort($query, ?string $sortBy, ?string $direction): void
+    {
+        $direction = strtolower((string) $direction) === 'asc' ? 'asc' : 'desc';
+
+        match ($sortBy) {
+            // The name shown is the employee's, falling back to the username
+            // for an account with no employee record — so sort by the same.
+            'name' => $query->orderByRaw(
+                'COALESCE((SELECT CONCAT(e.firstname, " ", e.lastname) FROM employees e WHERE e.user_id = users.id LIMIT 1), users.username) '.$direction
+            ),
+            'username' => $query->orderBy('users.username', $direction),
+            'email' => $query->orderBy('users.email', $direction),
+            'is_active' => $query->orderBy('users.is_active', $direction),
+            'created_at' => $query->orderBy('users.created_at', $direction),
+            default => $query->orderBy('users.created_at', 'desc'),
+        };
+
+        $query->orderBy('users.id', $direction);
     }
 
     public function status($request){

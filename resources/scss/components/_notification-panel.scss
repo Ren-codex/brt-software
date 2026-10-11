@@ -1,0 +1,272 @@
+// Notification panel (the topbar bell dropdown).
+//
+// Laid out like a social-feed notification list: big title, All / Unread tabs,
+// round avatars, roomy rows, a dot and tinted timestamp on anything unread.
+//
+// Two things keep it this size, and both are easy to undo by accident:
+//
+//  1. This file is imported LAST in app.scss, after components/dropdown.
+//     BDropdown renders .dropdown-menu on the same element, so the width here
+//     only wins because it comes later.
+//
+//  2. The BDropdown in Navigation.vue carries `end` and `no-size`. Without them
+//     the dropdown library writes an inline max-width equal to the space to the
+//     right of the bell, which beats any stylesheet and squeezes the panel to
+//     under 200px.
+
+$notif-accent: var(--brt-primary);
+$notif-ink: var(--brt-ink);
+$notif-muted: #65767a;
+
+.notif-panel {
+    width: 400px;
+    max-width: calc(100vw - 1rem) !important;
+    padding: 0;
+    border: 1px solid var(--brt-c-dfe9e6);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px -6px rgba(var(--brt-c-10322e-rgb), 0.28), 0 2px 6px rgba(var(--brt-c-10322e-rgb), 0.08);
+    overflow: hidden;
+    background: #fff;
+}
+
+.notif-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem 0.4rem;
+}
+
+.notif-head-title {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: $notif-ink;
+}
+
+.notif-head-action {
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: $notif-accent;
+    text-decoration: none;
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+
+    &:hover {
+        background: rgba(var(--brt-primary-rgb), 0.1);
+        color: var(--brt-primary-dark);
+    }
+}
+
+.notif-tabs {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.35rem 1.1rem 0.6rem;
+}
+
+.notif-tab {
+    border: none;
+    background: transparent;
+    color: $notif-ink;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+        background: var(--brt-c-eef3f1);
+    }
+
+    &.active {
+        background: rgba(var(--brt-primary-rgb), 0.14);
+        color: var(--brt-primary-dark);
+    }
+}
+
+.notif-scroll {
+    // Tall enough to read a real backlog, but never taller than the screen.
+    max-height: min(560px, calc(100vh - 230px));
+    padding: 0 0.5rem 0.5rem;
+}
+
+.notif-section-label {
+    padding: 0.5rem 0.6rem 0.3rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: $notif-ink;
+}
+
+.notif-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+    padding: 0.55rem 0.6rem;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    text-align: left;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+        background-color: var(--brt-c-f0f4f3);
+        color: inherit;
+    }
+}
+
+.notif-pinned {
+    background: rgba(var(--brt-primary-rgb), 0.08);
+    margin-bottom: 0.25rem;
+
+    &:hover {
+        background: rgba(var(--brt-primary-rgb), 0.14);
+    }
+}
+
+.notif-avatar {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+
+    &.tone-approval {
+        background: rgba(var(--brt-primary-rgb), 0.16);
+        color: $notif-accent;
+    }
+
+    &.tone-warn {
+        background: rgba(245, 158, 11, 0.16);
+        color: #b45309;
+    }
+
+    &.tone-danger {
+        background: rgba(220, 38, 38, 0.13);
+        color: #b42318;
+    }
+
+    &.tone-info {
+        background: rgba(71, 85, 105, 0.13);
+        color: #475569;
+    }
+}
+
+.notif-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.notif-text {
+    font-size: 0.92rem;
+    line-height: 1.35;
+    color: $notif-muted;
+    // Three lines, then ellipsis — enough for a reference, a name and an amount.
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    strong {
+        font-weight: 600;
+        color: $notif-muted;
+    }
+}
+
+// Unread rows read darker and heavier, the way an unread message does.
+.notif-item.unread .notif-text,
+.notif-pinned .notif-text {
+    color: $notif-ink;
+
+    strong {
+        font-weight: 700;
+        color: $notif-ink;
+    }
+}
+
+.notif-time {
+    font-size: 0.8rem;
+    color: $notif-muted;
+
+    &.is-unread {
+        color: $notif-accent;
+        font-weight: 700;
+    }
+}
+
+.notif-dot {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: $notif-accent;
+}
+
+.notif-chevron {
+    flex-shrink: 0;
+    font-size: 1.4rem;
+    color: $notif-accent;
+}
+
+.notif-empty {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #94a3b8;
+
+    i {
+        font-size: 2.6rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    p {
+        font-size: 0.92rem;
+        font-weight: 600;
+    }
+}
+
+.notif-foot {
+    padding: 0.5rem 0.6rem 0.6rem;
+    border-top: 1px solid var(--brt-c-edf2f0);
+}
+
+.notif-foot-link {
+    display: block;
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: var(--brt-c-eef3f1);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: $notif-ink;
+    text-decoration: none;
+
+    &:hover {
+        background: var(--brt-c-e2ebe8);
+        color: $notif-ink;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .notif-panel {
+        width: calc(100vw - 1rem);
+    }
+
+    .notif-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 1.35rem;
+    }
+}

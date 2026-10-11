@@ -1,0 +1,127 @@
+// The toolbar above a list page's table: search box, filters, status tabs, sort.
+//
+// Two things are settled here once, for every page:
+//
+//  1. A search box is the same width everywhere. It steps down with the screen
+//     instead of stretching to whatever its page happened to leave it.
+//  2. Where a page has status tabs as well, everything sits on one row — search
+//     first, the tabs after it, the sort dropdown at the far right.
+//
+// Imported after _sort-select.scss, whose rules for .search-section it refines.
+
+:root {
+    --brt-search-width: 320px;
+}
+
+@media (max-width: 1399.98px) {
+    :root { --brt-search-width: 280px; }
+}
+
+@media (max-width: 1199.98px) {
+    :root { --brt-search-width: 240px; }
+}
+
+@media (max-width: 991.98px) {
+    :root { --brt-search-width: 220px; }
+}
+
+// Phones: the search box takes the whole line.
+@media (max-width: 767.98px) {
+    :root { --brt-search-width: 100%; }
+}
+
+// ── 1. One width for every search box ──────────────────────────────────────
+// The multiselect that borrows .search-wrapper on Sales Orders is a filter,
+// not a search box, and keeps its own size.
+.search-section > .search-wrapper:not(.filter-multiselect-wrapper),
+.receiving-search.receiving-search {
+    flex: 0 0 var(--brt-search-width);
+    width: var(--brt-search-width);
+    max-width: 100%;
+}
+
+// Pages that lay the search box and its filters out in a Bootstrap row: each
+// column holding one gets the same width, rather than a share of the page.
+.search-section > .row > [class*="col-"]:has(> .search-wrapper) {
+    flex: 0 0 auto;
+    width: calc(var(--brt-search-width) + var(--bs-gutter-x));
+    max-width: 100%;
+}
+
+@media (max-width: 767.98px) {
+    .search-section > .row > [class*="col-"]:has(> .search-wrapper) {
+        width: 100%;
+    }
+}
+
+// ── 2. Search, tabs and sort on one row ────────────────────────────────────
+// They wrap onto more lines only when the screen is too narrow to hold them.
+// The class is doubled so these win over each page's scoped styles and over
+// the general .search-section rules, whatever order they load in.
+.tabs-search-row.tabs-search-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.1rem;
+
+    // The row carries the spacing now, not the blocks inside it.
+    > .tabs-section,
+    > .status-tab-bar,
+    > .search-section {
+        margin-bottom: 0;
+    }
+
+    > .tabs-section,
+    > .status-tab-bar {
+        flex: 0 0 auto;
+        max-width: 100%;
+    }
+
+    // The search section stops being a box of its own: its search box, its
+    // filters and its sort dropdown each take a place in this row directly,
+    // which is what lets the tabs sit between them.
+    > .search-section {
+        display: contents;
+
+        > .search-wrapper,
+        > .row {
+            order: -1;
+        }
+
+        > .sort-select-wrap {
+            order: 1;
+            margin-left: auto;
+        }
+
+        // A filter row here is only ever search box + dropdowns, so it is laid
+        // out as plain boxes with a gap instead of gutters.
+        > .row {
+            flex: 0 1 auto;
+            min-width: 0;
+            margin: 0;
+            gap: 0.75rem;
+
+            > [class*="col-"] {
+                padding: 0;
+            }
+
+            > [class*="col-"]:has(> .search-wrapper) {
+                width: var(--brt-search-width);
+            }
+        }
+    }
+}
+
+@media (max-width: 767.98px) {
+    .tabs-search-row.tabs-search-row > .search-section > .row {
+        flex: 1 1 100%;
+    }
+}
+
+// A .table-card pulls itself upwards with a negative margin, which swallowed
+// the row's own spacing and left the search box and the tabs sitting on the
+// table header (Receipts). Directly under the toolbar it keeps its place.
+.tabs-search-row.tabs-search-row + .table-card {
+    margin-top: 0;
+}

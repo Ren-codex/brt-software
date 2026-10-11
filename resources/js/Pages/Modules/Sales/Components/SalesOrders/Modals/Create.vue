@@ -41,6 +41,7 @@
 
                                 <div class="form-group">
                                     <label for="customer_id" class="form-label">Customer<span class="text-danger">*</span></label>
+                                    <div class="field-with-action">
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
                                         <Multiselect
@@ -56,21 +57,24 @@
                                             @change="handleCustomerSelectionChange"
                                         />
                                     </div>
-                                    <span class="error-message" v-if="form.errors.customer_id">{{ form.errors.customer_id }}</span>
-                                </div>
-
-                                <div class="form-group form-group-inline-action">
-                                    <label class="form-label">New Customer</label>
-                                    <button @click="addCustomer()" type="button" class="btn-outline-action">
-                                        <i class="ri-add-line"></i>
+                                    <button @click="addCustomer()" type="button" class="btn-outline-action" title="Add a new customer">
+                                        <i class="ri-user-add-line"></i>
                                         Add Customer
                                     </button>
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.customer_id">{{ form.errors.customer_id }}</span>
                                 </div>
                             </div>
 
+                            <!-- Who is on the order: the rep who sold it and the pair
+                                 who take it out. -->
+                            <div class="detail-subhead">
+                                <i class="ri-team-line"></i>
+                                <span>Assigned to</span>
+                            </div>
                             <div class="detail-grid detail-grid-secondary">
                                 <div class="form-group">
-                                    <label for="sales_rep_id" class="form-label">Assigned To (Sales Rep)<span class="text-danger">*</span></label>
+                                    <label for="sales_rep_id" class="form-label">Sales Rep<span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="ri-user-line input-icon"></i>
                                         <Multiselect
@@ -90,10 +94,10 @@
 
                                 <div class="form-group">
                                     <label for="driver_id" class="form-label">
-                                        Assigned To (Driver)<span v-if="isCod" class="text-danger">*</span>
+                                        Driver<span v-if="isCod" class="text-danger">*</span>
                                     </label>
                                     <div class="input-wrapper">
-                                        <i class="ri-user-line input-icon"></i>
+                                        <i class="ri-steering-2-line input-icon"></i>
                                         <Multiselect
                                             v-model="form.driver_id"
                                             :options="dropdowns.drivers"
@@ -109,6 +113,35 @@
                                     <span class="error-message" v-if="form.errors.driver_id">{{ form.errors.driver_id }}</span>
                                 </div>
 
+                                <!-- The driver's partner, who takes the money at the door.
+                                     Optional: a run can go out with a driver alone. -->
+                                <div class="form-group">
+                                    <label for="checker_id" class="form-label">
+                                        Checker <span class="label-note">collects payment</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <i class="ri-user-follow-line input-icon"></i>
+                                        <Multiselect
+                                            v-model="form.checker_id"
+                                            :options="dropdowns.checkers || []"
+                                            label="name"
+                                            value-prop="value"
+                                            track-by="name"
+                                            :searchable="true"
+                                            placeholder="Select Checker"
+                                            class="form-control"
+                                            :class="{ 'input-error': form.errors.checker_id }"
+                                        />
+                                    </div>
+                                    <span class="error-message" v-if="form.errors.checker_id">{{ form.errors.checker_id }}</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-subhead">
+                                <i class="ri-truck-line"></i>
+                                <span>Delivery</span>
+                            </div>
+                            <div class="detail-grid detail-grid-delivery">
                                 <div class="form-group">
                                     <label for="location" class="form-label">Location<span v-if="!isWalkInCustomer" class="text-danger">*</span></label>
                                     <div class="input-wrapper">
@@ -132,7 +165,7 @@
                                 <div class="form-group">
                                     <label for="shipping_date" class="form-label">Shipping Date</label>
                                     <div class="input-wrapper">
-                                        <i class="ri-truck-line input-icon"></i>
+                                        <i class="ri-calendar-event-line input-icon"></i>
                                         <text-input
                                             id="shipping_date"
                                             type="date"
@@ -468,6 +501,10 @@
                                 <span>Driver</span>
                                 <strong>{{ getDriverName(form.driver_id) }}</strong>
                             </div>
+                            <div class="review-info-item" v-if="form.checker_id">
+                                <span>Checker</span>
+                                <strong>{{ getCheckerName(form.checker_id) }}</strong>
+                            </div>
                             <div class="review-info-item">
                                 <span>Location</span>
                                 <strong>{{ form.delivery_location || '-' }}</strong>
@@ -609,6 +646,11 @@
                 </div>
                 <span class="error-message" v-if="form.errors.payment_mode">{{ form.errors.payment_mode }}</span>
 
+                <p v-if="selectedPaymentType === 'Credit Sales'" class="credit-approval-note">
+                    <i class="ri-shield-check-line"></i>
+                    A credit sale needs approval. It is saved now, and can be delivered and paid once an approver clears it.
+                </p>
+
                 <div v-if="selectedPaymentType === 'Cash Sales'" class="payment-subtype-section payment-detail-card">
                     <div class="payment-section-heading payment-section-heading-sm">
                         <span class="payment-section-kicker">Step 2</span>
@@ -646,7 +688,7 @@
         <div class="modal-container modal-md" @click.stop>
             <div class="modal-header bg-primary text-white">
                 <h4 class="mb-0 text-white">
-                    <i class="ri-money-dollar-circle-line me-2"></i>
+                    <i class="ri-money-peso-circle-line me-2"></i>
                     Amount Received
                 </h4>
                 <button class="close-btn text-white" @click="closeCashReceivedModal">
@@ -678,7 +720,7 @@
                     </div>
                     <label for="cash_received_modal" class="form-label">Amount Received<span class="text-danger">*</span></label>
                     <div class="input-wrapper">
-                        <i class="ri-money-dollar-circle-line input-icon"></i>
+                        <i class="ri-money-peso-circle-line input-icon"></i>
                         <input
                             id="cash_received_modal"
                             v-model.number="cashReceivedAmount"
@@ -870,7 +912,7 @@
                     <div class="form-group mb-0">
                         <label for="bank_transfer_amount" class="form-label">Amount Paid<span class="text-danger">*</span></label>
                         <div class="input-wrapper">
-                            <i class="ri-money-dollar-circle-line input-icon"></i>
+                            <i class="ri-money-peso-circle-line input-icon"></i>
                             <input
                                 id="bank_transfer_amount"
                                 v-model.number="bankTransferDetails.amount_paid"
@@ -1056,7 +1098,7 @@ import Customer from '@/Pages/Modules/Customers/Modals/Create.vue'
 import PaymentPromptModal from '@/Pages/Modules/Sales/Components/SalesOrders/Modals/PaymentPromptModal.vue';
 import PaymentLines from '@/Shared/Components/PaymentLines.vue';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     components: { TextInput, Item, Customer, PaymentPromptModal, Multiselect, PaymentLines },
     emits: ['add'],
@@ -1073,6 +1115,7 @@ export default {
                 customer_id: null,
                 sales_rep_id: null,
                 driver_id: null,
+                checker_id: null,
                 delivery_location: '',
                 status_id: null,
                 billing_account: null,
@@ -1511,6 +1554,7 @@ export default {
             this.customerSelection = data.customer?.id ?? '__walk_in__';
             this.form.sales_rep_id = data.sales_rep_id;
             this.form.driver_id = data.driver_id;
+            this.form.checker_id = data.checker_id ?? null;
             this.form.delivery_location = data.delivery_location || data.customer?.address || '';
             this.form.status_id = data.status_id;
             this.form.payment_mode = data.payment_mode;
@@ -1589,6 +1633,14 @@ export default {
             }
             if (this.isCod && !this.form.driver_id) {
                 errors.driver_id = 'A driver is required for COD.';
+            }
+            // The pair rides together: no checker without a driver, and not the
+            // same person in both seats. The server enforces the same two rules.
+            if (this.form.checker_id && !this.form.driver_id) {
+                errors.driver_id = 'Choose the driver this checker rides with.';
+            }
+            if (this.form.checker_id && Number(this.form.checker_id) === Number(this.form.driver_id)) {
+                errors.checker_id = 'The checker must be a different person from the driver.';
             }
             if (!this.form.items.length) {
                 errors.items = 'Add at least one item before reviewing the order.';
@@ -1944,7 +1996,7 @@ export default {
         },
         printOrderNow() {
             if (this.createdOrderId) {
-                printDocument(`/sales-orders/${this.createdOrderId}?option=print&type=sales_order`);
+                openOrPrint(`/sales-orders/${this.createdOrderId}?option=print&type=sales_order`);
             }
             this.skipOrderPrint();
         },
@@ -1955,7 +2007,7 @@ export default {
         },
         printReceiptNow() {
             if (this.pendingReceiptId) {
-                printDocument(`/receipts/${this.pendingReceiptId}?option=print&type=receipt`);
+                openOrPrint(`/receipts/${this.pendingReceiptId}?option=print&type=receipt`);
             }
             this.showPrintPrompt = false;
             this.pendingReceiptId = null;
@@ -2126,6 +2178,11 @@ export default {
             const driver = this.dropdowns?.drivers?.find(employee => Number(employee.value) === Number(employeeId));
             return driver ? driver.name : '-';
         },
+        getCheckerName(employeeId) {
+            if (!employeeId) return '-';
+            const checker = this.dropdowns?.checkers?.find(employee => Number(employee.value) === Number(employeeId));
+            return checker ? checker.name : '-';
+        },
 
         formatCurrency(value) {
             if (!value) return '₱0.00';
@@ -2259,14 +2316,14 @@ export default {
 
         getPaymentModeIcon(mode) {
             const icons = {
-                'Cash': 'ri-money-dollar-circle-line',
+                'Cash': 'ri-money-peso-circle-line',
                 'Credit': 'ri-bank-card-line',
-                'Cash Sales': 'ri-money-dollar-circle-line',
+                'Cash Sales': 'ri-money-peso-circle-line',
                 'Credit Sales': 'ri-bank-card-line',
                 'Bank Transfer': 'ri-exchange-funds-line',
                 'COD': 'ri-truck-line',
             };
-            return icons[mode] || 'ri-money-dollar-circle-line';
+            return icons[mode] || 'ri-money-peso-circle-line';
         },
 
 
@@ -2283,11 +2340,11 @@ export default {
     margin: 0;
     font-size: 0.9rem;
     line-height: 1.5;
-    color: #4d6b64;
+    color: var(--brt-c-4d6b64);
 }
 
 .order-print-lead strong {
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .print-review-modal .modal-container {
@@ -2302,18 +2359,18 @@ export default {
 
 .order-review-modal .modal-header {
     border-radius: 20px 20px 0 0;
-    background: #dceae5 !important;
+    background: var(--brt-c-dceae5) !important;
     border-bottom: 1px solid #e9ecef;
 }
 
 .order-review-modal .modal-header h4 {
-    color: #16423C !important;
+    color: var(--brt-c-16423c) !important;
     font-weight: 700;
 }
 
 .order-review-modal .close-btn {
     background: rgba(255, 255, 255, 0.25);
-    color: #16423C !important;
+    color: var(--brt-c-16423c) !important;
 }
 
 .order-review-modal .close-btn:hover {
@@ -2322,18 +2379,18 @@ export default {
 
 .print-review-modal .modal-header {
     border-radius: 20px 20px 0 0;
-    background: #dceae5 !important;
+    background: var(--brt-c-dceae5) !important;
     border-bottom: 1px solid #e9ecef;
 }
 
 .print-review-modal .modal-header h4 {
-    color: #16423C !important;
+    color: var(--brt-c-16423c) !important;
     font-weight: 700;
 }
 
 .print-review-modal .close-btn {
     background: rgba(255, 255, 255, 0.25);
-    color: #16423C !important;
+    color: var(--brt-c-16423c) !important;
 }
 
 .print-review-modal .close-btn:hover {
@@ -2378,7 +2435,7 @@ export default {
     align-items: flex-start;
     flex-shrink: 0;
     gap: 0.75rem;
-    background: linear-gradient(135deg, #3d8d7a 0%, #4f9e8c 100%);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #4f9e8c 100%);
     border-bottom: none;
 }
 
@@ -2426,9 +2483,9 @@ export default {
 
 .form-panel {
     background: #ffffff;
-    border: 1px solid rgba(61, 141, 122, 0.12);
+    border: 1px solid rgba(var(--brt-primary-rgb), 0.12);
     border-radius: 16px;
-    box-shadow: 0 10px 22px rgba(39, 84, 72, 0.07);
+    box-shadow: 0 10px 22px rgba(var(--brt-c-275448-rgb), 0.07);
 }
 
 .form-panel-main {
@@ -2459,7 +2516,7 @@ export default {
 
 .panel-title {
     margin: 0.15rem 0 0;
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.92rem;
     font-weight: 700;
 }
@@ -2469,13 +2526,70 @@ export default {
     gap: 0.7rem;
 }
 
+/* Date is short and fixed; the customer takes whatever is left. */
 .detail-grid-primary {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 150px;
+    grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
 }
 
 .detail-grid-secondary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: 0.7rem;
+}
+
+/* The address needs room; the two dates do not. */
+.detail-grid-delivery {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* A quiet heading that splits the details into who / where-and-when. */
+.detail-subhead {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.5rem 0 0.6rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #648b74;
+}
+
+.detail-subhead i {
+    font-size: 0.9rem;
+}
+
+.detail-subhead::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--brt-c-e3ece8);
+}
+
+/* An input with a button attached to its right-hand side. */
+.field-with-action {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.field-with-action .input-wrapper {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.field-with-action .btn-outline-action {
+    flex-shrink: 0;
+    padding: 0 0.85rem;
+    white-space: nowrap;
+}
+
+.label-note {
+    margin-left: 0.3rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: var(--brt-c-eef5f2);
+    color: var(--brt-c-4f7566);
+    font-size: 0.66rem;
+    font-weight: 600;
 }
 
 .form-group {
@@ -2507,7 +2621,7 @@ export default {
 .form-control {
     width: 100%;
     padding: 0.5rem 0.75rem 0.5rem 2.3rem;
-    border: 1px solid #d7e5de;
+    border: 1px solid var(--brt-c-d7e5de);
     border-radius: 10px;
     font-size: 0.82rem;
     transition: all 0.3s ease;
@@ -2516,8 +2630,8 @@ export default {
 
 .form-control:focus {
     outline: none;
-    border-color: #3d8d7a;
-    box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.12);
+    border-color: var(--brt-primary);
+    box-shadow: 0 0 0 4px rgba(var(--brt-primary-rgb), 0.12);
 }
 
 .input-error {
@@ -2535,7 +2649,7 @@ export default {
     display: block;
     margin-top: 0.3rem;
     font-size: 0.7rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
 .batch-override-icon {
@@ -2564,10 +2678,10 @@ export default {
 
 .btn-outline-action {
     min-height: 38px;
-    border: 1px solid #d7e5de;
+    border: 1px solid var(--brt-c-d7e5de);
     border-radius: 10px;
     background: #fff;
-    color: #355f55;
+    color: var(--brt-c-355f55);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2578,8 +2692,8 @@ export default {
 }
 
 .btn-outline-action:hover {
-    background: #f4faf8;
-    border-color: #b7cec4;
+    background: var(--brt-c-f4faf8);
+    border-color: var(--brt-c-b7cec4);
 }
 
 .section-divider {
@@ -2589,17 +2703,17 @@ export default {
     gap: 0.75rem;
     margin: 0.85rem 0 0.6rem;
     padding-top: 0.75rem;
-    border-top: 1px solid #edf3f1;
+    border-top: 1px solid var(--brt-c-edf3f1);
 }
 
 .section-title {
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.88rem;
     font-weight: 700;
 }
 
 .btn-add-item {
-    background: linear-gradient(135deg, #3d8d7a 0%, #2f7464 100%);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #2f7464 100%);
     color: white;
     border: none;
     padding: 0.45rem 0.75rem;
@@ -2611,12 +2725,12 @@ export default {
     gap: 0.35rem;
     font-size: 0.76rem;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 16px rgba(61, 141, 122, 0.18);
+    box-shadow: 0 8px 16px rgba(var(--brt-primary-rgb), 0.18);
 }
 
 .btn-add-item:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 14px 25px rgba(61, 141, 122, 0.24);
+    box-shadow: 0 14px 25px rgba(var(--brt-primary-rgb), 0.24);
 }
 
 .btn-add-item:disabled {
@@ -2626,10 +2740,10 @@ export default {
 }
 
 .items-table-wrap {
-    border: 1px solid #d9ebe4;
+    border: 1px solid var(--brt-c-d9ebe4);
     border-radius: 14px;
     overflow: hidden;
-    background: linear-gradient(180deg, #fbfefd 0%, #f4faf8 100%);
+    background: linear-gradient(180deg, #fbfefd 0%, var(--brt-c-f4faf8) 100%);
 }
 
 .payment-mode-grid {
@@ -2641,8 +2755,8 @@ export default {
 
 .payment-type-modal-body {
     background:
-        radial-gradient(circle at top right, rgba(61, 141, 122, 0.12), transparent 28%),
-        linear-gradient(180deg, #f8fcfb 0%, #f1f8f5 100%);
+        radial-gradient(circle at top right, rgba(var(--brt-primary-rgb), 0.12), transparent 28%),
+        linear-gradient(180deg, #f8fcfb 0%, var(--brt-c-f1f8f5) 100%);
 }
 
 .payment-section-heading {
@@ -2667,13 +2781,13 @@ export default {
     margin: 0;
     font-size: 0.88rem;
     font-weight: 700;
-    color: #20413a;
+    color: var(--brt-c-20413a);
 }
 
 .payment-section-heading p {
     margin: 0.15rem 0 0;
     font-size: 0.78rem;
-    color: #6b7f78;
+    color: var(--brt-c-6b7f78);
 }
 
 .review-overview-card {
@@ -2684,10 +2798,10 @@ export default {
     padding: 0.85rem 0.95rem;
     border-radius: 16px;
     background:
-        radial-gradient(circle at top right, rgba(61, 141, 122, 0.16), transparent 28%),
-        linear-gradient(135deg, #f7fcfa 0%, #edf7f3 100%);
-    border: 1px solid #dbe9e3;
-    box-shadow: 0 10px 20px rgba(31, 92, 80, 0.07);
+        radial-gradient(circle at top right, rgba(var(--brt-primary-rgb), 0.16), transparent 28%),
+        linear-gradient(135deg, #f7fcfa 0%, var(--brt-c-edf7f3) 100%);
+    border: 1px solid var(--brt-c-dbe9e3);
+    box-shadow: 0 10px 20px rgba(var(--brt-c-1f5c50-rgb), 0.07);
 }
 
 .review-overview-copy {
@@ -2709,14 +2823,14 @@ export default {
     margin: 0;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #20413a;
+    color: var(--brt-c-20413a);
 }
 
 .review-overview-copy p {
     margin: 0.3rem 0 0;
     font-size: 0.78rem;
     line-height: 1.5;
-    color: #6b7f78;
+    color: var(--brt-c-6b7f78);
 }
 
 .review-overview-metrics {
@@ -2730,7 +2844,7 @@ export default {
     padding: 0.65rem 0.75rem;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.82);
-    border: 1px solid #dbe9e3;
+    border: 1px solid var(--brt-c-dbe9e3);
 }
 
 .review-overview-metric span {
@@ -2739,7 +2853,7 @@ export default {
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #6c877d;
+    color: var(--brt-c-6c877d);
 }
 
 .review-overview-metric strong {
@@ -2747,12 +2861,12 @@ export default {
     margin-top: 0.3rem;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #20413a;
+    color: var(--brt-c-20413a);
     line-height: 1.3;
 }
 
 .review-overview-metric-total {
-    background: linear-gradient(135deg, #2f7a68 0%, #235e50 100%);
+    background: linear-gradient(135deg, var(--brt-c-2f7a68) 0%, var(--brt-c-235e50) 100%);
     border-color: transparent;
 }
 
@@ -2771,8 +2885,8 @@ export default {
     padding: 0.8rem;
     border-radius: 15px;
     background: rgba(255, 255, 255, 0.86);
-    border: 1px solid #dbe9e3;
-    box-shadow: 0 8px 18px rgba(31, 92, 80, 0.05);
+    border: 1px solid var(--brt-c-dbe9e3);
+    box-shadow: 0 8px 18px rgba(var(--brt-c-1f5c50-rgb), 0.05);
 }
 
 .review-section-head {
@@ -2787,7 +2901,7 @@ export default {
     margin: 0;
     font-size: 0.85rem;
     font-weight: 700;
-    color: #20413a;
+    color: var(--brt-c-20413a);
 }
 
 .review-info-grid {
@@ -2804,8 +2918,8 @@ export default {
     gap: 0.7rem;
     padding: 0.65rem 0.7rem;
     border-radius: 12px;
-    background: linear-gradient(135deg, #f4f7f6 0%, #edf3f1 100%);
-    border: 1px solid #dbe5e1;
+    background: linear-gradient(135deg, var(--brt-c-f4f7f6) 0%, var(--brt-c-edf3f1) 100%);
+    border: 1px solid var(--brt-c-dbe5e1);
 }
 
 .review-balance-banner.has-balance {
@@ -2823,7 +2937,7 @@ export default {
 }
 
 .review-balance-banner strong {
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.95rem;
     font-weight: 800;
 }
@@ -2835,8 +2949,8 @@ export default {
 .review-info-item {
     padding: 0.6rem 0.65rem;
     border-radius: 12px;
-    background: linear-gradient(180deg, #f8fcfb 0%, #f1f8f5 100%);
-    border: 1px solid #e2eeea;
+    background: linear-gradient(180deg, #f8fcfb 0%, var(--brt-c-f1f8f5) 100%);
+    border: 1px solid var(--brt-c-e2eeea);
 }
 
 .review-info-item span {
@@ -2846,13 +2960,13 @@ export default {
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #6c877d;
+    color: var(--brt-c-6c877d);
 }
 
 .review-info-item strong {
     display: block;
     font-size: 0.82rem;
-    color: #20413a;
+    color: var(--brt-c-20413a);
     line-height: 1.35;
 }
 
@@ -2861,11 +2975,11 @@ export default {
     margin-top: 0.25rem;
     font-size: 0.68rem;
     line-height: 1.4;
-    color: #7a8d86;
+    color: var(--brt-c-7a8d86);
 }
 
 .review-totals-card {
-    background: linear-gradient(180deg, #f7fcfa 0%, #eef7f3 100%);
+    background: linear-gradient(180deg, #f7fcfa 0%, var(--brt-c-eef7f3) 100%);
 }
 
 .review-total-list {
@@ -2881,23 +2995,23 @@ export default {
     padding: 0.6rem 0.7rem;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.82);
-    border: 1px solid #e2eeea;
+    border: 1px solid var(--brt-c-e2eeea);
 }
 
 .review-total-row span {
-    color: #5f7a70;
+    color: var(--brt-c-5f7a70);
     font-size: 0.78rem;
     font-weight: 600;
 }
 
 .review-total-row strong {
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.84rem;
     font-weight: 700;
 }
 
 .review-total-row-grand {
-    background: linear-gradient(135deg, #2f7a68 0%, #235e50 100%);
+    background: linear-gradient(135deg, var(--brt-c-2f7a68) 0%, var(--brt-c-235e50) 100%);
     border-color: transparent;
 }
 
@@ -2914,7 +3028,7 @@ export default {
     margin: 0.6rem 0 0;
     font-size: 0.72rem;
     line-height: 1.5;
-    color: #6b7f78;
+    color: var(--brt-c-6b7f78);
 }
 
 .review-section-head-items {
@@ -2927,24 +3041,24 @@ export default {
     gap: 0.35rem;
     padding: 0.35rem 0.6rem;
     border-radius: 999px;
-    background: #eef7f4;
-    color: #2f7666;
+    background: var(--brt-c-eef7f4);
+    color: var(--brt-c-2f7666);
     font-size: 0.7rem;
     font-weight: 700;
 }
 
 .review-items-table-wrap {
-    border: 1px solid #dceae4;
+    border: 1px solid var(--brt-c-dceae4);
     border-radius: 12px;
     overflow: hidden;
-    background: linear-gradient(180deg, #fbfefd 0%, #f5faf8 100%);
+    background: linear-gradient(180deg, #fbfefd 0%, var(--brt-c-f5faf8) 100%);
 }
 
 .review-items-table thead th {
     padding: 0.6rem 0.55rem;
     border: none;
-    background: linear-gradient(180deg, #eff7f4 0%, #e6f2ed 100%);
-    color: #49655d;
+    background: linear-gradient(180deg, var(--brt-c-eff7f4) 0%, var(--brt-c-e6f2ed) 100%);
+    color: var(--brt-c-49655d);
     font-size: 0.66rem;
     font-weight: 800;
     letter-spacing: 0.05em;
@@ -2954,7 +3068,7 @@ export default {
 .review-items-table tbody td {
     padding: 0.55rem 0.55rem;
     vertical-align: middle;
-    border-color: #edf3f1;
+    border-color: var(--brt-c-edf3f1);
     font-size: 0.8rem;
 }
 
@@ -2969,12 +3083,12 @@ export default {
 }
 
 .review-product-cell strong {
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.8rem;
 }
 
 .review-product-cell small {
-    color: #74867f;
+    color: var(--brt-c-74867f);
     font-size: 0.68rem;
     text-transform: capitalize;
 }
@@ -2992,8 +3106,8 @@ export default {
 }
 
 .review-batch-pill {
-    background: #eef7f4;
-    color: #2f7666;
+    background: var(--brt-c-eef7f4);
+    color: var(--brt-c-2f7666);
 }
 
 .review-qty-pill {
@@ -3004,7 +3118,7 @@ export default {
 .review-empty-state {
     padding: 1.25rem 0.75rem;
     text-align: center;
-    color: #74867f;
+    color: var(--brt-c-74867f);
 }
 
 .review-empty-state i {
@@ -3014,14 +3128,14 @@ export default {
     height: 44px;
     margin-bottom: 0.55rem;
     border-radius: 13px;
-    background: #eef7f4;
-    color: #2f7a68;
+    background: var(--brt-c-eef7f4);
+    color: var(--brt-c-2f7a68);
     font-size: 1.3rem;
 }
 
 .review-empty-state h6 {
     margin: 0;
-    color: #355f55;
+    color: var(--brt-c-355f55);
     font-size: 0.85rem;
     font-weight: 700;
 }
@@ -3032,7 +3146,7 @@ export default {
 }
 
 .review-helper-copy {
-    color: #70827b;
+    color: var(--brt-c-70827b);
     font-size: 0.76rem;
     line-height: 1.5;
 }
@@ -3048,14 +3162,14 @@ export default {
     padding: 0.7rem 0.7rem 0.75rem;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.75);
-    border: 1px solid #dbe9e3;
-    box-shadow: 0 8px 18px rgba(61, 141, 122, 0.07);
+    border: 1px solid var(--brt-c-dbe9e3);
+    box-shadow: 0 8px 18px rgba(var(--brt-primary-rgb), 0.07);
 }
 
 .payment-subtype-section {
     margin-top: 0.7rem;
     padding-top: 0.6rem;
-    border-top: 1px solid #edf3f1;
+    border-top: 1px solid var(--brt-c-edf3f1);
 }
 
 .payment-subtype-label {
@@ -3094,32 +3208,32 @@ export default {
     padding: 0.7rem;
     min-height: 96px;
     border-radius: 13px;
-    border-color: #dbe9e3;
-    box-shadow: 0 8px 18px rgba(31, 92, 80, 0.05);
+    border-color: var(--brt-c-dbe9e3);
+    box-shadow: 0 8px 18px rgba(var(--brt-c-1f5c50-rgb), 0.05);
 }
 
 .payment-choice-icon-wrap {
     width: 32px;
     height: 32px;
     border-radius: 10px;
-    background: #eef7f4;
+    background: var(--brt-c-eef7f4);
     display: grid;
     place-items: center;
     margin-bottom: 0.5rem;
-    color: #2f7a68;
+    color: var(--brt-c-2f7a68);
 }
 
 .payment-mode-card:hover {
-    border-color: #3d8d7a;
+    border-color: var(--brt-primary);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.15);
+    box-shadow: 0 4px 12px rgba(var(--brt-primary-rgb), 0.15);
 }
 
 .payment-mode-card.selected-payment-mode {
-    border-color: #3d8d7a;
-    background: linear-gradient(135deg, #3d8d7a 0%, #2e6f61 100%);
+    border-color: var(--brt-primary);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #2e6f61 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(61, 141, 122, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--brt-primary-rgb), 0.3);
 }
 
 .payment-mode-card.selected-payment-mode .payment-choice-icon-wrap {
@@ -3142,7 +3256,7 @@ export default {
     margin-top: 0.25rem;
     font-size: 0.68rem;
     line-height: 1.4;
-    color: #6b7f78;
+    color: var(--brt-c-6b7f78);
 }
 
 .payment-mode-card.selected-payment-mode .payment-choice-copy {
@@ -3157,8 +3271,8 @@ export default {
 
 .payment-choice-disabled:hover {
     transform: none;
-    border-color: #dbe9e3;
-    box-shadow: 0 10px 24px rgba(31, 92, 80, 0.06);
+    border-color: var(--brt-c-dbe9e3);
+    box-shadow: 0 10px 24px rgba(var(--brt-c-1f5c50-rgb), 0.06);
 }
 
 .payment-success-card {
@@ -3180,9 +3294,9 @@ export default {
     border-radius: 50%;
     display: block;
     stroke-width: 3;
-    stroke: #3d8d7a;
+    stroke: var(--brt-primary);
     stroke-miterlimit: 10;
-    box-shadow: inset 0 0 0 #3d8d7a;
+    box-shadow: inset 0 0 0 var(--brt-primary);
     animation: successCheckmarkFill 0.4s ease-in-out 0.4s forwards, successCheckmarkScale 0.3s ease-in-out 0.9s both;
 }
 
@@ -3191,7 +3305,7 @@ export default {
     stroke-dashoffset: 166;
     stroke-width: 3;
     stroke-miterlimit: 10;
-    stroke: #3d8d7a;
+    stroke: var(--brt-primary);
     fill: none;
     animation: successCheckmarkStroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
 }
@@ -3217,19 +3331,19 @@ export default {
 }
 
 @keyframes successCheckmarkFill {
-    100% { box-shadow: inset 0 0 0 26px #3d8d7a; }
+    100% { box-shadow: inset 0 0 0 26px var(--brt-primary); }
 }
 
 .payment-success-card h5 {
     margin: 0;
     font-size: 0.92rem;
     font-weight: 700;
-    color: #20413a;
+    color: var(--brt-c-20413a);
 }
 
 .payment-success-card p {
     margin: 0.3rem 0 0;
-    color: #6b7f78;
+    color: var(--brt-c-6b7f78);
     font-size: 0.78rem;
 }
 
@@ -3248,11 +3362,11 @@ export default {
     padding: 0.6rem 0.7rem;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.82);
-    border: 1px solid #dbe9e3;
+    border: 1px solid var(--brt-c-dbe9e3);
 }
 
 .payment-success-row span {
-    color: #5f7a70;
+    color: var(--brt-c-5f7a70);
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -3260,13 +3374,13 @@ export default {
 }
 
 .payment-success-row strong {
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.84rem;
     font-weight: 700;
 }
 
 .payment-success-row-highlight {
-    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
+    background: linear-gradient(135deg, var(--brt-c-e6f7ee) 0%, #d8f2e3 100%);
     border-color: #b9e6ca;
 }
 
@@ -3279,8 +3393,8 @@ export default {
 .credit-balance-callout {
     padding: 0.65rem 0.7rem;
     border-radius: 12px;
-    background: linear-gradient(135deg, #f4f7f6 0%, #edf3f1 100%);
-    border: 1px solid #dbe5e1;
+    background: linear-gradient(135deg, var(--brt-c-f4f7f6) 0%, var(--brt-c-edf3f1) 100%);
+    border: 1px solid var(--brt-c-dbe5e1);
 }
 
 .credit-balance-callout.has-balance {
@@ -3301,7 +3415,7 @@ export default {
 .credit-balance-callout-value {
     display: block;
     margin-top: 0.25rem;
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 1.05rem;
     font-weight: 800;
 }
@@ -3319,27 +3433,27 @@ export default {
 .credit-preset-btn {
     padding: 0.22rem 0.6rem;
     border-radius: 999px;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     background: #f7fbfa;
-    color: #335c52;
+    color: var(--brt-c-335c52);
     font-size: 0.68rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 .credit-preset-btn:hover {
-    background: #edf5f2;
-    border-color: #3d8d7a;
+    background: var(--brt-c-edf5f2);
+    border-color: var(--brt-primary);
 }
 .credit-preset-btn.active {
-    background: #3d8d7a;
-    border-color: #3d8d7a;
+    background: var(--brt-primary);
+    border-color: var(--brt-primary);
     color: #fff;
 }
 
 .credit-due-hint {
     font-size: 0.68rem;
-    color: #527267;
+    color: var(--brt-c-527267);
     margin-bottom: 0;
 }
 
@@ -3348,7 +3462,7 @@ export default {
     margin-top: 0.6rem;
     padding: 0.6rem 0.7rem;
     border-radius: 10px;
-    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
+    background: linear-gradient(135deg, var(--brt-c-e6f7ee) 0%, #d8f2e3 100%);
     border: 1px solid #b9e6ca;
     display: flex;
     justify-content: space-between;
@@ -3381,8 +3495,8 @@ export default {
 }
 
 .pretty-header {
-    background: linear-gradient(140deg, #eff7f4 0%, #e6f2ed 100%);
-    color: #20413a;
+    background: linear-gradient(140deg, var(--brt-c-eff7f4) 0%, var(--brt-c-e6f2ed) 100%);
+    color: var(--brt-c-20413a);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.4px;
@@ -3393,16 +3507,16 @@ export default {
     border: none;
     padding: 7px 6px;
     vertical-align: middle;
-    background: linear-gradient(140deg, #eff7f4 0%, #e6f2ed 100%);
+    background: linear-gradient(140deg, var(--brt-c-eff7f4) 0%, var(--brt-c-e6f2ed) 100%);
 }
 
 .pretty-table tbody tr {
     transition: all 0.3s ease;
-    border-bottom: 1px solid #edf3f1;
+    border-bottom: 1px solid var(--brt-c-edf3f1);
 }
 
 .pretty-table tbody tr:hover {
-    background: #f4faf8;
+    background: var(--brt-c-f4faf8);
 }
 
 .pretty-table td {
@@ -3412,7 +3526,7 @@ export default {
 }
 
 .row-selected {
-    background: #eef7f4;
+    background: var(--brt-c-eef7f4);
 }
 
 .empty-table {
@@ -3422,18 +3536,18 @@ export default {
 .empty-table-inner {
     text-align: center;
     padding: 1.25rem 1rem;
-    color: #74867f;
+    color: var(--brt-c-74867f);
 }
 
 .empty-table-inner i {
     font-size: 1.7rem;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     margin-bottom: 0.5rem;
 }
 
 .empty-table-inner h4 {
     margin: 0 0 0.3rem;
-    color: #355f55;
+    color: var(--brt-c-355f55);
     font-size: 0.85rem;
 }
 
@@ -3450,7 +3564,7 @@ export default {
 
 .product-name {
     font-weight: 700;
-    color: #20413a;
+    color: var(--brt-c-20413a);
 }
 
 .product-availability {
@@ -3465,8 +3579,8 @@ export default {
     min-width: 28px;
     padding: 0.15rem 0.45rem;
     border-radius: 999px;
-    background: #e8f4ef;
-    color: #2f7666;
+    background: var(--brt-c-e8f4ef);
+    color: var(--brt-c-2f7666);
     font-weight: 700;
     font-size: 0.76rem;
 }
@@ -3511,9 +3625,9 @@ export default {
 tfoot .footer-label,
 tfoot .footer-value {
     padding: 0.55rem 0.5rem !important;
-    background: #f1f7f4;
+    background: var(--brt-c-f1f7f4);
     font-weight: 700;
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.8rem;
 }
 
@@ -3527,13 +3641,13 @@ tfoot .footer-value {
 .summary-metric-card {
     padding: 0.6rem 0.7rem;
     border-radius: 12px;
-    background: linear-gradient(180deg, #f6fbf9 0%, #eef7f3 100%);
-    border: 1px solid #ddebe5;
+    background: linear-gradient(180deg, var(--brt-c-f6fbf9) 0%, var(--brt-c-eef7f3) 100%);
+    border: 1px solid var(--brt-c-ddebe5);
 }
 
 .summary-metric-label {
     display: block;
-    color: #6c877d;
+    color: var(--brt-c-6c877d);
     font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -3543,15 +3657,15 @@ tfoot .footer-value {
 .summary-metric-value {
     display: block;
     margin-top: 0.25rem;
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.88rem;
     line-height: 1.3;
 }
 
 .summary-card,
 .summary-section {
-    background: linear-gradient(135deg, #f8fbfa 0%, #f0f7f4 100%);
-    border: 1px solid #e0ece7;
+    background: linear-gradient(135deg, #f8fbfa 0%, var(--brt-c-f0f7f4) 100%);
+    border: 1px solid var(--brt-c-e0ece7);
     border-radius: 14px;
     padding: 0.8rem;
     margin-bottom: 0.75rem;
@@ -3562,7 +3676,7 @@ tfoot .footer-value {
     margin: 0 0 0.7rem;
     font-size: 0.88rem;
     font-weight: 700;
-    color: #20413a;
+    color: var(--brt-c-20413a);
 }
 
 .info-list {
@@ -3573,8 +3687,8 @@ tfoot .footer-value {
 .customer-balance-alert {
     padding: 0.6rem 0.7rem;
     border-radius: 12px;
-    background: linear-gradient(135deg, #f4f7f6 0%, #edf3f1 100%);
-    border: 1px solid #dbe5e1;
+    background: linear-gradient(135deg, var(--brt-c-f4f7f6) 0%, var(--brt-c-edf3f1) 100%);
+    border: 1px solid var(--brt-c-dbe5e1);
 }
 
 .customer-balance-alert.has-balance {
@@ -3595,7 +3709,7 @@ tfoot .footer-value {
 .customer-balance-value {
     display: block;
     margin-top: 0.25rem;
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 1.02rem;
     font-weight: 800;
 }
@@ -3618,12 +3732,12 @@ tfoot .footer-value {
 }
 
 .info-row strong {
-    color: #20413a;
+    color: var(--brt-c-20413a);
     font-size: 0.8rem;
 }
 
 .empty-side-note {
-    color: #74867f;
+    color: var(--brt-c-74867f);
     font-size: 0.76rem;
 }
 
@@ -3638,7 +3752,7 @@ tfoot .footer-value {
     justify-content: space-between;
     align-items: center;
     padding: 5px 0;
-    border-bottom: 1px solid #e4ece8;
+    border-bottom: 1px solid var(--brt-c-e4ece8);
     font-size: 0.82rem;
 }
 
@@ -3668,7 +3782,7 @@ tfoot .footer-value {
 }
 
 .success-alert {
-    background: linear-gradient(135deg, #e6f7ee 0%, #d8f2e3 100%);
+    background: linear-gradient(135deg, var(--brt-c-e6f7ee) 0%, #d8f2e3 100%);
     color: #155724;
     border: 1px solid #b9e6ca;
 }
@@ -3701,24 +3815,24 @@ tfoot .footer-value {
 
 .btn-cancel {
     background-color: #ffffff;
-    color: #60756d;
-    border: 1px solid #d7e5de;
+    color: var(--brt-c-60756d);
+    border: 1px solid var(--brt-c-d7e5de);
 }
 
 .btn-cancel:hover {
     background-color: #f7fbfa;
-    border-color: #b7cec4;
+    border-color: var(--brt-c-b7cec4);
 }
 
 .btn-save {
-    background: linear-gradient(135deg, #3d8d7a 0%, #2e6f61 100%);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #2e6f61 100%);
     color: white;
-    box-shadow: 0 8px 18px rgba(61, 141, 122, 0.25);
+    box-shadow: 0 8px 18px rgba(var(--brt-primary-rgb), 0.25);
 }
 
 .btn-save:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 16px 28px rgba(61, 141, 122, 0.34);
+    box-shadow: 0 16px 28px rgba(var(--brt-primary-rgb), 0.34);
 }
 
 .btn-save:disabled {
@@ -3758,7 +3872,8 @@ tfoot .footer-value {
     }
 
     .detail-grid-primary,
-    .detail-grid-secondary {
+    .detail-grid-secondary,
+    .detail-grid-delivery {
         grid-template-columns: 1fr;
     }
 
@@ -3807,5 +3922,22 @@ tfoot .footer-value {
     .review-total-row {
         padding: 0.85rem 0.9rem;
     }
+}
+.credit-approval-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #f0d49a;
+    border-radius: 8px;
+    background: #fdf6e7;
+    font-size: 0.8rem;
+    color: #7a5410;
+}
+
+.credit-approval-note i {
+    font-size: 1rem;
+    line-height: 1.2;
 }
 </style>

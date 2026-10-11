@@ -126,7 +126,7 @@ export default {
         {
           id: 'receipts',
           label: 'Receipts',
-          icon: 'ri-money-dollar-circle-line',
+          icon: 'ri-money-peso-circle-line',
           description: 'Payment receipts'
         },
         {

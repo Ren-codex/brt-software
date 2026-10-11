@@ -39,6 +39,7 @@ class PayrollClass
                 // Unordered, the newest payroll lands on the last page, which
                 // reads as "it did not save".
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count ?? 10);
 
         return PayrollResource::collection($payrolls);
@@ -123,9 +124,20 @@ class PayrollClass
     public function update($request, $id)
     {
                 // create payroll items
-        $payroll = Payroll::findOrFail($id);
+        $payroll = Payroll::with('status')->findOrFail($id);
+
+        if ($refusal = $this->editRefusal($payroll)) {
+            return [
+                'data' => null,
+                'message' => 'Payroll cannot be edited',
+                'info' => $refusal,
+                'status' => 'error',
+            ];
+        }
+
+        $wasStatus = optional($payroll->status)->slug;
          // Prevent updating to a payroll when there's already an ongoing (not paid)
-        DB::transaction(function () use ($request, $payroll) {
+        DB::transaction(function () use ($request, $payroll, $wasStatus) {
             $payroll->update([
                 'pay_period_start' => $request->pay_period_start,
                 'pay_period_end' => $request->pay_period_end,
@@ -161,6 +173,11 @@ class PayrollClass
                 'payroll_id' => $payroll->id,
                 'action' => 'updated',
                 'actioned_by_id' => auth()->user()->id,
+                // An edit after submission is the unusual case, so the trail
+                // says which stage the payroll was at when it was changed.
+                'remarks' => $wasStatus && $wasStatus !== 'draft'
+                    ? "Edited by Super Admin while {$wasStatus}"
+                    : null,
             ]);
         });
 
@@ -168,6 +185,36 @@ class PayrollClass
             'message' => 'Payroll updated successfully',
             'info' => "You've successfully updated the payroll"
         ];
+    }
+
+    /**
+     * Why this payroll may not be edited by the current user, or null if it may.
+     *
+     * - A draft is open to whoever can encode payroll, as before.
+     * - Once submitted (awaiting approval, approved for release, disapproved) it
+     *   is locked to everyone except a Super Admin, who can correct it in place.
+     * - A released payroll is closed to everybody: releasing posts the journal
+     *   entry and deducts loan payments, and rewriting the lines afterwards
+     *   would leave the books saying one thing and the payroll another.
+     */
+    private function editRefusal(Payroll $payroll): ?string
+    {
+        $status = optional($payroll->status)->slug;
+
+        if ($status === 'completed') {
+            return 'This payroll has been released. Its journal entry and loan deductions are already posted, so it can no longer be edited.';
+        }
+
+        if ($status === 'draft') {
+            return null;
+        }
+
+        $isSuperAdmin = auth()->user()?->roles()
+            ->where('user_roles.is_active', 1)
+            ->where('name', 'Super Admin')
+            ->exists();
+
+        return $isSuperAdmin ? null : 'Only a Super Admin can edit a payroll after it has been submitted.';
     }
 
     public function destroy($id)

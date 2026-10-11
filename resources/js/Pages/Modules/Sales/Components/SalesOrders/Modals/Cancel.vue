@@ -167,9 +167,9 @@ export default {
     border-radius: 10px;
     display: grid;
     place-items: center;
-    background: rgba(61, 141, 122, 0.12);
-    border: 1px solid rgba(61, 141, 122, 0.16);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.12);
+    border: 1px solid rgba(var(--brt-primary-rgb), 0.16);
+    color: var(--brt-primary);
     font-size: 1.2rem;
     flex-shrink: 0;
 }
@@ -181,14 +181,14 @@ export default {
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
 .modal-header h2 {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .modal-body {

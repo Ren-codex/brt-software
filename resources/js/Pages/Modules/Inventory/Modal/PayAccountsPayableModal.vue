@@ -389,11 +389,11 @@ export default {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6b8c85;
+  color: var(--brt-muted);
 }
 
 .modal-title {
-  color: #16322e;
+  color: var(--brt-ink);
   font-weight: 700;
 }
 
@@ -454,17 +454,17 @@ export default {
 .method-option {
   min-width: 140px;
   padding: 0.85rem 1rem;
-  border: 1px solid #d5e3dd;
+  border: 1px solid var(--brt-c-d5e3dd);
   border-radius: 14px;
   background: #fff;
-  color: #40645d;
+  color: var(--brt-c-40645d);
   font-weight: 700;
   transition: all 0.2s ease;
 }
 
 .method-option.active {
-  background: #3d8d7a;
-  border-color: #3d8d7a;
+  background: var(--brt-primary);
+  border-color: var(--brt-primary);
   color: #fff;
 }
 
@@ -485,8 +485,8 @@ export default {
 
 .form-input:focus {
   outline: none;
-  border-color: #3d8d7a;
-  box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.12);
+  border-color: var(--brt-primary);
+  box-shadow: 0 0 0 4px rgba(var(--brt-primary-rgb), 0.12);
 }
 
 .form-help {
@@ -506,7 +506,7 @@ export default {
 .field-hint {
   display: block;
   margin-top: 0.35rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
   font-size: 0.75rem;
 }
 
@@ -525,7 +525,7 @@ export default {
 }
 
 .footer-btn.primary {
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #fff;
 }
 

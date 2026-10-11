@@ -36,6 +36,11 @@ class SalesOrderResource extends JsonResource
             ] : null,
             'sales_rep_id' => $this->sales_rep_id,
             'driver_id' => $this->driver_id,
+            'checker_id' => $this->checker_id,
+            'checker' => $this->relationLoaded('checker') && $this->checker ? [
+                'id' => $this->checker->id,
+                'fullname' => $this->checker->fullname,
+            ] : null,
             'payment_mode' => $this->payment_mode,
             'due_date' => $this->due_date?->format('M d, Y'),
             'due_date_raw' => $this->due_date?->format('Y-m-d'),
@@ -44,6 +49,12 @@ class SalesOrderResource extends JsonResource
             'delivery_date' => $this->delivery_date?->format('M d, Y'),
             'delivery_date_raw' => $this->delivery_date?->format('Y-m-d'),
             'delivered_at' => $this->delivered_at?->format('M d, Y'),
+            // Encoded as delivered but not yet approved, and why the last
+            // submission was sent back, if it was.
+            'delivery_pending' => $this->awaitsDeliveryApproval(),
+            // On credit and not yet cleared to go out.
+            'credit_pending' => $this->awaitsCreditApproval(),
+            'delivery_rejection' => $this->delivery_rejection,
             'delivered_at_raw' => $this->delivered_at?->format('Y-m-d'),
             'delivered_by' => $this->deliveredBy ? ($this->deliveredBy->employee?->fullname ?? $this->deliveredBy->name) : null,
             'transferred_to' => $this->transferred_to,

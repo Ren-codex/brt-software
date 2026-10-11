@@ -1505,7 +1505,7 @@ const rawPagesEn = [
                 rows: [
                     ['Draft', 'Started, not submitted'],
                     ['Pending', 'Submitted, waiting'],
-                    ['Approval', 'Sitting with an approver'],
+                    ['For Approval', 'Sitting with an approver'],
                     ['Approved', 'Cleared to proceed'],
                     ['Disapproved', 'Rejected, needs rework'],
                     ['Open', 'Active and in progress'],
@@ -2880,7 +2880,7 @@ const rawPagesTl = [
                 rows: [
                     ['Draft', 'Sinimulan, hindi pa naisumite'],
                     ['Pending', 'Naisumite, naghihintay'],
-                    ['Approval', 'Nasa kamay ng approver'],
+                    ['For Approval', 'Nasa kamay ng approver'],
                     ['Approved', 'Pinayagang ipagpatuloy'],
                     ['Disapproved', 'Tinanggihan, kailangan ayusin muli'],
                     ['Open', 'Aktibo at ginagawa'],

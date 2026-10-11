@@ -119,7 +119,7 @@
 
                         <div class="form-group">
                             <label class="form-label">
-                                <i class="ri-money-dollar-circle-line"></i>
+                                <i class="ri-money-peso-circle-line"></i>
                                 Loan Amount
                                 <span class="required">*</span>
                             </label>
@@ -137,10 +137,6 @@
                             <span class="error-message" v-if="form.errors.amount">
                                 <i class="ri-alert-line"></i>
                                 {{ form.errors.amount }}
-                            </span>
-                            <span class="error-message" v-else-if="selectedLoanTypeLimit && principalAmount > selectedLoanTypeLimit">
-                                <i class="ri-alert-line"></i>
-                                Amount must not exceed {{ formatCurrency(selectedLoanTypeLimit) }} for this loan type.
                             </span>
                         </div>
 
@@ -322,7 +318,7 @@ export default {
             currentStep: 1,
             loanTypes: [
                 { value: 'personal', label: 'Personal Loan', icon: 'ri-user-line' },
-                { value: 'salary', label: 'Salary Loan', icon: 'ri-money-dollar-circle-line' },
+                { value: 'salary', label: 'Salary Loan', icon: 'ri-money-peso-circle-line' },
                 { value: 'emergency', label: 'Emergency Loan', icon: 'ri-flashlight-line' },
                 { value: 'cash_advance', label: 'Cash Advance', icon: 'ri-hand-coin-line' }
             ],
@@ -354,11 +350,6 @@ export default {
         principalAmount() {
             const value = parseFloat(this.form.amount);
             return Number.isFinite(value) ? value : 0;
-        },
-        selectedLoanTypeLimit() {
-            const limits = this.dropdowns.loan_type_limits || {};
-            const limit = limits[this.form.loan_type];
-            return limit !== undefined ? parseFloat(limit) : null;
         },
         interestRateValue() {
             const value = parseFloat(this.form.interest_rate);
@@ -399,10 +390,6 @@ export default {
                 }
                 if (!this.form.amount || this.form.amount <= 0) {
                     this.form.errors.amount = 'Please enter a valid loan amount';
-                    return;
-                }
-                if (this.selectedLoanTypeLimit && this.principalAmount > this.selectedLoanTypeLimit) {
-                    this.form.errors.amount = `Amount must not exceed ${this.formatCurrency(this.selectedLoanTypeLimit)} for this loan type.`;
                     return;
                 }
                 if (!this.form.payment_type) {
@@ -526,12 +513,12 @@ export default {
 .modal-title {
     font-size: 0.95rem;
     font-weight: 700;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .modal-subtitle {
     font-size: 0.75rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
 /* Body */
@@ -572,16 +559,16 @@ export default {
 }
 
 .step.active .step-number {
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: white;
-    border-color: #3d8d7a;
-    box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.2);
+    border-color: var(--brt-primary);
+    box-shadow: 0 0 0 4px rgba(var(--brt-primary-rgb), 0.2);
 }
 
 .step.completed .step-number {
-    background: #c4dad2;
-    color: #2c6b5c;
-    border-color: #3d8d7a;
+    background: var(--brt-c-c4dad2);
+    color: var(--brt-c-2c6b5c);
+    border-color: var(--brt-primary);
 }
 
 .step-label {
@@ -593,7 +580,7 @@ export default {
 }
 
 .step.active .step-label {
-    color: #3d8d7a;
+    color: var(--brt-primary);
     font-weight: 600;
 }
 
@@ -606,7 +593,7 @@ export default {
 }
 
 .step-line.active {
-    background: #3d8d7a;
+    background: var(--brt-primary);
 }
 
 /* Section Title */
@@ -616,12 +603,12 @@ export default {
     gap: 0.75rem;
     margin-bottom: 1.5rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid #c4dad2;
+    border-bottom: 2px solid var(--brt-c-c4dad2);
 }
 
 .section-title i {
     font-size: 24px;
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 .section-title h3 {
@@ -653,7 +640,7 @@ export default {
 }
 
 .form-label i {
-    color: #3d8d7a;
+    color: var(--brt-primary);
     font-size: 16px;
 }
 
@@ -682,19 +669,19 @@ export default {
 }
 
 .loan-type-card:hover {
-    border-color: #c4dad2;
+    border-color: var(--brt-c-c4dad2);
     background: #f9fafb;
     transform: translateY(-2px);
 }
 
 .loan-type-card.active {
-    border-color: #3d8d7a;
-    background: linear-gradient(135deg, #f0f9f6 0%, #e8f3ef 100%);
+    border-color: var(--brt-primary);
+    background: linear-gradient(135deg, var(--brt-c-f0f9f6) 0%, var(--brt-c-e8f3ef) 100%);
 }
 
 .loan-type-card i {
     font-size: 24px;
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 .loan-type-card span {
@@ -713,7 +700,7 @@ export default {
     position: absolute;
     left: 12px;
     font-weight: 600;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     font-size: 1rem;
 }
 
@@ -736,8 +723,8 @@ export default {
 
 .form-control:focus {
     outline: none;
-    border-color: #3d8d7a;
-    box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.1);
+    border-color: var(--brt-primary);
+    box-shadow: 0 0 0 3px rgba(var(--brt-primary-rgb), 0.1);
 }
 
 .form-control.input-error {
@@ -763,8 +750,8 @@ export default {
 }
 
 .term-slider-card:focus-within {
-    border-color: #3d8d7a;
-    box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.1);
+    border-color: var(--brt-primary);
+    box-shadow: 0 0 0 3px rgba(var(--brt-primary-rgb), 0.1);
 }
 
 .term-slider-card.slider-error {
@@ -803,8 +790,8 @@ export default {
             to right,
             transparent 0,
             transparent calc(10% - 1px),
-            #dbe4e0 calc(10% - 1px),
-            #dbe4e0 10%
+            var(--brt-c-dbe4e0) calc(10% - 1px),
+            var(--brt-c-dbe4e0) 10%
         );
     z-index: 0;
     pointer-events: none;
@@ -827,7 +814,7 @@ export default {
 .term-slider::-webkit-slider-runnable-track {
     height: 6px;
     border-radius: 999px;
-    background: linear-gradient(90deg, #7eb7a7 0%, #3d8d7a 100%);
+    background: linear-gradient(90deg, #7eb7a7 0%, var(--brt-primary) 100%);
 }
 
 .term-slider::-webkit-slider-thumb {
@@ -836,7 +823,7 @@ export default {
     height: 16px;
     margin-top: -5px;
     border-radius: 50%;
-    border: 3px solid #3d8d7a;
+    border: 3px solid var(--brt-primary);
     background: #ffffff;
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
 }
@@ -844,14 +831,14 @@ export default {
 .term-slider::-moz-range-track {
     height: 6px;
     border-radius: 999px;
-    background: linear-gradient(90deg, #7eb7a7 0%, #3d8d7a 100%);
+    background: linear-gradient(90deg, #7eb7a7 0%, var(--brt-primary) 100%);
 }
 
 .term-slider::-moz-range-thumb {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    border: 3px solid #3d8d7a;
+    border: 3px solid var(--brt-primary);
     background: #ffffff;
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
 }
@@ -872,18 +859,18 @@ export default {
 
 /* Info Card */
 .info-card {
-    background: linear-gradient(135deg, #f0f9f6 0%, #e8f3ef 100%);
+    background: linear-gradient(135deg, var(--brt-c-f0f9f6) 0%, var(--brt-c-e8f3ef) 100%);
     border-radius: 12px;
     padding: 1rem;
     display: flex;
     gap: 1rem;
     margin-top: 1rem;
-    border-left: 3px solid #3d8d7a;
+    border-left: 3px solid var(--brt-primary);
 }
 
 .info-icon i {
     font-size: 32px;
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 .info-details {
@@ -928,7 +915,7 @@ export default {
 
 .summary-header i {
     font-size: 20px;
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 .summary-header h4 {
@@ -956,29 +943,29 @@ export default {
     padding-top: 0.5rem;
     border-top: 1px solid #e5e7eb;
     font-weight: 600;
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 .summary-item.total strong {
     font-size: 1rem;
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 /* Success Alert */
 .success-alert {
-    background: linear-gradient(135deg, #c4dad2 0%, #b3c9c0 100%);
+    background: linear-gradient(135deg, var(--brt-c-c4dad2) 0%, var(--brt-c-b3c9c0) 100%);
     border-radius: 12px;
     padding: 1rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
-    border-left: 3px solid #3d8d7a;
+    border-left: 3px solid var(--brt-primary);
 }
 
 .success-alert i {
     font-size: 24px;
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 .alert-content strong {
@@ -1032,24 +1019,24 @@ export default {
 }
 
 .btn-primary {
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: white;
 }
 
 .btn-primary:hover {
-    background: #2c6b5c;
+    background: var(--brt-c-2c6b5c);
     transform: translateX(2px);
 }
 
 .btn-success {
-    background: linear-gradient(135deg, #3d8d7a 0%, #2c6b5c 100%);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #2c6b5c 100%);
     color: white;
-    box-shadow: 0 2px 4px rgba(61, 141, 122, 0.2);
+    box-shadow: 0 2px 4px rgba(var(--brt-primary-rgb), 0.2);
 }
 
 .btn-success:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(61, 141, 122, 0.3);
+    box-shadow: 0 4px 8px rgba(var(--brt-primary-rgb), 0.3);
 }
 
 .btn-outline {
@@ -1060,7 +1047,7 @@ export default {
 
 .btn-outline:hover {
     background: #f9fafb;
-    border-color: #c4dad2;
+    border-color: var(--brt-c-c4dad2);
 }
 
 .btn:disabled {
@@ -1122,12 +1109,12 @@ export default {
 }
 
 .modal-container::-webkit-scrollbar-thumb {
-    background: #c4dad2;
+    background: var(--brt-c-c4dad2);
     border-radius: 10px;
 }
 
 .modal-container::-webkit-scrollbar-thumb:hover {
-    background: #3d8d7a;
+    background: var(--brt-primary);
 }
 
 /* Responsive */

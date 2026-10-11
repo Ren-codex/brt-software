@@ -165,7 +165,7 @@ export default {
 <style scoped>
 .field-collections {
     background: #fff;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     border-radius: 12px;
     padding: 1.1rem 1.25rem;
     margin-bottom: 1.5rem;
@@ -187,12 +187,12 @@ export default {
 .fc-head h3 {
     font-size: 1.05rem;
     font-weight: 600;
-    color: #16322e;
+    color: var(--brt-ink);
     margin: 0 0 0.2rem;
 }
 
 .fc-head p {
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 0.85rem;
     margin: 0;
     max-width: 52ch;
@@ -201,16 +201,16 @@ export default {
 .fc-empty {
     text-align: center;
     padding: 2.5rem 1rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
 .fc-empty i {
     font-size: 1.8rem;
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 .fc-group {
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     border-radius: 10px;
     overflow: hidden;
     margin-bottom: 1rem;
@@ -221,17 +221,17 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 0.65rem 0.9rem;
-    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+    background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
 }
 
 .fc-holder {
     font-weight: 600;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .fc-total {
     font-weight: 600;
-    color: #16322e;
+    color: var(--brt-ink);
     font-variant-numeric: tabular-nums;
 }
 
@@ -245,17 +245,17 @@ export default {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #6b8c85;
+    color: var(--brt-muted);
     text-align: left;
     padding: 0.5rem 0.9rem;
-    border-bottom: 1px solid #edf6f2;
+    border-bottom: 1px solid var(--brt-tint-2);
 }
 
 .fc-table td {
     padding: 0.6rem 0.9rem;
-    border-bottom: 1px solid #f1f7f4;
+    border-bottom: 1px solid var(--brt-c-f1f7f4);
     font-size: 0.88rem;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .fc-days {
@@ -282,8 +282,8 @@ export default {
 }
 
 .fc-ext {
-    background: #edf6f2;
-    color: #3d8d7a;
+    background: var(--brt-tint-2);
+    color: var(--brt-primary);
 }
 
 .fc-unconfirmed {
@@ -294,7 +294,7 @@ export default {
 .fc-link {
     background: none;
     border: none;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     font-size: 0.82rem;
     font-weight: 600;
     padding: 0 0.3rem;
@@ -302,19 +302,19 @@ export default {
 }
 
 .fc-link:disabled {
-    color: #9bb5ad;
+    color: var(--brt-c-9bb5ad);
     cursor: default;
 }
 
 .fc-link-quiet {
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-weight: 500;
 }
 
 .fc-select {
     font-size: 0.82rem;
     padding: 0.2rem 0.4rem;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     border-radius: 6px;
     margin-right: 0.3rem;
 }

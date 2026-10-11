@@ -24,6 +24,7 @@
                         <i class="ri-search-line search-icon"></i>
                         <input type="text" v-model="filter.keyword" placeholder="Search funds..." class="search-input">
                     </div>
+                    <SortSelect v-model="sortOption" :fields="[{ field: 'name', label: 'Name' }, { field: 'balance', label: 'Balance', type: 'number' }]" @change="fetch()" />
                 </div>
 
                 <div class="table-section">
@@ -94,6 +95,7 @@
 
 <script>
 import _ from 'lodash';
+import { listSortMixin } from '@/Shared/listSort.js';
 import AccountingLayout from '@/Pages/Modules/Accounting/AccountingLayout.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import Create from '@/Pages/Modules/Libraries/Funds/Modals/Create.vue';
@@ -104,6 +106,7 @@ import Swal from 'sweetalert2';
 
 export default {
     components: { AccountingLayout, Pagination, Create, TopUp, AdjustBalance, TableLoadingRow },
+    mixins: [listSortMixin],
     props: {
         bankAccounts: { type: Array, default: () => [] },
     },
@@ -127,7 +130,7 @@ export default {
             page_url = page_url || '/accounting/funds';
             this.loading = true;
             axios.get(page_url, {
-                params: { option: 'lists', keyword: this.filter.keyword, count: 10 }
+                params: { ...this.sortParams, option: 'lists', keyword: this.filter.keyword, count: 10 }
             })
             .then(res => {
                 this.lists = res.data.data;

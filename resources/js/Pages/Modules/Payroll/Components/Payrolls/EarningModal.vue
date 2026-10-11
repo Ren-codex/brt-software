@@ -162,8 +162,8 @@ export default {
 }
 
 .form-summary {
-  background: #e8f4f2;
-  border: 1px solid #3D8D7A;
+  background: var(--brt-c-e8f4f2);
+  border: 1px solid var(--brt-primary);
   border-radius: 8px;
   padding: 1rem;
   margin-top: 1rem;
@@ -175,7 +175,7 @@ export default {
   padding: 0.25rem 0;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #3D8D7A;
+  color: var(--brt-primary);
 }
 
 .form-actions {
@@ -208,14 +208,14 @@ export default {
 }
 
 .btn-save {
-  background: #3D8D7A;
-  border: 1px solid #3D8D7A;
+  background: var(--brt-primary);
+  border: 1px solid var(--brt-primary);
   color: white;
 }
 
 .btn-save:hover {
-  background: #2d6d5e;
-  border-color: #2d6d5e;
+  background: var(--brt-c-2d6d5e);
+  border-color: var(--brt-c-2d6d5e);
 }
 
 .modal-container {
@@ -260,8 +260,8 @@ export default {
 
 .form-control:focus {
   outline: none;
-  border-color: #3D8D7A;
-  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.1);
+  border-color: var(--brt-primary);
+  box-shadow: 0 0 0 3px rgba(var(--brt-primary-rgb), 0.1);
 }
 
 .form-control.is-invalid {

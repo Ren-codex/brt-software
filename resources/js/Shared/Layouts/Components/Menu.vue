@@ -15,6 +15,19 @@
                 </Link>
             </li>
 
+            <!-- Shown to anyone holding an approver level on any module. The
+                 page spans several modules, so there is no single module gate
+                 that fits it; ApprovalService filters the contents per user. -->
+            <li class="nav-item" v-if="canApproveAnything()">
+                <Link href="/approvals" class="nav-link menu-link"
+                    :class="{ 'active': $page.url.startsWith('/approvals') }">
+                <i class="ri-checkbox-circle-line"></i>
+                <span class="fw-semibold fs-14">Approvals</span>
+                <span class="menu-link-bg"></span>
+                <span class="active-indicator"></span>
+                </Link>
+            </li>
+
             <!-- ── MANAGEMENT ── -->
             <li class="nav-group-label"
                 v-if="canAny('employees') || canAny('user_management') || canAny('inventory') || canAny('sales') || canAny('customers') || canAny('libraries')">
@@ -86,7 +99,7 @@
                 <li class="nav-item" v-if="canAny('libraries')">
                     <Link href="/suppliers" class="nav-link menu-link"
                         :class="{ 'active': $page.url.startsWith('/libraries/suppliers') }">
-                    <i class="ri-money-dollar-circle-fill"></i>
+                    <i class="ri-money-peso-circle-fill"></i>
                     <span class="fw-semibold fs-14" data-key="t-dashboards">Suppliers</span>
                     <span class="menu-link-bg"></span>
                     <span class="active-indicator"></span>
@@ -300,7 +313,7 @@ html[data-sidebar-size="sm-hover"] .navbar-menu:not(:hover) .nav-group-label:fir
 .menu-link-bg {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(45, 164, 135, 0.14), rgba(30, 126, 103, 0.07));
+    background: linear-gradient(135deg, rgba(var(--brt-menu-to-rgb), 0.14), rgba(var(--brt-menu-from-rgb), 0.07));
     border-radius: 10px;
     opacity: 0;
     transition: opacity 0.18s ease-out;
@@ -309,7 +322,7 @@ html[data-sidebar-size="sm-hover"] .navbar-menu:not(:hover) .nav-group-label:fir
 
 /* Hover — subtle shift, no bounce */
 .menu-link:hover {
-    border-color: rgba(45, 164, 135, 0.2);
+    border-color: rgba(var(--brt-menu-to-rgb), 0.2);
     background: rgba(255, 255, 255, 0.07);
     transform: translateX(4px);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
@@ -323,9 +336,9 @@ html[data-sidebar-size="sm-hover"] .navbar-menu:not(:hover) .nav-group-label:fir
 /* Active — stays in place, full gradient */
 .menu-link.active {
     color: #ffffff !important;
-    background: linear-gradient(135deg, #1a7460, #2da487);
-    border-color: rgba(26, 116, 96, 0.6);
-    box-shadow: 0 4px 16px rgba(26, 116, 96, 0.4);
+    background: linear-gradient(135deg, var(--brt-menu-from), var(--brt-menu-to));
+    border-color: rgba(var(--brt-menu-from-rgb), 0.6);
+    box-shadow: 0 4px 16px rgba(var(--brt-menu-from-rgb), 0.4);
     transform: none;
 }
 
@@ -341,10 +354,10 @@ html[data-sidebar-size="sm-hover"] .navbar-menu:not(:hover) .nav-group-label:fir
     transform: translateY(-50%) scale(0);
     width: 7px;
     height: 7px;
-    background: #4ade80;
+    background: var(--brt-menu-glow);
     border-radius: 50%;
     transition: transform 0.2s ease-out;
-    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6);
+    box-shadow: 0 0 0 0 rgba(var(--brt-menu-glow-rgb), 0.6);
 }
 
 .menu-link.active .active-indicator {
@@ -440,20 +453,20 @@ html[data-sidebar-size="sm-hover"] .navbar-menu:not(:hover) .nav-group-label:fir
 }
 
 .submenu-link:hover .submenu-dot {
-    background: #4db89e;
+    background: var(--brt-menu-dot);
     transform: scale(1.5);
 }
 
 .submenu-link.active {
     color: #ffffff;
     font-weight: 500;
-    background: rgba(45, 164, 135, 0.15);
+    background: rgba(var(--brt-menu-to-rgb), 0.15);
     padding-left: 1rem;
 }
 
 .submenu-link.active .submenu-dot {
-    background: #4db89e;
-    box-shadow: 0 0 0 2px rgba(77, 184, 158, 0.3);
+    background: var(--brt-menu-dot);
+    box-shadow: 0 0 0 2px rgba(var(--brt-menu-dot-rgb), 0.3);
     transform: scale(1.4);
 }
 
@@ -480,9 +493,9 @@ html[data-sidebar-size="sm-hover"] .navbar-menu:not(:hover) .nav-group-label:fir
 }
 
 @keyframes pulseActive {
-    0%   { box-shadow: 0 0 0 0   rgba(74, 222, 128, 0.6); }
-    60%  { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
-    100% { box-shadow: 0 0 0 0   rgba(74, 222, 128, 0); }
+    0%   { box-shadow: 0 0 0 0   rgba(var(--brt-menu-glow-rgb), 0.6); }
+    60%  { box-shadow: 0 0 0 6px rgba(var(--brt-menu-glow-rgb), 0); }
+    100% { box-shadow: 0 0 0 0   rgba(var(--brt-menu-glow-rgb), 0); }
 }
 
 /* ── Collapsed sidebar ── */

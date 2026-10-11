@@ -14,9 +14,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Regression coverage for punch-list items #1 and #3: a loan/cash-advance
- * withdrawal must not exceed a per-loan-type cap, and must declare whether
- * it's disbursed as cash or check.
+ * A loan must declare whether it is disbursed as cash or check.
+ *
+ * It used to be capped per loan type as well. That cap was removed on request —
+ * the amount is now the approver's decision — so the tests below pin the
+ * opposite: an amount over the old cap is accepted.
  */
 class LoanAmountLimitTest extends TestCase
 {
@@ -58,7 +60,7 @@ class LoanAmountLimitTest extends TestCase
         ]);
     }
 
-    public function test_amount_over_the_loan_types_limit_is_rejected(): void
+    public function test_amount_over_the_old_loan_type_cap_is_accepted(): void
     {
         $user = $this->adminUser();
         $employee = $this->makeEmployee();
@@ -71,10 +73,11 @@ class LoanAmountLimitTest extends TestCase
             'amount' => $limit->max_amount + 1,
             'interest_rate' => 0,
             'term_months' => 6,
+            'status' => 'pending',
         ]);
 
-        $response->assertSessionHasErrors('amount');
-        $this->assertDatabaseCount('loans', 0);
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseCount('loans', 1);
     }
 
     public function test_amount_within_the_loan_types_limit_is_accepted(): void
@@ -113,13 +116,13 @@ class LoanAmountLimitTest extends TestCase
         $response->assertSessionHasErrors('payment_type');
     }
 
-    public function test_different_loan_types_enforce_their_own_limit(): void
+    public function test_no_loan_type_enforces_a_cap(): void
     {
         $user = $this->adminUser();
         $employee = $this->makeEmployee();
         $cashAdvanceLimit = LoanTypeLimit::where('loan_type', 'cash_advance')->firstOrFail();
 
-        // Over the cash_advance limit but comfortably under the personal limit.
+        // Over what used to be the cash_advance cap.
         $response = $this->actingAs($user)->post('/loans', [
             'employee_id' => $employee->id,
             'loan_type' => 'cash_advance',
@@ -127,8 +130,9 @@ class LoanAmountLimitTest extends TestCase
             'amount' => $cashAdvanceLimit->max_amount + 500,
             'interest_rate' => 0,
             'term_months' => 6,
+            'status' => 'pending',
         ]);
 
-        $response->assertSessionHasErrors('amount');
+        $response->assertSessionHasNoErrors();
     }
 }

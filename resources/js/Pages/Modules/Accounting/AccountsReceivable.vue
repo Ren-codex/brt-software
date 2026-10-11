@@ -202,17 +202,17 @@ export default {
     align-items: center;
     padding: 0.3rem 0.75rem;
     border-radius: 999px;
-    background: #f0f5f3;
-    color: #48665c;
+    background: var(--brt-c-f0f5f3);
+    color: var(--brt-c-48665c);
     font-size: 0.75rem;
     font-weight: 700;
-    border: 1px solid #d1e4dc;
+    border: 1px solid var(--brt-c-d1e4dc);
     white-space: nowrap;
 }
 
 .ar-table thead th {
-    background: #edf5f2;
-    color: #527267;
+    background: var(--brt-c-edf5f2);
+    color: var(--brt-c-527267);
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -234,11 +234,11 @@ export default {
     min-width: 28px;
     padding: 2px 6px;
     border-radius: 999px;
-    background: #edf5f2;
-    color: #3d6b5f;
+    background: var(--brt-c-edf5f2);
+    color: var(--brt-c-3d6b5f);
     font-size: 0.72rem;
     font-weight: 700;
-    border: 1px solid #c8e3da;
+    border: 1px solid var(--brt-c-c8e3da);
 }
 
 .aging-chip {
@@ -264,7 +264,7 @@ export default {
 }
 .empty-state i {
     font-size: 2rem;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     display: block;
     margin-bottom: 0.5rem;
 }

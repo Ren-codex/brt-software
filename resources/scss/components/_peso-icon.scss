@@ -1,0 +1,47 @@
+// Peso icons.
+//
+// The icon font shipped with this app (Remix Icon) has dollar, euro, pound and
+// yuan money icons but no peso, and this is a Philippine business. These
+// classes draw one from the ₱ character itself, sized and aligned to sit
+// wherever the dollar icons used to:
+//
+//   ri-money-peso-circle-line   ₱ inside an outlined circle
+//   ri-money-peso-circle-fill   ₱ inside a filled circle
+//   ri-money-peso-line          a bare ₱
+//
+// They are written as ri-* names on purpose, so they pick up the same base
+// rules as every other icon (inline-block, antialiasing) and can be swapped in
+// markup one-for-one. The :before sets its own font, because the icon font has
+// no glyph for ₱.
+
+.ri-money-peso-circle-line:before,
+.ri-money-peso-circle-fill:before,
+.ri-money-peso-line:before {
+    content: "\20B1"; // ₱
+    font-family: "Segoe UI", Roboto, Arial, "Noto Sans", sans-serif;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 1;
+}
+
+.ri-money-peso-circle-line:before,
+.ri-money-peso-circle-fill:before {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    // The sign is drawn smaller than the icon and the circle sized back up
+    // around it, so the whole thing comes out about one icon wide.
+    font-size: 0.6em;
+    width: 1.6em;
+    height: 1.6em;
+    border: 0.15em solid currentColor;
+    border-radius: 50%;
+    vertical-align: 0.08em;
+}
+
+.ri-money-peso-circle-fill:before {
+    background: currentColor;
+    // White sign on a disc of the icon's own colour.
+    -webkit-text-fill-color: #fff;
+}

@@ -16,6 +16,7 @@ class FundClass
         return FundResource::collection(
             PettyCashFund::when($request->keyword, fn ($q, $kw) => $q->where('name', 'LIKE', "%{$kw}%"))
                 ->orderBy('name')
+                ->sortFromRequest()
                 ->paginate($request->count ?? 15)
         );
     }

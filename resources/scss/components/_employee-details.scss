@@ -2,7 +2,7 @@
 /* Employee Details Page Styles */
 
 .emp-create-btn {
-    background: #3D8D7A;
+    background: var(--brt-primary);
     border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
     padding: 0.5rem 1rem;
@@ -45,7 +45,7 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    background-color: #c4dad2;
+    background-color: var(--brt-c-c4dad2);
 }
 
 .emp-profile-avatar-section {
@@ -438,7 +438,7 @@
 
 .emp-progress-fill {
     height: 100%;
-    background: linear-gradient(135deg, #3D8D7A 0%, #2E6B5C 100%);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #2E6B5C 100%);
     border-radius: 5px;
     transition: width 0.4s ease;
 }
@@ -537,7 +537,7 @@
     align-items: center;
     gap: 16px;
     padding: 20px;
-    background: #c4dad2;
+    background: var(--brt-c-c4dad2);
     border-bottom: 1px solid #e9ecef;
 }
 
@@ -545,7 +545,7 @@
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #3D8D7A 0%, #2E6B5C 100%);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #2E6B5C 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -650,8 +650,8 @@
 
 .emp-progress-percentage {
     font-weight: 600;
-    color: #3D8D7A;
-    background: rgba(61, 141, 122, 0.1);
+    color: var(--brt-primary);
+    background: rgba(var(--brt-primary-rgb), 0.1);
     padding: 4px 12px;
     border-radius: 12px;
     font-size: 13px;
@@ -668,7 +668,7 @@
 
 .emp-progress-fill {
     height: 100%;
-    background: linear-gradient(135deg, #3D8D7A 0%, #2E6B5C 100%);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #2E6B5C 100%);
     border-radius: 5px;
     transition: width 0.4s ease;
 }
@@ -717,7 +717,7 @@
 .emp-detail-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border-color: #3D8D7A;
+    border-color: var(--brt-primary);
 }
 
 .emp-detail-header {
@@ -729,7 +729,7 @@
 
 .emp-detail-header i {
     font-size: 20px;
-    color: #3D8D7A;
+    color: var(--brt-primary);
 }
 
 .emp-detail-title {
@@ -804,7 +804,7 @@
 }
 
 .emp-btn-view-details {
-    background: #3D8D7A;
+    background: var(--brt-primary);
     border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
     padding: 10px 20px;
@@ -839,7 +839,7 @@
 
 .emp-btn-collapse:hover {
     background: rgba(0, 0, 0, 0.05);
-    color: #3D8D7A;
+    color: var(--brt-primary);
 }
 
 /* Enhanced Incentives Section */
@@ -860,13 +860,13 @@
 .emp-incentives-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    border-color: #3D8D7A;
+    border-color: var(--brt-primary);
 }
 
 .emp-incentives-header {
     padding: 24px;
-    background: #c4dad2;
-    border-bottom: 1px solid rgba(61, 141, 122, 0.1);
+    background: var(--brt-c-c4dad2);
+    border-bottom: 1px solid rgba(var(--brt-primary-rgb), 0.1);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -887,18 +887,18 @@
     display: block;
     width: 4px;
     height: 24px;
-    background: #c4dad2;
+    background: var(--brt-c-c4dad2);
     border-radius: 2px;
 }
 
 .emp-incentives-period {
     font-size: 14px;
-    color: #3D8D7A;
-    background: rgba(61, 141, 122, 0.1);
+    color: var(--brt-primary);
+    background: rgba(var(--brt-primary-rgb), 0.1);
     padding: 8px 20px;
     border-radius: 20px;
     font-weight: 600;
-    border: 1px solid rgba(61, 141, 122, 0.2);
+    border: 1px solid rgba(var(--brt-primary-rgb), 0.2);
 }
 
 .emp-incentives-stats {
@@ -934,7 +934,7 @@
 .emp-incentives-stat:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-    border-color: #3D8D7A;
+    border-color: var(--brt-primary);
     background: white;
 }
 
@@ -945,7 +945,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(135deg, #3D8D7A 0%, #2E6B5C 100%);
+    background: linear-gradient(135deg, var(--brt-primary) 0%, #2E6B5C 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -974,7 +974,7 @@
 }
 
 .emp-incentives-stat:nth-child(1) .emp-stat-value {
-    color: #3D8D7A;
+    color: var(--brt-primary);
 }
 
 .emp-incentives-stat:nth-child(2) .emp-stat-value {
@@ -997,9 +997,9 @@
 }
 
 .emp-incentives-stat .emp-stat-change.emp-positive {
-    background: linear-gradient(135deg, rgba(61, 141, 122, 0.15) 0%, rgba(46, 107, 92, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(var(--brt-primary-rgb), 0.15) 0%, rgba(46, 107, 92, 0.1) 100%);
     color: #155724;
-    border: 1px solid rgba(61, 141, 122, 0.2);
+    border: 1px solid rgba(var(--brt-primary-rgb), 0.2);
 }
 
 .emp-incentives-stat .emp-stat-change.emp-positive::before {

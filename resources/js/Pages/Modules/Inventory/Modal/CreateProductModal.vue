@@ -338,8 +338,8 @@ export default {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #3d8d7a;
-    background: rgba(61,141,122,0.10);
+    color: var(--brt-primary);
+    background: rgba(var(--brt-primary-rgb),0.10);
     border-radius: 4px;
     padding: 1px 6px;
     margin-left: 6px;
@@ -352,11 +352,11 @@ export default {
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     font-size: 1rem;
     cursor: pointer;
     padding: 2px 4px;
     line-height: 1;
 }
-.code-regen-btn:hover { color: #16322e; }
+.code-regen-btn:hover { color: var(--brt-ink); }
 </style>
