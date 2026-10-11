@@ -16,40 +16,45 @@
 
                 </div>
                 <div class="library-card-body">
-                    <div class="status-tab-bar">
-                        <button
-                            v-for="tab in statusTabs"
-                            :key="tab.slug || 'all'"
-                            class="status-tab-btn"
-                            :class="{ active: filter.status === tab.slug }"
-                            @click="filter.status = tab.slug; fetch()"
-                        >
-                            {{ tab.label }}
-                        </button>
-                    </div>
-
-                    <div class="search-section">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="search-wrapper">
-                                    <i class="ri-search-line search-icon"></i>
-                                    <input type="text" v-model="filter.keyword"
-                                        placeholder="Search receipt..." class="search-input">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="search-wrapper">
-                                    <i class="ri-map-pin-line search-icon"></i>
-                                    <select v-model="filter.location_id" @change="fetch()" class="search-input">
-                                        <option :value="null">All Locations</option>
-                                        <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
-                                            {{ location.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
+                    <!-- Search, location, status and sort share one row; they wrap
+                         only when the screen is too narrow to hold them. -->
+                    <div class="tabs-search-row">
+                        <div class="status-tab-bar">
+                            <button
+                                v-for="tab in statusTabs"
+                                :key="tab.slug || 'all'"
+                                class="status-tab-btn"
+                                :class="{ active: filter.status === tab.slug }"
+                                @click="filter.status = tab.slug; fetch()"
+                            >
+                                {{ tab.label }}
+                            </button>
                         </div>
 
+                        <div class="search-section">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="search-wrapper">
+                                        <i class="ri-search-line search-icon"></i>
+                                        <input type="text" v-model="filter.keyword"
+                                            placeholder="Search receipt..." class="search-input">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="search-wrapper">
+                                        <i class="ri-map-pin-line search-icon"></i>
+                                        <select v-model="filter.location_id" @change="fetch()" class="search-input">
+                                            <option :value="null">All Locations</option>
+                                            <option v-for="location in dropdowns.locations" :key="location.value" :value="location.value">
+                                                {{ location.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <SortSelect v-model="sortOption" :fields="[{ field: 'receipt_number', label: 'Receipt no.' }, { field: 'receipt_date', label: 'Receipt date', type: 'date' }, { field: 'amount_paid', label: 'Amount', type: 'number' }]" @change="fetch()" />
+                        </div>
                     </div>
 
 
@@ -181,6 +186,7 @@
 </template>
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
+import { listSortMixin } from '@/Shared/listSort.js';
 import { paymentTone, paymentLabel } from '@/Shared/utils/paymentType.js';
 import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
@@ -190,10 +196,10 @@ import { pollingMixin } from '@/Shared/polling.js';
 
 
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     components: { PageHeader, Pagination, TableLoadingRow },
-    mixins: [pollingMixin],
+    mixins: [listSortMixin, pollingMixin],
     props: ['dropdowns', 'isExternal'],
     data(){
         return {
@@ -266,7 +272,7 @@ export default {
                     location_id: this.filter.location_id,
                     status: this.filter.status,
                     count: 10,
-                    option: 'lists',
+                    ...this.sortParams, option: 'lists',
                     is_external: this.isExternal ? 1 : 0
                 }
             })
@@ -305,7 +311,7 @@ export default {
         },
 
         onPrint(id) {
-            printDocument(`/receipts/${id}?option=print&type=receipt`);
+            openOrPrint(`/receipts/${id}?option=print&type=receipt`);
         },
         getReceiptTypeLabel(type) {
             if (type === 'updated') return 'Adjusted Payment';
@@ -332,17 +338,17 @@ export default {
 .status-tab-btn {
     padding: 6px 16px;
     border-radius: 8px;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     background: #fff;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.status-tab-btn:hover { background: #edf6f2; color: #16322e; }
-.status-tab-btn.active { background: #3D8D7A; border-color: #3D8D7A; color: #fff; }
+.status-tab-btn:hover { background: var(--brt-tint-2); color: var(--brt-ink); }
+.status-tab-btn.active { background: var(--brt-primary); border-color: var(--brt-primary); color: #fff; }
 
 .main-table-row {
     transition: all 0.2s ease;

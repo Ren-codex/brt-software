@@ -5,17 +5,23 @@
                 <div class="library-card-header">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
-                                <i class="ri-money-dollar-circle-line fs-24"></i>
+                                <i class="ri-money-peso-circle-line fs-24"></i>
                             </div>
                             <div>
                                 <h4 class="header-title mb-1">Payroll Management</h4>
                                 <p class="header-subtitle mb-0">A comprehensive list of Payrolls</p>
                             </div>
                         </div>
-                        <button v-if="can('payroll', 'payroll_processing', 'encoder')" class="create-btn" @click="showCreateModal = true">
-                            <i class="ri-add-line"></i>
-                            <span>Add Payroll</span>
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="guide-btn" @click="openGuide()">
+                                <i class="ri-book-open-line"></i>
+                                <span>Guide</span>
+                            </button>
+                            <button v-if="can('payroll', 'payroll_processing', 'encoder')" class="create-btn" @click="showCreateModal = true">
+                                <i class="ri-add-line"></i>
+                                <span>Add Payroll</span>
+                            </button>
+                        </div>
                 </div>
                 <div class="card-body m-2 p-3">
                     <div class="search-section">
@@ -24,6 +30,7 @@
                             <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
                                 placeholder="Search payrolls..." class="search-input">
                         </div>
+                        <SortSelect v-model="sortOption" :fields="[{ field: 'payroll_no', label: 'Payroll no.' }, { field: 'pay_period_start', label: 'Pay period', type: 'date' }, { field: 'total_amount', label: 'Total', type: 'number' }]" @change="fetchPayrolls()" />
                     </div>
 
                     <div class="table-responsive table-card">
@@ -46,7 +53,7 @@
                                 <TableLoadingRow v-if="loading" :colspan="9" message="Loading payrolls..." />
                                 <template v-else>
                                     <template v-for="(payroll, index) in payrolls" :key="payroll.id">
-                                        <tr @click="editPayroll(payroll)" :class="{
+                                        <tr @click="viewPayroll(payroll)" :class="{
                                             'bg-primary bg-opacity-10 ': index === selectedRow,
                                             'cursor-pointer': true
                                         }" class="transition-all" style="transition: all 0.3s ease;">
@@ -67,18 +74,25 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center gap-1">
-                                                    <b-button v-if="can('payroll', 'payroll_processing', 'encoder')" @click.stop="editPayroll(payroll)" variant="outline-primary"
-                                                      v-b-tooltip.hover title="Edit" size="sm"
+                                                    <!-- View opens the payroll to read; Edit opens the form.
+                                                         They used to share one eye icon labelled "Edit". -->
+                                                    <b-button @click.stop="viewPayroll(payroll)" variant="outline-primary"
+                                                      v-b-tooltip.hover title="View" size="sm"
                                                       class="btn-icon rounded-circle">
                                                       <i class="ri-eye-line"></i>
+                                                    </b-button>
+                                                    <b-button v-if="canEdit(payroll)" @click.stop="openEdit(payroll)" variant="outline-success"
+                                                      v-b-tooltip.hover title="Edit" size="sm"
+                                                      class="btn-icon rounded-circle">
+                                                      <i class="ri-pencil-line"></i>
                                                     </b-button>
                                                     <b-button @click.stop="printPayroll(payroll)" variant="outline-info"
                                                         v-b-tooltip.hover title="Print" size="sm"
                                                         class="btn-icon rounded-circle"
-                                                        v-if="payroll.status != 'draft'">
+                                                        v-if="payroll.status?.slug !== 'draft'">
                                                         <i class="ri-printer-line"></i>
                                                     </b-button>
-                                                    <b-button v-if="payroll.status == 'draft' && can('payroll', 'payroll_processing', 'admin')" @click.stop="confirmDelete(payroll)" variant="outline-danger"
+                                                    <b-button v-if="payroll.status?.slug === 'draft' && can('payroll', 'payroll_processing', 'admin')" @click.stop="confirmDelete(payroll)" variant="outline-danger"
                                                         v-b-tooltip.hover title="Delete" size="sm"
                                                         class="btn-icon rounded-circle">
                                                         <i class="ri-delete-bin-line"></i>
@@ -112,19 +126,31 @@
       @close="closeModal"
       @saved="handleSaved"
     />
+    <PayrollModal
+      v-if="showEditModal && selectedPayroll"
+      :payroll="selectedPayroll"
+      :is-edit="true"
+      :keep-status="selectedPayroll.status?.slug !== 'draft'"
+      :dropdowns="dropdowns"
+      @close="closeModal"
+      @saved="handleSaved"
+    />
 </template>
 
 <script>
 import _ from 'lodash';
+import { listSortMixin } from '@/Shared/listSort.js';
 import axios from 'axios'
 import PayrollModal from './Modal.vue'
+import { openGuide } from '@/Shared/Components/ModuleGuide/moduleGuides.js';
 import Pagination from "@/Shared/Components/Pagination.vue";
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Swal from 'sweetalert2';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openDocument } from '@/Shared/utils/printDocument';
 export default {
   components: { PayrollModal, Pagination, TableLoadingRow },
+  mixins: [listSortMixin],
   props: ['dropdowns'],
   data() {
     return {
@@ -139,6 +165,7 @@ export default {
       },
       localKeyword: '',
       showCreateModal: false,
+      showEditModal: false,
       selectedPayroll: null,
       selectedRow: null,
       loading: false,
@@ -162,7 +189,7 @@ export default {
         params: {
           keyword: this.filter.keyword,
           count: 10,
-          option: 'lists',
+          ...this.sortParams, option: 'lists',
         }
       })
         .then(response => {
@@ -189,11 +216,43 @@ export default {
     updateKeyword(value) {
       this.filter.keyword = value;
     },
-    editPayroll(payroll) {
+    viewPayroll(payroll) {
       this.$emit('view', payroll)
     },
+    // Payroll documents open in their own tab, where they can be read,
+    // zoomed, saved or printed, rather than raising the print dialog here.
+    openPrint(url) {
+      if (!openDocument(url)) {
+        this.$toast?.error("Your browser blocked the new tab. Allow pop-ups for this site and try again.");
+      }
+    },
+    // Opens the guide book on the payroll chapter.
+    openGuide() {
+      openGuide('payroll');
+    },
     printPayroll(payroll) {
-      printDocument(`/payrolls/${payroll.id}/print`);
+      this.openPrint(`/payrolls/${payroll.id}/print`);
+    },
+    /**
+     * Who gets the pencil — the same rule the server enforces when saving:
+     * a draft belongs to whoever created it, a submitted payroll can be
+     * corrected only by a Super Admin, and a released one by nobody.
+     */
+    canEdit(payroll) {
+      const slug = payroll.status?.slug;
+      if (slug === 'completed') return false;
+
+      const roles = this.$page.props.roles;
+      const isSuperAdmin = (roles ? Object.values(roles) : []).includes('Super Admin');
+      if (isSuperAdmin) return true;
+
+      return slug === 'draft'
+        && this.can('payroll', 'payroll_processing', 'encoder')
+        && payroll.created_by_id === this.$page.props.user.data.id;
+    },
+    openEdit(payroll) {
+      this.selectedPayroll = payroll;
+      this.showEditModal = true;
     },
   
     closeModal() {
@@ -222,6 +281,28 @@ export default {
 }
 </script>
 <style scoped>
+/* Quieter than Add Payroll: it is help, not the main action. */
+.guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.85rem;
+  border: 1px solid var(--brt-c-b7cec4);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--brt-primary-dark);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.guide-btn:hover {
+  background: var(--brt-c-f1f8f5);
+  border-color: var(--brt-primary);
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

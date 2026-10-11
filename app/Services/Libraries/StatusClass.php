@@ -18,6 +18,7 @@ class StatusClass
                           ->orWhere('bg_color', 'LIKE', "%{$keyword}%");
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count)
         );
         return $data;

@@ -25,6 +25,7 @@ class ContactClass
                 $query->where('is_read', true);
             })
             ->orderBy('created_at', 'DESC')
+            ->sortFromRequest()
             ->paginate($request->count ?? 10)
         );
         return $data;

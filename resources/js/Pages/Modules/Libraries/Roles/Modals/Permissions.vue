@@ -275,7 +275,7 @@ export default {
   top: -16px;
   z-index: 3;
   background: #fff;
-  box-shadow: inset 0 -1px 0 #dcebe6, 0 2px 4px rgba(22, 50, 46, 0.06);
+  box-shadow: inset 0 -1px 0 var(--brt-c-dcebe6), 0 2px 4px rgba(var(--brt-c-16322e-rgb), 0.06);
 }
 .perm-head {
   display: flex;
@@ -283,12 +283,12 @@ export default {
   align-items: center;
   gap: 0.2rem;
 }
-.perm-head i { font-size: 1.05rem; color: #3d8d7a; }
+.perm-head i { font-size: 1.05rem; color: var(--brt-primary); }
 .perm-head span { font-size: 0.78rem; }
 .module-row td { background: #f7fbf9; font-weight: 600; }
-.submodule-row .submodule-name { padding-left: 2rem; color: #5a7a73; }
-.permissions-loading { display: flex; align-items: center; gap: .5rem; padding: 2rem; justify-content: center; color: #6b8c85; }
-.modal-subtitle { font-size: .8rem; color: #6b8c85; margin: 0; }
+.submodule-row .submodule-name { padding-left: 2rem; color: var(--brt-c-5a7a73); }
+.permissions-loading { display: flex; align-items: center; gap: .5rem; padding: 2rem; justify-content: center; color: var(--brt-muted); }
+.modal-subtitle { font-size: .8rem; color: var(--brt-muted); margin: 0; }
 
 .perm-checkbox {
   display: flex;
@@ -302,7 +302,7 @@ export default {
   border-radius: 8px;
   transition: background-color 0.15s ease;
 }
-.perm-checkbox:hover { background-color: rgba(61, 141, 122, 0.08); }
+.perm-checkbox:hover { background-color: rgba(var(--brt-primary-rgb), 0.08); }
 .perm-checkbox input[type="checkbox"] {
   position: absolute;
   opacity: 0;
@@ -315,7 +315,7 @@ export default {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border: 2px solid #c4d9d2;
+  border: 2px solid var(--brt-border);
   border-radius: 7px;
   background: #fff;
   color: transparent;
@@ -323,14 +323,14 @@ export default {
   line-height: 1;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
-.perm-checkbox:hover .perm-checkbox-box { border-color: #3d8d7a; }
+.perm-checkbox:hover .perm-checkbox-box { border-color: var(--brt-primary); }
 .perm-checkbox.checked .perm-checkbox-box {
-  background-color: #3d8d7a;
-  border-color: #3d8d7a;
+  background-color: var(--brt-primary);
+  border-color: var(--brt-primary);
   color: #fff;
 }
 .perm-checkbox input[type="checkbox"]:focus-visible ~ .perm-checkbox-box {
-  outline: 2px solid #3d8d7a;
+  outline: 2px solid var(--brt-primary);
   outline-offset: 2px;
 }
 .perm-checkbox:active .perm-checkbox-box { transform: scale(0.9); }
@@ -339,10 +339,10 @@ export default {
   cursor: not-allowed;
 }
 .perm-checkbox.inherited:hover { background-color: transparent; }
-.perm-checkbox.inherited:hover .perm-checkbox-box { border-color: #a9cfc3; }
+.perm-checkbox.inherited:hover .perm-checkbox-box { border-color: var(--brt-c-a9cfc3); }
 .perm-checkbox.inherited .perm-checkbox-box {
-  background-color: #a9cfc3;
-  border-color: #a9cfc3;
+  background-color: var(--brt-c-a9cfc3);
+  border-color: var(--brt-c-a9cfc3);
   color: #fff;
 }
 
@@ -351,21 +351,21 @@ export default {
   align-items: flex-start;
   gap: 0.5rem;
   background: #f7fbf9;
-  border: 1px solid #dcebe6;
+  border: 1px solid var(--brt-c-dcebe6);
   border-radius: 8px;
   padding: 0.65rem 0.9rem;
   margin-bottom: 0.9rem;
   font-size: 0.82rem;
-  color: #4a6963;
+  color: var(--brt-c-4a6963);
   line-height: 1.45;
 }
-.permissions-hint i { color: #3d8d7a; margin-top: 0.15rem; }
+.permissions-hint i { color: var(--brt-primary); margin-top: 0.15rem; }
 .hint-swatch {
   display: inline-block;
   width: 11px;
   height: 11px;
   border-radius: 3px;
-  background-color: #a9cfc3;
+  background-color: var(--brt-c-a9cfc3);
   margin: 0 0.15rem -1px;
 }
 
@@ -374,7 +374,7 @@ export default {
 .auth-section {
   margin-top: 1.4rem;
   padding-top: 1.1rem;
-  border-top: 1px solid #e3ece9;
+  border-top: 1px solid var(--brt-c-e3ece9);
 }
 .auth-section-head h3 {
   display: flex;
@@ -383,13 +383,13 @@ export default {
   margin: 0 0 0.25rem;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #16322e;
+  color: var(--brt-ink);
 }
-.auth-section-head h3 i { color: #3d8d7a; }
+.auth-section-head h3 i { color: var(--brt-primary); }
 .auth-section-head p {
   margin: 0 0 0.8rem;
   font-size: 0.82rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
   line-height: 1.45;
   max-width: 64ch;
 }
@@ -399,20 +399,20 @@ export default {
   gap: 0.65rem;
   padding: 0.6rem 0.75rem;
   margin-bottom: 0.4rem;
-  border: 1px solid #e3ece9;
+  border: 1px solid var(--brt-c-e3ece9);
   border-radius: 8px;
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
-.auth-action:hover { border-color: #c4d9d2; background: #fbfdfc; }
-.auth-action.checked { border-color: #a9cfc3; background: #f4faf8; }
+.auth-action:hover { border-color: var(--brt-border); background: #fbfdfc; }
+.auth-action.checked { border-color: var(--brt-c-a9cfc3); background: var(--brt-c-f4faf8); }
 .auth-action input { position: absolute; opacity: 0; pointer-events: none; }
 .auth-action-box {
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
   margin-top: 0.1rem;
-  border: 1.5px solid #c4d9d2;
+  border: 1.5px solid var(--brt-border);
   border-radius: 5px;
   background: #fff;
   display: flex;
@@ -421,19 +421,19 @@ export default {
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 .auth-action-box i { font-size: 13px; color: #fff; opacity: 0; }
-.auth-action.checked .auth-action-box { background: #3d8d7a; border-color: #3d8d7a; }
+.auth-action.checked .auth-action-box { background: var(--brt-primary); border-color: var(--brt-primary); }
 .auth-action.checked .auth-action-box i { opacity: 1; }
 .auth-action-text { display: flex; flex-direction: column; gap: 0.1rem; }
-.auth-action-text strong { font-size: 0.86rem; font-weight: 600; color: #16322e; }
-.auth-action-text span { font-size: 0.79rem; color: #6b8c85; line-height: 1.4; }
+.auth-action-text strong { font-size: 0.86rem; font-weight: 600; color: var(--brt-ink); }
+.auth-action-text span { font-size: 0.79rem; color: var(--brt-muted); line-height: 1.4; }
 .auth-note {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   margin: 0.7rem 0 0;
   font-size: 0.79rem;
-  color: #4a6963;
+  color: var(--brt-c-4a6963);
   line-height: 1.45;
 }
-.auth-note i { color: #3d8d7a; margin-top: 0.1rem; }
+.auth-note i { color: var(--brt-primary); margin-top: 0.1rem; }
 </style>

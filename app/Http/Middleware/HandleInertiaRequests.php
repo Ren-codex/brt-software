@@ -28,6 +28,9 @@ class HandleInertiaRequests extends Middleware
             'user' => (\Auth::check()) ? new UserResource(User::with('employee')->where('id',\Auth::user()->id)->first()) : '',
             'roles' => (\Auth::check()) ? \Auth::user()->roles()->where('user_roles.is_active', 1)->pluck('name') : '',
             'permissions' => (\Auth::check()) ? app(PermissionService::class)->userPermissionMap(\Auth::user()) : [],
+            // The signed-in user's own theme colour. Null — the default green —
+            // for a guest, so the sign-in page never wears somebody's theme.
+            'theme' => ['primary' => \App\Http\Controllers\SystemThemeController::for($request->user())],
             'flash' => [
                 'data' => session('data'),
                 'receipt_id' => session('receipt_id'),

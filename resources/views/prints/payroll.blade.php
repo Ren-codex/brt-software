@@ -69,7 +69,9 @@
 </head>
 <body>
     <div class="header">
-        <h1>Payroll Report</h1>
+        <h1>BOUYANT RICE TRADING</h1>
+        <p>Sinunoc, Zamboanga City, Zamboanga del Sur 7000, Philippines</p>
+        <h2 style="margin: 14px 0 0; font-size: 18px;">Payroll Report</h2>
         <p>Payroll No: {{ $payroll->payroll_no }}</p>
         <p>Pay Period: {{ $payroll->pay_period_start->format('M d, Y') }} - {{ $payroll->pay_period_end->format('M d, Y') }}</p>
     </div>

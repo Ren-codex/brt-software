@@ -202,33 +202,33 @@ export default {
 .drp-trigger {
     display: inline-flex; align-items: center; gap: 0.4rem;
     height: 30px; padding: 0 0.6rem;
-    border: 1px solid #c4d9d2; border-radius: 7px;
+    border: 1px solid var(--brt-border); border-radius: 7px;
     background: #fff; cursor: pointer;
-    font-size: 0.78rem; color: #1e3530;
+    font-size: 0.78rem; color: var(--brt-c-1e3530);
     transition: border-color 0.12s;
     white-space: nowrap;
 }
 .drp-trigger:hover,
-.drp-trigger.drp-active { border-color: #3d8d7a; }
+.drp-trigger.drp-active { border-color: var(--brt-primary); }
 
-.drp-icon  { color: #9ab8af; font-size: 0.85rem; flex-shrink: 0; }
-.drp-arrow { color: #9ab8af; font-size: 0.85rem; flex-shrink: 0; }
+.drp-icon  { color: var(--brt-c-9ab8af); font-size: 0.85rem; flex-shrink: 0; }
+.drp-arrow { color: var(--brt-c-9ab8af); font-size: 0.85rem; flex-shrink: 0; }
 .drp-value { flex: 1; }
 
 .drp-clear {
     background: none; border: none; padding: 0;
-    color: #9ab8af; cursor: pointer; font-size: 0.85rem;
+    color: var(--brt-c-9ab8af); cursor: pointer; font-size: 0.85rem;
     display: flex; align-items: center; flex-shrink: 0;
 }
-.drp-clear:hover { color: #527267; }
+.drp-clear:hover { color: var(--brt-c-527267); }
 </style>
 
 <style>
 /* ── Dropdown (global — rendered via Teleport at body level) ── */
 .drp-dropdown {
     background: #fff;
-    border: 1px solid #d1e4dc; border-radius: 14px;
-    box-shadow: 0 8px 32px rgba(10,28,25,0.13);
+    border: 1px solid var(--brt-c-d1e4dc); border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(var(--brt-c-0a1c19-rgb),0.13);
     padding: 0.75rem;
     min-width: 280px;
 }
@@ -237,14 +237,14 @@ export default {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 0.6rem;
 }
-.drp-month-title { font-size: 0.84rem; font-weight: 700; color: #1e3530; }
+.drp-month-title { font-size: 0.84rem; font-weight: 700; color: var(--brt-c-1e3530); }
 .drp-nav-btn {
-    background: none; border: 1px solid #e4eeea; border-radius: 7px;
-    width: 26px; height: 26px; cursor: pointer; color: #527267;
+    background: none; border: 1px solid var(--brt-c-e4eeea); border-radius: 7px;
+    width: 26px; height: 26px; cursor: pointer; color: var(--brt-c-527267);
     display: flex; align-items: center; justify-content: center; font-size: 1rem;
     transition: background 0.1s;
 }
-.drp-nav-btn:hover { background: #edf5f2; }
+.drp-nav-btn:hover { background: var(--brt-c-edf5f2); }
 
 .drp-grid {
     display: grid;
@@ -255,7 +255,7 @@ export default {
 .drp-wd {
     height: 28px; display: flex; align-items: center; justify-content: center;
     font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.04em; color: #9ab8af;
+    letter-spacing: 0.04em; color: var(--brt-c-9ab8af);
 }
 
 .drp-cell {
@@ -270,7 +270,7 @@ export default {
     width: 30px; height: 30px;
     display: flex; align-items: center; justify-content: center;
     border-radius: 50%;
-    font-size: 0.82rem; color: #1e3530;
+    font-size: 0.82rem; color: var(--brt-c-1e3530);
     position: relative; z-index: 1;
     transition: background 0.1s;
 }
@@ -281,7 +281,7 @@ export default {
     content: '';
     position: absolute;
     top: 4px; bottom: 4px; left: 0; right: 0;
-    background: #dff0ec;
+    background: var(--brt-c-dff0ec);
     z-index: 0;
 }
 .drp-from::before     { left: 50%; }
@@ -291,21 +291,21 @@ export default {
 .drp-from .drp-day-num,
 .drp-to   .drp-day-num,
 .drp-single .drp-day-num {
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: #fff;
     font-weight: 700;
 }
 
 .drp-cell-day:not(.drp-from):not(.drp-to):not(.drp-single):hover .drp-day-num {
-    background: #edf5f2;
+    background: var(--brt-c-edf5f2);
 }
 
 .drp-hint {
     display: flex; align-items: center; gap: 0.35rem;
     margin-top: 0.5rem; padding-top: 0.5rem;
-    border-top: 1px solid #f0f7f4;
-    font-size: 0.72rem; color: #9ab8af;
+    border-top: 1px solid var(--brt-c-f0f7f4);
+    font-size: 0.72rem; color: var(--brt-c-9ab8af);
 }
-.drp-step-dot { font-size: 0.45rem; color: #d5eae2; }
-.drp-step-dot.active { color: #3d8d7a; }
+.drp-step-dot { font-size: 0.45rem; color: var(--brt-c-d5eae2); }
+.drp-step-dot.active { color: var(--brt-primary); }
 </style>

@@ -38,6 +38,10 @@ class ArInvoiceController extends Controller
             case 'dashboard':
                 return $this->invoice->dashboard();
             break;
+            // The statuses worth offering in the filter: those in use.
+            case 'statuses':
+                return response()->json($this->invoice->statusOptions());
+            break;
             case 'stock':
                 return $this->invoice->stockAvailability();
             break;

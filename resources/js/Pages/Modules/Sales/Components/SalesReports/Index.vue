@@ -98,7 +98,7 @@
           <div class="summary-cards">
             <div class="summary-card">
               <div class="summary-icon cash">
-                <i class="ri-money-dollar-circle-line"></i>
+                <i class="ri-money-peso-circle-line"></i>
               </div>
               <div class="summary-details">
                 <span class="summary-label">Cash Sales</span>
@@ -447,7 +447,7 @@
             <div class="summary-cards">
               <div class="summary-card">
                 <div class="summary-icon cash">
-                  <i class="ri-money-dollar-circle-line"></i>
+                  <i class="ri-money-peso-circle-line"></i>
                 </div>
                 <div class="summary-details">
                   <span class="summary-label">Cash Sales</span>
@@ -550,6 +550,115 @@
             </table>
           </div>
 
+          <!-- Dated by when the goods came back, not when the order was placed. -->
+          <div v-else-if="activeReport === 'sales-returns'">
+            <div class="summary-cards">
+              <div class="summary-card">
+                <div class="summary-icon other"><i class="ri-file-list-3-line"></i></div>
+                <div class="summary-details">
+                  <span class="summary-label">Returned Orders</span>
+                  <span class="summary-value">{{ formatQuantity(report?.sales_return_report?.returned_orders) }}</span>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon cod"><i class="ri-arrow-go-back-line"></i></div>
+                <div class="summary-details">
+                  <span class="summary-label">Quantity Returned</span>
+                  <span class="summary-value">{{ formatQuantity(report?.sales_return_report?.total_quantity) }}</span>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon cash"><i class="ri-inbox-archive-line"></i></div>
+                <div class="summary-details">
+                  <span class="summary-label">Put Back in Stock</span>
+                  <span class="summary-value">{{ formatQuantity(report?.sales_return_report?.restocked_quantity) }}</span>
+                </div>
+              </div>
+              <div class="summary-card total">
+                <div class="summary-icon"><i class="ri-funds-line"></i></div>
+                <div class="summary-details">
+                  <span class="summary-label">Value Returned</span>
+                  <span class="summary-value">{{ formatCurrency(report?.sales_return_report?.total_value) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="data-table">
+              <div class="table-title">
+                <i class="ri-arrow-go-back-line"></i>
+                <h3>Sales Returns</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date Returned</th>
+                    <th>SO #</th>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th>Condition</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Unit Price</th>
+                    <th class="text-right">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in report?.sales_return_report?.items || []" :key="item.id" class="clickable-row" @click="openDrill('order', item.sales_order_id)">
+                    <td>{{ formatDate(item.returned_at) }}</td>
+                    <td><span class="so-number">{{ item.so_number || '-' }}</span></td>
+                    <td>{{ item.customer_name }}</td>
+                    <td>{{ item.product_name || '-' }}</td>
+                    <td class="text-capitalize">{{ item.condition || '-' }}</td>
+                    <td class="text-right">{{ formatQuantity(item.quantity) }}</td>
+                    <td class="text-right">{{ formatCurrency(item.unit_price) }}</td>
+                    <td class="text-right amount">{{ formatCurrency(item.total_value) }}</td>
+                  </tr>
+                  <tr v-if="!report?.sales_return_report?.items?.length">
+                    <td colspan="8" class="empty-message">No sales returns found for this filter</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Turned away at the door, before any money changed hands: the
+                 order was resized rather than refunded, so these are not sales
+                 returns in the books — but they are goods that came back. -->
+            <div class="data-table">
+              <div class="table-title">
+                <i class="ri-truck-line"></i>
+                <h3>Refused at Delivery ({{ formatQuantity(report?.sales_return_report?.refused_quantity) }})</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>SO #</th>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th class="text-right">Ordered</th>
+                    <th class="text-right">Accepted</th>
+                    <th class="text-right">Refused</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in report?.sales_return_report?.refusals || []" :key="item.id" class="clickable-row" @click="openDrill('order', item.sales_order_id)">
+                    <td>{{ formatDate(item.recorded_at) }}</td>
+                    <td><span class="so-number">{{ item.so_number || '-' }}</span></td>
+                    <td>{{ item.customer_name }}</td>
+                    <td>{{ item.product_name || '-' }}</td>
+                    <td class="text-right">{{ formatQuantity(item.ordered_quantity) }}</td>
+                    <td class="text-right">{{ formatQuantity(item.accepted_quantity) }}</td>
+                    <td class="text-right amount">{{ formatQuantity(item.refused_quantity) }}</td>
+                    <td>{{ item.reason || '-' }}</td>
+                  </tr>
+                  <tr v-if="!report?.sales_return_report?.refusals?.length">
+                    <td colspan="8" class="empty-message">Nothing was refused at delivery for this filter</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <div v-else-if="activeReport === 'discount'">
             <div class="summary-cards">
               <div class="summary-card">
@@ -633,6 +742,7 @@ const createDefaultReport = () => ({
   sales_rep_report: [],
   daily_sales_orders: [],
   receipt_report: [],
+  sales_return_report: { total_quantity: 0, total_value: 0, returned_orders: 0, restocked_quantity: 0, items: [], refusals: [], refused_quantity: 0 },
   employee_summary: [],
   discount_summary: { discounted_orders: 0, total_discount: 0, average_discount: 0, orders: [] },
   payment_summary: { cash: null, credit: null, other: null, grand_total_sales: 0, grand_total_orders: 0 },
@@ -662,6 +772,7 @@ export default {
         { key: 'employee-summary', label: 'Employee Summary', icon: 'ri-team-line' },
         { key: 'sales-by-payment-type', label: 'Sales by Payment Type', icon: 'ri-wallet-3-line' },
         { key: 'receipt', label: 'Receipt', icon: 'ri-receipt-line' },
+        { key: 'sales-returns', label: 'Sales Returns', icon: 'ri-arrow-go-back-line' },
         { key: 'discount', label: 'Discount', icon: 'ri-price-tag-3-line' },
       ],
       form: this.filters || {
@@ -820,7 +931,7 @@ export default {
 .filter-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d7e5de;
+  border: 1px solid var(--brt-c-d7e5de);
   border-radius: 10px;
   font-size: 0.85rem;
   background: white;
@@ -829,14 +940,14 @@ export default {
 
 .filter-input:focus {
   outline: none;
-  border-color: #3d8d7a;
-  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.12);
+  border-color: var(--brt-primary);
+  box-shadow: 0 0 0 3px rgba(var(--brt-primary-rgb), 0.12);
 }
 
 .filter-segment {
   display: inline-flex;
   flex-wrap: wrap;
-  background: #eaf2f0;
+  background: var(--brt-c-eaf2f0);
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
@@ -849,7 +960,7 @@ export default {
   gap: 6px;
   border: none;
   background: transparent;
-  color: #4a7a70;
+  color: var(--brt-c-4a7a70);
   font-weight: 600;
   font-size: 0.8rem;
   padding: 0.38rem 0.85rem;
@@ -864,14 +975,14 @@ export default {
 }
 
 .filter-segment-btn:hover:not(.active) {
-  background: rgba(61, 141, 122, 0.1);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.1);
+  color: var(--brt-primary);
 }
 
 .filter-segment-btn.active {
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+  box-shadow: 0 2px 8px rgba(var(--brt-primary-rgb), 0.28);
 }
 
 @media (max-width: 768px) {
@@ -883,10 +994,10 @@ export default {
 .icon-btn {
   width: 36px;
   height: 36px;
-  border: 1px solid #d7e5de;
+  border: 1px solid var(--brt-c-d7e5de);
   border-radius: 9px;
   background: white;
-  color: #5f786e;
+  color: var(--brt-c-5f786e);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -895,9 +1006,9 @@ export default {
 }
 
 .icon-btn:hover:not(:disabled) {
-  background: #f4faf8;
-  color: #3d8d7a;
-  border-color: #3d8d7a;
+  background: var(--brt-c-f4faf8);
+  color: var(--brt-primary);
+  border-color: var(--brt-primary);
 }
 
 /* Download Dropdown */
@@ -910,9 +1021,9 @@ export default {
   top: calc(100% + 0.35rem);
   right: 0;
   background: white;
-  border: 1px solid #d7e5de;
+  border: 1px solid var(--brt-c-d7e5de);
   border-radius: 10px;
-  box-shadow: 0 8px 18px rgba(39, 84, 72, 0.12);
+  box-shadow: 0 8px 18px rgba(var(--brt-c-275448-rgb), 0.12);
   min-width: 130px;
   z-index: 10;
 }
@@ -927,12 +1038,12 @@ export default {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.82rem;
-  color: #20413a;
+  color: var(--brt-c-20413a);
   cursor: pointer;
 }
 
 .download-menu-item:hover {
-  background: #f4faf8;
+  background: var(--brt-c-f4faf8);
 }
 
 .download-menu-item:first-child {
@@ -946,18 +1057,18 @@ export default {
 /* Loading State */
 .loading-state {
   background: #f7fbfa;
-  border: 1px solid #e0ece7;
+  border: 1px solid var(--brt-c-e0ece7);
   border-radius: 14px;
   padding: 3rem;
   text-align: center;
-  color: #5f786e;
+  color: var(--brt-c-5f786e);
 }
 
 .spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #d7e5de;
-  border-top-color: #3d8d7a;
+  border: 3px solid var(--brt-c-d7e5de);
+  border-top-color: var(--brt-primary);
   border-radius: 50%;
   margin: 0 auto 1rem;
   animation: spin 0.8s linear infinite;
@@ -977,7 +1088,7 @@ export default {
 
 .summary-card {
   background: #ffffff;
-  border: 1px solid #e0ece7;
+  border: 1px solid var(--brt-c-e0ece7);
   border-radius: 14px;
   padding: 1.1rem;
   display: flex;
@@ -986,7 +1097,7 @@ export default {
 }
 
 .summary-card.total {
-  background: linear-gradient(135deg, #3d8d7a 0%, #2e6f61 100%);
+  background: linear-gradient(135deg, var(--brt-primary) 0%, #2e6f61 100%);
   border-color: transparent;
 }
 
@@ -1007,13 +1118,13 @@ export default {
 }
 
 .summary-icon.cash {
-  background: rgba(61, 141, 122, 0.12);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  color: var(--brt-primary);
 }
 
 .summary-icon.cod {
   background: #e6f0ea;
-  color: #1f6b52;
+  color: var(--brt-c-1f6b52);
 }
 
 .summary-icon.credit {
@@ -1047,7 +1158,7 @@ export default {
   display: block;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #20413a;
+  color: var(--brt-c-20413a);
 }
 
 /* Tables */
@@ -1065,7 +1176,7 @@ export default {
 .data-table,
 .daily-sales {
   background: #ffffff;
-  border: 1px solid #e0ece7;
+  border: 1px solid var(--brt-c-e0ece7);
   border-radius: 14px;
   padding: 1.1rem;
   overflow-x: auto;
@@ -1080,14 +1191,14 @@ export default {
 }
 
 .table-title i {
-  color: #3d8d7a;
+  color: var(--brt-primary);
   font-size: 1.1rem;
 }
 
 .table-title h3 {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #20413a;
+  color: var(--brt-c-20413a);
   margin: 0;
 }
 
@@ -1104,14 +1215,14 @@ export default {
 .employee-search i {
   position: absolute;
   left: 0.65rem;
-  color: #8ea298;
+  color: var(--brt-c-8ea298);
   font-size: 0.95rem;
 }
 
 .employee-search-input {
   width: 220px;
   padding: 0.45rem 0.75rem 0.45rem 2rem;
-  border: 1px solid #d7e5de;
+  border: 1px solid var(--brt-c-d7e5de);
   border-radius: 10px;
   font-size: 0.82rem;
   background: white;
@@ -1120,8 +1231,8 @@ export default {
 
 .employee-search-input:focus {
   outline: none;
-  border-color: #3d8d7a;
-  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.12);
+  border-color: var(--brt-primary);
+  box-shadow: 0 0 0 3px rgba(var(--brt-primary-rgb), 0.12);
 }
 
 table {
@@ -1137,14 +1248,14 @@ th {
   color: #648b74;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid #e0ece7;
+  border-bottom: 1px solid var(--brt-c-e0ece7);
 }
 
 td {
   padding: 0.65rem 0.5rem;
   font-size: 0.82rem;
-  color: #20413a;
-  border-bottom: 1px solid #edf3f1;
+  color: var(--brt-c-20413a);
+  border-bottom: 1px solid var(--brt-c-edf3f1);
 }
 
 tr:last-child td {
@@ -1152,7 +1263,7 @@ tr:last-child td {
 }
 
 tbody tr:hover td {
-  background: #f4faf8;
+  background: var(--brt-c-f4faf8);
 }
 
 /* Rows that open a drill-down. */
@@ -1162,11 +1273,11 @@ tbody tr:hover td {
 }
 
 .clickable-row:hover td {
-  background: #eaf5f1;
+  background: var(--brt-c-eaf5f1);
 }
 
 .clickable-row:active td {
-  background: #dfeee8;
+  background: var(--brt-c-dfeee8);
 }
 
 .text-right {
@@ -1186,8 +1297,8 @@ tbody tr:hover td {
   justify-content: center;
   width: 20px;
   height: 20px;
-  background: #e8f4ef;
-  color: #2f7666;
+  background: var(--brt-c-e8f4ef);
+  color: var(--brt-c-2f7666);
   border-radius: 6px;
   font-size: 0.68rem;
   font-weight: 700;
@@ -1195,12 +1306,12 @@ tbody tr:hover td {
 
 .amount {
   font-weight: 700;
-  color: #2f7666;
+  color: var(--brt-c-2f7666);
 }
 
 .so-number {
   font-weight: 700;
-  color: #2f7666;
+  color: var(--brt-c-2f7666);
 }
 
 .payment-badge.cod {
@@ -1217,8 +1328,8 @@ tbody tr:hover td {
 }
 
 .payment-badge.cash {
-  background: rgba(61, 141, 122, 0.12);
-  color: #2f7666;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  color: var(--brt-c-2f7666);
 }
 
 .payment-badge.credit {
@@ -1233,27 +1344,27 @@ tbody tr:hover td {
 
 .empty-message {
   text-align: center;
-  color: #8ea298;
+  color: var(--brt-c-8ea298);
   padding: 2rem !important;
 }
 
 .empty-panel {
   background: #ffffff;
-  border: 1px solid #e0ece7;
+  border: 1px solid var(--brt-c-e0ece7);
   border-radius: 14px;
   padding: 3rem 1.5rem;
   text-align: center;
-  color: #5f786e;
+  color: var(--brt-c-5f786e);
 }
 
 .empty-panel i {
   font-size: 1.8rem;
-  color: #3d8d7a;
+  color: var(--brt-primary);
 }
 
 .empty-panel h3 {
   margin: 0.75rem 0 0.5rem;
-  color: #20413a;
+  color: var(--brt-c-20413a);
   font-size: 0.95rem;
 }
 

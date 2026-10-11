@@ -15,6 +15,11 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class)->except(['create', 'edit']);
     Route::get('/reports', [App\Http\Controllers\Modules\ReportsController::class, 'index']);
     Route::post('/sales-orders/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderController::class, 'adjustment']);
+    // Where an order stands, step by step. Serves external orders too — they are
+    // the same records. Access is checked in the controller.
+    Route::get('/sales-orders/{id}/timeline', [App\Http\Controllers\Modules\SalesOrderController::class, 'timeline']);
+    Route::post('/sales-orders/{id}/delivery-decision', [App\Http\Controllers\Modules\SalesOrderController::class, 'deliveryDecision']);
+    Route::post('/sales-orders/{id}/credit-decision', [App\Http\Controllers\Modules\SalesOrderController::class, 'creditDecision']);
     Route::resource('/sales-orders-external', App\Http\Controllers\Modules\SalesOrderExternalController::class)->except(['create', 'edit']);
     Route::post('/sales-orders-external/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderExternalController::class, 'adjustment']);
     Route::resource('/ar-invoices', App\Http\Controllers\Modules\ArInvoiceController::class)->except(['create', 'edit']);
@@ -33,6 +38,8 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::get('/customers/{id}/order-summary', [App\Http\Controllers\Modules\CustomerController::class, 'orderSummary'])
         ->middleware('permission:customers,view');
     Route::get('/customers/{id}/purchase-history', [App\Http\Controllers\Modules\CustomerController::class, 'purchaseHistory'])
+        ->middleware('permission:customers,view');
+    Route::get('/customers/{id}/issue-history', [App\Http\Controllers\Modules\CustomerController::class, 'issueHistory'])
         ->middleware('permission:customers,view');
     Route::resource('/suppliers', App\Http\Controllers\Libraries\SupplierController::class)->except(['create', 'edit']);
     Route::patch('/suppliers/{id}/toggle-active', [App\Http\Controllers\Libraries\SupplierController::class, 'toggleActive']);
@@ -80,6 +87,18 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::patch('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead']);
     Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead']);
+
+    // Approvals inbox. No permission middleware on purpose: ApprovalService
+    // filters every source by the caller's own 'approver' grant and re-checks it
+    // before acting, so a module gate here would be both redundant and wrong —
+    // the page spans several modules and nobody holds all of them.
+    // Saves the signed-in user's own theme colour. Open to every user: it
+    // changes their screen and nobody else's.
+    Route::post('/system-theme', [\App\Http\Controllers\SystemThemeController::class, 'update']);
+    // Which roles are responsible for a module, for the in-app guides.
+    Route::get('/guides/roles', [\App\Http\Controllers\GuideController::class, 'roles']);
+    Route::get('/approvals', [\App\Http\Controllers\ApprovalController::class, 'index']);
+    Route::post('/approvals/{source}/{id}/decide', [\App\Http\Controllers\ApprovalController::class, 'decide']);
 
     // Gated by the granular permission: middleware on each route below.
     // Replenishment request workflow
@@ -397,6 +416,12 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
 
     // Gated by the granular permission: middleware on each route below.
     Route::get('/payrolls/{id}/print', [App\Http\Controllers\Modules\PayrollController::class, 'printPayroll'])
+        ->middleware('permission:payroll,payroll_processing,view');
+    // Payslips for everyone on the payroll, or one with ?employee_id=.
+    Route::get('/payrolls/{id}/payslips', [App\Http\Controllers\Modules\PayrollController::class, 'printPayslips'])
+        ->middleware('permission:payroll,payroll_processing,view');
+    // The full-page pay statement for one employee on the payroll.
+    Route::get('/payrolls/{id}/statement/{employeeId}', [App\Http\Controllers\Modules\PayrollController::class, 'printStatement'])
         ->middleware('permission:payroll,payroll_processing,view');
     Route::get('/sales-incentives', [App\Http\Controllers\Modules\SalesIncentivesController::class, 'index'])
         ->middleware('permission:payroll,payroll_processing,view');

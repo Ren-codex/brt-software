@@ -395,7 +395,7 @@ export default {
 }
 
 .stat-card {
-    border: 1px solid #e4efeb;
+    border: 1px solid var(--brt-c-e4efeb);
     border-left: 4px solid #cbd5e1;
     border-radius: 10px;
     padding: 0.75rem 0.9rem;
@@ -405,7 +405,7 @@ export default {
     gap: 0.15rem;
 }
 
-.stat-card.accent-green  { border-left-color: #3d8d7a; }
+.stat-card.accent-green  { border-left-color: var(--brt-primary); }
 .stat-card.accent-blue   { border-left-color: #2563eb; }
 .stat-card.accent-amber  { border-left-color: #d97706; }
 .stat-card.accent-red    { border-left-color: #dc2626; }
@@ -416,10 +416,10 @@ export default {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
-.stat-value { font-size: 1.15rem; color: #16322e; }
+.stat-value { font-size: 1.15rem; color: var(--brt-ink); }
 .stat-note  { font-size: 0.68rem; color: #94a3b8; }
 
 .export-wrap { position: relative; }
@@ -430,9 +430,9 @@ export default {
     top: calc(100% + 6px);
     min-width: 210px;
     background: #fff;
-    border: 1px solid #dcebe5;
+    border: 1px solid var(--brt-c-dcebe5);
     border-radius: 12px;
-    box-shadow: 0 10px 26px rgba(22, 50, 46, 0.13);
+    box-shadow: 0 10px 26px rgba(var(--brt-c-16322e-rgb), 0.13);
     padding: 0.35rem;
     z-index: 50;
 }
@@ -443,24 +443,24 @@ export default {
     gap: 0.6rem;
     padding: 0.5rem 0.6rem;
     border-radius: 9px;
-    color: #16322e;
+    color: var(--brt-ink);
     text-decoration: none;
     font-size: 0.85rem;
     font-weight: 600;
 }
 
-.export-option:hover { background: #f2faf7; }
-.export-option i { font-size: 1.05rem; color: #3d8d7a; }
+.export-option:hover { background: var(--brt-c-f2faf7); }
+.export-option i { font-size: 1.05rem; color: var(--brt-primary); }
 .export-option span { display: flex; flex-direction: column; line-height: 1.2; }
 .export-option small { font-weight: 500; font-size: 0.68rem; color: #94a3b8; }
 
 .period-select {
-    border: 1px solid #dcebe5;
+    border: 1px solid var(--brt-c-dcebe5);
     border-radius: 999px;
     padding: 0.35rem 0.8rem;
     font-size: 0.78rem;
     font-weight: 600;
-    color: #16322e;
+    color: var(--brt-ink);
     background: #fff;
     margin-left: 0.25rem;
 }
@@ -473,9 +473,9 @@ export default {
 }
 
 .period-tab {
-    border: 1px solid #dcebe5;
+    border: 1px solid var(--brt-c-dcebe5);
     background: #fff;
-    color: #4a6b63;
+    color: var(--brt-c-4a6b63);
     border-radius: 999px;
     padding: 0.35rem 0.9rem;
     font-size: 0.78rem;
@@ -483,11 +483,11 @@ export default {
     cursor: pointer;
 }
 
-.period-tab:hover { background: #f2faf7; }
+.period-tab:hover { background: var(--brt-c-f2faf7); }
 
 .period-tab.active {
-    background: #3d8d7a;
-    border-color: #3d8d7a;
+    background: var(--brt-primary);
+    border-color: var(--brt-primary);
     color: #fff;
 }
 
@@ -496,7 +496,7 @@ export default {
     align-items: center;
     gap: 0.4rem;
     font-size: 0.8rem;
-    color: #4a6b63;
+    color: var(--brt-c-4a6b63);
     margin: 0;
     cursor: pointer;
 }
@@ -520,9 +520,9 @@ export default {
 .status-chip.expired      { background: #fee2e2; color: #7c2d12; }
 
 .report-total-row td {
-    background: #f4faf8;
+    background: var(--brt-c-f4faf8);
     font-weight: 700;
-    border-top: 2px solid #3d8d7a;
+    border-top: 2px solid var(--brt-primary);
 }
 
 .brand-breakdown { margin-top: 1.5rem; }
@@ -530,7 +530,7 @@ export default {
 .brand-breakdown-title {
     font-size: 0.85rem;
     font-weight: 700;
-    color: #16322e;
+    color: var(--brt-ink);
     margin-bottom: 0.6rem;
 }
 
@@ -541,7 +541,7 @@ export default {
 }
 
 .brand-card {
-    border: 1px solid #e4efeb;
+    border: 1px solid var(--brt-c-e4efeb);
     border-radius: 10px;
     padding: 0.6rem 0.8rem;
     background: #fff;
@@ -550,7 +550,7 @@ export default {
     gap: 0.1rem;
 }
 
-.brand-name  { font-size: 0.78rem; font-weight: 600; color: #4a6b63; }
-.brand-value { font-size: 1rem; color: #16322e; }
+.brand-name  { font-size: 0.78rem; font-weight: 600; color: var(--brt-c-4a6b63); }
+.brand-value { font-size: 1rem; color: var(--brt-ink); }
 .brand-note  { font-size: 0.68rem; color: #94a3b8; }
 </style>

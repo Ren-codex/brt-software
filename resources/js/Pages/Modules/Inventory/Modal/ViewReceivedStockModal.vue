@@ -284,11 +284,11 @@ export default {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6b8c85;
+  color: var(--brt-muted);
 }
 
 .rs-details-title {
-  color: #16322e;
+  color: var(--brt-ink);
   font-weight: 700;
 }
 
@@ -312,11 +312,11 @@ export default {
   align-items: center;
   gap: 0.4rem;
   padding: 0.55rem 0.75rem 0.2rem;
-  color: #415d54;
+  color: var(--brt-c-415d54);
 }
 
 .rs-detail-section-heading i {
-  color: #2f7666;
+  color: var(--brt-c-2f7666);
   font-size: 0.9rem;
 }
 
@@ -347,11 +347,11 @@ export default {
 }
 
 .rs-detail-info-row + .rs-detail-info-row {
-  border-top: 1px solid #f1f5f3;
+  border-top: 1px solid var(--brt-c-f1f5f3);
 }
 
 .rs-detail-info-label {
-  color: #5f7f73;
+  color: var(--brt-c-5f7f73);
   font-size: 0.74rem;
   font-weight: 700;
 }
@@ -362,14 +362,14 @@ export default {
   justify-content: flex-end;
   gap: 0.3rem;
   text-align: right;
-  color: #1f2f2b;
+  color: var(--brt-c-1f2f2b);
   font-size: 0.86rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .rs-detail-info-value-soft {
-  color: #556f67;
+  color: var(--brt-c-556f67);
   font-weight: 600;
 }
 
@@ -399,7 +399,7 @@ export default {
 .rs-items-panel,
 .rs-payments-panel {
   border-radius: 15px;
-  border: 1px solid #dbece4;
+  border: 1px solid var(--brt-c-dbece4);
   background: #ffffff;
   padding: 0.9rem;
   margin-bottom: 0.9rem;
@@ -421,7 +421,7 @@ export default {
 
 .rs-items-title,
 .rs-payments-title {
-  color: #214e41;
+  color: var(--brt-c-214e41);
   font-weight: 700;
   font-size: 1.02rem;
 }
@@ -440,7 +440,7 @@ export default {
   padding: 0.42rem 0.72rem;
   border-radius: 999px;
   background: #f8fafc;
-  color: #48665c;
+  color: var(--brt-c-48665c);
   font-size: 0.72rem;
   font-weight: 700;
   border: 1px solid #dbe5ee;
@@ -475,7 +475,7 @@ export default {
 
 .rs-items-table tbody tr:hover,
 .rs-payments-table tbody tr:hover {
-  background: rgba(61, 141, 122, 0.05);
+  background: rgba(var(--brt-primary-rgb), 0.05);
 }
 
 .rs-item-amount {

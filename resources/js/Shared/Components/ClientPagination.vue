@@ -103,10 +103,10 @@ export default {
 .pg-btn {
     width: 30px;
     height: 30px;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     border-radius: 8px;
     background: #ffffff;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     font-size: 1rem;
     display: flex;
     align-items: center;
@@ -118,8 +118,8 @@ export default {
 }
 
 .pg-btn:hover:not(:disabled) {
-    background: #3d8d7a;
-    border-color: #3d8d7a;
+    background: var(--brt-primary);
+    border-color: var(--brt-primary);
     color: #ffffff;
 }
 
@@ -133,7 +133,7 @@ export default {
 .pg-current {
     font-size: 0.76rem;
     font-weight: 600;
-    color: #16322e;
+    color: var(--brt-ink);
     padding: 0 6px;
     min-width: 44px;
     text-align: center;

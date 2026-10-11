@@ -459,54 +459,54 @@ export default {
 .chk-filters { display: flex; gap: 0.6rem; padding: 0.9rem 1.1rem; flex-wrap: wrap; }
 .chk-filter { max-width: 220px; }
 .chk-search { position: relative; flex: 1; min-width: 200px; }
-.chk-search i { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: #6b8c85; }
+.chk-search i { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--brt-muted); }
 .chk-search input {
     width: 100%; padding: 0.45rem 0.7rem 0.45rem 2rem;
-    border: 1px solid #d8e6e1; border-radius: 8px; font-size: 0.85rem;
+    border: 1px solid var(--brt-c-d8e6e1); border-radius: 8px; font-size: 0.85rem;
 }
 
-.chk-empty { padding: 2.5rem; text-align: center; color: #6b8c85; }
+.chk-empty { padding: 2.5rem; text-align: center; color: var(--brt-muted); }
 .chk-empty i { font-size: 1.8rem; display: block; margin-bottom: 0.4rem; }
 
 .chk-chip, .chk-status {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 2px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; white-space: nowrap;
 }
-.chk-chip.received { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+.chk-chip.received { background: var(--brt-c-e9f5f0); color: var(--brt-c-1b6b4a); border: 1px solid var(--brt-c-a8dcc8); }
 .chk-chip.issued   { background: #fff0e9; color: #9a3b1b; border: 1px solid #f9c5a8; }
 
 .chk-status.pending { background: #fdf3e3; color: #8a5a10; border: 1px solid #f0d49a; }
-.chk-status.cleared { background: #e9f5f0; color: #1b6b4a; border: 1px solid #a8dcc8; }
+.chk-status.cleared { background: var(--brt-c-e9f5f0); color: var(--brt-c-1b6b4a); border: 1px solid var(--brt-c-a8dcc8); }
 .chk-status.bounced { background: #fdeaea; color: #96231f; border: 1px solid #f2b8b5; }
 
 .chk-reason, .chk-overdue-note { font-size: 0.7rem; color: #96231f; margin-top: 2px; }
 .chk-overdue { background: #fffaf3; }
 
-.chk-bounce-summary { font-size: 0.85rem; color: #33564f; margin-bottom: 0.9rem; }
+.chk-bounce-summary { font-size: 0.85rem; color: var(--brt-c-33564f); margin-bottom: 0.9rem; }
 
 .fc-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-.fc-account { border: 1px solid #d8e6e1; border-radius: 10px; padding: 0.9rem; background: #fbfdfc; }
+.fc-account { border: 1px solid var(--brt-c-d8e6e1); border-radius: 10px; padding: 0.9rem; background: #fbfdfc; }
 .fc-account.fc-at-risk { border-color: #f2b8b5; background: #fffafa; }
 .fc-account-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem; }
-.fc-account-name { color: #6b8c85; font-size: 0.78rem; margin-left: 0.35rem; }
-.fc-opening { font-weight: 600; color: #16322e; }
+.fc-account-name { color: var(--brt-muted); font-size: 0.78rem; margin-left: 0.35rem; }
+.fc-opening { font-weight: 600; color: var(--brt-ink); }
 
 .fc-warning, .fc-clear, .fc-none { font-size: 0.78rem; margin: 0 0 0.6rem; display: flex; align-items: center; gap: 4px; }
 .fc-warning { color: #96231f; }
-.fc-clear { color: #1b6b4a; }
-.fc-none { color: #6b8c85; }
+.fc-clear { color: var(--brt-c-1b6b4a); }
+.fc-none { color: var(--brt-muted); }
 
 .fc-table { font-size: 0.8rem; }
-.fc-table thead th { color: #6b8c85; font-weight: 600; border-bottom: 1px solid #e3efeb; }
+.fc-table thead th { color: var(--brt-muted); font-weight: 600; border-bottom: 1px solid #e3efeb; }
 .fc-short { background: #fdeaea; }
 .fc-short-icon { color: #96231f; margin-left: 3px; }
 
 .fc-unassigned {
     margin: 0.9rem 0 0; padding: 0.6rem 0.8rem; border-radius: 8px;
-    background: #f4f8f7; border: 1px solid #d8e6e1; color: #33564f; font-size: 0.78rem;
+    background: var(--brt-c-f4f8f7); border: 1px solid var(--brt-c-d8e6e1); color: var(--brt-c-33564f); font-size: 0.78rem;
 }
 
-.action-btn.confirm { color: #1b6b4a; }
+.action-btn.confirm { color: var(--brt-c-1b6b4a); }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -526,7 +526,7 @@ export default {
 .tr-age {
     font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
-    color: #6b8c85;
+    color: var(--brt-muted);
     white-space: nowrap;
 }
 
@@ -539,7 +539,7 @@ export default {
 .tr-note {
     margin: 0.75rem 0 0;
     font-size: 0.78rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
 .tr-error {

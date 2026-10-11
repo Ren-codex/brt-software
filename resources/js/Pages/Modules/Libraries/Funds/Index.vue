@@ -26,6 +26,7 @@
                             <i class="ri-search-line search-icon"></i>
                             <input type="text" v-model="filter.keyword" placeholder="Search funds..." class="search-input">
                         </div>
+                        <SortSelect v-model="sortOption" :fields="[{ field: 'name', label: 'Name' }, { field: 'balance', label: 'Balance', type: 'number' }]" @change="fetch()" />
                     </div>
 
                     <div class="table-section">
@@ -97,6 +98,7 @@
 
 <script>
 import _ from 'lodash';
+import { listSortMixin } from '@/Shared/listSort.js';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import Create from './Modals/Create.vue';
@@ -107,6 +109,7 @@ import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
     components: { PageHeader, Pagination, Create, TopUp, AdjustBalance, TableLoadingRow },
+    mixins: [listSortMixin],
     data() {
         return {
             lists: [],
@@ -127,7 +130,7 @@ export default {
             page_url = page_url || '/accounting/funds';
             this.loading = true;
             axios.get(page_url, {
-                params: { option: 'lists', keyword: this.filter.keyword, count: 10 }
+                params: { ...this.sortParams, option: 'lists', keyword: this.filter.keyword, count: 10 }
             })
             .then(res => {
                 this.lists = res.data.data;

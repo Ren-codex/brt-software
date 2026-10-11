@@ -80,7 +80,7 @@
               <div class="row" v-if="activeTab === 'purchaseOrders' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <PurchaseOrdersTab :listPurchaseOrders="listPurchaseOrders" :meta="meta" :links="links"
-                    :filter="filter" :dropdowns="dropdowns" :loading="isPurchaseOrdersLoading" @fetch="fetchPurchaseOrders" @update-keyword="updateKeyword"
+                    :filter="filter" :dropdowns="dropdowns" :loading="isPurchaseOrdersLoading" @fetch="fetchPurchaseOrders" @update-sort="setTabSort('purchaseOrders', $event, fetchPurchaseOrders)" @update-keyword="updateKeyword"
                     @toast="showToast" @view-details="openPurchaseOrderDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -97,7 +97,7 @@
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <PurchaseRequestsTab :listPurchaseRequests="listPurchaseRequests"
                     :listPurchaseOrders="listPurchaseOrders" :listPRDisapproved="listPRDisapproved" :meta="meta"
-                    :links="links" :filter="filter" :dropdowns="dropdowns" :loading="isPurchaseOrdersLoading" @fetch="fetchPurchaseOrders"
+                    :links="links" :filter="filter" :dropdowns="dropdowns" :loading="isPurchaseOrdersLoading" @fetch="fetchPurchaseOrders" @update-sort="setTabSort('purchaseOrders', $event, fetchPurchaseOrders)"
                     @update-keyword="updateKeyword" @toast="showToast" @view-details="openPurchaseOrderDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -126,7 +126,7 @@
               <div class="row" v-if="activeTab === 'products'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <ProductsTab :listProducts="listProducts" :meta="meta" :links="links" :filter="filter"
-                    :dropdowns="dropdowns" :loading="isProductsLoading" @fetch="fetchProducts" @update-keyword="updateKeyword" @toast="showToast" />
+                    :dropdowns="dropdowns" :loading="isProductsLoading" @fetch="fetchProducts" @update-sort="setTabSort('products', $event, fetchProducts)" @update-keyword="updateKeyword" @toast="showToast" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
                   <QuickStatsSidebar :activeTab="activeTab" :listProducts="listProducts"
@@ -140,7 +140,7 @@
               <div class="row" v-if="activeTab === 'inventoryStocks' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <InventoryStocksTab :listInventoryStocks="listInventoryStocks" :meta="meta" :links="links"
-                    :filter="filter" :dropdowns="dropdowns" :loading="isInventoryStocksLoading" @fetch="fetchInventoryStocks"
+                    :filter="filter" :dropdowns="dropdowns" :loading="isInventoryStocksLoading" @fetch="fetchInventoryStocks" @update-sort="setTabSort('inventoryStocks', $event, fetchInventoryStocks)"
                     @update-keyword="updateKeyword" @toast="showToast" @view-details="openInventoryStockDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -171,6 +171,11 @@
                   />
                 </div>
               </div>
+              <div class="row" v-if="activeTab === 'consolidation' && currentView === 'list'">
+                <div class="col-md-12">
+                  <ConsolidationTab @toast="showToast($event?.message || $event)" />
+                </div>
+              </div>
               <div class="row" v-if="activeTab === 'inventoryReport' && currentView === 'list'">
                 <div class="col-md-12">
                   <InventoryReportTab @toast="showToast" />
@@ -180,7 +185,7 @@
               <div class="row" v-if="activeTab === 'stockReturns' && currentView === 'list'">
                 <div :class="isRightSidebarCollapsed ? 'col-md-12' : 'col-md-9'">
                   <StockReturnsTab :listStockReturns="listStockReturns" :meta="meta" :links="links" :filter="filter"
-                    :dropdowns="dropdowns" :loading="isStockReturnsLoading" @fetch="fetchStockReturns" @refresh="fetchStockReturns(null, { force: true })" @update-keyword="updateKeyword"
+                    :dropdowns="dropdowns" :loading="isStockReturnsLoading" @fetch="fetchStockReturns" @update-sort="setTabSort('stockReturns', $event, fetchStockReturns)" @refresh="fetchStockReturns(null, { force: true })" @update-keyword="updateKeyword"
                     @toast="showToast" @view-details="openStockReturnDetails" />
                 </div>
                 <div v-show="!isRightSidebarCollapsed" class="col-md-3">
@@ -198,7 +203,10 @@
     </div>
 
     <!-- Floating Quick Stats Toggle Button -->
-    <button class="quick-stats-floating-toggle" @click="toggleRightSidebar"
+    <!-- Only on tabs that have a Quick Stats panel. On the others (Inventory
+         Report, Product Summary, Accounts Payable) the button used to show and
+         do nothing when clicked. -->
+    <button v-if="hasQuickStats" class="quick-stats-floating-toggle" @click="toggleRightSidebar"
       :title="isRightSidebarCollapsed ? 'Show Quick Stats' : 'Hide Quick Stats'">
       <!-- <i :class="isRightSidebarCollapsed ? 'ri-arrow-left-s-line' : 'ri-arrow-right-s-line'"></i> -->
       <span>Quick Stats</span>
@@ -220,6 +228,7 @@ import PurchaseOrdersTab from './Tab/PurchaseOrdersTab.vue';
 import PurchaseRequestsTab from './Tab/PurchaseRequestsTab.vue';
 import ProductsTab from './Tab/ProductsTab.vue';
 import InventoryReportTab from './Tab/InventoryReportTab.vue';
+import ConsolidationTab from './Tab/ConsolidationTab.vue';
 import InventoryStocksTab from './Tab/InventoryStocksTab.vue';
 import StockReturnsTab from './Tab/StockReturnsTab.vue';
 import AccountsPayableTab from './Tab/AccountsPayableTab.vue';
@@ -241,6 +250,7 @@ export default {
     PurchaseRequestsTab,
     ProductsTab,
     InventoryReportTab,
+    ConsolidationTab,
     InventoryStocksTab,
     StockReturnsTab,
     AccountsPayableTab,
@@ -267,6 +277,8 @@ export default {
       isRightSidebarCollapsed: true,
       activeTab: normalizedInventoryTab || 'productSummary',
       currentView: 'list',
+      // Sort chosen on each tab, as request parameters ({} = default order).
+      tabSort: { products: {}, purchaseOrders: {}, inventoryStocks: {}, stockReturns: {} },
       filter: {
         keyword: '',
       },
@@ -330,6 +342,12 @@ export default {
           description: 'List of products'
         },
         {
+          id: 'consolidation',
+          label: 'Inventory Consolidation',
+          icon: 'ri-stack-line',
+          description: 'Each product, all batches added up'
+        },
+        {
           id: 'stockReturns',
           label: 'Stock Returns',
           icon: 'ri-text-wrap',
@@ -345,6 +363,11 @@ export default {
     };
   },
   computed: {
+    // The tabs QuickStatsSidebar has figures for, while their list is showing.
+    hasQuickStats() {
+      const tabs = ['purchaseRequests', 'purchaseOrders', 'products', 'inventoryStocks', 'receiving'];
+      return tabs.includes(this.activeTab) && (this.activeTab === 'products' || this.currentView === 'list');
+    },
     visibleTabs() {
       // purchaseRequests and accountsPayable are outside this pilot's
       // submodule catalog (spec §9/§12) — they stay visible to anyone who
@@ -356,6 +379,7 @@ export default {
         productSummary: 'inventory_stocks',
         stockReturns: 'stock_returns',
         inventoryReport: 'inventory_stocks',
+        consolidation: 'inventory_stocks',
       };
       return this.tabs.filter((tab) => {
         const submoduleKey = tabToSubmodule[tab.id];
@@ -397,7 +421,7 @@ export default {
     const tabParam = params.get('tab');
     const stockIdParam = params.get('stock_id');
     const returnIdParam = params.get('return_id');
-    const inventoryTabs = ['products', 'purchaseOrders', 'purchaseRequests', 'receiving', 'accountsPayable', 'inventoryStocks', 'stockReturns', 'productSummary'];
+    const inventoryTabs = ['products', 'purchaseOrders', 'purchaseRequests', 'receiving', 'accountsPayable', 'inventoryStocks', 'stockReturns', 'productSummary', 'consolidation', 'inventoryReport'];
 
     if (tabParam && inventoryTabs.includes(tabParam)) {
       this.activeTab = tabParam;
@@ -468,6 +492,12 @@ export default {
       }
     },
 
+    // A tab picked a sort: remember it and reload that tab's list from page 1.
+    setTabSort(key, params, refetch) {
+      this.tabSort[key] = params || {};
+      refetch(null, { force: true });
+    },
+
     fetchProducts(page_url, { force = false } = {}) {
       // force: a refresh asked for right after a write must happen even if the
       // tab check would otherwise drop it. Without an escape hatch the gate
@@ -478,6 +508,7 @@ export default {
         axios
           .get(page_url, {
             params: {
+              ...this.tabSort.products,
               keyword: this.filter.keyword,
               count: 10,
               option: 'lists',
@@ -510,11 +541,15 @@ export default {
               keyword: this.filter.keyword,
               count: 10,
               option: 'list',
+              ...this.tabSort.purchaseOrders,
             },
           })
           .then((response) => {
             if (response) {
               const allPurchaseOrders = response.data.data;
+              // Remember the order the server sent, so the tabs can keep it
+              // after splitting these rows up by status.
+              allPurchaseOrders.forEach((order, index) => { order._pos = index; });
               // Separate based on status
               this.listPurchaseRequests = allPurchaseOrders.filter(order => order.status?.name === 'Pending');
               this.listPurchaseOrders = allPurchaseOrders.filter(order => ['Approved', 'Completed', 'Voided'].includes(order.status?.name));
@@ -548,6 +583,7 @@ export default {
               count: 10,
               option: 'lists',
               exclude_converted: 1,
+              ...this.tabSort.inventoryStocks,
             },
           })
           .then((response) => {
@@ -599,6 +635,7 @@ export default {
         axios
           .get(page_url, {
             params: {
+              ...this.tabSort.stockReturns,
               keyword: this.filter.keyword,
               count: 10,
             },
@@ -944,11 +981,11 @@ export default {
   top: 50%;
   right: 0;
   transform: translateY(-50%);
-  background: #c4dad2;
+  background: var(--brt-c-c4dad2);
   border: 1px solid rgba(108, 117, 125, 0.3);
   border-right: none;
   border-radius: 8px 0 0 8px;
-  color: #16423c;
+  color: var(--brt-c-16423c);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -959,7 +996,7 @@ export default {
 }
 
 .quick-stats-floating-toggle:hover {
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #ffffff;
 }
 

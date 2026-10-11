@@ -70,6 +70,7 @@
                             </div> -->
                         </div>
 
+                        <SortSelect v-model="sortOption" :fields="[{ field: 'so_number', label: 'SO no.' }, { field: 'order_date', label: 'Order date', type: 'date' }, { field: 'total_amount', label: 'Amount', type: 'number' }]" @change="fetch()" />
                     </div>
 
                     <div class="table-responsive">
@@ -360,6 +361,7 @@
 </template>
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
+import { listSortMixin } from '@/Shared/listSort.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
 import PageHeader from '@/Shared/Components/PageHeader.vue';
@@ -372,9 +374,10 @@ import ReturnHistory from './ReturnHistory.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     components: { PageHeader, Pagination, Multiselect, CreateFromReceipt, Cancel, Adjustment, Approval, ReturnHistory, TableLoadingRow },
+    mixins: [listSortMixin],
     props: ['dropdowns', 'invoices', 'user', 'isExternal', 'returnGracePeriod'],
     data(){
         return {
@@ -439,7 +442,7 @@ export default {
                     location_id: this.filter.location_id,
                     status: this.filter.status,
                     count: 10,
-                    option: 'lists'
+                    ...this.sortParams, option: 'lists'
                 }
             })
                 .then(response => {
@@ -477,12 +480,12 @@ export default {
 
         onPrint(list) {
             if (list?.refund_receipt_id) {
-                printDocument(`/receipts/${list.refund_receipt_id}?option=print&type=receipt`);
+                openOrPrint(`/receipts/${list.refund_receipt_id}?option=print&type=receipt`);
                 return;
             }
 
             let url = this.isExternal ? '/sales-orders-external' : '/sales-orders';
-            printDocument(`${url}/${list.id}?option=print&type=sales_order`);
+            openOrPrint(`${url}/${list.id}?option=print&type=sales_order`);
         },
 
         onApprove(data) {
@@ -564,16 +567,16 @@ export default {
 .sub-tab-btn {
     padding: 6px 16px;
     border-radius: 8px;
-    border: 1px solid #c4d9d2;
+    border: 1px solid var(--brt-border);
     background: #fff;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
 }
-.sub-tab-btn:hover { background: #edf6f2; color: #16322e; }
-.sub-tab-btn.active { background: #3D8D7A; border-color: #3D8D7A; color: #fff; }
+.sub-tab-btn:hover { background: var(--brt-tint-2); color: var(--brt-ink); }
+.sub-tab-btn.active { background: var(--brt-primary); border-color: var(--brt-primary); color: #fff; }
 
 /* Modern Collapsible Row Styles */
 .main-table-row {
@@ -583,13 +586,13 @@ export default {
 }
 
 .main-table-row:hover {
-    background-color: rgba(61, 141, 122, 0.05) !important;
-    border-left-color: #3D8D7A;
+    background-color: rgba(var(--brt-primary-rgb), 0.05) !important;
+    border-left-color: var(--brt-primary);
 }
 
 .main-table-row.expanded-row {
-    background: linear-gradient(90deg, rgba(61, 141, 122, 0.08) 0%, rgba(61, 141, 122, 0.02) 100%);
-    border-left-color: #3D8D7A;
+    background: linear-gradient(90deg, rgba(var(--brt-primary-rgb), 0.08) 0%, rgba(var(--brt-primary-rgb), 0.02) 100%);
+    border-left-color: var(--brt-primary);
 }
 
 .expand-icon {
@@ -606,7 +609,7 @@ export default {
 
 .expand-icon.rotated {
     transform: rotate(90deg);
-    color: #3D8D7A;
+    color: var(--brt-primary);
 }
 
 /* Details Row Styles */
@@ -647,9 +650,9 @@ export default {
 }
 
 .info-card:hover {
-    box-shadow: 0 8px 25px rgba(61, 141, 122, 0.15);
+    box-shadow: 0 8px 25px rgba(var(--brt-primary-rgb), 0.15);
     transform: translateY(-2px);
-    border-color: #3D8D7A;
+    border-color: var(--brt-primary);
 }
 
 .info-card-header {
@@ -664,8 +667,8 @@ export default {
 
 .info-card-header i {
     font-size: 1.25rem;
-    color: #3D8D7A;
-    background: rgba(61, 141, 122, 0.1);
+    color: var(--brt-primary);
+    background: rgba(var(--brt-primary-rgb), 0.1);
     padding: 0.5rem;
     border-radius: 8px;
     width: 40px;
@@ -716,7 +719,7 @@ export default {
     content: '';
     width: 6px;
     height: 6px;
-    background: #C4DAD2;
+    background: var(--brt-c-c4dad2);
     border-radius: 50%;
 }
 
@@ -755,7 +758,7 @@ export default {
 /* ── Detail card redesign ─────────────────────────────────── */
 .det-card {
     background: #fff;
-    border: 1px solid #e2ece8;
+    border: 1px solid var(--brt-c-e2ece8);
     border-radius: 12px;
     overflow: hidden;
     height: 100%;
@@ -765,28 +768,28 @@ export default {
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background: linear-gradient(to right, #edf6f2, #f6fbf9);
-    border-bottom: 1px solid #dceee8;
+    background: linear-gradient(to right, var(--brt-tint-2), #f6fbf9);
+    border-bottom: 1px solid var(--brt-c-dceee8);
     font-size: 12px;
     font-weight: 700;
-    color: #2a6b58;
+    color: var(--brt-c-2a6b58);
     text-transform: uppercase;
     letter-spacing: .5px;
 }
-.det-card-header i { font-size: 15px; color: #3d8d7a; }
+.det-card-header i { font-size: 15px; color: var(--brt-primary); }
 .det-card-body { padding: 4px 0; }
 .det-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 6px 14px;
-    border-bottom: 1px dashed #f0f4f2;
+    border-bottom: 1px dashed var(--brt-c-f0f4f2);
     font-size: 12px;
 }
 .det-row:last-child { border-bottom: none; }
-.det-label { color: #7a9b90; font-weight: 500; }
-.det-value { color: #1e3d33; font-weight: 600; text-align: right; }
-.det-divider { height: 1px; background: #e2ece8; margin: 4px 0; }
+.det-label { color: var(--brt-c-7a9b90); font-weight: 500; }
+.det-value { color: var(--brt-c-1e3d33); font-weight: 600; text-align: right; }
+.det-divider { height: 1px; background: var(--brt-c-e2ece8); margin: 4px 0; }
 .det-receipt-row { background: #fafcfb; }
 .mode-pill {
     display: inline-block;
@@ -815,13 +818,13 @@ export default {
 }
 .det-items-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .det-items-table thead th {
-    background: #f5f9f7;
-    color: #5a7e72;
+    background: var(--brt-c-f5f9f7);
+    color: var(--brt-c-5a7e72);
     font-weight: 700;
     font-size: 11px;
     padding: 7px 10px;
-    border-bottom: 1px solid #dceee8;
+    border-bottom: 1px solid var(--brt-c-dceee8);
 }
-.det-items-table tbody td { padding: 8px 10px; border-bottom: 1px dashed #f0f4f2; }
+.det-items-table tbody td { padding: 8px 10px; border-bottom: 1px dashed var(--brt-c-f0f4f2); }
 .det-items-table tbody tr:last-child td { border-bottom: none; }
 </style>

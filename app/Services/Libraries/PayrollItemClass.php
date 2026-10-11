@@ -19,6 +19,7 @@ class PayrollItemClass
                         ->orWhere('type', 'LIKE', "%{$keyword}%");
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count ?? 10)
         );
     }

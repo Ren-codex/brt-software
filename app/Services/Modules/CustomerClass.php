@@ -25,10 +25,32 @@ class CustomerClass
                           ->orWhere('email', 'LIKE', "%{$keyword}%");
                     });
                 })
-                ->orderBy('created_at', 'DESC')
+                ->tap(fn ($query) => $this->applySort($query, $request->sort_by, $request->sort_direction))
                 ->paginate($request->count)
         );
         return $data;
+    }
+
+    /**
+     * Order the customer list. Sorting happens here, not in the browser, so it
+     * applies to the whole list rather than to whichever ten rows are on screen.
+     *
+     * Both inputs are checked against fixed lists: a column name cannot be bound
+     * as a query parameter, so anything unrecognised falls back to newest first.
+     */
+    private function applySort($query, ?string $sortBy, ?string $direction): void
+    {
+        $direction = strtolower((string) $direction) === 'asc' ? 'asc' : 'desc';
+        $column = in_array($sortBy, ['name', 'email', 'credit_limit', 'created_at'], true) ? $sortBy : null;
+
+        if ($column) {
+            $query->orderBy($column, $direction);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        // Rows that tie would otherwise be free to swap between pages.
+        $query->orderBy('id', $direction);
     }
 
     public function save($request){
@@ -178,6 +200,80 @@ class CustomerClass
                     'total_amount' => round((float) $order->total_amount, 2),
                 ];
             });
+    }
+
+    /**
+     * What went wrong with this customer's orders, newest first: goods they
+     * returned, goods they turned away at the door, and credit that was not
+     * approved. One list, because whoever opens a profile before extending
+     * credit is asking one question — is there a history here?
+     */
+    public function issueHistory($customerId): array
+    {
+        Customer::findOrFail($customerId);
+
+        $productName = fn ($product) => $product
+            ? trim(collect([optional($product->brand)->name, $product->weight, optional($product->unit)->name])->filter()->implode(' '))
+            : 'Item';
+        $quantity = fn ($value) => rtrim(rtrim(number_format((float) $value, 2), '0'), '.');
+        $forCustomer = fn ($query) => $query->where('customer_id', $customerId);
+
+        $returns = \App\Models\SalesReturnHistory::with(['salesOrder:id,so_number', 'product.brand', 'product.unit'])
+            ->whereHas('salesOrder', $forCustomer)
+            ->get()
+            ->map(fn ($row) => [
+                'key' => 'return-'.$row->id,
+                'type' => 'return',
+                'label' => 'Sales return',
+                'date' => optional($row->returned_at)->format('Y-m-d'),
+                'so_number' => optional($row->salesOrder)->so_number,
+                'detail' => $quantity($row->quantity).' × '.$productName($row->product),
+                'note' => $row->condition ? ucfirst($row->condition) : null,
+                'amount' => round((float) $row->total_value, 2),
+            ]);
+
+        $refusals = \App\Models\SalesOrderDeliveryRefusal::with(['salesOrder:id,so_number', 'product.brand', 'product.unit'])
+            ->whereHas('salesOrder', $forCustomer)
+            ->get()
+            ->map(fn ($row) => [
+                'key' => 'refusal-'.$row->id,
+                'type' => 'refusal',
+                'label' => 'Refused at delivery',
+                'date' => optional($row->recorded_at)->format('Y-m-d'),
+                'so_number' => optional($row->salesOrder)->so_number,
+                'detail' => $quantity($row->refused_quantity).' of '.$quantity($row->ordered_quantity).' × '.$productName($row->product),
+                'note' => $row->reason ?: null,
+                'amount' => null,
+            ]);
+
+        $rejected = SalesOrder::where('customer_id', $customerId)
+            ->where('credit_approval', 'rejected')
+            ->get()
+            ->map(fn ($order) => [
+                'key' => 'credit-'.$order->id,
+                'type' => 'disapproved',
+                'label' => 'Credit not approved',
+                'date' => optional($order->credit_approved_at ?? $order->order_date)->format('Y-m-d'),
+                'so_number' => $order->so_number,
+                'detail' => 'Credit sale refused; the order was cancelled',
+                // Stored as "Credit not approved: <reason>"; the label already says the first half.
+                'note' => trim(preg_replace('/^Credit not approved:?\s*/i', '', (string) $order->credit_approval_remarks)) ?: null,
+                'amount' => round((float) $order->total_amount, 2),
+            ]);
+
+        $rows = $returns->concat($refusals)->concat($rejected)
+            ->sortByDesc(fn ($row) => $row['date'].'|'.$row['key'])
+            ->values();
+
+        return [
+            'counts' => [
+                'return' => $returns->count(),
+                'refusal' => $refusals->count(),
+                'disapproved' => $rejected->count(),
+            ],
+            'data' => $rows->take(50)->all(),
+            'total' => $rows->count(),
+        ];
     }
 
     public function details($customerId)

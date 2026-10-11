@@ -52,7 +52,7 @@
 /* Minimal Sidebar with #267a4c */
 .inventory-sidebar {
   width: 240px;
-  background: #3D8D7A;
+  background: var(--brt-primary);
   color: white;
   display: flex;
   flex-direction: column;
@@ -297,7 +297,7 @@
   display: flex;
   flex-direction: column;
   min-height: 500px;
-  background: #E9EFEC;
+  background: var(--brt-c-e9efec);
   overflow: hidden;
 }
 
@@ -435,8 +435,8 @@
   padding: 1rem 1.1rem;
   background: #ffffff;
   border-radius: 12px;
-  border: 1px solid rgba(61, 141, 122, 0.12);
-  box-shadow: 0 2px 8px rgba(28, 49, 45, 0.06);
+  border: 1px solid rgba(var(--brt-primary-rgb), 0.12);
+  box-shadow: 0 2px 8px rgba(var(--brt-c-1c312d-rgb), 0.06);
   height: 100%;
 }
 
@@ -447,15 +447,15 @@
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: rgba(61, 141, 122, 0.12);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  color: var(--brt-primary);
   font-size: 1.15rem;
   flex-shrink: 0;
 }
 
 .acct-stat-label {
   margin-bottom: 0.15rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -464,13 +464,13 @@
 
 .acct-stat-value {
   margin-bottom: 0.1rem;
-  color: #16322e;
+  color: var(--brt-ink);
   font-weight: 700;
   font-size: 1.1rem;
 }
 
 .acct-stat-note {
-  color: #7a9e93;
+  color: var(--brt-c-7a9e93);
   font-size: 0.72rem;
   margin: 0;
 }
@@ -492,22 +492,22 @@
 .acct-filter-label {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #6b8c85;
+  color: var(--brt-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .acct-filter-input {
-  border: 1px solid #c4d9d2;
+  border: 1px solid var(--brt-border);
   border-radius: 8px;
   padding: 0.38rem 0.65rem;
   font-size: 0.84rem;
-  color: #16322e;
+  color: var(--brt-ink);
   background: #f7fbfa;
   outline: none;
 
   &:focus {
-    border-color: #3d8d7a;
+    border-color: var(--brt-primary);
     background: #fff;
   }
 }
@@ -525,12 +525,12 @@
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 700;
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #fff;
   border: none;
   cursor: pointer;
 
-  &:hover { background: #347a6a; }
+  &:hover { background: var(--brt-primary-hover); }
 }
 
 .acct-btn-secondary {
@@ -538,39 +538,39 @@
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 700;
-  background: #f0f5f3;
-  color: #527267;
-  border: 1px solid #c4d9d2;
+  background: var(--brt-c-f0f5f3);
+  color: var(--brt-c-527267);
+  border: 1px solid var(--brt-border);
   cursor: pointer;
 
-  &:hover { background: #e4eeeb; }
+  &:hover { background: var(--brt-c-e4eeeb); }
 }
 
 /* ── Shared Sales Table ─────────────────────────────────────────── */
 .sales-table {
   thead th {
-    background: #edf5f2;
-    color: #527267;
+    background: var(--brt-c-edf5f2);
+    color: var(--brt-c-527267);
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     white-space: nowrap;
     padding: 0.45rem 0.65rem;
-    border-color: #d6ebe4;
+    border-color: var(--brt-c-d6ebe4);
   }
   tbody td {
     font-size: 0.82rem;
     vertical-align: middle;
     padding: 0.4rem 0.65rem;
-    border-color: #edf5f2;
+    border-color: var(--brt-c-edf5f2);
   }
   tbody tr:hover { background: #f7fbf9; }
   tfoot td {
-    background: #f0faf6;
+    background: var(--brt-c-f0faf6);
     font-size: 0.82rem;
     padding: 0.45rem 0.65rem;
-    border-top: 2px solid #c8e3da !important;
+    border-top: 2px solid var(--brt-c-c8e3da) !important;
     font-weight: 700;
   }
 }
@@ -602,7 +602,7 @@
      depending on the row, and both are the same promise to the reader. */
 
   /* Opens the record for changing. */
-  &.edit                      { border-color: #a8d5c4; color: #2f6b5c; &:hover { background: #e4f0eb; } }
+  &.edit                      { border-color: var(--brt-c-a8d5c4); color: var(--brt-c-2f6b5c); &:hover { background: var(--brt-c-e4f0eb); } }
   /* Looks without touching. */
   &.info, &.view              { border-color: #bfdbfe; color: #1e40af; &:hover { background: #eff6ff; } }
   /* Leaves the system entirely -- no state changes, so it stays neutral. */
@@ -646,19 +646,19 @@
 
   i {
     font-size: 2.5rem;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     display: block;
     margin-bottom: 0.6rem;
   }
-  p { font-size: 0.9rem; color: #3d7060; }
-  small { font-size: 0.78rem; color: #7a9e93; }
+  p { font-size: 0.9rem; color: var(--brt-c-3d7060); }
+  small { font-size: 0.78rem; color: var(--brt-c-7a9e93); }
 }
 
 /* ── Shared Tab Bar ─────────────────────────────────────────────── */
 .cm-tab-bar {
   display: flex;
   gap: 0.5rem;
-  border-bottom: 2px solid #e2ece9;
+  border-bottom: 2px solid var(--brt-c-e2ece9);
   padding-bottom: 0;
   margin-bottom: 1rem;
 }
@@ -668,7 +668,7 @@
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: #6b8c85;
+  color: var(--brt-muted);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -679,12 +679,12 @@
   align-items: center;
   gap: 0.35rem;
 
-  &:hover { color: #3d8d7a; }
+  &:hover { color: var(--brt-primary); }
 
   &.active {
-    color: #3d8d7a;
-    border-bottom-color: #3d8d7a;
-    background: #f4faf8;
+    color: var(--brt-primary);
+    border-bottom-color: var(--brt-primary);
+    background: var(--brt-c-f4faf8);
   }
 }
 
@@ -701,3 +701,27 @@
   font-size: 0.85rem;
   margin-bottom: 1rem;
 }
+
+// Page gutters.
+//
+// The space between the main menu and the page used to be about 24px each side
+// (the theme's page padding plus the container's own gutter), which left the
+// module panels floating well clear of the menu. It is brought down to a thin
+// 6px so the page sits almost flush against the menu and uses the width.
+//
+// .main-content is included so this outranks the theme's own .page-content
+// rules whichever order the two stylesheets are combined in.
+.main-content .page-content {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+
+  > .container-fluid {
+    --vz-gutter-x: 0.25rem;
+  }
+}
+
+// Status tabs, search and sort sharing one row above a table (Purchase Requests,
+// Purchase Orders). Each block used to take a row of its own, which pushed the
+// table a long way down the page.
+// .tabs-search-row itself lives in _list-toolbar.scss, with the rest of the
+// list toolbar rules.

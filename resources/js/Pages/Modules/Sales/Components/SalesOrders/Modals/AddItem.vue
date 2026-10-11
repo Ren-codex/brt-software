@@ -199,14 +199,39 @@
 
                             <div class="form-group discount-group">
                                 <label for="discount_per_unit" class="form-label">Discount per Unit (Amount)</label>
-                                <div class="input-wrapper">
-                                    <i class="ri-cash-line input-icon"></i>
-                                    <Amount
-                                        @amount="updateDiscountPerUnit($event)"
-                                        :class="{ 'input-error': form.errors.discount_per_unit }"
-                                        class="form-control"
-                                        ref="discountComponent"
-                                    />
+                                <!-- Big targets for a touch screen: step the amount by five
+                                     pesos, or jump straight to a usual discount. Every
+                                     button keeps the value between 0 and the limit. -->
+                                <div class="discount-stepper">
+                                    <button type="button" class="step-btn" aria-label="Decrease discount"
+                                        :disabled="discountValue <= 0" @click="stepDiscount(-DISCOUNT_STEP)">
+                                        <i class="ri-subtract-line"></i>
+                                    </button>
+                                    <div class="input-wrapper">
+                                        <i class="ri-cash-line input-icon"></i>
+                                        <Amount
+                                            @amount="updateDiscountPerUnit($event)"
+                                            :class="{ 'input-error': form.errors.discount_per_unit }"
+                                            class="form-control"
+                                            ref="discountComponent"
+                                        />
+                                    </div>
+                                    <button type="button" class="step-btn" aria-label="Increase discount"
+                                        :disabled="discountValue >= discountLimit" @click="stepDiscount(DISCOUNT_STEP)">
+                                        <i class="ri-add-line"></i>
+                                    </button>
+                                </div>
+                                <div class="discount-presets">
+                                    <button v-for="amount in discountPresets" :key="amount" type="button"
+                                        class="preset-btn" :class="{ active: discountValue === amount }"
+                                        :disabled="amount > discountLimit"
+                                        @click="setDiscount(amount)">
+                                        ₱{{ amount }}
+                                    </button>
+                                    <button type="button" class="preset-btn preset-clear"
+                                        :disabled="discountValue <= 0" @click="setDiscount(0)">
+                                        None
+                                    </button>
                                 </div>
                                 <span class="error-message" v-if="form.errors.discount_per_unit">{{ form.errors.discount_per_unit }}</span>
                             </div>
@@ -263,6 +288,10 @@ import { useForm } from '@inertiajs/vue3';
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 import Multiselect from '@vueform/multiselect';
 import Amount from '@/Shared/Components/Forms/Amount.vue';
+
+// The most that may be taken off one unit, in pesos. SalesOrderRequest enforces
+// the same figure, so change both together.
+const MAX_DISCOUNT_PER_UNIT = 100;
 import UpdatePriceModal from '@/Pages/Modules/Inventory/Modal/UpdatePriceModal.vue';
 
 export default {
@@ -296,6 +325,21 @@ export default {
         }
     },
     computed: {
+        discountValue() {
+            return parseFloat(this.form.discount_per_unit) || 0;
+        },
+        // Never more than the unit price: a discount cannot make a sack free.
+        discountLimit() {
+            const price = parseFloat(this.form.price) || 0;
+            return price > 0 ? Math.min(MAX_DISCOUNT_PER_UNIT, price) : MAX_DISCOUNT_PER_UNIT;
+        },
+        discountPresets() {
+            return [5, 10, 20];
+        },
+        // How far one tap of plus or minus moves the discount, in pesos.
+        DISCOUNT_STEP() {
+            return 5;
+        },
         isWholesale: {
             get() {
                 return this.form.price_type === 'wholesale';
@@ -454,6 +498,10 @@ export default {
             this.showModal = true;
             this.validateQuantity(); // Validate quantity against current stock
             this.$nextTick(() => {
+                // Show the saved discount in the box. Without this it kept
+                // whatever the last item left there, so the stepper buttons
+                // would start from a number that was not this item's.
+                this.$refs.discountComponent?.emitValue((parseFloat(data.discount_per_unit) || 0).toFixed(2));
                 this.$refs.productSelect?.blur();
             });
         },
@@ -504,6 +552,20 @@ export default {
 
 
 
+        /**
+         * Set the discount from a button. Clamped, so no button can take it
+         * below zero or past the limit, and written through the money input so
+         * the box shows what was chosen.
+         */
+        setDiscount(amount) {
+            const clamped = Math.min(Math.max(Number(amount) || 0, 0), this.discountLimit);
+            this.form.discount_per_unit = clamped;
+            this.$refs.discountComponent?.emitValue(clamped.toFixed(2));
+            this.validateDiscount();
+        },
+        stepDiscount(direction) {
+            this.setDiscount(this.discountValue + direction);
+        },
         updateDiscountPerUnit(value) {
             if (typeof value === 'string') {
                 const cleanValue = value.replace(/[₱,]/g, '');
@@ -641,7 +703,15 @@ export default {
             const totalCost = parseFloat(this.form.price).toFixed(2) * parseFloat(this.form.quantity);
             const totalDiscount = parseFloat(this.form.discount_per_unit) * parseFloat(this.form.quantity);
 
-            if (totalDiscount > totalCost) {
+            const discount = parseFloat(this.form.discount_per_unit) || 0;
+
+            // Typed values are checked rather than silently changed, so nobody
+            // saves a different discount from the one they meant to enter.
+            if (discount < 0) {
+                this.form.errors.discount_per_unit = 'Discount cannot be negative';
+            } else if (discount > MAX_DISCOUNT_PER_UNIT) {
+                this.form.errors.discount_per_unit = `Discount cannot be more than ₱${MAX_DISCOUNT_PER_UNIT} per unit`;
+            } else if (totalDiscount > totalCost) {
                 this.form.errors.discount_per_unit = 'Total discount cannot exceed total cost';
             } else {
                 this.form.errors.discount_per_unit = null;
@@ -686,7 +756,7 @@ export default {
 .modal-header-subtitle {
     margin: 0;
     font-size: 0.72rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
 }
 
 .required-asterisk {
@@ -733,7 +803,7 @@ export default {
 .section-title {
     font-size: 0.9rem;
     font-weight: 700;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     margin: 0 0 0.65rem;
 }
 
@@ -765,17 +835,17 @@ export default {
 .stat-value {
     font-size: 1.2rem;
     font-weight: 700;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .stat-value-accent {
-    color: #3d8d7a;
+    color: var(--brt-primary);
 }
 
 .stat-box-input {
     background-color: #fff;
-    border: 1.5px solid #3d8d7a;
-    box-shadow: 0 1px 3px rgba(61, 141, 122, 0.12);
+    border: 1.5px solid var(--brt-primary);
+    box-shadow: 0 1px 3px rgba(var(--brt-primary-rgb), 0.12);
 }
 
 .stat-box-input .stat-label {
@@ -797,7 +867,7 @@ export default {
     padding: 0;
     font-size: 1.2rem;
     font-weight: 700;
-    color: #16322e;
+    color: var(--brt-ink);
     text-align: center;
     -moz-appearance: textfield;
 }
@@ -814,7 +884,7 @@ export default {
 
 .stat-box-input:focus-within {
     border-color: #267a4c;
-    box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.18);
+    box-shadow: 0 0 0 3px rgba(var(--brt-primary-rgb), 0.18);
 }
 
 .quantity-stepper-btn {
@@ -822,8 +892,8 @@ export default {
     width: 22px;
     height: 22px;
     border-radius: 6px;
-    border: 1px solid #c4d9d2;
-    background: #eef7f3;
+    border: 1px solid var(--brt-border);
+    background: var(--brt-c-eef7f3);
     color: #267a4c;
     display: inline-flex;
     align-items: center;
@@ -834,7 +904,7 @@ export default {
 }
 
 .quantity-stepper-btn:hover:not(:disabled) {
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: #fff;
 }
 
@@ -874,18 +944,18 @@ export default {
 }
 
 .batch-radio-row:hover {
-    background-color: #f5f9f7;
+    background-color: var(--brt-c-f5f9f7);
 }
 
 .batch-radio-row.selected {
-    background-color: #eef7f3;
+    background-color: var(--brt-c-eef7f3);
 }
 
 .batch-radio-dot {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    border: 2px solid #3d8d7a;
+    border: 2px solid var(--brt-primary);
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
@@ -897,13 +967,13 @@ export default {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #3d8d7a;
+    background: var(--brt-primary);
 }
 
 .batch-radio-code {
     font-weight: 600;
     font-size: 0.8rem;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .batch-radio-date {
@@ -915,7 +985,7 @@ export default {
 .batch-radio-qty {
     font-weight: 700;
     font-size: 0.8rem;
-    color: #16322e;
+    color: var(--brt-ink);
     margin-left: auto;
 }
 
@@ -955,6 +1025,81 @@ export default {
     margin-bottom: 0;
 }
 
+.discount-stepper {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.discount-stepper .input-wrapper {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.step-btn {
+    flex-shrink: 0;
+    width: 44px;
+    min-height: 40px;
+    border: 1px solid var(--brt-c-d7e5de);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--brt-c-355f55);
+    font-size: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.step-btn:hover:not(:disabled) {
+    background: var(--brt-primary);
+    border-color: var(--brt-primary);
+    color: #fff;
+}
+
+.discount-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.preset-btn {
+    min-width: 56px;
+    min-height: 36px;
+    padding: 0 0.8rem;
+    border: 1px solid var(--brt-c-d7e5de);
+    border-radius: 999px;
+    background: var(--brt-c-f7faf9);
+    color: var(--brt-c-355f55);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.preset-btn:hover:not(:disabled) {
+    border-color: var(--brt-primary);
+}
+
+.preset-btn.active {
+    background: var(--brt-primary);
+    border-color: var(--brt-primary);
+    color: #fff;
+}
+
+.preset-clear {
+    background: #fff;
+    color: #6b7280;
+}
+
+.step-btn:disabled,
+.preset-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .price-type-toggle {
     margin-bottom: 0.85rem;
 }
@@ -971,8 +1116,8 @@ export default {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    border: 1px solid #3d8d7a;
-    background: #eef7f3;
+    border: 1px solid var(--brt-primary);
+    background: var(--brt-c-eef7f3);
     color: #267a4c;
     border-radius: 8px;
     padding: 0.45rem 0.75rem;
@@ -987,7 +1132,7 @@ export default {
 }
 
 .price-adjust-btn:hover:not(:disabled) {
-    background: #3d8d7a;
+    background: var(--brt-primary);
     color: #ffffff;
 }
 
@@ -1027,8 +1172,8 @@ export default {
     width: 34px;
     height: 34px;
     border-radius: 9px;
-    background: rgba(61, 141, 122, 0.12);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.12);
+    color: var(--brt-primary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1044,7 +1189,7 @@ export default {
 .net-price-label {
     font-weight: 700;
     font-size: 0.85rem;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .net-price-sub {
@@ -1061,7 +1206,7 @@ export default {
 
 .net-price-value-total {
     font-size: 1.5rem;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .net-price-divider {

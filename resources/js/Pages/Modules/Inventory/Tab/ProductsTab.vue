@@ -30,6 +30,7 @@
                 class="search-input"
               >
             </div>
+            <SortSelect v-model="sortOption" :fields="[{ field: 'code', label: 'Code' }, { field: 'weight', label: 'Weight', type: 'number' }, { field: 'minimum_stock', label: 'Minimum stock', type: 'number' }]" @change="$emit('update-sort', sortParams)" />
           </div>
 
           <div class="table-section">
@@ -99,17 +100,17 @@
 /* Card Header */
 .library-card-header {
   padding: 0.75rem 1.1rem;
-  border-bottom: 1px solid #c4d9d2;
-  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+  border-bottom: 1px solid var(--brt-border);
+  background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
 }
 
 .header-icon {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(61, 141, 122, 0.12);
-  border: 1px solid rgba(61, 141, 122, 0.16);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--brt-primary-rgb), 0.16);
+  color: var(--brt-primary);
   font-size: 18px;
   flex-shrink: 0;
   display: inline-flex;
@@ -120,19 +121,20 @@
 .header-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #16322e;
+  color: var(--brt-ink);
   margin: 0;
 }
 
 .header-subtitle {
   font-size: 0.76rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
   margin: 0;
 }
 </style>
 
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
+import { listSortMixin } from '@/Shared/listSort.js';
 import CreateProduct from '../Modal/CreateProductModal.vue';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
@@ -140,6 +142,7 @@ import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 export default {
   name: "ProductsTab",
   components: { Pagination, CreateProduct, Delete, TableLoadingRow },
+  mixins: [listSortMixin],
   props: {
     listProducts: Array,
     meta: Object,
@@ -151,7 +154,7 @@ export default {
       default: false,
     },
   },
-  emits: ['fetch', 'update-keyword', 'toast'],
+  emits: ['fetch', 'update-sort', 'update-keyword', 'toast'],
   data() {
     return {
       selectedRow: null,

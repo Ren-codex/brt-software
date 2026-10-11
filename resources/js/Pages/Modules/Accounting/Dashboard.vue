@@ -450,8 +450,8 @@ export default {
 /* Snapshot tables */
 .snapshot-table { border-collapse: collapse; }
 .snapshot-table td { padding: 0.5rem 0.25rem; font-size: 0.85rem; }
-.snap-divider-row td { border-top: 1px solid #dde8e3; padding-top: 0.65rem; }
-.snap-total-row td { border-top: 2px solid #c4d9d2; padding-top: 0.65rem; }
+.snap-divider-row td { border-top: 1px solid var(--brt-c-dde8e3); padding-top: 0.65rem; }
+.snap-total-row td { border-top: 2px solid var(--brt-border); padding-top: 0.65rem; }
 .text-success-soft { color: #166534; }
 .text-danger-soft  { color: #991b1b; }
 
@@ -484,18 +484,18 @@ export default {
 .view-all-link {
     font-size: 0.8rem;
     font-weight: 700;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
 }
-.view-all-link:hover { color: #277660; text-decoration: underline; }
+.view-all-link:hover { color: var(--brt-c-277660); text-decoration: underline; }
 
 /* Journal entries table */
 .dash-je-table thead th {
-    background: #edf5f2;
-    color: #527267;
+    background: var(--brt-c-edf5f2);
+    color: var(--brt-c-527267);
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -528,7 +528,7 @@ export default {
     font-weight: 700;
     text-transform: capitalize;
 }
-.status-chip.posted    { background: #e7f7f2; color: #277660; }
+.status-chip.posted    { background: var(--brt-c-e7f7f2); color: var(--brt-c-277660); }
 .status-chip.draft     { background: #f1f5f9; color: #475569; }
 .status-chip.reversed  { background: #fff1f1; color: #b15050; }
 
@@ -540,7 +540,7 @@ export default {
 }
 .empty-state i {
     font-size: 2rem;
-    color: #3d8d7a;
+    color: var(--brt-primary);
     display: block;
     margin-bottom: 0.5rem;
 }
@@ -551,7 +551,7 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 0.9rem 1.1rem;
-    background: linear-gradient(to right, #1a4035, #2d6b58);
+    background: linear-gradient(to right, var(--brt-c-1a4035), var(--brt-c-2d6b58));
     color: #fff;
 }
 .cash-total-label  { font-size: 0.78rem; font-weight: 600; opacity: 0.85; }
@@ -563,15 +563,15 @@ export default {
     align-items: center;
     gap: 0.7rem;
     padding: 0.6rem 1.1rem;
-    border-bottom: 1px solid #edf4f1;
+    border-bottom: 1px solid var(--brt-c-edf4f1);
 }
 .bank-row:last-child { border-bottom: none; }
 .bank-icon-wrap {
     width: 30px;
     height: 30px;
     border-radius: 7px;
-    background: rgba(61, 141, 122, 0.1);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.1);
+    color: var(--brt-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -587,14 +587,14 @@ export default {
 .bank-name {
     font-size: 0.8rem;
     font-weight: 700;
-    color: #16322e;
+    color: var(--brt-ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .bank-acct {
     font-size: 0.7rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -615,10 +615,10 @@ export default {
     justify-content: space-between;
     margin-bottom: 0.85rem;
     padding-bottom: 0.6rem;
-    border-bottom: 1px solid #edf4f1;
+    border-bottom: 1px solid var(--brt-c-edf4f1);
 }
-.aging-total-label { font-size: 0.8rem; color: #6b8c85; }
-.aging-total-value { font-size: 0.95rem; font-weight: 800; color: #16322e; }
+.aging-total-label { font-size: 0.8rem; color: var(--brt-muted); }
+.aging-total-value { font-size: 0.95rem; font-weight: 800; color: var(--brt-ink); }
 
 .aging-grid {
     display: grid;
@@ -644,8 +644,8 @@ export default {
 .aging-cell-label  { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.35rem; }
 .aging-cell-amount { font-size: 0.78rem; font-weight: 800; }
 
-.aging-cell.ag-current  { background: #e7f7ef; border-top-color: #3d8d7a; }
-.aging-cell.ag-current .aging-cell-label  { color: #277660; }
+.aging-cell.ag-current  { background: #e7f7ef; border-top-color: var(--brt-primary); }
+.aging-cell.ag-current .aging-cell-label  { color: var(--brt-c-277660); }
 .aging-cell.ag-current .aging-cell-amount { color: #166534; }
 
 .aging-cell.ag-warn1    { background: #fefce8; border-top-color: #ca8a04; }

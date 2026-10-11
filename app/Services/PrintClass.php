@@ -42,7 +42,7 @@ class PrintClass
     }
 
     public function printSalesOrder($id){
-        $sales_order = SalesOrder::with('status' , 'customer', 'location', 'salesRep', 'driver', 'items.product.brand' , 'items.product.unit', 'items.product.packaging', 'created_by' )->findOrFail($id);
+        $sales_order = SalesOrder::with('status' , 'customer', 'location', 'salesRep', 'driver', 'checker', 'items.product.brand' , 'items.product.unit', 'items.product.packaging', 'created_by' )->findOrFail($id);
         $items = $sales_order->items;
 
         $array = [
@@ -83,6 +83,20 @@ class PrintClass
         return $pdf->stream('remittance-'.$remittance->remittance_no.'.pdf');
 
     }
+
+    /**
+     * The most item rows one copy can hold and still fit the top half of a long
+     * bond sheet, measured against the rendered PDF (see the print templates).
+     * Above this, each copy is printed on a sheet of its own rather than being
+     * split across the cut. Re-measure if a template's font or layout changes.
+     *
+     * Both measured at five rows with a discount line showing; set one lower so
+     * a product name wrapping onto a second line, or a refund receipt's extra
+     * remark lines, still clears the cut.
+     */
+    public const RECEIPT_ROWS_PER_HALF_SHEET = 4;
+
+    public const INVOICE_ROWS_PER_HALF_SHEET = 4;
 
     public function printArInvoice($id){
         $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.approved_by')->findOrFail($id);
@@ -170,6 +184,56 @@ class PrintClass
         $pdf = \PDF::loadView('prints.receipt',$array)->setPaper(self::LONG_BOND);
         return $pdf->stream($receipt->receipt_number.'.pdf');
 
+    }
+
+    /**
+     * One payslip per employee on the payroll, or a single one when an
+     * employee is named. Built from the saved payroll lines, so a payslip
+     * always agrees with the payroll it came from.
+     */
+    public function printPayslips($id, $employeeId = null)
+    {
+        $payroll = \App\Models\Payroll::with('items.employee.position', 'creator.employee')->findOrFail($id);
+
+        $items = $payroll->items
+            ->when($employeeId, fn ($items) => $items->where('employee_id', (int) $employeeId))
+            ->sortBy(fn ($item) => $item->employee?->fullname ?? '')
+            ->values();
+
+        abort_if($employeeId && $items->isEmpty(), 404, 'That employee is not on this payroll.');
+
+        // Everyone at once goes four to a sheet, to be cut into quarters; one
+        // employee on their own keeps the larger slip.
+        $pdf = \PDF::loadView('prints.payslip', [
+            'payroll' => $payroll,
+            'items' => $items,
+            'fourUp' => ! $employeeId,
+        ])->setPaper(self::LONG_BOND);
+
+        $suffix = $employeeId ? '-'.\Illuminate\Support\Str::slug($items->first()->employee?->fullname ?? 'employee') : '';
+
+        return $pdf->stream($payroll->payroll_no.'-payslips'.$suffix.'.pdf');
+    }
+
+    /**
+     * A full-page pay statement for one employee on a payroll.
+     *
+     * The same figures as the payslip, laid out as a document to file or hand
+     * over rather than a slip to cut out: it adds how each amount was arrived
+     * at (rate × days, overtime hours × rate), any loans deducted, and a line
+     * for the approver's signature.
+     */
+    public function printPayrollStatement($id, $employeeId)
+    {
+        $payroll = \App\Models\Payroll::with('status', 'items.employee.position', 'creator.employee', 'approvedBy.employee')->findOrFail($id);
+        $item = $payroll->items->firstWhere('employee_id', (int) $employeeId);
+
+        abort_unless($item, 404, 'That employee is not on this payroll.');
+
+        $pdf = \PDF::loadView('prints.payroll-statement', ['payroll' => $payroll, 'item' => $item])
+            ->setPaper(self::LONG_BOND);
+
+        return $pdf->stream($payroll->payroll_no.'-statement-'.\Illuminate\Support\Str::slug($item->employee?->fullname ?? 'employee').'.pdf');
     }
 
     public function printPayroll($id){

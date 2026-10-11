@@ -429,7 +429,7 @@ export default {
 
 .input-group:focus-within {
   border-color: var(--theme-primary);
-  box-shadow: 0 0 0 4px rgba(61, 141, 122, 0.14);
+  box-shadow: 0 0 0 4px rgba(var(--brt-primary-rgb), 0.14);
 }
 
 .currency-symbol {

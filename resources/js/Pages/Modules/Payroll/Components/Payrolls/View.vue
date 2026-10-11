@@ -8,7 +8,7 @@
               <div class="library-card-header">
                   <div class="d-flex align-items-center gap-3">
                     <div class="header-icon">
-                      <i class="ri-money-dollar-circle-line"></i>
+                      <i class="ri-money-peso-circle-line"></i>
                     </div>
                     <div>
                       <h4 class="header-title mb-1">{{ payroll.payroll_no }}</h4>
@@ -30,6 +30,13 @@
                             @click="draftPayroll" v-b-tooltip.hover title="Mark as Draft" style="margin-right: -8px">
                       <i class="ri-file-edit-line"></i>
                     </button>
+                    <!-- A Super Admin can correct a payroll after it has been
+                         submitted. Never once released: that has posted to the
+                         books. The server enforces the same rule. -->
+                    <button v-if="canSuperEdit" @click="editPayroll" class="create-btn" v-b-tooltip.hover title="Edit (Super Admin)">
+                      <i class="ri-pencil-fill"></i>
+                      <span>Edit</span>
+                    </button>
                     <template v-if="payroll.status.slug === 'draft' && payroll.created_by_id === $page.props.user.data.id">
                       <button @click="editPayroll" class="create-btn" v-b-tooltip.hover title="Edit" style="margin-right: -8px">
                         <i class="ri-pencil-fill"></i>
@@ -41,8 +48,9 @@
                     <button @click="printPayroll" class="create-btn" v-b-tooltip.hover title="Print">
                       <i class="ri-printer-line"></i>
                     </button>
-                    <button @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back" style="margin-left: -8px">
-                      <i class="ri-arrow-left-line"></i>
+                    <button @click="printPayslips()" class="create-btn" v-b-tooltip.hover title="Print payslips for all employees">
+                      <i class="ri-file-list-3-line"></i>
+                      <span>Payslips</span>
                     </button>
                   </div>
               </div>
@@ -112,6 +120,7 @@
                           <th>Earnings</th>
                           <th>Deductions</th>
                           <th>Net Salary</th>
+                          <th class="text-center">Print</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -157,6 +166,18 @@
                             </div>
                           </td>
                           <td>{{ formatCurrency(item.net_salary) }}</td>
+                          <td class="text-center">
+                            <div class="print-actions">
+                              <button type="button" class="print-btn print-btn-payslip" v-b-tooltip.hover title="Payslip (compact)"
+                                @click="printPayslips(item.employee_id)">
+                                <i class="ri-file-list-3-line"></i>
+                              </button>
+                              <button type="button" class="print-btn print-btn-statement" v-b-tooltip.hover title="Pay statement (full page)"
+                                @click="printStatement(item.employee_id)">
+                                <i class="ri-file-text-line"></i>
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -211,6 +232,7 @@
     v-if="showEditModal"
     :payroll="payroll"
     :is-edit="showEditModal"
+    :keep-status="payroll.status.slug !== 'draft'"
     :dropdowns="dropdowns"
     @close="closeModal"
     @saved="handleSaved"
@@ -222,15 +244,17 @@ import Swal from 'sweetalert2';
 import PayrollModal from './Modal.vue'
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openDocument } from '@/Shared/utils/printDocument';
 export default {
   name: "PayrollView",
   components: { PayrollModal, TransactionLogs },
   props: {
     payroll: Object,
     dropdowns: Object,
+    // Set by the page when this view is shown in a full-screen modal.
+    fullscreen: { type: Boolean, default: false },
   },
-  emits: ['back', 'toast', 'fetch'],
+  emits: ['back', 'toast', 'fetch', 'toggle-fullscreen'],
   data() {
     return {
       showModal: false,
@@ -245,6 +269,15 @@ export default {
       const roles = this.$page.props.roles;
       const userRoles = roles ? Object.values(roles) : [];
       return userRoles.some(role => ['Administrator', 'Super Admin'].includes(role));
+    },
+    isSuperAdmin() {
+      const roles = this.$page.props.roles;
+      return (roles ? Object.values(roles) : []).includes('Super Admin');
+    },
+    // Submitted but not yet released. Drafts keep their own edit button below.
+    canSuperEdit() {
+      const slug = this.payroll?.status?.slug;
+      return this.isSuperAdmin && slug !== 'draft' && slug !== 'completed';
     }
   },
   methods: {
@@ -370,10 +403,30 @@ export default {
       }
     },
     
+    // Payroll documents open in their own tab, where they can be read,
+    // zoomed, saved or printed, rather than raising the print dialog here.
+    openPrint(url) {
+      if (!openDocument(url)) {
+        this.$toast?.error("Your browser blocked the new tab. Allow pop-ups for this site and try again.");
+      }
+    },
     printPayroll() {
       if (this.payroll) {
-        printDocument(`/payrolls/${this.payroll.id}/print`);
+        this.openPrint(`/payrolls/${this.payroll.id}/print`);
       }
+    },
+
+    // One employee's full-page pay statement.
+    printStatement(employeeId) {
+      if (!this.payroll || !employeeId) return;
+      this.openPrint(`/payrolls/${this.payroll.id}/statement/${employeeId}`);
+    },
+
+    // Everyone on the payroll, or one employee when an id is given.
+    printPayslips(employeeId = null) {
+      if (!this.payroll) return;
+      const query = employeeId ? `?employee_id=${employeeId}` : '';
+      this.openPrint(`/payrolls/${this.payroll.id}/payslips${query}`);
     },
 
     updateStatus(status) {
@@ -442,6 +495,50 @@ export default {
 </script>
 
 <style scoped>
+.print-actions {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.print-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+/* Green for the compact payslip, blue for the full-page statement — told apart
+   by icon and tooltip as well, not by colour alone. */
+.print-btn-payslip {
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  border-color: rgba(var(--brt-primary-rgb), 0.3);
+  color: var(--brt-primary-dark);
+}
+
+.print-btn-payslip:hover {
+  background: var(--brt-primary);
+  border-color: var(--brt-primary);
+  color: #fff;
+}
+
+.print-btn-statement {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.28);
+  color: #1d4ed8;
+}
+
+.print-btn-statement:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
 .toast-notification {
   position: fixed;
   top: 20px;
@@ -479,7 +576,7 @@ export default {
 }
 
 .loan-icon {
-  color: #3D8D7A;
+  color: var(--brt-primary);
   cursor: pointer;
   font-size: 1rem;
   margin-left: 0.5rem;
@@ -522,6 +619,6 @@ export default {
 }
 
 .loan-detail strong {
-  color: #3D8D7A;
+  color: var(--brt-primary);
 }
 </style>

@@ -257,8 +257,8 @@ export default {
 
 .form-control:focus {
     outline: none;
-    border-color: #2e8b57;
-    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+    border-color: var(--brt-focus);
+    box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
 }
 
 .form-control[readonly] {
@@ -305,14 +305,14 @@ export default {
 }
 
 .btn-save {
-    background: #3a8674;
+    background: var(--brt-c-3a8674);
     color: white;
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--brt-focus-rgb), 0.3);
 }
 
 .btn-save:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(46, 139, 87, 0.4);
+    box-shadow: 0 6px 20px rgba(var(--brt-focus-rgb), 0.4);
 }
 
 .btn-save:disabled {
@@ -412,7 +412,7 @@ export default {
 .btn-pagination {
     padding: 0.375rem 0.75rem;
     font-size: 0.8125rem;
-    background-color: #3a8674;
+    background-color: var(--brt-c-3a8674);
     color: white;
     border: none;
     border-radius: 4px;
@@ -424,7 +424,7 @@ export default {
 }
 
 .btn-pagination:hover:not(:disabled) {
-    background-color: #2e6b5a;
+    background-color: var(--brt-c-2e6b5a);
     transform: translateY(-1px);
 }
 

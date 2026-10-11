@@ -20,6 +20,7 @@ class ProductClass
                     });
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count)
         );
         return $data;

@@ -224,7 +224,7 @@ class ListStatusesTableSeeder extends Seeder
             17 =>
             array (
                 'id' => 18,
-                'name' => 'Approval',
+                'name' => 'For Approval',
                 'slug' => 'approval',
                 'description' => 'For Approval status',
                 'text_color' => '#ffffff',

@@ -33,19 +33,8 @@ class ArInvoiceClass
         $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
         $data = ArInvoiceResource::collection(
-            ArInvoice::with(['sales_order.customer', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status', 'receipts.registerCheck'])
-                ->whereHas('sales_order', function ($q) {
-                    $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), \App\Models\SalesOrder::ON_ACCOUNT_MODES);
-                })
-                ->when($employeeId, function ($query) use ($employeeId) {
-                    $query->whereHas('sales_order', function ($soQuery) use ($employeeId) {
-                        $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
-                            $salesOrderQuery
-                                ->where('added_by_id', Auth::id() ?? -1)
-                                ->orWhere('sales_rep_id', $employeeId);
-                        });
-                    });
-                })
+            $this->visibleInvoices($employeeId)
+                ->with(['sales_order.customer', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status', 'receipts.registerCheck'])
                 ->when($request->location_id, function ($query, $locationId) {
                     $query->whereHas('sales_order', function ($q) use ($locationId) {
                         $q->where('location_id', $locationId);
@@ -56,22 +45,99 @@ class ArInvoiceClass
                         $q->where('slug', $status);
                     });
                 })
-                ->when($request->keyword, function ($query,$keyword) {
-                    $query->where('invoice_number', 'LIKE', "%{$keyword}%")
-                          ->orWhereHas('sales_order', function($q) use ($keyword){
-                              $q->where('so_number', 'LIKE', "%{$keyword}%")
-                                ->orWhereHas('customer', function($cq) use ($keyword){
-                                    $cq->where('name', 'LIKE', "%{$keyword}%");
-                                });
-                          })
-                          ->orWhereHas('status', function($sq) use ($keyword){
-                              $sq->where('name', 'LIKE', "%{$keyword}%");
-                          });
+                ->when(trim((string) $request->keyword) !== '', function ($query) use ($request) {
+                    $this->applySearch($query, trim((string) $request->keyword));
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count)
         );
         return $data;
+    }
+
+    /**
+     * The invoices a user is allowed to see: on-account sales only, and for a
+     * sales rep only their own. Everything that lists or counts AR invoices for
+     * this screen starts from here, so the list, the search and the status
+     * dropdown all describe the same set of records.
+     *
+     * `$employeeId` is PermissionService::salesScopeEmployeeId(): null for a
+     * sales administrator, an employee id to filter by, or -1 to match nothing.
+     */
+    private function visibleInvoices($employeeId)
+    {
+        return ArInvoice::query()
+            ->whereHas('sales_order', function ($q) {
+                $q->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(payment_mode)'), \App\Models\SalesOrder::ON_ACCOUNT_MODES);
+            })
+            ->when($employeeId, function ($query) use ($employeeId) {
+                $query->whereHas('sales_order', function ($soQuery) use ($employeeId) {
+                    $soQuery->where(function ($salesOrderQuery) use ($employeeId) {
+                        $salesOrderQuery
+                            ->where('added_by_id', Auth::id() ?? -1)
+                            ->orWhere('sales_rep_id', $employeeId);
+                    });
+                });
+            });
+    }
+
+    /**
+     * Match a search across everything a person might type to find an invoice:
+     * its number, the order number, the customer, the sales rep, the payment
+     * mode, the status, and — for a number — the amounts.
+     *
+     * All inside one where(), so the search can only ever narrow the list. It
+     * must never widen it past the filters and the rep scope applied before it.
+     */
+    private function applySearch($query, string $keyword): void
+    {
+        $like = '%'.$keyword.'%';
+        // "1,500.00" should find 1500.00.
+        $number = str_replace([',', '₱', ' '], '', $keyword);
+
+        $query->where(function ($q) use ($like, $number) {
+            $q->where('invoice_number', 'LIKE', $like)
+                ->orWhereHas('status', fn ($status) => $status->where('name', 'LIKE', $like))
+                ->orWhereHas('sales_order', function ($order) use ($like) {
+                    $order->where(function ($o) use ($like) {
+                        $o->where('so_number', 'LIKE', $like)
+                            ->orWhere('payment_mode', 'LIKE', $like)
+                            ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'LIKE', $like))
+                            ->orWhereHas('salesRep', function ($rep) use ($like) {
+                                $rep->where(function ($r) use ($like) {
+                                    $r->where('firstname', 'LIKE', $like)
+                                        ->orWhere('lastname', 'LIKE', $like)
+                                        ->orWhereRaw("CONCAT(firstname, ' ', lastname) LIKE ?", [$like]);
+                                });
+                            });
+                    });
+                });
+
+            if (is_numeric($number)) {
+                $q->orWhere('amount_due', 'LIKE', $number.'%')
+                    ->orWhere('balance_due', 'LIKE', $number.'%');
+            }
+        });
+    }
+
+    /**
+     * The statuses to offer in the filter: only those at least one visible
+     * invoice actually has. Offering every status in the system meant most
+     * choices returned an empty list.
+     */
+    public function statusOptions()
+    {
+        $employeeId = app(PermissionService::class)->salesScopeEmployeeId(Auth::user());
+
+        return ListStatus::whereIn('id', $this->visibleInvoices($employeeId)->select('status_id')->distinct())
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug'])
+            ->map(fn ($status) => [
+                'value' => $status->id,
+                'name' => $status->name,
+                'slug' => $status->slug,
+            ])
+            ->values();
     }
 
     public function remittanceCandidates($request)
@@ -103,6 +169,7 @@ class ArInvoiceClass
                     });
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count ?: 10)
         );
 
@@ -191,6 +258,12 @@ class ArInvoiceClass
 
     public function payment($request, $id = null){
         $ar_invoice = ArInvoice::findOrFail($request->id);
+
+        // No money is taken against credit that has not been approved: the
+        // sale itself may still be refused, and cancelled with it.
+        if ($ar_invoice->sales_order) {
+            app(SalesOrderClass::class)->assertCreditApproved($ar_invoice->sales_order, 'splits');
+        }
 
         // A payment is either one {payment_mode, amount_paid} pair, or a 'splits'
         // array of them (e.g. part Cash, part GCash) applied together in one go.
@@ -334,8 +407,11 @@ class ArInvoiceClass
                 // the office, and blaming the driver for money they never
                 // touched would leave the order waiting on a handover that
                 // cannot happen.
+                //
+                // On the truck that is the checker when the order has one, and
+                // the driver when it does not — SalesOrder::fieldCollectorId().
                 'held_by_employee_id' => $collectedInField
-                    ? (optional($ar_invoice->sales_order)->driver_id
+                    ? (optional($ar_invoice->sales_order)->fieldCollectorId()
                         ?? optional($ar_invoice->sales_order)->sales_rep_id)
                     : optional($ar_invoice->sales_order)->sales_rep_id,
             ]);
@@ -343,10 +419,20 @@ class ArInvoiceClass
             $this->journalEntryService->recordReceiptEntry($receipt);
 
             if ($isCheck) {
-                app(CheckRegisterClass::class)->registerReceived($receipt, [
+                // The bank chosen with the check is where it will be deposited.
+                // The register keeps it so the forecast can count the money as
+                // arriving in that account, and so clearing the check does not
+                // have to ask for the bank again.
+                $depositTo = $split['bank_account_id']
+                    ? \App\Models\BankAccount::find($split['bank_account_id'])
+                    : null;
+
+                app(CheckRegisterClass::class)->registerReceived($receipt, array_filter([
                     'check_number' => $split['reference_number'] ?? null,
                     'check_date' => $split['check_date'],
-                ]);
+                    'bank_account_id' => $depositTo?->id,
+                    'bank_name' => $depositTo?->bank_name,
+                ], fn ($value) => $value !== null));
             }
 
             $receiptIds[] = $receipt->id;

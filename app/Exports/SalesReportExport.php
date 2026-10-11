@@ -54,6 +54,10 @@ class SalesReportExport implements WithMultipleSheets
             'receipt' => [
                 new SalesReportSheet('Receipt Report', $this->receiptRows()),
             ],
+            'sales-returns' => [
+                new SalesReportSheet('Sales Returns', $this->salesReturnRows()),
+                new SalesReportSheet('Refused At Delivery', $this->deliveryRefusalRows()),
+            ],
             'discount' => [
                 new SalesReportSheet('Discount Summary', $this->discountSummaryRows()),
                 new SalesReportSheet('Discount Orders', $this->discountOrdersRows()),
@@ -81,6 +85,7 @@ class SalesReportExport implements WithMultipleSheets
             'employee-summary' => 'Employee Summary',
             'sales-by-payment-type' => 'Sales by Payment Type',
             'receipt' => 'Receipt',
+            'sales-returns' => 'Sales Returns',
             'discount' => 'Discount',
             'taxes' => 'Taxes',
             default => 'Sales Summary',
@@ -258,6 +263,57 @@ class SalesReportExport implements WithMultipleSheets
                 (string) data_get($item, 'payment_mode', ''),
                 (float) data_get($item, 'amount_paid', 0),
                 (float) data_get($item, 'balance_due', 0),
+            ];
+        }
+
+        return $rows;
+    }
+
+    private function salesReturnRows(): array
+    {
+        $report = $this->reportData['sales_return_report'] ?? [];
+
+        $rows = [
+            ['Returned Orders', (int) data_get($report, 'returned_orders', 0)],
+            ['Quantity Returned', (float) data_get($report, 'total_quantity', 0)],
+            ['Put Back In Stock', (float) data_get($report, 'restocked_quantity', 0)],
+            ['Value Returned', (float) data_get($report, 'total_value', 0)],
+            [],
+            ['Date Returned', 'SO #', 'Customer', 'Product', 'Condition', 'Quantity', 'Unit Price', 'Value'],
+        ];
+
+        foreach ((data_get($report, 'items') ?? []) as $item) {
+            $rows[] = [
+                (string) data_get($item, 'returned_at', ''),
+                (string) data_get($item, 'so_number', '-'),
+                (string) data_get($item, 'customer_name', 'Walk-in Customer'),
+                (string) data_get($item, 'product_name', '-'),
+                ucfirst((string) data_get($item, 'condition', '')),
+                (float) data_get($item, 'quantity', 0),
+                (float) data_get($item, 'unit_price', 0),
+                (float) data_get($item, 'total_value', 0),
+            ];
+        }
+
+        return $rows;
+    }
+
+    private function deliveryRefusalRows(): array
+    {
+        $rows = [
+            ['Date', 'SO #', 'Customer', 'Product', 'Ordered', 'Accepted', 'Refused', 'Reason'],
+        ];
+
+        foreach ((data_get($this->reportData, 'sales_return_report.refusals') ?? []) as $item) {
+            $rows[] = [
+                (string) data_get($item, 'recorded_at', ''),
+                (string) data_get($item, 'so_number', '-'),
+                (string) data_get($item, 'customer_name', 'Walk-in Customer'),
+                (string) data_get($item, 'product_name', '-'),
+                (float) data_get($item, 'ordered_quantity', 0),
+                (float) data_get($item, 'accepted_quantity', 0),
+                (float) data_get($item, 'refused_quantity', 0),
+                (string) data_get($item, 'reason', ''),
             ];
         }
 

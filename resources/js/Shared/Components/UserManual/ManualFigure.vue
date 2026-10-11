@@ -413,7 +413,7 @@ export default {
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.06em;
-    fill: #2f6d4f;
+    fill: var(--brt-c-2f6d4f);
     font-family: inherit;
 }
 </style>

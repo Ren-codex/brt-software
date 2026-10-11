@@ -7,7 +7,7 @@
       <!-- Minimal Vertical Tabs -->
       <div class="inventory-sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
         <div class="inventory-sidebar-header">
-          <i class="ri-money-dollar-circle-line"></i>
+          <i class="ri-money-peso-circle-line"></i>
           <h4 v-if="!isSidebarCollapsed">Payroll</h4>
           <button class="sidebar-toggle-btn" @click="toggleSidebar" title="Toggle Sidebar">
             <i :class="isSidebarCollapsed ? 'ri-arrow-right-s-line' : 'ri-arrow-left-s-line'"></i>
@@ -35,7 +35,7 @@
         <div class="inventory-sidebar-footer" v-if="!isSidebarCollapsed">
           <div class="inventory-stats">
             <div class="inventory-stat-item">
-              <i class="ri-money-dollar-circle-line"></i>
+              <i class="ri-money-peso-circle-line"></i>
               <span>{{ payrolls.length || 0 }} Payrolls</span>
             </div>
           </div>
@@ -48,16 +48,6 @@
         <div>
           <transition name="inventory-fade" mode="out-in">
             <div :key="currentView" class="inventory-tab-content">
-              <!-- Payroll Details View -->
-              <div v-if="currentView === 'payrollDetails' && selectedPayroll" class="payroll-details-container">
-                <PayrollView
-                  :payroll="selectedPayroll"
-                  :dropdowns="dropdowns"
-                  @back="backToList"
-                  @toast="showToast"
-                  @fetch="fetchPayrolls"
-                />
-              </div>
               <div v-if="currentView === 'loanDetails' && selectedLoan" class="payroll-details-container">
                 <LoanView
                   :loan="selectedLoan"
@@ -89,6 +79,46 @@
       </div>
     </div>
 
+    <!-- A payroll opens over the list instead of replacing it, so closing it
+         returns to the same page, search and sort the user was on. The
+         overlay carries .modal-overlay.active so the list's background
+         refresh pauses while it is open, as it does for every other modal. -->
+    <div v-if="selectedPayroll" class="modal-overlay active payroll-view-overlay"
+      :class="{ 'is-fullscreen': payrollFullscreen }" @click.self="backToList">
+      <div class="payroll-view-dialog" role="dialog" aria-modal="true">
+        <!-- Window controls in the corner where people look for them. The bar
+             sticks to the top, so they stay in reach while a long payroll
+             scrolls underneath. -->
+        <div class="payroll-view-bar">
+          <span class="payroll-view-bar-title">
+            <i class="ri-money-peso-circle-line"></i> Payroll {{ selectedPayroll.payroll_no }}
+          </span>
+          <div class="payroll-view-bar-actions">
+            <button type="button" class="window-btn window-btn-text" v-b-tooltip.hover title="How payroll works"
+              @click="openPayrollGuide">
+              <i class="ri-book-open-line"></i> <span>Guide</span>
+            </button>
+            <button type="button" class="window-btn" v-b-tooltip.hover
+              :title="payrollFullscreen ? 'Exit full screen' : 'Full screen'"
+              @click="payrollFullscreen = !payrollFullscreen">
+              <i :class="payrollFullscreen ? 'ri-fullscreen-exit-line' : 'ri-fullscreen-line'"></i>
+            </button>
+            <button type="button" class="window-btn window-btn-close" v-b-tooltip.hover title="Close" @click="backToList">
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+        </div>
+        <PayrollView
+          :payroll="selectedPayroll"
+          :dropdowns="dropdowns"
+          :fullscreen="payrollFullscreen"
+          @toggle-fullscreen="payrollFullscreen = !payrollFullscreen"
+          @back="backToList"
+          @toast="showToast"
+        />
+      </div>
+    </div>
+
     <!-- Toast -->
     <div v-if="isToastVisible" class="inventory-toast">
       <div class="inventory-toast-content">
@@ -104,6 +134,7 @@ import _ from 'lodash';
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import PayrollManagement from './Components/Payrolls/Index.vue';
 import PayrollView from './Components/Payrolls/View.vue';
+import { openGuide } from '@/Shared/Components/ModuleGuide/moduleGuides.js';
 import PayrollSettings from './Components/Settings/Index.vue';
 import PayrollTemplate from './Components/Templates/Index.vue';
 import SalesIncentives from './Components/SalesIncentives/Index.vue';
@@ -130,6 +161,9 @@ export default {
       showCreateModal: false,
       showEditModal: false,
       selectedPayroll: null,
+      // Whether the payroll modal fills the screen. Kept while moving between
+      // payrolls, so someone who prefers it large does not re-click each time.
+      payrollFullscreen: false,
       selectedLoan: null,
       isToastVisible: false,
       toastMessage: '',
@@ -206,9 +240,14 @@ export default {
       this.selectedLoan = null;
       this.filters.search = '';
     },
+    // Opens the guide book on the payroll chapter, at the stages page, with
+    // the open payroll's own stage marked.
+    openPayrollGuide() {
+      openGuide('payroll', this.selectedPayroll?.status?.slug);
+    },
+    // Opens the payroll in a modal; the list stays where it is underneath.
     openPayrollDetails(payroll) {
       this.selectedPayroll = payroll;
-      this.currentView = 'payrollDetails';
     },
     openLoanDetails(loan) {
       this.selectedLoan = loan;
@@ -239,6 +278,148 @@ export default {
 </script>
 
 <style scoped>
+/* The payroll view modal. Not .modal-container: that class animates with a
+   transform, and a transformed box would trap the approve and edit dialogs
+   that open from inside the payroll, which are fixed to the screen. */
+.payroll-view-overlay {
+  /* Centred both ways. The dialog scrolls inside itself when the payroll is
+     taller than the screen, so centring never pushes its top out of reach. */
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  /* The shared overlay blurs what is behind it. A backdrop-filter also traps
+     fixed-position children the way a transform does, so it is switched off
+     here for the same reason: the dialogs opened from inside must stay pinned
+     to the screen even when this overlay is scrolled. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.payroll-view-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  /* Pulled out to the dialog's edges so content scrolling beneath it is
+     covered right up to the corners. */
+  margin: 0 -1.1rem 0.9rem;
+  padding: 0.6rem 0.9rem 0.6rem 1.1rem;
+  background: var(--brt-c-f3f6f5);
+  border-bottom: 1px solid var(--brt-c-dfe9e6);
+  border-radius: 16px 16px 0 0;
+}
+
+.payroll-view-bar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--brt-ink);
+}
+
+.payroll-view-bar-title i {
+  color: var(--brt-primary);
+  font-size: 1.1rem;
+}
+
+.payroll-view-bar-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.window-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--brt-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--brt-ink);
+  font-size: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.window-btn-text {
+  width: auto;
+  gap: 0.35rem;
+  padding: 0 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.window-btn-text i {
+  font-size: 1rem;
+}
+
+.window-btn:hover {
+  background: var(--brt-primary);
+  border-color: var(--brt-primary);
+  color: #fff;
+}
+
+.window-btn-close:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.payroll-view-dialog {
+  width: 100%;
+  max-width: 1280px;
+  max-height: calc(100vh - 2.5rem);
+  overflow-y: auto;
+  margin: auto;
+  padding: 0 1.1rem 0.25rem;
+  border-radius: 16px;
+  background: var(--brt-c-f3f6f5);
+  box-shadow: 0 24px 60px -12px rgba(var(--brt-c-10322e-rgb), 0.45);
+}
+
+/* Full screen: edge to edge, no rounded corners, nothing of the page behind. */
+.payroll-view-overlay.is-fullscreen {
+  padding: 0;
+}
+
+.payroll-view-overlay.is-fullscreen .payroll-view-dialog {
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.payroll-view-overlay.is-fullscreen .payroll-view-bar {
+  border-radius: 0;
+}
+
+@media (max-width: 767.98px) {
+  .payroll-view-overlay {
+    padding: 0.5rem;
+  }
+
+  .payroll-view-dialog {
+    max-height: calc(100vh - 1rem);
+  }
+
+  .payroll-view-dialog {
+    padding: 0 0.6rem 0;
+    border-radius: 12px;
+  }
+
+  .payroll-view-bar {
+    margin: 0 -0.6rem 0.6rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
 .inventory-sidebar-header {
   position: relative;
 }

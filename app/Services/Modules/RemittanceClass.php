@@ -90,6 +90,7 @@ class RemittanceClass
 
         return RemittanceResource::collection(
             $query->orderBy('created_at', 'DESC')
+                  ->sortFromRequest()
                   ->paginate($request->count ?: 10)
         );
     }

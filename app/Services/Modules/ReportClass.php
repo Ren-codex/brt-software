@@ -20,6 +20,7 @@ class ReportClass
             'daily_sales_orders' => $this->dailySalesOrders($filters),
             'payment_summary' => $this->paymentSummary($filters),
             'receipt_report' => $this->receiptReport($filters),
+            'sales_return_report' => $this->salesReturnReport($filters),
             'discount_summary' => $this->discountSummary($filters),
             'tax_summary' => $this->taxSummary(),
             'employee_summary' => $this->employeeSummary($filters),
@@ -356,6 +357,113 @@ class ReportClass
             )
             ->orderByDesc('r.receipt_date')
             ->orderByDesc('r.id')
+            ->limit($filters['limit'])
+            ->get();
+    }
+
+    /**
+     * Goods that came back, line by line, with what they were worth.
+     *
+     * Dated by when the return happened, not by when the order was placed:
+     * a sack sold in March and returned in April is April's return, and that
+     * is the month someone reading this report is asking about.
+     */
+    private function salesReturnReport(array $filters): array
+    {
+        $query = DB::table('sales_return_history as srh')
+            ->join('sales_orders as so', 'srh.sales_order_id', '=', 'so.id')
+            ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
+            ->leftJoin('products as p', 'srh.product_id', '=', 'p.id')
+            ->leftJoin('list_brands as lb', 'p.brand_id', '=', 'lb.id')
+            ->leftJoin('list_units as lu', 'p.unit_id', '=', 'lu.id')
+            ->when(! empty($filters['from']) && ! empty($filters['to']), function ($query) use ($filters) {
+                $query->whereBetween('srh.returned_at', [$filters['from'], $filters['to']]);
+            })
+            ->when(! empty($filters['location_id']), function ($query) use ($filters) {
+                $query->where('so.location_id', $filters['location_id']);
+            });
+
+        // Hand-built like the receipt report, so the rep scope is applied here.
+        $this->applySalesRepScope($query);
+        $this->applyPaymentModeFilter($query, $filters['payment_mode']);
+
+        $totals = (clone $query)
+            ->selectRaw('COALESCE(SUM(srh.quantity), 0) as total_quantity')
+            ->selectRaw('COALESCE(SUM(srh.total_value), 0) as total_value')
+            ->selectRaw('COUNT(DISTINCT srh.sales_order_id) as returned_orders')
+            ->selectRaw("COALESCE(SUM(CASE WHEN srh.`condition` = 'restockable' THEN srh.quantity ELSE 0 END), 0) as restocked_quantity")
+            ->first();
+
+        $items = $query
+            ->select(
+                'srh.id',
+                'srh.returned_at',
+                'so.id as sales_order_id',
+                'so.so_number',
+                'so.payment_mode',
+                DB::raw("COALESCE(c.name, 'Walk-in Customer') as customer_name"),
+                DB::raw("TRIM(CONCAT(COALESCE(lb.name, ''), ' ', COALESCE(p.weight, ''), ' ', COALESCE(lu.name, ''))) as product_name"),
+                'srh.quantity',
+                'srh.condition',
+                'srh.unit_price',
+                'srh.total_value'
+            )
+            ->orderByDesc('srh.returned_at')
+            ->orderByDesc('srh.id')
+            ->limit($filters['limit'])
+            ->get();
+
+        return [
+            'total_quantity' => (float) ($totals->total_quantity ?? 0),
+            'total_value' => (float) ($totals->total_value ?? 0),
+            'returned_orders' => (int) ($totals->returned_orders ?? 0),
+            'restocked_quantity' => (float) ($totals->restocked_quantity ?? 0),
+            'items' => $items,
+            'refusals' => $refusals = $this->deliveryRefusals($filters),
+            'refused_quantity' => (float) $refusals->sum('refused_quantity'),
+        ];
+    }
+
+    /**
+     * Goods the customer turned away at the door, during the delivery itself.
+     *
+     * Not a sales return in the books — no money had changed hands, so the
+     * order was simply resized and the stock went back — but it is the same
+     * question to whoever reads this report: what came back, and why.
+     */
+    private function deliveryRefusals(array $filters)
+    {
+        $query = DB::table('sales_order_delivery_refusals as dr')
+            ->join('sales_orders as so', 'dr.sales_order_id', '=', 'so.id')
+            ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
+            ->leftJoin('products as p', 'dr.product_id', '=', 'p.id')
+            ->leftJoin('list_brands as lb', 'p.brand_id', '=', 'lb.id')
+            ->leftJoin('list_units as lu', 'p.unit_id', '=', 'lu.id')
+            ->when(! empty($filters['from']) && ! empty($filters['to']), function ($query) use ($filters) {
+                $query->whereBetween(DB::raw('DATE(dr.recorded_at)'), [$filters['from'], $filters['to']]);
+            })
+            ->when(! empty($filters['location_id']), function ($query) use ($filters) {
+                $query->where('so.location_id', $filters['location_id']);
+            });
+
+        $this->applySalesRepScope($query);
+        $this->applyPaymentModeFilter($query, $filters['payment_mode']);
+
+        return $query
+            ->select(
+                'dr.id',
+                'dr.recorded_at',
+                'so.id as sales_order_id',
+                'so.so_number',
+                DB::raw("COALESCE(c.name, 'Walk-in Customer') as customer_name"),
+                DB::raw("TRIM(CONCAT(COALESCE(lb.name, ''), ' ', COALESCE(p.weight, ''), ' ', COALESCE(lu.name, ''))) as product_name"),
+                'dr.ordered_quantity',
+                'dr.accepted_quantity',
+                'dr.refused_quantity',
+                'dr.reason'
+            )
+            ->orderByDesc('dr.recorded_at')
+            ->orderByDesc('dr.id')
             ->limit($filters['limit'])
             ->get();
     }

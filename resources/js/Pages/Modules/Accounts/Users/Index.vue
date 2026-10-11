@@ -27,6 +27,19 @@
                             <input type="text" v-model="filter.keyword" @input="debouncedSearch"
                                 placeholder="Search Employee..." class="search-input">
                         </div>
+                        <div class="sort-wrapper">
+                            <label for="user-sort" class="sort-label"><i class="ri-sort-desc"></i> Sort by</label>
+                            <select id="user-sort" class="sort-select" v-model="sortOption" @change="fetch()">
+                                <option value="created_at:desc">Latest added</option>
+                                <option value="created_at:asc">Oldest added</option>
+                                <option value="name:asc">Name (A–Z)</option>
+                                <option value="name:desc">Name (Z–A)</option>
+                                <option value="username:asc">Username (A–Z)</option>
+                                <option value="username:desc">Username (Z–A)</option>
+                                <option value="is_active:desc">Active first</option>
+                                <option value="is_active:asc">Inactive first</option>
+                            </select>
+                        </div>
 
                     </div>
 
@@ -143,6 +156,8 @@ export default {
             filter: {
                 keyword: null
             },
+            // "field:direction" — the server does the sorting, across all pages.
+            sortOption: 'created_at:desc',
             index: null,
             selectedRow: null,
             units: [],
@@ -167,6 +182,8 @@ export default {
             axios.get(page_url, {
                 params: {
                     keyword: this.filter.keyword,
+                    sort_by: this.sortOption.split(':')[0],
+                    sort_direction: this.sortOption.split(':')[1],
                     count: 10,
                     option: 'list'
                 }
@@ -226,3 +243,48 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.search-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.search-section .search-wrapper {
+    flex: 1 1 260px;
+}
+
+.sort-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sort-label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.sort-select {
+    padding: 0.55rem 2rem 0.55rem 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    font-size: 0.8125rem;
+    color: #374151;
+    cursor: pointer;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: var(--brt-focus);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
+}
+</style>

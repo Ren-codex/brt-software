@@ -21,7 +21,7 @@
                                 <div class="search-wrapper">
                                     <i class="ri-search-line search-icon"></i>
                                     <input type="text" v-model="filter.keyword"
-                                        placeholder="Search AR invoice..." class="search-input">
+                                        placeholder="Search invoice no., order no., customer, sales rep, amount..." class="search-input">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -39,9 +39,14 @@
                             <div class="col-md-3">
                                 <div class="search-wrapper">
                                     <i class="ri-flag-line search-icon"></i>
-                                    <select v-model="filter.status" @change="fetch()" class="search-input">
-                                        <option :value="null">All Status</option>
-                                        <option v-for="status in dropdowns.sales_statuses" :key="status.value"
+                                    <!-- With no invoices yet there is no status to filter
+                                         by, so the dropdown says so instead of offering
+                                         a lone "All Status" that filters nothing. -->
+                                    <select v-model="filter.status" @change="fetch()" class="search-input"
+                                        :disabled="!statusOptions.length">
+                                        <option :value="null">{{ statusOptions.length ? 'All Status' : 'No data yet' }}</option>
+                                        <!-- Only statuses some invoice here actually has. -->
+                                        <option v-for="status in statusOptions" :key="status.value"
                                             :value="status.slug">
                                             {{ status.name }}
                                         </option>
@@ -49,6 +54,7 @@
                                 </div>
                             </div>
                         </div>
+                        <SortSelect v-model="sortOption" :fields="[{ field: 'invoice_number', label: 'Invoice no.' }, { field: 'invoice_date', label: 'Invoice date', type: 'date' }, { field: 'due_date', label: 'Due date', type: 'date' }, { field: 'balance_due', label: 'Balance', type: 'number' }]" @change="fetch()" />
                     </div>
 
                     <div class="table-responsive table-card">
@@ -137,7 +143,7 @@
                                                 <button
                                                     v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned') && can('sales', 'ar_invoices', 'encoder')"
                                                     @click.stop="onPayment(list)" class="action-btn edit" title="Record Payment">
-                                                    <i class="ri-money-dollar-circle-fill"></i>
+                                                    <i class="ri-money-peso-circle-fill"></i>
                                                 </button>
                                             </div>
                                         </td>
@@ -158,7 +164,7 @@
                                                         <button
                                                             v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned') && can('sales', 'ar_invoices', 'encoder')"
                                                             @click.stop="onPayment(list)" class="acct-btn-primary">
-                                                            <i class="ri-money-dollar-circle-fill"></i>
+                                                            <i class="ri-money-peso-circle-fill"></i>
                                                             Record Payment
                                                         </button>
                                                     </div>
@@ -268,6 +274,7 @@
 
 <script>
 import { statusTone } from '@/Shared/utils/statusTone.js';
+import { listSortMixin } from '@/Shared/listSort.js';
 import { paymentTone, paymentLabel } from '@/Shared/utils/paymentType.js';
 import _ from 'lodash';
 import Multiselect from "@vueform/multiselect";
@@ -277,9 +284,10 @@ import Payment from '../ARInvoices/Modals/Payment.vue';
 import ReceiptsList from '../ARInvoices/Modals/ReceiptsList.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     components: { PageHeader, Pagination, Multiselect, Payment, ReceiptsList, TableLoadingRow },
+    mixins: [listSortMixin],
     props: ['dropdowns', 'isExternal'],
     data() {
         return {
@@ -293,6 +301,8 @@ export default {
                 location_id: null,
                 status: null
             },
+            // Filled from the server: the statuses in use on these invoices.
+            statusOptions: [],
             index: null,
             expandedRow: null, // Changed from expandedRows array to single value
             units: [],
@@ -356,7 +366,7 @@ export default {
             this.loading = true;
             axios.get(page_url, {
                 params: {
-                    option: 'lists',
+                    ...this.sortParams, option: 'lists',
                     keyword: this.filter.keyword,
                     location_id: this.filter.location_id,
                     status: this.filter.status,
@@ -385,7 +395,7 @@ export default {
         },
 
         onPrint(id) {
-            printDocument(`/ar-invoices/${id}?option=print&type=ar_invoice`);
+            openOrPrint(`/ar-invoices/${id}?option=print&type=ar_invoice`);
         },
 
         toggleRowExpansion(index) {
@@ -397,7 +407,24 @@ export default {
             }
         },
 
+        // The status filter offers only what exists. Re-read whenever the
+        // figures are, since a payment can move an invoice to a new status.
+        fetchStatuses() {
+            axios.get('/ar-invoices', { params: { option: 'statuses' } })
+                .then(response => {
+                    this.statusOptions = response.data || [];
+                    // A status nobody has any more: fall back to all, rather
+                    // than leave a filter selected that the list cannot show.
+                    if (this.filter.status && !this.statusOptions.some(s => s.slug === this.filter.status)) {
+                        this.filter.status = null;
+                        this.fetch();
+                    }
+                })
+                .catch(() => {});
+        },
+
         fetchMetrics() {
+            this.fetchStatuses();
             axios.get('/ar-invoices', {
                 params: {
                     option: 'dashboard'
@@ -468,13 +495,13 @@ export default {
 }
 
 .main-table-row:hover {
-    background-color: rgba(61, 141, 122, 0.05) !important;
-    border-left-color: #3D8D7A;
+    background-color: rgba(var(--brt-primary-rgb), 0.05) !important;
+    border-left-color: var(--brt-primary);
 }
 
 .main-table-row.expanded-row {
-    background: linear-gradient(90deg, rgba(61, 141, 122, 0.08) 0%, rgba(61, 141, 122, 0.02) 100%);
-    border-left-color: #3D8D7A;
+    background: linear-gradient(90deg, rgba(var(--brt-primary-rgb), 0.08) 0%, rgba(var(--brt-primary-rgb), 0.02) 100%);
+    border-left-color: var(--brt-primary);
 }
 
 .main-table-row.overdue-row {
@@ -503,7 +530,7 @@ export default {
     border: none;
     border-radius: 50%;
     background: transparent;
-    color: #2e8b57;
+    color: var(--brt-focus);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -511,7 +538,7 @@ export default {
 }
 
 .collapse-btn:hover {
-    background: rgba(61, 141, 122, 0.08);
+    background: rgba(var(--brt-primary-rgb), 0.08);
 }
 
 .expand-icon {
@@ -527,7 +554,7 @@ export default {
 
 .expand-icon.rotated {
     transform: rotate(90deg);
-    color: #3D8D7A;
+    color: var(--brt-primary);
 }
 
 /* Details Row Styles */
@@ -574,9 +601,9 @@ export default {
 }
 
 .info-card:hover {
-    box-shadow: 0 8px 25px rgba(61, 141, 122, 0.15);
+    box-shadow: 0 8px 25px rgba(var(--brt-primary-rgb), 0.15);
     transform: translateY(-2px);
-    border-color: #3D8D7A;
+    border-color: var(--brt-primary);
 }
 
 .info-card-header {
@@ -591,8 +618,8 @@ export default {
 
 .info-card-header i {
     font-size: 1.25rem;
-    color: #3D8D7A;
-    background: rgba(61, 141, 122, 0.1);
+    color: var(--brt-primary);
+    background: rgba(var(--brt-primary-rgb), 0.1);
     padding: 0.5rem;
     border-radius: 8px;
     width: 40px;
@@ -631,12 +658,12 @@ export default {
 }
 
 .info-item.highlight {
-    background: linear-gradient(135deg, rgba(61, 141, 122, 0.08) 0%, rgba(38, 122, 76, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(var(--brt-primary-rgb), 0.08) 0%, rgba(38, 122, 76, 0.05) 100%);
     padding: 1rem;
     border-radius: 10px;
     margin-top: 0.5rem;
     border: none;
-    box-shadow: 0 2px 8px rgba(61, 141, 122, 0.1);
+    box-shadow: 0 2px 8px rgba(var(--brt-primary-rgb), 0.1);
 }
 
 .info-label {
@@ -652,7 +679,7 @@ export default {
     content: '';
     width: 6px;
     height: 6px;
-    background: #C4DAD2;
+    background: var(--brt-c-c4dad2);
     border-radius: 50%;
 }
 
@@ -669,7 +696,7 @@ export default {
 }
 
 .info-value.amount.paid {
-    color: #2e8b57;
+    color: var(--brt-focus);
 }
 
 .info-value.amount.due {

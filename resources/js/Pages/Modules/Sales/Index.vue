@@ -151,7 +151,10 @@
     </div>
 
     <!-- Floating Quick Stats Toggle Button -->
-    <button class="quick-stats-floating-toggle" @click="toggleRightSidebar"
+    <!-- Only on tabs that have a Quick Stats panel. On the others (Sales
+         Reports, Deliveries, Check Monitoring) the button used to show and do
+         nothing when clicked. -->
+    <button v-if="hasQuickStats" class="quick-stats-floating-toggle" @click="toggleRightSidebar"
       :title="isRightSidebarCollapsed ? 'Show Quick Stats' : 'Hide Quick Stats'">
       <span>Quick Stats</span>
     </button>
@@ -247,7 +250,7 @@ export default {
         {
           id: 'receipts',
           label: 'Receipts',
-          icon: 'ri-money-dollar-circle-line',
+          icon: 'ri-money-peso-circle-line',
           description: 'Payment receipts'
         },
         {
@@ -278,6 +281,10 @@ export default {
     };
   },
   computed: {
+    // The tabs that render a QuickStatsSidebar beside their list.
+    hasQuickStats() {
+      return ['sales_orders', 'sales_returns', 'ar_invoices', 'receipts', 'remittance'].includes(this.activeTab);
+    },
     visibleTabs() {
       // sales-reports is outside this pilot's submodule catalog (spec
       // §9/§12) — it stays visible to anyone who can see the Sales module
@@ -534,11 +541,11 @@ export default {
   top: 50%;
   right: 0;
   transform: translateY(-50%);
-  background: #c4dad2;
+  background: var(--brt-c-c4dad2);
   border: 1px solid rgba(108, 117, 125, 0.3);
   border-right: none;
   border-radius: 8px 0 0 8px;
-  color: #16423c;
+  color: var(--brt-c-16423c);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -549,7 +556,7 @@ export default {
 }
 
 .quick-stats-floating-toggle:hover {
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #ffffff;
 }
 

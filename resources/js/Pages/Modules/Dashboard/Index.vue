@@ -263,7 +263,7 @@ export default {
         salesStatCards() {
             const s = this.stats || {};
             return [
-                { label: 'Total Revenue', value: s.totalSales || 0, icon: 'bx bx-dollar', iconBg: '#E6F9ED', iconColor: '#10b981', trend: `${s.totalReceipts || 0} receipts`, trendClass: 'trend-up', trendIcon: 'bx bx-receipt', showCurrency: true },
+                { label: 'Total Revenue', value: s.totalSales || 0, icon: 'ri-money-peso-line', iconBg: '#E6F9ED', iconColor: '#10b981', trend: `${s.totalReceipts || 0} receipts`, trendClass: 'trend-up', trendIcon: 'bx bx-receipt', showCurrency: true },
                 { label: 'Customers Served', value: s.totalCustomers || 0, icon: 'bx bx-group', iconBg: '#E5F0FF', iconColor: '#3b82f6', trend: null, trendClass: '', trendIcon: '', showCurrency: false },
                 { label: 'Outstanding Balance', value: s.totalOutstanding || 0, icon: 'bx bx-credit-card', iconBg: '#FFF0E5', iconColor: '#f97316', trend: 'total unpaid AR', trendClass: 'trend-down', trendIcon: 'bx bx-error-circle', showCurrency: true },
                 { label: 'Avg. Receipt Value', value: s.avgOrderValue || 0, icon: 'bx bx-calculator', iconBg: '#F3E8FF', iconColor: '#8b5cf6', trend: 'per transaction', trendClass: 'trend-neutral', trendIcon: 'bx bx-trending-up', showCurrency: true }
@@ -275,7 +275,7 @@ export default {
                 { label: 'Pending POs', value: i.pendingPOs || 0, unit: '', icon: 'bx bx-time-five', iconBg: '#E5F0FF', trend: 'awaiting fulfillment', trendClass: 'trend-neutral', trendIcon: '', cardClass: 'health-blue' },
                 { label: 'Low Stock Items', value: i.lowStockItems || 0, unit: 'items', icon: 'bx bx-error', iconBg: '#FFF0E5', trend: 'need replenishment', trendClass: 'trend-down', trendIcon: '', cardClass: 'health-orange' },
                 { label: 'Out of Stock', value: i.outOfStock || 0, unit: 'items', icon: 'bx bx-block', iconBg: '#FFE5E5', trend: 'unavailable', trendClass: 'trend-down', trendIcon: '', cardClass: 'health-red' },
-                { label: 'Inventory Value', value: i.totalValue || 0, unit: '', icon: 'bx bx-dollar', iconBg: '#E6F9ED', trend: 'retail price × qty', trendClass: 'trend-up', trendIcon: '', cardClass: 'health-green' }
+                { label: 'Inventory Value', value: i.totalValue || 0, unit: '', icon: 'ri-money-peso-line', iconBg: '#E6F9ED', trend: 'retail price × qty', trendClass: 'trend-up', trendIcon: '', cardClass: 'health-green' }
             ];
         },
         teamStatCards() {
@@ -442,16 +442,16 @@ export default {
     padding: 1.6rem 2rem;
     overflow: hidden;
     border-radius: 28px;
-    background-color: #2e7a6c;
+    background-color: var(--brt-c-2e7a6c);
     background-image:
         radial-gradient(ellipse 70% 100% at 105% -5%, rgba(180, 255, 230, 0.22) 0%, transparent 52%),
-        radial-gradient(ellipse 45% 65% at -2% 105%, rgba(30, 90, 80, 0.35) 0%, transparent 48%),
+        radial-gradient(ellipse 45% 65% at -2% 105%, rgba(var(--brt-c-1e5a50-rgb), 0.35) 0%, transparent 48%),
         radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
-        linear-gradient(135deg, #2a7165 0%, #3d8d7a 38%, #4a9a89 68%, #56a897 100%);
+        linear-gradient(135deg, #2a7165 0%, var(--brt-primary) 38%, #4a9a89 68%, #56a897 100%);
     background-size: 100% 100%, 100% 100%, 26px 26px, 100% 100%;
     box-shadow:
-        0 16px 48px rgba(45, 113, 101, 0.28),
-        0 4px 16px rgba(45, 113, 101, 0.16),
+        0 16px 48px rgba(var(--brt-c-2d7165-rgb), 0.28),
+        0 4px 16px rgba(var(--brt-c-2d7165-rgb), 0.16),
         inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
@@ -664,20 +664,20 @@ export default {
     align-items: center;
     gap: 0.85rem;
     padding: 0.7rem 1.15rem;
-    border: 1px solid rgba(46, 139, 87, 0.22);
+    border: 1px solid rgba(var(--brt-focus-rgb), 0.22);
     border-radius: 16px;
     background: linear-gradient(135deg, #ffffff 0%, #f4fbf7 100%);
     color: #1e293b;
     cursor: pointer;
     text-align: left;
-    box-shadow: 0 4px 14px rgba(46, 139, 87, 0.08);
+    box-shadow: 0 4px 14px rgba(var(--brt-focus-rgb), 0.08);
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .manual-btn:hover {
     transform: translateY(-2px);
-    border-color: rgba(46, 139, 87, 0.5);
-    box-shadow: 0 10px 26px rgba(46, 139, 87, 0.18);
+    border-color: rgba(var(--brt-focus-rgb), 0.5);
+    box-shadow: 0 10px 26px rgba(var(--brt-focus-rgb), 0.18);
 }
 
 .manual-btn-book {
@@ -690,7 +690,7 @@ export default {
     justify-content: center;
     font-size: 1.3rem;
     color: #f3ead9;
-    background: linear-gradient(150deg, #2f6d4f 0%, #1d4835 100%);
+    background: linear-gradient(150deg, var(--brt-c-2f6d4f) 0%, var(--brt-c-1d4835) 100%);
     box-shadow: inset -3px 0 6px -3px rgba(0, 0, 0, 0.6);
     transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -713,7 +713,7 @@ export default {
 }
 
 .manual-btn-arrow {
-    color: #2e8b57;
+    color: var(--brt-focus);
     font-size: 1.05rem;
     opacity: 0.6;
     transition: opacity 0.25s ease, transform 0.25s ease;
@@ -742,7 +742,7 @@ export default {
 
 .tab-btn.active {
     background: white;
-    color: #2e8b57;
+    color: var(--brt-focus);
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 

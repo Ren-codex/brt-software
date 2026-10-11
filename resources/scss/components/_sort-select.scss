@@ -1,0 +1,80 @@
+// The "Sort by" dropdown on list pages (Shared/Components/SortSelect.vue).
+//
+// It sits inside a page's .search-section, beside the search box. That section
+// is a plain block on most pages, so it is turned into a row here — but only
+// where a sort dropdown is actually present, to leave every other use of
+// .search-section exactly as it was.
+
+.search-section:has(> .sort-select-wrap) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    // Stays on one line beside the search box until there is no room, then
+    // drops below it at full width (see the phone rule further down).
+    flex-wrap: wrap;
+
+    > .search-wrapper {
+        flex: 1 1 240px;
+    }
+
+    // Some pages lay their search box and filters out in a Bootstrap row.
+    // As a flex child a row shrinks to its contents, which squeezed those
+    // filters until "All Locations" was cut off — so it is told to take the
+    // space the sort dropdown leaves.
+    > .row {
+        flex: 1 1 0;
+        min-width: min(100%, 420px);
+    }
+}
+
+.sort-select-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.sort-select-label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.sort-select-input {
+    padding: 0.55rem 2rem 0.55rem 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    font-size: 0.8125rem;
+    color: #374151;
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+        border-color: var(--brt-focus);
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
+    }
+}
+
+// Narrow screens: the dropdown takes its own full-width line, label on the
+// left and the select filling the rest, instead of being squeezed beside the
+// search box or left floating at the right edge.
+@media (max-width: 767.98px) {
+    .sort-select-wrap {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .sort-select-input {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .search-section:has(> .sort-select-wrap) > .search-wrapper {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+}

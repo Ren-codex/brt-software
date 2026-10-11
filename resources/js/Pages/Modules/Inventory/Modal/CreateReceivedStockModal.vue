@@ -387,7 +387,7 @@ export default {
           value: 'Cash',
           label: 'Cash',
           description: 'Pay now using cash or bank transfer',
-          icon: 'ri-money-dollar-circle-line',
+          icon: 'ri-money-peso-circle-line',
         },
         {
           value: 'Credit',
@@ -873,15 +873,15 @@ export default {
   background-color: #f8f8f8;
 }
 
-.modal-title  { font-size: 0.95rem; font-weight: 700; color: #16322e; }
-.modal-subtitle { font-size: 0.75rem; color: #6b8c85; }
+.modal-title  { font-size: 0.95rem; font-weight: 700; color: var(--brt-ink); }
+.modal-subtitle { font-size: 0.75rem; color: var(--brt-muted); }
 
 .section-kicker {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6b8c85;
+  color: var(--brt-muted);
   margin-bottom: 0.5rem;
 }
 
@@ -949,7 +949,7 @@ export default {
 .purchase-order-table th {
   padding: 0.45rem 0.65rem;
   font-weight: 700;
-  color: #5f7f77;
+  color: var(--brt-c-5f7f77);
   text-transform: uppercase;
   font-size: 0.65rem;
   letter-spacing: 0.5px;
@@ -1043,7 +1043,7 @@ export default {
   width: 100%;
   height: 32px;
   padding: 0.3rem 0.6rem;
-  border: 1px solid #c4d9d2;
+  border: 1px solid var(--brt-border);
   border-radius: 7px;
   font-size: 0.8rem;
   transition: all 0.2s ease;
@@ -1051,8 +1051,8 @@ export default {
 }
 
 .modern-input:focus {
-  border-color: #3d8d7a;
-  box-shadow: 0 0 0 3px rgba(61, 141, 122, 0.1);
+  border-color: var(--brt-primary);
+  box-shadow: 0 0 0 3px rgba(var(--brt-primary-rgb), 0.1);
   outline: none;
 }
 
@@ -1077,7 +1077,7 @@ export default {
   left: 0.45rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #6b8c85;
+  color: var(--brt-muted);
   font-weight: 500;
   font-size: 0.8rem;
 }
@@ -1156,12 +1156,12 @@ export default {
 }
 
 .checkbox-container:hover input~.checkmark {
-  border-color: #3d8d7a;
+  border-color: var(--brt-primary);
 }
 
 .checkbox-container input:checked~.checkmark {
-  background-color: #3d8d7a;
-  border-color: #3d8d7a;
+  background-color: var(--brt-primary);
+  border-color: var(--brt-primary);
 }
 
 .checkmark:after {
@@ -1255,13 +1255,13 @@ export default {
   gap: 1rem;
   padding: 1rem 1.25rem;
   margin-bottom: 1.25rem;
-  border: 1px solid rgba(61, 141, 122, 0.18);
+  border: 1px solid rgba(var(--brt-primary-rgb), 0.18);
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(61, 141, 122, 0.08), rgba(61, 141, 122, 0.02));
+  background: linear-gradient(135deg, rgba(var(--brt-primary-rgb), 0.08), rgba(var(--brt-primary-rgb), 0.02));
 }
 
 .payment-summary-label {
-  color: #527267;
+  color: var(--brt-c-527267);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -1269,7 +1269,7 @@ export default {
 }
 
 .payment-summary-value {
-  color: #16423c;
+  color: var(--brt-c-16423c);
   font-size: 1.2rem;
 }
 
@@ -1285,7 +1285,7 @@ export default {
   align-items: flex-start;
   gap: 0.6rem;
   padding: 1.1rem;
-  border: 1px solid #d7e4df;
+  border: 1px solid var(--brt-c-d7e4df);
   border-radius: 18px;
   background: #fff;
   color: #1f2937;
@@ -1294,15 +1294,15 @@ export default {
 }
 
 .payment-option-card:hover {
-  border-color: #3d8d7a;
-  box-shadow: 0 12px 28px rgba(22, 66, 60, 0.08);
+  border-color: var(--brt-primary);
+  box-shadow: 0 12px 28px rgba(var(--brt-c-16423c-rgb), 0.08);
   transform: translateY(-1px);
 }
 
 .payment-option-card.selected {
-  border-color: #3d8d7a;
-  background: linear-gradient(180deg, #f4fbf8 0%, #ffffff 100%);
-  box-shadow: 0 14px 30px rgba(22, 66, 60, 0.1);
+  border-color: var(--brt-primary);
+  background: linear-gradient(180deg, var(--brt-c-f4fbf8) 0%, #ffffff 100%);
+  box-shadow: 0 14px 30px rgba(var(--brt-c-16423c-rgb), 0.1);
 }
 
 .payment-option-icon {
@@ -1312,8 +1312,8 @@ export default {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: #e6f2ef;
-  color: #2f7666;
+  background: var(--brt-c-e6f2ef);
+  color: var(--brt-c-2f7666);
   font-size: 1.15rem;
 }
 
@@ -1331,7 +1331,7 @@ export default {
 .payment-suboption-panel {
   margin-top: 1.25rem;
   padding: 1rem 1.1rem;
-  border: 1px solid #dfeae6;
+  border: 1px solid var(--brt-c-dfeae6);
   border-radius: 18px;
   background: #f8fcfb;
 }
@@ -1342,7 +1342,7 @@ export default {
 
 .payment-suboption-note {
   margin-top: 1rem;
-  color: #527267;
+  color: var(--brt-c-527267);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -1360,12 +1360,12 @@ export default {
 }
 
 .payment-detail-label {
-  color: #16423c;
+  color: var(--brt-c-16423c);
   font-weight: 700;
 }
 
 .payment-detail-input {
-  border: 1px solid #cfe0d9;
+  border: 1px solid var(--brt-tint-1);
   border-radius: 14px;
   min-height: 48px;
 }
@@ -1377,7 +1377,7 @@ export default {
 .payment-amount-label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #16423c;
+  color: var(--brt-c-16423c);
   font-weight: 700;
 }
 
@@ -1390,13 +1390,13 @@ export default {
   left: 0.85rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #527267;
+  color: var(--brt-c-527267);
   font-weight: 700;
 }
 
 .payment-amount-input {
   padding-left: 2rem;
-  border: 1px solid #cfe0d9;
+  border: 1px solid var(--brt-tint-1);
   border-radius: 14px;
   min-height: 48px;
 }
@@ -1412,7 +1412,7 @@ export default {
   justify-content: space-between;
   gap: 0.75rem;
   margin-top: 0.65rem;
-  color: #527267;
+  color: var(--brt-c-527267);
   font-size: 0.9rem;
 }
 
@@ -1431,7 +1431,7 @@ export default {
 
 .payment-panel-heading h5 {
   margin-bottom: 0.25rem;
-  color: #16423c;
+  color: var(--brt-c-16423c);
   font-weight: 700;
 }
 
@@ -1443,7 +1443,7 @@ export default {
 .payment-panel-kicker {
   display: inline-block;
   margin-bottom: 0.35rem;
-  color: #3d8d7a;
+  color: var(--brt-primary);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1464,9 +1464,9 @@ export default {
 .credit-preset-btn {
   padding: 0.22rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid #c4d9d2;
+  border: 1px solid var(--brt-border);
   background: #f7fbfa;
-  color: #335c52;
+  color: var(--brt-c-335c52);
   font-size: 0.68rem;
   font-weight: 600;
   cursor: pointer;
@@ -1474,13 +1474,13 @@ export default {
 }
 
 .credit-preset-btn:hover {
-  background: #edf5f2;
-  border-color: #3d8d7a;
+  background: var(--brt-c-edf5f2);
+  border-color: var(--brt-primary);
 }
 
 .credit-preset-btn.active {
-  background: #3d8d7a;
-  border-color: #3d8d7a;
+  background: var(--brt-primary);
+  border-color: var(--brt-primary);
   color: #fff;
 }
 

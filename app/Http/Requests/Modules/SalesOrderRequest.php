@@ -92,7 +92,11 @@ class SalesOrderRequest extends FormRequest
                 'sales_rep_id' => 'nullable|exists:employees,id',
                 // COD sends goods out to be paid for at the door, so somebody
                 // has to carry them and bring the money back.
-                'driver_id' => 'nullable|exists:employees,id|required_if:payment_mode,COD',
+                'driver_id' => 'nullable|exists:employees,id|required_if:payment_mode,COD|required_with:checker_id',
+                // The driver's partner, who takes the money at the door. Optional:
+                // some runs go out with a driver alone. They ride together, so a
+                // checker with no driver, or one person in both seats, is a slip.
+                'checker_id' => 'nullable|exists:employees,id|different:driver_id',
                 'payment_mode' => 'required|string',
                 'due_date' => 'nullable|date|required_if:payment_mode,Credit',
                 // Planned dates, both optional. Delivering before shipping is
@@ -108,7 +112,10 @@ class SalesOrderRequest extends FormRequest
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.price_type' => 'required|string|in:retail,wholesale',
                 'items.*.batch_code' => 'required|string|exists:inventory_stocks,batch_code',
-                'items.*.discount_per_unit' => 'nullable|numeric|min:0',
+                // At most ₱100 off a unit, and never negative. The add-item form
+                // holds the same limit (MAX_DISCOUNT_PER_UNIT); this is the one
+                // that cannot be bypassed.
+                'items.*.discount_per_unit' => 'nullable|numeric|min:0|max:100',
                 'items.*.is_batch_override' => 'nullable|boolean',
 
                 // A cash sale may be settled with several methods at once. Absent

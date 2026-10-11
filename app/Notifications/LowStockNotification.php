@@ -4,11 +4,11 @@ namespace App\Notifications;
 
 use App\Models\Product;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class LowStockNotification extends Notification implements ShouldBroadcast
+class LowStockNotification extends Notification implements ShouldBroadcastNow
 {
     use Queueable;
 
@@ -31,6 +31,7 @@ class LowStockNotification extends Notification implements ShouldBroadcast
     {
         return [
             'type'          => 'low_stock',
+            'url'           => '/inventory-stocks',
             'product_id'    => $this->product->id,
             'product_name'  => $this->product->brand->name . ' ' . $this->product->weight . ' ' . $this->product->unit->name,
             'current_stock' => $this->currentStock,

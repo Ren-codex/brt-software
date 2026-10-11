@@ -203,7 +203,7 @@ export default {
 
 <style scoped>
 .line-items-table {
-  border: 1px solid #dee6e3;
+  border: 1px solid var(--brt-c-dee6e3);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -212,13 +212,13 @@ export default {
   grid-template-columns: 1fr 20px 1fr 20px 90px 28px;
   gap: 6px;
   align-items: center;
-  background: #edf5f2;
+  background: var(--brt-c-edf5f2);
   padding: 0.4rem 0.75rem;
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #527267;
+  color: var(--brt-c-527267);
 }
 .line-item-row {
   display: grid;
@@ -226,12 +226,12 @@ export default {
   gap: 6px;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  border-top: 1px solid #f0f7f4;
+  border-top: 1px solid var(--brt-c-f0f7f4);
 }
 .line-op {
   text-align: center;
   font-weight: 700;
-  color: #6b8c85;
+  color: var(--brt-muted);
   font-size: 0.85rem;
 }
 .line-subtotal {
@@ -243,7 +243,7 @@ export default {
 .line-remove-btn {
   width: 24px;
   height: 24px;
-  border: 1px solid #e4eeea;
+  border: 1px solid var(--brt-c-e4eeea);
   border-radius: 6px;
   background: #fff;
   color: #94a3b8;
@@ -263,9 +263,9 @@ export default {
 .line-remove-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .add-row-btn {
   background: none;
-  border: 1px dashed #3d8d7a;
+  border: 1px dashed var(--brt-primary);
   border-radius: 6px;
-  color: #3d8d7a;
+  color: var(--brt-primary);
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.25rem 0.75rem;
@@ -275,7 +275,7 @@ export default {
   align-items: center;
   gap: 4px;
 }
-.add-row-btn:hover { background: #edf5f2; }
+.add-row-btn:hover { background: var(--brt-c-edf5f2); }
 .total-loss-banner {
   background: #f8fafc;
   border: 1px dashed #cbd5e1;

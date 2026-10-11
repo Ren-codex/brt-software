@@ -193,14 +193,14 @@ export default {
 <style scoped>
 .settings-modal-container { max-width: 520px; }
 
-.modal-header-subtitle { font-size: 0.78rem; color: #6b8c85; }
+.modal-header-subtitle { font-size: 0.78rem; color: var(--brt-muted); }
 
 .settings-section-label {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #6b8c85;
+  color: var(--brt-muted);
   margin-bottom: 0.75rem;
 }
 
@@ -209,13 +209,13 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 0.65rem 0;
-  border-bottom: 1px solid #f0f5f3;
+  border-bottom: 1px solid var(--brt-c-f0f5f3);
 }
 .settings-toggle-row:last-child { border-bottom: none; }
 
 .settings-toggle-info { display: flex; flex-direction: column; gap: 2px; }
-.settings-toggle-title { font-size: 0.85rem; font-weight: 600; color: #16322e; }
-.settings-toggle-desc  { font-size: 0.75rem; color: #6b8c85; }
+.settings-toggle-title { font-size: 0.85rem; font-weight: 600; color: var(--brt-ink); }
+.settings-toggle-desc  { font-size: 0.75rem; color: var(--brt-muted); }
 
 /* Toggle switch */
 .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
@@ -236,7 +236,7 @@ export default {
   border-radius: 50%;
   transition: transform 0.2s;
 }
-.toggle-switch input:checked + .toggle-slider { background: #3d8d7a; }
+.toggle-switch input:checked + .toggle-slider { background: var(--brt-primary); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
 
 .success-alert {

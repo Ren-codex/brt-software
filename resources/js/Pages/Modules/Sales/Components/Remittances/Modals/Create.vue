@@ -431,7 +431,7 @@ export default {
 
 .modal-subtitle {
     font-size: 0.78rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
     font-weight: 500;
 }
 
@@ -450,7 +450,7 @@ export default {
     align-items: center;
     gap: 1rem;
     padding: 1.1rem 1.4rem;
-    background: linear-gradient(135deg, #1f6f57 0%, #2c8a6c 100%);
+    background: linear-gradient(135deg, var(--brt-c-1f6f57) 0%, var(--brt-c-2c8a6c) 100%);
     color: #fff;
     min-width: 0;
 }
@@ -488,8 +488,8 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #cfe9df 0%, #eef8f4 100%);
-    color: rgba(31, 111, 87, 0.35);
+    background: linear-gradient(135deg, var(--brt-c-cfe9df) 0%, var(--brt-c-eef8f4) 100%);
+    color: rgba(var(--brt-c-1f6f57-rgb), 0.35);
     font-size: 2.4rem;
 }
 
@@ -500,7 +500,7 @@ export default {
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: #1f6f57;
+    background: var(--brt-c-1f6f57);
     color: #fff;
     display: flex;
     align-items: center;
@@ -539,7 +539,7 @@ export default {
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #16322e;
+    color: var(--brt-ink);
     margin-bottom: 0.9rem;
 }
 
@@ -547,8 +547,8 @@ export default {
     width: 26px;
     height: 26px;
     border-radius: 8px;
-    background: rgba(61, 141, 122, 0.12);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.12);
+    color: var(--brt-primary);
     font-size: 0.85rem;
     flex-shrink: 0;
     display: inline-flex;
@@ -567,14 +567,14 @@ export default {
 
 .remit-stat-label {
     font-size: 0.78rem;
-    color: #6b8c85;
+    color: var(--brt-muted);
     margin-bottom: 0.2rem;
 }
 
 .remit-stat-value {
     font-size: 1.15rem;
     font-weight: 700;
-    color: #16322e;
+    color: var(--brt-ink);
 }
 
 .remit-ar-row {
@@ -587,7 +587,7 @@ export default {
     display: flex;
     align-items: center;
     gap: 0.7rem;
-    background: #f4f9f7;
+    background: var(--brt-c-f4f9f7);
     border-radius: 10px;
     padding: 0.8rem 1rem;
 }
@@ -596,8 +596,8 @@ export default {
     width: 34px;
     height: 34px;
     border-radius: 9px;
-    background: rgba(61, 141, 122, 0.12);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.12);
+    color: var(--brt-primary);
     font-size: 1rem;
     flex-shrink: 0;
     display: inline-flex;

@@ -86,6 +86,7 @@
         $salesRepReport = $reportData['sales_rep_report'] ?? [];
         $dailySales = $reportData['daily_sales_orders'] ?? [];
         $receiptReport = $reportData['receipt_report'] ?? [];
+        $salesReturnReport = $reportData['sales_return_report'] ?? [];
         $discountSummary = $reportData['discount_summary'] ?? [];
         $discountOrders = $discountSummary['orders'] ?? [];
         $taxSummary = $reportData['tax_summary'] ?? [];
@@ -95,6 +96,7 @@
             'sales-by-employee' => 'Sales by Employee',
             'sales-by-payment-type' => 'Sales by Payment Type',
             'receipt' => 'Receipt',
+            'sales-returns' => 'Sales Returns',
             'discount' => 'Discount',
             'taxes' => 'Taxes',
             default => 'Sales Summary',
@@ -226,6 +228,86 @@
                     <th class="text-right">{{ (int) data_get($summary, 'grand_total_orders', 0) }}</th>
                     <th class="text-right">{{ number_format((float) data_get($summary, 'grand_total_sales', 0), 2) }}</th>
                 </tr>
+            </table>
+        </div>
+    @elseif ($reportType === 'sales-returns')
+        <div class="section">
+            <div class="section-title">Sales Returns</div>
+            <table>
+                <tr>
+                    <th>Returned Orders</th>
+                    <th class="text-right">Quantity Returned</th>
+                    <th class="text-right">Put Back In Stock</th>
+                    <th class="text-right">Value Returned</th>
+                </tr>
+                <tr>
+                    <td>{{ (int) data_get($salesReturnReport, 'returned_orders', 0) }}</td>
+                    <td class="text-right">{{ number_format((float) data_get($salesReturnReport, 'total_quantity', 0)) }}</td>
+                    <td class="text-right">{{ number_format((float) data_get($salesReturnReport, 'restocked_quantity', 0)) }}</td>
+                    <td class="text-right">{{ number_format((float) data_get($salesReturnReport, 'total_value', 0), 2) }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="section">
+            <div class="section-title">Returned Items</div>
+            <table>
+                <tr>
+                    <th>Date Returned</th>
+                    <th>SO #</th>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th>Condition</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Unit Price</th>
+                    <th class="text-right">Value</th>
+                </tr>
+                @forelse ((data_get($salesReturnReport, 'items') ?? []) as $item)
+                    <tr>
+                        <td>{{ data_get($item, 'returned_at', '-') }}</td>
+                        <td>{{ data_get($item, 'so_number', '-') }}</td>
+                        <td>{{ data_get($item, 'customer_name', 'Walk-in Customer') }}</td>
+                        <td>{{ data_get($item, 'product_name', '-') }}</td>
+                        <td>{{ ucfirst((string) data_get($item, 'condition', '-')) }}</td>
+                        <td class="text-right">{{ number_format((float) data_get($item, 'quantity', 0)) }}</td>
+                        <td class="text-right">{{ number_format((float) data_get($item, 'unit_price', 0), 2) }}</td>
+                        <td class="text-right">{{ number_format((float) data_get($item, 'total_value', 0), 2) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="8">No sales returns found for this filter.</td>
+                    </tr>
+                @endforelse
+            </table>
+        </div>
+        <div class="section">
+            <div class="section-title">Refused at Delivery</div>
+            <table>
+                <tr>
+                    <th>Date</th>
+                    <th>SO #</th>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th class="text-right">Ordered</th>
+                    <th class="text-right">Accepted</th>
+                    <th class="text-right">Refused</th>
+                    <th>Reason</th>
+                </tr>
+                @forelse ((data_get($salesReturnReport, 'refusals') ?? []) as $item)
+                    <tr>
+                        <td>{{ \Illuminate\Support\Str::limit((string) data_get($item, 'recorded_at', '-'), 10, '') }}</td>
+                        <td>{{ data_get($item, 'so_number', '-') }}</td>
+                        <td>{{ data_get($item, 'customer_name', 'Walk-in Customer') }}</td>
+                        <td>{{ data_get($item, 'product_name', '-') }}</td>
+                        <td class="text-right">{{ number_format((float) data_get($item, 'ordered_quantity', 0)) }}</td>
+                        <td class="text-right">{{ number_format((float) data_get($item, 'accepted_quantity', 0)) }}</td>
+                        <td class="text-right">{{ number_format((float) data_get($item, 'refused_quantity', 0)) }}</td>
+                        <td>{{ data_get($item, 'reason') ?: '-' }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="8">Nothing was refused at delivery for this filter.</td>
+                    </tr>
+                @endforelse
             </table>
         </div>
     @elseif ($reportType === 'receipt')

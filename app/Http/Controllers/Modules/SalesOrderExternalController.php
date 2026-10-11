@@ -45,6 +45,7 @@ class SalesOrderExternalController extends Controller
                         'batch_codes' => $this->dropdown->batch_codes(),
                         'sales_reps' => $this->dropdown->sales_reps(),
                         'drivers' => $this->dropdown->drivers(),
+                        'checkers' => $this->dropdown->checkers(),
                         'locations' => $this->dropdown->locations(),
                         'sales_statuses' => $this->dropdown->sales_statuses(),
                     ],

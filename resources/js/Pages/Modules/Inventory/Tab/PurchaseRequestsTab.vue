@@ -19,34 +19,39 @@
         </div>
 
         <div class="library-card-body">
-          <div class="tabs-section">
-            <div class="filter-segment">
-              <button
-                v-for="tab in statusTabs"
-                :key="tab.value"
-                type="button"
-                class="filter-segment-btn"
-                :class="{ active: activeTab === tab.value }"
-                @click="setActiveTab(tab.value)"
-              >
-                <i :class="tab.icon"></i>
-                <span>{{ tab.label }}</span>
-              </button>
+          <!-- Status tabs, search and sort on one row; they wrap onto more
+               lines only when the screen is too narrow to hold them. -->
+          <div class="tabs-search-row">
+            <div class="tabs-section">
+              <div class="filter-segment">
+                <button
+                  v-for="tab in statusTabs"
+                  :key="tab.value"
+                  type="button"
+                  class="filter-segment-btn"
+                  :class="{ active: activeTab === tab.value }"
+                  @click="setActiveTab(tab.value)"
+                >
+                  <i :class="tab.icon"></i>
+                  <span>{{ tab.label }}</span>
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div class="search-section">
-            <div class="search-wrapper">
-              <i class="ri-search-line search-icon"></i>
-              <input
-                type="text"
-                v-model="localKeyword"
-                @input="updateKeyword($event.target.value)"
-                placeholder="Search purchase request..."
-                class="search-input"
-              >
+            <div class="search-section">
+              <div class="search-wrapper">
+                <i class="ri-search-line search-icon"></i>
+                <input
+                  type="text"
+                  v-model="localKeyword"
+                  @input="updateKeyword($event.target.value)"
+                  placeholder="Search purchase request..."
+                  class="search-input"
+                >
+              </div>
+            
+              <SortSelect v-model="sortOption" :fields="[{ field: 'pr_number', label: 'PR no.' }, { field: 'po_date', label: 'Date', type: 'date' }, { field: 'total_amount', label: 'Amount', type: 'number' }]" @change="$emit('update-sort', sortParams)" />
             </div>
-          
           </div>
 
           <div class="table-section">
@@ -175,15 +180,16 @@
 
 <script>
 import Pagination from '@/Shared/Components/Pagination.vue';
+import { listSortMixin } from '@/Shared/listSort.js';
 import Delete from "@/Shared/Components/Modals/Delete.vue";
 import CreatePurchaseOrderModal from '../Modal/CreatePurchaseOrderModal.vue';
 import { recordLockMixin } from '@/Shared/recordLock.js';
 
-import printDocument from '@/Shared/utils/printDocument';
+import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
   name: "PurchaseOrdersTab",
   components: { Pagination, Delete, CreatePurchaseOrderModal },
-  mixins: [recordLockMixin],
+  mixins: [listSortMixin, recordLockMixin],
   props: {
     listPurchaseRequests: Array,
     listPurchaseOrders: Array,
@@ -197,7 +203,7 @@ export default {
       default: false,
     },
   },
-  emits: ['fetch', 'update-keyword', 'toast', 'update-filter', 'view-details'],
+  emits: ['fetch', 'update-sort', 'update-keyword', 'toast', 'update-filter', 'view-details'],
   data() {
     return {
       selectedRow: null,
@@ -240,6 +246,12 @@ export default {
         filtered = filtered.filter(order =>
           order.status && order.status.id == this.selectedStatus
         );
+      }
+
+      // A sort picked from the dropdown was done by the server across every
+      // page; keep that order instead of re-sorting these rows by the headers.
+      if (this.sortOption) {
+        return [...filtered].sort((a, b) => (a._pos ?? 0) - (b._pos ?? 0));
       }
 
       return this.sortList(filtered);
@@ -290,7 +302,7 @@ export default {
     },
     
     printPurchaseOrder(id) {
-        printDocument(`/purchase-orders/${id}/print?type=purchase_order`);
+        openOrPrint(`/purchase-orders/${id}/print?type=purchase_order`);
     },
     
     updateKeyword(keyword) {
@@ -415,7 +427,7 @@ export default {
 
 .filter-segment {
   display: inline-flex;
-  background: #eaf2f0;
+  background: var(--brt-c-eaf2f0);
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
@@ -427,7 +439,7 @@ export default {
   gap: 6px;
   border: none;
   background: transparent;
-  color: #4a7a70;
+  color: var(--brt-c-4a7a70);
   font-weight: 600;
   font-size: 0.8rem;
   padding: 0.38rem 0.85rem;
@@ -442,14 +454,14 @@ export default {
 }
 
 .filter-segment-btn:hover:not(.active) {
-  background: rgba(61, 141, 122, 0.1);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.1);
+  color: var(--brt-primary);
 }
 
 .filter-segment-btn.active {
-  background: #3d8d7a;
+  background: var(--brt-primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(61, 141, 122, 0.28);
+  box-shadow: 0 2px 8px rgba(var(--brt-primary-rgb), 0.28);
 }
 
 /* Filter Section */
@@ -489,8 +501,8 @@ export default {
 
 .status-select:focus {
   outline: none;
-  border-color: #2e8b57;
-  box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+  border-color: var(--brt-focus);
+  box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
 }
 
 /* Sort Section */
@@ -531,8 +543,8 @@ export default {
 }
 
 .sort-btn.active {
-  background: #2e8b57;
-  border-color: #2e8b57;
+  background: var(--brt-focus);
+  border-color: var(--brt-focus);
   color: white;
 }
 
@@ -551,7 +563,7 @@ export default {
 }
 
 .sortable-header:hover {
-  color: #2e8b57;
+  color: var(--brt-focus);
 }
 
 .sortable-header i {
@@ -616,7 +628,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background-color: var(--hover-color, rgba(46, 139, 87, 0.05)) !important;
+  background-color: var(--hover-color, rgba(var(--brt-focus-rgb), 0.05)) !important;
 }
 
 /* Supplier Info */
@@ -634,7 +646,7 @@ tbody tr:hover {
 }
 
 .amount-value {
-  color: #2e8b57;
+  color: var(--brt-focus);
 }
 
 /* Action Buttons */
@@ -665,8 +677,8 @@ tbody tr:hover {
 .spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #d7e5de;
-  border-top-color: #3d8d7a;
+  border: 3px solid var(--brt-c-d7e5de);
+  border-top-color: var(--brt-primary);
   border-radius: 50%;
   margin: 0 auto 1rem;
   animation: spin 0.8s linear infinite;
@@ -679,17 +691,17 @@ tbody tr:hover {
 /* Card Header */
 .library-card-header {
   padding: 0.75rem 1.1rem;
-  border-bottom: 1px solid #c4d9d2;
-  background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+  border-bottom: 1px solid var(--brt-border);
+  background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
 }
 
 .header-icon {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(61, 141, 122, 0.12);
-  border: 1px solid rgba(61, 141, 122, 0.16);
-  color: #3d8d7a;
+  background: rgba(var(--brt-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--brt-primary-rgb), 0.16);
+  color: var(--brt-primary);
   font-size: 18px;
   flex-shrink: 0;
   display: inline-flex;
@@ -700,13 +712,13 @@ tbody tr:hover {
 .header-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #16322e;
+  color: var(--brt-ink);
   margin: 0;
 }
 
 .header-subtitle {
   font-size: 0.76rem;
-  color: #6b8c85;
+  color: var(--brt-muted);
   margin: 0;
 }
 

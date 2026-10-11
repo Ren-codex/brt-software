@@ -154,7 +154,7 @@ export default {
                         {
                             id: "cash_management",
                             label: "Cash Management",
-                            icon: "ri-exchange-dollar-line",
+                            icon: "ri-exchange-funds-line",
                             description: "Position, transfers, bank deposits",
                             href: "/accounting/cash-management",
                         },
@@ -329,7 +329,7 @@ export default {
 }
 
 .inventory-sidebar-tab:hover {
-    background: rgba(61, 141, 122, 0.12);
+    background: rgba(var(--brt-primary-rgb), 0.12);
     transform: translateX(2px);
 }
 

@@ -63,7 +63,7 @@
             <div class="emp-loan-details-grid" style="grid-template-columns: repeat(3, 1fr);">
               <div class="emp-detail-card">
                 <div class="emp-detail-header">
-                  <i class="ri-money-dollar-circle-line"></i>
+                  <i class="ri-money-peso-circle-line"></i>
                   <span class="emp-detail-title">Loan Amount</span>
                 </div>
                 <div class="emp-detail-content">

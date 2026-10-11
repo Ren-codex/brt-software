@@ -4,12 +4,14 @@ import Vertical from "./Vertical.vue";
 import Horizontal from "./Horizontal.vue";
 import TwoColumns from "./Twocolumn.vue";
 import MinimisedDraftBar from "@/Shared/Components/MinimisedDraftBar.vue";
+import ThemeSwitcher from "@/Shared/Components/ThemeSwitcher.vue";
 export default {
     components: {
         Vertical,
         Horizontal,
         TwoColumns,
         MinimisedDraftBar,
+        ThemeSwitcher,
     },
     props: { 
         surveyQuestions: Array
@@ -52,6 +54,10 @@ export default {
 
         <!-- A form someone set aside, following them wherever they go next. -->
         <MinimisedDraftBar />
+
+        <!-- Applies the saved system theme for everyone; shows its floating
+             button only to Super Admin and Mini Admin. -->
+        <ThemeSwitcher />
     </div>
     <!-- <div v-if="message" class="flash-modal-overlay" @click.self="check()">
         <div class="flash-modal">

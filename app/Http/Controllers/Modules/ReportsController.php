@@ -95,6 +95,7 @@ class ReportsController extends Controller
                 'employee-summary',
                 'sales-by-payment-type',
                 'receipt',
+                'sales-returns',
                 'discount',
                 'taxes',
             ], true) ? $reportType : 'sales-summary',

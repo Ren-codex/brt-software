@@ -15,6 +15,7 @@ class PackagingClass
                           ->orWhere('description', 'LIKE', "%{$keyword}%");
                 })
                 ->orderBy('created_at', 'DESC')
+                ->sortFromRequest()
                 ->paginate($request->count)
         );
 

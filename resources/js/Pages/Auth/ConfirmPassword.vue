@@ -87,7 +87,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(160deg, #0d3b2e 0%, #1a5c48 50%, #0f4a38 100%);
+    background: linear-gradient(160deg, #0d3b2e 0%, var(--brt-c-1a5c48) 50%, #0f4a38 100%);
     position: relative;
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -129,7 +129,7 @@ export default {
     justify-content: center;
     margin: 0 auto 18px;
     font-size: 1.7rem;
-    color: #a8d5c5;
+    color: var(--brt-c-a8d5c5);
 }
 
 .lock-title {
@@ -162,7 +162,7 @@ export default {
     width: 46px;
     height: 46px;
     border-radius: 50%;
-    background: linear-gradient(145deg, #3dbf98, #2d9478);
+    background: linear-gradient(145deg, var(--brt-c-3dbf98), var(--brt-c-2d9478));
     color: #fff;
     font-size: 1.1rem;
     font-weight: 700;
@@ -222,8 +222,8 @@ export default {
 }
 
 .lock-input:focus {
-    border-color: rgba(61, 191, 152, 0.6);
-    box-shadow: 0 0 0 3px rgba(61, 191, 152, 0.15);
+    border-color: rgba(var(--brt-c-3dbf98-rgb), 0.6);
+    box-shadow: 0 0 0 3px rgba(var(--brt-c-3dbf98-rgb), 0.15);
 }
 
 .lock-input-wrap.has-error .lock-input {
@@ -259,7 +259,7 @@ export default {
     display: block;
     width: 100%;
     padding: 13px;
-    background: linear-gradient(135deg, #3dbf98 0%, #2a9478 100%);
+    background: linear-gradient(135deg, var(--brt-c-3dbf98) 0%, var(--brt-c-2a9478) 100%);
     color: #fff;
     border: none;
     border-radius: 12px;
@@ -288,12 +288,12 @@ export default {
 }
 
 .lock-signin a {
-    color: #6dd5b5;
+    color: var(--brt-c-6dd5b5);
     font-weight: 600;
     text-decoration: none;
 }
 
 .lock-signin a:hover {
-    color: #a8e8d5;
+    color: var(--brt-c-a8e8d5);
 }
 </style>

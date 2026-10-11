@@ -29,6 +29,9 @@ class InventoryStockController extends Controller
             case 'detail':
                 return response()->json(['data' => $this->inventoryStock->view($request->id)]);
                 break;
+            case 'consolidation':
+                return response()->json($this->inventoryStock->consolidation());
+                break;
             default:
                 return inertia('Modules/Inventory/Index');
                 break;

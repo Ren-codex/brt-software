@@ -150,12 +150,12 @@ export default {
 
 <style scoped>
 .employee-details-page {
-    --ink-900: #102723;
-    --ink-700: #35524d;
-    --ink-500: #5c7974;
-    --line-200: #d2e4df;
+    --ink-900: var(--brt-c-102723);
+    --ink-700: var(--brt-c-35524d);
+    --ink-500: var(--brt-c-5c7974);
+    --line-200: var(--brt-c-d2e4df);
     --mint-700: #1a7e67;
-    --mint-500: #2fa485;
+    --mint-500: var(--brt-c-2fa485);
     --surface: #ffffff;
     --surface-soft: #f7fcfa;
     padding: 4px 0 0;
@@ -199,8 +199,8 @@ export default {
     border: 1px solid var(--line-200);
     border-radius: 22px;
     padding: 20px;
-    background: linear-gradient(160deg, #f9fffd 0%, #eff9f6 100%);
-    box-shadow: 0 12px 32px rgba(28, 64, 56, 0.08);
+    background: linear-gradient(160deg, #f9fffd 0%, var(--brt-c-eff9f6) 100%);
+    box-shadow: 0 12px 32px rgba(var(--brt-c-1c4038-rgb), 0.08);
 }
 
 .profile-avatar-wrap {
@@ -216,7 +216,7 @@ export default {
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid #fff;
-    box-shadow: 0 10px 28px rgba(14, 47, 41, 0.2);
+    box-shadow: 0 10px 28px rgba(var(--brt-c-0e2f29-rgb), 0.2);
 }
 
 .profile-avatar-image {
@@ -237,9 +237,9 @@ export default {
     display: grid;
     place-items: center;
     color: #fff;
-    background: #1f826b;
+    background: var(--brt-c-1f826b);
     cursor: pointer;
-    box-shadow: 0 10px 18px rgba(31, 130, 107, 0.28);
+    box-shadow: 0 10px 18px rgba(var(--brt-c-1f826b-rgb), 0.28);
 }
 
 .profile-img-file-input {
@@ -273,8 +273,8 @@ export default {
 }
 
 .profile-badge-primary {
-    background: #d9f0e8;
-    color: #1b6f5a;
+    background: var(--brt-c-d9f0e8);
+    color: var(--brt-c-1b6f5a);
 }
 
 .profile-badge-neutral {
@@ -283,7 +283,7 @@ export default {
 }
 
 .profile-info-list {
-    border-top: 1px solid #d8e9e4;
+    border-top: 1px solid var(--brt-c-d8e9e4);
     padding-top: 12px;
 }
 
@@ -313,7 +313,7 @@ export default {
 
 .profile-subcard {
     margin-top: 12px;
-    border-top: 1px solid #d8e9e4;
+    border-top: 1px solid var(--brt-c-d8e9e4);
     padding-top: 12px;
 }
 
@@ -322,7 +322,7 @@ export default {
     align-items: center;
     gap: 7px;
     margin-bottom: 8px;
-    color: #1a6e5a;
+    color: var(--brt-c-1a6e5a);
 }
 
 .profile-subcard-header h3 {
@@ -336,7 +336,7 @@ export default {
 }
 
 .profile-tab-btn {
-    border: 1px solid #d7e7e2;
+    border: 1px solid var(--brt-c-d7e7e2);
     background: var(--surface-soft);
     color: var(--ink-700);
     border-radius: 11px;
@@ -355,13 +355,13 @@ export default {
 }
 
 .profile-tab-btn:hover {
-    background: #f3fbf8;
-    border-color: #bedbd3;
+    background: var(--brt-c-f3fbf8);
+    border-color: var(--brt-c-bedbd3);
     transform: translateX(3px);
 }
 
 .profile-tab-btn.active {
-    border-color: #2a9479;
+    border-color: var(--brt-c-2a9479);
     color: #fff;
     background: linear-gradient(125deg, var(--mint-500) 0%, var(--mint-700) 100%);
     box-shadow: 0 8px 20px rgba(28, 120, 99, 0.25);
@@ -374,11 +374,11 @@ export default {
 }
 
 .details-card {
-    border: 1px solid #dbe9e5;
+    border: 1px solid var(--brt-c-dbe9e5);
     border-radius: 20px;
     padding: 18px;
     background: var(--surface);
-    box-shadow: 0 8px 28px rgba(22, 58, 50, 0.06);
+    box-shadow: 0 8px 28px rgba(var(--brt-c-163a32-rgb), 0.06);
 }
 
 .profile-content-wrap {

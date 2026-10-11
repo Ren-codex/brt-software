@@ -74,24 +74,26 @@
 <table class="items-table">
     <thead>
         <tr>
-            <th width="5%">#</th>
-            <th width="35%">Item</th>
-            <th width="10%">Batch Code</th>
-            <th width="10%" class="text-center">Quantity</th>
-            <th width="13%" class="text-right">Unit Price</th>
-            <th width="12%" class="text-right">Discount</th>
-            <th width="15%" class="text-right">Amount</th>
+            <th width="10%">Quantity</th>
+            <th>Item</th>
+            <th width="14%">Batch Code</th>
+            <th width="15%" class="text-right">Unit Price</th>
+            @if($hasDiscount)
+            <th width="13%" class="text-right">Discount</th>
+            @endif
+            <th width="16%" class="text-right">Amount</th>
         </tr>
     </thead>
     <tbody>
         @foreach($items as $index => $item)
         <tr>
-            <td>{{ $index + 1 }}</td>
+            <td><strong>{{ number_format($item->quantity) }}</strong></td>
             <td><strong>{{ $item->product->brand?->name ?? '' }} {{ $item->product->weight ?? '' }}</strong> {{ $item->product->unit?->name ?? '' }}</td>
             <td>{{ $item->batch_code ?? '---' }}</td>
-            <td class="text-center">{{ number_format($item->quantity) }}</td>
             <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
+            @if($hasDiscount)
             <td class="text-right">PHP {{ number_format($item->discount_per_unit * $item->quantity, 2) }}</td>
+            @endif
             <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>
         </tr>
         @endforeach
@@ -114,10 +116,12 @@
                     <td style="padding: 4px 0;">Subtotal</td>
                     <td class="text-right">PHP {{ number_format($subtotal, 2) }}</td>
                 </tr>
+                @if($hasDiscount)
                 <tr>
                     <td style="padding: 4px 0;">Discount</td>
                     <td class="text-right">PHP {{ number_format($sales_order->total_discount, 2) }}</td>
                 </tr>
+                @endif
                 <tr>
                     <td style="padding: 4px 0;">Amount Paid</td>
                     <td class="text-right">PHP {{ number_format($ar_invoice->amount_paid, 2) }}</td>

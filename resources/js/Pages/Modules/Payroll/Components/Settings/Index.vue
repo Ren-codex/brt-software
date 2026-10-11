@@ -24,6 +24,7 @@
                             <input type="text" v-model="localKeyword" @input="updateKeyword($event.target.value)"
                                 placeholder="Search settings..." class="search-input">
                         </div>
+                        <SortSelect v-model="sortOption" :fields="[{ field: 'field_name', label: 'Name' }]" @change="fetchPayrollSettings()" />
                     </div>
 
                     <div class="table-responsive table-card">
@@ -101,6 +102,7 @@
 
 <script>
 import _ from 'lodash';
+import { listSortMixin } from '@/Shared/listSort.js';
 import axios from 'axios'
 import PayrollSettingModal from './Modal.vue'
 import Logs from './Logs.vue'
@@ -109,6 +111,7 @@ import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
   components: { PayrollSettingModal, Logs, Pagination, TableLoadingRow },
+  mixins: [listSortMixin],
   props: ['dropdown'],
   data() {
     return {
@@ -145,7 +148,7 @@ export default {
       this.loading = true;
       axios.get(page_url, {
         params: {
-          keyword: this.filter.keyword,
+          ...this.sortParams, keyword: this.filter.keyword,
           count: 10
         }
       })

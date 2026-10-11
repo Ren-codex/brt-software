@@ -29,6 +29,22 @@ export const permissionsMixin = {
 
             return hasLevel(moduleGrants._module, requiredLevel);
         },
+        /**
+         * Does this user hold an approver level anywhere?
+         *
+         * Gates the Approvals item in the sidebar. The page itself re-derives the
+         * same answer server-side and shows only the sources the user can
+         * approve, so this is purely about not advertising an empty screen.
+         */
+        canApproveAnything() {
+            const permissions = this.$page?.props?.permissions || {};
+
+            return Object.values(permissions).some(moduleGrants =>
+                Object.values(moduleGrants || {}).some(levels =>
+                    Array.isArray(levels) && (levels.includes('approver') || levels.includes('admin'))
+                )
+            );
+        },
         canAny(moduleKey, submoduleKey) {
             const permissions = this.$page?.props?.permissions || {};
             const moduleGrants = permissions[moduleKey];

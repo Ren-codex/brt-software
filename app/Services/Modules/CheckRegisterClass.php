@@ -31,20 +31,56 @@ class CheckRegisterClass
      */
     public function lists(array $filters = [], ?int $ownEmployeeId = null)
     {
-        return Check::query()
+        return $this->visibleChecks($ownEmployeeId)
             ->with(['customer', 'supplier', 'receivedBy', 'bankAccount'])
-            ->when($ownEmployeeId, fn ($q) => $q
-                ->where('direction', Check::DIRECTION_RECEIVED)
-                ->where('received_by_id', $ownEmployeeId))
             ->when($filters['direction'] ?? null, fn ($q, $d) => $q->where('direction', $d))
             ->when($filters['status'] ?? null, fn ($q, $st) => $q->where('status', $st))
             ->when($filters['keyword'] ?? null, fn ($q, $kw) => $q->where(function ($inner) use ($kw) {
+                // The customer or supplier by name too: that is how people
+                // remember a cheque, more often than by its number.
                 $inner->where('check_number', 'LIKE', "%{$kw}%")
-                    ->orWhere('bank_name', 'LIKE', "%{$kw}%");
+                    ->orWhere('bank_name', 'LIKE', "%{$kw}%")
+                    ->orWhereHas('customer', fn ($c) => $c->where('name', 'LIKE', "%{$kw}%"))
+                    ->orWhereHas('supplier', fn ($s) => $s->where('name', 'LIKE', "%{$kw}%"));
             }))
             ->orderBy('check_date')
             ->orderByDesc('id')
+            // Replaces the order above when the screen asks for a sort.
+            ->sortFromRequest()
             ->paginate($filters['count'] ?? 15);
+    }
+
+    /**
+     * How many cheques are at each status, and what they add up to — for the
+     * totals at the top of the Sales check monitoring screen. Scoped exactly as
+     * lists() is, so the cards and the table always describe the same cheques.
+     */
+    public function summary(?int $ownEmployeeId = null): array
+    {
+        $rows = $this->visibleChecks($ownEmployeeId)
+            ->selectRaw('status, COUNT(*) as total, COALESCE(SUM(amount), 0) as amount')
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        $summary = [];
+        foreach ([Check::STATUS_PENDING, Check::STATUS_CLEARED, Check::STATUS_BOUNCED] as $status) {
+            $summary[$status] = [
+                'count' => (int) ($rows[$status]->total ?? 0),
+                'amount' => (float) ($rows[$status]->amount ?? 0),
+            ];
+        }
+
+        return $summary;
+    }
+
+    /** The cheques a caller may see: everything, or one rep's own received ones. */
+    private function visibleChecks(?int $ownEmployeeId)
+    {
+        return Check::query()
+            ->when($ownEmployeeId, fn ($q) => $q
+                ->where('direction', Check::DIRECTION_RECEIVED)
+                ->where('received_by_id', $ownEmployeeId));
     }
 
     /**

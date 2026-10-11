@@ -3,6 +3,7 @@
 namespace App\Services\Modules;
 
 use App\Models\Employee;
+use App\Models\ListPosition;
 use App\Models\User;
 use App\Http\Resources\Modules\EmployeeResource;
 use App\Services\System\User\UserClass;
@@ -38,10 +39,37 @@ class EmployeeClass
                           });
                     });
                 })
-                ->orderBy('created_at', 'DESC')
+                ->tap(fn ($query) => $this->applySort($query, $request->sort_by, $request->sort_direction))
                 ->paginate($request->count)
         );
         return $data;
+    }
+
+    /**
+     * Order the employee list. Sorting happens here, not in the browser, so it
+     * applies to the whole list rather than to whichever ten rows are on screen.
+     *
+     * Both inputs are checked against fixed lists: a column name cannot be bound
+     * as a query parameter, so anything unrecognised falls back to newest first.
+     */
+    private function applySort($query, ?string $sortBy, ?string $direction): void
+    {
+        $direction = strtolower((string) $direction) === 'asc' ? 'asc' : 'desc';
+
+        match ($sortBy) {
+            // Matches the name as displayed: first name, then last name.
+            'fullname' => $query->orderBy('firstname', $direction)->orderBy('lastname', $direction),
+            'email' => $query->orderBy('email', $direction),
+            'position' => $query->orderBy(
+                ListPosition::select('title')->whereColumn('list_positions.id', 'employees.position_id')->limit(1),
+                $direction
+            ),
+            'created_at' => $query->orderBy('created_at', $direction),
+            default => $query->orderBy('created_at', 'desc'),
+        };
+
+        // Rows that tie would otherwise be free to swap between pages.
+        $query->orderBy('employees.id', $direction);
     }
 
     public function save($request, $userId = null){

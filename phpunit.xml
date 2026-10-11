@@ -23,6 +23,8 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DELIVERY_APPROVAL" value="false"/>
+        <env name="CREDIT_APPROVAL" value="false"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="IP_LOOKUP_ENABLED" value="false"/>
         <env name="MAIL_MAILER" value="array"/>

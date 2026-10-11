@@ -22,6 +22,7 @@ class SalesOrder extends Model
         'approved_at',
         'sales_rep_id',
         'driver_id',
+        'checker_id',
         'payment_mode',
         'payment_lines',
         'due_date',
@@ -29,6 +30,14 @@ class SalesOrder extends Model
         'delivery_date',
         'delivered_at',
         'delivered_by_id',
+        'delivery_submission',
+        'delivery_rejection',
+        'delivery_approved_by_id',
+        'delivery_approved_at',
+        'credit_approval',
+        'credit_approval_remarks',
+        'credit_approved_by_id',
+        'credit_approved_at',
         'location_id',
         'delivery_location',
         'cancellation_remarks',
@@ -41,6 +50,9 @@ class SalesOrder extends Model
         'shipping_date' => 'date',
         'delivery_date' => 'date',
         'delivered_at' => 'datetime',
+        'delivery_submission' => 'array',
+        'delivery_approved_at' => 'datetime',
+        'credit_approved_at' => 'datetime',
         'transferred_at' => 'date',
         'approved_at' => 'date',
         'total_amount' => 'decimal:2',
@@ -114,13 +126,18 @@ class SalesOrder extends Model
      */
     public function moneyIsIn(): bool
     {
-        if (! $this->driver_id) {
+        // Either of the pair may be carrying it: the checker normally, the
+        // driver on an order sent out without one or collected before the
+        // checker was named.
+        $crew = array_filter([$this->driver_id, $this->checker_id]);
+
+        if (! $crew) {
             return true;
         }
 
         return ! Receipt::whereIn('ar_invoice_id', $this->arInvoices()->select('id'))
             ->where('receipt_type', 'payment')
-            ->where('held_by_employee_id', $this->driver_id)
+            ->whereIn('held_by_employee_id', $crew)
             ->whereNull('remittance_id')
             ->exists();
     }
@@ -172,6 +189,47 @@ class SalesOrder extends Model
         return ListStatus::getBySlug($slug)?->id;
     }
 
+    /** Placed on credit, and not yet cleared to go out. */
+    public function awaitsCreditApproval(): bool
+    {
+        return $this->credit_approval === 'pending';
+    }
+
+    public function scopeAwaitingCreditApproval($query)
+    {
+        return $query->where('credit_approval', 'pending')
+            ->whereDoesntHave('status', fn ($q) => $q->where('slug', 'cancelled'));
+    }
+
+    /**
+     * What `credit_approval` should read for an order on these terms.
+     *
+     * Credit the business extends needs an approver; COD and cash do not. An
+     * approval already given stands for as long as the order stays on credit,
+     * so editing the remarks on an approved order does not send it round again.
+     */
+    public static function creditApprovalFor(?string $paymentMode, ?string $current = null): ?string
+    {
+        if (! config('sales.credit_approval', true) || ! self::isTermCredit($paymentMode)) {
+            return null;
+        }
+
+        return $current === 'approved' ? 'approved' : 'pending';
+    }
+
+    /** Encoded as delivered, and waiting on an approver before it counts. */
+    public function awaitsDeliveryApproval(): bool
+    {
+        return ! $this->delivered_at && ! empty($this->delivery_submission);
+    }
+
+    public function scopeAwaitingDeliveryApproval($query)
+    {
+        return $query->whereNull('delivered_at')
+            ->whereNotNull('delivery_submission')
+            ->whereDoesntHave('status', fn ($q) => $q->where('slug', 'cancelled'));
+    }
+
     public function deliveredBy()
     {
         return $this->belongsTo(User::class, 'delivered_by_id');
@@ -220,6 +278,23 @@ class SalesOrder extends Model
     public function driver()
     {
         return $this->belongsTo(Employee::class, 'driver_id');
+    }
+
+    public function checker()
+    {
+        return $this->belongsTo(Employee::class, 'checker_id');
+    }
+
+    /**
+     * Who takes the customer's money at the door.
+     *
+     * The checker when the order has one — that is their job on the truck —
+     * otherwise the driver, who does both on a run without a checker. Null on
+     * an order nobody is delivering.
+     */
+    public function fieldCollectorId(): ?int
+    {
+        return $this->checker_id ?? $this->driver_id;
     }
 
     public function location()

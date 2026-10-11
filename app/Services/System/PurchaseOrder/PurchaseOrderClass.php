@@ -33,6 +33,7 @@ class PurchaseOrderClass
             'items.receivedItems.receivedStock',
         ])
             ->latest('id')
+            ->sortFromRequest()
             ->paginate($request->count ?? 10);
         return PurchaseOrderResource::collection($data);
     }

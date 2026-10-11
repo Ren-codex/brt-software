@@ -68,8 +68,8 @@
 
 /* Modal Header */
 .modal-header {
-    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
-    border-bottom: 1px solid #c4d9d2;
+    background: linear-gradient(to right, var(--brt-tint-1) 0%, var(--brt-tint-2) 100%);
+    border-bottom: 1px solid var(--brt-border);
     padding: 0.65rem 1rem;
     display: flex;
     justify-content: space-between;
@@ -80,7 +80,7 @@
     h2, h4, h5, h6 {
         font-weight: 700;
         margin: 0;
-        color: #16322e;
+        color: var(--brt-ink);
         font-size: 0.95rem;
     }
 }
@@ -90,9 +90,9 @@
     width: 30px;
     height: 30px;
     border-radius: 8px;
-    background: rgba(61, 141, 122, 0.12);
-    border: 1px solid rgba(61, 141, 122, 0.18);
-    color: #3d8d7a;
+    background: rgba(var(--brt-primary-rgb), 0.12);
+    border: 1px solid rgba(var(--brt-primary-rgb), 0.18);
+    color: var(--brt-primary);
     font-size: 0.95rem;
     flex-shrink: 0;
     display: inline-flex;
@@ -102,8 +102,8 @@
 
 .close-btn {
     background: #fff;
-    border: 1px solid #c4d9d2;
-    color: #16322e;
+    border: 1px solid var(--brt-border);
+    color: var(--brt-ink);
     width: 30px;
     height: 30px;
     border-radius: 8px;
@@ -116,8 +116,8 @@
     font-size: 0.95rem;
 
     &:hover {
-        background: #f0f7f4;
-        border-color: #a8c8be;
+        background: var(--brt-c-f0f7f4);
+        border-color: var(--brt-c-a8c8be);
     }
 }
 
@@ -192,8 +192,8 @@
 
     &:focus {
         outline: none;
-        border-color: #2e8b57;
-        box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+        border-color: var(--brt-focus);
+        box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
     }
 
     &.input-error {
@@ -248,7 +248,7 @@
         height: 0;
 
         &:checked + .slider {
-            background-color: #2e8b57;
+            background-color: var(--brt-focus);
         }
 
         &:checked + .slider:before {
@@ -256,7 +256,7 @@
         }
 
         &:focus + .slider {
-            box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+            box-shadow: 0 0 0 3px rgba(var(--brt-focus-rgb), 0.1);
         }
     }
 }
@@ -379,13 +379,13 @@
 }
 
 .btn-save {
-    background: #3D8D7A;
+    background: var(--brt-primary);
     color: white;
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--brt-focus-rgb), 0.3);
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(46, 139, 87, 0.4);
+        box-shadow: 0 6px 20px rgba(var(--brt-focus-rgb), 0.4);
     }
 
     &:active {
@@ -446,4 +446,13 @@
     .modal-body {
         padding: 0.85rem;
     }
+}
+
+// A group of window buttons in a modal header — minimise beside close, say.
+// Spaced apart so each is a separate target; without this they render touching.
+.modal-header .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
 }

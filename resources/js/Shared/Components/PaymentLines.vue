@@ -424,7 +424,7 @@ export default {
 }
 
 .payment-line {
-  border: 1px solid #e4efeb;
+  border: 1px solid var(--brt-c-e4efeb);
   border-radius: 12px;
   padding: 0.75rem;
   background: #fbfefd;
@@ -453,13 +453,13 @@ export default {
 .payment-line-label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #4a6b63;
+  color: var(--brt-c-4a6b63);
   margin-bottom: 0.25rem;
 }
 
 .payment-line-hint {
   font-size: 0.68rem;
-  color: #7f9a92;
+  color: var(--brt-c-7f9a92);
   margin-top: 0.2rem;
 }
 
@@ -525,8 +525,8 @@ export default {
 .payment-line-add {
   align-self: flex-start;
   background: none;
-  border: 1px dashed #b9d3ca;
-  color: #3d8d7a;
+  border: 1px dashed var(--brt-c-b9d3ca);
+  color: var(--brt-primary);
   border-radius: 10px;
   padding: 0.45rem 0.8rem;
   font-size: 0.8rem;
@@ -535,11 +535,11 @@ export default {
 }
 
 .payment-line-add:hover {
-  background: #f2faf7;
+  background: var(--brt-c-f2faf7);
 }
 
 .payment-lines-summary {
-  border-top: 1px solid #e4efeb;
+  border-top: 1px solid var(--brt-c-e4efeb);
   padding-top: 0.65rem;
   display: flex;
   flex-direction: column;
@@ -550,7 +550,7 @@ export default {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: #22403a;
+  color: var(--brt-c-22403a);
 }
 
 .summary-remaining strong {

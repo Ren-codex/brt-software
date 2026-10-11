@@ -474,7 +474,7 @@ export default {
 
 .um-bar-title i {
     font-size: 1.5rem;
-    color: #7fd4a8;
+    color: var(--brt-c-7fd4a8);
 }
 
 .um-bar-title strong {
@@ -553,8 +553,8 @@ export default {
 }
 
 .um-filter.is-on {
-    border-color: #7fd4a8;
-    background: rgba(127, 212, 168, 0.16);
+    border-color: var(--brt-c-7fd4a8);
+    background: rgba(var(--brt-c-7fd4a8-rgb), 0.16);
     color: #fff;
 }
 
@@ -580,7 +580,7 @@ export default {
 .um-lang:hover {
     background: rgba(255, 255, 255, 0.12);
     color: #fff;
-    border-color: #7fd4a8;
+    border-color: var(--brt-c-7fd4a8);
 }
 
 .um-close {
@@ -681,7 +681,7 @@ export default {
     padding: 0.3rem 0.7rem;
     border: none;
     background: none;
-    color: #7fd4a8;
+    color: var(--brt-c-7fd4a8);
     font-size: 0.66rem;
     font-weight: 700;
     letter-spacing: 0.16em;
@@ -711,8 +711,8 @@ export default {
 }
 
 .um-rail-item.is-active {
-    border-left-color: #7fd4a8;
-    background: rgba(127, 212, 168, 0.12);
+    border-left-color: var(--brt-c-7fd4a8);
+    background: rgba(var(--brt-c-7fd4a8-rgb), 0.12);
     color: #fff;
 }
 
@@ -926,8 +926,8 @@ export default {
 }
 
 .um-nav:hover:not(:disabled) {
-    background: rgba(127, 212, 168, 0.18);
-    border-color: #7fd4a8;
+    background: rgba(var(--brt-c-7fd4a8-rgb), 0.18);
+    border-color: var(--brt-c-7fd4a8);
 }
 
 .um-nav:disabled {
@@ -953,7 +953,7 @@ export default {
 
 .um-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #7fd4a8, #4ea87c);
+    background: linear-gradient(90deg, var(--brt-c-7fd4a8), var(--brt-c-4ea87c));
     border-radius: 2px;
     transition: width 0.4s ease;
 }

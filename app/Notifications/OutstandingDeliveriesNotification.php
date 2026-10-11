@@ -3,7 +3,7 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +12,7 @@ use Illuminate\Notifications\Notification;
  * collected but still in somebody's hands. Sent to the office as a whole and
  * to each rep for their own orders — `scope` says which.
  */
-class OutstandingDeliveriesNotification extends Notification implements ShouldBroadcast
+class OutstandingDeliveriesNotification extends Notification implements ShouldBroadcastNow
 {
     use Queueable;
 
@@ -39,6 +39,7 @@ class OutstandingDeliveriesNotification extends Notification implements ShouldBr
     {
         return [
             'type' => 'outstanding_deliveries',
+            'url'  => '/sales-orders',
             'scope' => $this->scope,
             'days' => $this->days,
             'uncollected_count' => $this->uncollectedCount,

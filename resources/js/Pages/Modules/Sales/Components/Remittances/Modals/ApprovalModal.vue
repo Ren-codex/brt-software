@@ -370,39 +370,39 @@ export default {
 .modal-overlay { z-index: 50; }
 .modal-container { overflow: hidden; width: 100%; padding: 0; }
 .modal-body { padding: 1.2rem 1.4rem; }
-.modal-title { font-size: 0.95rem; font-weight: 700; color: #16322e; }
-.modal-subtitle { font-size: 0.76rem; color: #6b8c85; }
+.modal-title { font-size: 0.95rem; font-weight: 700; color: var(--brt-ink); }
+.modal-subtitle { font-size: 0.76rem; color: var(--brt-muted); }
 .form-actions .btn { min-width: 120px; }
 
 .summary-panel {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f4fbf8;
-    border: 1px solid #c4d9d2;
+    background: var(--brt-c-f4fbf8);
+    border: 1px solid var(--brt-border);
     border-radius: 10px;
     padding: 0.7rem 1rem;
 }
 .summary-label {
     font-size: 0.72rem;
     font-weight: 600;
-    color: #6b8c85;
+    color: var(--brt-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 .summary-value {
     font-size: 1rem;
     font-weight: 700;
-    color: #16423c;
+    color: var(--brt-c-16423c);
 }
 .summary-rep {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #16422c;
+    color: var(--brt-c-16422c);
 }
 
 .received-table { font-size: 0.85rem; }
-.received-table th { color: #6b8c85; font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; border-top: none; }
+.received-table th { color: var(--brt-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; border-top: none; }
 .received-table td { vertical-align: middle; }
 .received-table input { width: 120px; }
 
@@ -429,8 +429,8 @@ export default {
     padding: 3px 10px;
     margin-right: 6px;
     border-radius: 20px;
-    background: rgba(61,141,122,0.12);
-    color: #16322e;
+    background: rgba(var(--brt-primary-rgb),0.12);
+    color: var(--brt-ink);
     font-weight: 600;
     font-size: 0.78rem;
 }
@@ -441,7 +441,7 @@ export default {
     gap: 8px;
     font-size: 0.82rem;
 }
-.variance-label { color: #6b8c85; }
+.variance-label { color: var(--brt-muted); }
 .variance-badge {
     display: inline-flex;
     align-items: center;

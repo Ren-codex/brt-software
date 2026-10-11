@@ -25,6 +25,7 @@ class ReplenishmentService
             ->when($request->fund_id, fn($q, $id) => $q->where('fund_id', $id))
             ->when($request->status, fn($q, $s) => $q->where('status', $s))
             ->orderByDesc('created_at')
+            ->sortFromRequest()
             ->paginate($request->count ?? 15);
     }
 

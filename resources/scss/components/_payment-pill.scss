@@ -11,8 +11,8 @@
     white-space: nowrap;
 
     &.is-cash {
-        background: rgba(61, 141, 122, 0.12);
-        color: #2f6f60;
+        background: rgba(var(--brt-primary-rgb), 0.12);
+        color: var(--brt-c-2f6f60);
     }
 
     &.is-cod {
