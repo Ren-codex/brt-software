@@ -151,6 +151,12 @@
                                     >
                                         <i class="ri-money-peso-circle-fill"></i>
                                     </button>
+                                    <!-- Nothing to chase here: the customer has
+                                         paid and the paper is in. It clears in
+                                         Receipts, where the bank is confirmed. -->
+                                    <span v-else-if="row.stage === 'bank'" class="waiting-note">
+                                        Waiting to clear
+                                    </span>
                                     <!-- The driver hands the money in. Only the holder
                                          changes — the collection was recorded at the door,
                                          and the remittance is what finally clears it. -->
@@ -293,15 +299,15 @@ export default {
             loading: false,
             activeStage: 'all',
             // One search and one sort per stage, keyed like the stages.
-            stageKeyword: { all: '', out: '', pending: '', collect: '', money: '' },
-            stageSort: { all: '', out: '', pending: '', collect: '', money: '' },
-            board: { out_for_delivery: [], pending_approval: [], to_collect: [], with_driver: [] },
+            stageKeyword: { all: '', out: '', pending: '', collect: '', money: '', bank: '' },
+            stageSort: { all: '', out: '', pending: '', collect: '', money: '', bank: '' },
+            board: { out_for_delivery: [], pending_approval: [], to_collect: [], with_driver: [], awaiting_bank: [] },
             decision: { open: false, row: null, type: 'approved', remarks: '', error: '', saving: false },
             handover: { open: false, row: null, holder: null, error: '', saving: false },
         };
     },
     computed: {
-        /** The three stages of a delivery, in the order one passes through them. */
+        /** The stages of a delivery, in the order one passes through them. */
         stages() {
             return [
                 {
@@ -310,7 +316,7 @@ export default {
                     hint: 'Everything on the road or still owed, most recently updated first.',
                     empty: 'Nothing out and nothing owed.',
                     tone: 'tone-neutral',
-                    rows: [...this.stageRows('out'), ...this.stageRows('pending'), ...this.stageRows('collect'), ...this.stageRows('money')],
+                    rows: [...this.stageRows('out'), ...this.stageRows('pending'), ...this.stageRows('collect'), ...this.stageRows('money'), ...this.stageRows('bank')],
                 },
                 {
                     key: 'out',
@@ -331,7 +337,7 @@ export default {
                 {
                     key: 'collect',
                     label: 'To collect',
-                    hint: 'Goods with the customer, nothing collected yet.',
+                    hint: 'Goods with the customer, nobody has paid yet.',
                     empty: 'Nothing owed on delivered goods.',
                     tone: 'tone-warn',
                     rows: this.stageRows('collect'),
@@ -343,6 +349,14 @@ export default {
                     empty: 'Nobody is carrying collections.',
                     tone: 'tone-money',
                     rows: this.stageRows('money'),
+                },
+                {
+                    key: 'bank',
+                    label: 'Waiting for the bank',
+                    hint: 'Paid by cheque or transfer and handed in. Confirm it in Receipts once the bank pays.',
+                    empty: 'Nothing waiting on the bank.',
+                    tone: 'tone-bank',
+                    rows: this.stageRows('bank'),
                 },
             ];
         },
@@ -455,6 +469,17 @@ export default {
                     source: this.board.with_driver,
                     action: null,
                 },
+                bank: {
+                    stageLabel: 'Waiting for the bank',
+                    tone: 'tone-bank',
+                    // "With" reads as who handed it in and what the cheque is
+                    // dated: the two things worth knowing while it is out.
+                    source: (this.board.awaiting_bank ?? []).map((row) => ({
+                        ...row,
+                        mode: row.due ? `${row.mode} dated ${this.dueLabel(row.due)}` : row.mode,
+                    })),
+                    action: null,
+                },
             }[key];
 
             return (shape.source ?? []).map((row) => ({
@@ -480,6 +505,13 @@ export default {
             return sameDay
                 ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
                 : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        },
+        /** A cheque's own date, which is when the bank will pay it. */
+        dueLabel(date) {
+            const d = new Date(date);
+            if (Number.isNaN(d.getTime())) return date;
+
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         },
         ageLabel(days) {
             if (days === 0) return 'today';
@@ -690,6 +722,8 @@ export default {
     border-color: var(--brt-focus);
 }
 .stage-pill.tone-money { background: #e5eef8; color: #2a5b86; }
+/* Out of anyone's hands here, so cooler and quieter than money in a pocket. */
+.stage-pill.tone-bank { background: #eaeef1; color: #4a5a68; }
 
 .mode-note {
     display: block;

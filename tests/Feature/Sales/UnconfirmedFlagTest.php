@@ -53,8 +53,14 @@ class UnconfirmedFlagTest extends TestCase
         $field = $this->actingAs($this->user)
             ->getJson('/remittances?option=field-collections')->assertOk()->json();
 
+        // A collection sits under "With driver / checker" while somebody is
+        // carrying it, and under "Waiting for the bank" once the paper is in
+        // and only the bank is holding it up. The flag means the same thing in
+        // either place, which is what this test is about.
+        $row = ($board['with_driver'][0] ?? null) ?? ($board['awaiting_bank'][0] ?? null);
+
         return [
-            'board' => $board['with_driver'][0]['confirmed'] ?? null,
+            'board' => $row['confirmed'] ?? null,
             'field' => $field[0]['confirmed'] ?? null,
         ];
     }
