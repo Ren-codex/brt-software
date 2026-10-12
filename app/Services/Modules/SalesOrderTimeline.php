@@ -22,6 +22,7 @@ class SalesOrderTimeline
     {
         $order->loadMissing([
             'status', 'customer', 'created_by.employee', 'deliveredBy.employee',
+            'creditApprovedBy.employee', 'deliveryApprovedBy.employee',
             'driver', 'checker', 'salesRep',
             'arInvoices.receipts.status', 'arInvoices.receipts.heldBy', 'arInvoices.receipts.remittance',
         ]);
@@ -32,13 +33,22 @@ class SalesOrderTimeline
         $payment = $this->paymentStep($order);
         $delivery = $this->deliveryStep($order);
 
+        // Each approval sits with the thing it holds up: the credit one before
+        // anything can go out at all, the delivery one between encoding the
+        // delivery and it counting as made.
+        $deliveryPair = array_values(array_filter([
+            $this->deliveryApprovalStep($order),
+            $delivery,
+        ]));
+
         // Goods go out first on COD and credit; a cash sale is paid first.
         $middle = SalesOrder::isOnAccount($order->payment_mode)
-            ? [$delivery, $payment]
-            : [$payment, $delivery];
+            ? [...$deliveryPair, $payment]
+            : [$payment, ...$deliveryPair];
 
         $steps = array_values(array_filter([
             $this->placedStep($order),
+            $this->creditStep($order),
             ...$middle,
             $this->turnoverStep($order, $payment['done']),
             $this->closedStep($order, $slug),
@@ -140,6 +150,75 @@ class SalesOrderTimeline
         ];
     }
 
+    /**
+     * Only for a sale on terms the business had to agree to. COD and cash need
+     * nobody's blessing, so there is no step to show.
+     */
+    private function creditStep(SalesOrder $order): ?array
+    {
+        if ($order->credit_approval === null) {
+            return null;
+        }
+
+        $approved = $order->credit_approval === 'approved';
+        $refused = $order->credit_approval === 'rejected';
+
+        return [
+            'key' => 'credit-approval',
+            'label' => $refused ? 'Credit refused' : ($approved ? 'Credit approved' : 'Credit approval'),
+            'icon' => 'ri-shield-check-line',
+            'done' => $approved,
+            'at' => optional($order->credit_approved_at)->toIso8601String(),
+            'by' => $this->userName($order->creditApprovedBy),
+            'detail' => $refused
+                ? ($order->credit_approval_remarks ?: 'The credit on this order was not approved.')
+                : ($approved
+                    ? 'Cleared to go out on credit.'
+                    : 'Nothing goes out and no payment is taken until an approver clears this.'),
+        ];
+    }
+
+    /**
+     * Shown only where an approval is actually in play: a delivery waiting on
+     * one, one that was confirmed, or one that was sent back. Orders recorded
+     * before approvals existed, or with the setting off, skip it.
+     */
+    private function deliveryApprovalStep(SalesOrder $order): ?array
+    {
+        $approvedAt = $order->delivery_approved_at;
+        $waiting = $order->awaitsDeliveryApproval();
+
+        if (! $approvedAt && ! $waiting && ! $order->delivery_rejection) {
+            return null;
+        }
+
+        // The column for anything encoded since it existed; the submission's
+        // own stamp for one encoded before, which is still waiting.
+        $encodedAt = $order->delivery_encoded_at
+            ?? (($order->delivery_submission['submitted_at'] ?? null)
+                ? \Carbon\Carbon::parse($order->delivery_submission['submitted_at'])
+                : null);
+        $encoder = $this->userName($order->deliveredBy);
+        $encoded = collect([
+            $encoder ? 'Encoded by '.$encoder : 'Encoded',
+            $encodedAt ? 'on '.$encodedAt->format('M d, Y g:i A') : null,
+        ])->filter()->implode(' ');
+
+        return [
+            'key' => 'delivery-approval',
+            'label' => $approvedAt ? 'Delivery approved' : ($waiting ? 'Delivery approval' : 'Delivery sent back'),
+            'icon' => 'ri-check-double-line',
+            'done' => (bool) $approvedAt,
+            'at' => optional($approvedAt)->toIso8601String(),
+            'by' => $this->userName($order->deliveryApprovedBy),
+            'detail' => $approvedAt
+                ? $encoded.' · confirmed here.'
+                : ($waiting
+                    ? $encoded.' · waiting for an approver.'
+                    : $order->delivery_rejection),
+        ];
+    }
+
     private function deliveryStep(SalesOrder $order): array
     {
         $delivered = (bool) $order->delivered_at;
@@ -185,6 +264,9 @@ class SalesOrderTimeline
             && in_array($r->held_by_employee_id, array_filter([$order->driver_id, $order->checker_id])));
         $remitted = $receipts->filter(fn ($r) => $r->remittance)->sortByDesc(fn ($r) => $r->remittance->remittance_date)->first();
         $in = $paid && $order->moneyIsIn();
+        // When the money came in off the truck. The remittance can be days
+        // later, so it only stands in for a handover nobody recorded.
+        $handedOver = $receipts->pluck('handed_over_at')->filter()->max();
 
         if ($in) {
             $detail = $remitted
@@ -202,12 +284,25 @@ class SalesOrderTimeline
             'label' => $in ? 'Money turned in' : 'Money turnover',
             'icon' => 'ri-hand-coin-line',
             'done' => $in,
-            'at' => $in && $remitted && $remitted->remittance->remittance_date
-                ? \Carbon\Carbon::parse($remitted->remittance->remittance_date)->toIso8601String()
-                : null,
+            'at' => $this->turnoverAt($in, $handedOver, $remitted),
             'by' => null,
             'detail' => $detail,
         ];
+    }
+
+    private function turnoverAt(bool $in, $handedOver, $remitted): ?string
+    {
+        if (! $in) {
+            return null;
+        }
+
+        if ($handedOver) {
+            return \Carbon\Carbon::parse($handedOver)->toIso8601String();
+        }
+
+        return $remitted && $remitted->remittance->remittance_date
+            ? \Carbon\Carbon::parse($remitted->remittance->remittance_date)->toIso8601String()
+            : null;
     }
 
     private function closedStep(SalesOrder $order, ?string $slug): array
@@ -219,7 +314,9 @@ class SalesOrderTimeline
             'label' => 'Closed',
             'icon' => 'ri-checkbox-circle-line',
             'done' => $closed,
-            'at' => null,
+            // Null on an order closed before this was recorded: the date is
+            // genuinely unknown, and updated_at moves with every later edit.
+            'at' => optional($order->closed_at)->toIso8601String(),
             'by' => null,
             'detail' => $closed
                 ? 'Paid, delivered, and the money is in. Nothing left to do.'

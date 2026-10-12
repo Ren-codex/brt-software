@@ -898,6 +898,10 @@ class SalesOrderClass
                 'submitted_by_id' => auth()->id(),
                 'submitted_at' => now()->toIso8601String(),
             ],
+            // Kept outside the submission as well, because approving wipes the
+            // submission — and with it the record of when this was encoded,
+            // which is half of what an approval is accountable for.
+            'delivery_encoded_at' => now(),
             'delivery_rejection' => null,
         ]);
 

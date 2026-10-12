@@ -38,6 +38,7 @@ class Receipt extends Model
         'source_receipt_id',
         'remittance_id',
         'held_by_employee_id',
+        'handed_over_at',
         'notes',
         'check_date',
         'check_status',
@@ -49,6 +50,7 @@ class Receipt extends Model
 
     protected $casts = [
         'check_date' => 'date',
+        'handed_over_at' => 'datetime',
         'released_at' => 'datetime',
         'confirmed_at' => 'datetime',
     ];

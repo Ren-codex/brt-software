@@ -30,7 +30,9 @@ class SalesOrder extends Model
         'delivery_date',
         'delivered_at',
         'delivered_by_id',
+        'closed_at',
         'delivery_submission',
+        'delivery_encoded_at',
         'delivery_rejection',
         'delivery_approved_by_id',
         'delivery_approved_at',
@@ -50,7 +52,9 @@ class SalesOrder extends Model
         'shipping_date' => 'date',
         'delivery_date' => 'date',
         'delivered_at' => 'datetime',
+        'closed_at' => 'datetime',
         'delivery_submission' => 'array',
+        'delivery_encoded_at' => 'datetime',
         'delivery_approved_at' => 'datetime',
         'credit_approved_at' => 'datetime',
         'transferred_at' => 'date',
@@ -59,6 +63,37 @@ class SalesOrder extends Model
         'total_discount' => 'decimal:2',
         'payment_lines' => 'array',
     ];
+
+    /**
+     * When the business finished with this order.
+     *
+     * Closing is not an action anybody takes: a dozen places re-derive the
+     * status after a payment, a delivery or a handover, and one of them lands
+     * on Closed. Stamping it in each of them would mean missing one, so it is
+     * stamped here, where every status change passes.
+     *
+     * Reopening clears it. An order knocked back to For Turnover is not
+     * finished, and a date saying it was would outlive the fact.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (self $order) {
+            if (! $order->isDirty('status_id')) {
+                return;
+            }
+
+            $closedId = ListStatus::getBySlug('closed')?->id;
+            if (! $closedId) {
+                return;
+            }
+
+            if ((int) $order->status_id === (int) $closedId) {
+                $order->closed_at = now();
+            } elseif ($order->closed_at) {
+                $order->closed_at = null;
+            }
+        });
+    }
 
     /**
      * Modes where the goods leave before the money arrives, so the sale is a
@@ -233,6 +268,16 @@ class SalesOrder extends Model
     public function deliveredBy()
     {
         return $this->belongsTo(User::class, 'delivered_by_id');
+    }
+
+    public function creditApprovedBy()
+    {
+        return $this->belongsTo(User::class, 'credit_approved_by_id');
+    }
+
+    public function deliveryApprovedBy()
+    {
+        return $this->belongsTo(User::class, 'delivery_approved_by_id');
     }
 
     public function customer()

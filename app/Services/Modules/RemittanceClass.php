@@ -232,7 +232,13 @@ class RemittanceClass
             }
         }
 
-        $receipt->update(['held_by_employee_id' => $employee->id]);
+        // The moment itself, not just the new holder: the remittance that
+        // follows can be days later, so it cannot stand in for when the money
+        // actually came in off the truck.
+        $receipt->update([
+            'held_by_employee_id' => $employee->id,
+            'handed_over_at' => now(),
+        ]);
 
         // The handover is what finishes a delivered, paid order: until now the
         // money was out with the driver, so the order sat in For Turnover
