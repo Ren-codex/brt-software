@@ -194,6 +194,27 @@ class DeliveryAcceptanceTest extends TestCase
         $this->assertSame(3000.0, (float) ArInvoice::firstOrFail()->balance_due);
     }
 
+    public function test_a_shortfall_on_an_already_delivered_order_is_refused(): void
+    {
+        // Resizing only ever happens as the delivery is recorded. Sending a
+        // shortfall against an order already marked delivered used to be
+        // accepted and then quietly dropped: no stock back, no credit note, no
+        // refusal row, and no word to whoever typed it.
+        $this->postCredit()->assertSessionHasNoErrors();
+        $order = SalesOrder::with('items')->firstOrFail();
+        $item = $order->items->first();
+
+        $this->deliver($order, [$item->id => 2])->assertSessionHasNoErrors();
+        $this->assertNotNull($order->fresh()->delivered_at);
+
+        $this->deliver($order, [$item->id => 1], [$item->id => 'Sent one back'])
+            ->assertSessionHasErrors('accepted_quantities');
+
+        $this->assertSame(2, (int) $item->fresh()->quantity);
+        $this->assertSame(3000.0, (float) ArInvoice::firstOrFail()->amount_due);
+        $this->assertSame(0, SalesOrderDeliveryRefusal::count());
+    }
+
     public function test_the_sale_is_re_posted_at_the_accepted_amount(): void
     {
         $this->postCredit()->assertSessionHasNoErrors();

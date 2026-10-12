@@ -1027,6 +1027,17 @@ class SalesOrderClass
             fn ($item) => $accepted->has($item->id) && $accepted->get($item->id) < (int) $item->quantity
         );
 
+        // Resizing belongs to the moment the delivery is recorded. A shortfall
+        // sent against an order already marked delivered used to be accepted
+        // and then dropped — no stock back, no credit note, no refusal row,
+        // and nothing said to whoever typed it. Goods coming back after the
+        // delivery stands are a return.
+        if ($isShort && $data->delivered_at) {
+            throw ValidationException::withMessages([
+                'accepted_quantities' => 'This delivery is already recorded, so the quantities cannot be changed here. Record a sales return for anything coming back.',
+            ]);
+        }
+
         if ($isShort && ! $data->delivered_at) {
             $invoice = $data->arInvoices()->first();
 

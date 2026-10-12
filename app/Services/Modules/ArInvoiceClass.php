@@ -356,8 +356,16 @@ class ArInvoiceClass
         // fills in a delivery nobody recorded. Stamped before the payment is
         // applied, because whether the order can close depends on it. An
         // explicit stamp always wins.
+        //
+        // Only money that has actually arrived says anything about a delivery.
+        // A cheque the bank has not paid, or a transfer nobody has confirmed,
+        // is a promise: the truck may still be in the yard. Stamping on one
+        // takes the order off the driver's list, which is the only place Mark
+        // Delivered lives, so what really arrived could never be recorded —
+        // and the COD rule, which runs only on an unstamped order, would be
+        // skipped with it.
         $order = $ar_invoice->sales_order;
-        if ($order && ! $order->delivered_at && SalesOrder::isCod($order->payment_mode)) {
+        if ($order && ! $order->delivered_at && $immediateTotal > 0 && SalesOrder::isCod($order->payment_mode)) {
             $order->update([
                 'delivered_at' => now(),
                 'delivered_by_id' => Auth::id(),
