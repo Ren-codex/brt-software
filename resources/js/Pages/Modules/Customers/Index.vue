@@ -104,13 +104,14 @@
                                         </td>
 
                                         <td class="text-center">
-                                            <i v-if="list.is_blacklisted === 1" class="ri-close-line text-danger fs-16"></i>
-                                            <i v-else class="ri-check-line text-success fs-16"></i>
+                                            <i v-if="list.is_blacklisted === 1" class="ri-check-line text-danger fs-16"></i>
+                                            <i v-else class="ri-close-line text-muted fs-16"></i>
                                         </td>
 
                                         <td>
                                             <b-form-checkbox
                                                 :checked="list.is_active === 1"
+                                                :disabled="!can('customers', 'encoder')"
                                                 @change="toggleActive(list)"
                                                 switch
                                                 size="md"
@@ -316,7 +317,9 @@ export default {
             })
             .catch(err => {
                 console.log(err);
-                this.$toast.error('Failed to update customer status');
+                // Put the switch back where the saved state is.
+                this.fetch();
+                this.$toast.error(err.response?.data?.info || err.response?.data?.message || 'Failed to update customer status');
             });
         },
 
