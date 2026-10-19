@@ -51,15 +51,24 @@ class LoginFailed
         }
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Private and loopback addresses have no place to look up, and GeoIP
+     * answers a miss with its configured default (New Haven, US), which must
+     * not be recorded as where someone signed in from.
+     *
+     * @return array<string, mixed>
+     */
     private function resolveLocation(string $ip): array
     {
-        if (! config('services.ip_lookup.enabled')) {
+        if (! config('services.ip_lookup.enabled')
+            || ! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
             return [];
         }
 
         try {
-            return geoip()->getLocation($ip)->toArray();
+            $location = geoip()->getLocation($ip);
+
+            return $location->default ? [] : $location->toArray();
         } catch (\Throwable $e) {
             Log::debug('Geo lookup failed; recording the lockout without a location.', [
                 'exception' => $e->getMessage(),
