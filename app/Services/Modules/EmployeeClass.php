@@ -34,8 +34,7 @@ class EmployeeClass
                                 ->orWhereRaw('LOWER(username) LIKE ?', ["%{$keyword}%"]);
                           })
                           ->orWhereHas('position', function($q) use ($keyword) {
-                              $q->whereRaw('LOWER(title) LIKE ?', ["%{$keyword}%"])
-                                ->orWhereRaw('LOWER(short) LIKE ?', ["%{$keyword}%"]);
+                              $q->whereRaw('LOWER(title) LIKE ?', ["%{$keyword}%"]);
                           });
                     });
                 })
