@@ -59,9 +59,9 @@ class CustomerClass
             'address' => $request->address,
             'contact_number' => $request->contact_number,
             'email' => $request->email,
-            'is_active' => $request->is_active,
-            'is_regular' => $request->is_regular,
-            'is_blacklisted' => $request->is_blacklisted,
+            'is_active' => $request->is_active ?? 1,
+            'is_regular' => $request->is_regular ?? 0,
+            'is_blacklisted' => $request->is_blacklisted ?? 0,
             'credit_limit'   => $request->credit_limit ?? 0,
             'added_by_id'    => auth()->id(),
         ]);
@@ -80,9 +80,9 @@ class CustomerClass
             'address' => $request->address,
             'contact_number' => $request->contact_number,
             'email' => $request->email,
-            'is_active' => $request->is_active,
-            'is_regular' => $request->is_regular,
-            'is_blacklisted' => $request->is_blacklisted,
+            'is_active' => $request->is_active ?? $data->is_active,
+            'is_regular' => $request->is_regular ?? $data->is_regular,
+            'is_blacklisted' => $request->is_blacklisted ?? $data->is_blacklisted,
             'credit_limit'   => $request->credit_limit ?? $data->credit_limit,
         ]);
 

@@ -49,7 +49,9 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function update(Request $request){
+    // Checked like a new customer, so a problem comes back as a message under
+    // the field rather than as a database error.
+    public function update(CustomerRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->customer->update($request);
         });
