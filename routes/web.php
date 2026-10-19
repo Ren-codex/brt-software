@@ -33,6 +33,9 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         ->middlewareFor(['index', 'show'], 'permission:customers,view')
         ->middlewareFor(['store', 'update'], 'permission:customers,encoder')
         ->middlewareFor('destroy', 'permission:customers,admin');
+    // The Active switch on the customer list. Same grant as editing.
+    Route::patch('/customers/toggle-active/{id}', [App\Http\Controllers\Modules\CustomerController::class, 'toggleActive'])
+        ->middleware('permission:customers,encoder');
     Route::get('/customers/{id}/details', [App\Http\Controllers\Modules\CustomerController::class, 'details'])
         ->middleware('permission:customers,view');
     Route::get('/customers/{id}/order-summary', [App\Http\Controllers\Modules\CustomerController::class, 'orderSummary'])

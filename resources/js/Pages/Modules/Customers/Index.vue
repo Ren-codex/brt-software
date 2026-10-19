@@ -111,6 +111,7 @@
                                         <td>
                                             <b-form-checkbox
                                                 :checked="list.is_active === 1"
+                                                :disabled="!can('customers', 'encoder')"
                                                 @change="toggleActive(list)"
                                                 switch
                                                 size="md"
@@ -316,7 +317,9 @@ export default {
             })
             .catch(err => {
                 console.log(err);
-                this.$toast.error('Failed to update customer status');
+                // Put the switch back where the saved state is.
+                this.fetch();
+                this.$toast.error(err.response?.data?.info || err.response?.data?.message || 'Failed to update customer status');
             });
         },
 
