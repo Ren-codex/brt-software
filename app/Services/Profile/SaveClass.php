@@ -42,12 +42,14 @@ class SaveClass
         }
 
         // Email is read-only on the profile page, so it is not written here.
-        $employee->firstname = $request->firstname;
+        // Name, sex and mobile can't be null in the table; an administrator may
+        // leave them blank (ProfileRequest), which keeps the value on file.
+        $employee->firstname = $request->firstname ?? $employee->firstname;
         $employee->middlename = $request->middlename;
-        $employee->lastname = $request->lastname;
+        $employee->lastname = $request->lastname ?? $employee->lastname;
         $employee->suffix = $request->suffix;
-        $employee->sex = $request->gender;
-        $employee->mobile = $request->mobile;
+        $employee->sex = $request->gender ?? $employee->sex;
+        $employee->mobile = $request->mobile ?? $employee->mobile;
         $employee->save();
 
         return [

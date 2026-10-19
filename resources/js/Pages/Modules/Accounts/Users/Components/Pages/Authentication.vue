@@ -35,8 +35,7 @@
                     </td>
                     <td>
                         <h5 class="fs-13 mb-0 text-dark">{{list.platform}} <span class="fs-12 text-muted">({{list.browser}})</span></h5>
-                        <p v-if="list.location" class="fs-12 text-muted mb-0">{{ list.location.city }},  {{ list.location.state_name }}, {{ list.location.country }}</p>
-                        <p v-else class="fs-12 text-muted mb-0">Not Available</p>
+                        <p class="fs-12 text-muted mb-0">{{ list.location || 'Location not available' }}</p>
                     </td>
                     <td class="text-center">{{list.ip}} </td>
                     <td class="text-center">{{list.created_at}}</td>

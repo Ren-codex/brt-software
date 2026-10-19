@@ -33,7 +33,25 @@ class AuthenticationResource extends JsonResource
             'avatar' =>  's',
             'created_at' => date('M d, Y g:i a', strtotime($this->created_at)),
             'type' => $type,
-            'location' => json_decode($this->location)
+            'location' => $this->place(),
         ];
+    }
+
+    // "City, Region, Country" from the stored lookup, or null when there was
+    // none (a blank lookup is stored as "[]", which used to render ", , ").
+    private function place(): ?string
+    {
+        $location = json_decode((string) $this->location, true);
+        if (! is_array($location) || ! empty($location['default'])) {
+            return null;
+        }
+
+        $parts = array_filter([
+            $location['city'] ?? null,
+            $location['state_name'] ?? null,
+            $location['country'] ?? null,
+        ]);
+
+        return $parts ? implode(', ', array_unique($parts)) : null;
     }
 }

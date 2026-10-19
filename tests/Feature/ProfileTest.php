@@ -97,3 +97,31 @@ test('a profile update rejects a malformed or taken mobile number', function () 
         ->put('/profile/updated', $payload + ['mobile' => '09179999999'])
         ->assertSessionHasErrors('mobile');
 });
+
+test('a non-admin must fill in name, mobile and gender', function () {
+    $user = User::factory()->create();
+    profileEmployee($user);
+
+    $this->actingAs($user)
+        ->put('/profile/updated', [])
+        ->assertSessionHasErrors(['firstname', 'lastname', 'mobile', 'gender']);
+});
+
+test('an admin can save the profile with fields left blank, keeping what is on file', function () {
+    $user = User::factory()->create();
+    $role = \App\Models\ListRole::create(['name' => 'Administrator', 'type' => 'role', 'definition' => 't', 'is_active' => true]);
+    \App\Models\UserRole::create(['user_id' => $user->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $user->id]);
+    $employee = profileEmployee($user, ['middlename' => 'Bautista']);
+
+    $this->actingAs($user)
+        ->put('/profile/updated', ['firstname' => 'Maria'])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('status', true);
+
+    $employee->refresh();
+    expect($employee->firstname)->toBe('Maria')
+        ->and($employee->lastname)->toBe('Cruz')
+        ->and($employee->mobile)->toBe('09170000000')
+        ->and($employee->sex)->toBe('Female')
+        ->and($employee->middlename)->toBeNull();
+});
