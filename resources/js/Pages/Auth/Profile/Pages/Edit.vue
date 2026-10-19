@@ -131,11 +131,14 @@ export default {
                         });
                     }
                 },
-                onError: () => {
+                onError: (errors) => {
+                    // Name the problem: not every field the server checks has a
+                    // highlight on this page.
+                    const reasons = Object.values(errors).flat();
                     Swal.fire({
                         icon: 'error',
                         title: 'Not saved',
-                        text: 'Please check the highlighted fields.',
+                        text: reasons.length ? reasons.join(' ') : 'Please check the highlighted fields.',
                     });
                 },
             });

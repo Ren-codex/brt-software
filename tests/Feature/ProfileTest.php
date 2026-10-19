@@ -125,3 +125,48 @@ test('an admin can save the profile with fields left blank, keeping what is on f
         ->and($employee->sex)->toBe('Female')
         ->and($employee->middlename)->toBeNull();
 });
+
+function giveRole(User $user, string $name): void
+{
+    $role = \App\Models\ListRole::firstOrCreate(['name' => $name], ['type' => 'role', 'definition' => 't', 'is_active' => true]);
+    \App\Models\UserRole::create(['user_id' => $user->id, 'role_id' => $role->id, 'is_active' => 1, 'added_by_id' => $user->id]);
+}
+
+test('a super admin without an employee record gets one from the profile page', function () {
+    $user = User::factory()->create();
+    giveRole($user, 'Super Admin');
+
+    $this->actingAs($user)
+        ->put('/profile/updated', ['firstname' => 'Super', 'lastname' => 'Admin'])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('status', true);
+
+    $employee = $user->fresh()->employee;
+    expect($employee)->not->toBeNull()
+        ->and($employee->firstname)->toBe('Super')
+        ->and($employee->lastname)->toBe('Admin')
+        ->and($employee->mobile)->toBe('');
+});
+
+test('a super admin can save with nothing filled in and a mobile in any format', function () {
+    $user = User::factory()->create();
+    giveRole($user, 'Super Admin');
+    $employee = profileEmployee($user, ['mobile' => '+63 917 000 0000']);
+
+    $this->actingAs($user)
+        ->put('/profile/updated', ['mobile' => '+63 917 000 0000'])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('status', true);
+
+    expect($employee->fresh()->firstname)->toBe('Ana');
+});
+
+test('a non-admin without an employee record is told so', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->put('/profile/updated', ['firstname' => 'Ana', 'lastname' => 'Cruz', 'mobile' => '09171234567', 'gender' => 'Female'])
+        ->assertSessionHasErrors('firstname');
+
+    expect($user->fresh()->employee)->toBeNull();
+});

@@ -3,6 +3,7 @@
 namespace App\Services\Profile;
 
 use App\Models\User;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Auth;
@@ -36,21 +37,34 @@ class SaveClass
         $data = User::find(\Auth::user()->id);
         $employee = $data->employee;
         if (!$employee) {
-            throw ValidationException::withMessages([
-                'firstname' => 'This account has no employee record to update.',
+            if (!$request->isAdmin()) {
+                throw ValidationException::withMessages([
+                    'firstname' => 'This account has no employee record to update. Please ask an administrator.',
+                ]);
+            }
+
+            // An administrator's account may never have been given an employee
+            // record; the profile page is where they fill one in. The columns
+            // this page doesn't collect can't be null, so they start blank.
+            $employee = new Employee([
+                'user_id' => $data->id,
+                'added_by_id' => $data->id,
+                'birthdate' => '',
+                'religion' => '',
             ]);
         }
 
         // Email is read-only on the profile page, so it is not written here.
         // Name, sex and mobile can't be null in the table; an administrator may
         // leave them blank (ProfileRequest), which keeps the value on file.
-        $employee->firstname = $request->firstname ?? $employee->firstname;
+        $employee->firstname = $request->firstname ?? $employee->firstname ?? '';
         $employee->middlename = $request->middlename;
-        $employee->lastname = $request->lastname ?? $employee->lastname;
+        $employee->lastname = $request->lastname ?? $employee->lastname ?? '';
         $employee->suffix = $request->suffix;
-        $employee->sex = $request->gender ?? $employee->sex;
-        $employee->mobile = $request->mobile ?? $employee->mobile;
+        $employee->sex = $request->gender ?? $employee->sex ?? '';
+        $employee->mobile = $request->mobile ?? $employee->mobile ?? '';
         $employee->save();
+        $data->load('employee');
 
         return [
             'data' => new UserResource($data),

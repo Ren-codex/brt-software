@@ -10,7 +10,8 @@ use Illuminate\Validation\Rule;
 // fields the profile page has no way to send.
 class ProfileRequest extends FormRequest
 {
-    // Accounts that may save their profile with any field left blank.
+    // Accounts whose profile has nothing required: any field may be left
+    // blank, and the mobile number's format isn't enforced.
     protected const ADMIN_ROLES = ['Administrator', 'Super Admin', 'Mini Admin'];
 
     public function authorize(): bool
@@ -21,23 +22,31 @@ class ProfileRequest extends FormRequest
     public function rules(): array
     {
         $employeeId = $this->user()->employee?->id;
-        $required = $this->isAdmin() ? 'nullable' : 'required';
+        // A number already on another employee is still refused, admin or not.
+        $uniqueMobile = Rule::unique('employees', 'mobile')->ignore($employeeId);
+
+        if ($this->isAdmin()) {
+            return [
+                'firstname' => 'nullable|string|max:255',
+                'middlename' => 'nullable|string|max:255',
+                'lastname' => 'nullable|string|max:255',
+                'suffix' => 'nullable|string|max:255',
+                'mobile' => ['nullable', 'string', 'max:255', $uniqueMobile],
+                'gender' => 'nullable|string|max:255',
+            ];
+        }
 
         return [
-            'firstname' => "$required|string|max:255",
+            'firstname' => 'required|string|max:255',
             'middlename' => 'nullable|string|max:255',
-            'lastname' => "$required|string|max:255",
+            'lastname' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:10',
-            'mobile' => [
-                $required,
-                'regex:/^09\d{9}$/',
-                Rule::unique('employees', 'mobile')->ignore($employeeId),
-            ],
-            'gender' => "$required|in:Male,Female",
+            'mobile' => ['required', 'regex:/^09\d{9}$/', $uniqueMobile],
+            'gender' => 'required|in:Male,Female',
         ];
     }
 
-    protected function isAdmin(): bool
+    public function isAdmin(): bool
     {
         return $this->user()->roles()
             ->where('user_roles.is_active', 1)
