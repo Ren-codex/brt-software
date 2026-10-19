@@ -34,20 +34,25 @@ class SaveClass
 
     public function update($request){
         $data = User::find(\Auth::user()->id);
-        $data->email = $request->email;
-        if($data->save()){
-            $employee = $data->employee;
-            $employee->firstname = $request->firstname;
-            $employee->middlename = $request->middlename;
-            $employee->lastname = $request->lastname;
-            $employee->gender = $request->gender;
-            $employee->mobile = $request->mobile;
-            $employee->save();
+        $employee = $data->employee;
+        if (!$employee) {
+            throw ValidationException::withMessages([
+                'firstname' => 'This account has no employee record to update.',
+            ]);
         }
-        
+
+        // Email is read-only on the profile page, so it is not written here.
+        $employee->firstname = $request->firstname;
+        $employee->middlename = $request->middlename;
+        $employee->lastname = $request->lastname;
+        $employee->suffix = $request->suffix;
+        $employee->sex = $request->gender;
+        $employee->mobile = $request->mobile;
+        $employee->save();
+
         return [
             'data' => new UserResource($data),
-            'message' => 'User information updated successfully.', 
+            'message' => 'Personal information updated successfully.',
             'info' => "All relevant fields have been refreshed with the latest data."
         ];
     }

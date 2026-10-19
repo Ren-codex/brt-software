@@ -26,7 +26,7 @@ class UserResource extends JsonResource
             'firstname' => $firstname,
             'lastname' => $lastname,
             'middlename' => $employee?->middlename,
-            'gender' => $employee?->gender,
+            'gender' => $employee?->sex,
             'suffix' => $employee?->suffix,
             'mobile' => $employee?->mobile,
             'employee_id' => $employee?->id,
