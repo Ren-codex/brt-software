@@ -104,8 +104,8 @@
                                         </td>
 
                                         <td class="text-center">
-                                            <i v-if="list.is_blacklisted === 1" class="ri-close-line text-danger fs-16"></i>
-                                            <i v-else class="ri-check-line text-success fs-16"></i>
+                                            <i v-if="list.is_blacklisted === 1" class="ri-check-line text-danger fs-16"></i>
+                                            <i v-else class="ri-close-line text-muted fs-16"></i>
                                         </td>
 
                                         <td>
