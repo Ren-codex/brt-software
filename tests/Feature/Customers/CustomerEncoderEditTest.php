@@ -96,4 +96,35 @@ class CustomerEncoderEditTest extends TestCase
 
         $this->assertSame(1, (int) $customer->fresh()->is_active);
     }
+
+    public function test_a_customer_can_be_saved_without_a_contact_number(): void
+    {
+        $rep = $this->salesRepWith("encoder");
+        $customer = $this->customer();
+
+        $this->actingAs($rep)
+            ->put("/customers/{$customer->id}", ["id" => $customer->id, "name" => "BF Store", "address" => "Southcom, Zamboanga City", "contact_number" => "", "is_regular" => 0, "is_active" => 1, "is_blacklisted" => 0, "credit_limit" => 0])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas("status", true);
+
+        $this->assertNull($customer->fresh()->contact_number);
+
+        $this->actingAs($rep)
+            ->post("/customers", ["name" => "No Phone Store", "address" => "Cebu", "contact_number" => null])
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas("customers", ["name" => "No Phone Store", "contact_number" => null]);
+    }
+
+    public function test_a_bad_edit_says_what_is_wrong_under_the_field(): void
+    {
+        $rep = $this->salesRepWith("encoder");
+        $customer = $this->customer();
+
+        $this->actingAs($rep)
+            ->put("/customers/{$customer->id}", ["id" => $customer->id, "name" => "", "address" => "Cebu", "contact_number" => "12345"])
+            ->assertSessionHasErrors([
+                "name" => "Please enter the customer name.",
+                "contact_number" => "The contact number must be 11 digits starting with 09, e.g. 09171234567. Leave it blank if there is none.",
+            ]);
+    }
 }
