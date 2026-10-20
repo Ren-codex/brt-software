@@ -43,6 +43,26 @@ class PrintClass
 
     public function printSalesOrder($id){
         $sales_order = SalesOrder::with('status' , 'customer', 'location', 'salesRep', 'driver', 'checker', 'items.product.brand' , 'items.product.unit', 'items.product.packaging', 'created_by' )->findOrFail($id);
+
+        // A credit sale nobody has approved yet is not a document.
+        //
+        // This page is what the warehouse releases goods against and what the
+        // customer is handed, and it says nothing about credit either way — so
+        // printed early it is indistinguishable from an approved order, and
+        // the approval it is waiting on could be walked straight past.
+        //
+        // Refused the same way whoever is asking, approver included: the
+        // order is not fit to be printed yet, which is not a question of
+        // permission. The screen hides the button to match, and this is what
+        // holds when the URL is reached another way.
+        if ($sales_order->awaitsCreditApproval()) {
+            abort(403, 'This is a credit sale waiting for approval. It can be printed once an approver clears it.');
+        }
+
+        if (optional($sales_order->status)->slug === 'cancelled') {
+            abort(403, 'This order was cancelled, so there is nothing to print.');
+        }
+
         $items = $sales_order->items;
 
         $array = [
