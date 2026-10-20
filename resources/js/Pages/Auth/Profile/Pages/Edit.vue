@@ -69,7 +69,7 @@
                     <div class="col-md-3">
                         <div class="form-floating mt-n1">
                             
-                            <select v-model="form.gender" class="form-select" id="floatingSelect">
+                            <select v-model="form.gender" class="form-select" id="floatingSelect" :class="{ 'is-invalid': form.errors.gender }">
                                 <option value="Male">Male</option>
                                 <option value="Female">Female</option>
                             </select>
@@ -86,6 +86,7 @@
 </template>
 <script>
 import { useForm } from '@inertiajs/vue3';
+import Swal from 'sweetalert2';
 import TextInput from '@/Shared/Components/Forms/TextInput.vue';
 import InputLabel from '@/Shared/Components/Forms/InputLabel.vue';
 export default {
@@ -110,7 +111,36 @@ export default {
                 errorBag: "submit",
                 preserveScroll: true,
                 preserveState: true,
-                onSuccess: () => {},
+                onSuccess: () => {
+                    // HandlesTransaction reports a caught exception as a normal
+                    // redirect with status false, so check it before calling it saved.
+                    const flash = this.$page.props.flash;
+                    if (flash.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: flash.message || 'Personal information updated successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Not saved',
+                            text: flash.info || flash.message || 'Personal information was not saved.',
+                        });
+                    }
+                },
+                onError: (errors) => {
+                    // Name the problem: not every field the server checks has a
+                    // highlight on this page.
+                    const reasons = Object.values(errors).flat();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Not saved',
+                        text: reasons.length ? reasons.join(' ') : 'Please check the highlighted fields.',
+                    });
+                },
             });
         }
     }

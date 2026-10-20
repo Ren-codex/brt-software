@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Profile\ViewClass;
 use App\Services\Profile\SaveClass;
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Requests\ProfileRequest;
 use Illuminate\Validation\Rules\Password;
 use App\Services\DropdownClass;
 
@@ -82,7 +82,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function update(EmployeeRequest $request){
+    public function update(ProfileRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->save->update($request);
         });

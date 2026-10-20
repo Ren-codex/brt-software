@@ -12,7 +12,7 @@ use App\Http\Resources\AuthenticationResource;
 class ViewClass
 {
     public function authenticationlogs($request){
-        $data = AuthenticationLog::with('user.employee')->where('user_id',\Auth::user()->id)->paginate($request->count);
+        $data = AuthenticationLog::with('user.employee')->where('user_id',\Auth::user()->id)->orderBy('created_at','DESC')->paginate($request->count);
         return AuthenticationResource::collection($data);
     }
 

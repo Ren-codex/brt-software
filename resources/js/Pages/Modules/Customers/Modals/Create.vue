@@ -147,6 +147,11 @@
                         <i class="ri-checkbox-circle-fill"></i>
                         <span>Your information has been saved successfully!</span>
                     </div>
+
+                    <div class="error-alert" v-if="submitError">
+                        <i class="ri-error-warning-fill"></i>
+                        <span>{{ submitError }}</span>
+                    </div>
                     
                 </form>
             </div>
@@ -195,6 +200,7 @@ export default {
             showModal: false,
             editable: false,
             saveSuccess: false,
+            submitError: '',
         }
     },
     methods: { 
@@ -221,11 +227,23 @@ export default {
             this.saveSuccess = false;
             this.showModal = true;
         },
+        // HandlesTransaction answers a failed save with a normal redirect and
+        // status false, so a successful visit alone doesn't mean it was saved.
+        savedOrReport(page) {
+            const flash = page?.props?.flash || {};
+            if (flash.status === false) {
+                this.submitError = flash.info || flash.message || 'The customer was not saved. Please try again.';
+                return false;
+            }
+            return true;
+        },
         submit() {
+            this.submitError = '';
             if (this.editable) {
                 this.form.put(`/customers/${this.form.id}`, {
                     preserveScroll: true,
-                    onSuccess: (response) => {
+                    onSuccess: (page) => {
+                        if (!this.savedOrReport(page)) return;
                         this.saveSuccess = true;
                         setTimeout(() => {
                             this.$emit('update', { id: this.form.id });
@@ -237,7 +255,8 @@ export default {
             } else {
                 this.form.post('/customers', {
                     preserveScroll: true,
-                    onSuccess: (response) => {
+                    onSuccess: (page) => {
+                        if (!this.savedOrReport(page)) return;
                         this.saveSuccess = true;
                         setTimeout(() => {
                             this.$emit('add', true);
@@ -256,6 +275,7 @@ export default {
             this.form.clearErrors();
             this.editable = false;
             this.saveSuccess = false;
+            this.submitError = '';
             this.showModal = false;
         }
     }

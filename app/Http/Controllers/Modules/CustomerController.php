@@ -49,7 +49,9 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function update(Request $request){
+    // Checked like a new customer, so a problem comes back as a message under
+    // the field rather than as a database error.
+    public function update(CustomerRequest $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->customer->update($request);
         });
@@ -62,17 +64,19 @@ class CustomerController extends Controller
         ]);
     }
 
+    // Called with axios from the list's Active switch, which reads the message
+    // off the JSON; a redirect would hand it the whole page instead.
     public function toggleActive(Request $request){
         $result = $this->handleTransaction(function () use ($request) {
             return $this->customer->toggleActive($request);
         });
 
-        return back()->with([
+        return response()->json([
             'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
-        ]);
+        ], $result['status'] ? 200 : 422);
     }
 
     public function orderSummary(Request $request, $id)
