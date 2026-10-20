@@ -290,9 +290,25 @@ class CheckRegisterClass
         ], $attributes));
     }
 
-    public function markCleared(Check $check): Check
+    /**
+     * $bankName fills in a bank the cheque never had.
+     *
+     * Clearing cannot proceed without one — the amount has to be posted
+     * somewhere — and a cheque recorded at the door often arrives with none,
+     * because nobody at the door knows which bank it will be deposited to.
+     * Until now that cheque could not be cleared from any screen: the only
+     * confirm took no input, so it failed on the missing bank every time and
+     * there was nowhere to supply it. A bank already on the cheque wins; this
+     * only fills a blank.
+     */
+    public function markCleared(Check $check, ?string $bankName = null): Check
     {
         $this->assertPending($check);
+
+        if (! $check->bank_name && filled($bankName)) {
+            $check->update(['bank_name' => trim($bankName)]);
+            $check->refresh();
+        }
 
         DB::transaction(function () use ($check) {
             if ($check->source_type === BankWithdrawal::class) {

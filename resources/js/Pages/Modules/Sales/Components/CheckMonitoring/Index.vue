@@ -66,6 +66,7 @@
                                 <th class="text-end">Amount</th>
                                 <th>Status</th>
                                 <th>Received By</th>
+                                <th v-if="canApprove" class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -93,6 +94,20 @@
                                         </div>
                                     </td>
                                     <td>{{ receivedBy(c) }}</td>
+                                    <td v-if="canApprove" class="text-center">
+                                        <button
+                                            v-if="canClear(c)"
+                                            class="action-btn approve"
+                                            v-b-tooltip.hover title="Confirm it cleared"
+                                            @click="openConfirm(c)"
+                                        >
+                                            <i class="ri-check-line"></i>
+                                        </button>
+                                        <!-- A bounce needs a reason and a
+                                             supervisor, both collected on the
+                                             register. Nothing half-done here. -->
+                                        <span v-else class="cm-no-action">&mdash;</span>
+                                    </td>
                                 </tr>
                                 <tr v-if="!rows.length">
                                     <td :colspan="columnCount">
@@ -114,18 +129,74 @@
                 <Pagination @fetch="fetch" :lists="rows.length" :links="links" :pagination="meta" />
             </div>
 
-            <!-- Why there are no buttons here. -->
-            <p class="cm-readonly">
+            <!-- Why there are no buttons here — or, for an approver, which
+                 one is missing and where it lives. -->
+            <p class="cm-readonly" v-if="!canApprove">
                 <i class="ri-information-line"></i>
                 This page is for following your checks. Confirming a check cleared, or recording a bounce, is done by
                 Accounting on the Check Register.
             </p>
+            <p class="cm-readonly" v-else>
+                <i class="ri-information-line"></i>
+                Confirming a cheque here is the same act as on the Check Register, and is recorded the same way.
+                A bounce is not: it needs a reason and a supervisor's authorization, so it stays on the
+                <Link href="/accounting/check-register">Check Register</Link>.
+            </p>
+        </div>
+
+        <!-- Modal chrome is global (_library-modal.scss); nothing here restyles it. -->
+        <div v-if="confirm.open" class="modal-overlay active" @click.self="closeConfirm">
+            <div class="modal-container" style="max-width: 460px">
+                <div class="modal-header">
+                    <div class="modal-header-icon"><i class="ri-bank-card-line"></i></div>
+                    <div>
+                        <h5 class="modal-title">Confirm cheque cleared</h5>
+                        <p class="modal-subtitle">
+                            {{ confirm.check?.check_number }} &middot; {{ money(confirm.check?.amount) }}
+                            &middot; {{ confirm.check?.customer?.name || 'customer' }}
+                        </p>
+                    </div>
+                    <button class="close-btn ms-auto" @click="closeConfirm" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="cm-confirm-line">
+                        Recording that the bank paid this cheque. The amount is posted and the customer's
+                        invoice is settled by it.
+                    </p>
+                    <!-- Only when the cheque never carried one. A cheque taken
+                         at the door often has no bank on it: nobody there knows
+                         where it will be deposited. -->
+                    <template v-if="!confirm.check?.bank_name">
+                        <label class="form-label" for="cm_bank_name">Which bank paid it?</label>
+                        <input
+                            id="cm_bank_name"
+                            v-model.trim="confirm.bank_name"
+                            type="text"
+                            class="form-control"
+                            placeholder="e.g. BDO"
+                            maxlength="255"
+                            @keyup.enter="saveConfirm"
+                        >
+                    </template>
+                    <p v-else class="cm-confirm-bank">Bank: <strong>{{ confirm.check.bank_name }}</strong></p>
+                    <p v-if="confirm.error" class="cm-confirm-error">{{ confirm.error }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="acct-btn-secondary" @click="closeConfirm">Cancel</button>
+                    <button class="acct-btn-primary" :disabled="confirm.saving" @click="saveConfirm">
+                        {{ confirm.saving ? 'Saving…' : 'Confirm cleared' }}
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </template>
 
 <script>
 import axios from "axios";
+import { Link } from "@inertiajs/vue3";
 import Pagination from "@/Shared/Components/Pagination.vue";
 import TableLoadingRow from "@/Shared/Components/TableLoadingRow.vue";
 import { listSortMixin } from "@/Shared/listSort.js";
@@ -134,13 +205,16 @@ import { listSortMixin } from "@/Shared/listSort.js";
  * The sales side of the check register: the same cheques, filters and layout
  * Accounting sees, but for following only.
  *
- * It is read-only on purpose. Confirming a cheque is an Accounting act — a rep
- * able to clear their own cheque would make "cleared" mean nothing — so there
- * are no action buttons here, and the server offers this route no way to act.
+ * Read-only for almost everyone. Confirming a cheque is an Accounting act — a
+ * rep able to clear their own cheque would make "cleared" mean nothing — so the
+ * only person who sees a button here is one who already holds the Check
+ * Register's approver grant, and it posts to that same endpoint, which refuses
+ * anyone else whatever this screen chooses to show.
+ *
  * A sales rep sees the cheques they took; a sales administrator sees them all.
  */
 export default {
-    components: { Pagination, TableLoadingRow },
+    components: { Pagination, TableLoadingRow, Link },
     mixins: [listSortMixin],
     data() {
         return {
@@ -152,6 +226,7 @@ export default {
             statuses: ['pending', 'cleared', 'bounced'],
             filters: { keyword: '', status: '', direction: '' },
             summary: {},
+            confirm: { open: false, check: null, bank_name: '', error: '', saving: false },
             cards: [
                 { status: 'pending', label: 'Pending', icon: 'ri-time-line' },
                 { status: 'cleared', label: 'Cleared', icon: 'ri-checkbox-circle-line' },
@@ -170,11 +245,24 @@ export default {
         seesAll() {
             return this.can('sales', 'admin');
         },
+        /**
+         * The Check Register's own grant, asked for by name: this screen adds a
+         * doorway to that approval, never a second way of being allowed it.
+         */
+        canApprove() {
+            return this.can('accounting', 'check_register', 'approver');
+        },
         columnCount() {
-            return this.seesAll ? 8 : 7;
+            return (this.seesAll ? 8 : 7) + (this.canApprove ? 1 : 0);
         },
     },
     mounted() {
+        // An approver comes here to work through what is waiting, so that is
+        // what they land on. Everyone else still arrives at the whole list.
+        if (this.canApprove) {
+            this.filters.status = 'pending';
+        }
+
         this.fetch();
         this.fetchSummary();
     },
@@ -226,6 +314,41 @@ export default {
         toggleStatus(status) {
             this.filters.status = this.filters.status === status ? '' : status;
             this.fetch();
+        },
+        /** Only a cheque from a customer, and only while it is still pending. */
+        canClear(check) {
+            return check.status === 'pending' && check.direction !== 'issued';
+        },
+        openConfirm(check) {
+            this.confirm = { open: true, check, bank_name: '', error: '', saving: false };
+        },
+        closeConfirm() {
+            this.confirm.open = false;
+        },
+        saveConfirm() {
+            if (!this.confirm.check?.bank_name && !this.confirm.bank_name) {
+                this.confirm.error = 'Name the bank that paid it — the amount has to be posted somewhere.';
+                return;
+            }
+
+            this.confirm.saving = true;
+            this.confirm.error = '';
+
+            axios.put(`/accounting/check-register/${this.confirm.check.id}/confirm`, {
+                bank_name: this.confirm.bank_name || null,
+            })
+                .then(() => {
+                    this.confirm.open = false;
+                    this.fetch();
+                    this.fetchSummary();
+                })
+                // The server refuses for its own reasons too — a deposit it
+                // cannot match, a cheque somebody else just cleared — and that
+                // message is more use than anything this screen could guess.
+                .catch(err => {
+                    this.confirm.error = err.response?.data?.message || 'Could not confirm this cheque.';
+                })
+                .finally(() => { this.confirm.saving = false; });
         },
         receivedBy(check) {
             const person = check.received_by;
@@ -347,6 +470,12 @@ export default {
     font-size: 0.76rem;
     color: var(--brt-muted);
 }
+
+/* Content inside the modal body only; the chrome around it is global. */
+.cm-no-action { color: var(--brt-muted); }
+.cm-confirm-line { font-size: 0.85rem; color: #16322e; margin-bottom: 0.9rem; }
+.cm-confirm-bank { font-size: 0.85rem; color: var(--brt-muted); margin: 0; }
+.cm-confirm-error { margin: 0.6rem 0 0; font-size: 0.78rem; color: #96231f; }
 
 @media (max-width: 767.98px) {
     .cm-summary { grid-template-columns: 1fr; }
