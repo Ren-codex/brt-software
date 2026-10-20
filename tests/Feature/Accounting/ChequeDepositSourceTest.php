@@ -122,15 +122,14 @@ class ChequeDepositSourceTest extends TestCase
         return Check::where('check_number', $number)->firstOrFail();
     }
 
+    /** Banked the way the office does it: by picking the cheque off the list. */
     private function depositCheque(User $as, string $number = 'CHK-DEP', array $extra = [])
     {
         return $this->actingAs($as)->postJson('/accounting/bank-deposits', array_merge([
             'bank_account_id' => $this->bank->id,
-            'amount' => 3000,
             'deposit_date' => now()->toDateString(),
             'deposit_type' => 'check',
-            'check_number' => $number,
-            'check_date' => now()->addDays(3)->toDateString(),
+            'check_ids' => [Check::where('check_number', $number)->latest('id')->firstOrFail()->id],
         ], $extra));
     }
 

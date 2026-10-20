@@ -57,6 +57,33 @@ class BankDepositCheckTest extends TestCase
         ], $overrides);
     }
 
+    /**
+     * A cheque on hand, and the payload that banks it.
+     *
+     * Cheques are picked off the register rather than typed out, so a deposit
+     * needs one to exist — and it is the cheque, not the caller, that says what
+     * the deposit is worth and when it falls due.
+     */
+    private function chequePayload(string $number, string $checkDate, float $amount = 5000): array
+    {
+        $cheque = \App\Models\Check::create([
+            'direction' => \App\Models\Check::DIRECTION_RECEIVED,
+            'check_number' => $number,
+            'check_date' => $checkDate,
+            'amount' => $amount,
+            'status' => \App\Models\Check::STATUS_PENDING,
+            'source_type' => \App\Models\Receipt::class,
+            'source_id' => random_int(10000, 99999),
+        ]);
+
+        return [
+            'bank_account_id' => $this->bankAccount()->id,
+            'deposit_date' => now()->toDateString(),
+            'deposit_type' => 'check',
+            'check_ids' => [$cheque->id],
+        ];
+    }
+
     public function test_cash_deposit_posts_its_journal_entry_immediately(): void
     {
         $deposit = $this->service()->createBankDeposit($this->payload());
@@ -68,11 +95,9 @@ class BankDepositCheckTest extends TestCase
 
     public function test_future_dated_check_creates_no_journal_entry(): void
     {
-        $deposit = $this->service()->createBankDeposit($this->payload([
-            'deposit_type' => 'check',
-            'check_date' => now()->addDays(10)->toDateString(),
-            'check_number' => 'CHK-001',
-        ]));
+        $deposit = $this->service()->createBankDeposit(
+            $this->chequePayload('CHK-001', now()->addDays(10)->toDateString())
+        );
 
         $this->assertSame(BankDeposit::STATUS_PENDING, $deposit->status);
         $this->assertNull($deposit->posted_at);
@@ -81,11 +106,9 @@ class BankDepositCheckTest extends TestCase
 
     public function test_check_dated_today_is_created_pending_and_posts_nothing(): void
     {
-        $deposit = $this->service()->createBankDeposit($this->payload([
-            'deposit_type' => 'check',
-            'check_date' => now()->toDateString(),
-            'check_number' => 'CHK-002',
-        ]));
+        $deposit = $this->service()->createBankDeposit(
+            $this->chequePayload('CHK-002', now()->toDateString())
+        );
 
         // A check dated today can still bounce — the date on the check is
         // not proof it cleared, so it is never posted on creation, only via
@@ -97,11 +120,9 @@ class BankDepositCheckTest extends TestCase
 
     public function test_the_command_never_posts_a_due_check(): void
     {
-        $deposit = $this->service()->createBankDeposit($this->payload([
-            'deposit_type' => 'check',
-            'check_date' => now()->addDays(3)->toDateString(),
-            'check_number' => 'CHK-003',
-        ]));
+        $deposit = $this->service()->createBankDeposit(
+            $this->chequePayload('CHK-003', now()->addDays(3)->toDateString())
+        );
 
         $this->travelTo(now()->addDays(3));
         $this->artisan('deposits:post-due-checks')->assertSuccessful();
@@ -113,11 +134,9 @@ class BankDepositCheckTest extends TestCase
 
     public function test_command_does_not_post_a_check_before_its_date(): void
     {
-        $deposit = $this->service()->createBankDeposit($this->payload([
-            'deposit_type' => 'check',
-            'check_date' => now()->addDays(5)->toDateString(),
-            'check_number' => 'CHK-004',
-        ]));
+        $deposit = $this->service()->createBankDeposit(
+            $this->chequePayload('CHK-004', now()->addDays(5)->toDateString())
+        );
 
         $this->artisan('deposits:post-due-checks')->assertSuccessful();
 
@@ -129,13 +148,9 @@ class BankDepositCheckTest extends TestCase
     public function test_a_pending_check_is_held_against_the_account_it_came_from(): void
     {
         $cash = $this->cashAccount();
-        $deposit = $this->service()->createBankDeposit($this->payload([
-            'cash_account_id' => $cash->id,
-            'amount' => 5000,
-            'deposit_type' => 'check',
-            'check_date' => now()->addDays(9)->toDateString(),
-            'check_number' => 'CHK-008',
-        ]));
+        $deposit = $this->service()->createBankDeposit(
+            $this->chequePayload('CHK-008', now()->addDays(9)->toDateString(), 5000)
+        );
 
         // A cheque never sat in the drawer, so the drawer is untouched by one
         // waiting to clear — whatever account the form happened to send.
@@ -171,11 +186,9 @@ class BankDepositCheckTest extends TestCase
 
     public function test_deleting_a_pending_deposit_does_not_error(): void
     {
-        $deposit = $this->service()->createBankDeposit($this->payload([
-            'deposit_type' => 'check',
-            'check_date' => now()->addDays(7)->toDateString(),
-            'check_number' => 'CHK-007',
-        ]));
+        $deposit = $this->service()->createBankDeposit(
+            $this->chequePayload('CHK-007', now()->addDays(7)->toDateString())
+        );
 
         $this->service()->deleteBankDeposit($deposit->id);
 

@@ -17,6 +17,7 @@ class BankDeposit extends Model
         'cash_account_id',
         'bank_account_id',
         'deposit_type',
+        'check_id',
         'amount',
         'deposit_date',
         'check_date',
@@ -32,6 +33,12 @@ class BankDeposit extends Model
         'check_date' => 'date',
         'posted_at' => 'datetime',
     ];
+
+    /** The cheque this deposit is carrying, for one made by picking it. */
+    public function check()
+    {
+        return $this->belongsTo(Check::class, 'check_id');
+    }
 
     /**
      * The date the money actually reaches the bank: a check only becomes good

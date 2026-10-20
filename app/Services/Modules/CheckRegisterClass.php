@@ -340,11 +340,22 @@ class CheckRegisterClass
             // the whole confirmation is refused (rolling back the receipt
             // confirmation above too) until a person resolves the ambiguity.
             if ($check->direction === Check::DIRECTION_RECEIVED) {
-                $matches = BankDeposit::where('deposit_type', BankDeposit::TYPE_CHECK)
+                // A deposit made by picking this cheque off the list says so
+                // outright, and there is nothing to match or disambiguate.
+                $linked = BankDeposit::where('check_id', $check->id)
                     ->where('status', BankDeposit::STATUS_PENDING)
-                    ->where('check_number', $check->check_number)
-                    ->where('amount', $check->amount)
                     ->get();
+
+                $matches = $linked->isNotEmpty()
+                    ? $linked
+                    // Written before deposits carried that link: all that is
+                    // left to go on is the number and the amount.
+                    : BankDeposit::where('deposit_type', BankDeposit::TYPE_CHECK)
+                        ->where('status', BankDeposit::STATUS_PENDING)
+                        ->whereNull('check_id')
+                        ->where('check_number', $check->check_number)
+                        ->where('amount', $check->amount)
+                        ->get();
 
                 if ($matches->count() > 1) {
                     throw ValidationException::withMessages([

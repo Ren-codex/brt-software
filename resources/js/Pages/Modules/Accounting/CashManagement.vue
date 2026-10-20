@@ -386,29 +386,38 @@
                             </div>
                         </div>
 
-                        <div v-if="bdIsCheck" class="row g-3 mt-0">
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Check Date <span class="text-danger">*</span></label>
-                                <input v-model="bdForm.check_date" type="date" class="form-control" />
-                                <div v-if="bdErrors.check_date" class="error-msg">{{ bdErrors.check_date[0] }}</div>
+            <!-- Cheques are not typed out: you tick the ones in your hand.
+                 Each becomes a deposit of its own, because the bank pays them
+                 one at a time and any one of them can bounce alone. -->
+                        <div v-if="bdIsCheck" class="bd-cheque-section">
+                            <label class="form-label mb-1">Cheques to deposit <span class="text-danger">*</span></label>
+                            <p class="form-text mt-0 mb-2">
+                                Tick the cheques going to the bank. Each one is recorded separately and stays
+                                pending until the bank pays it.
+                            </p>
+
+                            <div v-if="undepositedChecks.length === 0" class="bd-cheque-empty">
+                                No cheques on hand. One appears here as soon as a customer's cheque is recorded.
                             </div>
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Check Number <span class="text-danger">*</span></label>
-                                <input v-model="bdForm.check_number" type="text" class="form-control" placeholder="e.g. 0012345" />
-                                <div v-if="bdErrors.check_number" class="error-msg">{{ bdErrors.check_number[0] }}</div>
-                            </div>
-                            <div class="col-12">
-                                <p class="bd-check-note mb-0">
-                                    <i class="ri-time-line"></i>
-                                    <span v-if="bdCheckIsFuture">
-                                        This deposit will be held as <strong>Pending</strong> — the amount reaches the bank on
-                                        <strong>{{ bdForm.check_date }}</strong>, and the journal entry posts on that date.
+
+                            <div v-else class="bd-cheque-list">
+                                <label v-for="c in undepositedChecks" :key="c.id" class="bd-cheque-row">
+                                    <input type="checkbox" :checked="isChequeSelected(c)" @change="toggleCheque(c)" />
+                                    <span class="bd-cheque-info">
+                                        <span class="bd-cheque-no">{{ c.check_number || 'No number' }}</span>
+                                        <span class="bd-cheque-meta">
+                                            {{ c.customer }}<span v-if="c.check_date"> · dated {{ c.check_date }}</span>
+                                        </span>
                                     </span>
-                                    <span v-else>
-                                        The check date is today or earlier, so this posts immediately.
-                                    </span>
-                                </p>
+                                    <span class="bd-cheque-amount">{{ c.amount_formatted }}</span>
+                                </label>
                             </div>
+
+                            <div v-if="bdForm.check_ids.length" class="bd-cheque-total">
+                                {{ bdForm.check_ids.length }} selected
+                                <strong>{{ bdChequeTotalFormatted }}</strong>
+                            </div>
+                            <div v-if="bdErrors.check_ids" class="error-msg">{{ bdErrors.check_ids[0] }}</div>
                         </div>
 
                         <div v-if="undepositedRemittances.length > 0" class="bd-remit-section">
@@ -427,7 +436,8 @@
                         </div>
 
                         <div class="row g-3 mt-0">
-                            <div class="col-12 col-sm-6">
+                            <!-- A cheque is worth what is written on it. -->
+                            <div class="col-12 col-sm-6" v-if="!bdIsCheck">
                                 <label class="form-label">Amount <span class="text-danger">*</span></label>
                                 <input v-model="bdForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
                                 <div v-if="bdErrors.amount" class="error-msg">{{ bdErrors.amount[0] }}</div>
@@ -763,8 +773,9 @@ const emptyFtForm = () => ({
 const emptyBdForm = (cashAccounts = []) => ({
     deposit_date: new Date().toISOString().slice(0, 10),
     deposit_type: 'cash',
-    check_date: '',
-    check_number: '',
+    // The cheques ticked off the list, in place of a number and a date
+    // somebody types and nothing checks.
+    check_ids: [],
     cash_account_id: (cashAccounts.find(a => a.code === '1000') ?? cashAccounts[0])?.id ?? '',
     bank_account_id: '',
     amount: '',
@@ -795,6 +806,7 @@ export default {
         deposits:     { type: Array,  default: () => [] },
         withdrawals:  { type: Array,  default: () => [] },
         undepositedRemittances: { type: Array, default: () => [] },
+        undepositedChecks: { type: Array, default: () => [] },
         cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], cash_on_hand: 0, total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
         summaryCards: { type: Array,  default: () => [] },
         stats:        { type: Object, default: () => ({}) },
@@ -833,9 +845,14 @@ export default {
         wdIsCheck() {
             return this.wdForm.withdrawal_method === 'check';
         },
-        bdCheckIsFuture() {
-            if (!this.bdIsCheck || !this.bdForm.check_date) return false;
-            return this.bdForm.check_date > new Date().toISOString().slice(0, 10);
+        /** What the ticked cheques come to, for the line under the list. */
+        bdChequeTotal() {
+            return this.undepositedChecks
+                .filter(c => this.bdForm.check_ids.includes(c.id))
+                .reduce((sum, c) => sum + Number(c.amount || 0), 0);
+        },
+        bdChequeTotalFormatted() {
+            return `₱${this.bdChequeTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         },
         bdSelectedCashAccount() {
             return this.cashAccounts.find(a => a.id === this.bdForm.cash_account_id) ?? null;
@@ -901,6 +918,14 @@ export default {
         isRemittanceSelected(r) {
             return this.bdForm.remittance_ids.includes(r.id);
         },
+        isChequeSelected(c) {
+            return this.bdForm.check_ids.includes(c.id);
+        },
+        toggleCheque(c) {
+            const idx = this.bdForm.check_ids.indexOf(c.id);
+            if (idx === -1) this.bdForm.check_ids.push(c.id);
+            else this.bdForm.check_ids.splice(idx, 1);
+        },
         toggleRemittance(r) {
             const idx = this.bdForm.remittance_ids.indexOf(r.id);
             if (idx === -1) this.bdForm.remittance_ids.push(r.id);
@@ -919,7 +944,7 @@ export default {
                 // the cheque is sitting, and sending a leftover selection here
                 // would only look like the drawer was involved.
                 const payload = this.bdIsCheck
-                    ? { ...this.bdForm, cash_account_id: null }
+                    ? { ...this.bdForm, cash_account_id: null, amount: null }
                     : this.bdForm;
                 await axios.post('/accounting/bank-deposits', payload);
                 this.bdModal.open = false;
@@ -1191,4 +1216,31 @@ export default {
 .bd-remit-no  { font-weight: 700; color: var(--brt-ink); font-family: monospace; font-size: 0.78rem; }
 .bd-remit-rep { color: var(--brt-muted); font-size: 0.74rem; }
 .bd-remit-amount { font-weight: 700; color: #1e4d8c; white-space: nowrap; }
+
+/* The cheque picker mirrors the collections list above it, so the two read as
+   one idea: tick what this deposit is carrying. */
+.bd-cheque-section {
+    margin-top: 0.75rem; padding: 0.85rem 1rem;
+    background: #f7fbfa; border: 1px solid var(--brt-c-e0eeea); border-radius: 10px;
+}
+.bd-cheque-empty { font-size: 0.8rem; color: var(--brt-muted); }
+.bd-cheque-list {
+    max-height: 220px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 0.35rem;
+}
+.bd-cheque-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.45rem 0.6rem; border-radius: 8px;
+    background: #fff; border: 1px solid var(--brt-c-e5efec);
+    cursor: pointer; font-size: 0.82rem;
+}
+.bd-cheque-row:hover { border-color: var(--brt-c-a7d4c4); }
+.bd-cheque-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.bd-cheque-no { font-weight: 700; color: var(--brt-ink); font-family: monospace; font-size: 0.78rem; }
+.bd-cheque-meta { color: var(--brt-muted); font-size: 0.74rem; }
+.bd-cheque-amount { font-weight: 700; color: #1e4d8c; white-space: nowrap; }
+.bd-cheque-total {
+    display: flex; justify-content: space-between;
+    margin-top: 0.5rem; font-size: 0.78rem; color: var(--brt-muted);
+}
 </style>

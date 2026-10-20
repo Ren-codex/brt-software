@@ -38,21 +38,34 @@ class CheckClearingTest extends TestCase
         );
     }
 
-    /**
-     * A pending check-type deposit for the given Check, matched the same way
-     * CheckRegisterClass::markCleared() matches it back: same check_number
-     * and amount.
-     */
+    /** A pending deposit carrying this cheque, made the way the office does. */
     private function pendingDepositFor(Check $check): BankDeposit
     {
         return app(CashManagementService::class)->createBankDeposit([
-            'cash_account_id' => $this->cashAccount()->id,
             'bank_account_id' => $this->bankAccount()->id,
-            'amount' => $check->amount,
             'deposit_date' => now()->toDateString(),
             'deposit_type' => 'check',
+            'check_ids' => [$check->id],
+        ]);
+    }
+
+    /**
+     * A deposit of the shape written before deposits carried a cheque id:
+     * nothing but a number and an amount to find the cheque by.
+     */
+    private function legacyDepositFor(Check $check): BankDeposit
+    {
+        return BankDeposit::create([
+            'deposit_no' => 'BD-LEGACY-'.uniqid(),
+            'cash_account_id' => $this->cashAccount()->id,
+            'bank_account_id' => $this->bankAccount()->id,
+            'deposit_type' => BankDeposit::TYPE_CHECK,
+            'check_id' => null,
+            'amount' => $check->amount,
+            'deposit_date' => now()->toDateString(),
             'check_date' => now()->addDays(3)->toDateString(),
             'check_number' => $check->check_number,
+            'status' => BankDeposit::STATUS_PENDING,
         ]);
     }
 
@@ -157,8 +170,10 @@ class CheckClearingTest extends TestCase
     {
         $receipt = $this->receipt('Check', '000123');
         $check = app(CheckRegisterClass::class)->registerReceived($receipt, ['bank_name' => 'BDO']);
-        $depositA = $this->pendingDepositFor($check);
-        $depositB = $this->pendingDepositFor($check);
+        // Only old rows can collide now: a deposit made by picking the cheque
+        // names it outright, and the same cheque cannot be banked twice.
+        $depositA = $this->legacyDepositFor($check);
+        $depositB = $this->legacyDepositFor($check);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
 
