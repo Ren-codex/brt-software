@@ -71,7 +71,7 @@ class CashAccountOptionsTest extends TestCase
         return $slugs;
     }
 
-    public function test_cash_on_hand_accounts_are_offered(): void
+    public function test_only_cash_on_hand_is_offered(): void
     {
         $this->account('1000', 'cash', 'Cash');
         $this->account('1050', 'undeposited_collections', 'Undeposited Collections');
@@ -79,7 +79,10 @@ class CashAccountOptionsTest extends TestCase
         $slugs = $this->cashAccountSlugs();
 
         $this->assertContains('cash', $slugs);
-        $this->assertContains('undeposited_collections', $slugs);
+        // Collections in transit used to be offered too, which let money be
+        // deposited before it ever reached the office. It leaves that account
+        // one way now: remitted, and verified by whoever counted it.
+        $this->assertNotContains('undeposited_collections', $slugs);
     }
 
     public function test_bank_gl_accounts_are_never_offered_as_cash(): void

@@ -64,9 +64,19 @@ class CashManagementService
         return DB::transaction(function () use ($data) {
             $isCheck = ($data['deposit_type'] ?? BankDeposit::TYPE_CASH) === BankDeposit::TYPE_CHECK;
 
+            // Where the money is coming from, decided here rather than taken
+            // from the form. A cheque is not in anybody's drawer: it is sitting
+            // in collections in transit, debited there when it clears, and that
+            // is the account the deposit has to credit. Crediting Cash on Hand
+            // instead took money out of a drawer that never held it, and left
+            // the cheque in transit for good.
+            $sourceAccountId = $isCheck
+                ? $this->journal->inTransitAccount()->id
+                : $data['cash_account_id'];
+
             $deposit = BankDeposit::create([
                 'deposit_no' => $this->series->get('bank_deposit_no'),
-                'cash_account_id' => $data['cash_account_id'],
+                'cash_account_id' => $sourceAccountId,
                 'bank_account_id' => $data['bank_account_id'],
                 'deposit_type' => $isCheck ? BankDeposit::TYPE_CHECK : BankDeposit::TYPE_CASH,
                 'amount' => round((float) $data['amount'], 2),

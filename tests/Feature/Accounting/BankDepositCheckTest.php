@@ -126,10 +126,10 @@ class BankDepositCheckTest extends TestCase
         $this->assertCount(0, $this->entriesFor($deposit));
     }
 
-    public function test_available_balance_excludes_pending_check_deposits(): void
+    public function test_a_pending_check_is_held_against_the_account_it_came_from(): void
     {
         $cash = $this->cashAccount();
-        $this->service()->createBankDeposit($this->payload([
+        $deposit = $this->service()->createBankDeposit($this->payload([
             'cash_account_id' => $cash->id,
             'amount' => 5000,
             'deposit_type' => 'check',
@@ -137,13 +137,21 @@ class BankDepositCheckTest extends TestCase
             'check_number' => 'CHK-008',
         ]));
 
-        // The pending check has not credited cash yet, so the raw ledger balance
-        // still shows it. Available must not, or two pending checks could each
-        // pass the guard while together overdrawing the account.
-        $raw = $this->service()->getAccountBalance($cash->id);
-        $available = $this->service()->getAvailableCashBalance($cash->id);
+        // A cheque never sat in the drawer, so the drawer is untouched by one
+        // waiting to clear — whatever account the form happened to send.
+        $this->assertSame(
+            $this->service()->getAccountBalance($cash->id),
+            $this->service()->getAvailableCashBalance($cash->id)
+        );
 
-        $this->assertSame(round($raw - 5000, 2), $available);
+        // It is held against collections in transit, where the cheque is: two
+        // pending cheques must not each pass a guard they together overdraw.
+        $transit = app(\App\Services\Accounting\JournalEntryService::class)->inTransitAccount();
+        $this->assertSame($transit->id, $deposit->cash_account_id);
+        $this->assertSame(
+            round($this->service()->getAccountBalance($transit->id) - 5000, 2),
+            $this->service()->getAvailableCashBalance($transit->id)
+        );
     }
 
     public function test_available_balance_matches_ledger_when_nothing_is_pending(): void

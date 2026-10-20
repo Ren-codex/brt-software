@@ -283,7 +283,7 @@
                             <div class="header-icon"><i class="ri-bank-card-2-line"></i></div>
                             <div>
                                 <h4 class="header-title mb-0">Bank Deposits</h4>
-                                <p class="header-subtitle mb-0">Record cash deposited to bank. Posts DR Bank / CR Cash on Hand automatically.</p>
+                                <p class="header-subtitle mb-0">Cash banked from the drawer, and customers' cheques banked from collections in transit.</p>
                             </div>
                         </div>
                         <button v-if="can('accounting', 'cash_management', 'encoder')" class="acct-btn-primary" @click="openCreateDeposit">
@@ -361,7 +361,11 @@
                         <div class="modal-header-icon"><i class="ri-bank-card-2-line"></i></div>
                         <div>
                             <h5 class="modal-title">Record Bank Deposit</h5>
-                            <p class="modal-subtitle">Cash on hand deposited to a bank account. Posts DR Bank / CR Cash — a check posts on its check date.</p>
+                            <p class="modal-subtitle" v-if="bdIsCheck">
+                                A customer's cheque banked. Posts nothing until the bank pays it, and then out of
+                                collections in transit, never the cash drawer.
+                            </p>
+                            <p class="modal-subtitle" v-else>Cash on hand deposited to a bank account. Posts DR Bank / CR Cash on Hand.</p>
                         </div>
                         <button class="close-btn ms-auto" @click="bdModal.open = false"><i class="ri-close-line"></i></button>
                     </div>
@@ -428,7 +432,11 @@
                                 <input v-model="bdForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
                                 <div v-if="bdErrors.amount" class="error-msg">{{ bdErrors.amount[0] }}</div>
                             </div>
-                            <div class="col-12">
+            <!-- Only cash comes out of an account somebody picks. A cheque is
+                 the customer's money passing through: it is sitting in
+                 collections in transit, and that is what the deposit credits,
+                 whatever this form might have offered. -->
+                            <div class="col-12" v-if="!bdIsCheck">
                                 <label class="form-label">Cash Account (Source) <span class="text-danger">*</span></label>
                                 <select v-model="bdForm.cash_account_id" class="form-select">
                                     <option value="">-- Select cash GL account --</option>
@@ -441,6 +449,12 @@
                                     </span>
                                 </div>
                                 <div v-if="bdErrors.cash_account_id" class="error-msg">{{ bdErrors.cash_account_id[0] }}</div>
+                            </div>
+                            <div class="col-12" v-else>
+                                <div class="form-text mb-0">
+                                    Nothing leaves the cash drawer: the cheque is the customer's money, and it is
+                                    banked straight out of collections in transit. Cash on Hand does not change.
+                                </div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Deposit To (Bank Account) <span class="text-danger">*</span></label>
@@ -901,7 +915,13 @@ export default {
             this.bdSaving = true;
             this.bdErrors = {};
             try {
-                await axios.post('/accounting/bank-deposits', this.bdForm);
+                // A cheque has no cash source to send; the server knows where
+                // the cheque is sitting, and sending a leftover selection here
+                // would only look like the drawer was involved.
+                const payload = this.bdIsCheck
+                    ? { ...this.bdForm, cash_account_id: null }
+                    : this.bdForm;
+                await axios.post('/accounting/bank-deposits', payload);
                 this.bdModal.open = false;
                 router.reload({ preserveScroll: true });
             } catch (e) {

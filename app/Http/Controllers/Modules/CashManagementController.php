@@ -27,7 +27,15 @@ class CashManagementController extends Controller
      * Slugs are stable and explicit, so the list is defined by slug. Add a slug
      * here to offer a new cash account in the deposit and withdrawal modals.
      */
-    private const CASH_ACCOUNT_SLUGS = ['cash', 'undeposited_collections'];
+    /**
+     * What a deposit may be made from.
+     *
+     * Cash on Hand alone. Collections in transit are money reps say they took
+     * and the office has not counted; it leaves that account one way, by being
+     * remitted and verified. Offering it here was a second door out, and a
+     * deposit made through it moved money that had never arrived.
+     */
+    private const CASH_ACCOUNT_SLUGS = ['cash'];
 
     public function __construct(private CashManagementService $service) {}
 
@@ -279,7 +287,9 @@ class CashManagementController extends Controller
     public function storeDeposit(Request $request)
     {
         $data = $request->validate([
-            'cash_account_id'    => 'required|integer|exists:accounts,id',
+            // Only a cash deposit comes out of an account somebody chooses. A
+            // cheque's source is the cheque itself, and the service sets it.
+            'cash_account_id'    => 'required_if:deposit_type,cash|nullable|integer|exists:accounts,id',
             'bank_account_id'    => 'required|integer|exists:bank_accounts,id',
             'amount'             => 'required|numeric|min:0.01',
             'deposit_date'       => 'required|date',
@@ -293,16 +303,23 @@ class CashManagementController extends Controller
         ]);
 
         $amount = round((float) $data['amount'], 2);
-        // Pending check deposits are already spoken for, so they do not count
-        // as available cash.
-        $sourceBalance = $this->service->getAvailableCashBalance((int) $data['cash_account_id']);
-        if ($amount > $sourceBalance) {
-            $message = 'Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').';
 
-            return response()->json([
-                'message' => $message,
-                'errors'  => ['amount' => [$message]],
-            ], 422);
+        // Only cash is held to a balance. A cheque is the customer's money
+        // passing through, and it is not posted anywhere until it clears, so
+        // measuring it against the drawer refused every cheque on a day the
+        // drawer happened to be empty.
+        if (($data['deposit_type'] ?? 'cash') === 'cash') {
+            // Pending check deposits are already spoken for, so they do not
+            // count as available cash.
+            $sourceBalance = $this->service->getAvailableCashBalance((int) $data['cash_account_id']);
+            if ($amount > $sourceBalance) {
+                $message = 'Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').';
+
+                return response()->json([
+                    'message' => $message,
+                    'errors'  => ['amount' => [$message]],
+                ], 422);
+            }
         }
 
         $deposit = $this->service->createBankDeposit($data);
