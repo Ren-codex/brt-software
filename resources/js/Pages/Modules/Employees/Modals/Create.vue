@@ -226,24 +226,38 @@
                                  stays with the position above. -->
                             <div class="form-group">
                                 <label>Also works as <span class="optional">(optional)</span></label>
-                                <div class="extra-positions">
-                                    <label
-                                        v-for="position in otherPositions"
+                                <select
+                                    ref="extraPositionSelect"
+                                    v-model="extraPositionPick"
+                                    :disabled="!form.position_id || !selectableExtraPositions.length"
+                                    @change="addExtraPosition"
+                                >
+                                    <option value="" disabled>
+                                        {{ extraPositionPlaceholder }}
+                                    </option>
+                                    <option
+                                        v-for="position in selectableExtraPositions"
                                         :key="position.value"
-                                        class="extra-position"
-                                        :class="{ picked: form.extra_position_ids.includes(position.value) }"
+                                        :value="position.value"
                                     >
-                                        <input
-                                            type="checkbox"
-                                            :value="position.value"
-                                            :checked="form.extra_position_ids.includes(position.value)"
-                                            @change="toggleExtraPosition(position.value)"
-                                        >
                                         {{ position.title }}
-                                    </label>
-                                    <p v-if="!otherPositions.length" class="field-hint mb-0">
-                                        Pick a position above first.
-                                    </p>
+                                    </option>
+                                </select>
+                                <!-- What they have been given, each one removable:
+                                     a list you can read at a glance, rather than a
+                                     closed dropdown hiding its own answer. -->
+                                <div class="extra-positions" v-if="pickedExtraPositions.length">
+                                    <span v-for="position in pickedExtraPositions" :key="position.value" class="extra-chip">
+                                        {{ position.title }}
+                                        <button
+                                            type="button"
+                                            class="extra-chip-remove"
+                                            :aria-label="'Remove ' + position.title"
+                                            @click="removeExtraPosition(position.value)"
+                                        >
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                    </span>
                                 </div>
                                 <small class="field-hint">
                                     Only changes which lists they appear in — drivers, sales reps. Pay is unaffected.
@@ -378,6 +392,8 @@ export default {
                 is_blacklisted: 0,
                 option: 'lists'
             }),
+            // Bound to the dropdown only long enough to add a chip.
+            extraPositionPick: '',
             showModal: false,
             editable: false,
             saveSuccess: false,
@@ -393,12 +409,49 @@ export default {
 
             return (this.dropdowns.positions || []).filter(p => p.value !== this.form.position_id);
         },
+        /** Still on offer: not the paying one, and not already given. */
+        selectableExtraPositions() {
+            return this.otherPositions.filter(p => !this.form.extra_position_ids.includes(p.value));
+        },
+        pickedExtraPositions() {
+            return (this.dropdowns.positions || []).filter(p => this.form.extra_position_ids.includes(p.value));
+        },
+        extraPositionPlaceholder() {
+            if (!this.form.position_id) return 'Pick a position above first';
+            if (!this.selectableExtraPositions.length) return 'No other positions left';
+
+            return 'Add a position…';
+        },
+    },
+    watch: {
+        // Promoting a covered job to the paying one leaves it in both places.
+        // The server strips it either way; this keeps the screen honest.
+        'form.position_id'(id) {
+            this.form.extra_position_ids = this.form.extra_position_ids.filter(x => x !== id);
+        },
     },
     methods: {
-        toggleExtraPosition(id) {
-            const idx = this.form.extra_position_ids.indexOf(id);
-            if (idx === -1) this.form.extra_position_ids.push(id);
-            else this.form.extra_position_ids.splice(idx, 1);
+        addExtraPosition() {
+            const id = this.extraPositionPick;
+            if (id && !this.form.extra_position_ids.includes(id)) {
+                this.form.extra_position_ids.push(id);
+            }
+
+            // Back to the placeholder, ready for the next one. The option just
+            // chosen leaves the list, and a browser left to itself then shows
+            // whichever option moved into its place — so the box would read
+            // "Cashier" when nothing of the sort had been picked. Clearing the
+            // model is not enough: it already is clear by then, so nothing
+            // re-renders. The element has to be put back by hand.
+            this.extraPositionPick = '';
+            this.$nextTick(() => {
+                if (this.$refs.extraPositionSelect) {
+                    this.$refs.extraPositionSelect.selectedIndex = 0;
+                }
+            });
+        },
+        removeExtraPosition(id) {
+            this.form.extra_position_ids = this.form.extra_position_ids.filter(x => x !== id);
         },
         show() {
             this.form.reset();
@@ -1235,22 +1288,32 @@ input:checked + .toggle-slider:before {
     gap: 0.4rem;
     padding: 0.5rem 0;
 }
-.extra-position {
+.extra-chip {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.65rem;
-    border: 1px solid #d9e6e1;
+    gap: 0.3rem;
+    padding: 0.28rem 0.4rem 0.28rem 0.7rem;
+    border: 1px solid #3d8d7a;
     border-radius: 999px;
     font-size: 0.8rem;
-    cursor: pointer;
-    background: #fff;
-}
-.extra-position.picked {
-    border-color: #3d8d7a;
     background: rgba(61, 141, 122, 0.08);
     color: #16322e;
 }
+.extra-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #3d8d7a;
+    cursor: pointer;
+    line-height: 1;
+}
+.extra-chip-remove:hover { background: rgba(61, 141, 122, 0.18); }
 .field-hint {
     display: block;
     font-size: 0.72rem;
