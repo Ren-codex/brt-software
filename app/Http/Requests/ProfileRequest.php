@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ListRole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,10 +11,6 @@ use Illuminate\Validation\Rule;
 // fields the profile page has no way to send.
 class ProfileRequest extends FormRequest
 {
-    // Accounts whose profile has nothing required: any field may be left
-    // blank, and the mobile number's format isn't enforced.
-    protected const ADMIN_ROLES = ['Administrator', 'Super Admin', 'Mini Admin'];
-
     public function authorize(): bool
     {
         return true;
@@ -25,6 +22,8 @@ class ProfileRequest extends FormRequest
         // A number already on another employee is still refused, admin or not.
         $uniqueMobile = Rule::unique('employees', 'mobile')->ignore($employeeId);
 
+        // An admin's profile has nothing required: any field may be left
+        // blank, and the mobile number's format isn't enforced.
         if ($this->isAdmin()) {
             return [
                 'firstname' => 'nullable|string|max:255',
@@ -50,7 +49,7 @@ class ProfileRequest extends FormRequest
     {
         return $this->user()->roles()
             ->where('user_roles.is_active', 1)
-            ->whereIn('name', self::ADMIN_ROLES)
+            ->whereIn('name', ListRole::ADMIN_ROLES)
             ->exists();
     }
 
