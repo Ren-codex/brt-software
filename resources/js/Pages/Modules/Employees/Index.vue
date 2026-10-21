@@ -1,9 +1,9 @@
 <template>
-    <PageHeader :title="currentView === 'list' ? 'Employee Management' : 'Employee Details'" :pageTitle="currentView === 'list' ? 'List' : 'Details'" />
+    <PageHeader title="Employee Management" pageTitle="List" />
     <BRow>
         <div class="col-md-12">
             <div class="library-card">
-                <div class="library-card-header" v-if="currentView === 'list'">
+                <div class="library-card-header">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-shopping-cart-line fs-24"></i>
@@ -20,7 +20,7 @@
                 </div>
 
 
-                <div class="library-card-body" v-if="currentView === 'list'">
+                <div class="library-card-body">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
@@ -150,6 +150,9 @@
 
                                         <td>
                                             <div class="action-buttons" @click.stop>
+                                                <b-button @click="openView(list)" variant="light" v-b-tooltip.hover title="View" size="sm" class="btn-icon">
+                                                    <i class="ri-eye-line"></i>
+                                                </b-button>
                                                 <b-button v-if="can('employees', 'encoder')" @click="openEdit(list,index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
@@ -174,14 +177,45 @@
                     </div>
                 </div>
 
-                
-
-                <div v-if="currentView === 'details'">
-                    <Details @update="fetch()" :employee="selectedEmployee" :dropdowns="dropdowns" :backToList="backToList" ref="details" />
-                </div>
             </div>
         </div>
     </BRow>
+
+    <!-- View Employee: full screen over the list, so closing it lands back
+         exactly where the list was. -->
+    <div v-if="viewOpen" class="modal-overlay active" @click.self="backToList">
+        <div class="modal-container employee-view-modal" ref="fullscreenTarget" @click.stop>
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="modal-header-icon"><i class="ri-user-3-line"></i></div>
+                    <div>
+                        <h5 class="mb-0">{{ selectedEmployee.fullname || 'Employee' }}</h5>
+                        <small>{{ selectedEmployee.position?.title || 'Employee profile' }}</small>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button v-if="can('employees', 'encoder')" type="button" class="btn btn-sm btn-light"
+                        @click="$refs.details.openEdit(selectedEmployee)">
+                        <i class="ri-pencil-fill"></i> Edit
+                    </button>
+                    <!-- The modal alone takes the whole screen; the page stays behind it. -->
+                    <button type="button" class="close-btn" @click="toggleModalFullscreen"
+                        :title="modalFullscreen ? 'Exit full screen' : 'Full screen'"
+                        :aria-label="modalFullscreen ? 'Exit full screen' : 'Full screen'">
+                        <i :class="modalFullscreen ? 'bx bx-exit-fullscreen' : 'bx bx-fullscreen'"></i>
+                    </button>
+                    <button class="close-btn" type="button" @click="backToList" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <Details @update="fetch()" :employee="selectedEmployee" :dropdowns="dropdowns" :backToList="backToList"
+                    :embedded="true" ref="details" />
+            </div>
+        </div>
+    </div>
+
     <Create @add="fetch()" @update="fetch()"  :dropdowns="dropdowns" ref="create" />
 </template>
 <script>
@@ -193,9 +227,11 @@ import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Create from './Modals/Create.vue';
 import Details from './Details.vue';
+import { modalFullscreenMixin } from '@/Shared/modalFullscreen.js';
 
 export default {
     components: { PageHeader, Pagination, Multiselect, Create, Details, DeleteModal, TableLoadingRow },
+    mixins: [modalFullscreenMixin],
     props: ['dropdowns'],
     data() {
         return {
@@ -209,7 +245,8 @@ export default {
             index: null,
             selectedRow: null,
             selectedEmployee: {},
-            currentView: 'list',
+            // The View Employee modal.
+            viewOpen: false,
             units: [],
             deleteModalTitle: 'Delete Employee',
             deleteModalMessage: 'Are you sure you want to delete this employee? This action cannot be undone.',
@@ -245,7 +282,19 @@ export default {
     created() {
         this.fetch();
     },
+    mounted() {
+        document.addEventListener('keydown', this.onEscape);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this.onEscape);
+    },
     methods: {
+        /** Escape closes View Employee, unless its Edit form is open on top. */
+        onEscape(event) {
+            if (event.key !== 'Escape' || !this.viewOpen) return;
+            if (this.$refs.details?.$refs?.create?.showModal) return;
+            this.backToList();
+        },
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
@@ -306,7 +355,7 @@ export default {
                         this.links = response.data.links;
 
                         // Keep details view in sync after edit/save.
-                        if (this.currentView === 'details' && this.selectedEmployee?.id) {
+                        if (this.viewOpen && this.selectedEmployee?.id) {
                             const updatedEmployee = this.lists.find(item => item.id === this.selectedEmployee.id);
                             if (updatedEmployee) {
                                 this.selectedEmployee = updatedEmployee;
@@ -369,11 +418,12 @@ export default {
 
         openView(data) {
             this.selectedEmployee = data;
-            this.currentView = 'details';
+            this.viewOpen = true;
         },
 
         backToList() {
-            this.currentView = 'list';
+            this.exitModalFullscreen();
+            this.viewOpen = false;
             this.selectedEmployee = {};
             this.selectedRow = null;
         },
@@ -405,6 +455,24 @@ export default {
 </script>
 
 <style scoped>
+/* View Employee fills the screen; the chrome itself comes from _library-modal.scss. */
+.employee-view-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+}
+
+.employee-view-modal .header-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #c4d9d2;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
 /* Sortable Header */
 .search-section {
     display: flex;

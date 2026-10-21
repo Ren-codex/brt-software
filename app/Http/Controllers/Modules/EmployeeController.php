@@ -10,6 +10,7 @@ use App\Traits\HandlesTransaction;
 use App\Http\Controllers\Controller;
 use App\Models\SalesOrderIncentive;
 use App\Services\Modules\EmployeeClass;
+use App\Services\Modules\EmployeeOverviewClass;
 use App\Http\Requests\Modules\EmployeeRequest;
 use App\Services\System\Permission\PermissionService;
 
@@ -99,6 +100,11 @@ class EmployeeController extends Controller
             'message' => $result['message'],
             'status' => $result['status'],
         ]);
+    }
+
+    public function overview(Request $request, EmployeeOverviewClass $overview, $id)
+    {
+        return response()->json($overview->for(Employee::findOrFail($id), $request->user()));
     }
 
     public function incentivesSummary(Request $request, $id)

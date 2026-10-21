@@ -1,6 +1,8 @@
 <template>
-    <div class="employee-details-page">
-        <div class="details-topbar">
+    <div class="employee-details-page" :class="{ 'is-embedded': embedded }">
+        <!-- Inside the View Employee modal, the modal's own header carries
+             the title, Edit and Close. -->
+        <div class="details-topbar" v-if="!embedded">
             <div class="details-title-block">
                 <h1>Employee Profile</h1>
                 <p>View and manage employee records, account access, and payroll-related metrics.</p>
@@ -123,6 +125,61 @@
             </aside>
 
             <section class="details-main">
+                <!-- Their dealings across the system in one card. Each part is
+                     there only if the viewer may see that module. -->
+                <div class="details-card" v-if="overviewLoading || glanceTiles.length">
+                    <div class="details-card-header details-card-header-between">
+                        <h3>
+                            <i class="ri-dashboard-3-line"></i>
+                            At a Glance
+                        </h3>
+                        <span v-if="overviewLoading" class="glance-loading">
+                            <i class="ri-loader-4-line glance-spin"></i> Loading…
+                        </span>
+                    </div>
+
+                    <div class="glance-tiles">
+                        <div v-for="tile in glanceTiles" :key="tile.key" class="details-stat">
+                            <div class="details-stat-label">{{ tile.label }}</div>
+                            <div class="glance-value">{{ tile.value }}</div>
+                            <div class="glance-sub">{{ tile.sub }}</div>
+                        </div>
+                    </div>
+
+                    <template v-if="glanceTabs.length">
+                        <div class="glance-tabs">
+                            <button v-for="tab in glanceTabs" :key="tab.key" type="button" class="glance-tab"
+                                :class="{ active: currentGlanceTab?.key === tab.key }" @click="glanceTab = tab.key">
+                                <i :class="tab.icon"></i>
+                                {{ tab.label }}
+                                <span class="glance-tab-count">{{ tab.rows.length }}</span>
+                            </button>
+                        </div>
+                        <div class="glance-table-wrap">
+                            <table class="glance-table">
+                                <thead>
+                                    <tr>
+                                        <th v-for="col in currentGlanceTab.columns" :key="col.key"
+                                            :class="{ 'text-end': col.type === 'money' || col.type === 'number' }">{{ col.label }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="!currentGlanceTab.rows.length">
+                                        <td :colspan="currentGlanceTab.columns.length" class="glance-empty">{{ currentGlanceTab.empty }}</td>
+                                    </tr>
+                                    <tr v-for="(row, i) in currentGlanceTab.rows" :key="i">
+                                        <td v-for="col in currentGlanceTab.columns" :key="col.key"
+                                            :class="{ 'text-end': col.type === 'money' || col.type === 'number', 'fw-semibold': col.key === 'reference' }">
+                                            {{ glanceCell(row[col.key], col.type) }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="glance-note">The latest {{ currentGlanceTab.rows.length || 'few' }} shown.</p>
+                    </template>
+                </div>
+
                 <div v-if="employee.user" class="details-card">
                     <div class="details-card-header details-card-header-between">
                         <h3>
@@ -183,21 +240,29 @@
                             </select>
                         </div>
                     </div>
+                    <!-- From /employees/{id}/incentives-summary for the month picked;
+                         the change is against the month before. -->
                     <div class="details-stat-grid">
                         <div class="details-stat">
                             <div class="details-stat-label">Total Amount Earned This Month</div>
-                            <div class="details-stat-value">PHP 1,250</div>
-                            <div class="details-stat-trend details-stat-trend-up">+5%</div>
+                            <div class="details-stat-value">{{ formatCurrency(incentiveSummary.total_amount) }}</div>
+                            <div class="details-stat-trend" :class="trendClass(incentiveSummary.amount_change_percent)">
+                                {{ formatChange(incentiveSummary.amount_change_percent) }}
+                            </div>
                         </div>
                         <div class="details-stat">
                             <div class="details-stat-label">Total Rice Sold</div>
-                            <div class="details-stat-value">1250 kg</div>
-                            <div class="details-stat-trend details-stat-trend-up">+15%</div>
+                            <div class="details-stat-value">{{ Number(incentiveSummary.total_rice_sold_kg || 0).toLocaleString('en-PH') }} kg</div>
+                            <div class="details-stat-trend" :class="trendClass(incentiveSummary.rice_change_percent)">
+                                {{ formatChange(incentiveSummary.rice_change_percent) }}
+                            </div>
                         </div>
                         <div class="details-stat">
                             <div class="details-stat-label">Total Points Earned</div>
-                            <div class="details-stat-value">50</div>
-                            <div class="details-stat-trend details-stat-trend-up">+10%</div>
+                            <div class="details-stat-value">{{ Number(incentiveSummary.total_points_earned || 0).toLocaleString('en-PH') }}</div>
+                            <div class="details-stat-trend" :class="trendClass(incentiveSummary.points_change_percent)">
+                                {{ formatChange(incentiveSummary.points_change_percent) }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -360,10 +425,15 @@ import Create from './Modals/Create.vue';
 import LoanDetails from './Modals/LoanDetails.vue';
 export default {
     components: { Create, LoanDetails },
-    props: ['employee', 'backToList', 'dropdowns'],
+    // embedded: shown inside the View Employee modal rather than as a page.
+    props: ['employee', 'backToList', 'dropdowns', 'embedded'],
     name: 'EmployeeDetails',
     data() {
         return {
+            // GET /employees/{id}/overview: null parts are ones the viewer may not see.
+            overview: {},
+            overviewLoading: false,
+            glanceTab: null,
             loanCollapsed: false,
             showLoanHistoryModal: false,
             loans: [],
@@ -610,9 +680,100 @@ export default {
         },
         loanStartDate() {
             return this.currentLoan?.approved_at || this.currentLoan?.created_at || null;
-        }
+        },
+        /** The headline figures, one per part of the overview the viewer may see. */
+        glanceTiles() {
+            const o = this.overview;
+            const tiles = [];
+            if (o.payroll) tiles.push({ key: 'payroll', label: 'Net Pay This Year',
+                value: this.formatCurrency(o.payroll.year_net), sub: `${o.payroll.count} payslip${o.payroll.count === 1 ? '' : 's'} · approved payrolls only` });
+            if (o.sales) tiles.push({ key: 'sales', label: 'Sales This Month',
+                value: this.formatCurrency(o.sales.month_total), sub: `${o.sales.month_count} order${o.sales.month_count === 1 ? '' : 's'} · ${o.sales.count} all time` });
+            if (o.deliveries) tiles.push({ key: 'deliveries', label: 'Deliveries This Month',
+                value: String(o.deliveries.month_count), sub: `${o.deliveries.count} all time` });
+            if (o.cash) tiles.push({ key: 'cash', label: 'Cash in Hand',
+                value: this.formatCurrency(o.cash.total), sub: `${o.cash.count} receipt${o.cash.count === 1 ? '' : 's'} not yet handed over` });
+            if (o.account) tiles.push({ key: 'account', label: 'Last Sign-in',
+                value: o.account.last_sign_in ? this.formatDate(o.account.last_sign_in) : 'Never',
+                sub: o.account.failed_last_30_days ? `${o.account.failed_last_30_days} failed attempt(s) in 30 days` : 'No failed attempts in 30 days' });
+            return tiles;
+        },
+        /** The recent lists, as tabs under the tiles. */
+        glanceTabs() {
+            const o = this.overview;
+            const order = [
+                { key: 'reference', label: 'SO No.' }, { key: 'date', label: 'Date', type: 'date' },
+                { key: 'customer', label: 'Customer' }, { key: 'amount', label: 'Amount', type: 'money' },
+                { key: 'status', label: 'Status' },
+            ];
+            return [
+                o.payroll && { key: 'payroll', label: 'Payslips', icon: 'ri-wallet-3-line', rows: o.payroll.recent,
+                    empty: 'No payslips yet.', columns: [
+                        { key: 'reference', label: 'Payroll No.' }, { key: 'period', label: 'Period' },
+                        { key: 'days', label: 'Days', type: 'number' }, { key: 'net', label: 'Net Pay', type: 'money' },
+                        { key: 'status', label: 'Status' }] },
+                o.sales && { key: 'sales', label: 'Sales', icon: 'ri-shopping-cart-line', rows: o.sales.recent,
+                    empty: 'No sales as rep yet.', columns: order },
+                o.deliveries && { key: 'deliveries', label: 'Deliveries', icon: 'ri-truck-line', rows: o.deliveries.recent,
+                    empty: 'No deliveries driven yet.', columns: order.map(c => c.key === 'date' ? { ...c, label: 'Delivered' } : c) },
+                o.cash && { key: 'cash', label: 'Cash in Hand', icon: 'ri-hand-coin-line', rows: o.cash.recent,
+                    empty: 'Holding nothing — all collections handed over.', columns: [
+                        { key: 'reference', label: 'Receipt' }, { key: 'date', label: 'Date', type: 'date' },
+                        { key: 'customer', label: 'Customer' }, { key: 'mode', label: 'Mode' },
+                        { key: 'amount', label: 'Amount', type: 'money' }] },
+            ].filter(Boolean);
+        },
+        currentGlanceTab() {
+            return this.glanceTabs.find(tab => tab.key === this.glanceTab) || this.glanceTabs[0];
+        },
+    },
+    watch: {
+        // The modal can switch to another employee without remounting.
+        'employee.id': {
+            handler(id) {
+                if (!id) return;
+                this.fetchOverview();
+                this.fetchIncentives();
+            },
+            immediate: true,
+        },
+        selectedMonth() { this.fetchIncentives(); },
+        selectedYear() { this.fetchIncentives(); },
     },
     methods: {
+        fetchOverview() {
+            const id = this.employee?.id;
+            this.overviewLoading = true;
+            axios.get(`/employees/${id}/overview`)
+                .then(res => { if (this.employee?.id === id) this.overview = res.data || {}; })
+                .catch(() => { if (this.employee?.id === id) this.overview = {}; })
+                .finally(() => { if (this.employee?.id === id) this.overviewLoading = false; });
+        },
+        fetchIncentives() {
+            const id = this.employee?.id;
+            if (!id) return;
+            axios.get(`/employees/${id}/incentives-summary`, { params: { year: this.selectedYear, month: this.selectedMonth } })
+                .then(res => {
+                    if (this.employee?.id !== id) return;
+                    this.incentiveSummary = { ...res.data.totals, ...res.data.changes };
+                })
+                .catch(() => {});
+        },
+        glanceCell(value, type) {
+            if (value === null || value === undefined || value === '') return '—';
+            if (type === 'money') return this.formatCurrency(value);
+            if (type === 'date') return this.formatDate(value);
+            if (type === 'number') return Number(value).toLocaleString('en-PH', { maximumFractionDigits: 2 });
+            return value;
+        },
+        formatChange(percent) {
+            const value = Number(percent || 0);
+            return `${value > 0 ? '+' : ''}${value.toLocaleString('en-PH', { maximumFractionDigits: 1 })}% vs last month`;
+        },
+        trendClass(percent) {
+            const value = Number(percent || 0);
+            return value > 0 ? 'details-stat-trend-up' : value < 0 ? 'details-danger' : 'details-stat-trend-flat';
+        },
         toNumber(value, fallback = 0) {
             if (value === null || value === undefined || value === '') {
                 return fallback;
@@ -1651,5 +1812,172 @@ export default {
         flex-direction: column;
     }
 
+}
+
+/* Inside the View Employee modal: the modal gives the padding, and the
+   profile panel and the details each scroll on their own, so the profile
+   stays in view while the details are read. (The page's 110% zoom is left
+   off here; it threw the heights out.) */
+.employee-details-page.is-embedded {
+    zoom: 1;
+    padding: 0;
+    max-width: none;
+    height: 100%;
+}
+
+.employee-details-page.is-embedded .details-grid {
+    height: 100%;
+    align-items: stretch;
+}
+
+.employee-details-page.is-embedded .details-sidebar,
+.employee-details-page.is-embedded .details-main {
+    position: static;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+}
+
+/* Stacked into one column on a narrow screen: one scroll again. */
+@media (max-width: 1140px) {
+    .employee-details-page.is-embedded,
+    .employee-details-page.is-embedded .details-grid {
+        height: auto;
+    }
+
+    .employee-details-page.is-embedded .details-sidebar,
+    .employee-details-page.is-embedded .details-main {
+        overflow-y: visible;
+    }
+}
+
+.details-stat-trend-flat {
+    color: var(--ink-500);
+}
+
+/* At a Glance */
+.glance-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.glance-value {
+    margin-top: 8px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ink-900);
+}
+
+.glance-sub {
+    margin-top: 3px;
+    font-size: 0.74rem;
+    color: var(--ink-500);
+}
+
+.glance-loading {
+    font-size: 0.78rem;
+    color: var(--ink-500);
+}
+
+.glance-spin {
+    display: inline-block;
+    animation: glance-spin 0.9s linear infinite;
+}
+
+@keyframes glance-spin {
+    to { transform: rotate(360deg); }
+}
+
+.glance-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 14px 0 10px;
+    padding: 3px;
+    border-radius: 10px;
+    background: var(--brt-c-eaf2f0);
+}
+
+.glance-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--brt-c-4a7a70);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.38rem 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+}
+
+.glance-tab:hover:not(.active) {
+    background: rgba(var(--brt-primary-rgb), 0.1);
+    color: var(--brt-primary);
+}
+
+.glance-tab.active {
+    background: var(--brt-primary);
+    color: #fff;
+}
+
+.glance-tab-count {
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.08);
+    padding: 0 0.4rem;
+    font-size: 0.7rem;
+}
+
+.glance-tab.active .glance-tab-count {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.glance-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--brt-c-e2eeeb);
+    border-radius: 12px;
+}
+
+.glance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.glance-table th {
+    padding: 8px 10px;
+    background: var(--surface-soft);
+    color: var(--ink-500);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.glance-table td {
+    padding: 8px 10px;
+    border-top: 1px solid var(--brt-c-e2eeeb);
+    color: var(--ink-700);
+}
+
+.glance-empty {
+    padding: 16px !important;
+    text-align: center;
+    color: var(--ink-500) !important;
+}
+
+.glance-note {
+    margin: 6px 0 0;
+    font-size: 0.72rem;
+    color: var(--ink-500);
 }
 </style>
