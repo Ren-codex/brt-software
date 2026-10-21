@@ -1069,16 +1069,23 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p class="order-print-lead">
+                <p class="order-print-lead" v-if="createdOrderNeedsApproval">
+                    <strong>{{ createdOrderNumber || 'The order' }}</strong> has been saved and sent for
+                    credit approval. It can be printed once an approver clears it — until then nothing
+                    goes out on it.
+                </p>
+                <p class="order-print-lead" v-else>
                     <strong>{{ createdOrderNumber || 'The order' }}</strong> has been saved.
                     Print it for the driver to take on the delivery?
                 </p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-cancel" @click="skipOrderPrint">
-                    <i class="ri-close-line me-1"></i>Not Now
+                    <i class="ri-close-line me-1"></i>{{ createdOrderNeedsApproval ? 'Close' : 'Not Now' }}
                 </button>
-                <button type="button" class="btn btn-save" @click="printOrderNow" :disabled="!createdOrderId">
+                <button type="button" class="btn btn-save" @click="printOrderNow"
+                    :disabled="!createdOrderId || createdOrderNeedsApproval"
+                    :title="createdOrderNeedsApproval ? 'Printable once the credit is approved' : null">
                     <i class="ri-printer-line me-1"></i>Print Sales Order
                 </button>
             </div>
@@ -1153,6 +1160,8 @@ export default {
             showOrderPrintPrompt: false,
             createdOrderId: null,
             createdOrderNumber: null,
+            // Saved on credit and waiting on an approver: printable later, not now.
+            createdOrderNeedsApproval: false,
             cashReceivedAmount: null,
             cashChargeError: null,
             creditVerificationError: null,
@@ -1843,6 +1852,10 @@ export default {
                     if (createdOrder?.id) {
                         this.createdOrderId = createdOrder.id;
                         this.createdOrderNumber = createdOrder.so_number || null;
+                        // A credit sale nobody has approved is not paperwork
+                        // yet, and the server refuses to print it. Offering
+                        // the button anyway only hands someone an error.
+                        this.createdOrderNeedsApproval = !!createdOrder.credit_pending;
                         this.showOrderPrintPrompt = true;
                     }
                 },
@@ -2004,6 +2017,7 @@ export default {
             this.showOrderPrintPrompt = false;
             this.createdOrderId = null;
             this.createdOrderNumber = null;
+            this.createdOrderNeedsApproval = false;
         },
         printReceiptNow() {
             if (this.pendingReceiptId) {
