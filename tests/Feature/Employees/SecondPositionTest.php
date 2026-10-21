@@ -79,6 +79,19 @@ class SecondPositionTest extends TestCase
         $this->assertContains($bothJobs->id, $this->dropdown('sales_reps'));
     }
 
+    public function test_a_driver_who_also_reps_appears_in_both_lists(): void
+    {
+        // The other way round: driving is the job, repping is covered. Both
+        // lists should name him, and he is paid as a driver.
+        $driverWhoReps = $this->employee($this->driver, [$this->rep]);
+
+        $this->assertContains($driverWhoReps->id, $this->dropdown('drivers'));
+        $this->assertContains($driverWhoReps->id, $this->dropdown('sales_reps'));
+
+        $row = collect(app(DropdownClass::class)->employees())->firstWhere('value', $driverWhoReps->id);
+        $this->assertSame(450.0, (float) $row['basic_salary'], 'Paid as a driver, not a rep.');
+    }
+
     public function test_the_primary_position_is_what_pays(): void
     {
         $bothJobs = $this->employee($this->rep, [$this->driver]);
