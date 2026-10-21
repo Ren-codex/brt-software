@@ -1,6 +1,8 @@
 <template>
-    <div class="employee-details-page">
-        <div class="details-topbar">
+    <div class="employee-details-page" :class="{ 'is-embedded': embedded }">
+        <!-- Inside the View Customer modal, the modal's own header carries
+             the title, Edit and Close. -->
+        <div class="details-topbar" v-if="!embedded">
             <div class="details-title-block">
                 <h1>Customer Profile</h1>
                 <p>View purchase behavior, credit status, and payment timeline.</p>
@@ -476,7 +478,8 @@ import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
     components: { Pagination, TableLoadingRow },
-    props: ['customer', 'backToList', 'openEdit', 'selectedCustomer', 'selectedRow'],
+    // embedded: shown inside the View Customer modal rather than as a page.
+    props: ['customer', 'backToList', 'openEdit', 'selectedCustomer', 'selectedRow', 'embedded'],
     name: 'CustomerDetails',
     data() {
         return {
@@ -1002,7 +1005,47 @@ export default {
 }
 </script>
 
-<style scoped src="@/Shared/Styles/employee-details-layout.css">.issue-pill {
+<style scoped src="@/Shared/Styles/employee-details-layout.css"></style>
+
+<!-- A <style> with src ignores anything written inside it, so these lived
+     inside the tag above and never applied. -->
+<style scoped>
+/* Inside the View Customer modal: the modal gives the padding, and the
+   contact panel and the details each scroll on their own. */
+.employee-details-page.is-embedded {
+    padding: 0;
+    max-width: none;
+    height: 100%;
+}
+
+.employee-details-page.is-embedded .details-grid {
+    height: 100%;
+    align-items: stretch;
+}
+
+.employee-details-page.is-embedded .details-sidebar,
+.employee-details-page.is-embedded .details-main {
+    position: static;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+}
+
+/* Stacked into one column on a narrow screen: one scroll again. */
+@media (max-width: 1140px) {
+    .employee-details-page.is-embedded,
+    .employee-details-page.is-embedded .details-grid {
+        height: auto;
+    }
+
+    .employee-details-page.is-embedded .details-sidebar,
+    .employee-details-page.is-embedded .details-main {
+        overflow-y: visible;
+    }
+}
+
+.issue-pill {
     display: inline-block;
     padding: 2px 10px;
     border-radius: 999px;
