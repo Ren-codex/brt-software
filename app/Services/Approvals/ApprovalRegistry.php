@@ -6,12 +6,17 @@ use App\Models\Check;
 use App\Models\Expense;
 use App\Models\ListStatus;
 use App\Models\Loan;
+use App\Models\LoanLog;
 use App\Models\Payroll;
+use App\Models\PayrollLog;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderLog;
 use App\Models\Remittance;
 use App\Models\ReplenishmentRequest;
 use App\Models\SalesOrder;
 use App\Models\StockReturn;
+use App\Models\StockReturnLog;
+use App\Models\User;
 
 /**
  * One description per thing in this system that waits on an approver.
@@ -49,9 +54,26 @@ use App\Models\StockReturn;
  * column to `watch` instead of relying on a status change. A sale on *credit*
  * is the other thing approved about an order, and works the same way: it is
  * the terms being cleared, not the order.
+ *
+ * Each source also says where its past decisions are kept, for the Approved
+ * and Disapproved tabs: `history` queries one kind ('approved' or 'rejected')
+ * newest first, or returns null for a kind the source never has, and
+ * `decision` reads one back as the record it was about plus who decided,
+ * when, and how. The four sources
+ * with a decision log (purchase orders, stock returns, payrolls, loans) read
+ * the log, since their own columns are overwritten or cleared by later steps.
+ * The rest read the decided-by / decided-at columns on the record. A rejected
+ * delivery is the one decision nothing records who made or when, so it is
+ * not listed.
  */
 class ApprovalRegistry
 {
+    /** Who made a decision: the employee's full name, else the username. */
+    protected function who(?User $user): ?string
+    {
+        return $user?->employee?->fullname ?? $user?->username;
+    }
+
     /**
      * @return array<string, array<string, mixed>>
      */
@@ -77,6 +99,19 @@ class ApprovalRegistry
                     'requested_by' => $po->created_by->name ?? null,
                     'requested_at' => $po->po_date ?? $po->created_at,
                 ],
+                // The log action is the status name the order was moved to.
+                'history' => fn (string $decision) => PurchaseOrderLog::with(['purchaseOrder.supplier', 'purchaseOrder.created_by', 'user.employee'])
+                    ->where('action', $decision === 'approved' ? 'Approved' : 'Disapproved')
+                    ->whereHas('purchaseOrder')
+                    ->latest()->orderByDesc('id'),
+                'decision' => fn (PurchaseOrderLog $log) => [
+                    'model' => $log->purchaseOrder,
+                    'decision' => $log->action === 'Approved' ? 'approved' : 'rejected',
+                    'label' => $log->action,
+                    'by' => $this->who($log->user),
+                    'at' => $log->created_at,
+                    'remarks' => $log->remarks,
+                ],
             ],
 
             'stock_return' => [
@@ -97,6 +132,18 @@ class ApprovalRegistry
                     'amount' => null,
                     'requested_by' => $sr->createdBy->name ?? null,
                     'requested_at' => $sr->created_at,
+                ],
+                'history' => fn (string $decision) => StockReturnLog::with(['stockReturn.createdBy', 'user.employee'])
+                    ->where('action', $decision === 'approved' ? 'Approved' : 'Disapproved')
+                    ->whereHas('stockReturn')
+                    ->latest()->orderByDesc('id'),
+                'decision' => fn (StockReturnLog $log) => [
+                    'model' => $log->stockReturn,
+                    'decision' => $log->action === 'Approved' ? 'approved' : 'rejected',
+                    'label' => $log->action,
+                    'by' => $this->who($log->user),
+                    'at' => $log->created_at,
+                    'remarks' => $log->remarks,
                 ],
             ],
 
@@ -124,6 +171,20 @@ class ApprovalRegistry
                     'requested_by' => null,
                     'requested_at' => $p->created_at,
                 ],
+                // approved_by_id is cleared when a payroll is sent back, so only
+                // the log still says who approved or disapproved it.
+                'history' => fn (string $decision) => PayrollLog::with(['payroll', 'actionedBy.employee'])
+                    ->where('action', $decision === 'approved' ? 'status updated to for-release' : 'status updated to disapproved')
+                    ->whereHas('payroll')
+                    ->latest()->orderByDesc('id'),
+                'decision' => fn (PayrollLog $log) => [
+                    'model' => $log->payroll,
+                    'decision' => $log->action === 'status updated to for-release' ? 'approved' : 'rejected',
+                    'label' => $log->action === 'status updated to for-release' ? 'Approved' : 'Disapproved',
+                    'by' => $this->who($log->actionedBy),
+                    'at' => $log->created_at,
+                    'remarks' => $log->remarks,
+                ],
             ],
 
             'loan' => [
@@ -144,6 +205,20 @@ class ApprovalRegistry
                     'amount' => (float) $l->amount,
                     'requested_by' => null,
                     'requested_at' => $l->created_at,
+                ],
+                // Logged with the status asked for: 'disapproved' from this page,
+                // 'rejected' from the loan screen.
+                'history' => fn (string $decision) => LoanLog::with(['loan.employee', 'actionedBy.employee'])
+                    ->whereIn('action', $decision === 'approved' ? ['approved'] : ['disapproved', 'rejected'])
+                    ->whereHas('loan')
+                    ->latest()->orderByDesc('id'),
+                'decision' => fn (LoanLog $log) => [
+                    'model' => $log->loan,
+                    'decision' => $log->action === 'approved' ? 'approved' : 'rejected',
+                    'label' => $log->action === 'approved' ? 'Approved' : 'Rejected',
+                    'by' => $this->who($log->actionedBy),
+                    'at' => $log->created_at,
+                    'remarks' => $log->remarks,
                 ],
             ],
 
@@ -172,6 +247,19 @@ class ApprovalRegistry
                     'requested_by' => $e->added_by->name ?? null,
                     'requested_at' => $e->expense_date ?? $e->created_at,
                 ],
+                // There is no rejecting a general expense, only approving it.
+                'history' => fn (string $decision) => $decision !== 'approved' ? null : Expense::with(['added_by', 'approvedBy.employee'])
+                    ->whereNull('fund_id')
+                    ->whereNotNull('approved_at')
+                    ->latest('approved_at')->orderByDesc('id'),
+                'decision' => fn (Expense $e) => [
+                    'model' => $e,
+                    'decision' => 'approved',
+                    'label' => 'Approved',
+                    'by' => $this->who($e->approvedBy),
+                    'at' => $e->approved_at,
+                    'remarks' => null,
+                ],
             ],
 
             'remittance' => [
@@ -195,6 +283,22 @@ class ApprovalRegistry
                     'amount' => (float) $r->total_amount,
                     'requested_by' => $r->createdBy->name ?? null,
                     'requested_at' => $r->remittance_date ?? $r->created_at,
+                ],
+                'history' => fn (string $decision) => Remittance::with(['createdBy', 'approvedBy.employee', 'status'])
+                    ->whereNotNull('approved_at')
+                    ->when(
+                        $decision === 'approved',
+                        fn ($q) => $q->whereDoesntHave('status', fn ($s) => $s->where('slug', 'disapproved')),
+                        fn ($q) => $q->whereHas('status', fn ($s) => $s->where('slug', 'disapproved')),
+                    )
+                    ->latest('approved_at')->orderByDesc('id'),
+                'decision' => fn (Remittance $r) => [
+                    'model' => $r,
+                    'decision' => $r->status?->slug === 'disapproved' ? 'rejected' : 'approved',
+                    'label' => $r->status?->slug === 'disapproved' ? 'Disapproved' : 'Verified',
+                    'by' => $this->who($r->approvedBy),
+                    'at' => $r->approved_at,
+                    'remarks' => $r->remarks,
                 ],
             ],
 
@@ -230,6 +334,32 @@ class ApprovalRegistry
                     'requested_by' => $c->receivedBy?->fullname,
                     'requested_at' => $c->created_at,
                 ],
+                // Bouncing is done on the check register, but it is the other
+                // way a pending cheque gets decided, so it is listed too.
+                'history' => fn (string $decision) => $decision === 'approved'
+                    ? Check::with(['customer', 'supplier', 'receivedBy', 'clearedBy.employee'])
+                        ->where('status', Check::STATUS_CLEARED)
+                        ->latest('cleared_at')->orderByDesc('id')
+                    : Check::with(['customer', 'supplier', 'receivedBy', 'bouncedBy.employee'])
+                        ->where('status', Check::STATUS_BOUNCED)
+                        ->latest('bounced_at')->orderByDesc('id'),
+                'decision' => fn (Check $c) => $c->status === Check::STATUS_CLEARED
+                    ? [
+                        'model' => $c,
+                        'decision' => 'approved',
+                        'label' => 'Cleared',
+                        'by' => $this->who($c->clearedBy),
+                        'at' => $c->cleared_at,
+                        'remarks' => null,
+                    ]
+                    : [
+                        'model' => $c,
+                        'decision' => 'rejected',
+                        'label' => 'Bounced',
+                        'by' => $this->who($c->bouncedBy),
+                        'at' => $c->bounced_at,
+                        'remarks' => $c->bounce_reason,
+                    ],
             ],
 
             'credit_order' => [
@@ -271,6 +401,30 @@ class ApprovalRegistry
                         'requested_at' => $so->created_at,
                     ];
                 },
+                'history' => fn (string $decision) => SalesOrder::with(['customer', 'created_by', 'creditApprovedBy.employee'])
+                    ->where('credit_approval', $decision === 'approved' ? 'approved' : 'rejected')
+                    ->whereNotNull('credit_approved_at')
+                    ->latest('credit_approved_at')->orderByDesc('id'),
+                // What the customer owes today would misdescribe a past
+                // decision, so the history row leaves it out.
+                'history_row' => fn (SalesOrder $so) => [
+                    'reference' => $so->so_number,
+                    'summary' => collect([
+                        $so->customer->name ?? 'Walk-in customer',
+                        $so->due_date ? 'due '.$so->due_date->format('M d, Y') : null,
+                    ])->filter()->implode(' · '),
+                    'amount' => (float) $so->total_amount,
+                    'requested_by' => $so->created_by->name ?? null,
+                    'requested_at' => $so->created_at,
+                ],
+                'decision' => fn (SalesOrder $so) => [
+                    'model' => $so,
+                    'decision' => $so->credit_approval === 'approved' ? 'approved' : 'rejected',
+                    'label' => $so->credit_approval === 'approved' ? 'Approved' : 'Rejected',
+                    'by' => $this->who($so->creditApprovedBy),
+                    'at' => $so->credit_approved_at,
+                    'remarks' => $so->credit_approval_remarks,
+                ],
             ],
 
             'delivery' => [
@@ -309,6 +463,27 @@ class ApprovalRegistry
                         'requested_at' => $submission['submitted_at'] ?? $so->updated_at,
                     ];
                 },
+                // Only approvals: a rejection keeps no record of who or when.
+                'history' => fn (string $decision) => $decision !== 'approved' ? null : SalesOrder::with(['customer', 'deliveredBy', 'deliveryApprovedBy.employee'])
+                    ->whereNotNull('delivery_approved_at')
+                    ->latest('delivery_approved_at')->orderByDesc('id'),
+                // The submission is cleared once approved, so the row is read
+                // from what the approval left on the order.
+                'history_row' => fn (SalesOrder $so) => [
+                    'reference' => $so->so_number,
+                    'summary' => $so->customer->name ?? 'Walk-in customer',
+                    'amount' => (float) $so->total_amount,
+                    'requested_by' => $so->deliveredBy?->name,
+                    'requested_at' => $so->delivered_at,
+                ],
+                'decision' => fn (SalesOrder $so) => [
+                    'model' => $so,
+                    'decision' => 'approved',
+                    'label' => 'Approved',
+                    'by' => $this->who($so->deliveryApprovedBy),
+                    'at' => $so->delivery_approved_at,
+                    'remarks' => null,
+                ],
             ],
 
             'replenishment' => [
@@ -332,6 +507,18 @@ class ApprovalRegistry
                     'amount' => (float) $r->total_amount,
                     'requested_by' => null,
                     'requested_at' => $r->submitted_at ?? $r->created_at,
+                ],
+                'history' => fn (string $decision) => ReplenishmentRequest::with(['fund', 'reviewedBy.employee'])
+                    ->whereIn('status', $decision === 'approved' ? ['approved', 'released'] : ['rejected'])
+                    ->whereNotNull('reviewed_at')
+                    ->latest('reviewed_at')->orderByDesc('id'),
+                'decision' => fn (ReplenishmentRequest $r) => [
+                    'model' => $r,
+                    'decision' => $r->status === 'rejected' ? 'rejected' : 'approved',
+                    'label' => $r->status === 'rejected' ? 'Rejected' : 'Approved',
+                    'by' => $this->who($r->reviewedBy),
+                    'at' => $r->reviewed_at,
+                    'remarks' => $r->review_notes,
                 ],
             ],
         ];

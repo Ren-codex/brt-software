@@ -11,7 +11,9 @@ use Illuminate\Validation\ValidationException;
  * The one screen an approver can work from.
  *
  * Follows the house `?option=` pattern: the bare GET renders the Inertia page,
- * `?option=lists` returns the rows as JSON for the page's own refreshes, and
+ * `?option=lists` returns the rows as JSON for the page's own refreshes,
+ * `?option=history&decision=approved|rejected` returns past decisions for the
+ * Approved and Disapproved tabs, and
  * `?option=count` returns just the badge number for the bell.
  *
  * Access is not role-based. The page shows each user exactly the sources they
@@ -34,6 +36,12 @@ class ApprovalController extends Controller
 
             case 'count':
                 return response()->json(['count' => $this->service->pendingCount($request->user())]);
+
+            // The Approved and Disapproved tabs, loaded when opened.
+            case 'history':
+                $decision = $request->query('decision') === 'rejected' ? 'rejected' : 'approved';
+
+                return response()->json($this->service->history($decision, $request->user()));
 
             default:
                 $pending = $this->service->pending($request->user());

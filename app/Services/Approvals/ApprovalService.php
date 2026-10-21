@@ -13,6 +13,7 @@ use App\Services\System\Permission\PermissionService;
 use App\Services\System\PurchaseOrder\PurchaseOrderClass;
 use App\Services\System\PurchaseOrder\StockReturnClass;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -139,6 +140,78 @@ class ApprovalService
                 'count' => $count,
                 'can_approve_inline' => $source['can_approve_inline'],
                 'can_reject_inline' => $source['can_reject_inline'],
+                'items' => $items,
+            ];
+        }
+
+        return [
+            'groups' => $groups,
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * Past decisions of one kind — 'approved' or 'rejected' — on the sources
+     * this user may approve, grouped the same way as pending() so the page can
+     * filter and search them alike. Made by anyone, here or on the module's
+     * own screen, newest first.
+     *
+     * `limit` caps rows per source; the count stays exact.
+     */
+    public function history(string $decision, ?User $user = null, int $limit = 50): array
+    {
+        $user ??= Auth::user();
+        $sources = $this->registry->sources();
+        $groups = [];
+        $total = 0;
+
+        foreach ($this->allowedSourceKeys($user) as $key) {
+            $source = $sources[$key];
+            // Null when the source never has this kind of decision (nothing
+            // rejects a general expense here, say); it still gets its pill.
+            $query = ($source['history'])($decision);
+
+            $count = $query ? (clone $query)->count() : 0;
+            $total += $count;
+
+            $records = $query ? $query->limit($limit)->get() : collect();
+
+            $items = $records->map(function ($record) use ($source, $key) {
+                $decision = ($source['decision'])($record);
+                $model = $decision['model'];
+                $row = ($source['history_row'] ?? $source['row'])($model);
+
+                return [
+                    'id' => $model->getKey(),
+                    // A record decided twice (sent back, then approved) has a
+                    // row per decision, so the record id alone is not unique.
+                    'key' => $key.'-'.$record->getKey(),
+                    'source' => $key,
+                    'label' => $source['label'],
+                    'icon' => $source['icon'],
+                    'url' => $source['url'],
+                    'reference' => $row['reference'],
+                    'summary' => $row['summary'],
+                    'amount' => $row['amount'],
+                    'requested_by' => $row['requested_by'],
+                    'requested_at' => $row['requested_at'],
+                    'decision' => $decision['decision'],
+                    'decision_label' => $decision['label'],
+                    'decided_by' => $decision['by'],
+                    // Some of these columns are not cast to dates; one format
+                    // for all of them keeps the browser's parsing reliable.
+                    'decided_at' => $decision['at'] ? Carbon::parse($decision['at'])->toIso8601String() : null,
+                    'remarks' => $decision['remarks'],
+                ];
+            })->values();
+
+            $groups[] = [
+                'source' => $key,
+                'label' => $source['label'],
+                'plural' => $source['plural'],
+                'icon' => $source['icon'],
+                'url' => $source['url'],
+                'count' => $count,
                 'items' => $items,
             ];
         }

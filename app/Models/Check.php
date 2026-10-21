@@ -50,6 +50,16 @@ class Check extends Model
         return $this->belongsTo(BankAccount::class, 'bank_account_id');
     }
 
+    public function clearedBy()
+    {
+        return $this->belongsTo(User::class, 'cleared_by_id');
+    }
+
+    public function bouncedBy()
+    {
+        return $this->belongsTo(User::class, 'bounced_by_id');
+    }
+
     public function source()
     {
         return $this->morphTo();

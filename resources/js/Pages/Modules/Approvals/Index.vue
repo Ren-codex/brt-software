@@ -22,8 +22,8 @@
                         <span class="approval-total-badge" :class="{ 'is-zero': total === 0 }">
                             {{ total }} pending
                         </span>
-                        <button class="create-btn" @click="refresh" :disabled="loading">
-                            <i class="ri-refresh-line" :class="{ 'spin': loading }"></i>
+                        <button class="create-btn" @click="refresh" :disabled="loading || historyLoading">
+                            <i class="ri-refresh-line" :class="{ 'spin': loading || historyLoading }"></i>
                             <span>Refresh</span>
                         </button>
                     </div>
@@ -38,6 +38,28 @@
                     </div>
 
                     <template v-else>
+                        <!-- Pending is what still needs a decision; Approved and
+                             Disapproved are what has had one, here or on the
+                             module's own screen. -->
+                        <div class="filter-segment mb-3">
+                            <button type="button" class="filter-segment-btn"
+                                :class="{ active: tab === 'pending' }" @click="tab = 'pending'">
+                                <i class="ri-time-line"></i>
+                                <span>Pending</span>
+                                <span class="segment-count">{{ total }}</span>
+                            </button>
+                            <button type="button" class="filter-segment-btn"
+                                :class="{ active: tab === 'approved' }" @click="tab = 'approved'">
+                                <i class="ri-checkbox-circle-line"></i>
+                                <span>Approved</span>
+                            </button>
+                            <button type="button" class="filter-segment-btn"
+                                :class="{ active: tab === 'rejected' }" @click="tab = 'rejected'">
+                                <i class="ri-close-circle-line"></i>
+                                <span>Disapproved</span>
+                            </button>
+                        </div>
+
                         <!-- Source filter. Counts stay exact even when a group's
                              rows are capped, so the pills double as a summary. -->
                         <div class="search-section">
@@ -46,27 +68,24 @@
                                 <input
                                     type="text"
                                     v-model="keyword"
-                                    placeholder="Search reference, details, requester, amount..."
+                                    :placeholder="tab === 'pending'
+                                        ? 'Search reference, details, requester, amount...'
+                                        : 'Search reference, details, decision, decided by, remarks...'"
                                     class="search-input"
                                 >
                             </div>
-                            <!-- Sorted in the browser: every pending row is already
-                                 loaded here, unlike the paged lists elsewhere. -->
-                            <SortSelect v-model="sortOption" :added="false" :fields="[
-                                { field: 'requested_at', label: 'Requested', type: 'date' },
-                                { field: 'amount', label: 'Amount', type: 'number' },
-                                { field: 'reference', label: 'Reference' },
-                                { field: 'label', label: 'Type' },
-                            ]" />
+                            <!-- Sorted in the browser: every row is already loaded
+                                 here, unlike the paged lists elsewhere. -->
+                            <SortSelect v-model="sortOption" :added="false" :fields="sortFields" />
                         </div>
 
                         <div class="approval-filters">
                             <button class="approval-pill" :class="{ active: activeSource === null }"
                                 @click="activeSource = null">
                                 All
-                                <span class="pill-count">{{ total }}</span>
+                                <span class="pill-count">{{ currentTotal }}</span>
                             </button>
-                            <button v-for="g in groups" :key="g.source"
+                            <button v-for="g in currentGroups" :key="g.source"
                                 class="approval-pill"
                                 :class="{ active: activeSource === g.source, 'is-empty': g.count === 0 }"
                                 @click="activeSource = g.source">
@@ -85,29 +104,40 @@
                                             <th>Reference</th>
                                             <th>Details</th>
                                             <th class="text-end">Amount</th>
-                                            <th>Requested</th>
-                                            <th class="text-end">Action</th>
+                                            <template v-if="tab === 'pending'">
+                                                <th>Requested</th>
+                                                <th class="text-end">Action</th>
+                                            </template>
+                                            <template v-else>
+                                                <th>Decision</th>
+                                                <th>Decided</th>
+                                            </template>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <TableLoadingRow v-if="loading && !rows.length" :colspan="6" message="Loading approvals..." />
+                                        <TableLoadingRow v-if="currentLoading && !rows.length" :colspan="6"
+                                            :message="tab === 'pending' ? 'Loading approvals...' : 'Loading decisions...'" />
                                         <tr v-else-if="!rows.length">
                                             <td colspan="6">
                                                 <div class="approval-empty py-4">
                                                     <i class="ri-checkbox-multiple-line"></i>
                                                     <template v-if="searchTerm">
                                                         <h6>No matches</h6>
-                                                        <p class="mb-0">Nothing pending matches "{{ keyword.trim() }}".</p>
+                                                        <p class="mb-0">Nothing {{ tabWord }} matches "{{ keyword.trim() }}".</p>
                                                     </template>
-                                                    <template v-else>
+                                                    <template v-else-if="tab === 'pending'">
                                                         <h6>Nothing waiting</h6>
                                                         <p class="mb-0">Everything you can approve has been actioned.</p>
+                                                    </template>
+                                                    <template v-else>
+                                                        <h6>Nothing {{ tabWord }} yet</h6>
+                                                        <p class="mb-0">Anything {{ tabWord }} among what you can approve will be listed here.</p>
                                                     </template>
                                                 </div>
                                             </td>
                                         </tr>
-                                        <tr v-for="row in rows" :key="row.source + '-' + row.id"
-                                            :class="{ 'is-focused': isFocused(row) }"
+                                        <tr v-for="row in rows" :key="rowKey(row)"
+                                            :class="{ 'is-focused': tab === 'pending' && isFocused(row) }"
                                             :ref="el => registerRowRef(row, el)">
                                             <td>
                                                 <span class="type-chip">
@@ -121,11 +151,24 @@
                                                 <span v-if="row.amount !== null">{{ peso(row.amount) }}</span>
                                                 <span v-else class="text-muted">&mdash;</span>
                                             </td>
-                                            <td>
+                                            <template v-if="tab !== 'pending'">
+                                                <td>
+                                                    <span class="decision-chip" :class="row.decision === 'approved' ? 'is-approved' : 'is-rejected'">
+                                                        <i :class="row.decision === 'approved' ? 'ri-check-line' : 'ri-close-line'"></i>
+                                                        {{ row.decision_label }}
+                                                    </span>
+                                                    <div v-if="row.remarks" class="fs-11 text-muted mt-1 decision-remarks">{{ row.remarks }}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="fs-12">{{ dateTime(row.decided_at) }}</div>
+                                                    <div class="fs-11 text-muted" v-if="row.decided_by">{{ row.decided_by }}</div>
+                                                </td>
+                                            </template>
+                                            <td v-if="tab === 'pending'">
                                                 <div class="fs-12">{{ shortDate(row.requested_at) }}</div>
                                                 <div class="fs-11 text-muted" v-if="row.requested_by">{{ row.requested_by }}</div>
                                             </td>
-                                            <td class="text-end">
+                                            <td v-if="tab === 'pending'" class="text-end">
                                                 <div class="d-flex gap-1 justify-content-end flex-wrap">
                                                     <button v-if="row.can_approve_inline"
                                                         class="act-btn act-approve"
@@ -221,6 +264,14 @@ export default {
         return {
             groups: this.initial.groups || [],
             total: this.initial.total || 0,
+            // 'pending', 'approved' or 'rejected' (the Disapproved tab).
+            tab: 'pending',
+            // Past decisions, fetched each time their tab is opened.
+            history: {
+                approved: { groups: [], total: 0 },
+                rejected: { groups: [], total: 0 },
+            },
+            historyLoading: false,
             activeSource: this.focusSource || null,
             keyword: '',
             // "field:direction"; empty means newest request first.
@@ -245,11 +296,38 @@ export default {
         searchTerm() {
             return this.keyword.trim().toLowerCase();
         },
-        /** Flattened rows for the active filter and search, newest request first. */
+        currentGroups() {
+            return this.tab === 'pending' ? this.groups : this.history[this.tab].groups;
+        },
+        currentTotal() {
+            return this.tab === 'pending' ? this.total : this.history[this.tab].total;
+        },
+        /** How the empty and no-match messages name what this tab lists. */
+        tabWord() {
+            return { pending: 'pending', approved: 'approved', rejected: 'disapproved' }[this.tab];
+        },
+        currentLoading() {
+            return this.tab === 'pending' ? this.loading : this.historyLoading;
+        },
+        /** The date each tab is about: when it was asked for, or when it was decided. */
+        dateField() {
+            return this.tab === 'pending' ? 'requested_at' : 'decided_at';
+        },
+        sortFields() {
+            return [
+                this.tab === 'pending'
+                    ? { field: 'requested_at', label: 'Requested', type: 'date' }
+                    : { field: 'decided_at', label: 'Decided', type: 'date' },
+                { field: 'amount', label: 'Amount', type: 'number' },
+                { field: 'reference', label: 'Reference' },
+                { field: 'label', label: 'Type' },
+            ];
+        },
+        /** Flattened rows for the active tab, filter and search, newest first. */
         filteredRows() {
             const groups = this.activeSource
-                ? this.groups.filter(g => g.source === this.activeSource)
-                : this.groups;
+                ? this.currentGroups.filter(g => g.source === this.activeSource)
+                : this.currentGroups;
 
             const term = this.searchTerm;
 
@@ -258,13 +336,14 @@ export default {
                 .filter(row => !term || this.searchText(row).includes(term))
                 .sort(this.rowComparator);
         },
-        /** Compares two rows by the chosen sort; newest request first by default. */
+        /** Compares two rows by the chosen sort; newest first by default. */
         rowComparator() {
-            const [field, direction] = (this.sortOption || 'requested_at:desc').split(':');
+            const dateField = this.dateField;
+            const [field, direction] = (this.sortOption || `${dateField}:desc`).split(':');
             const sign = direction === 'asc' ? 1 : -1;
 
             const value = row => {
-                if (field === 'requested_at') return new Date(row.requested_at || 0).getTime();
+                if (field === 'requested_at' || field === 'decided_at') return new Date(row[field] || 0).getTime();
                 // Rows with no amount (stock returns) sort as zero rather than NaN.
                 if (field === 'amount') return Number(row.amount) || 0;
                 return String(row[field] ?? '').toLowerCase();
@@ -276,7 +355,7 @@ export default {
                 if (x < y) return -1 * sign;
                 if (x > y) return 1 * sign;
                 // Ties fall back to newest first, so the order is always stable.
-                return new Date(b.requested_at || 0) - new Date(a.requested_at || 0);
+                return new Date(b[dateField] || 0) - new Date(a[dateField] || 0);
             };
         },
         lastPage() {
@@ -312,6 +391,13 @@ export default {
         searchTerm() { this.page = 1; },
         sortOption() { this.page = 1; },
         activeSource() { this.page = 1; },
+        // Both tabs list the same sources, so the filter and search carry
+        // over; the sort does not, since each tab sorts by its own date.
+        tab(tab) {
+            this.sortOption = '';
+            this.page = 1;
+            if (tab !== 'pending') this.fetchHistory(tab);
+        },
         // Approving the last row on the last page must not leave an empty page.
         lastPage(last) {
             if (this.page > last) this.page = last;
@@ -334,10 +420,16 @@ export default {
                 row.amount !== null ? row.amount : null,
                 row.amount !== null ? this.peso(row.amount) : null,
                 this.shortDate(row.requested_at),
+                // Only on Approved and Disapproved rows.
+                row.decision_label,
+                row.decided_by,
+                row.remarks,
+                row.decided_at ? this.shortDate(row.decided_at) : null,
             ].filter(v => v !== null && v !== undefined).join(' ').toLowerCase();
         },
         rowKey(row) {
-            return `${row.source}-${row.id}`;
+            // A decided row has its own key: one record decided twice is two rows.
+            return row.key || `${row.source}-${row.id}`;
         },
         isFocused(row) {
             return this.focusSource === row.source && String(this.focusId) === String(row.id);
@@ -354,6 +446,12 @@ export default {
             if (Number.isNaN(d.getTime())) return String(value);
             return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
         },
+        dateTime(value) {
+            if (!value) return '—';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return String(value);
+            return d.toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        },
         fetch({ quiet = false } = {}) {
             if (!quiet) this.loading = true;
 
@@ -367,8 +465,27 @@ export default {
                 })
                 .finally(() => { this.loading = false; });
         },
+        /** @param {'approved'|'rejected'} decision */
+        fetchHistory(decision, { quiet = false } = {}) {
+            if (!quiet) this.historyLoading = true;
+
+            return axios.get('/approvals', { params: { option: 'history', decision } })
+                .then(res => {
+                    this.history[decision] = {
+                        groups: res.data.groups || [],
+                        total: res.data.total || 0,
+                    };
+                })
+                .catch(() => {
+                    if (!quiet) this.$toast?.error('Could not load past decisions.');
+                })
+                .finally(() => { this.historyLoading = false; });
+        },
         refresh() {
-            return this.fetch();
+            // The pending count in the header is shown on both tabs.
+            return this.tab === 'pending'
+                ? this.fetch()
+                : Promise.all([this.fetch(), this.fetchHistory(this.tab)]);
         },
         open(row, decision) {
             this.pending = { row, decision };
@@ -423,8 +540,12 @@ export default {
                 return;
             }
             this.fetch({ quiet: true });
+            if (this.tab !== 'pending') this.fetchHistory(this.tab, { quiet: true });
         });
-        this.startPolling(() => this.fetch({ quiet: true }), 10000);
+        this.startPolling(() => {
+            this.fetch({ quiet: true });
+            if (this.tab !== 'pending') this.fetchHistory(this.tab, { quiet: true });
+        }, 10000);
 
         if (this.focusSource && this.focusId) {
             // Turn to the page the row is on before scrolling to it.
@@ -507,6 +628,64 @@ export default {
     font-size: 0.72rem;
     font-weight: 600;
     white-space: nowrap;
+}
+
+/* Pending | Approved | Disapproved switch, the same segmented style as the inventory tabs. */
+.filter-segment {
+    display: inline-flex;
+    background: var(--brt-c-eaf2f0);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+}
+.filter-segment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    color: var(--brt-c-4a7a70);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 0.38rem 0.85rem;
+    border-radius: 8px;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.filter-segment-btn i { font-size: 0.95rem; }
+.filter-segment-btn:hover:not(.active) {
+    background: rgba(var(--brt-primary-rgb), 0.1);
+    color: var(--brt-primary);
+}
+.filter-segment-btn.active {
+    background: var(--brt-primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(var(--brt-primary-rgb), 0.28);
+}
+.segment-count {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 999px;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.7rem;
+}
+.filter-segment-btn.active .segment-count { background: rgba(255, 255, 255, 0.25); }
+
+.decision-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 6px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.decision-chip.is-approved { background: #dcfce7; color: #166534; }
+.decision-chip.is-rejected { background: #fee2e2; color: #b42318; }
+.decision-remarks {
+    max-width: 260px;
+    white-space: normal;
 }
 
 .act-btn {
