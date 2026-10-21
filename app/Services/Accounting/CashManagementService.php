@@ -5,6 +5,7 @@ namespace App\Services\Accounting;
 use App\Models\Account;
 use App\Models\BankDeposit;
 use App\Models\BankWithdrawal;
+use App\Models\Check;
 use App\Models\FundTransfer;
 use App\Models\JournalEntryLine;
 use App\Models\ListStatus;
@@ -59,60 +60,134 @@ class CashManagementService
 
     // ── Bank Deposits ────────────────────────────────────────────────
 
+    /**
+     * Record a deposit.
+     *
+     * Cash is one deposit for an amount somebody types. Cheques are picked off
+     * the list of what is on hand, and each one becomes a deposit of its own,
+     * sharing the date, the bank and the slip reference. They travel to the
+     * bank together and the paper slip says so, but the bank pays them one at
+     * a time and any one of them can bounce alone — a single row for the lot
+     * could not be split apart again when that happened.
+     *
+     * Returns the deposit for a cash deposit, and the first of them for
+     * cheques, which is what the screen needs to show a confirmation.
+     */
     public function createBankDeposit(array $data): BankDeposit
     {
         return DB::transaction(function () use ($data) {
             $isCheck = ($data['deposit_type'] ?? BankDeposit::TYPE_CASH) === BankDeposit::TYPE_CHECK;
 
-            $deposit = BankDeposit::create([
-                'deposit_no' => $this->series->get('bank_deposit_no'),
+            if ($isCheck) {
+                return $this->depositCheques($data);
+            }
+
+            $deposit = $this->writeDeposit($data, [
                 'cash_account_id' => $data['cash_account_id'],
-                'bank_account_id' => $data['bank_account_id'],
-                'deposit_type' => $isCheck ? BankDeposit::TYPE_CHECK : BankDeposit::TYPE_CASH,
+                'deposit_type' => BankDeposit::TYPE_CASH,
                 'amount' => round((float) $data['amount'], 2),
-                'deposit_date' => $data['deposit_date'],
-                'check_date' => $isCheck ? ($data['check_date'] ?? null) : null,
-                'check_number' => $isCheck ? ($data['check_number'] ?? null) : null,
-                'status' => BankDeposit::STATUS_PENDING,
-                'reference' => $data['reference'] ?? null,
-                'notes' => $data['notes'] ?? null,
-                'created_by_id' => Auth::id(),
             ]);
 
-            $deposit->load(['cashAccount', 'bankAccount', 'createdBy']);
-
             // Cash is good the moment it's deposited, so it posts right away.
-            // A check is never posted on creation, not even one dated today
-            // or earlier — a check can bounce regardless of the date written
-            // on it, so only a person confirming it actually cleared may post
-            // it. See CheckRegisterClass::markCleared(), which is what calls
-            // postBankDeposit() for a confirmed check-type deposit;
-            // deposits:post-due-checks never posts anything either.
-            // A deposit is what says which of our accounts a customer's check
-            // will reach, so the register learns it here — without it the
-            // forecast cannot count the money as arriving anywhere.
-            if ($isCheck) {
-                app(\App\Services\Modules\CheckRegisterClass::class)->attributeToBank(
-                    (string) ($data['check_number'] ?? ''),
-                    round((float) $data['amount'], 2),
-                    (int) $data['bank_account_id']
-                );
-            }
+            $this->postBankDeposit($deposit);
 
-            if (!$isCheck) {
-                $this->postBankDeposit($deposit);
-            }
-
-            if (!empty($data['remittance_ids'])) {
-                $liquidatedStatusId = ListStatus::getBySlug('liquidated')?->id;
-                Remittance::whereIn('id', $data['remittance_ids'])
-                    ->where('status_id', $liquidatedStatusId)
-                    ->whereNull('bank_deposit_id')
-                    ->update(['bank_deposit_id' => $deposit->id]);
-            }
+            $this->attachRemittances($data, $deposit);
 
             return $deposit;
         });
+    }
+
+    /**
+     * One deposit per cheque, from the cheques the office ticked.
+     *
+     * What the caller says a cheque is worth is ignored: the cheque itself
+     * says that, and the bank will pay that figure and nothing else. Nothing
+     * is posted here either, not even for a cheque dated today — a cheque can
+     * bounce whatever is written on it, so only a person confirming it
+     * actually cleared may post it. See CheckRegisterClass::markCleared().
+     */
+    private function depositCheques(array $data): BankDeposit
+    {
+        $cheques = Check::whereIn('id', $data['check_ids'] ?? [])->get();
+
+        if ($cheques->isEmpty()) {
+            throw ValidationException::withMessages([
+                'check_ids' => 'Pick at least one cheque to deposit.',
+            ]);
+        }
+
+        $alreadyBanked = $cheques->filter(
+            fn (Check $c) => BankDeposit::where('check_id', $c->id)->exists()
+        );
+
+        if ($alreadyBanked->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'check_ids' => 'Already deposited: '.$alreadyBanked->pluck('check_number')->implode(', ').'.',
+            ]);
+        }
+
+        $notOnHand = $cheques->reject(fn (Check $c) => $c->isPending());
+
+        if ($notOnHand->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'check_ids' => 'Not on hand any more: '.$notOnHand->pluck('check_number')->implode(', ').'.',
+            ]);
+        }
+
+        $first = null;
+
+        foreach ($cheques as $cheque) {
+            $deposit = $this->writeDeposit($data, [
+                // A cheque is the customer's money passing through, and sits
+                // in collections in transit until the bank pays it.
+                'cash_account_id' => $this->journal->inTransitAccount()->id,
+                'deposit_type' => BankDeposit::TYPE_CHECK,
+                'check_id' => $cheque->id,
+                'amount' => round((float) $cheque->amount, 2),
+                'check_number' => $cheque->check_number,
+                'check_date' => $cheque->check_date?->toDateString(),
+            ]);
+
+            // A deposit is what says which of our accounts a customer's cheque
+            // will reach, so the register learns it here — without it the
+            // forecast cannot count the money as arriving anywhere.
+            $cheque->update(['bank_account_id' => (int) $data['bank_account_id']]);
+
+            $first ??= $deposit;
+        }
+
+        $this->attachRemittances($data, $first);
+
+        return $first;
+    }
+
+    /** The parts every deposit shares, whatever it is carrying. */
+    private function writeDeposit(array $data, array $own): BankDeposit
+    {
+        $deposit = BankDeposit::create(array_merge([
+            'deposit_no' => $this->series->get('bank_deposit_no'),
+            'bank_account_id' => $data['bank_account_id'],
+            'deposit_date' => $data['deposit_date'],
+            'status' => BankDeposit::STATUS_PENDING,
+            'reference' => $data['reference'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'created_by_id' => Auth::id(),
+        ], $own));
+
+        return $deposit->load(['cashAccount', 'bankAccount', 'createdBy']);
+    }
+
+    private function attachRemittances(array $data, ?BankDeposit $deposit): void
+    {
+        if (empty($data['remittance_ids']) || ! $deposit) {
+            return;
+        }
+
+        $liquidatedStatusId = ListStatus::getBySlug('liquidated')?->id;
+        Remittance::whereIn('id', $data['remittance_ids'])
+            ->where('status_id', $liquidatedStatusId)
+            ->whereNull('bank_deposit_id')
+            ->update(['bank_deposit_id' => $deposit->id]);
     }
 
     /**

@@ -217,7 +217,13 @@ class SalesOrderClass
             });
 
         // Delivered, nothing collected: the moment to ask the driver.
-        $toCollect = $mine(SalesOrder::with('customer', 'driver', 'arInvoices')
+        //
+        // What a cheque covers is not owed by the customer any more — they have
+        // paid, the bank just has not. Counting it here asked the same money
+        // twice: once as a debt on this list, once as a cheque on the next one,
+        // and the balance alone cannot tell them apart, because an uncleared
+        // cheque deliberately leaves the balance at its full figure.
+        $toCollect = $mine(SalesOrder::with('customer', 'driver', 'arInvoices.receipts.registerCheck')
             ->whereNotNull('delivered_at')
             ->whereDoesntHave('status', fn ($q) => $q->whereIn('slug', ['cancelled', 'sales-returned']))
             ->whereHas('arInvoices', fn ($q) => $q->where('balance_due', '>', 0)))
@@ -225,12 +231,13 @@ class SalesOrderClass
             ->get()
             ->map(function ($order) use ($days) {
                 $invoice = $order->arInvoices->first();
+                $outstanding = round((float) optional($invoice)->balance_due - $this->unclearedOn($order), 2);
 
                 return [
                     'id' => $order->id,
                     'reference' => $order->so_number,
                     'customer' => optional($order->customer)->name,
-                    'amount' => (float) optional($invoice)->balance_due,
+                    'amount' => $outstanding,
                     'person' => optional($order->driver)->fullname,
                     'invoice_id' => optional($invoice)->id,
                     // The payment screen decides from this whether a part
@@ -239,10 +246,12 @@ class SalesOrderClass
                     'days' => $days($order->delivered_at),
                     'updated_at' => optional($order->updated_at)->toIso8601String(),
                 ];
-            });
+            })
+            // Paid in full by cheque: nothing to ask the customer for.
+            ->filter(fn ($row) => $row['amount'] > 0);
 
         // Collected, not handed in.
-        $withDriver = Receipt::with('heldBy', 'customer', 'arInvoice.sales_order.salesRep')
+        $pendingReceipts = Receipt::with('heldBy', 'customer', 'registerCheck', 'arInvoice.sales_order.salesRep')
             ->whereNull('remittance_id')
             ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
             ->when($employeeId, function ($query) use ($employeeId) {
@@ -254,36 +263,76 @@ class SalesOrderClass
                 });
             })
             ->orderBy('receipt_date')
-            ->get()
-            ->map(fn ($receipt) => [
-                'id' => $receipt->id,
-                'reference' => $receipt->receipt_number,
-                'customer' => optional($receipt->customer)->name,
-                'amount' => (float) $receipt->amount_paid,
-                'person' => optional($receipt->heldBy)->fullname ?? 'Unassigned',
-                'mode' => $receipt->payment_mode,
-                // Who the money may be handed to: the rep whose sale it is.
-                'rep_id' => optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->id,
-                'rep_name' => optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->fullname,
-                // The shared rule, not a list of modes: a transfer waits only
-                // on a COD order, so a credit sale's transfer is not pending
-                // anything and must not be shown as though it were.
-                'confirmed' => ! Receipt::modeAwaitsBankConfirmation(
-                    $receipt->payment_mode,
-                    optional(optional($receipt->arInvoice)->sales_order)->payment_mode
-                ) || ! is_null($receipt->confirmed_at),
-                'days' => $days($receipt->receipt_date),
-                // The receipt's own, not the order's: a handover changes the
-                // receipt and that is the event worth surfacing here.
-                'updated_at' => optional($receipt->updated_at)->toIso8601String(),
-            ]);
+            ->get();
+
+        // Which of the two money stages a collection belongs in.
+        //
+        // One list, one thing to do. Cash in the truck is chased from the
+        // driver; a cheque already handed in is chased from the bank, by
+        // nobody here. A cheque still in the truck stays with the driver,
+        // because bringing the paper in comes first.
+        $awaitsBank = function (Receipt $receipt) {
+            $order = optional($receipt->arInvoice)->sales_order;
+            $crew = array_filter([optional($order)->driver_id, optional($order)->checker_id]);
+
+            return $receipt->isUnclearedFor(optional($order)->payment_mode)
+                && ! in_array((int) $receipt->held_by_employee_id, array_map('intval', $crew), true);
+        };
+
+        $shape = fn (Receipt $receipt) => [
+            'id' => $receipt->id,
+            'reference' => $receipt->receipt_number,
+            'customer' => optional($receipt->customer)->name,
+            'amount' => (float) $receipt->amount_paid,
+            'person' => optional($receipt->heldBy)->fullname ?? 'Unassigned',
+            'mode' => $receipt->payment_mode,
+            // Who the money may be handed to: the rep whose sale it is.
+            'rep_id' => optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->id,
+            'rep_name' => optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->fullname,
+            // The shared rule, not a list of modes: a transfer waits only
+            // on a COD order, so a credit sale's transfer is not pending
+            // anything and must not be shown as though it were.
+            'confirmed' => ! Receipt::modeAwaitsBankConfirmation(
+                $receipt->payment_mode,
+                optional(optional($receipt->arInvoice)->sales_order)->payment_mode
+            ) || ! is_null($receipt->confirmed_at),
+            // What the bank is waiting on, for the stage that waits on it.
+            'due' => $receipt->check_date
+                ? Carbon::parse($receipt->check_date)->toDateString()
+                : null,
+            'days' => $days($receipt->receipt_date),
+            // The receipt's own, not the order's: a handover changes the
+            // receipt and that is the event worth surfacing here.
+            'updated_at' => optional($receipt->updated_at)->toIso8601String(),
+        ];
+
+        $withDriver = $pendingReceipts->reject($awaitsBank)->map($shape);
+        $awaitingBank = $pendingReceipts->filter($awaitsBank)->map($shape);
 
         return response()->json([
             'out_for_delivery' => $outForDelivery->values(),
             'pending_approval' => $pendingApproval->values(),
             'to_collect' => $toCollect->values(),
+            'awaiting_bank' => $awaitingBank->values(),
             'with_driver' => $withDriver->values(),
         ]);
+    }
+
+    /**
+     * Money this order is counting on that the bank has not paid: a cheque
+     * waiting to clear, a field transfer nobody has confirmed.
+     *
+     * The invoice balance still shows it as owed, deliberately — that is what
+     * stops the same money being collected twice — so anything reading the
+     * balance as a debt has to subtract this first. Same rule the collection
+     * screen enforces, so the two cannot disagree.
+     */
+    private function unclearedOn(SalesOrder $order): float
+    {
+        return round((float) $order->arInvoices
+            ->flatMap->receipts
+            ->filter(fn (Receipt $receipt) => $receipt->isUnclearedFor($order->payment_mode))
+            ->sum('amount_paid'), 2);
     }
 
     /**
@@ -849,6 +898,10 @@ class SalesOrderClass
                 'submitted_by_id' => auth()->id(),
                 'submitted_at' => now()->toIso8601String(),
             ],
+            // Kept outside the submission as well, because approving wipes the
+            // submission — and with it the record of when this was encoded,
+            // which is half of what an approval is accountable for.
+            'delivery_encoded_at' => now(),
             'delivery_rejection' => null,
         ]);
 

@@ -199,9 +199,10 @@
 
                             <div class="form-group discount-group">
                                 <label for="discount_per_unit" class="form-label">Discount per Unit (Amount)</label>
-                                <!-- Big targets for a touch screen: step the amount by five
-                                     pesos, or jump straight to a usual discount. Every
-                                     button keeps the value between 0 and the limit. -->
+                                <!-- Big targets for a touch screen: step the amount a peso
+                                     at a time, or jump straight to a usual discount with the
+                                     presets. Every button keeps the value between 0 and the
+                                     limit. -->
                                 <div class="discount-stepper">
                                     <button type="button" class="step-btn" aria-label="Decrease discount"
                                         :disabled="discountValue <= 0" @click="stepDiscount(-DISCOUNT_STEP)">
@@ -336,9 +337,11 @@ export default {
         discountPresets() {
             return [5, 10, 20];
         },
-        // How far one tap of plus or minus moves the discount, in pesos.
+        // How far one tap of plus or minus moves the discount, in pesos. One:
+        // the presets below are there for the round numbers, so these two
+        // buttons are for the peso either side of them.
         DISCOUNT_STEP() {
-            return 5;
+            return 1;
         },
         isWholesale: {
             get() {

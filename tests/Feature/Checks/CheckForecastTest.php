@@ -103,16 +103,10 @@ class CheckForecastTest extends TestCase
         $check->update(['check_number' => 'CHK-777']);
 
         app(\App\Services\Accounting\CashManagementService::class)->createBankDeposit([
-            'cash_account_id' => \App\Models\Account::firstOrCreate(
-                ['slug' => 'cash'],
-                ['code' => '1000', 'name' => 'Cash', 'type' => 'asset', 'subtype' => 'current_asset']
-            )->id,
             'bank_account_id' => $bdo->id,
-            'amount' => 800000,
             'deposit_date' => now()->toDateString(),
             'deposit_type' => 'check',
-            'check_date' => now()->addDays(8)->toDateString(),
-            'check_number' => 'CHK-777',
+            'check_ids' => [$check->id],
         ]);
 
         $forecast = app(CheckForecastClass::class)->build();

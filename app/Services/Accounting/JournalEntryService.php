@@ -1511,6 +1511,19 @@ class JournalEntryService
         return true;
     }
 
+    /**
+     * Collections recorded but not yet in the office's hands: a rep's cash on
+     * its way in, a customer's cheque waiting on the bank.
+     *
+     * Public because it is not only the posting code that needs to name it —
+     * a cheque deposit has to know which account the cheque is sitting in,
+     * and guessing produced a deposit that credited the wrong one.
+     */
+    public function inTransitAccount(): Account
+    {
+        return $this->ensureAccount('1050', 'undeposited_collections', 'Undeposited Collections', 'asset', 'current_asset');
+    }
+
     private function ensureAccount(string $code, string $slug, string $name, string $type, ?string $subtype = null): Account
     {
         $account = Account::where('slug', $slug)->first()

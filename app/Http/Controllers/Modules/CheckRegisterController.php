@@ -56,11 +56,17 @@ class CheckRegisterController extends Controller
         ]);
     }
 
-    public function confirm(int $id)
+    public function confirm(int $id, Request $request)
     {
+        $data = $request->validate([
+            // Optional: only a cheque that reached the register without a bank
+            // needs one named here, and only then is it saved.
+            'bank_name' => 'nullable|string|max:255',
+        ]);
+
         $check = Check::findOrFail($id);
 
-        $this->register->markCleared($check);
+        $this->register->markCleared($check, $data['bank_name'] ?? null);
 
         return response()->json([
             'data' => $check->fresh(),

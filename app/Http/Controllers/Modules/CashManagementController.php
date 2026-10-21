@@ -27,7 +27,15 @@ class CashManagementController extends Controller
      * Slugs are stable and explicit, so the list is defined by slug. Add a slug
      * here to offer a new cash account in the deposit and withdrawal modals.
      */
-    private const CASH_ACCOUNT_SLUGS = ['cash', 'undeposited_collections'];
+    /**
+     * What a deposit may be made from.
+     *
+     * Cash on Hand alone. Collections in transit are money reps say they took
+     * and the office has not counted; it leaves that account one way, by being
+     * remitted and verified. Offering it here was a second door out, and a
+     * deposit made through it moved money that had never arrived.
+     */
+    private const CASH_ACCOUNT_SLUGS = ['cash'];
 
     public function __construct(private CashManagementService $service) {}
 
@@ -117,6 +125,32 @@ class CashManagementController extends Controller
                 })
             : collect();
 
+        // The cheques the office is holding: received, still pending with the
+        // bank, and not already on a deposit. This is what the deposit screen
+        // offers to bank, in place of asking somebody to type a cheque out.
+        $undepositedChecks = Schema::hasTable('checks')
+            ? \App\Models\Check::with('customer')
+                ->where('direction', \App\Models\Check::DIRECTION_RECEIVED)
+                ->where('status', \App\Models\Check::STATUS_PENDING)
+                ->whereNotExists(function ($q) {
+                    $q->selectRaw('1')->from('bank_deposits')
+                        ->whereColumn('bank_deposits.check_id', 'checks.id');
+                })
+                ->orderBy('check_date')
+                ->orderBy('id')
+                ->get()
+                ->map(fn ($c) => [
+                    'id' => $c->id,
+                    'check_number' => $c->check_number,
+                    'check_date' => optional($c->check_date)->toDateString(),
+                    'customer' => $c->customer->name ?? 'Walk-in customer',
+                    'bank_name' => $c->bank_name,
+                    'amount' => (float) $c->amount,
+                    'amount_formatted' => '₱' . number_format((float) $c->amount, 2),
+                ])
+                ->values()
+            : collect();
+
         $deposits = BankDeposit::with(['cashAccount', 'bankAccount', 'createdBy', 'remittances.createdBy.employee'])
             ->orderByDesc('deposit_date')
             ->orderByDesc('id')
@@ -188,6 +222,7 @@ class CashManagementController extends Controller
         $totalWithdrawn    = BankWithdrawal::sum('amount');
 
         return inertia('Modules/Accounting/CashManagement', [
+            'undepositedChecks' => $undepositedChecks,
             'transfers'    => $transfers,
             'funds'        => $funds,
             'bankAccounts' => $bankAccounts,
@@ -279,30 +314,41 @@ class CashManagementController extends Controller
     public function storeDeposit(Request $request)
     {
         $data = $request->validate([
-            'cash_account_id'    => 'required|integer|exists:accounts,id',
+            // Only a cash deposit comes out of an account somebody chooses. A
+            // cheque's source is the cheque itself, and the service sets it.
+            'cash_account_id'    => 'required_if:deposit_type,cash|nullable|integer|exists:accounts,id',
             'bank_account_id'    => 'required|integer|exists:bank_accounts,id',
-            'amount'             => 'required|numeric|min:0.01',
+            'amount'             => 'required_if:deposit_type,cash|nullable|numeric|min:0.01',
             'deposit_date'       => 'required|date',
             'deposit_type'       => 'required|in:cash,check',
-            'check_date'         => 'required_if:deposit_type,check|nullable|date',
-            'check_number'       => 'required_if:deposit_type,check|nullable|string|max:50',
+            // Cheques are picked off the list of what is on hand; their
+            // number, date and amount come from the cheque itself.
+            'check_ids'          => 'required_if:deposit_type,check|array|min:1',
+            'check_ids.*'        => 'integer|exists:checks,id',
             'reference'          => 'nullable|string|max:100',
             'notes'              => 'nullable|string|max:500',
             'remittance_ids'     => 'nullable|array',
             'remittance_ids.*'   => 'integer|exists:remittances,id',
         ]);
 
-        $amount = round((float) $data['amount'], 2);
-        // Pending check deposits are already spoken for, so they do not count
-        // as available cash.
-        $sourceBalance = $this->service->getAvailableCashBalance((int) $data['cash_account_id']);
-        if ($amount > $sourceBalance) {
-            $message = 'Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').';
+        // Only cash is held to a balance, and only cash carries an amount at
+        // all: a cheque is worth what is written on it. A cheque is also the
+        // customer's money passing through, posted nowhere until it clears,
+        // so measuring it against the drawer refused every cheque on a day
+        // the drawer happened to be empty.
+        if (($data['deposit_type'] ?? 'cash') === 'cash') {
+            $amount = round((float) $data['amount'], 2);
+            // Pending check deposits are already spoken for, so they do not
+            // count as available cash.
+            $sourceBalance = $this->service->getAvailableCashBalance((int) $data['cash_account_id']);
+            if ($amount > $sourceBalance) {
+                $message = 'Amount exceeds this cash account\'s available balance (₱' . number_format($sourceBalance, 2) . ').';
 
-            return response()->json([
-                'message' => $message,
-                'errors'  => ['amount' => [$message]],
-            ], 422);
+                return response()->json([
+                    'message' => $message,
+                    'errors'  => ['amount' => [$message]],
+                ], 422);
+            }
         }
 
         $deposit = $this->service->createBankDeposit($data);

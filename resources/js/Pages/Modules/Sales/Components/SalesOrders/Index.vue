@@ -164,10 +164,20 @@
                                                     class="action-btn info" v-b-tooltip.hover title="Status Timeline">
                                                     <i class="ri-route-line"></i>
                                                 </button>
-                                                <button @click.stop="onPrint(list.id)"
+                                                <!-- A credit sale waiting on an approver is not a
+                                                     document yet: the page it would print says nothing
+                                                     about credit, so it reads as an approved order. The
+                                                     server refuses it too; this is so nobody meets that
+                                                     refusal without warning. -->
+                                                <button v-if="!list.credit_pending"
+                                                    @click.stop="onPrint(list.id)"
                                                     class="action-btn info" v-b-tooltip.hover title="Print Invoice">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
+                                                <span v-else class="action-btn info is-disabled"
+                                                    v-b-tooltip.hover title="Printable once the credit is approved">
+                                                    <i class="ri-printer-line"></i>
+                                                </span>
                                                 <button v-if="isEditableOrder(list) && can('sales', 'sales_orders', 'encoder')"
                                                     @click.stop="openEdit(list, index)"
                                                     class="action-btn edit" v-b-tooltip.hover title="Edit">
@@ -831,5 +841,13 @@ export default {
             width: 100%;
         }
     }
+
+/* The print button standing in for itself while the credit is unapproved:
+   present, so the row does not jump about, and plainly not available. */
+.action-btn.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
 
 </style>
