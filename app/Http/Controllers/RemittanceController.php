@@ -52,6 +52,9 @@ class RemittanceController extends Controller
                         'drivers' => $this->dropdown->drivers(),
                         'sales_reps' => $this->dropdown->sales_reps(),
                     ],
+                    // Review on the Approvals page links here with ?from=approvals;
+                    // the screen then offers the way back.
+                    'backUrl' => $request->query('from') === 'approvals' ? '/approvals' : null,
                 ]);
             break;
         }

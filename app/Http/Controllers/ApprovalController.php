@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Approvals\ApprovalDetails;
 use App\Services\Approvals\ApprovalService;
 use App\Traits\HandlesTransaction;
 use Illuminate\Http\Request;
@@ -54,6 +55,19 @@ class ApprovalController extends Controller
                     'focusId' => $request->query('focus'),
                 ]);
         }
+    }
+
+    /**
+     * The View button: one record's details, in one shape for every source.
+     * Held to the same rule as the list — only sources the viewer may approve.
+     */
+    public function show(Request $request, ApprovalDetails $details, string $source, int $id)
+    {
+        if (! in_array($source, $this->service->allowedSourceKeys($request->user()), true)) {
+            abort(403, 'You do not have access to these approvals.');
+        }
+
+        return response()->json($details->for($source, $id));
     }
 
     public function decide(Request $request, string $source, int $id)

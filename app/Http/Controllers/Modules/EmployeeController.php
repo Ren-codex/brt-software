@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SalesOrderIncentive;
 use App\Services\Modules\EmployeeClass;
 use App\Http\Requests\Modules\EmployeeRequest;
+use App\Services\System\Permission\PermissionService;
 
 class EmployeeController extends Controller
 {
@@ -27,6 +28,15 @@ class EmployeeController extends Controller
         switch($request->option){
             case 'lists':
                 return $this->employee->lists($request);
+            break;
+            // The Login Account picker on Edit Employee. Account names are
+            // User Management's to show, so it asks for that grant too.
+            case 'unlinked_accounts':
+                abort_unless(
+                    app(PermissionService::class)->userHasAccess($request->user(), 'user_management', null, 'encoder'),
+                    403
+                );
+                return response()->json($this->dropdown->accountsWithoutEmployee());
             break;
             default:
                 return inertia('Modules/Employees/Index', [
@@ -46,9 +56,13 @@ class EmployeeController extends Controller
         });
 
         return back()->with([
+            // The saved employee and, when one was made, its new account's
+            // username and default password for the form to show.
+            'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'password' => $result['password'] ?? null,
         ]);
     }
 
