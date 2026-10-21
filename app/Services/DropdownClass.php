@@ -295,16 +295,47 @@ class DropdownClass
             });
     }
 
+    /**
+     * Anyone who sells, whether it is their main job or one they also cover.
+     *
+     * An employee has one position and it is the one that pays, so somebody
+     * repping alongside another job holds it as an extra position instead.
+     * Both count here: the list is about who may be picked, not who is paid
+     * what.
+     */
     public function sales_reps()
     {
-        $data = Employee::where('position_id', ListPosition::getID('Sales Rep'))->get()->map(function ($item) {
+        $positionId = ListPosition::getID('Sales Rep');
+
+        $data = $this->holdingPosition([$positionId])->map(function ($item) {
             return [
                 'value' => $item->id,
                 'name' => $item->fullname,
             ];
         });
 
-        return $data;
+        return $data->values();
+    }
+
+    /**
+     * Everyone holding any of these positions, as their paying one or as a
+     * job they also cover. Each person once, however many of them match.
+     */
+    private function holdingPosition($positionIds)
+    {
+        $positionIds = collect($positionIds)->filter()->values();
+
+        if ($positionIds->isEmpty()) {
+            return collect();
+        }
+
+        return Employee::with('position')
+            ->where(function ($query) use ($positionIds) {
+                $query->whereIn('position_id', $positionIds)
+                    ->orWhereHas('extraPositions', fn ($q) => $q->whereIn('list_positions.id', $positionIds));
+            })
+            ->get()
+            ->unique('id');
     }
 
     /**
@@ -318,21 +349,24 @@ class DropdownClass
     {
         $positionIds = ListPosition::whereRaw('LOWER(title) LIKE ?', ['%driver%'])->pluck('id');
 
-        $data = Employee::with('position')
-            ->whereIn('position_id', $positionIds)
-            ->get()
+        $data = $this->holdingPosition($positionIds)
             ->sortBy(fn ($item) => [$item->position->title ?? '', $item->fullname])
             ->values()
-            ->map(function ($item) {
-                $position = $item->position ? $item->position->title : null;
+            ->map(function ($item) use ($positionIds) {
+                // The driving position, which for somebody who drives as a
+                // second job is not the one they are paid as. Labelling them
+                // "Bea Cruz — Sales Rep" in the driver list helps nobody.
+                $driving = $positionIds->contains($item->position_id)
+                    ? optional($item->position)->title
+                    : optional($item->extraPositions->whereIn('id', $positionIds)->first())->title;
 
                 return [
                     'value' => $item->id,
-                    'name' => $position ? $item->fullname.' — '.$position : $item->fullname,
+                    'name' => $driving ? $item->fullname.' — '.$driving : $item->fullname,
                 ];
             });
 
-        return $data;
+        return $data->values();
     }
 
     /**

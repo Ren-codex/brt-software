@@ -215,7 +215,39 @@
                                         {{ position.title }}
                                     </option>
                                 </select>
+                                <small class="field-hint">This sets the daily rate they are paid.</small>
                                 <span class="error-text" v-if="form.errors.position_id">{{ form.errors.position_id }}</span>
+                            </div>
+
+                            <!-- Other jobs this person covers: a rep who drives
+                                 when a driver is out, a driver on a second
+                                 truck. They decide which lists the person can
+                                 be picked from, and nothing else — the pay
+                                 stays with the position above. -->
+                            <div class="form-group">
+                                <label>Also works as <span class="optional">(optional)</span></label>
+                                <div class="extra-positions">
+                                    <label
+                                        v-for="position in otherPositions"
+                                        :key="position.value"
+                                        class="extra-position"
+                                        :class="{ picked: form.extra_position_ids.includes(position.value) }"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            :value="position.value"
+                                            :checked="form.extra_position_ids.includes(position.value)"
+                                            @change="toggleExtraPosition(position.value)"
+                                        >
+                                        {{ position.title }}
+                                    </label>
+                                    <p v-if="!otherPositions.length" class="field-hint mb-0">
+                                        Pick a position above first.
+                                    </p>
+                                </div>
+                                <small class="field-hint">
+                                    Only changes which lists they appear in — drivers, sales reps. Pay is unaffected.
+                                </small>
                             </div>
 
                             <div class="form-group">
@@ -336,6 +368,8 @@ export default {
                 religion: null,
                 address: null,
                 position_id: null,
+                // Other jobs they cover; never the paying one above.
+                extra_position_ids: [],
                 hours_per_day: 8,
                 overtime_rate: 0,
                 avatar: null,
@@ -352,7 +386,20 @@ export default {
             previewImage: null,
         }
     },
+    computed: {
+        /** Everything except the one that pays — holding that twice says nothing. */
+        otherPositions() {
+            if (!this.form.position_id) return [];
+
+            return (this.dropdowns.positions || []).filter(p => p.value !== this.form.position_id);
+        },
+    },
     methods: {
+        toggleExtraPosition(id) {
+            const idx = this.form.extra_position_ids.indexOf(id);
+            if (idx === -1) this.form.extra_position_ids.push(id);
+            else this.form.extra_position_ids.splice(idx, 1);
+        },
         show() {
             this.form.reset();
             this.form.is_active = 1;
@@ -377,6 +424,7 @@ export default {
             this.form.religion = data.religion;
             this.form.address = data.address;
             this.form.position_id = data.position_id;
+            this.form.extra_position_ids = [...(data.extra_position_ids || [])];
             this.form.hours_per_day = data.hours_per_day ?? 8;
             this.form.overtime_rate = data.overtime_rate ?? 0;
             this.form.is_regular = data.is_regular;
@@ -1178,4 +1226,36 @@ input:checked + .toggle-slider:before {
         justify-content: center;
     }
 }
+
+/* The other jobs, as tick-chips: a short list people scan, not a dropdown
+   they have to open to see what is already set. */
+.extra-positions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.5rem 0;
+}
+.extra-position {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid #d9e6e1;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background: #fff;
+}
+.extra-position.picked {
+    border-color: #3d8d7a;
+    background: rgba(61, 141, 122, 0.08);
+    color: #16322e;
+}
+.field-hint {
+    display: block;
+    font-size: 0.72rem;
+    color: #6b8c85;
+}
+.optional { font-weight: 400; color: #6b8c85; font-size: 0.78rem; }
+
 </style>

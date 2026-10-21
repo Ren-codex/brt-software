@@ -31,6 +31,12 @@ class EmployeeResource extends JsonResource
             'is_blacklisted' => $this->is_blacklisted,
             'user' => $this->user,
             'position' => $this->position,
+            // The other jobs they cover. The paying one is 'position' above.
+            'extra_positions' => $this->whenLoaded('extraPositions', fn () => $this->extraPositions->map(fn ($p) => [
+                'id' => $p->id,
+                'title' => $p->title,
+            ])->values(), []),
+            'extra_position_ids' => $this->whenLoaded('extraPositions', fn () => $this->extraPositions->pluck('id')->values(), []),
             'added_by' => $this->added_by,
             'created_at' => $this->created_at->format('F d, Y'),
             'updated_at' => $this->updated_at->format('F d, Y'),

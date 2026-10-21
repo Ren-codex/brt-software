@@ -50,6 +50,10 @@ class EmployeeRequest extends FormRequest
             'religion' => 'nullable|string|max:100',
             'address' => 'nullable|string|max:500',
             'position_id' => 'required|exists:list_positions,id',
+            // The other jobs this person covers. Optional, and never the one
+            // that pays — that is position_id, and payroll reads only it.
+            'extra_position_ids' => 'sometimes|array',
+            'extra_position_ids.*' => 'integer|exists:list_positions,id',
             'hours_per_day' => 'nullable|numeric|min:0|max:24',
             'overtime_rate' => 'nullable|numeric|min:0',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',

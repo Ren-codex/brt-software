@@ -20,7 +20,7 @@ class EmployeeClass
 
     public function lists($request){
         $data = EmployeeResource::collection(
-            Employee::with(['user.roles', 'user.myroles.role', 'position', 'added_by', 'loans.payments'])
+            Employee::with(['user.roles', 'user.myroles.role', 'position', 'extraPositions', 'added_by', 'loans.payments'])
                 ->when($request->keyword, function ($query,$keyword) {
                     $keyword = strtolower($keyword);
                     $query->where(function($q) use ($keyword) {
@@ -112,8 +112,12 @@ class EmployeeClass
             'added_by_id' => $userId ?: auth()->id(),
         ]);
 
+        // The other jobs this person covers. Never the paying one — that is
+        // position_id above, and payroll reads only that.
+        $data->syncExtraPositions($request->input('extra_position_ids', []));
+
         return [
-            'data' => new EmployeeResource($data->load('user')),
+            'data' => new EmployeeResource($data->load('user', 'extraPositions')),
             'message' => 'Employee saved successfully!',
             'info' => "You've successfully saved the employee"
         ];
@@ -177,8 +181,15 @@ class EmployeeClass
             'user_id' => $user ? $user->id : $data->user_id,
         ]);
 
+        // Only when the form sent them: other screens update an employee
+        // without ever showing this field, and a missing key must not be read
+        // as "they cover nothing else now".
+        if ($request->has('extra_position_ids')) {
+            $data->syncExtraPositions($request->input('extra_position_ids', []));
+        }
+
         return [
-            'data' => new EmployeeResource($data->load('user')),
+            'data' => new EmployeeResource($data->load('user', 'extraPositions')),
             'message' => 'Employee updated successfully!',
             'info' => "You've successfully updated the employee"
         ];

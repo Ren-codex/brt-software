@@ -38,6 +38,48 @@ class Employee extends Model
     public function user()     { return $this->belongsTo(User::class); }
     public function position() { return $this->belongsTo(ListPosition::class, 'position_id'); }
 
+    /**
+     * The other jobs this person covers.
+     *
+     * Never the one that pays — that is position() above, and payroll reads
+     * only that. These say who may be picked as a driver, a rep, and so on,
+     * for somebody whose main job is something else.
+     */
+    public function extraPositions()
+    {
+        return $this->belongsToMany(ListPosition::class, 'employee_positions', 'employee_id', 'position_id')->withTimestamps();
+    }
+
+    /**
+     * Set the other jobs this person covers.
+     *
+     * The paying position is dropped if it is passed in: holding it twice
+     * says nothing and would print the title twice beside their name.
+     */
+    public function syncExtraPositions($positionIds): void
+    {
+        $ids = collect($positionIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->reject(fn ($id) => $id === (int) $this->position_id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $this->extraPositions()->sync($ids);
+    }
+
+    /** Every position this person holds, the paying one first. */
+    public function allPositionIds(): array
+    {
+        return collect([$this->position_id])
+            ->merge($this->extraPositions->pluck('id'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     // Note: sex, religion, suffix are stored as strings, not foreign keys
 
     public function getFullnameAttribute()
