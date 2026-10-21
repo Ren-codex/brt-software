@@ -90,6 +90,17 @@ class RemittancePermissionTest extends TestCase
                 ->has('dropdowns.sales_reps'));
     }
 
+    public function test_opened_from_approvals_it_offers_the_way_back(): void
+    {
+        $user = $this->administratorWithGrant('view');
+
+        $this->actingAs($user)->get('/remittances?from=approvals')
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('backUrl', '/approvals'));
+
+        $this->actingAs($user)->get('/remittances')
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('backUrl', null));
+    }
+
     public function test_store_denied_without_encoder_grant(): void
     {
         $user = $this->administratorWithGrant('view');

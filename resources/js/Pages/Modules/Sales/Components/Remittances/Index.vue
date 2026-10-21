@@ -6,6 +6,11 @@
                     <div class="library-card">
                         <div class="library-card-header">
                                 <div class="d-flex align-items-center gap-3">
+                                    <!-- Only when opened from Review on the Approvals page. -->
+                                    <Link v-if="backUrl" :href="backUrl" class="create-btn" title="Back to Approvals">
+                                        <i class="ri-arrow-left-line"></i>
+                                        <span>Approvals</span>
+                                    </Link>
                                     <div class="header-icon">
                                         <i class="ri-shopping-cart-line fs-24"></i>
                                     </div>
@@ -351,7 +356,9 @@ import { pollingMixin } from '@/Shared/polling.js';
 export default {
     components: { Pagination, Create, View, SummaryView, FieldCollections, TableLoadingRow },
     mixins: [listSortMixin, pollingMixin],
-    props: ['dropdowns'],
+    // backUrl is only set when this screen is opened on its own from the
+    // Approvals page; inside the Sales page it is absent.
+    props: ['dropdowns', 'backUrl'],
     data() {
         return {
             loading: false,

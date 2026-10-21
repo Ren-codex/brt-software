@@ -186,7 +186,7 @@
                                                          collect, so they link out instead of offering a
                                                          button that cannot complete. -->
                                                     <Link v-if="!row.can_approve_inline || !row.can_reject_inline"
-                                                        :href="row.url" class="act-btn act-review">
+                                                        :href="reviewUrl(row)" class="act-btn act-review">
                                                         <i class="ri-external-link-line"></i> Review
                                                     </Link>
                                                 </div>
@@ -426,6 +426,10 @@ export default {
                 row.remarks,
                 row.decided_at ? this.shortDate(row.decided_at) : null,
             ].filter(v => v !== null && v !== undefined).join(' ').toLowerCase();
+        },
+        /** Tells the module screen it was opened from here, so it can offer a way back. */
+        reviewUrl(row) {
+            return row.url + (row.url.includes('?') ? '&' : '?') + 'from=approvals';
         },
         rowKey(row) {
             // A decided row has its own key: one record decided twice is two rows.
