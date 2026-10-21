@@ -165,4 +165,99 @@ class EmployeeLoginAccountTest extends TestCase
 
         $this->assertSame(0, Employee::count());
     }
+
+    // ── Edit Employee: linking an account that already exists ──
+
+    private function unlinkedEmployee(): Employee
+    {
+        return Employee::create([
+            'firstname' => 'Joshua', 'middlename' => 'Reyes', 'lastname' => 'Santos', 'mobile' => '09171234567',
+            'birthdate' => '1995-03-29', 'sex' => 'Male', 'religion' => 'None', 'is_regular' => 0, 'is_active' => 1,
+            'position_id' => ListPosition::create(['title' => 'Clerk', 'slug' => 'clerk-'.uniqid(), 'rate_per_day' => 500])->id,
+        ]);
+    }
+
+    private function edit(User $as, Employee $employee, array $overrides)
+    {
+        return $this->actingAs($as)->put('/employees/'.$employee->id, array_merge([
+            // The form sends the id in the body too; the update reads it there.
+            'id' => $employee->id,
+            'firstname' => $employee->firstname, 'middlename' => $employee->middlename, 'lastname' => $employee->lastname,
+            'mobile' => $employee->mobile, 'birthdate' => '1995-03-29', 'sex' => $employee->sex,
+            'position_id' => $employee->position_id, 'is_regular' => 0, 'is_active' => 1, 'is_blacklisted' => 0,
+            'account_id' => $employee->user_id,
+        ], $overrides));
+    }
+
+    public function test_editing_links_an_existing_account(): void
+    {
+        $encoder = $this->userWith(['employees' => 'encoder', 'user_management' => 'encoder']);
+        $account = User::factory()->create(['username' => 'joshu@29']);
+        $employee = $this->unlinkedEmployee();
+
+        $this->edit($encoder, $employee, ['account_id' => $account->id])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('info', "Linked to the account joshu@29. It now shows this employee's name.");
+
+        $this->assertSame($account->id, $employee->fresh()->user_id);
+        // What the Payroll Clerk column reads.
+        $this->assertSame('Joshua R. Santos', $account->fresh()->employee->fullname);
+    }
+
+    public function test_an_account_another_employee_has_is_refused(): void
+    {
+        $encoder = $this->userWith(['employees' => 'encoder', 'user_management' => 'encoder']);
+        $taken = User::factory()->create();
+        Employee::create(['firstname' => 'Ana', 'lastname' => 'Cruz', 'mobile' => '09170000009', 'birthdate' => '1990-01-01',
+            'sex' => 'Female', 'religion' => 'None', 'user_id' => $taken->id]);
+        $employee = $this->unlinkedEmployee();
+
+        $this->edit($encoder, $employee, ['account_id' => $taken->id])->assertSessionHasErrors('account_id');
+
+        $this->assertNull($employee->fresh()->user_id);
+    }
+
+    public function test_clearing_the_picker_unlinks_the_account(): void
+    {
+        $encoder = $this->userWith(['employees' => 'encoder', 'user_management' => 'encoder']);
+        $employee = $this->unlinkedEmployee();
+        $employee->update(['user_id' => User::factory()->create()->id]);
+
+        $this->edit($encoder, $employee, ['account_id' => null])->assertSessionHasNoErrors();
+
+        $this->assertNull($employee->fresh()->user_id);
+    }
+
+    public function test_changing_the_link_needs_user_management_access_but_a_plain_edit_does_not(): void
+    {
+        $encoder = $this->userWith(['employees' => 'encoder']);
+        $employee = $this->unlinkedEmployee();
+
+        // The picker left as it was: an ordinary edit.
+        $this->edit($encoder, $employee, ['lastname' => 'Santos-Cruz'])->assertSessionHasNoErrors();
+        $this->assertSame('Santos-Cruz', $employee->fresh()->lastname);
+
+        $this->edit($encoder, $employee->fresh(), ['account_id' => User::factory()->create()->id])
+            ->assertSessionHasErrors('account_id');
+        $this->assertNull($employee->fresh()->user_id);
+    }
+
+    public function test_the_picker_lists_only_accounts_nobody_is_linked_to(): void
+    {
+        $encoder = $this->userWith(['employees' => 'encoder', 'user_management' => 'encoder']);
+        User::factory()->create(['username' => 'joshu@29']);
+        $linked = User::factory()->create(['username' => 'linked01']);
+        Employee::create(['firstname' => 'Ana', 'lastname' => 'Cruz', 'mobile' => '09170000009', 'birthdate' => '1990-01-01',
+            'sex' => 'Female', 'religion' => 'None', 'user_id' => $linked->id]);
+
+        $names = collect($this->actingAs($encoder)->getJson('/employees?option=unlinked_accounts')->assertOk()->json())
+            ->pluck('name');
+
+        $this->assertTrue($names->contains(fn ($name) => str_starts_with($name, 'joshu@29')));
+        $this->assertFalse($names->contains(fn ($name) => str_starts_with($name, 'linked01')));
+
+        $this->actingAs($this->userWith(['employees' => 'encoder']))
+            ->getJson('/employees?option=unlinked_accounts')
+            ->assertForbidden();
+    }
 }

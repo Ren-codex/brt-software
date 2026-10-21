@@ -44,6 +44,14 @@ class EmployeeRequest extends FormRequest
                 Rule::unique('users', 'username')->ignore($ignoreUserId),
             ],
             'create_account' => 'nullable|boolean',
+            // The Login Account picker on Edit Employee: an existing account
+            // to link, never one another employee is already linked to.
+            'account_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+                Rule::unique('employees', 'user_id')->ignore($employeeId),
+            ],
             'role_ids' => $this->filled('username') || $this->wantsAccount() ? 'required|array|min:1' : 'nullable|array',
             'role_ids.*' => 'exists:list_roles,id',
             'password' => $this->isMethod('post') || $this->filled('password') ? 'nullable|string|min:8|confirmed' : 'nullable',
@@ -76,16 +84,38 @@ class EmployeeRequest extends FormRequest
     }
 
     /**
-     * Making an account here is the same act as making one in User Management,
-     * so it needs the same grant, not just the employees one this route checks.
+     * Whether an edit changes which account the employee is linked to. The
+     * form always sends the current one, so an edit that leaves the picker
+     * alone is not a change, and needs no extra grant.
+     */
+    public function changesAccount(): bool
+    {
+        if (! $this->isMethod('put') || ! $this->has('account_id')) {
+            return false;
+        }
+
+        $current = \App\Models\Employee::find($this->route('employee'))?->user_id;
+
+        return (int) ($this->input('account_id') ?: 0) !== (int) ($current ?: 0);
+    }
+
+    /**
+     * Making or linking an account here is the same act as doing it in User
+     * Management, so it needs that grant, not just the employees one this
+     * route checks.
      */
     public function after(): array
     {
         return [
             function ($validator) {
-                if ($this->wantsAccount() && ! app(PermissionService::class)
-                    ->userHasAccess($this->user(), 'user_management', null, 'encoder')) {
+                $permissions = app(PermissionService::class);
+                $mayManageAccounts = fn () => $permissions->userHasAccess($this->user(), 'user_management', null, 'encoder');
+
+                if ($this->wantsAccount() && ! $mayManageAccounts()) {
                     $validator->errors()->add('create_account', 'Creating a login account needs User Management access.');
+                }
+                if ($this->changesAccount() && ! $mayManageAccounts()) {
+                    $validator->errors()->add('account_id', 'Linking a login account needs User Management access.');
                 }
             },
         ];
@@ -100,6 +130,7 @@ class EmployeeRequest extends FormRequest
             'email.unique' => 'This email is already taken',
             'mobile.regex' => 'Mobile number must be in the format 09XXXXXXXXX',
             'mobile.unique' => 'This mobile number is already taken',
+            'account_id.unique' => 'That account is already linked to another employee',
             'role_ids.required' => 'Please select at least one role',
             'role_ids.min' => 'Please select at least one role',
             'avatar.image' => 'Avatar must be an image file',

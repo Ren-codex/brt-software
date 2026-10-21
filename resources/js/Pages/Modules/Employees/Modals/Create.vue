@@ -351,6 +351,54 @@
                         </div>
                     </div>
 
+                    <!-- Login account on edit: link an account that already exists
+                         (or clear it), for someone who may manage accounts. -->
+                    <div class="form-section" v-if="editable && can('user_management', 'encoder')">
+                        <h3 class="section-title">
+                            <i class="ri-shield-user-line"></i>
+                            Login Account
+                        </h3>
+
+                        <div class="form-group">
+                            <label>Account this employee signs in with</label>
+                            <Multiselect
+                                v-model="form.account_id"
+                                :options="accountOptions"
+                                label="name"
+                                :searchable="true"
+                                :can-clear="true"
+                                :loading="accountsLoading"
+                                :disabled="saveSuccess"
+                                placeholder="No account linked — pick one"
+                                no-options-text="Every account is already linked to an employee"
+                                class="role-multiselect"
+                                :class="{ 'has-error': form.errors.account_id }"
+                                @change="handleInput('account_id')"
+                            />
+                            <span class="error-text" v-if="form.errors.account_id">{{ form.errors.account_id }}</span>
+                        </div>
+
+                        <div class="account-preview">
+                            <div class="account-preview-title">
+                                <i class="ri-information-line"></i>
+                                {{ accountChange ? 'On save' : 'How this works' }}
+                            </div>
+                            <span v-if="accountChange === 'link'" class="account-preview-note">
+                                <b>{{ chosenAccountName }}</b> is linked to this employee. Wherever that account is listed —
+                                Payroll Clerk, Approved By and the like — it will show <b>{{ previewFullname }}</b>
+                                instead of the username, and it can save its own profile.
+                            </span>
+                            <span v-else-if="accountChange === 'unlink'" class="account-preview-note">
+                                <b>{{ originalAccount.username }}</b> is unlinked. That account goes back to showing its
+                                username, and can no longer save a profile.
+                            </span>
+                            <span v-else class="account-preview-note">
+                                Only accounts no other employee is linked to are listed. To give them a brand-new account,
+                                use User Management &rarr; Add Account and pick this employee.
+                            </span>
+                        </div>
+                    </div>
+
                     <transition name="fade">
                         <div class="submit-message submit-message-error" v-if="submitError" ref="submitError">
                             <div class="submit-message-icon">
@@ -433,6 +481,9 @@ export default {
                 // The Login Account switch, and the roles the account gets.
                 create_account: 0,
                 role_ids: [],
+                // Edit only: the account the employee is linked to. Always sent
+                // as it stands, so leaving the picker alone changes nothing.
+                account_id: null,
                 option: 'lists'
             }),
             showModal: false,
@@ -443,11 +494,34 @@ export default {
             previewImage: null,
             // { username, password } once an account has been made.
             createdAccount: null,
+            // Edit: the account linked when the form opened, and the picker's list.
+            originalAccount: null,
+            accountOptions: [],
+            accountsLoading: false,
         }
     },
     computed: {
         roleOptions() {
             return Array.isArray(this.dropdowns?.roles) ? this.dropdowns.roles : [];
+        },
+        /** 'link', 'unlink', or null when the picker still shows what is linked. */
+        accountChange() {
+            const before = this.originalAccount?.id ?? null;
+            const after = this.form.account_id ?? null;
+            if (before === after) return null;
+            return after === null ? 'unlink' : 'link';
+        },
+        chosenAccountName() {
+            return this.accountOptions.find(option => option.value === this.form.account_id)?.name ?? '';
+        },
+        /** The name the account will show, built as Employee::getFullnameAttribute builds it. */
+        previewFullname() {
+            const middle = (this.form.middlename || '').trim();
+            const name = [this.form.firstname, middle ? middle[0].toUpperCase() + '.' : '', this.form.lastname]
+                .map(part => (part || '').trim())
+                .filter(Boolean)
+                .join(' ');
+            return this.form.suffix ? `${name}, ${this.form.suffix}` : name;
         },
         /**
          * The username the account will get, made as UserClass::generateUsername
@@ -494,6 +568,8 @@ export default {
             this.form.is_regular = 0;
             this.form.create_account = 0;
             this.form.role_ids = [];
+            this.form.account_id = null;
+            this.originalAccount = null;
             this.createdAccount = null;
             this.previewImage = null;
             this.editable = false;
@@ -520,7 +596,10 @@ export default {
             this.form.is_regular = data.is_regular;
             this.form.is_active = data.is_active;
             this.form.is_blacklisted = data.is_blacklisted;
-            
+            this.form.account_id = data.user?.id ?? null;
+            this.originalAccount = data.user ? { id: data.user.id, username: data.user.username } : null;
+            if (this.can('user_management', 'encoder')) this.loadAccountOptions();
+
             // Handle avatar preview - construct the correct storage path
             if (data.avatar) {
                 // Check if avatar already has 'avatars/' prefix or just the filename
@@ -543,6 +622,7 @@ export default {
             this.submitError = '';
 
             if (this.editable) {
+                const linkChanged = this.accountChange !== null;
                 this.form.put(`/employees/${this.form.id}`, {
                     preserveScroll: true,
                     onSuccess: (page) => {
@@ -552,7 +632,8 @@ export default {
                             return;
                         }
 
-                        this.successMessage = flash.message || 'Employee updated successfully!';
+                        // A changed link is worth saying in so many words.
+                        this.successMessage = (linkChanged && flash.info) || flash.message || 'Employee updated successfully!';
                         this.saveSuccess = true;
                         setTimeout(() => {
                             this.$emit('update', true);
@@ -596,6 +677,19 @@ export default {
                     },
                 });
             }
+        },
+        /** Accounts nobody is linked to, plus this employee's own, fetched fresh each edit. */
+        loadAccountOptions() {
+            const own = this.originalAccount
+                ? [{ value: this.originalAccount.id, name: `${this.originalAccount.username} (linked now)` }]
+                : [];
+            this.accountOptions = own;
+            this.accountsLoading = true;
+
+            axios.get('/employees', { params: { option: 'unlinked_accounts' } })
+                .then(res => { this.accountOptions = [...own, ...(res.data || [])]; })
+                .catch(() => { this.accountOptions = own; })
+                .finally(() => { this.accountsLoading = false; });
         },
         handleInput(field) {
             this.form.errors[field] = false;

@@ -295,6 +295,23 @@ class DropdownClass
             });
     }
 
+    /**
+     * The other side of employeesWithoutAccount(): sign-in accounts no employee
+     * is linked to, for the Login Account picker on Edit Employee.
+     */
+    public function accountsWithoutEmployee()
+    {
+        return \App\Models\User::doesntHave('employee')
+            ->orderBy('username')
+            ->get(['id', 'username', 'email', 'is_active'])
+            ->map(fn ($user) => [
+                'value' => $user->id,
+                'name' => $user->username
+                    .($user->email ? " ({$user->email})" : '')
+                    .($user->is_active ? '' : ' — inactive'),
+            ]);
+    }
+
     public function sales_reps()
     {
         $data = Employee::where('position_id', ListPosition::getID('Sales Rep'))->get()->map(function ($item) {

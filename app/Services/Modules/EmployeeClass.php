@@ -180,14 +180,41 @@ class EmployeeClass
             'is_regular' => $request->is_regular,
             'is_active' => $request->is_active,
             'is_blacklisted' => $request->is_blacklisted,
-            'user_id' => $user ? $user->id : $data->user_id,
+            // $user is the account the username path above worked on, if it ran.
+            'user_id' => $accountId = $this->linkedAccountId($request, $request->filled('username') ? $user : null, $data),
         ]);
+
+        $info = "You've successfully updated the employee";
+        if ($data->wasChanged('user_id')) {
+            $account = $accountId ? User::find($accountId) : null;
+            $info = $account
+                ? "Linked to the account {$account->username}. It now shows this employee's name."
+                : 'Unlinked from its login account.';
+        }
 
         return [
             'data' => new EmployeeResource($data->load('user')),
             'message' => 'Employee updated successfully!',
-            'info' => "You've successfully updated the employee"
+            'info' => $info,
         ];
+    }
+
+    /**
+     * Which account the employee ends up linked to: the one the username path
+     * worked on, else the one picked in the Login Account picker on Edit
+     * Employee (null to unlink), else whatever it already had.
+     */
+    protected function linkedAccountId($request, ?User $fromUsername, Employee $employee): ?int
+    {
+        if ($fromUsername) {
+            return $fromUsername->id;
+        }
+
+        if ($request->has('account_id')) {
+            return $request->account_id ?: null;
+        }
+
+        return $employee->user_id;
     }
 
     public function toggleActive($request){
