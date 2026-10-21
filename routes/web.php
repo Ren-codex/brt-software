@@ -101,6 +101,7 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     // Which roles are responsible for a module, for the in-app guides.
     Route::get('/guides/roles', [\App\Http\Controllers\GuideController::class, 'roles']);
     Route::get('/approvals', [\App\Http\Controllers\ApprovalController::class, 'index']);
+    Route::get('/approvals/{source}/{id}', [\App\Http\Controllers\ApprovalController::class, 'show'])->whereNumber('id');
     Route::post('/approvals/{source}/{id}/decide', [\App\Http\Controllers\ApprovalController::class, 'decide']);
 
     // Gated by the granular permission: middleware on each route below.
