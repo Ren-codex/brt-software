@@ -46,9 +46,13 @@ class EmployeeController extends Controller
         });
 
         return back()->with([
+            // The saved employee and, when one was made, its new account's
+            // username and default password for the form to show.
+            'data' => $result['data'],
             'message' => $result['message'],
             'info' => $result['info'],
             'status' => $result['status'],
+            'password' => $result['password'] ?? null,
         ]);
     }
 

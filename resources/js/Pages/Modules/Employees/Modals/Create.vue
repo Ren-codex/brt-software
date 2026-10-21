@@ -19,7 +19,7 @@
 
             <!-- Simple Form -->
             <div class="modal-body">
-                <form class="employee-form" @submit.prevent="submit">
+                <form id="employee-form" class="employee-form" @submit.prevent="submit">
                     <!-- Profile Picture - Simple -->
                     <div class="profile-section" :class="{ 'has-error': form.errors.avatar }">
                         <div class="profile-section-header">
@@ -273,8 +273,86 @@
                         </div>
                     </div>
 
+                    <!-- Login account: only when adding, and only for someone who
+                         may create accounts in User Management. -->
+                    <div class="form-section" v-if="!editable && can('user_management', 'encoder')">
+                        <h3 class="section-title">
+                            <i class="ri-shield-user-line"></i>
+                            Login Account
+                        </h3>
+
+                        <div class="form-group">
+                            <label>Will this employee sign in to the system?</label>
+                            <div class="toggle-wrapper">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="form.create_account" :true-value="1" :false-value="0"
+                                        :disabled="saveSuccess" @change="handleInput('create_account')">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label">
+                                    {{ form.create_account ? 'Yes, create a login account' : 'No, no account needed' }}
+                                </span>
+                            </div>
+                            <span class="error-text" v-if="form.errors.create_account">{{ form.errors.create_account }}</span>
+                        </div>
+
+                        <div class="form-grid account-fields" v-if="form.create_account">
+                            <div class="form-group full-width">
+                                <label>Roles <span class="required">*</span></label>
+                                <!-- The same picker User Management uses for roles. -->
+                                <Multiselect
+                                    v-model="form.role_ids"
+                                    :options="roleOptions"
+                                    label="name"
+                                    mode="tags"
+                                    :searchable="true"
+                                    :close-on-select="false"
+                                    :disabled="saveSuccess"
+                                    placeholder="Select roles"
+                                    class="role-multiselect"
+                                    :class="{ 'has-error': form.errors.role_ids }"
+                                    @change="handleInput('role_ids')"
+                                />
+                                <span class="error-text" v-if="form.errors.role_ids">{{ form.errors.role_ids }}</span>
+                            </div>
+                            <!-- What the login will be, worked out from the name and
+                                 birthdate above the same way the server makes it. -->
+                            <div class="account-preview full-width">
+                                <div class="account-preview-title">
+                                    <i class="ri-information-line"></i>
+                                    How their login is made
+                                </div>
+                                <div class="account-preview-row">
+                                    <span class="account-preview-label">Username</span>
+                                    <div v-if="usernamePreview">
+                                        <code>{{ usernamePreview.username }}</code>
+                                        <span class="account-preview-note">
+                                            initials <b>{{ usernamePreview.initials }}</b>
+                                            + birth month &amp; day <b>{{ usernamePreview.monthDay }}</b>
+                                        </span>
+                                    </div>
+                                    <div v-else>
+                                        <span class="account-preview-note">
+                                            e.g. <b>Juan Reyes Santos</b>, born <b>March 29</b> &rarr; <code>jrs0329</code>.
+                                            Fill in the name and birthdate to see theirs.
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="account-preview-row">
+                                    <span class="account-preview-label">Password</span>
+                                    <span class="account-preview-note">
+                                        The default password, shown after saving. They must change it the first time they sign in.
+                                    </span>
+                                </div>
+                                <small class="account-preview-foot">
+                                    If the username is already taken, a number is added, e.g. <code>{{ (usernamePreview?.username || 'jrs0329') + '-2' }}</code>.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
                     <transition name="fade">
-                        <div class="submit-message submit-message-error" v-if="submitError">
+                        <div class="submit-message submit-message-error" v-if="submitError" ref="submitError">
                             <div class="submit-message-icon">
                                 <i class="ri-error-warning-line"></i>
                             </div>
@@ -287,29 +365,37 @@
 
                     <!-- Simple Success Message -->
                     <transition name="fade">
-                        <div class="success-message" v-if="saveSuccess">
+                        <div class="success-message" v-if="saveSuccess" ref="successMessage">
                             <div class="success-message-icon">
                                 <i class="ri-checkbox-circle-line"></i>
                             </div>
                             <div class="success-message-body">
                                 <strong>Employee saved</strong>
                                 <span>{{ successMessage }}</span>
+                                <!-- Kept on screen until closed, so the details can be passed on. -->
+                                <div v-if="createdAccount" class="account-credentials">
+                                    <div><span>Username</span><strong>{{ createdAccount.username }}</strong></div>
+                                    <div><span>Default password</span><strong>{{ createdAccount.password }}</strong></div>
+                                    <small>They will be asked to set a new password the first time they sign in.</small>
+                                </div>
                             </div>
                         </div>
                     </transition>
 
-                    <!-- Simple Form Actions -->
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" @click="hide">
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary" :disabled="form.processing">
-                            <i class="ri-save-line" v-if="!form.processing"></i>
-                            <i class="ri-loader-4-line spinner" v-else></i>
-                            {{ form.processing ? 'Saving...' : (editable ? 'Update Employee' : 'Save Employee') }}
-                        </button>
-                    </div>
                 </form>
+            </div>
+
+            <!-- Outside the scrolling body so the buttons stay in view; the
+                 submit button reaches the form through its id. -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @click="hide">
+                    {{ saveSuccess ? 'Close' : 'Cancel' }}
+                </button>
+                <button type="submit" form="employee-form" class="btn btn-primary" :disabled="form.processing || saveSuccess">
+                    <i class="ri-save-line" v-if="!form.processing"></i>
+                    <i class="ri-loader-4-line spinner" v-else></i>
+                    {{ form.processing ? 'Saving...' : (editable ? 'Update Employee' : 'Save Employee') }}
+                </button>
             </div>
         </div>
     </div>
@@ -317,8 +403,10 @@
 
 <script>
 import { useForm } from '@inertiajs/vue3';
+import Multiselect from '@vueform/multiselect';
 
 export default {
+    components: { Multiselect },
     props: ['dropdowns'],
     data() {
         return {
@@ -342,6 +430,9 @@ export default {
                 is_regular: 0,
                 is_active: 1,
                 is_blacklisted: 0,
+                // The Login Account switch, and the roles the account gets.
+                create_account: 0,
+                role_ids: [],
                 option: 'lists'
             }),
             showModal: false,
@@ -350,13 +441,60 @@ export default {
             successMessage: 'Employee saved successfully!',
             submitError: '',
             previewImage: null,
+            // { username, password } once an account has been made.
+            createdAccount: null,
         }
+    },
+    computed: {
+        roleOptions() {
+            return Array.isArray(this.dropdowns?.roles) ? this.dropdowns.roles : [];
+        },
+        /**
+         * The username the account will get, made as UserClass::generateUsername
+         * makes it: first, middle and last initials plus the birth month and day.
+         * Null until the name and birthdate are in.
+         */
+        usernamePreview() {
+            const first = (this.form.firstname || '').trim();
+            const middle = (this.form.middlename || '').trim();
+            const last = (this.form.lastname || '').trim();
+            const [, month, day] = (this.form.birthdate || '').split('-');
+            if (!first || !last || !month || !day) return null;
+
+            const initials = first[0] + (middle ? middle[0] : '') + last[0];
+
+            return {
+                username: (initials + month + day).toLowerCase(),
+                initials: initials.toUpperCase().split('').join(' · '),
+                monthDay: month + day,
+            };
+        },
+    },
+    watch: {
+        // The messages sit at the foot of a body that scrolls, under the fixed
+        // buttons, so bring each into view when it appears.
+        submitError(message) {
+            if (message) this.$nextTick(() => this.$refs.submitError?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+        },
+        saveSuccess(saved) {
+            if (saved) this.$nextTick(() => this.$refs.successMessage?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+        },
+        // Switching the account off drops the roles picked for it.
+        'form.create_account'(on) {
+            if (!on) {
+                this.form.role_ids = [];
+                this.form.errors.role_ids = false;
+            }
+        },
     },
     methods: {
         show() {
             this.form.reset();
             this.form.is_active = 1;
             this.form.is_regular = 0;
+            this.form.create_account = 0;
+            this.form.role_ids = [];
+            this.createdAccount = null;
             this.previewImage = null;
             this.editable = false;
             this.saveSuccess = false;
@@ -437,6 +575,17 @@ export default {
 
                         this.successMessage = flash.message || 'Employee saved successfully!';
                         this.saveSuccess = true;
+
+                        // An account was made: keep its login details on screen
+                        // until the modal is closed, rather than for a second
+                        // and a half.
+                        const saved = flash.data?.data || flash.data || {};
+                        if (flash.password && saved.user?.username) {
+                            this.createdAccount = { username: saved.user.username, password: flash.password };
+                            this.$emit('add', true);
+                            return;
+                        }
+
                         setTimeout(() => {
                             this.$emit('add', true);
                             this.hide();
@@ -486,6 +635,7 @@ export default {
         hide() {
             this.form.reset();
             this.form.clearErrors();
+            this.createdAccount = null;
             this.previewImage = null;
             this.editable = false;
             this.saveSuccess = false;
@@ -573,7 +723,6 @@ export default {
 
 .modal-body {
     padding: 18px;
-    max-height: calc(100vh - 126px);
     overflow-y: auto;
 }
 
@@ -727,8 +876,7 @@ export default {
 }
 
 .form-group input:focus,
-.form-group select:focus,
-.role-picker-trigger:focus {
+.form-group select:focus {
     outline: none;
     border-color: var(--mint-500);
     box-shadow: 0 0 0 3px rgba(var(--brt-c-2da487-rgb), 0.14);
@@ -740,90 +888,122 @@ export default {
     background: var(--danger-100);
 }
 
-.role-picker {
-    position: relative;
-}
-
-.role-picker-trigger {
-    width: 100%;
-    min-height: 40px;
-    border: 1px solid var(--line-200);
-    border-radius: 10px;
-    background: #fbfefd;
-    color: var(--brt-c-1a302c);
-    padding: 0 11px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    font-size: 0.86rem;
-}
-
-.role-picker-menu {
-    position: absolute;
-    z-index: 20;
-    top: calc(100% + 6px);
-    left: 0;
-    right: 0;
-    max-height: 190px;
-    overflow-y: auto;
-    border: 1px solid var(--line-200);
-    border-radius: 10px;
-    background: #fff;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
-    padding: 6px;
-}
-
-.role-picker-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 8px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.role-picker-option:hover {
-    background: var(--brt-c-f2fbf7);
-}
-
-.role-picker.error .role-picker-trigger {
-    border-color: #e59c92;
-    background: var(--danger-100);
-}
-
-.role-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-}
-
-.role-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: var(--brt-c-e6f7ef);
-    color: var(--brt-c-1e6d57);
-    font-size: 0.74rem;
-    font-weight: 600;
-}
-
-.role-chip button {
-    border: 0;
-    background: transparent;
-    padding: 0;
-    color: inherit;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-}
-
 .error-text {
     font-size: 0.73rem;
     color: var(--danger-500);
+}
+
+.account-fields {
+    margin-top: 12px;
+}
+
+/* Matched to this form's inputs; picked roles show as removable tags. */
+.role-multiselect {
+    --ms-bg: #fbfefd;
+    --ms-border-color: var(--line-200);
+    --ms-border-color-active: var(--mint-500);
+    --ms-radius: 10px;
+    --ms-py: 0.42rem;
+    --ms-px: 0.7rem;
+    --ms-font-size: 0.86rem;
+    --ms-ring-width: 3px;
+    --ms-ring-color: rgba(var(--brt-c-2da487-rgb), 0.14);
+    --ms-placeholder-color: var(--ink-500);
+    --ms-tag-bg: var(--mint-700);
+    --ms-tag-color: #fff;
+    --ms-tag-radius: 999px;
+    --ms-tag-font-weight: 600;
+    --ms-dropdown-radius: 10px;
+    --ms-dropdown-border-color: var(--line-200);
+    --ms-option-font-size: 0.84rem;
+    --ms-option-bg-pointed: var(--brt-c-f2fbf7);
+    --ms-option-color-pointed: var(--ink-900);
+    --ms-option-bg-selected: var(--mint-700);
+    --ms-option-bg-selected-pointed: var(--mint-500);
+    --ms-max-height: 14rem;
+}
+
+.role-multiselect.has-error {
+    --ms-border-color: #e59c92;
+    --ms-bg: var(--danger-100);
+}
+
+.account-preview {
+    grid-column: 1 / -1;
+    border: 1px solid var(--line-200);
+    border-radius: 12px;
+    background: var(--brt-c-f2fbf7);
+    padding: 10px 12px;
+    display: grid;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--ink-700);
+}
+
+.account-preview-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    color: var(--mint-700);
+}
+
+.account-preview-row {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 8px;
+    align-items: baseline;
+}
+
+.account-preview-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-500);
+}
+
+.account-preview-note {
+    color: var(--ink-500);
+}
+
+.account-preview code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-900);
+    background: #fff;
+    border: 1px solid var(--line-200);
+    border-radius: 6px;
+    padding: 1px 6px;
+    margin-right: 6px;
+}
+
+.account-preview-foot {
+    color: var(--ink-500);
+    font-size: 0.72rem;
+}
+
+.account-preview-foot code {
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.account-credentials {
+    margin-top: 8px;
+    display: grid;
+    gap: 4px;
+    font-size: 0.82rem;
+}
+
+.account-credentials div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.account-credentials strong {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
 .password-input {
@@ -1036,16 +1216,6 @@ input:checked + .toggle-slider:before {
     word-break: break-word;
 }
 
-.form-actions {
-    grid-column: 2;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 2px;
-    padding-top: 14px;
-    border-top: 1px solid var(--brt-c-dbe8e4);
-}
-
 .btn {
     min-height: 40px;
     padding: 0 17px;
@@ -1131,8 +1301,7 @@ input:checked + .toggle-slider:before {
     }
 
     .submit-message,
-    .success-message,
-    .form-actions {
+    .success-message {
         grid-column: 1;
     }
 }
@@ -1167,10 +1336,6 @@ input:checked + .toggle-slider:before {
 
     .form-group.full-width {
         grid-column: 1;
-    }
-
-    .form-actions {
-        flex-direction: column-reverse;
     }
 
     .btn {

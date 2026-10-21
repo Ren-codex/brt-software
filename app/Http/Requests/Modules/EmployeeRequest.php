@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Modules;
 
+use App\Services\System\Permission\PermissionService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,16 +28,23 @@ class EmployeeRequest extends FormRequest
             'middlename' => 'nullable|string|max:255',
             'lastname' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:10',
-            'email' => $this->filled('username')
-                ? 'required|email|max:255|unique:employees,email,' . $employeeId
-                : 'nullable|email|max:255|unique:employees,email,' . $employeeId,
+            // Optional even with a login account: they sign in by username.
+            'email' => array_values(array_filter([
+                $this->filled('username') ? 'required' : 'nullable',
+                'email',
+                'max:255',
+                'unique:employees,email,' . $employeeId,
+                // When given, the new account is signed up with it too.
+                $this->wantsAccount() ? 'unique:users,email' : null,
+            ])),
             'username' => [
                 'nullable',
                 'string',
                 'max:255',
                 Rule::unique('users', 'username')->ignore($ignoreUserId),
             ],
-            'role_ids' => $this->filled('username') ? 'required|array|min:1' : 'nullable|array',
+            'create_account' => 'nullable|boolean',
+            'role_ids' => $this->filled('username') || $this->wantsAccount() ? 'required|array|min:1' : 'nullable|array',
             'role_ids.*' => 'exists:list_roles,id',
             'password' => $this->isMethod('post') || $this->filled('password') ? 'nullable|string|min:8|confirmed' : 'nullable',
             'password_confirmation' => $this->isMethod('post') || $this->filled('password') ? 'nullable|string|min:8' : 'nullable',
@@ -58,6 +66,31 @@ class EmployeeRequest extends FormRequest
             'is_blacklisted' => 'nullable|boolean',
         ];
     }
+    /**
+     * The Add Employee form's "Create a login account" switch. Only on adding:
+     * editing an employee never makes an account through this.
+     */
+    public function wantsAccount(): bool
+    {
+        return $this->isMethod('post') && $this->boolean('create_account');
+    }
+
+    /**
+     * Making an account here is the same act as making one in User Management,
+     * so it needs the same grant, not just the employees one this route checks.
+     */
+    public function after(): array
+    {
+        return [
+            function ($validator) {
+                if ($this->wantsAccount() && ! app(PermissionService::class)
+                    ->userHasAccess($this->user(), 'user_management', null, 'encoder')) {
+                    $validator->errors()->add('create_account', 'Creating a login account needs User Management access.');
+                }
+            },
+        ];
+    }
+
     public function messages()
     {
         return [
