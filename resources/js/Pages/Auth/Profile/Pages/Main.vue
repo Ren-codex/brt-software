@@ -110,11 +110,24 @@ import ActivityLog from "./ActivityLog.vue";
 import AuthenticationLog from "./AuthenticationLog.vue";
 import PageHeader from "@/Shared/Components/PageHeader.vue";
 
+const TAB_KEY = "profile_active_tab";
+
+function savedTab() {
+    try {
+        const tab = Number(localStorage.getItem(TAB_KEY));
+        return tab >= 1 && tab <= 5 ? tab : 1;
+    } catch (e) {
+        return 1;
+    }
+}
+
 export default {
     components: { PageHeader, Overview, Edit, AuthenticationLog, ActivityLog, Security },
     data() {
         return {
-            activeTab: 1,
+            // Reopens on the section last viewed, as the Sales, Inventory and
+            // Payroll pages do; Overview the first time, or if storage is blocked.
+            activeTab: savedTab(),
             form: useForm({
                 image: null,
             }),
@@ -123,6 +136,11 @@ export default {
     methods: {
         show(tab) {
             this.activeTab = tab;
+            try {
+                localStorage.setItem(TAB_KEY, String(tab));
+            } catch (e) {
+                // Private window or blocked storage: the tab just won't be remembered.
+            }
         },
         previewImage() {
             const fileInput = document.querySelector(".profile-img-file-input");

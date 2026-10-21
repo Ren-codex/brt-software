@@ -29,6 +29,10 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         ->middlewareFor('destroy', 'permission:employees,admin');
     Route::get('/employees/{id}/incentives-summary', [App\Http\Controllers\Modules\EmployeeController::class, 'incentivesSummary'])
         ->middleware('permission:employees,view');
+    // The View Employee modal's at-a-glance figures; each part is further held
+    // to the viewer's access to its own module.
+    Route::get('/employees/{id}/overview', [App\Http\Controllers\Modules\EmployeeController::class, 'overview'])
+        ->middleware('permission:employees,view');
     Route::resource('/customers', App\Http\Controllers\Modules\CustomerController::class)->except(['create', 'edit'])
         ->middlewareFor(['index', 'show'], 'permission:customers,view')
         ->middlewareFor(['store', 'update'], 'permission:customers,encoder')
@@ -101,6 +105,7 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     // Which roles are responsible for a module, for the in-app guides.
     Route::get('/guides/roles', [\App\Http\Controllers\GuideController::class, 'roles']);
     Route::get('/approvals', [\App\Http\Controllers\ApprovalController::class, 'index']);
+    Route::get('/approvals/{source}/{id}', [\App\Http\Controllers\ApprovalController::class, 'show'])->whereNumber('id');
     Route::post('/approvals/{source}/{id}/decide', [\App\Http\Controllers\ApprovalController::class, 'decide']);
 
     // Gated by the granular permission: middleware on each route below.

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Approvals\ApprovalDetails;
 use App\Services\Approvals\ApprovalService;
 use App\Traits\HandlesTransaction;
 use Illuminate\Http\Request;
@@ -11,7 +12,9 @@ use Illuminate\Validation\ValidationException;
  * The one screen an approver can work from.
  *
  * Follows the house `?option=` pattern: the bare GET renders the Inertia page,
- * `?option=lists` returns the rows as JSON for the page's own refreshes, and
+ * `?option=lists` returns the rows as JSON for the page's own refreshes,
+ * `?option=history&decision=approved|rejected` returns past decisions for the
+ * Approved and Disapproved tabs, and
  * `?option=count` returns just the badge number for the bell.
  *
  * Access is not role-based. The page shows each user exactly the sources they
@@ -35,6 +38,12 @@ class ApprovalController extends Controller
             case 'count':
                 return response()->json(['count' => $this->service->pendingCount($request->user())]);
 
+            // The Approved and Disapproved tabs, loaded when opened.
+            case 'history':
+                $decision = $request->query('decision') === 'rejected' ? 'rejected' : 'approved';
+
+                return response()->json($this->service->history($decision, $request->user()));
+
             default:
                 $pending = $this->service->pending($request->user());
 
@@ -46,6 +55,19 @@ class ApprovalController extends Controller
                     'focusId' => $request->query('focus'),
                 ]);
         }
+    }
+
+    /**
+     * The View button: one record's details, in one shape for every source.
+     * Held to the same rule as the list — only sources the viewer may approve.
+     */
+    public function show(Request $request, ApprovalDetails $details, string $source, int $id)
+    {
+        if (! in_array($source, $this->service->allowedSourceKeys($request->user()), true)) {
+            abort(403, 'You do not have access to these approvals.');
+        }
+
+        return response()->json($details->for($source, $id));
     }
 
     public function decide(Request $request, string $source, int $id)

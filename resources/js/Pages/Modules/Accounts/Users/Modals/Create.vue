@@ -17,7 +17,7 @@
                 <form @submit.prevent="submit">
                     <div v-if="!editable" class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Link to Employee <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+                            <label class="form-label">Link to Employee <span style="font-weight:400;color:#94a3b8">(not needed for Administrator, Super Admin or Mini Admin)</span></label>
                             <Multiselect
                                 :options="dropdowns.unlinked_employees || []"
                                 :searchable="true"
@@ -28,6 +28,7 @@
                                 @select="onEmployeeSelect"
                                 @clear="onEmployeeClear"
                             />
+                            <span v-if="form.errors.employee_id" class="error-message">{{ form.errors.employee_id }}</span>
                         </div>
                     </div>
                     <div class="form-row">
@@ -164,6 +165,7 @@ export default {
             }
             this.form.username = option?.username || null;
             this.form.errors.username = false;
+            this.form.errors.employee_id = false;
         },
         onEmployeeClear() {
             this.form.email = null;

@@ -77,19 +77,6 @@ class EmployeeClass
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
 
-        $user = null;
-        if ($request->filled('username') && $request->filled('password')) {
-            $roleIds = is_array($request->role_ids) ? $request->role_ids : [];
-            $userRequest = new \Illuminate\Http\Request([
-                'username' => $request->username,
-                'email' => $request->email,
-                'password' => $request->password,
-                'role_ids' => $roleIds
-            ]);
-            $userResult = $this->userClass->save($userRequest);
-            $user = User::find($userResult['data']['id']);
-        }
-
         $data = Employee::create([
             'firstname' => $request->firstname,
             'middlename' => $request->middlename,
@@ -108,7 +95,6 @@ class EmployeeClass
             'is_regular' => $request->is_regular,
             'is_active' => $request->is_active,
             'is_blacklisted' => $request->is_blacklisted,
-            'user_id' => $user ? $user->id : null,
             'added_by_id' => $userId ?: auth()->id(),
         ]);
 
@@ -116,10 +102,30 @@ class EmployeeClass
         // position_id above, and payroll reads only that.
         $data->syncExtraPositions($request->input('extra_position_ids', []));
 
+        // "Create a login account" on the Add Employee form. Made exactly as
+        // User Management makes one for an employee: the username from their
+        // initials and birth date, the default password to be changed at first
+        // sign-in, and the employee linked to it.
+        if ($request->boolean('create_account')) {
+            $this->userClass->save(new \Illuminate\Http\Request([
+                'employee_id' => $data->id,
+                // users.email cannot be null. Blank is safe: they sign in by
+                // username, and the email lookup only runs for an address.
+                'email' => $request->email ?? '',
+                'role_ids' => is_array($request->role_ids) ? $request->role_ids : [],
+            ]));
+            $data->refresh();
+        }
+
+        $account = $data->load('user')->user;
+
         return [
-            'data' => new EmployeeResource($data->load('user', 'extraPositions')),
+            'data' => new EmployeeResource($data->load('extraPositions')),
             'message' => 'Employee saved successfully!',
-            'info' => "You've successfully saved the employee"
+            'info' => $account
+                ? "Account created. Username: {$account->username} — Default password: ".UserClass::DEFAULT_PASSWORD.'. They will be asked to set a new password the first time they sign in.'
+                : "You've successfully saved the employee",
+            'password' => $account ? UserClass::DEFAULT_PASSWORD : null,
         ];
     }
 
@@ -178,7 +184,8 @@ class EmployeeClass
             'is_regular' => $request->is_regular,
             'is_active' => $request->is_active,
             'is_blacklisted' => $request->is_blacklisted,
-            'user_id' => $user ? $user->id : $data->user_id,
+            // $user is the account the username path above worked on, if it ran.
+            'user_id' => $accountId = $this->linkedAccountId($request, $request->filled('username') ? $user : null, $data),
         ]);
 
         // Only when the form sent them: other screens update an employee
@@ -188,11 +195,37 @@ class EmployeeClass
             $data->syncExtraPositions($request->input('extra_position_ids', []));
         }
 
+        $info = "You've successfully updated the employee";
+        if ($data->wasChanged('user_id')) {
+            $account = $accountId ? User::find($accountId) : null;
+            $info = $account
+                ? "Linked to the account {$account->username}. It now shows this employee's name."
+                : 'Unlinked from its login account.';
+        }
+
         return [
             'data' => new EmployeeResource($data->load('user', 'extraPositions')),
             'message' => 'Employee updated successfully!',
-            'info' => "You've successfully updated the employee"
+            'info' => $info,
         ];
+    }
+
+    /**
+     * Which account the employee ends up linked to: the one the username path
+     * worked on, else the one picked in the Login Account picker on Edit
+     * Employee (null to unlink), else whatever it already had.
+     */
+    protected function linkedAccountId($request, ?User $fromUsername, Employee $employee): ?int
+    {
+        if ($fromUsername) {
+            return $fromUsername->id;
+        }
+
+        if ($request->has('account_id')) {
+            return $request->account_id ?: null;
+        }
+
+        return $employee->user_id;
     }
 
     public function toggleActive($request){

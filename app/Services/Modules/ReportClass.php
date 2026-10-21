@@ -150,18 +150,35 @@ class ReportClass
             ->get();
     }
 
+    /**
+     * An employee's name in SQL, built as Employee::getFullnameAttribute
+     * builds it: "First M. Last", then ", Suffix" when there is one. A blank
+     * middle name or suffix is left out rather than leaving a stray "." or ",".
+     * Written to run on MySQL and on the SQLite the tests use.
+     */
+    private function fullnameSql(string $table): string
+    {
+        $initial = "CASE WHEN COALESCE({$table}.middlename, '') = '' THEN NULL"
+            ." ELSE CONCAT(UPPER(SUBSTR({$table}.middlename, 1, 1)), '.') END";
+        $suffix = "CASE WHEN COALESCE({$table}.suffix, '') = '' THEN ''"
+            ." ELSE CONCAT(', ', {$table}.suffix) END";
+
+        return "CASE WHEN {$table}.id IS NULL THEN NULL"
+            ." ELSE CONCAT(CONCAT_WS(' ', {$table}.firstname, {$initial}, {$table}.lastname), {$suffix}) END";
+    }
+
     private function salesRepReport(array $filters)
     {
         return $this->baseSalesOrderQuery($filters)
             ->leftJoin('employees as e', 'so.sales_rep_id', '=', 'e.id')
             ->select(
                 'so.sales_rep_id',
-                DB::raw("COALESCE(CONCAT(e.firstname, ' ', e.lastname), 'Unassigned') as sales_rep_name"),
+                DB::raw("COALESCE(".$this->fullnameSql('e').", 'Unassigned') as sales_rep_name"),
                 DB::raw('COUNT(so.id) as total_orders'),
                 DB::raw('SUM(so.total_amount) as total_sales'),
                 DB::raw('AVG(so.total_amount) as average_order_value')
             )
-            ->groupBy('so.sales_rep_id', 'e.firstname', 'e.lastname')
+            ->groupBy('so.sales_rep_id', 'e.firstname', 'e.middlename', 'e.lastname', 'e.suffix')
             ->orderByDesc('total_sales')
             ->limit($filters['limit'])
             ->get();
@@ -241,7 +258,7 @@ class ReportClass
             ->leftJoinSub($receiptSub, 'rd', 'rd.sales_rep_id', '=', 'e.id')
             ->select(
                 'e.id as employee_id',
-                DB::raw("CONCAT(e.firstname, ' ', e.lastname) as employee_name"),
+                DB::raw($this->fullnameSql('e')." as employee_name"),
                 DB::raw('COALESCE(sod.so_count, 0) as so_count'),
                 DB::raw('COALESCE(qd.sold_quantity, 0) as sold_quantity'),
                 DB::raw('COALESCE(sod.so_total, 0) as so_total'),
@@ -620,7 +637,7 @@ class ReportClass
         }
 
         $rep = DB::table('employees')->where('id', $id)
-            ->selectRaw("CONCAT(firstname, ' ', lastname) as name")
+            ->selectRaw($this->fullnameSql('employees')." as name")
             ->value('name');
 
         return $rep ?: 'Unknown sales rep';
@@ -646,7 +663,7 @@ class ReportClass
                 'ls.name as status_name',
                 'll.name as location_name',
                 DB::raw("COALESCE(c.name, 'Walk-in Customer') as customer_name"),
-                DB::raw("COALESCE(CONCAT(e.firstname, ' ', e.lastname), 'Unassigned') as sales_rep_name")
+                DB::raw("COALESCE(".$this->fullnameSql('e').", 'Unassigned') as sales_rep_name")
             )
             ->first();
 

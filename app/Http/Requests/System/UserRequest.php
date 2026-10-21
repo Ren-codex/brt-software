@@ -4,6 +4,8 @@ namespace App\Http\Requests\System;
 
 use Hashids\Hashids;
 use App\Models\Employee;
+use App\Models\ListRole;
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UserRequest extends FormRequest
@@ -54,8 +56,29 @@ class UserRequest extends FormRequest
         } else {
             $rules['username'] = $this->filled('employee_id') ? 'nullable|string' : 'required|string|unique:users,username';
             $rules['email'] .= '|unique:users,email';
+            // An account with no employee record can't save its own profile,
+            // so only an admin account may be made without one.
+            $rules['employee_id'] = [
+                $this->hasAdminRole() ? 'nullable' : 'required',
+                Rule::exists('employees', 'id')->whereNull('user_id'),
+            ];
         }
 
         return $rules;
+    }
+
+    public function messages(): array
+    {
+        return [
+            'employee_id.required' => 'Choose the employee this account is for. Only Administrator, Super Admin and Mini Admin accounts can be made without one.',
+            'employee_id.exists' => 'That employee already has an account.',
+        ];
+    }
+
+    protected function hasAdminRole(): bool
+    {
+        return ListRole::whereIn('id', (array) $this->role_ids)
+            ->whereIn('name', ListRole::ADMIN_ROLES)
+            ->exists();
     }
 }

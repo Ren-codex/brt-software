@@ -1,9 +1,9 @@
 <template>
-    <PageHeader :title="currentView === 'list' ? 'Supplier Management' : 'Supplier Details'" :pageTitle="currentView === 'list' ? 'List' : 'Details'" />
+    <PageHeader title="Supplier Management" pageTitle="List" />
     <BRow>
         <div class="col-md-12">
             <div class="library-card">
-                <div class="library-card-header" v-if="currentView === 'list'">
+                <div class="library-card-header">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-truck-line"></i>
@@ -19,7 +19,7 @@
                         </button>
                 </div>
 
-                <div class="library-card-body" v-if="currentView === 'list'">
+                <div class="library-card-body">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
@@ -87,6 +87,9 @@
                                         </td>
                                         <td>
                                             <div class="action-buttons" @click.stop>
+                                                <button @click="openView(list)" class="action-btn view" v-b-tooltip.hover title="View">
+                                                    <i class="ri-eye-line"></i>
+                                                </button>
                                                 <button @click="openEdit(list,index)" class="action-btn action-btn-edit" v-b-tooltip.hover title="Edit">
                                                     <i class="ri-pencil-line"></i>
                                                 </button>
@@ -110,13 +113,44 @@
                         <Pagination v-if="meta" @fetch="fetch" :lists="lists.length" :links="links" :pagination="meta" />
                     </div>
                 </div>
-
-                <div v-if="currentView === 'details'">
-                    <Details @update="fetch()" :supplier="selectedSupplier" :backToList="backToList" ref="details" />
-                </div>
             </div>
         </div>
     </BRow>
+
+    <!-- View Supplier: fills the window over the list, so closing it lands
+         back exactly where the list was. -->
+    <div v-if="viewOpen" class="modal-overlay active" @click.self="backToList">
+        <div class="modal-container supplier-view-modal" ref="fullscreenTarget" @click.stop>
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="modal-header-icon"><i class="ri-truck-line"></i></div>
+                    <div>
+                        <h5 class="mb-0">{{ selectedSupplier.name || 'Supplier' }}</h5>
+                        <small>Supplier profile</small>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-sm btn-light"
+                        @click="$refs.details.openEdit($refs.details.supplierData)">
+                        <i class="ri-pencil-fill"></i> Edit
+                    </button>
+                    <!-- The modal alone takes the whole screen; the page stays behind it. -->
+                    <button type="button" class="close-btn" @click="toggleModalFullscreen"
+                        :title="modalFullscreen ? 'Exit full screen' : 'Full screen'"
+                        :aria-label="modalFullscreen ? 'Exit full screen' : 'Full screen'">
+                        <i :class="modalFullscreen ? 'bx bx-exit-fullscreen' : 'bx bx-fullscreen'"></i>
+                    </button>
+                    <button class="close-btn" type="button" @click="backToList" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <Details @update="fetch()" :supplier="selectedSupplier" :backToList="backToList" :embedded="true" ref="details" />
+            </div>
+        </div>
+    </div>
+
     <Create @add="fetch()" @update="fetch()" :dropdowns="dropdowns" ref="create"/>
 </template>
 <script>
@@ -128,10 +162,11 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import Create from './Modals/Create.vue';
 import Details from './Details.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+import { modalFullscreenMixin } from '@/Shared/modalFullscreen.js';
 
 export default {
     components: { PageHeader, Pagination, Multiselect, Create, Details, TableLoadingRow },
-    mixins: [listSortMixin],
+    mixins: [listSortMixin, modalFullscreenMixin],
     props: ['dropdowns'],
     data(){
         return {
@@ -145,7 +180,8 @@ export default {
             index: null,
             selectedRow: null,
             selectedSupplier: {},
-            currentView: 'list',
+            // The View Supplier modal.
+            viewOpen: false,
             units: [],
             loading: false
         }
@@ -158,7 +194,19 @@ export default {
     created(){
        this.fetch();
     },
+    mounted() {
+        document.addEventListener('keydown', this.onEscape);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this.onEscape);
+    },
     methods: {
+        /** Escape closes View Supplier, unless its Edit form is open on top. */
+        onEscape(event) {
+            if (event.key !== 'Escape' || !this.viewOpen) return;
+            if (this.$refs.details?.$refs?.create?.showModal) return;
+            this.backToList();
+        },
         checkSearchStr: _.debounce(function(string) {
             this.fetch();
         }, 300),
@@ -204,11 +252,12 @@ export default {
 
         openView(data) {
             this.selectedSupplier = data;
-            this.currentView = 'details';
+            this.viewOpen = true;
         },
 
         backToList() {
-            this.currentView = 'list';
+            this.exitModalFullscreen();
+            this.viewOpen = false;
             this.selectedSupplier = {};
             this.selectedRow = null;
         },
@@ -259,6 +308,23 @@ export default {
 </script>
 
 <style scoped>
+/* View Supplier fills the window; the chrome itself comes from _library-modal.scss. */
+.supplier-view-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+}
+
+.supplier-view-modal .header-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #c4d9d2;
+    border-radius: 10px;
+    font-weight: 600;
+}
 /* Table Row Hover Effects */
 tbody tr {
     transition: background-color 0.3s ease;

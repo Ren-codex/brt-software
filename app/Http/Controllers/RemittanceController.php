@@ -44,7 +44,18 @@ class RemittanceController extends Controller
                 return $this->remittance->undepositedSummary($request);
             break;
             default:
-                return inertia('Modules/Sales/Components/Remittances/Index');
+                // Opened on its own (the Approvals page's Review link), so it
+                // needs the dropdowns the Sales page would otherwise hand it.
+                return inertia('Modules/Sales/Components/Remittances/Index', [
+                    'dropdowns' => [
+                        'locations' => $this->dropdown->locations(),
+                        'drivers' => $this->dropdown->drivers(),
+                        'sales_reps' => $this->dropdown->sales_reps(),
+                    ],
+                    // Review on the Approvals page links here with ?from=approvals;
+                    // the screen then offers the way back.
+                    'backUrl' => $request->query('from') === 'approvals' ? '/approvals' : null,
+                ]);
             break;
         }
     }

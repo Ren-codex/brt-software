@@ -1,6 +1,8 @@
 <template>
-    <div class="employee-details-page">
-        <div class="details-topbar">
+    <div class="employee-details-page" :class="{ 'is-embedded': embedded }">
+        <!-- Inside the View Supplier modal, the modal's own header carries
+             the title, Edit and Close. -->
+        <div class="details-topbar" v-if="!embedded">
             <div class="details-title-block">
                 <h1>Supplier Profile</h1>
                 <p>View supplier records, purchase activity, and stock-return performance.</p>
@@ -268,7 +270,8 @@ import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 
 export default {
     components: { Create, Pagination, TableLoadingRow },
-    props: ['supplier', 'backToList', 'dropdowns'],
+    // embedded: shown inside the View Supplier modal rather than as a page.
+    props: ['supplier', 'backToList', 'dropdowns', 'embedded'],
     name: 'SupplierDetails',
     data() {
         return {
@@ -986,6 +989,41 @@ export default {
 
     .details-stat-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Inside the View Supplier modal: the modal gives the padding, and the
+   contact panel and the details each scroll on their own. */
+.employee-details-page.is-embedded {
+    padding: 0;
+    max-width: none;
+    height: 100%;
+}
+
+.employee-details-page.is-embedded .details-grid {
+    height: 100%;
+    align-items: stretch;
+}
+
+.employee-details-page.is-embedded .details-sidebar,
+.employee-details-page.is-embedded .details-main {
+    position: static;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+}
+
+/* Stacked into one column on a narrow screen: one scroll again. */
+@media (max-width: 1140px) {
+    .employee-details-page.is-embedded,
+    .employee-details-page.is-embedded .details-grid {
+        height: auto;
+    }
+
+    .employee-details-page.is-embedded .details-sidebar,
+    .employee-details-page.is-embedded .details-main {
+        overflow-y: visible;
     }
 }
 </style>
