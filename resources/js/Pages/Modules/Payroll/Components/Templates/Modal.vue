@@ -37,7 +37,7 @@
                             <div class="employee-list">
                                 <div class="employee-item" v-for="employee in paginatedEmployees" :key="employee.id">
                                     <input type="checkbox" :value="employee.id" v-model="form.employee_ids" :id="'employee-' + employee.id">
-                                    <label :for="'employee-' + employee.id" class="employee-label">{{ employee.lastname }}, {{ employee.firstname }} {{ employee.middlename }} <span class="employee-position">({{ employee.position?.title || 'No Position' }})</span></label>
+                                    <label :for="'employee-' + employee.id" class="employee-label">{{ employee.fullname }} <span class="employee-position">({{ employee.position?.title || 'No Position' }})</span></label>
                                 </div>
                             </div>
                             <div v-if="totalPages > 1" class="pagination">
@@ -125,7 +125,9 @@ export default {
       }
       const query = this.searchQuery.toLowerCase()
       return this.employees.filter(employee => {
-        const fullName = `${employee.lastname}, ${employee.firstname} ${employee.middlename || ''}`.toLowerCase()
+        // The shown name, plus the parts typed in full, so "Reyes" and "R." both find them.
+        const fullName = [employee.fullname, employee.firstname, employee.middlename, employee.lastname]
+          .filter(Boolean).join(' ').toLowerCase()
         return fullName.includes(query)
       })
     },

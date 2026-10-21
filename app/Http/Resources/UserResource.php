@@ -13,7 +13,8 @@ class UserResource extends JsonResource
         $employee = $this->employee;
         $firstname = $employee?->firstname;
         $lastname = $employee?->lastname;
-        $fullname = trim(collect([$firstname, $lastname])->filter()->implode(' '));
+        // "First M. Last", as every other name in the system reads.
+        $fullname = trim((string) $employee?->fullname);
 
         return [
             'id' => $this->id,

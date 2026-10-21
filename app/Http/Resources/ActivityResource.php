@@ -17,7 +17,7 @@ class ActivityResource extends JsonResource
         if ($this->causer) {
             $emp = $this->causer->employee;
             $causerName = $emp
-                ? trim("{$emp->firstname} {$emp->lastname}")
+                ? $emp->fullname
                 : $this->causer->email;
         }
 
