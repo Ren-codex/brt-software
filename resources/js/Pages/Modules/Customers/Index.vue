@@ -1,9 +1,9 @@
 <template>
-    <PageHeader :title="currentView === 'list' ? 'Customer Management' : 'Customer Details'" :pageTitle="currentView === 'list' ? 'List' : 'Details'" />
+    <PageHeader title="Customer Management" pageTitle="List" />
     <BRow>
         <div class="col-md-12">
             <div class="library-card">
-                <div class="library-card-header" v-if="currentView === 'list'">
+                <div class="library-card-header">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-icon">
                                 <i class="ri-shopping-cart-line fs-24"></i>
@@ -20,7 +20,7 @@
                 </div>
 
 
-                <div class="library-card-body" v-if="currentView === 'list'">
+                <div class="library-card-body">
                     <div class="search-section">
                         <div class="search-wrapper">
                             <i class="ri-search-line search-icon"></i>
@@ -124,6 +124,9 @@
 
                                         <td>
                                             <div class="action-buttons" @click.stop>
+                                                <b-button @click="openView(list, index)" variant="light" v-b-tooltip.hover title="View" size="sm" class="btn-icon">
+                                                    <i class="ri-eye-line"></i>
+                                                </b-button>
                                                 <b-button v-if="can('customers', 'encoder')" @click="openEdit(list, index)" variant="info" v-b-tooltip.hover title="Edit" size="sm" class="btn-icon">
                                                     <i class="ri-pencil-fill"></i>
                                                 </b-button>
@@ -147,13 +150,45 @@
                         <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length" :links="links" :pagination="meta" />
                     </div>
                 </div>
-
-                <div v-else>
-                    <Details @update="fetch()" :customer="selectedCustomer" :backToList="backToList" :openEdit="openEdit" :selectedCustomer="selectedCustomer" :selectedRow="selectedRow" />
-                </div>
             </div>
         </div>
     </BRow>
+
+    <!-- View Customer: full screen over the list, so closing it lands back
+         exactly where the list was. Placed before Create so Edit opens on top. -->
+    <div v-if="viewOpen" class="modal-overlay active" @click.self="backToList">
+        <div class="modal-container customer-view-modal" ref="fullscreenTarget" @click.stop>
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="modal-header-icon"><i class="ri-store-2-line"></i></div>
+                    <div>
+                        <h5 class="mb-0">{{ selectedCustomer.name || 'Customer' }}</h5>
+                        <small>Customer profile</small>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button v-if="can('customers', 'encoder')" type="button" class="btn btn-sm btn-light"
+                        @click="editFromView">
+                        <i class="ri-pencil-fill"></i> Edit
+                    </button>
+                    <!-- The modal alone takes the whole screen; the page stays behind it. -->
+                    <button type="button" class="close-btn" @click="toggleModalFullscreen"
+                        :title="modalFullscreen ? 'Exit full screen' : 'Full screen'"
+                        :aria-label="modalFullscreen ? 'Exit full screen' : 'Full screen'">
+                        <i :class="modalFullscreen ? 'bx bx-exit-fullscreen' : 'bx bx-fullscreen'"></i>
+                    </button>
+                    <button class="close-btn" type="button" @click="backToList" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <Details @update="fetch()" :customer="selectedCustomer" :backToList="backToList" :openEdit="openEdit"
+                    :selectedCustomer="selectedCustomer" :selectedRow="selectedRow" :embedded="true" />
+            </div>
+        </div>
+    </div>
+
     <Create @add="handleCustomerCreated" @update="handleCustomerUpdated" :dropdowns="dropdowns" ref="create" />
 </template>
 <script>
@@ -164,9 +199,11 @@ import Pagination from "@/Shared/Components/Pagination.vue";
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Create from './Modals/Create.vue';
 import Details from './Details.vue';
+import { modalFullscreenMixin } from '@/Shared/modalFullscreen.js';
 
 export default {
     components: { PageHeader, Pagination, Multiselect, Create, Details, TableLoadingRow },
+    mixins: [modalFullscreenMixin],
     props: ['dropdowns'],
     data() {
         return {
@@ -181,7 +218,8 @@ export default {
             index: null,
             selectedRow: null,
             selectedCustomer: {},
-            currentView: 'list',
+            // The View Customer modal.
+            viewOpen: false,
             units: [],
             sortBy: 'created_at',
             sortDirection: 'desc',
@@ -213,7 +251,19 @@ export default {
     created() {
         this.fetch();
     },
+    mounted() {
+        document.addEventListener('keydown', this.onEscape);
+    },
+    beforeUnmount() {
+        document.removeEventListener('keydown', this.onEscape);
+    },
     methods: {
+        /** Escape closes View Customer, unless its Edit form is open on top. */
+        onEscape(event) {
+            if (event.key !== 'Escape' || !this.viewOpen) return;
+            if (this.$refs.create?.showModal) return;
+            this.backToList();
+        },
         checkSearchStr: _.debounce(function (string) {
             this.fetch();
         }, 300),
@@ -302,6 +352,15 @@ export default {
             this.$refs.create.show();
         },
 
+        /**
+         * The Edit form sits outside the view modal, and nothing outside a
+         * full-screen element can be seen, so leave full screen first.
+         */
+        editFromView() {
+            this.exitModalFullscreen();
+            this.openEdit(this.selectedCustomer, this.selectedRow);
+        },
+
         openEdit(data, index) {
             this.selectedRow = index;
             this.$refs.create.edit(data, index);
@@ -323,9 +382,10 @@ export default {
             });
         },
 
-        openView(data) {
+        openView(data, index = null) {
             this.selectedCustomer = data;
-            this.currentView = 'details';
+            this.selectedRow = index;
+            this.viewOpen = true;
             this.loadCustomerDetails(data);
         },
 
@@ -339,19 +399,20 @@ export default {
             this.fetch().then(() => {
                 const refreshedCustomer = this.lists.find(list => list.id === updatedCustomerId);
 
-                if (refreshedCustomer && this.currentView === 'details') {
+                if (refreshedCustomer && this.viewOpen) {
                     this.loadCustomerDetails(refreshedCustomer);
                     return;
                 }
 
-                if (this.currentView === 'details' && this.selectedCustomer?.id === updatedCustomerId) {
+                if (this.viewOpen && this.selectedCustomer?.id === updatedCustomerId) {
                     this.loadCustomerDetails(this.selectedCustomer);
                 }
             });
         },
 
         backToList() {
-            this.currentView = 'list';
+            this.exitModalFullscreen();
+            this.viewOpen = false;
             this.selectedCustomer = {};
             this.selectedRow = null;
         }
@@ -360,6 +421,24 @@ export default {
 </script>
 
 <style scoped>
+/* View Customer fills the screen; the chrome itself comes from _library-modal.scss. */
+.customer-view-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+}
+
+.customer-view-modal .header-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #c4d9d2;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
 /* Sortable Header */
 .search-section {
     display: flex;

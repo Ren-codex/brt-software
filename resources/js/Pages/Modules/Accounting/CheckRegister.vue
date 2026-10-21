@@ -409,7 +409,7 @@ export default {
         },
         repName(check) {
             const rep = check?.received_by;
-            return rep ? `${rep.firstname} ${rep.lastname}` : '';
+            return rep ? (rep.fullname || `${rep.firstname} ${rep.lastname}`) : '';
         },
         money(value) {
             return `PHP ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

@@ -259,7 +259,7 @@ class DropdownClass
 
             return [
                 'value' => $item->id,
-                'name' => rtrim($item->lastname.', '.$item->firstname.' '.($item->middlename ? strtoupper($item->middlename[0]).'.' : '')),
+                'name' => $item->fullname,
                 'position_name' => $item->position ? $item->position->title : null,
                 'basic_salary' => $item->position ? $item->position->rate_per_day : null,
                 'hours_per_day' => $item->hours_per_day,
@@ -434,7 +434,7 @@ class DropdownClass
                 'employees' => $item->employees->map(function ($emp) {
                     return [
                         'id' => $emp->id,
-                        'name' => rtrim($emp->lastname.', '.$emp->firstname.' '.($emp->middlename ? strtoupper($emp->middlename[0]).'.' : '')),
+                        'name' => $emp->fullname,
                         'basic_salary' => $emp->position ? $emp->position->rate_per_day : null,
                         'hours_per_day' => $emp->hours_per_day,
                         'overtime_rate' => $emp->overtime_rate,

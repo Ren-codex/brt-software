@@ -5,16 +5,25 @@
         :class="{ active: showModal }"
         @click.self="hide"
     >
-        <div class="modal-container" @click.stop>
+        <div class="modal-container" ref="fullscreenTarget" @click.stop>
             <!-- Simple Header -->
             <div class="modal-header">
                 <div class="header-title">
                     <i :class="editable ? 'ri-edit-box-line' : 'ri-user-add-line'"></i>
                     <h2>{{ editable ? 'Update Employee' : 'Add New Employee' }}</h2>
                 </div>
-                <button class="close-btn" @click="hide">
-                    <i class="ri-close-line"></i>
-                </button>
+                <div class="header-actions">
+                    <!-- The form alone takes the whole screen; the page stays
+                         behind it. Same look as the close button beside it. -->
+                    <button type="button" class="close-btn" @click="toggleModalFullscreen"
+                        :title="modalFullscreen ? 'Exit full screen' : 'Full screen'"
+                        :aria-label="modalFullscreen ? 'Exit full screen' : 'Full screen'">
+                        <i :class="modalFullscreen ? 'bx bx-exit-fullscreen' : 'bx bx-fullscreen'"></i>
+                    </button>
+                    <button type="button" class="close-btn" @click="hide" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Simple Form -->
@@ -51,8 +60,21 @@
                         </div>
                     </div>
 
+                    <!-- One section at a time. A tab with a field the server
+                         refused carries a red dot, and a failed save opens it. -->
+                    <div class="section-tabs" role="tablist">
+                        <button v-for="section in visibleSections" :key="section.key" type="button"
+                            class="section-tab" :class="{ active: activeSection === section.key }"
+                            role="tab" :aria-selected="activeSection === section.key"
+                            @click="activeSection = section.key">
+                            <i :class="section.icon"></i>
+                            <span>{{ section.label }}</span>
+                            <span v-if="sectionHasError(section)" class="section-tab-error" title="Has an error"></span>
+                        </button>
+                    </div>
+
                     <!-- Personal Information Section -->
-                    <div class="form-section">
+                    <div class="form-section" v-show="activeSection === 'personal'">
                         <h3 class="section-title">
                             <i class="ri-user-info-line"></i>
                             Personal Information
@@ -134,7 +156,7 @@
                     </div>
 
                     <!-- Contact Information Section -->
-                    <div class="form-section">
+                    <div class="form-section" v-show="activeSection === 'contact'">
                         <h3 class="section-title">
                             <i class="ri-contacts-line"></i>
                             Contact Information
@@ -193,7 +215,7 @@
                     </div>
 
                     <!-- Employment Details Section -->
-                    <div class="form-section">
+                    <div class="form-section" v-show="activeSection === 'employment'">
                         <h3 class="section-title">
                             <i class="ri-briefcase-line"></i>
                             Employment Details
@@ -275,7 +297,7 @@
 
                     <!-- Login account: only when adding, and only for someone who
                          may create accounts in User Management. -->
-                    <div class="form-section" v-if="!editable && can('user_management', 'encoder')">
+                    <div class="form-section" v-if="!editable && can('user_management', 'encoder')" v-show="activeSection === 'account'">
                         <h3 class="section-title">
                             <i class="ri-shield-user-line"></i>
                             Login Account
@@ -353,7 +375,7 @@
 
                     <!-- Login account on edit: link an account that already exists
                          (or clear it), for someone who may manage accounts. -->
-                    <div class="form-section" v-if="editable && can('user_management', 'encoder')">
+                    <div class="form-section" v-if="editable && can('user_management', 'encoder')" v-show="activeSection === 'account'">
                         <h3 class="section-title">
                             <i class="ri-shield-user-line"></i>
                             Login Account
@@ -452,9 +474,11 @@
 <script>
 import { useForm } from '@inertiajs/vue3';
 import Multiselect from '@vueform/multiselect';
+import { modalFullscreenMixin } from '@/Shared/modalFullscreen.js';
 
 export default {
     components: { Multiselect },
+    mixins: [modalFullscreenMixin],
     props: ['dropdowns'],
     data() {
         return {
@@ -498,9 +522,25 @@ export default {
             originalAccount: null,
             accountOptions: [],
             accountsLoading: false,
+            // The tab on show; see visibleSections.
+            activeSection: 'personal',
         }
     },
     computed: {
+        /** The form's tabs, with the fields each holds so an error can find its tab. */
+        visibleSections() {
+            return [
+                { key: 'personal', label: 'Personal', icon: 'ri-user-info-line',
+                    fields: ['firstname', 'middlename', 'lastname', 'suffix', 'birthdate', 'sex'] },
+                { key: 'contact', label: 'Contact', icon: 'ri-contacts-line',
+                    fields: ['mobile', 'email', 'address', 'religion'] },
+                { key: 'employment', label: 'Employment', icon: 'ri-briefcase-line',
+                    fields: ['position_id', 'hours_per_day', 'overtime_rate', 'is_regular', 'is_active'] },
+                { key: 'account', label: 'Login Account', icon: 'ri-shield-user-line',
+                    fields: ['create_account', 'role_ids', 'account_id', 'username'],
+                    hidden: !this.can('user_management', 'encoder') },
+            ].filter(section => !section.hidden);
+        },
         roleOptions() {
             return Array.isArray(this.dropdowns?.roles) ? this.dropdowns.roles : [];
         },
@@ -569,6 +609,7 @@ export default {
             this.form.create_account = 0;
             this.form.role_ids = [];
             this.form.account_id = null;
+            this.activeSection = 'personal';
             this.originalAccount = null;
             this.createdAccount = null;
             this.previewImage = null;
@@ -611,6 +652,7 @@ export default {
                 this.previewImage = null;
             }
             
+            this.activeSection = 'personal';
             this.editable = true;
             this.saveSuccess = false;
             this.successMessage = 'Employee updated successfully!';
@@ -642,6 +684,7 @@ export default {
                     },
                     onError: (errors) => {
                         this.submitError = this.formatSubmitError(errors, 'Please check the highlighted fields and try again.');
+                        this.openFirstErrorSection(errors);
                     },
                 });
             } else {
@@ -674,9 +717,18 @@ export default {
                     },
                     onError: (errors) => {
                         this.submitError = this.formatSubmitError(errors, 'Please check the highlighted fields and try again.');
+                        this.openFirstErrorSection(errors);
                     },
                 });
             }
+        },
+        sectionHasError(section) {
+            return section.fields.some(field => this.form.errors[field]);
+        },
+        /** After a refused save, show the first tab holding a refused field. */
+        openFirstErrorSection(errors) {
+            const section = this.visibleSections.find(s => s.fields.some(field => errors?.[field]));
+            if (section) this.activeSection = section.key;
         },
         /** Accounts nobody is linked to, plus this employee's own, fetched fresh each edit. */
         loadAccountOptions() {
@@ -727,6 +779,7 @@ export default {
             }
         },
         hide() {
+            this.exitModalFullscreen();
             this.form.reset();
             this.form.clearErrors();
             this.createdAccount = null;
@@ -761,6 +814,12 @@ export default {
     max-height: calc(100vh - 36px);
     overflow: hidden;
     font-family: "Poppins", "Segoe UI", sans-serif;
+}
+
+/* The header's full-screen button: the browser sizes it to the screen. */
+.modal-container:fullscreen {
+    max-height: none;
+    border-radius: 0;
 }
 
 .modal-header {
@@ -895,6 +954,58 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+/* Personal | Contact | Employment | Login Account */
+.section-tabs {
+    grid-column: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+    background: var(--brt-c-eaf2f0);
+    align-self: start;
+}
+
+.section-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    background: transparent;
+    color: var(--brt-c-4a7a70);
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding: 0.5rem 0.95rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.section-tab i {
+    font-size: 1rem;
+}
+
+.section-tab:hover:not(.active) {
+    background: rgba(var(--brt-primary-rgb), 0.1);
+    color: var(--brt-primary);
+}
+
+.section-tab.active {
+    background: var(--brt-primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(var(--brt-primary-rgb), 0.28);
+}
+
+.section-tab-error {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--danger-500);
+    box-shadow: 0 0 0 2px #fff;
 }
 
 .form-section {
@@ -1390,7 +1501,8 @@ input:checked + .toggle-slider:before {
         min-width: 190px;
     }
 
-    .form-section {
+    .form-section,
+    .section-tabs {
         grid-column: 1;
     }
 
