@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\UserRole;
 use Database\Seeders\ModulesAndSubmodulesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class RemittancePermissionTest extends TestCase
@@ -69,6 +70,24 @@ class RemittancePermissionTest extends TestCase
         $user = $this->administratorWithGrant('view');
 
         $this->actingAs($user)->get('/remittances')->assertOk();
+    }
+
+    /**
+     * The Approvals page's Review link opens /remittances on its own, not
+     * inside the Sales page — it crashed reading dropdowns.locations when the
+     * page was rendered without them.
+     */
+    public function test_the_page_opened_on_its_own_has_its_dropdowns(): void
+    {
+        $user = $this->administratorWithGrant('view');
+
+        $this->actingAs($user)->get('/remittances')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Modules/Sales/Components/Remittances/Index', false)
+                ->has('dropdowns.locations')
+                ->has('dropdowns.drivers')
+                ->has('dropdowns.sales_reps'));
     }
 
     public function test_store_denied_without_encoder_grant(): void
