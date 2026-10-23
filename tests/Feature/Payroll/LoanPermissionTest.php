@@ -163,7 +163,28 @@ class LoanPermissionTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
-        // One copy for the employee, one for BRT, each on a page of its own.
-        $this->assertSame(2, preg_match_all('#/Type\s*/Page[^s]#', $response->getContent()));
+        // The employee's copy and BRT's share one sheet, to be cut in half.
+        $this->assertSame(1, $this->pageCount($response->getContent()));
+    }
+
+    public function test_print_gives_each_copy_its_own_sheet_past_the_half_sheet_limit(): void
+    {
+        $loan = $this->makeLoan();
+        $user = $this->administratorWithGrant('view');
+        foreach (range(1, \App\Services\PrintClass::LOAN_PAYMENT_ROWS_PER_HALF_SHEET + 1) as $i) {
+            $loan->payments()->create([
+                'amount' => 100, 'paid_date' => "Cut-off {$i}", 'paid_term' => 1, 'added_by_id' => $user->id,
+            ]);
+        }
+
+        $response = $this->actingAs($user)->get("/loans/{$loan->id}/print")->assertOk();
+
+        // Too many payments for half a sheet: two sheets, neither copy cut through.
+        $this->assertSame(2, $this->pageCount($response->getContent()));
+    }
+
+    private function pageCount(string $pdf): int
+    {
+        return preg_match_all('#/Type\s*/Page[^s]#', $pdf);
     }
 }
