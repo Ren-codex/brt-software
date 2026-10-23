@@ -153,7 +153,9 @@ class LoanPermissionTest extends TestCase
         $loan = $this->makeLoan();
         $user = $this->administratorWithGrant('view');
         $loan->payments()->create([
-            'amount' => 416.67, 'paid_date' => '2026-01-15', 'paid_term' => 1,
+            // paid_date is a free-text label, and payroll writes pay periods
+            // into it, not dates: this one broke the statement on live.
+            'amount' => 416.67, 'paid_date' => 'October 1-15, 2026 to February 16-28, 2027', 'paid_term' => 1,
             'remarks' => 'Payroll deduction', 'added_by_id' => $user->id,
         ]);
 

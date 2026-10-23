@@ -274,7 +274,9 @@ class PrintClass
 
         $pdf = \PDF::loadView('prints.loan', [
             'loan' => $loan,
-            'payments' => $loan->payments->sortBy(fn ($p) => [$p->paid_date, $p->id])->values(),
+            // In the order they were recorded: paid_date is a text label, so
+            // sorting on it would put "February" before "October".
+            'payments' => $loan->payments->sortBy(fn ($p) => [$p->created_at, $p->id])->values(),
             'released' => $loan->logs->where('action', 'released')->sortByDesc('created_at')->first(),
         ])->setPaper(self::LONG_BOND);
 
