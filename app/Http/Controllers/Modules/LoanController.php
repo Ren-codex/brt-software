@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Modules\LoanRequest;
 use App\Services\DropdownClass;
 use App\Services\Modules\LoanClass;
+use App\Services\PrintClass;
 use App\Traits\HandlesTransaction;
 use Illuminate\Http\Request;
 
@@ -84,6 +85,11 @@ class LoanController extends Controller
             'message' => $result['message'],
             'status' => $result['status'],
         ]);
+    }
+
+    public function print($id)
+    {
+        return app(PrintClass::class)->printLoan($id);
     }
 
     public function updateStatus(Request $request, $id)

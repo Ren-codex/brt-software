@@ -48,15 +48,6 @@
         <div>
           <transition name="inventory-fade" mode="out-in">
             <div :key="currentView" class="inventory-tab-content">
-              <div v-if="currentView === 'loanDetails' && selectedLoan" class="payroll-details-container">
-                <LoanView
-                  :loan="selectedLoan"
-                  :dropdowns="dropdowns"
-                  @back="backToLoanList"
-                  @view="openLoanDetails"
-                />
-              </div>
-
               <!-- Payroll Management List -->
               <div v-if="activeTab === 'payroll_management' && currentView === 'list'" class="shadow-sm p-3">
                 <PayrollManagement :dropdowns="dropdowns" @view="openPayrollDetails" />
@@ -119,6 +110,36 @@
       </div>
     </div>
 
+    <!-- A loan opens over the list the same way a payroll does, so closing it
+         returns to the same page, search and sort. -->
+    <div v-if="selectedLoan" class="modal-overlay active payroll-view-overlay"
+      :class="{ 'is-fullscreen': loanFullscreen }" @click.self="closeLoan">
+      <div class="payroll-view-dialog loan-view-dialog" role="dialog" aria-modal="true">
+        <div class="payroll-view-bar">
+          <span class="payroll-view-bar-title">
+            <i class="ri-bank-card-line"></i> Loan {{ selectedLoan.loan_no }}
+          </span>
+          <div class="payroll-view-bar-actions">
+            <button type="button" class="window-btn" v-b-tooltip.hover
+              :title="loanFullscreen ? 'Exit full screen' : 'Full screen'"
+              @click="loanFullscreen = !loanFullscreen">
+              <i :class="loanFullscreen ? 'ri-fullscreen-exit-line' : 'ri-fullscreen-line'"></i>
+            </button>
+            <button type="button" class="window-btn window-btn-close" v-b-tooltip.hover title="Close" @click="closeLoan">
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+        </div>
+        <LoanView
+          :loan="selectedLoan"
+          :dropdowns="dropdowns"
+          in-modal
+          @back="closeLoan"
+          @view="openLoanDetails"
+        />
+      </div>
+    </div>
+
     <!-- Toast -->
     <div v-if="isToastVisible" class="inventory-toast">
       <div class="inventory-toast-content">
@@ -165,6 +186,8 @@ export default {
       // payrolls, so someone who prefers it large does not re-click each time.
       payrollFullscreen: false,
       selectedLoan: null,
+      // Same as payrollFullscreen, for the loan modal.
+      loanFullscreen: false,
       isToastVisible: false,
       toastMessage: '',
       tabs: [
@@ -249,9 +272,15 @@ export default {
     openPayrollDetails(payroll) {
       this.selectedPayroll = payroll;
     },
+    // Opens the loan in a modal. The loan view also emits here with the fresh
+    // record after an approval, release or payment, which keeps it open.
     openLoanDetails(loan) {
       this.selectedLoan = loan;
-      this.currentView = 'loanDetails';
+    },
+    // The list underneath may be stale after an approval, payment or delete.
+    closeLoan() {
+      this.selectedLoan = null;
+      this.$refs.loanManagement?.fetch();
     },
     backToList() {
       this.currentView = 'list';
@@ -259,12 +288,6 @@ export default {
       this.selectedLoan = null;
       // Optionally fetch updated data
       // this.fetchPayrolls();
-    },
-    backToLoanList() {
-      this.currentView = 'list';
-      this.selectedLoan = null;
-      this.fetchLoans();
-      this.changeTab('loan_management');
     },
     showToast(message) {
       this.toastMessage = message;
@@ -380,6 +403,12 @@ export default {
   border-radius: 16px;
   background: var(--brt-c-f3f6f5);
   box-shadow: 0 24px 60px -12px rgba(var(--brt-c-10322e-rgb), 0.45);
+}
+
+/* A loan has less to show than a payroll. */
+.loan-view-dialog {
+  max-width: 1180px;
+  padding-bottom: 1.1rem;
 }
 
 /* Full screen: edge to edge, no rounded corners, nothing of the page behind. */

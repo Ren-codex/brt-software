@@ -256,6 +256,31 @@ class PrintClass
         return $pdf->stream($payroll->payroll_no.'-statement-'.\Illuminate\Support\Str::slug($item->employee?->fullname ?? 'employee').'.pdf');
     }
 
+    /**
+     * A full-page loan statement: the terms the employee signed for, what is
+     * deducted each cut-off, every payment so far and what is still owed.
+     * The release date comes from the log, since the loan row keeps no
+     * column for it.
+     */
+    public function printLoan($id)
+    {
+        $loan = \App\Models\Loan::with(
+            'employee.position',
+            'added_by.employee',
+            'approved_by.employee',
+            'payments.addedBy.employee',
+            'logs.actionedBy.employee',
+        )->findOrFail($id);
+
+        $pdf = \PDF::loadView('prints.loan', [
+            'loan' => $loan,
+            'payments' => $loan->payments->sortBy(fn ($p) => [$p->paid_date, $p->id])->values(),
+            'released' => $loan->logs->where('action', 'released')->sortByDesc('created_at')->first(),
+        ])->setPaper(self::LONG_BOND);
+
+        return $pdf->stream($loan->loan_no.'.pdf');
+    }
+
     public function printPayroll($id){
         $payroll = \App\Models\Payroll::with('items.employee', 'template', 'creator', 'approvedBy.employee')->findOrFail($id);
         $items = $payroll->items;

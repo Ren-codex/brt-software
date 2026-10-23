@@ -139,4 +139,26 @@ class LoanPermissionTest extends TestCase
         $allowed = $this->administratorWithGrant('view');
         $this->actingAs($allowed)->getJson('/loan-payments?option=lists')->assertOk();
     }
+
+    public function test_print_denied_without_view_grant(): void
+    {
+        $loan = $this->makeLoan();
+        $user = $this->administratorWithGrant(null);
+
+        $this->actingAs($user)->get("/loans/{$loan->id}/print")->assertForbidden();
+    }
+
+    public function test_print_streams_a_pdf_with_view_grant(): void
+    {
+        $loan = $this->makeLoan();
+        $user = $this->administratorWithGrant('view');
+        $loan->payments()->create([
+            'amount' => 416.67, 'paid_date' => '2026-01-15', 'paid_term' => 1,
+            'remarks' => 'Payroll deduction', 'added_by_id' => $user->id,
+        ]);
+
+        $this->actingAs($user)->get("/loans/{$loan->id}/print")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+    }
 }

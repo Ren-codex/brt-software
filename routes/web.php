@@ -435,6 +435,9 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
         ->middleware('permission:payroll,payroll_processing,view');
     Route::put('/payrolls/{id}/status', [App\Http\Controllers\Modules\PayrollController::class, 'updateStatus'])
         ->middleware('permission:payroll,payroll_processing,approver');
+    // The loan statement: terms, cut-off deduction, payments and balance.
+    Route::get('/loans/{id}/print', [App\Http\Controllers\Modules\LoanController::class, 'print'])
+        ->middleware('permission:payroll,loans,view');
     // Only a blanket 'view' gate here — approve/reject vs. release require
     // different access levels ('approver' vs 'releaser'), enforced per-status
     // inside LoanClass::updateStatus().

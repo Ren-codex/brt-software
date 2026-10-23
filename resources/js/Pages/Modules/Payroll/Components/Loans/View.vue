@@ -32,7 +32,10 @@
                   <i class="ri-wallet-3-line"></i>
                   <span>Release Loan</span>
                 </button>
-                <button @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back">
+                <button @click="printLoan" class="create-btn" v-b-tooltip.hover title="Print" :style="inModal ? null : 'margin-right: -8px'">
+                  <i class="ri-printer-line"></i>
+                </button>
+                <button v-if="!inModal" @click="$emit('back')" class="create-btn" v-b-tooltip.hover title="Back">
                   <i class="ri-arrow-left-line"></i>
                 </button>
               </div>
@@ -254,6 +257,7 @@ import Swal from 'sweetalert2';
 import Create from './Create.vue';
 import LoanPaymentModal from './Modals/Payment.vue';
 import TransactionLogs from '@/Shared/Components/TransactionLogsCard.vue';
+import { openDocument } from '@/Shared/utils/printDocument';
 
 export default {
   name: 'LoanView',
@@ -263,7 +267,12 @@ export default {
     loan: {
       type: Object,
       required: true,
-    }
+    },
+    // Opened in the payroll page's modal, whose bar has its own Close.
+    inModal: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['back', 'edit', 'view'],
   data() {
@@ -423,6 +432,13 @@ export default {
     }
   },
   methods: {
+    // The statement opens in its own tab, like the payroll documents.
+    printLoan() {
+      if (!this.loan?.id) return;
+      if (!openDocument(`/loans/${this.loan.id}/print`)) {
+        this.$toast?.error("Your browser blocked the new tab. Allow pop-ups for this site and try again.");
+      }
+    },
     toNumber(value, fallback = 0) {
       if (value === null || value === undefined || value === '') {
         return fallback;
