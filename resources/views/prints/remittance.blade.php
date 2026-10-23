@@ -1,514 +1,268 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Remittance #{{ $remittance->remittance_no }}</title>
+    <title>Remittance - {{ $remittance->remittance_no }}</title>
     <style>
-        @page {
-            size: 215.9mm 330.2mm;
-            margin: 0.5in;
-        }
-
+        /* DomPDF: tables for layout, no flexbox. Same look as the loan
+           statement and pay statement, on long bond. */
+        @page { size: 215.9mm 330.2mm; margin: 12mm 12mm; }
         body {
-            font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
             margin: 0;
-            padding: 0;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #000;
-        }
-
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-
-        /* Header Styles */
-        .header {
-            border-bottom: 3px solid #333;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .company-info {
-            float: left;
-            width: 60%;
-        }
-
-        .company-logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .company-details {
-            font-size: 11px;
-            color: #555;
-        }
-
-        .document-title {
-            float: right;
-            width: 35%;
-            text-align: right;
-        }
-
-        .title {
-            font-size: 28px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-
-        .document-info {
-            border: 2px solid #333;
-            padding: 10px;
-            background-color: #f9f9f9;
-        }
-
-        /* Clear floats */
-        .clearfix::after {
-            content: "";
-            clear: both;
-            display: table;
-        }
-
-        /* Two-column layout */
-        .two-columns {
-            display: flex;
-            margin-bottom: 20px;
-            gap: 20px;
-        }
-
-        .column {
-            flex: 1;
-        }
-
-        /* Section styles */
-        .section {
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            background-color: #2c3e50;
-            color: white;
-            padding: 6px 10px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .info-table td {
-            padding: 4px 8px;
-            vertical-align: top;
-            border: 1px solid #ddd;
-        }
-
-        .info-table .label {
-            font-weight: bold;
-            background-color: #f5f5f5;
-            width: 30%;
-        }
-
-        /* Items table */
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        .items-table th {
-            background-color: #2c3e50;
-            color: white;
-            padding: 8px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #ddd;
-        }
-
-        .items-table td {
-            padding: 6px 8px;
-            border: 1px solid #ddd;
-        }
-
-        .items-table .text-left {
-            text-align: left;
-        }
-
-        .items-table .text-right {
-            text-align: right;
-        }
-
-        .items-table .text-center {
-            text-align: center;
-        }
-
-        /* Totals section */
-        .totals-section {
-            float: right;
-            width: 40%;
-            margin-top: 20px;
-        }
-
-        .totals-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .totals-table td {
-            padding: 6px 10px;
-            border: 1px solid #ddd;
-        }
-
-        .totals-table .label {
-            font-weight: bold;
-            text-align: right;
-        }
-
-        .totals-table .amount {
-            text-align: right;
-            width: 40%;
-        }
-
-        .grand-total {
-            background-color: #2c3e50;
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        /* Footer styles */
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #333;
+            font-family: DejaVu Sans, Arial, sans-serif;
+            color: #222;
             font-size: 10px;
-            color: #666;
+            line-height: 1.3;
         }
-
-        .terms-conditions {
-            margin-bottom: 20px;
-        }
-
-        .signature-section {
-            margin-top: 30px;
-        }
-
-        .signature-box {
+        table { width: 100%; border-collapse: collapse; }
+        .muted { color: #666; }
+        .header-table td { vertical-align: top; }
+        .company { font-size: 17px; font-weight: bold; }
+        .title-cell { text-align: right; }
+        .title { font-size: 15px; font-weight: bold; letter-spacing: 1px; }
+        .status-pill {
             display: inline-block;
-            width: 45%;
-            margin-right: 5%;
-            padding-top: 40px;
-            border-top: 1px solid #333;
-            text-align: center;
-        }
-
-        /* Utility classes */
-        .b {
+            margin-top: 3px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 8.5px;
             font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #fff;
+            background: #7f8c8d;
+        }
+        .status-pill.is-verified { background: #3d8d7a; }
+        .status-pill.is-open { background: #d68910; }
+        .status-pill.is-rejected { background: #c0392b; }
+        .rule { border-top: 2px solid #333; margin: 8px 0 10px; }
+        .notice { margin-bottom: 8px; padding: 5px 8px; border: 1px solid #c0392b; color: #c0392b; font-weight: bold; text-align: center; }
+
+        .info td { padding: 2.5px 0; vertical-align: top; }
+        .info .label { width: 13%; color: #666; }
+        .info .value { width: 20.33%; font-weight: bold; padding-right: 8px; }
+
+        h3 {
+            font-size: 9.5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 14px 0 5px;
+            color: #444;
         }
 
-        .text-right {
-            text-align: right;
-        }
+        /* The money handed in, by kind, with the total standing out. */
+        .tiles td { width: 25%; padding: 0 4px; vertical-align: top; }
+        .tiles td:first-child { padding-left: 0; }
+        .tiles td:last-child { padding-right: 0; }
+        .tile { border: 1px solid #dcdcdc; border-radius: 4px; padding: 7px 9px; }
+        .tile-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
+        .tile-value { font-size: 13px; font-weight: bold; margin-top: 2px; }
+        .tile.is-total { border: 2px solid #333; }
 
-        .text-center {
-            text-align: center;
+        .lines th {
+            text-align: left;
+            background: #ededed;
+            border: 1px solid #c9c9c9;
+            padding: 5px 6px;
+            font-size: 8.5px;
+            text-transform: uppercase;
         }
+        .lines td { border: 1px solid #dcdcdc; padding: 3px 6px; }
+        .amount { text-align: right; white-space: nowrap; }
+        .subtotal td { font-weight: bold; background: #f6f6f6; }
 
-        .mt-20 {
-            margin-top: 20px;
-        }
+        .check td { border: 1px solid #dcdcdc; padding: 6px 8px; }
+        .check .label { width: 30%; color: #555; background: #fafafa; }
+        .check .fill { height: 14px; }
+        .variance-short { color: #c0392b; font-weight: bold; }
+        .variance-over { color: #1e8449; font-weight: bold; }
 
-        .mb-10 {
-            margin-bottom: 10px;
-        }
+        .remarks { border: 1px solid #dcdcdc; padding: 6px 8px; min-height: 18px; }
 
-        .page-break {
-            page-break-before: always;
-        }
-
-        /* Status badges */
-        .status-badge {
-            padding: 3px 10px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
-        .status-pending {
-            background-color: #f39c12;
-            color: white;
-        }
-
-        .status-approved {
-            background-color: #27ae60;
-            color: white;
-        }
-
-        .status-cancelled {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        .status-completed {
-            background-color: #3498db;
-            color: white;
-        }
-
-        .status-draft {
-            background-color: #95a5a6;
-            color: white;
-        }
-
-        /* Company info - you might want to move this to config */
-        .company-header {
-            margin-bottom: 10px;
-        }
+        .sign { margin-top: 44px; }
+        .sign td { width: 33.33%; text-align: center; font-size: 9px; vertical-align: top; }
+        .sign .name { font-weight: bold; font-size: 10px; }
+        .sign .line { border-top: 1px solid #555; margin: 0 16px; padding-top: 3px; }
+        .footer { margin-top: 22px; text-align: center; font-size: 8px; color: #888; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header Section -->
-        <div class="header clearfix">
-            <div class="company-info">
-                <div class="company-logo">{{ config('app.company_name', 'YOUR COMPANY') }}</div>
-                <div class="company-details">
-                    {{ config('app.company_address', '123 Business Avenue') }}<br>
-                    {{ config('app.company_city', 'City, State 12345') }}<br>
-                    Phone: {{ config('app.company_phone', '(555) 123-4567') }} |
-                    Email: {{ config('app.company_email', 'sales@company.com') }}<br>
-                    Website: {{ config('app.company_website', 'www.company.com') }} |
-                    {{ config('app.company_vat', 'VAT: #123456789') }}
+@php
+    $peso = fn ($value) => number_format((float) $value, 2);
+    $userName = fn ($user) => $user?->employee?->fullname ?? $user?->username;
+    $date = fn ($value, $format = 'M d, Y') => $value ? \Carbon\Carbon::parse($value)->format($format) : '—';
+
+    $slug = $remittance->status?->slug;
+    $statusName = $remittance->status?->name ?? 'Pending';
+    $isVerified = in_array($slug, ['liquidated', 'approved', 'verified'], true);
+    $isRejected = $slug === 'disapproved';
+    $pillClass = $isVerified ? 'is-verified' : ($isRejected ? 'is-rejected' : 'is-open');
+
+    // The summary the remittance was saved with, in a fixed order, so the
+    // three kinds always print even when one of them is nil.
+    $summary = is_array($remittance->summary) ? $remittance->summary : [];
+    $kinds = [
+        'cash_sales' => 'Cash sales',
+        'credit_sales' => 'Credit sales',
+        'bank_transfer' => 'Bank transfer',
+    ];
+
+    $receiptTotal = (float) $receipts->sum('amount_paid');
+    $expected = (float) ($remittance->total_amount ?? $receiptTotal);
+    $received = $remittance->received_amount;
+    $variance = $received !== null ? (float) ($remittance->variance ?? ((float) $received - $expected)) : null;
+    $breakdown = collect($remittance->received_breakdown ?? [])->filter(fn ($amount) => (float) $amount != 0);
+    $modes = collect(explode(',', (string) $remittance->received_via))->map(fn ($m) => ucwords(trim($m)))->filter();
+@endphp
+
+<table class="header-table">
+    <tr>
+        <td>
+            <div class="company">BOUYANT RICE TRADING</div>
+            <div class="muted">Sinunoc, Zamboanga City, Zamboanga del Sur 7000, Philippines</div>
+        </td>
+        <td class="title-cell">
+            <div class="title">REMITTANCE</div>
+            <div class="muted">No. {{ $remittance->remittance_no }}</div>
+            <div class="status-pill {{ $pillClass }}">{{ $statusName }}</div>
+        </td>
+    </tr>
+</table>
+<div class="rule"></div>
+
+@if($isRejected)
+    <div class="notice">THIS REMITTANCE WAS DISAPPROVED — ITS RECEIPTS WERE RETURNED TO PENDING</div>
+@endif
+
+<table class="info">
+    <tr>
+        <td class="label">Remitted by</td>
+        <td class="value">{{ $userName($remittance->createdBy) ?? '—' }}</td>
+        <td class="label">Remittance date</td>
+        <td class="value">{{ $date($remittance->remittance_date) }}</td>
+        <td class="label">Verified by</td>
+        <td class="value">{{ $userName($remittance->approvedBy) ?? '—' }}</td>
+    </tr>
+    <tr>
+        <td class="label">Receipts</td>
+        <td class="value">{{ $receipts->count() }}</td>
+        <td class="label">Prepared at</td>
+        <td class="value">{{ $date($remittance->created_at, 'M d, Y h:i A') }}</td>
+        <td class="label">Verified at</td>
+        <td class="value">{{ $date($remittance->approved_at, 'M d, Y h:i A') }}</td>
+    </tr>
+</table>
+
+<h3>Amount remitted</h3>
+<table class="tiles">
+    <tr>
+        @foreach($kinds as $key => $kindLabel)
+            <td>
+                <div class="tile">
+                    <div class="tile-label">{{ $kindLabel }}</div>
+                    <div class="tile-value">PHP {{ $peso($summary[$key] ?? 0) }}</div>
                 </div>
+            </td>
+        @endforeach
+        <td>
+            <div class="tile is-total">
+                <div class="tile-label">Total remitted</div>
+                <div class="tile-value">PHP {{ $peso($expected) }}</div>
             </div>
+        </td>
+    </tr>
+</table>
 
-            <div class="document-title">
-                <div class="title">REMITTANCE</div>
-                <div class="document-info">
-                    <table style="width: 100%; font-size: 11px;">
-                        <tr>
-                            <td class="b">Remittance Number:</td>
-                            <td>{{ $remittance->remittance_no }}</td>
-                        </tr>
-                        <tr>
-                            <td class="b">Remittance Date:</td>
-                            <td>{{ $remittance->remittance_date }}</td>
-                        </tr>
-                        <tr>
-                            <td class="b">Status:</td>
-                            <td>
-                                <span class="status-badge status-{{ strtolower($remittance->status->name ?? 'pending') }}">
-                                    {{ strtoupper($remittance->status->name ?? 'PENDING') }}
-                                </span>
-                            </td>
-                        </tr>
-                        @if($remittance->approved_at)
-                        <tr>
-                            <td class="b">Approved Date:</td>
-                            <td>{{ \Carbon\Carbon::parse($remittance->approved_at)->format('F d, Y') }}</td>
-                        </tr>
-                        @endif
-                    </table>
-                </div>
-            </div>
-        </div>
+<h3>Receipts included</h3>
+<table class="lines">
+    <tr>
+        <th style="width: 4%;">#</th>
+        <th style="width: 15%;">Receipt no.</th>
+        <th style="width: 15%;">Invoice no.</th>
+        <th>Customer</th>
+        <th style="width: 16%;">Sales rep</th>
+        <th style="width: 11%;">Date</th>
+        <th style="width: 9%;">Mode</th>
+        <th class="amount" style="width: 12%;">Amount</th>
+    </tr>
+    @forelse($receipts as $index => $receipt)
+        <tr>
+            <td>{{ $index + 1 }}</td>
+            <td>{{ $receipt->receipt_number ?? '—' }}</td>
+            <td>{{ $receipt->arInvoice?->invoice_number ?? '—' }}</td>
+            <td>{{ $receipt->customer?->name ?? $receipt->arInvoice?->sales_order?->customer?->name ?? '—' }}</td>
+            <td>{{ $receipt->arInvoice?->sales_order?->salesRep?->fullname ?? '—' }}</td>
+            <td>{{ $date($receipt->receipt_date) }}</td>
+            <td>{{ $receipt->payment_mode ? ucwords($receipt->payment_mode) : '—' }}</td>
+            <td class="amount">{{ $peso($receipt->amount_paid) }}</td>
+        </tr>
+    @empty
+        <tr><td colspan="8" class="muted">No receipts on this remittance</td></tr>
+    @endforelse
+    <tr class="subtotal">
+        <td colspan="7">Total of {{ $receipts->count() }} receipt(s)</td>
+        <td class="amount">{{ $peso($receiptTotal) }}</td>
+    </tr>
+</table>
 
-        <!-- Remittance Information -->
-        <div class="two-columns">
-            <div class="column">
-                <div class="section">
-                    <div class="section-title">REMITTANCE DETAILS</div>
-                    <table class="info-table">
-                        <tr>
-                            <td class="label">Created By:</td>
-                            <td>{{ $remittance->createdBy->username ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Created At:</td>
-                            <td>{{ $remittance->created_at ? \Carbon\Carbon::parse($remittance->created_at)->format('F d, Y h:i A') : 'N/A' }}</td>
-                        </tr>
-                        @if($remittance->approved_by)
-                        <tr>
-                            <td class="label">Approved By:</td>
-                            <td>{{ $remittance->approvedBy->username }}</td>
-                        </tr>
-                        @endif
-                        <tr>
-                            <td class="label">Total Amount:</td>
-                            <td>₱{{ number_format($remittance->total_amount ?? 0, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Total Receipts:</td>
-                            <td>{{ count($receipts) }}</td>
-                        </tr>
-                        @if($remittance->received_via)
-                        <tr>
-                            <td class="label">Received Via:</td>
-                            <td>{{ collect(explode(',', $remittance->received_via))->map(fn($v) => ucfirst(trim($v)))->implode(', ') }}</td>
-                        </tr>
-                        @endif
-                        @if(str_contains(strtolower($remittance->received_via ?? ''), 'check') && $remittance->reference_no)
-                        <tr>
-                            <td class="label">Reference No.:</td>
-                            <td>{{ $remittance->reference_no }}</td>
-                        </tr>
-                        @endif
-                        @if($remittance->remarks)
-                        <tr>
-                            <td class="label">Remarks:</td>
-                            <td>{{ $remittance->remarks }}</td>
-                        </tr>
-                        @endif
-                    </table>
-                </div>
-            </div>
+{{-- What the cashier counted against what the receipts say. Filled in from
+     the verification once it is done; until then the lines are left blank,
+     to be written in by hand as the money is counted. --}}
+<h3>Verification</h3>
+<table class="check">
+    <tr>
+        <td class="label">Amount expected</td>
+        <td class="amount">PHP {{ $peso($expected) }}</td>
+    </tr>
+    <tr>
+        <td class="label">Amount received</td>
+        <td class="amount fill">{{ $received !== null ? 'PHP '.$peso($received) : '' }}</td>
+    </tr>
+    <tr>
+        <td class="label">Variance</td>
+        <td class="amount fill">
+            @if($variance !== null)
+                <span class="{{ $variance < 0 ? 'variance-short' : ($variance > 0 ? 'variance-over' : '') }}">
+                    {{ $variance < 0 ? 'Short' : ($variance > 0 ? 'Over' : 'None') }}@if($variance != 0) · PHP {{ $peso(abs($variance)) }}@endif
+                </span>
+            @endif
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Received via</td>
+        <td class="fill">
+            @if($breakdown->isNotEmpty())
+                {{ $breakdown->map(fn ($amount, $mode) => ucwords(str_replace('_', ' ', $mode)).' PHP '.$peso($amount))->implode(' · ') }}
+            @else
+                {{ $modes->implode(', ') }}
+            @endif
+            @if($remittance->reference_no)
+                <span class="muted"> · Ref. {{ $remittance->reference_no }}</span>
+            @endif
+        </td>
+    </tr>
+</table>
 
-            <div class="column">
-                <div class="section">
-                    <div class="section-title">SUMMARY</div>
-                    <div style="padding: 10px; border: 1px solid #ddd; min-height: 100px;">
-                        @if(is_array($remittance->summary) && count($remittance->summary) > 0)
-                            <table class="info-table" style="margin: 0;">
-                                @foreach($remittance->summary as $key => $value)
-                                    <tr>
-                                        <td class="label" style="width: 50%;">{{ ucwords(str_replace('_', ' ', $key)) }}:</td>
-                                        <td>₱{{ number_format($value, 2) }}</td>
-                                    </tr>
-                                @endforeach
-                            </table>
-                        @elseif(is_object($remittance->summary) && count((array)$remittance->summary) > 0)
-                            <table class="info-table" style="margin: 0;">
-                                @foreach($remittance->summary as $key => $value)
-                                    <tr>
-                                        <td class="label" style="width: 50%;">{{ ucwords(str_replace('_', ' ', $key)) }}:</td>
-                                        <td>₱{{ number_format($value, 2) }}</td>
-                                    </tr>
-                                @endforeach
-                            </table>
-                        @else
-                            <p style="margin: 0;">{{ $remittance->summary ?? 'No summary available' }}</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
+<h3>Remarks</h3>
+<div class="remarks">{{ $remittance->remarks ?: '' }}</div>
 
-        <!-- Receipts List -->
-        <div class="section">
-            <div class="section-title">RECEIPTS INCLUDED</div>
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th width="5%">#</th>
-                        <th width="15%">Receipt No.</th>
-                        <th width="20%">Customer</th>
-                        <th width="15%">Amount</th>
-                        <th width="15%">Date</th>
-                        <th width="15%">Payment Mode</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php
-                        $totalAmount = 0;
-                        $itemCount = count($receipts);
-                    @endphp
+<table class="sign">
+    <tr>
+        <td>
+            <div class="name">{!! e($userName($remittance->createdBy)) ?: '&nbsp;' !!}</div>
+            <div class="line">Remitted by</div>
+        </td>
+        <td>
+            <div class="name">&nbsp;</div>
+            <div class="line">Received by (cashier) / Date</div>
+        </td>
+        <td>
+            <div class="name">{!! e($userName($remittance->approvedBy)) ?: '&nbsp;' !!}</div>
+            <div class="line">Verified by</div>
+        </td>
+    </tr>
+</table>
 
-                    @foreach($receipts as $index => $receipt)
-                        @php
-                            $totalAmount += $receipt->amount_paid ?? 0;
-                        @endphp
-                        <tr>
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td class="text-center">{{ $receipt->receipt_number ?? '-' }}</td>
-                            <td class="text-left">{{ $receipt->customer->name ?? '-' }}</td>
-                            <td class="text-right">₱{{ number_format($receipt->amount_paid ?? 0, 2) }}</td>
-                            <td class="text-center">{{ $receipt->receipt_date ?? '-' }}</td>
-                            <td class="text-center">{{ $receipt->payment_mode ?? '-' }}</td>
-                        </tr>
-                    @endforeach
-
-                    <!-- Empty rows if less than minimum items -->
-                    @if($itemCount < 8)
-                        @for($i = $itemCount; $i < 8; $i++)
-                            <tr>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                            </tr>
-                        @endfor
-                    @endif
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Totals Section -->
-        <div class="totals-section">
-            <table class="totals-table">
-                <tr>
-                    <td class="label">Total Receipts:</td>
-                    <td class="amount">{{ count($receipts) }}</td>
-                </tr>
-                <tr class="grand-total">
-                    <td class="label">TOTAL AMOUNT:</td>
-                    <td class="amount">₱{{ number_format($totalAmount, 2) }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="clearfix"></div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <div class="terms-conditions">
-                <div class="section-title">REMITTANCE NOTES</div>
-                <div style="font-size: 9px; line-height: 1.3;">
-                    This remittance represents the collection of payments from the listed receipts.<br>
-                    All receipts have been verified and processed according to company procedures.<br>
-                    This document serves as official record of the remittance transaction.
-                </div>
-            </div>
-
-            <!-- Signatures -->
-            <div class="signature-section clearfix">
-                <div class="signature-box">
-                    <div class="b">Prepared By</div>
-                    <div style="font-size: 9px; margin-top: 5px;">{{ $remittance->createdBy->username ?? 'N/A' }}</div>
-                </div>
-
-                @if($remittance->approved_by)
-                <div class="signature-box">
-                    <div class="b">Approved By</div>
-                    <div style="font-size: 9px; margin-top: 5px;">{{ $remittance->approvedBy->username }}</div>
-                </div>
-                @else
-                <div class="signature-box">
-                    <div class="b">Authorized Signature</div>
-                    <div style="font-size: 9px; margin-top: 5px;">{{ config('app.company_name', 'Your Company') }}</div>
-                </div>
-                @endif
-
-                <div style="clear: both;"></div>
-            </div>
-
-            <!-- Footer notes -->
-            <div class="text-center mt-20">
-                <div style="border-top: 1px solid #ddd; padding-top: 10px; font-size: 9px; color: #777;">
-                    This is a computer-generated document.<br>
-                    Remittance #{{ $remittance->remittance_no }} |
-                    Generated on: {{ \Carbon\Carbon::now()->format('F d, Y h:i A') }}
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="footer">Remittance {{ $remittance->remittance_no }} · Generated on {{ now()->format('M d, Y h:i A') }}</div>
 </body>
 </html>

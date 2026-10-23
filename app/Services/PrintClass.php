@@ -91,8 +91,15 @@ class PrintClass
     }
 
     public function printRemittance($id){
-        $remittance = \App\Models\Remittance::with('status', 'receipts.customer', 'createdBy', 'approvedBy')->findOrFail($id);
-        $receipts = $remittance->receipts;
+        $remittance = \App\Models\Remittance::with(
+            'status',
+            'receipts.customer',
+            'receipts.arInvoice.sales_order.customer',
+            'receipts.arInvoice.sales_order.salesRep',
+            'createdBy.employee',
+            'approvedBy.employee',
+        )->findOrFail($id);
+        $receipts = $remittance->receipts->sortBy(fn ($r) => [$r->receipt_date, $r->id])->values();
 
         $array = [
             'remittance' => $remittance,
