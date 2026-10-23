@@ -74,17 +74,17 @@
          returns to the same page, search and sort the user was on. The
          overlay carries .modal-overlay.active so the list's background
          refresh pauses while it is open, as it does for every other modal. -->
-    <div v-if="selectedPayroll" class="modal-overlay active payroll-view-overlay"
+    <div v-if="selectedPayroll" class="modal-overlay active record-view-overlay"
       :class="{ 'is-fullscreen': payrollFullscreen }" @click.self="backToList">
-      <div class="payroll-view-dialog" role="dialog" aria-modal="true">
+      <div class="record-view-dialog" role="dialog" aria-modal="true">
         <!-- Window controls in the corner where people look for them. The bar
              sticks to the top, so they stay in reach while a long payroll
              scrolls underneath. -->
-        <div class="payroll-view-bar">
-          <span class="payroll-view-bar-title">
+        <div class="record-view-bar">
+          <span class="record-view-bar-title">
             <i class="ri-money-peso-circle-line"></i> Payroll {{ selectedPayroll.payroll_no }}
           </span>
-          <div class="payroll-view-bar-actions">
+          <div class="record-view-bar-actions">
             <button type="button" class="window-btn window-btn-text" v-b-tooltip.hover title="How payroll works"
               @click="openPayrollGuide">
               <i class="ri-book-open-line"></i> <span>Guide</span>
@@ -112,14 +112,14 @@
 
     <!-- A loan opens over the list the same way a payroll does, so closing it
          returns to the same page, search and sort. -->
-    <div v-if="selectedLoan" class="modal-overlay active payroll-view-overlay"
+    <div v-if="selectedLoan" class="modal-overlay active record-view-overlay"
       :class="{ 'is-fullscreen': loanFullscreen }" @click.self="closeLoan">
-      <div class="payroll-view-dialog loan-view-dialog" role="dialog" aria-modal="true">
-        <div class="payroll-view-bar">
-          <span class="payroll-view-bar-title">
+      <div class="record-view-dialog is-narrow" role="dialog" aria-modal="true">
+        <div class="record-view-bar">
+          <span class="record-view-bar-title">
             <i class="ri-bank-card-line"></i> Loan {{ selectedLoan.loan_no }}
           </span>
-          <div class="payroll-view-bar-actions">
+          <div class="record-view-bar-actions">
             <button type="button" class="window-btn" v-b-tooltip.hover
               :title="loanFullscreen ? 'Exit full screen' : 'Full screen'"
               @click="loanFullscreen = !loanFullscreen">
@@ -301,154 +301,6 @@ export default {
 </script>
 
 <style scoped>
-/* The payroll view modal. Not .modal-container: that class animates with a
-   transform, and a transformed box would trap the approve and edit dialogs
-   that open from inside the payroll, which are fixed to the screen. */
-.payroll-view-overlay {
-  /* Centred both ways. The dialog scrolls inside itself when the payroll is
-     taller than the screen, so centring never pushes its top out of reach. */
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  /* The shared overlay blurs what is behind it. A backdrop-filter also traps
-     fixed-position children the way a transform does, so it is switched off
-     here for the same reason: the dialogs opened from inside must stay pinned
-     to the screen even when this overlay is scrolled. */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: rgba(15, 23, 42, 0.6);
-}
-
-.payroll-view-bar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  /* Pulled out to the dialog's edges so content scrolling beneath it is
-     covered right up to the corners. */
-  margin: 0 -1.1rem 0.9rem;
-  padding: 0.6rem 0.9rem 0.6rem 1.1rem;
-  background: var(--brt-c-f3f6f5);
-  border-bottom: 1px solid var(--brt-c-dfe9e6);
-  border-radius: 16px 16px 0 0;
-}
-
-.payroll-view-bar-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--brt-ink);
-}
-
-.payroll-view-bar-title i {
-  color: var(--brt-primary);
-  font-size: 1.1rem;
-}
-
-.payroll-view-bar-actions {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.window-btn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--brt-border);
-  border-radius: 10px;
-  background: #fff;
-  color: var(--brt-ink);
-  font-size: 1.05rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.window-btn-text {
-  width: auto;
-  gap: 0.35rem;
-  padding: 0 0.7rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.window-btn-text i {
-  font-size: 1rem;
-}
-
-.window-btn:hover {
-  background: var(--brt-primary);
-  border-color: var(--brt-primary);
-  color: #fff;
-}
-
-.window-btn-close:hover {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-
-.payroll-view-dialog {
-  width: 100%;
-  max-width: 1280px;
-  max-height: calc(100vh - 2.5rem);
-  overflow-y: auto;
-  margin: auto;
-  padding: 0 1.1rem 0.25rem;
-  border-radius: 16px;
-  background: var(--brt-c-f3f6f5);
-  box-shadow: 0 24px 60px -12px rgba(var(--brt-c-10322e-rgb), 0.45);
-}
-
-/* A loan has less to show than a payroll. */
-.loan-view-dialog {
-  max-width: 1180px;
-  padding-bottom: 1.1rem;
-}
-
-/* Full screen: edge to edge, no rounded corners, nothing of the page behind. */
-.payroll-view-overlay.is-fullscreen {
-  padding: 0;
-}
-
-.payroll-view-overlay.is-fullscreen .payroll-view-dialog {
-  max-width: none;
-  height: 100vh;
-  max-height: none;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.payroll-view-overlay.is-fullscreen .payroll-view-bar {
-  border-radius: 0;
-}
-
-@media (max-width: 767.98px) {
-  .payroll-view-overlay {
-    padding: 0.5rem;
-  }
-
-  .payroll-view-dialog {
-    max-height: calc(100vh - 1rem);
-  }
-
-  .payroll-view-dialog {
-    padding: 0 0.6rem 0;
-    border-radius: 12px;
-  }
-
-  .payroll-view-bar {
-    margin: 0 -0.6rem 0.6rem;
-    padding: 0.5rem 0.6rem;
-    border-radius: 12px 12px 0 0;
-  }
-}
-
 .inventory-sidebar-header {
   position: relative;
 }
