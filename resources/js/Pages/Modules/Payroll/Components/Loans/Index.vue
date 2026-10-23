@@ -98,6 +98,11 @@
                       class="btn-icon rounded-circle">
                       <i class="ri-eye-line"></i>
                     </b-button>
+                    <b-button @click.stop="printLoan(loan)" variant="outline-secondary"
+                      v-b-tooltip.hover title="Print" size="sm"
+                      class="btn-icon rounded-circle">
+                      <i class="ri-printer-line"></i>
+                    </b-button>
                   </div>
                 </td>
               </tr>
@@ -130,6 +135,7 @@ import Pagination from '@/Shared/Components/Pagination.vue';
 import DeleteModal from '@/Shared/Components/Modals/DeleteModal.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
 import Create from './Create.vue';
+import { openDocument } from '@/Shared/utils/printDocument';
 
 export default {
   components: { Pagination, Create, DeleteModal, TableLoadingRow },
@@ -195,6 +201,13 @@ export default {
     },
     viewLoan(loan) {
       this.$emit('view', loan);
+    },
+    // Same statement as the Print button on the loan's own page.
+    printLoan(loan) {
+      if (!loan?.id) return;
+      if (!openDocument(`/loans/${loan.id}/print`)) {
+        this.$toast?.error("Your browser blocked the new tab. Allow pop-ups for this site and try again.");
+      }
     },
     openEdit(data, index) {
       this.selectedRow = index;
