@@ -23,7 +23,7 @@
                         <button class="create-btn" @click="onPrint(item.id)">
                             <i class="ri-printer-line"></i>
                         </button>
-                        <button class="create-btn" @click="$emit('back')">
+                        <button v-if="!inModal" class="create-btn" @click="$emit('back')">
                             <i class="ri-arrow-left-line"></i>
                         </button>
                     </div>
@@ -261,6 +261,11 @@ export default {
         dropdowns: {
             type: Object,
             default: () => ({}),
+        },
+        // Opened in the remittance list's modal, whose bar has its own Close.
+        inModal: {
+            type: Boolean,
+            default: false,
         },
     },
     emits: ['back', 'reload'],

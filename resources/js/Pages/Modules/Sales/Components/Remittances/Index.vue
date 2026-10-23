@@ -320,14 +320,6 @@
             <Create @add="fetch" ref="create" />
         </template>
 
-        <View
-            v-else-if="currentView === 'view' && selectedRemittance"
-            :item="selectedRemittance"
-            :dropdowns="dropdowns"
-            @back="closeView"
-            @reload="handleViewReload"
-        />
-
         <SummaryView
             v-else-if="currentView === 'summary'"
             @back="currentView = 'list'"
@@ -338,6 +330,36 @@
             :dropdowns="dropdowns"
             @back="currentView = 'list'"
         />
+
+        <!-- A remittance opens over the list, like a payroll or a loan, so
+             closing it returns to the same page, search and sort. -->
+        <div v-if="selectedRemittance" class="modal-overlay active record-view-overlay"
+            :class="{ 'is-fullscreen': viewFullscreen }" @click.self="closeView">
+            <div class="record-view-dialog is-narrow" role="dialog" aria-modal="true">
+                <div class="record-view-bar">
+                    <span class="record-view-bar-title">
+                        <i class="ri-safe-2-line"></i> Remittance {{ selectedRemittance.remittance_no }}
+                    </span>
+                    <div class="record-view-bar-actions">
+                        <button type="button" class="window-btn" v-b-tooltip.hover
+                            :title="viewFullscreen ? 'Exit full screen' : 'Full screen'"
+                            @click="viewFullscreen = !viewFullscreen">
+                            <i :class="viewFullscreen ? 'ri-fullscreen-exit-line' : 'ri-fullscreen-line'"></i>
+                        </button>
+                        <button type="button" class="window-btn window-btn-close" v-b-tooltip.hover title="Close" @click="closeView">
+                            <i class="ri-close-line"></i>
+                        </button>
+                    </div>
+                </div>
+                <View
+                    :item="selectedRemittance"
+                    :dropdowns="dropdowns"
+                    in-modal
+                    @back="closeView"
+                    @reload="handleViewReload"
+                />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -373,6 +395,9 @@ export default {
             },
             activeTab: 'for-verification',
             currentView: 'list',
+            // Whether the remittance modal fills the screen. Kept between
+            // remittances, so someone who prefers it large does not re-click.
+            viewFullscreen: false,
             selectedRemittance: null,
             metrics: {
                 total_remittances: 0,
@@ -484,12 +509,11 @@ export default {
         openCreate() {
             this.$refs.create.show();
         },
+        // Opens in the modal; the list stays where it is underneath.
         openView(item) {
             this.selectedRemittance = item;
-            this.currentView = 'view';
         },
         closeView() {
-            this.currentView = 'list';
             this.selectedRemittance = null;
         },
         handleViewReload() {
