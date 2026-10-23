@@ -118,6 +118,16 @@ class PrintClass
 
     public const INVOICE_ROWS_PER_HALF_SHEET = 4;
 
+    /**
+     * The most payment rows one loan statement copy can hold and still fit
+     * half a long bond sheet, so the employee's copy and the company's share a sheet.
+     * Above this, each copy gets a sheet of its own. Measured against the
+     * rendered PDF at its tallest (pending notice, a two-line purpose): 12
+     * fits, 13 does not, and 12 is every cut-off of a 6-month loan.
+     * Re-measure if prints/partials/loan-copy changes.
+     */
+    public const LOAN_PAYMENT_ROWS_PER_HALF_SHEET = 12;
+
     public function printArInvoice($id){
         $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.approved_by')->findOrFail($id);
         $sales_order = $ar_invoice->sales_order;
