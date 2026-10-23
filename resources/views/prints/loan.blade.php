@@ -47,6 +47,19 @@
         .sign .name { font-weight: bold; font-size: 11px; }
         .sign .line { border-top: 1px solid #555; margin: 0 16px; padding-top: 4px; }
         .footer { margin-top: 30px; text-align: center; font-size: 9px; color: #888; }
+        .new-sheet { page-break-before: always; }
+        .copy-label {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #fff;
+            background-color: #7f8c8d;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
@@ -68,6 +81,11 @@
     $notYetApproved = in_array($loan->status, ['pending', 'rejected', 'disapproved'], true);
 @endphp
 
+{{-- Two copies, one kept by the employee and one filed by BRT, each a full
+     page of its own: the statement already fills one. --}}
+@foreach(['Employee Copy', 'BRT Copy'] as $copyIndex => $copyLabel)
+<div class="{{ $copyIndex > 0 ? 'new-sheet' : '' }}">
+
 <table>
     <tr>
         <td>
@@ -75,6 +93,7 @@
             <div class="muted">Sinunoc, Zamboanga City, Zamboanga del Sur 7000, Philippines</div>
         </td>
         <td class="title-cell">
+            <div class="copy-label">{{ $copyLabel }}</div>
             <div class="title">LOAN STATEMENT</div>
             <div class="muted">Loan No. {{ $loan->loan_no ?? '—' }}</div>
             <div class="muted">Status: {{ $label($loan->status) }}</div>
@@ -164,7 +183,7 @@
         <td class="amount">PHP {{ $peso($balance) }}</td>
     </tr>
 </table>
-<div class="note">{{ $remainingCutoffs }} cut-off(s) left to pay. Remaining balance is the total payable less total paid.</div>
+<div class="note">{{ rtrim(rtrim(number_format((float) $remainingCutoffs, 2), '0'), '.') }} cut-off(s) left to pay. Remaining balance is the total payable less total paid.</div>
 
 <table class="sign">
     <tr>
@@ -183,6 +202,8 @@
     </tr>
 </table>
 
-<div class="footer">Generated on {{ now()->format('M d, Y h:i A') }}</div>
+<div class="footer">{{ $copyLabel }} · Generated on {{ now()->format('M d, Y h:i A') }}</div>
+</div>
+@endforeach
 </body>
 </html>

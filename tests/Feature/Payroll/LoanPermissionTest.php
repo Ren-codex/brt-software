@@ -159,8 +159,11 @@ class LoanPermissionTest extends TestCase
             'remarks' => 'Payroll deduction', 'added_by_id' => $user->id,
         ]);
 
-        $this->actingAs($user)->get("/loans/{$loan->id}/print")
+        $response = $this->actingAs($user)->get("/loans/{$loan->id}/print")
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
+
+        // One copy for the employee, one for BRT, each on a page of its own.
+        $this->assertSame(2, preg_match_all('#/Type\s*/Page[^s]#', $response->getContent()));
     }
 }
