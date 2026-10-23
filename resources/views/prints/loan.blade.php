@@ -7,7 +7,7 @@
         /* DomPDF: tables for layout, no flexbox.
 
            Two copies on one sheet, cut in half with scissors: the employee
-           keeps the top, BRT files the bottom. The same layout the invoice and
+           keeps the top, the company files the bottom. The same layout the invoice and
            receipt prints use. The top copy is given exactly half the printable
            height (long bond is 330.2mm; less the 6mm margins at each end, half
            is 159.1mm) and carries the cut line on its bottom edge, so the cut
@@ -116,7 +116,7 @@
 </div>
 
 <div class="copy-cell {{ $copiesShareSheet ? 'keep-whole' : 'new-sheet' }}">
-    @include('prints.partials.loan-copy', ['copyLabel' => 'BRT Copy'])
+    @include('prints.partials.loan-copy', ['copyLabel' => 'Company Copy'])
 </div>
 </body>
 </html>

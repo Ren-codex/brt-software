@@ -120,7 +120,7 @@ class PrintClass
 
     /**
      * The most payment rows one loan statement copy can hold and still fit
-     * half a long bond sheet, so the employee's copy and BRT's share a sheet.
+     * half a long bond sheet, so the employee's copy and the company's share a sheet.
      * Above this, each copy gets a sheet of its own. Measured against the
      * rendered PDF at its tallest (pending notice, a two-line purpose): 12
      * fits, 13 does not, and 12 is every cut-off of a 6-month loan.

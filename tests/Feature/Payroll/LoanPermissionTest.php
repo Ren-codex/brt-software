@@ -163,7 +163,7 @@ class LoanPermissionTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
-        // The employee's copy and BRT's share one sheet, to be cut in half.
+        // The employee's copy and the company's share one sheet, to be cut in half.
         $this->assertSame(1, $this->pageCount($response->getContent()));
     }
 
