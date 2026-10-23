@@ -51,68 +51,31 @@
                                     <th style="width: 15%;" class="text-center border-none">Sold Quantity</th>
                                     <th style="width: 15%;" class="text-center border-none">Total Product KG</th>
                                     <th style="width: 15%;" class="text-center border-none">Collected Points</th>
+                                    <th style="width: 8%;" class="text-center border-none">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="fs-12">
-                                <TableLoadingRow v-if="loading" :colspan="5" message="Loading sales incentives..." />
+                                <TableLoadingRow v-if="loading" :colspan="6" message="Loading sales incentives..." />
                                 <template v-else>
-                                    <template v-for="(incentive, index) in incentives" :key="incentive.employee_id">
-                                        <tr class="transition-all incentive-row"
-                                            style="transition: all 0.3s ease;"
-                                            @click="toggleExpanded(incentive.employee_id)">
-                                            <td class="text-center">
-                                                <div class="d-flex align-items-center justify-content-center gap-2">
-                                                    <span>{{ index + 1 }}</span>
-                                                    <i class="ri-arrow-down-s-line expand-icon"
-                                                        :class="{ open: expandedEmployeeId === incentive.employee_id }"></i>
-                                                </div>
-                                            </td>
-                                            <td class="text-center fw-semibold">{{ incentive.employee?.fullname }}</td>
-                                            <td class="text-center">{{ incentive.total_sold_quantity || 0 }}</td>
-                                            <td class="text-center">{{ incentive.total_product_total_kg || 0 }}</td>
-                                            <td class="text-center">{{ incentive.total_amount }}</td>
-                                        </tr>
-                                        <tr v-if="expandedEmployeeId === incentive.employee_id" class="details-row">
-                                            <td colspan="5" class="p-0">
-                                                <div class="details-panel p-3">
-                                                    <div class="details-title mb-2">
-                                                        Sales incentive details for {{ incentive.employee?.fullname }}
-                                                    </div>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm align-middle mb-0 details-table">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>SO #</th>
-                                                                    <th>Order Date</th>
-                                                                    <th>Sold Quantity</th>
-                                                                    <th>Total KG</th>
-                                                                    <th>Points</th>
-                                                                    <th>Created</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <tr v-for="detail in incentive.details || []" :key="detail.id">
-                                                                    <td>{{ detail.sales_order?.so_number || `SO #${detail.sales_order_id}` }}</td>
-                                                                    <td>{{ formatDate(detail.sales_order?.order_date) }}</td>
-                                                                    <td>{{ detail.sold_quantity || 0 }}</td>
-                                                                    <td>{{ detail.product_total_kg || 0 }}</td>
-                                                                    <td>{{ detail.amount || 0 }}</td>
-                                                                    <td>{{ formatDateTime(detail.created_at) }}</td>
-                                                                </tr>
-                                                                <tr v-if="!(incentive.details || []).length">
-                                                                    <td colspan="7" class="text-center text-muted py-3">
-                                                                        No sales incentive details found.
-                                                                    </td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </template>
+                                    <tr v-for="(incentive, index) in incentives" :key="incentive.employee_id"
+                                        class="transition-all incentive-row"
+                                        style="transition: all 0.3s ease;"
+                                        @click="openDetails(incentive)">
+                                        <td class="text-center">{{ index + 1 }}</td>
+                                        <td class="text-center fw-semibold">{{ incentive.employee?.fullname }}</td>
+                                        <td class="text-center">{{ incentive.total_sold_quantity || 0 }}</td>
+                                        <td class="text-center">{{ incentive.total_product_total_kg || 0 }}</td>
+                                        <td class="text-center">{{ incentive.total_amount }}</td>
+                                        <td class="text-center">
+                                            <b-button @click.stop="openDetails(incentive)" variant="outline-primary"
+                                                v-b-tooltip.hover title="View" size="sm"
+                                                class="btn-icon rounded-circle">
+                                                <i class="ri-eye-line"></i>
+                                            </b-button>
+                                        </td>
+                                    </tr>
                                     <tr v-if="incentives.length === 0">
-                                        <td colspan="5" class="text-center text-muted py-3">No incentives found</td>
+                                        <td colspan="6" class="text-center text-muted py-3">No incentives found</td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -126,6 +89,69 @@
             </div>
         </div>
     </BRow>
+    <!-- One employee's sales orders behind the totals in their row. -->
+    <div v-if="detailIncentive" class="modal-overlay active" @click.self="closeDetails">
+        <div class="modal-container modal-xl" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <div class="modal-header-icon">
+                    <i class="ri-trophy-line"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title">{{ detailIncentive.employee?.fullname || 'Employee' }}</h5>
+                    <p class="modal-subtitle">Sales incentives · {{ formatDate(filter.created_date_from) }} – {{ formatDate(filter.created_date_to) }}</p>
+                </div>
+                <button class="close-btn ms-auto" @click="closeDetails"><i class="ri-close-line"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="incentive-totals mb-3">
+                    <div class="incentive-total">
+                        <span class="incentive-total-label">Sold Quantity</span>
+                        <span class="incentive-total-value">{{ detailIncentive.total_sold_quantity || 0 }}</span>
+                    </div>
+                    <div class="incentive-total">
+                        <span class="incentive-total-label">Total Product KG</span>
+                        <span class="incentive-total-value">{{ detailIncentive.total_product_total_kg || 0 }}</span>
+                    </div>
+                    <div class="incentive-total">
+                        <span class="incentive-total-label">Collected Points</span>
+                        <span class="incentive-total-value">{{ detailIncentive.total_amount || 0 }}</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0 details-table">
+                        <thead>
+                            <tr>
+                                <th>SO #</th>
+                                <th>Order Date</th>
+                                <th>Sold Quantity</th>
+                                <th>Total KG</th>
+                                <th>Points</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="detail in detailIncentive.details || []" :key="detail.id">
+                                <td>{{ detail.sales_order?.so_number || `SO #${detail.sales_order_id}` }}</td>
+                                <td>{{ formatDate(detail.sales_order?.order_date) }}</td>
+                                <td>{{ detail.sold_quantity || 0 }}</td>
+                                <td>{{ detail.product_total_kg || 0 }}</td>
+                                <td>{{ detail.amount || 0 }}</td>
+                                <td>{{ formatDateTime(detail.created_at) }}</td>
+                            </tr>
+                            <tr v-if="!(detailIncentive.details || []).length">
+                                <td colspan="6" class="text-center text-muted py-3">
+                                    No sales incentive details found.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" @click="closeDetails">Close</button>
+            </div>
+        </div>
+    </div>
     <!-- Create/Edit Modal -->
     <div v-if="showModal" class="modal-overlay" :class="{ active: showModal }" @click.self="closeModal">
         <div class="modal-container modal-lg" @click.stop>
@@ -216,7 +242,8 @@ export default {
         created_date_to: null
       },
       localKeyword: '',
-      expandedEmployeeId: null,
+      // The row whose sales orders are open in the details modal.
+      detailIncentive: null,
       loading: false,
       showModal: false,
       selectedIncentive: null,
@@ -292,12 +319,6 @@ export default {
         const response = await axios.get('/sales-incentives', { params })
         if (response.data) {
           this.incentives = response.data.data || [];
-          if (this.expandedEmployeeId) {
-            const hasExpandedRow = this.incentives.some((item) => item.employee_id === this.expandedEmployeeId);
-            if (!hasExpandedRow) {
-              this.expandedEmployeeId = null;
-            }
-          }
           this.meta = {
             current_page: response.data.current_page || 1,
             last_page: response.data.last_page || 1,
@@ -326,7 +347,6 @@ export default {
     },
     closeModal() {
         this.showModal = false;
-        this.expandedEmployeeId = null;
         this.selectedIncentive = null;
         this.form = {
         employee_id: '',
@@ -342,8 +362,11 @@ export default {
         currency: 'USD'
       }).format(amount);
     },
-    toggleExpanded(employeeId) {
-      this.expandedEmployeeId = this.expandedEmployeeId === employeeId ? null : employeeId;
+    openDetails(incentive) {
+      this.detailIncentive = incentive;
+    },
+    closeDetails() {
+      this.detailIncentive = null;
     },
     formatDate(value) {
       if (!value) return '-';
@@ -399,26 +422,39 @@ export default {
   cursor: pointer;
 }
 
-.expand-icon {
-  transition: transform 0.2s ease;
+.incentive-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
-.expand-icon.open {
-  transform: rotate(180deg);
+.incentive-total {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--brt-border);
+  border-radius: 10px;
+  background: #fff;
 }
 
-.details-row td {
-  background: #f8f9fa;
+.incentive-total-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6c757d;
 }
 
-.details-panel {
-  border-top: 1px solid #e9ecef;
+.incentive-total-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--brt-ink);
 }
 
-.details-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #495057;
+@media (max-width: 575.98px) {
+  .incentive-totals {
+    grid-template-columns: 1fr;
+  }
 }
 
 .details-table thead th {
