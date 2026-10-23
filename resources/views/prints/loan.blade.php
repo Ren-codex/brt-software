@@ -139,20 +139,23 @@
 
 <h3>Payments</h3>
 <table class="lines">
-    <tr><th style="width: 6%;">#</th><th>Date paid</th><th>Cut-off(s)</th><th>Received by</th><th>Remarks</th><th class="amount">Amount (PHP)</th></tr>
+    <tr><th style="width: 5%;">#</th><th>Period covered</th><th>Recorded</th><th>Cut-off(s)</th><th>Received by</th><th>Remarks</th><th class="amount">Amount (PHP)</th></tr>
     @forelse($payments as $index => $payment)
         <tr>
             <td>{{ $index + 1 }}</td>
-            <td>{{ $payment->paid_date ? \Carbon\Carbon::parse($payment->paid_date)->format('M d, Y') : $payment->created_at?->format('M d, Y') }}</td>
+            {{-- paid_date is a free-text label, often a pay period such as
+                 "October 1-15, 2026", so it is printed as written, never parsed. --}}
+            <td>{{ $payment->paid_date ?: '—' }}</td>
+            <td>{{ $payment->created_at?->format('M d, Y') ?? '—' }}</td>
             <td>{{ $payment->paid_term ?? '—' }}</td>
             <td>{{ $userName($payment->addedBy) ?? '—' }}</td>
             <td>{{ $payment->remarks ?: '—' }}</td>
             <td class="amount">{{ $peso($payment->amount) }}</td>
         </tr>
     @empty
-        <tr><td colspan="6" class="muted">No payments recorded yet</td></tr>
+        <tr><td colspan="7" class="muted">No payments recorded yet</td></tr>
     @endforelse
-    <tr class="subtotal"><td colspan="5">Total paid</td><td class="amount">{{ $peso($paid) }}</td></tr>
+    <tr class="subtotal"><td colspan="6">Total paid</td><td class="amount">{{ $peso($paid) }}</td></tr>
 </table>
 
 <table class="net">
