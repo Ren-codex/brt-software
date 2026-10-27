@@ -176,7 +176,7 @@ export const MODULE_GUIDES = [
         ],
         notes: [
             'Drivers are picked on a sales order by position: anyone whose position has "driver" in its title.',
-            'Checkers are picked by user role instead: give the person the Checker role under Users.',
+            'Checkers are picked the same way, by the Checker position. Most hold it under "Also works as", which leaves their pay as it is.',
             'An employee\'s loans and their balances are shown on their profile.',
         ],
     },
@@ -239,7 +239,7 @@ export const MODULE_GUIDES = [
         ],
         notes: [
             'Roles decide access. Position decides pay. They are separate things.',
-            'The Checker role makes a person selectable as the checker on a sales order.',
+            'Drivers and checkers are set on the employee record, by position, not by role.',
             'A Super Admin can do everything, whatever the role settings say.',
         ],
     },

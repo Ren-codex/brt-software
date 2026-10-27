@@ -164,12 +164,12 @@ export const BEGINNER = {
             'One person can have more than one role.',
         ],
         example: {
-            title: 'Carlo, the warehouse manager, will also ride as a checker',
+            title: 'Carlo, the warehouse manager, will also coordinate deliveries',
             steps: [
                 'You open Users and edit Carlo\'s account.',
-                'In Roles he already has Warehouse Manager. You add Checker as well.',
+                'In Roles he already has Warehouse Manager. You add Logistic Coordinator as well.',
                 'You save. He keeps everything he could do before.',
-                'On a sales order, Carlo now appears in the Checker dropdown.',
+                'He can now also do whatever the Logistic Coordinator role is allowed to do.',
             ],
         },
         words: [

@@ -389,23 +389,19 @@ class DropdownClass
     /**
      * The checkers who ride with a driver and take the money at the door.
      *
-     * Unlike drivers, a checker is picked by *user role*, not by position: it
-     * is a duty people take on alongside their real job, and an account can
-     * hold several roles at once where an employee has only one position. So a
-     * cashier or warehouse hand becomes selectable by being given the Checker
-     * role under Users, without changing what they are paid as.
+     * Picked from employees, the same way as drivers: anyone whose position, or
+     * one of the other jobs they cover ("Also works as" on their record), has
+     * "checker" in its title. Most checkers have no user account — helpers,
+     * warehouse hands — so going by user role left them out of the list.
      *
-     * Only an active role assignment counts, matching how permissions read
-     * user_roles everywhere else.
+     * Each name is labelled with the job they are paid as, so a cashier riding
+     * as checker reads "Ana Reyes — Cashier", not "— Checker" on every line.
      */
     public function checkers()
     {
-        return Employee::with('position')
-            ->whereHas('user.roles', function ($role) {
-                $role->whereRaw('LOWER(list_roles.name) LIKE ?', ['%checker%'])
-                    ->where('user_roles.is_active', 1);
-            })
-            ->get()
+        $positionIds = ListPosition::whereRaw('LOWER(title) LIKE ?', ['%checker%'])->pluck('id');
+
+        return $this->holdingPosition($positionIds)
             ->sortBy(fn ($item) => $item->fullname)
             ->values()
             ->map(function ($item) {
