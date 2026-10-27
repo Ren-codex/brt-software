@@ -245,7 +245,7 @@ export const GUIDES_TL = {
         ],
         notes: [
             'Ang mga driver ay pinipili sa sales order ayon sa position: sinumang may "driver" sa pangalan ng position.',
-            'Ang mga checker naman ay pinipili ayon sa user role: bigyan ang tao ng Checker role sa Users.',
+            'Ganoon din ang mga checker, ayon sa Checker position. Kadalasan ay inilalagay ito sa "Also works as", kaya hindi nagbabago ang sahod nila.',
             'Makikita sa profile ng empleyado ang kanyang mga loan at balanse.',
         ],
     },
@@ -296,7 +296,7 @@ export const GUIDES_TL = {
         ],
         notes: [
             'Ang role ang nagpapasya ng access. Ang position ang nagpapasya ng sahod. Magkaiba ang dalawa.',
-            'Ang Checker role ang nagpapalabas sa isang tao bilang checker sa sales order.',
+            'Ang mga driver at checker ay itinatakda sa record ng empleyado, ayon sa position, hindi ayon sa role.',
             'Kayang gawin ng Super Admin ang lahat, anuman ang nakalagay sa mga role.',
         ],
     },
@@ -498,12 +498,12 @@ export const BEGINNER_TL = {
             'Puwedeng higit sa isa ang role ng isang tao.',
         ],
         example: {
-            title: 'Si Carlo, ang warehouse manager, ay sasama rin bilang checker',
+            title: 'Si Carlo, ang warehouse manager, ay mag-aasikaso rin ng mga delivery',
             steps: [
                 'Bubuksan mo ang Users at ie-edit ang account ni Carlo.',
-                'Sa Roles, mayroon na siyang Warehouse Manager. Idadagdag mo ang Checker.',
+                'Sa Roles, mayroon na siyang Warehouse Manager. Idadagdag mo ang Logistic Coordinator.',
                 'I-save mo. Nasa kanya pa rin ang lahat ng kaya niyang gawin dati.',
-                'Sa sales order, lalabas na si Carlo sa Checker dropdown.',
+                'Kaya na rin niyang gawin ang pinapayagan sa Logistic Coordinator.',
             ],
         },
         words: [
