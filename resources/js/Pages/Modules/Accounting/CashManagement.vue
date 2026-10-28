@@ -420,9 +420,21 @@
                             <div v-if="bdErrors.check_ids" class="error-msg">{{ bdErrors.check_ids[0] }}</div>
                         </div>
 
-                        <div v-if="undepositedRemittances.length > 0" class="bd-remit-section">
-                            <label class="form-label mb-1">Link Collections <span class="text-muted">(optional)</span></label>
-                            <p class="form-text mt-0 mb-2">Check the remittance(s) this deposit covers — the amount below fills in automatically.</p>
+                        <!-- Cash only. A cheque was never in the drawer and has no
+                             remittance to tick; its own list is above. -->
+                        <div v-if="!bdIsCheck" class="bd-remit-section">
+                            <div class="bd-cash-head">
+                                <span>Cash on Hand</span>
+                                <strong>{{ bdCashAvailable }}</strong>
+                            </div>
+                            <p class="form-text mt-0 mb-2">
+                                What the drawer holds, whether it came from a rep's remittance, a bank
+                                withdrawal or an entry made by hand.
+                            </p>
+
+                            <template v-if="undepositedRemittances.length > 0">
+                                <label class="form-label mb-1">Collections not yet banked <span class="text-muted">(optional)</span></label>
+                                <p class="form-text mt-0 mb-2">Tick what this deposit covers — the amount fills in. You can still type any figure.</p>
                             <div class="bd-remit-list">
                                 <label v-for="r in undepositedRemittances" :key="r.id" class="bd-remit-row">
                                     <input type="checkbox" :checked="isRemittanceSelected(r)" @change="toggleRemittance(r)" />
@@ -433,6 +445,11 @@
                                     <span class="bd-remit-amount">{{ r.amount_formatted }}</span>
                                 </label>
                             </div>
+                            </template>
+                            <p v-else class="form-text mb-0">
+                                No verified remittances waiting. Anything banked now came from a bank
+                                withdrawal or an entry made by hand.
+                            </p>
                         </div>
 
                         <div class="row g-3 mt-0">
@@ -854,6 +871,11 @@ export default {
         bdChequeTotalFormatted() {
             return `₱${this.bdChequeTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         },
+        /** What the chosen drawer holds, for the line at the top of the form. */
+        bdCashAvailable() {
+            return this.bdSelectedCashAccount?.balance_formatted
+                ?? (this.cashAccounts[0]?.balance_formatted ?? '₱0.00');
+        },
         bdSelectedCashAccount() {
             return this.cashAccounts.find(a => a.id === this.bdForm.cash_account_id) ?? null;
         },
@@ -1205,6 +1227,16 @@ export default {
     margin-top: 0.75rem; padding: 0.85rem 1rem;
     background: #f7fbfa; border: 1px solid var(--brt-c-e0eeea); border-radius: 10px;
 }
+.bd-cash-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #16322e;
+    margin-bottom: 0.15rem;
+}
+.bd-cash-head strong { font-size: 1.05rem; }
 .bd-remit-list {
     max-height: 180px; overflow-y: auto;
     display: flex; flex-direction: column; gap: 0.35rem;
