@@ -38,11 +38,13 @@
         .doc-title-meta { font-size: 12px; font-weight: normal; }
         .order-info { text-align: right; font-size: 12px; }
         .order-meta-table { width: 100%; border-collapse: collapse; }
+        /* No rule under the label: it used to underline a 150px column beside
+           the letterhead, and with that column gone it drew a line across the
+           whole page. */
         .order-meta-label {
             font-size: 10px;
             font-weight: bold;
             text-align: right;
-            border-bottom: 1px solid #333;
             padding-bottom: 2px;
         }
         .order-meta-value { text-align: right; font-size: 12px; padding: 2px 0 5px 0; }
