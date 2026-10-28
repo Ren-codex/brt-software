@@ -33,8 +33,12 @@
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .order-title { font-size: 22px; font-weight: bold; text-align: right; margin: 0 0 6px 0; white-space: nowrap; }
-        .order-info { text-align: right; font-size: 12px; }
+        /* One centred line across the top, now the letterhead is gone. */
+        .order-title { font-size: 18px; font-weight: bold; text-align: center; margin: 0 0 6px 0; white-space: nowrap; }
+        /* The date and number ride with the title, a size down so the
+           document still names itself first. */
+        .order-title-meta { font-size: 12px; font-weight: normal; }
+        .order-info { text-align: center; font-size: 12px; }
         .order-meta-table { width: 100%; border-collapse: collapse; }
         .order-meta-label {
             font-size: 10px;

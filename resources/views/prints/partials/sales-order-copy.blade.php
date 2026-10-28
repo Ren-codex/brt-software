@@ -6,18 +6,13 @@
             @isset($copyLabel)
                 <div class="copy-label">{{ $copyLabel }}</div>
             @endisset
-            <h2 class="order-title">Sales Order</h2>
-            <table class="order-meta-table">
-                <tr>
-                    <td class="order-meta-value">{{ \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') }}</td>
-                </tr>
-                <tr>
-                    <td class="order-meta-label">Sales Order No.</td>
-                </tr>
-                <tr>
-                    <td class="order-meta-value">{{ $sales_order->so_number }}</td>
-                </tr>
-            </table>
+            <h2 class="order-title">
+                SALES ORDER
+                <span class="order-title-meta">
+                    ({{ \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') }})
+                    (Sales Order No. {{ $sales_order->so_number }})
+                </span>
+            </h2>
         </td>
     </tr>
 </table>
