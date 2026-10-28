@@ -50,7 +50,7 @@
         .order-meta-value { text-align: right; font-size: 12px; padding: 2px 0 5px 0; }
 
         /* Address & Total Section */
-        .summary-container { width: 100%; display: table; margin-bottom: 10px; }
+        .summary-container { width: 100%; display: table; margin-bottom: 6px; }
         .address-block { display: table-cell; width: 24%; vertical-align: top; }
         /* The crew reads as a list, not as the boxes it wore at the foot of
            the page: three names in a column beside two addresses. */
@@ -80,26 +80,31 @@
             background-color: #D5DBDB;
             border: 1px solid #BDC3C7;
         }
-        .meta-table th { font-size: 10px; padding: 3px; text-align: center; width: 20%; }
-        .meta-table td { background-color: white; text-align: center; padding: 4px; border: 1px solid #BDC3C7; }
+        .meta-table th { font-size: 10px; padding: 2px 3px; text-align: center; width: 20%; }
+        .meta-table td { background-color: white; text-align: center; padding: 2px 4px; border: 1px solid #BDC3C7; }
 
         /* Items Table */
         .items-table { width: 100%; border-collapse: collapse; }
         /* 3px rather than 5px a side: ten rows need about 9mm that the old
            padding was spending, and the row still clears the text. */
-        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 3px 5px; text-align: left; }
-        .items-table td { padding: 3px 5px; border-bottom: 1px solid #eee; }
+        /* The items are what the warehouse and the customer actually read off
+           this page, so they print a size up from everything around them. */
+        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 4px 5px; text-align: left; font-size: 15px; }
+        .items-table td { padding: 4px 5px; border-bottom: 1px solid #eee; font-size: 15px; }
+        /* Narrow and centred, sitting against the packaging it belongs to:
+           "3 Sack" reads as one fact, not a number adrift in a wide column. */
+        .items-table .qty-col { width: 60px; text-align: center; }
         .text-right { text-align: right; }
         .items-table .text-center { text-align: center; }
 
         /* Footer */
-        .footer-table { width: 100%; margin-top: 14px; }
+        .footer-table { width: 100%; margin-top: 8px; }
         .grand-total-box { background-color: #D5DBDB; padding: 7px; font-weight: bold; }
 
         /* Signature Section */
         .signature-section { width: 100%; margin-top: 8px; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
-        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 16px; padding-bottom: 4px; }
+        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 12px; padding-bottom: 4px; }
 
         /* Copy label */
         .copy-label {
@@ -119,12 +124,11 @@
 <body>
     @php
         // Measured off the rendered PDF on long bond: one copy stands 150.0mm
-        // tall with seven items against the 159.1mm half-sheet, which leaves
-        // clear space above the cut. An eighth comes within 2.3mm of the line —
-        // close enough that one product name wrapping to a second row would
-        // cross it — so eight and up get a sheet each instead of being cut
-        // through.
-        $copiesShareSheet = count($items) <= 10;
+        // Measured in a browser at long-bond width, with the items at 15px:
+        // eight rows stand 154.7mm against the 159.1mm half-sheet, 4.4mm clear
+        // of the cut. A ninth lands on 162.2mm, over the line, so nine and up
+        // get a sheet each instead of being cut through.
+        $copiesShareSheet = count($items) <= 8;
     @endphp
 
     <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : '' }}">

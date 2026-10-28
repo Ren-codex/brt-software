@@ -164,23 +164,22 @@ class SalesOrderPrintItemsTest extends TestCase
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
     }
 
-    public function test_ten_items_still_share_one_sheet(): void
+    public function test_eight_items_still_share_one_sheet(): void
     {
-        // Measured in the browser at long-bond width: ten rows stand 154.1mm
-        // against the 159.1mm half-sheet, 5.0mm clear of the cut. The room
-        // came from dropping the letterhead, moving the crew up beside the
-        // addresses, and 2px a side off every row.
-        $html = $this->renderOrder($this->order(), items: 10);
+        // Measured in the browser at long-bond width, with the items printing
+        // at 15px: eight rows stand 154.7mm against the 159.1mm half-sheet,
+        // 4.4mm clear of the cut.
+        $html = $this->renderOrder($this->order(), items: 8);
 
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
         $this->assertStringNotContainsString('class="copy-cell new-sheet"', $html);
     }
 
-    public function test_eleven_items_take_a_sheet_each(): void
+    public function test_nine_items_take_a_sheet_each(): void
     {
-        // An eleventh row lands on 159.7mm — over the line by 0.6mm, which is
-        // no margin at all, so neither copy is cut through.
-        $html = $this->renderOrder($this->order(), items: 11);
+        // A ninth row lands on 162.2mm, past the cut, so neither copy is cut
+        // through.
+        $html = $this->renderOrder($this->order(), items: 9);
 
         // The class name also appears in the stylesheet, so match where it is
         // applied rather than merely mentioned.

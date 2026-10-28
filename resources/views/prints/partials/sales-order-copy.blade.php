@@ -85,7 +85,7 @@
 <table class="items-table">
     <thead>
         <tr>
-            <th>Quantity</th>
+            <th class="qty-col">Quantity</th>
             {{-- Beside the count, because the two are read as one thing:
                  "2 sacks", not a quantity here and its unit three columns
                  away. --}}
@@ -99,7 +99,7 @@
     <tbody>
         @foreach($items as $index => $item)
         <tr>
-            <td><strong>{{ number_format($item->quantity) }}</strong></td>
+            <td class="qty-col"><strong>{{ number_format($item->quantity) }}</strong></td>
             <td class="text-center">{{ $item->product->packaging->name ?? '---' }}</td>
             {{-- The unit belongs to the weight: "Princess Bea Red 25 Kg" is the
                  product's name, the way it is written everywhere else. What
