@@ -964,8 +964,12 @@ export default {
                 variant:     'danger',
             });
             if (!ok) return;
-            await axios.delete(`/accounting/bank-deposits/${d.id}`);
-            router.reload({ preserveScroll: true });
+            try {
+                await axios.delete(`/accounting/bank-deposits/${d.id}`);
+                router.reload({ preserveScroll: true });
+            } catch (e) {
+                alert(e.response?.data?.message || 'Could not delete this deposit.');
+            }
         },
 
         // ── Cash Withdrawals ──────────────────────────────────────────

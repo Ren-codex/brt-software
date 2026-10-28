@@ -142,11 +142,11 @@ class CheckClearingTest extends TestCase
     }
 
     /**
-     * The other half of the seam above: a bounced check never was money, so
-     * its linked deposit must not post either — it stays pending exactly
-     * like the check does.
+     * A bounced cheque never was money, so its deposit is removed entirely
+     * rather than left pending forever — a phantom row that inflates counts
+     * and holds balance against the transit account.
      */
-    public function test_bouncing_a_received_check_leaves_its_deposit_pending(): void
+    public function test_bouncing_a_received_check_removes_its_deposit(): void
     {
         $receipt = $this->receipt('Check', '000123');
         $check = app(CheckRegisterClass::class)->registerReceived($receipt, ['bank_name' => 'BDO']);
@@ -154,8 +154,8 @@ class CheckClearingTest extends TestCase
 
         app(CheckRegisterClass::class)->markBounced($check, 'Insufficient funds');
 
-        $this->assertSame(BankDeposit::STATUS_PENDING, $deposit->fresh()->status);
-        $this->assertNull($deposit->fresh()->posted_at);
+        $this->assertNull($deposit->fresh(), 'A bounced cheque\'s deposit must not linger.');
+        $this->assertDatabaseMissing('bank_deposits', ['id' => $deposit->id]);
     }
 
     /**

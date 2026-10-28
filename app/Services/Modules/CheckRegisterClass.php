@@ -6,6 +6,7 @@ use App\Models\BankDeposit;
 use App\Models\BankWithdrawal;
 use App\Models\Check;
 use App\Models\Receipt;
+use App\Models\Remittance;
 use App\Models\ReceivedStockPayment;
 use App\Models\User;
 use App\Notifications\BouncedCheckNotification;
@@ -386,14 +387,17 @@ class CheckRegisterClass
             ]);
         }
 
-        $check->update([
-            'status' => Check::STATUS_BOUNCED,
-            'bounced_at' => now(),
-            'bounced_by_id' => Auth::id(),
-            'bounce_reason' => trim($reason),
-        ]);
+        DB::transaction(function () use ($check, $reason) {
+            $check->update([
+                'status' => Check::STATUS_BOUNCED,
+                'bounced_at' => now(),
+                'bounced_by_id' => Auth::id(),
+                'bounce_reason' => trim($reason),
+            ]);
 
-        // Nothing posts and no balance changes: a bounced check never was money.
+            $this->retireDepositForCheck($check);
+        });
+
         $this->notifyReceivingRep($check);
 
         return $check;
@@ -406,6 +410,45 @@ class CheckRegisterClass
                 'status' => 'Only a pending check can be cleared or bounced. This one is ' . $check->status . '.',
             ]);
         }
+    }
+
+    /**
+     * Remove the deposit row that was waiting on a cheque that will never clear.
+     *
+     * A pending deposit never posted a journal entry, so there is nothing to
+     * reverse — the row is simply deleted. When the match is ambiguous (legacy
+     * rows without a check_id FK, more than one candidate) the deposit is left
+     * alone rather than guessing wrong.
+     */
+    private function retireDepositForCheck(Check $check): void
+    {
+        if ($check->direction !== Check::DIRECTION_RECEIVED) {
+            return;
+        }
+
+        $deposit = BankDeposit::where('check_id', $check->id)
+            ->where('status', BankDeposit::STATUS_PENDING)
+            ->first();
+
+        if (! $deposit) {
+            $matches = BankDeposit::where('deposit_type', BankDeposit::TYPE_CHECK)
+                ->where('status', BankDeposit::STATUS_PENDING)
+                ->whereNull('check_id')
+                ->where('check_number', $check->check_number)
+                ->where('amount', $check->amount)
+                ->get();
+
+            $deposit = $matches->count() === 1 ? $matches->first() : null;
+        }
+
+        if (! $deposit) {
+            return;
+        }
+
+        Remittance::where('bank_deposit_id', $deposit->id)
+            ->update(['bank_deposit_id' => null]);
+
+        $deposit->delete();
     }
 
     private function notifyReceivingRep(Check $check): void

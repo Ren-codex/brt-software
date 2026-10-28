@@ -54,6 +54,7 @@ class CashManagementController extends Controller
         $transfers = FundTransfer::with(['fromBankAccount', 'toBankAccount', 'createdBy'])
             ->orderByDesc('transfer_date')
             ->orderByDesc('id')
+            ->limit(500)
             ->get()
             ->map(fn($t) => [
                 'id'               => $t->id,
@@ -154,6 +155,7 @@ class CashManagementController extends Controller
         $deposits = BankDeposit::with(['cashAccount', 'bankAccount', 'createdBy', 'remittances.createdBy.employee'])
             ->orderByDesc('deposit_date')
             ->orderByDesc('id')
+            ->limit(500)
             ->get()
             ->map(fn($d) => [
                 'id'               => $d->id,
@@ -182,6 +184,7 @@ class CashManagementController extends Controller
         $withdrawals = BankWithdrawal::with(['cashAccount', 'bankAccount', 'createdBy'])
             ->orderByDesc('withdrawal_date')
             ->orderByDesc('id')
+            ->limit(500)
             ->get()
             ->map(fn($w) => [
                 'id'                => $w->id,
@@ -216,8 +219,8 @@ class CashManagementController extends Controller
         $transferCount     = FundTransfer::count();
         $fundCount         = PettyCashFund::count();
         $totalPettyCash    = PettyCashFund::sum('balance');
-        $depositCount      = BankDeposit::count();
-        $totalDeposited    = BankDeposit::sum('amount');
+        $depositCount      = BankDeposit::where('status', BankDeposit::STATUS_POSTED)->count();
+        $totalDeposited    = BankDeposit::where('status', BankDeposit::STATUS_POSTED)->sum('amount');
         $withdrawalCount   = BankWithdrawal::count();
         $totalWithdrawn    = BankWithdrawal::sum('amount');
 

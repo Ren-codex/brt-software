@@ -217,11 +217,36 @@ class CashManagementService
     {
         DB::transaction(function () use ($id) {
             $deposit = BankDeposit::with(['cashAccount', 'bankAccount'])->findOrFail($id);
+
+            if ($deposit->check_id) {
+                $check = Check::find($deposit->check_id);
+                if ($check && $check->status === Check::STATUS_CLEARED) {
+                    throw ValidationException::withMessages([
+                        'deposit' => ['This deposit\'s cheque has cleared the bank. Reverse the clearing before deleting the deposit.'],
+                    ]);
+                }
+            }
+
             // A pending check never posted an entry, so there is nothing to reverse.
             if ($deposit->status === BankDeposit::STATUS_POSTED) {
                 $this->journal->reverseEntriesForSource($deposit, 'Bank deposit deleted.', now()->toDateString());
             }
-            Remittance::where('bank_deposit_id', $id)->update(['bank_deposit_id' => null]);
+
+            $sibling = ($deposit->deposit_type === BankDeposit::TYPE_CHECK && filled($deposit->reference))
+                ? BankDeposit::where('id', '!=', $id)
+                    ->where('reference', $deposit->reference)
+                    ->where('deposit_date', $deposit->deposit_date)
+                    ->where('bank_account_id', $deposit->bank_account_id)
+                    ->first()
+                : null;
+
+            Remittance::where('bank_deposit_id', $id)
+                ->update(['bank_deposit_id' => $sibling?->id]);
+
+            if ($deposit->check_id) {
+                Check::where('id', $deposit->check_id)->update(['bank_account_id' => null]);
+            }
+
             $deposit->delete();
         });
     }
