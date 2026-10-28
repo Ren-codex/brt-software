@@ -125,7 +125,7 @@
                                             </td>
                                         </tr>
                                         <template v-for="(entry, index) in lists" :key="entry.id">
-                                            <tr class="journal-row" @click="toggleExpanded(entry.id)">
+                                            <tr class="journal-row" @click="openEntry(entry)">
                                                 <td>{{ index + 1 }}</td>
                                                 <td>
                                                     <div class="journal-primary">
@@ -165,75 +165,6 @@
                                                     </div>
                                                 </td>
                                             </tr>
-                                            <tr v-if="expandedRows.includes(entry.id)" class="details-row">
-                                                <td colspan="7">
-                                                    <div class="details-grid">
-                                                        <div class="detail-card">
-                                                            <h6 class="detail-title">Entry Details</h6>
-                                                            <p><strong>Memo:</strong> {{ entry.memo || '-' }}</p>
-                                                            <p><strong>Source:</strong> {{ entry.source_type }} #{{ entry.source_id || '-' }}</p>
-                                                            <p><strong>Reversed At:</strong> {{ entry.reversed_at || '-' }}</p>
-                                                            <p><strong>Reason:</strong> {{ entry.reversal_reason || '-' }}</p>
-                                                        </div>
-                                                        <div class="detail-card">
-                                                            <h6 class="detail-title">Linked Journals</h6>
-                                                            <p v-if="entry.reversal_of">
-                                                                <strong>Original:</strong> {{ entry.reversal_of.journal_number }} on {{ entry.reversal_of.entry_date }}
-                                                            </p>
-                                                            <div v-if="entry.reversals.length">
-                                                                <p class="mb-2"><strong>Reversals:</strong></p>
-                                                                <div v-for="reversal in entry.reversals" :key="reversal.id" class="reversal-item">
-                                                                    <span>{{ reversal.journal_number }}</span>
-                                                                    <small>{{ reversal.entry_date }} • {{ formatLabel(reversal.status) }}</small>
-                                                                </div>
-                                                            </div>
-                                                            <p v-if="!entry.reversal_of && !entry.reversals.length" class="mb-0">No linked reversal journal.</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="line-table-wrap">
-                                                        <table class="table line-table mb-0">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Account</th>
-                                                                    <th>Code</th>
-                                                                    <th>Bank</th>
-                                                                    <th class="text-center">Type</th>
-                                                                    <th class="text-end">Debit</th>
-                                                                    <th class="text-end">Credit</th>
-                                                                    <th>Description</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <tr v-for="line in entry.lines" :key="line.id">
-                                                                    <td>{{ line.account_name || '-' }}</td>
-                                                                    <td>{{ line.account_code || '-' }}</td>
-                                                                    <td>{{ line.bank_account_name || '-' }}</td>
-                                                                    <td class="text-center">
-                                                                        <span class="line-type-chip" :class="line.line_type">
-                                                                            {{ line.line_type === 'debit' ? 'DR' : 'CR' }}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td class="text-end text-debit">{{ line.line_type === 'debit' ? '₱' + line.amount : '' }}</td>
-                                                                    <td class="text-end text-credit">{{ line.line_type === 'credit' ? '₱' + line.amount : '' }}</td>
-                                                                    <td>{{ line.description || '-' }}</td>
-                                                                </tr>
-                                                            </tbody>
-                                                            <tfoot>
-                                                                <tr class="lines-totals-row">
-                                                                    <td colspan="4" class="text-end fw-semibold">Totals</td>
-                                                                    <td class="text-end text-debit fw-bold">₱{{ lineDebitTotal(entry.lines) }}</td>
-                                                                    <td class="text-end text-credit fw-bold">₱{{ lineCreditTotal(entry.lines) }}</td>
-                                                                    <td>
-                                                                        <span class="balance-chip" :class="isBalanced(entry.lines) ? 'balanced' : 'unbalanced'">
-                                                                            {{ isBalanced(entry.lines) ? 'Balanced ✓' : 'Unbalanced !' }}
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
-                                                            </tfoot>
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
                                         </template>
                                         </template>
                                     </tbody>
@@ -250,6 +181,103 @@
                             </div>
                         </div>
                     </div>
+
+        <!-- One entry in full. Was an expanding row under the table, which
+             pushed everything below it down the page and left two entries
+             impossible to read side by side. -->
+        <div v-show="openedEntry" class="modal-overlay" :class="{ active: !!openedEntry }" @click.self="closeEntry">
+            <div class="modal-container modal-lg" @click.stop v-if="openedEntry">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="modal-header-icon">
+                            <i class="ri-book-open-line"></i>
+                        </div>
+                        <div>
+                            <p class="modal-kicker mb-0">
+                                {{ openedEntry.entry_date }} &middot; {{ formatLabel(openedEntry.entry_type) }}
+                            </p>
+                            <h5 class="mb-0">{{ openedEntry.journal_number }}</h5>
+                        </div>
+                        <span class="status-chip ms-2" :class="statusClass(openedEntry.status)">
+                            {{ formatLabel(openedEntry.status) }}
+                        </span>
+                    </div>
+                    <button class="close-btn" @click="closeEntry">
+                        <i class="ri-close-line fs-20"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                                                    <div class="details-grid">
+                                                        <div class="detail-card">
+                                                            <h6 class="detail-title">Entry Details</h6>
+                                                            <p><strong>Memo:</strong> {{ openedEntry.memo || '-' }}</p>
+                                                            <p><strong>Source:</strong> {{ openedEntry.source_type }} #{{ openedEntry.source_id || '-' }}</p>
+                                                            <p><strong>Reversed At:</strong> {{ openedEntry.reversed_at || '-' }}</p>
+                                                            <p><strong>Reason:</strong> {{ openedEntry.reversal_reason || '-' }}</p>
+                                                        </div>
+                                                        <div class="detail-card">
+                                                            <h6 class="detail-title">Linked Journals</h6>
+                                                            <p v-if="openedEntry.reversal_of">
+                                                                <strong>Original:</strong> {{ openedEntry.reversal_of.journal_number }} on {{ openedEntry.reversal_of.entry_date }}
+                                                            </p>
+                                                            <div v-if="openedEntry.reversals.length">
+                                                                <p class="mb-2"><strong>Reversals:</strong></p>
+                                                                <div v-for="reversal in openedEntry.reversals" :key="reversal.id" class="reversal-item">
+                                                                    <span>{{ reversal.journal_number }}</span>
+                                                                    <small>{{ reversal.entry_date }} • {{ formatLabel(reversal.status) }}</small>
+                                                                </div>
+                                                            </div>
+                                                            <p v-if="!openedEntry.reversal_of && !openedEntry.reversals.length" class="mb-0">No linked reversal journal.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="line-table-wrap">
+                                                        <table class="table line-table mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Account</th>
+                                                                    <th>Code</th>
+                                                                    <th>Bank</th>
+                                                                    <th class="text-center">Type</th>
+                                                                    <th class="text-end">Debit</th>
+                                                                    <th class="text-end">Credit</th>
+                                                                    <th>Description</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <tr v-for="line in openedEntry.lines" :key="line.id">
+                                                                    <td>{{ line.account_name || '-' }}</td>
+                                                                    <td>{{ line.account_code || '-' }}</td>
+                                                                    <td>{{ line.bank_account_name || '-' }}</td>
+                                                                    <td class="text-center">
+                                                                        <span class="line-type-chip" :class="line.line_type">
+                                                                            {{ line.line_type === 'debit' ? 'DR' : 'CR' }}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td class="text-end text-debit">{{ line.line_type === 'debit' ? '₱' + line.amount : '' }}</td>
+                                                                    <td class="text-end text-credit">{{ line.line_type === 'credit' ? '₱' + line.amount : '' }}</td>
+                                                                    <td>{{ line.description || '-' }}</td>
+                                                                </tr>
+                                                            </tbody>
+                                                            <tfoot>
+                                                                <tr class="lines-totals-row">
+                                                                    <td colspan="4" class="text-end fw-semibold">Totals</td>
+                                                                    <td class="text-end text-debit fw-bold">₱{{ lineDebitTotal(openedEntry.lines) }}</td>
+                                                                    <td class="text-end text-credit fw-bold">₱{{ lineCreditTotal(openedEntry.lines) }}</td>
+                                                                    <td>
+                                                                        <span class="balance-chip" :class="isBalanced(openedEntry.lines) ? 'balanced' : 'unbalanced'">
+                                                                            {{ isBalanced(openedEntry.lines) ? 'Balanced ✓' : 'Unbalanced !' }}
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="acct-btn-secondary" @click="closeEntry">Close</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Manual Journal Entry Modal -->
         <div v-show="showEntryModal" class="modal-overlay" :class="{ active: showEntryModal }" @click.self="closeEntryModal">
@@ -471,7 +499,9 @@ export default {
             meta: {},
             links: {},
             listLoading: false,
-            expandedRows: [],
+            // The entry whose modal is open, or null. Was a list of expanded
+            // row ids; only one entry is ever read at a time.
+            openedEntry: null,
             filter: {
                 keyword: null,
                 status: null,
@@ -628,12 +658,11 @@ export default {
         capitalize(str) {
             return str.charAt(0).toUpperCase() + str.slice(1);
         },
-        toggleExpanded(id) {
-            if (this.expandedRows.includes(id)) {
-                this.expandedRows = this.expandedRows.filter(rowId => rowId !== id);
-                return;
-            }
-            this.expandedRows.push(id);
+        openEntry(entry) {
+            this.openedEntry = entry;
+        },
+        closeEntry() {
+            this.openedEntry = null;
         },
         formatLabel(value) {
             return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
