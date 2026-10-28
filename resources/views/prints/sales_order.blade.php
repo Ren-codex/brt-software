@@ -85,8 +85,10 @@
 
         /* Items Table */
         .items-table { width: 100%; border-collapse: collapse; }
-        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 5px; text-align: left; }
-        .items-table td { padding: 5px; border-bottom: 1px solid #eee; }
+        /* 3px rather than 5px a side: ten rows need about 9mm that the old
+           padding was spending, and the row still clears the text. */
+        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 3px 5px; text-align: left; }
+        .items-table td { padding: 3px 5px; border-bottom: 1px solid #eee; }
         .text-right { text-align: right; }
         .items-table .text-center { text-align: center; }
 
@@ -97,7 +99,7 @@
         /* Signature Section */
         .signature-section { width: 100%; margin-top: 8px; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
-        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 24px; padding-bottom: 4px; }
+        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 16px; padding-bottom: 4px; }
 
         /* Copy label */
         .copy-label {
@@ -122,7 +124,7 @@
         // close enough that one product name wrapping to a second row would
         // cross it — so eight and up get a sheet each instead of being cut
         // through.
-        $copiesShareSheet = count($items) <= 7;
+        $copiesShareSheet = count($items) <= 10;
     @endphp
 
     <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : '' }}">
