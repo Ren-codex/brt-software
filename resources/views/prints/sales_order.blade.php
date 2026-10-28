@@ -90,7 +90,9 @@
         /* The items are what the warehouse and the customer actually read off
            this page, so they print a size up from everything around them. */
         .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 4px 5px; text-align: left; font-size: 15px; }
-        .items-table td { padding: 4px 5px; border-bottom: 1px solid #eee; font-size: 15px; }
+        /* Every cell bold, not just the quantity and the product name: this
+           row is read across a counter, often at arm's length. */
+        .items-table td { padding: 4px 5px; border-bottom: 1px solid #eee; font-size: 15px; font-weight: bold; }
         /* Narrow and centred, sitting against the packaging it belongs to:
            "3 Sack" reads as one fact, not a number adrift in a wide column. */
         .items-table .qty-col { width: 60px; text-align: center; }
