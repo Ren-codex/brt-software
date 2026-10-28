@@ -33,6 +33,9 @@
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        /* Centred across the top, in place of the letterhead. */
+        .doc-title { text-align: center; font-size: 18px; font-weight: bold; margin: 0 0 8px 0; }
+        .doc-title-meta { font-size: 12px; font-weight: normal; }
         .order-info { text-align: right; font-size: 12px; }
         .order-meta-table { width: 100%; border-collapse: collapse; }
         .order-meta-label {

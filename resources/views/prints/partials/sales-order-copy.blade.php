@@ -1,3 +1,12 @@
+{{-- Names the document across the top, where the letterhead used to be. --}}
+<div class="doc-title">
+    SALES ORDER
+    <span class="doc-title-meta">
+        ({{ \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') }})
+        (Sales Order No. {{ $sales_order->so_number }})
+    </span>
+</div>
+
 <table class="header-table">
     <tr>
         {{-- No logo, no company name, no address: these print on headed paper,
