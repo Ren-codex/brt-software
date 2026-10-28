@@ -130,7 +130,7 @@
 <div class="signature-section">
     <div class="signature-box">
         <div class="signature-line"></div>
-        <strong>Prepared By</strong>
+        <strong>Checker</strong>
     </div>
     <div class="signature-box">
         <div class="signature-line"></div>
