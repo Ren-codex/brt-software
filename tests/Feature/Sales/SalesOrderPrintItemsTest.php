@@ -86,6 +86,10 @@ class SalesOrderPrintItemsTest extends TestCase
         return $this->renderOrder($this->order(), $this->item($packaging));
     }
 
+    /**
+     * The cells of the first item row, in the order they print:
+     * 0 quantity, 1 packaging, 2 product, 3 batch code, 4 unit price, 5 total.
+     */
     private function itemCells(string $html): array
     {
         preg_match('/<table class="items-table">(.*?)<\/table>/s', $html, $table);
@@ -102,7 +106,7 @@ class SalesOrderPrintItemsTest extends TestCase
     {
         $cells = $this->itemCells($this->render());
 
-        $this->assertSame('Jasmine Rice 25 Kg', $cells[1], 'The Kg belongs to the name.');
+        $this->assertSame('Jasmine Rice 25 Kg', $cells[2], 'The Kg belongs to the name.');
     }
 
     public function test_the_column_shows_how_it_is_packed(): void
@@ -110,14 +114,15 @@ class SalesOrderPrintItemsTest extends TestCase
         $html = $this->render();
 
         $this->assertStringContainsString('<th class="text-center">Packaging</th>', $html);
-        $this->assertSame('Sack', $this->itemCells($html)[3]);
+        // Beside the quantity, which is how it is read: "2 sacks".
+        $this->assertSame('Sack', $this->itemCells($html)[1]);
         $this->assertStringNotContainsString('Unit of Measurement', $html);
     }
 
     public function test_a_product_with_no_packaging_recorded_prints_a_dash(): void
     {
         // Rather than an empty cell that reads as a rendering fault.
-        $this->assertSame('---', $this->itemCells($this->render(packaging: null))[3]);
+        $this->assertSame('---', $this->itemCells($this->render(packaging: null))[1]);
     }
 
     public function test_it_names_the_driver_beside_the_sales_rep(): void

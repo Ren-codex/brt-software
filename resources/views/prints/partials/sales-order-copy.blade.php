@@ -86,9 +86,12 @@
     <thead>
         <tr>
             <th>Quantity</th>
+            {{-- Beside the count, because the two are read as one thing:
+                 "2 sacks", not a quantity here and its unit three columns
+                 away. --}}
+            <th class="text-center">Packaging</th>
             <th>Product</th>
             <th>Batch Code</th>
-            <th class="text-center">Packaging</th>
             <th class="text-right">Unit Price</th>
             <th class="text-right">Total</th>
         </tr>
@@ -97,12 +100,12 @@
         @foreach($items as $index => $item)
         <tr>
             <td><strong>{{ number_format($item->quantity) }}</strong></td>
+            <td class="text-center">{{ $item->product->packaging->name ?? '---' }}</td>
             {{-- The unit belongs to the weight: "Princess Bea Red 25 Kg" is the
                  product's name, the way it is written everywhere else. What
                  goes in its own column is how it is packed. --}}
             <td><strong>{{ $item->product->brand->name ?? '' }} {{ $item->product->weight }}</strong> {{ $item->product->unit->name ?? '' }}</td>
             <td>{{ $item->batch_code ?? '---' }}</td>
-            <td class="text-center">{{ $item->product->packaging->name ?? '---' }}</td>
             <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
             <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>
         </tr>
