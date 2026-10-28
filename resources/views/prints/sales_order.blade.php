@@ -33,25 +33,6 @@
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .logo-box {
-            width: 45px;
-            height: 45px;
-            border-radius: 4px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        .logo-img {
-            width: 45px;
-            height: 45px;
-            object-fit: contain;
-        }
-        .logo-fallback {
-            width: 45px;
-            height: 45px;
-            background-color: #C0392B;
-            border-radius: 4px;
-        }
-        .company-name { font-size: 17px; font-weight: bold; color: #1a1a1a; margin: 0; }
         .order-title { font-size: 22px; font-weight: bold; text-align: right; margin: 0 0 6px 0; white-space: nowrap; }
         .order-info { text-align: right; font-size: 12px; }
         .order-meta-table { width: 100%; border-collapse: collapse; }
@@ -133,7 +114,6 @@
 </head>
 <body>
     @php
-        $logoPath = public_path('images/official-logo-mini.png');
         // Measured off the rendered PDF on long bond: one copy stands 150.0mm
         // tall with seven items against the 159.1mm half-sheet, which leaves
         // clear space above the cut. An eighth comes within 2.3mm of the line —

@@ -1,19 +1,8 @@
 <table class="header-table">
     <tr>
-        <td style="width: 60px;">
-            <div class="logo-box">
-                @if(file_exists($logoPath))
-                    <img src="{{ $logoPath }}" alt="System Logo" class="logo-img">
-                @else
-                    <div class="logo-fallback"></div>
-                @endif
-            </div>
-        </td>
-        <td>
-            <h1 class="company-name">BOUYANT RICE TRADING</h1>
-            Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
-        </td>
-        <td class="order-info" style="width: 150px;">
+        {{-- No logo, no company name, no address: these print on headed paper,
+             which carries all three already. --}}
+        <td class="order-info">
             @isset($copyLabel)
                 <div class="copy-label">{{ $copyLabel }}</div>
             @endisset
