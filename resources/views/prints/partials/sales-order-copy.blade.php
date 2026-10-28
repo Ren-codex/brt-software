@@ -43,6 +43,18 @@
         <strong>{{ $sales_order->customer->name ?? '---' }}</strong><br>
         {!! nl2br(e($sales_order->customer->address ?? '---')) !!}
     </div>
+    {{-- Beside the addresses, where whoever reads the page is already
+         looking: who sold it, who is carrying it, who takes the money. --}}
+    <div class="address-block crew-block">
+        <div class="address-label">Assigned To</div>
+        <div class="crew-line"><strong>Sales Rep:</strong> {{ $sales_order->salesRep->fullname ?? '---' }}</div>
+        <div class="crew-line"><strong>Driver:</strong> {{ $sales_order->driver->fullname ?? '---' }}</div>
+        {{-- Only when one rides along: the customer pays the checker, so
+             their name belongs on the copy the customer keeps. --}}
+        @if ($sales_order->checker)
+        <div class="crew-line"><strong>Checker:</strong> {{ $sales_order->checker->fullname }}</div>
+        @endif
+    </div>
     <div class="total-block">
         <div style="text-align: left; font-weight: bold; font-size: 13px;">TOTAL</div>
         <div style="font-size: 19px; font-weight: bold;">PHP {{ number_format($sales_order->total_amount, 2) }}</div>
@@ -100,23 +112,7 @@
 
 <table class="footer-table">
     <tr>
-        <td style="vertical-align: top;">
-            <div class="sales-rep-box">
-                <strong>Sales Rep:</strong> {{ $sales_order->salesRep->fullname ?? '---' }}
-            </div>
-            {{-- Whoever carries the goods belongs on the copy the customer
-                 signs for, beside whoever sold them. --}}
-            <div class="sales-rep-box">
-                <strong>Driver:</strong> {{ $sales_order->driver->fullname ?? '---' }}
-            </div>
-            {{-- Only when one rides along: the customer pays the checker, so
-                 their name belongs on the copy the customer keeps. --}}
-            @if ($sales_order->checker)
-            <div class="sales-rep-box">
-                <strong>Checker:</strong> {{ $sales_order->checker->fullname }}
-            </div>
-            @endif
-        </td>
+        <td style="vertical-align: top;"></td>
         <td style="width: 220px;">
             <table style="width: 100%; border-collapse: collapse;">
                 <tr class="grand-total-box">

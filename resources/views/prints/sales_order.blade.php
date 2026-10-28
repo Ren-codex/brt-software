@@ -51,10 +51,14 @@
 
         /* Address & Total Section */
         .summary-container { width: 100%; display: table; margin-bottom: 10px; }
-        .address-block { display: table-cell; width: 33%; vertical-align: top; }
+        .address-block { display: table-cell; width: 24%; vertical-align: top; }
+        /* The crew reads as a list, not as the boxes it wore at the foot of
+           the page: three names in a column beside two addresses. */
+        .crew-block { padding-right: 8px; }
+        .crew-line { font-size: 11px; padding: 1px 0; }
         .total-block {
             display: table-cell;
-            width: 34%;
+            width: 28%;
             background-color: #E5E7E9;
             padding: 10px;
             text-align: right;
@@ -89,12 +93,6 @@
         /* Footer */
         .footer-table { width: 100%; margin-top: 14px; }
         .grand-total-box { background-color: #D5DBDB; padding: 7px; font-weight: bold; }
-        .sales-rep-box {
-            display: inline-block;
-            border: 1px solid #BDC3C7;
-            padding: 5px 9px;
-            margin-right: 6px;
-        }
 
         /* Signature Section */
         .signature-section { width: 100%; margin-top: 8px; display: table; }
