@@ -82,21 +82,13 @@
                                 <TableLoadingRow v-if="loading" :colspan="11" message="Loading AR invoices..." />
                                 <template v-else>
                                 <template v-for="(list, index) in lists" :key="index">
-                                    <tr @click="toggleRowExpansion(index)" :class="{
-                                        'expanded-row': expandedRow === index,
+                                    <tr @click="openInvoice(list)" :class="{
+                                        'expanded-row': openedInvoice && openedInvoice.id === list.id,
                                         'overdue-row': isOverdue(list),
                                         'due-soon-row': isDueSoon(list),
                                         'main-table-row': true
                                     }" class="transition-all" style="transition: all 0.3s ease;">
-                                        <td class="text-center">
-                                            <button type="button" class="collapse-btn"
-                                                @click.stop="toggleRowExpansion(index)">
-                                                <div class="expand-icon" :class="{ rotated: expandedRow === index }">
-                                                    <i class="ri-arrow-right-s-line"></i>
-                                                </div>
-                                            </button>
-                                            {{ index + 1 }}
-                                        </td>
+                                        <td class="text-center">{{ index + 1 }}</td>
                                         <td class="text-center fw-semibold">{{ list.invoice_number }}</td>
                                         <td class="text-center">{{ list.sales_order?.so_number || '-' }}</td>
                                         <td class="text-center">
@@ -148,104 +140,6 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRow === index" class="details-row">
-                                        <td colspan="12">
-                                            <div class="details-container">
-                                                <div class="details-content">
-                                                    <div class="collapse-actions">
-                                                        <button @click.stop="onViewReceipts(list)" class="acct-btn-secondary">
-                                                            <i class="ri-file-3-line"></i>
-                                                            View Receipts
-                                                        </button>
-                                                        <button @click.stop="onPrint(list.id)" class="acct-btn-secondary">
-                                                            <i class="ri-printer-line"></i>
-                                                            Print Invoice
-                                                        </button>
-                                                        <button
-                                                            v-if="(list.status?.slug == 'unpaid' || list.status?.slug == 'partially-paid' || list.balance_due > 0) && (list.sales_order?.status?.slug != 'cancelled' && list.sales_order?.status?.slug != 'sales-returned') && can('sales', 'ar_invoices', 'encoder')"
-                                                            @click.stop="onPayment(list)" class="acct-btn-primary">
-                                                            <i class="ri-money-peso-circle-fill"></i>
-                                                            Record Payment
-                                                        </button>
-                                                    </div>
-                                                <h6 class="text-primary mb-3">
-                                                    <i class="ri-file-list-line me-2"></i>Invoice Details
-                                                </h6>
-                                                <div class="row g-3">
-                                                    <div class="col-md-6">
-                                                        <div class="info-card invoice-card">
-                                                            <div class="info-card-header">
-                                                                <i class="ri-file-list-line"></i>
-                                                                <h6>Invoice Information</h6>
-                                                            </div>
-                                                            <div class="info-card-body">
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Invoice Date:</span>
-                                                                    <span class="info-value">{{ list.invoice_date
-                                                                        }}</span>
-                                                                </div>
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Sales Rep:</span>
-                                                                    <span class="info-value">{{ list.sales_rep?.fullname || '-' }}</span>
-                                                                </div>
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Amount Balance:</span>
-                                                                    <span class="info-value amount">₱{{
-                                                                        list.balance_due?.toFixed(2) }}</span>
-                                                                </div>
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Amount Paid:</span>
-                                                                    <span class="info-value amount paid">₱{{
-                                                                        list.amount_paid?.toFixed(2) }}</span>
-                                                                </div>
-                                                                <div class="info-item highlight">
-                                                                    <span class="info-label">Balance Due:</span>
-                                                                    <span class="info-value amount due">₱{{
-                                                                        list.balance_due?.toFixed(2) }}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="info-card order-card">
-                                                            <div class="info-card-header">
-                                                                <i class="ri-shopping-bag-line"></i>
-                                                                <h6>Sales Order Details</h6>
-                                                            </div>
-                                                            <div class="info-card-body">
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Sales Order:</span>
-                                                                    <span class="info-value">{{
-                                                                        list.sales_order?.so_number || '-' }}</span>
-                                                                </div>
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Customer:</span>
-                                                                    <span class="info-value">{{
-                                                                        list.sales_order?.customer?.name || '-'
-                                                                        }}</span>
-                                                                </div>
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Order Date:</span>
-                                                                    <span class="info-value">{{
-                                                                        list.sales_order?.order_date || '-' }}</span>
-                                                                </div>
-                                                                <div v-if="list.sales_order?.status" class="info-item">
-                                                                    <span class="info-label">Order Status:</span>
-                                                                    <span class="info-value">
-                                                                        <span class="status-badge"
-                                                                            :class="statusTone(list.sales_order.status)">
-                                                                            {{ list.sales_order.status?.name }}
-                                                                        </span>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            </div>
-                                        </td>
-                                    </tr>
                                 </template>
                                 <tr v-if="lists.length === 0">
                                     <td colspan="11">
@@ -268,6 +162,134 @@
             </div>
         </div>
     </div>
+    <!-- One invoice in full. Was a panel that unfolded inside the table,
+         pushing every row below it down the page; two invoices could not be
+         read at once, and the panel had to live in a cell spanning twelve
+         columns. Chrome comes from _library-modal.scss, as everywhere else. -->
+    <div v-if="openedInvoice" class="modal-overlay active" @click.self="closeInvoice">
+        <div class="modal-container" style="max-width: 920px" @click.stop>
+            <div class="modal-header">
+                <div class="modal-header-icon"><i class="ri-file-list-line"></i></div>
+                <div>
+                    <p class="modal-subtitle mb-0">
+                        {{ openedInvoice.sales_order?.customer?.name || 'Walk-in customer' }}
+                        <span v-if="openedInvoice.sales_order?.so_number">
+                            &middot; {{ openedInvoice.sales_order.so_number }}
+                        </span>
+                    </p>
+                    <h5 class="modal-title mb-0">{{ openedInvoice.invoice_number }}</h5>
+                </div>
+                <span class="status-badge ms-2" :class="statusTone(openedInvoice.status)">
+                    {{ openedInvoice.status?.name }}
+                </span>
+                <button class="close-btn ms-auto" @click="closeInvoice" aria-label="Close">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                                            <div class="details-container">
+                                                <div class="details-content">
+                                                <h6 class="text-primary mb-3">
+                                                    <i class="ri-file-list-line me-2"></i>Invoice Details
+                                                </h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="info-card invoice-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-file-list-line"></i>
+                                                                <h6>Invoice Information</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Invoice Date:</span>
+                                                                    <span class="info-value">{{ openedInvoice.invoice_date
+                                                                        }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Sales Rep:</span>
+                                                                    <span class="info-value">{{ openedInvoice.sales_rep?.fullname || '-' }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Amount Balance:</span>
+                                                                    <span class="info-value amount">₱{{
+                                                                        openedInvoice.balance_due?.toFixed(2) }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Amount Paid:</span>
+                                                                    <span class="info-value amount paid">₱{{
+                                                                        openedInvoice.amount_paid?.toFixed(2) }}</span>
+                                                                </div>
+                                                                <div class="info-item highlight">
+                                                                    <span class="info-label">Balance Due:</span>
+                                                                    <span class="info-value amount due">₱{{
+                                                                        openedInvoice.balance_due?.toFixed(2) }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="info-card order-card">
+                                                            <div class="info-card-header">
+                                                                <i class="ri-shopping-bag-line"></i>
+                                                                <h6>Sales Order Details</h6>
+                                                            </div>
+                                                            <div class="info-card-body">
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Sales Order:</span>
+                                                                    <span class="info-value">{{
+                                                                        openedInvoice.sales_order?.so_number || '-' }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Customer:</span>
+                                                                    <span class="info-value">{{
+                                                                        openedInvoice.sales_order?.customer?.name || '-'
+                                                                        }}</span>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <span class="info-label">Order Date:</span>
+                                                                    <span class="info-value">{{
+                                                                        formatDate(openedInvoice.sales_order?.order_date) }}</span>
+                                                                </div>
+                                                                <div v-if="openedInvoice.sales_order?.status" class="info-item">
+                                                                    <span class="info-label">Order Status:</span>
+                                                                    <span class="info-value">
+                                                                        <span class="status-badge"
+                                                                            :class="statusTone(openedInvoice.sales_order.status)">
+                                                                            {{ openedInvoice.sales_order.status?.name }}
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            </div>
+            </div>
+            <!-- Actions live in the footer, so they stay put while the body
+                 scrolls. -->
+            <div class="modal-footer">
+                <button class="acct-btn-secondary" @click="closeInvoice">Close</button>
+                                                    <div class="collapse-actions">
+                                                        <button @click="onViewReceipts(openedInvoice)" class="acct-btn-secondary">
+                                                            <i class="ri-file-3-line"></i>
+                                                            View Receipts
+                                                        </button>
+                                                        <button @click="onPrint(openedInvoice.id)" class="acct-btn-secondary">
+                                                            <i class="ri-printer-line"></i>
+                                                            Print Invoice
+                                                        </button>
+                                                        <button
+                                                            v-if="(openedInvoice.status?.slug == 'unpaid' || openedInvoice.status?.slug == 'partially-paid' || openedInvoice.balance_due > 0) && (openedInvoice.sales_order?.status?.slug != 'cancelled' && openedInvoice.sales_order?.status?.slug != 'sales-returned') && can('sales', 'ar_invoices', 'encoder')"
+                                                            @click="onPayment(openedInvoice)" class="acct-btn-primary">
+                                                            <i class="ri-money-peso-circle-fill"></i>
+                                                            Record Payment
+                                                        </button>
+                                                    </div>
+            </div>
+        </div>
+    </div>
+
     <Payment @approve="fetch()" ref="payment" />
     <ReceiptsList ref="receiptsList" />
 </template>
@@ -304,7 +326,8 @@ export default {
             // Filled from the server: the statuses in use on these invoices.
             statusOptions: [],
             index: null,
-            expandedRow: null, // Changed from expandedRows array to single value
+            // The invoice whose modal is open, or null.
+            openedInvoice: null,
             units: [],
             metrics: {
                 total_invoices: 0,
@@ -379,7 +402,7 @@ export default {
                         this.lists = response.data.data;
                         this.meta = response.data.meta;
                         this.links = response.data.links;
-                        this.expandedRow = null; // Reset expanded row when data changes
+                        this.openedInvoice = null; // The list changed under it
                     }
                 })
                 .catch(err => console.log(err))
@@ -398,13 +421,23 @@ export default {
             openOrPrint(`/ar-invoices/${id}?option=print&type=ar_invoice`);
         },
 
-        toggleRowExpansion(index) {
-            // Toggle between opening and closing, only one row open at a time
-            if (this.expandedRow === index) {
-                this.expandedRow = null; // Close if clicking the same row
-            } else {
-                this.expandedRow = index; // Open new row, closing any previously opened one
-            }
+        /**
+         * The order date arrives as a raw timestamp while the invoice date
+         * comes through formatted, so the two sat side by side reading
+         * differently. Same shape as the rest of the screen.
+         */
+        formatDate(value) {
+            if (!value) return '-';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return String(value);
+
+            return d.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' });
+        },
+        openInvoice(invoice) {
+            this.openedInvoice = invoice;
+        },
+        closeInvoice() {
+            this.openedInvoice = null;
         },
 
         // The status filter offers only what exists. Re-read whenever the
