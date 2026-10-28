@@ -35,6 +35,13 @@ class CashManagementController extends Controller
      * remitted and verified. Offering it here was a second door out, and a
      * deposit made through it moved money that had never arrived.
      */
+    /**
+     * How many rows either picker carries into the page. Both lists only ever
+     * grow, and nobody scrolls past the first screenful; the count beside them
+     * says what is really waiting.
+     */
+    private const PICKER_LIMIT = 100;
+
     private const CASH_ACCOUNT_SLUGS = ['cash'];
 
     public function __construct(private CashManagementService $service) {}
@@ -129,16 +136,24 @@ class CashManagementController extends Controller
         // The cheques the office is holding: received, still pending with the
         // bank, and not already on a deposit. This is what the deposit screen
         // offers to bank, in place of asking somebody to type a cheque out.
-        $undepositedChecks = Schema::hasTable('checks')
-            ? \App\Models\Check::with('customer')
-                ->where('direction', \App\Models\Check::DIRECTION_RECEIVED)
+        $chequesOnHand = Schema::hasTable('checks')
+            ? \App\Models\Check::where('direction', \App\Models\Check::DIRECTION_RECEIVED)
                 ->where('status', \App\Models\Check::STATUS_PENDING)
                 ->whereNotExists(function ($q) {
                     $q->selectRaw('1')->from('bank_deposits')
                         ->whereColumn('bank_deposits.check_id', 'checks.id');
                 })
+            : null;
+        $undepositedCheckTotal = $chequesOnHand ? (clone $chequesOnHand)->count() : 0;
+
+        $undepositedChecks = $chequesOnHand
+            ? $chequesOnHand
+                ->with('customer')
+                // Oldest cheque date first: that is the one the bank is
+                // waiting on, and the one that ages into trouble.
                 ->orderBy('check_date')
                 ->orderBy('id')
+                ->limit(self::PICKER_LIMIT)
                 ->get()
                 ->map(fn ($c) => [
                     'id' => $c->id,
@@ -200,10 +215,19 @@ class CashManagementController extends Controller
                 'created_at'        => $w->created_at?->toDateTimeString(),
             ]);
 
-        $undepositedRemittances = Remittance::with(['createdBy.employee'])
-            ->whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
-            ->whereNull('bank_deposit_id')
-            ->orderBy('remittance_date')
+        // Newest first and capped: this list only grows, and what gets banked
+        // today is what came in lately. The count says how many are really
+        // waiting, so a long backlog shows as a number instead of a page of
+        // rows nobody reads.
+        $remittancesWaiting = Remittance::whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
+            ->whereNull('bank_deposit_id');
+        $undepositedRemittanceTotal = (clone $remittancesWaiting)->count();
+
+        $undepositedRemittances = $remittancesWaiting
+            ->with(['createdBy.employee'])
+            ->orderByDesc('remittance_date')
+            ->orderByDesc('id')
+            ->limit(self::PICKER_LIMIT)
             ->get()
             ->map(fn($r) => [
                 'id'                => $r->id,
@@ -226,6 +250,8 @@ class CashManagementController extends Controller
 
         return inertia('Modules/Accounting/CashManagement', [
             'undepositedChecks' => $undepositedChecks,
+            'undepositedCheckTotal' => $undepositedCheckTotal,
+            'undepositedRemittanceTotal' => $undepositedRemittanceTotal,
             'transfers'    => $transfers,
             'funds'        => $funds,
             'bankAccounts' => $bankAccounts,

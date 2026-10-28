@@ -390,7 +390,10 @@
                  Each becomes a deposit of its own, because the bank pays them
                  one at a time and any one of them can bounce alone. -->
                         <div v-if="bdIsCheck" class="bd-cheque-section">
-                            <label class="form-label mb-1">Cheques to deposit <span class="text-danger">*</span></label>
+                            <label class="form-label mb-1">
+                                Cheques to deposit <span class="text-danger">*</span>
+                                <span class="picker-count">{{ pickerCount(undepositedChecks, undepositedCheckTotal) }}</span>
+                            </label>
                             <p class="form-text mt-0 mb-2">
                                 Tick the cheques going to the bank. Each one is recorded separately and stays
                                 pending until the bank pays it.
@@ -400,8 +403,16 @@
                                 No cheques on hand. One appears here as soon as a customer's cheque is recorded.
                             </div>
 
-                            <div v-else class="bd-cheque-list">
-                                <label v-for="c in undepositedChecks" :key="c.id" class="bd-cheque-row">
+                            <input
+                                v-if="undepositedChecks.length > 6"
+                                v-model.trim="chequeSearch"
+                                type="text"
+                                class="form-control picker-search"
+                                placeholder="Search by cheque no, customer or date"
+                            >
+
+                            <div v-if="undepositedChecks.length" class="bd-cheque-list">
+                                <label v-for="c in shownCheques" :key="c.id" class="bd-cheque-row">
                                     <input type="checkbox" :checked="isChequeSelected(c)" @change="toggleCheque(c)" />
                                     <span class="bd-cheque-info">
                                         <span class="bd-cheque-no">{{ c.check_number || 'No number' }}</span>
@@ -411,6 +422,9 @@
                                     </span>
                                     <span class="bd-cheque-amount">{{ c.amount_formatted }}</span>
                                 </label>
+                                <p v-if="shownCheques.length === 0" class="form-text mb-0 p-2">
+                                    Nothing matches &ldquo;{{ chequeSearch }}&rdquo;.
+                                </p>
                             </div>
 
                             <div v-if="bdForm.check_ids.length" class="bd-cheque-total">
@@ -433,10 +447,20 @@
                             </p>
 
                             <template v-if="undepositedRemittances.length > 0">
-                                <label class="form-label mb-1">Collections not yet banked <span class="text-muted">(optional)</span></label>
+                                <label class="form-label mb-1">
+                                    Collections not yet banked <span class="text-muted">(optional)</span>
+                                    <span class="picker-count">{{ pickerCount(undepositedRemittances, undepositedRemittanceTotal) }}</span>
+                                </label>
                                 <p class="form-text mt-0 mb-2">Tick what this deposit covers — the amount fills in. You can still type any figure.</p>
+                                <input
+                                    v-if="undepositedRemittances.length > 6"
+                                    v-model.trim="remitSearch"
+                                    type="text"
+                                    class="form-control picker-search"
+                                    placeholder="Search by remittance no, rep or date"
+                                >
                             <div class="bd-remit-list">
-                                <label v-for="r in undepositedRemittances" :key="r.id" class="bd-remit-row">
+                                <label v-for="r in shownRemittances" :key="r.id" class="bd-remit-row">
                                     <input type="checkbox" :checked="isRemittanceSelected(r)" @change="toggleRemittance(r)" />
                                     <span class="bd-remit-info">
                                         <span class="bd-remit-no">{{ r.remittance_no }}</span>
@@ -444,6 +468,9 @@
                                     </span>
                                     <span class="bd-remit-amount">{{ r.amount_formatted }}</span>
                                 </label>
+                                <p v-if="shownRemittances.length === 0" class="form-text mb-0 p-2">
+                                    Nothing matches &ldquo;{{ remitSearch }}&rdquo;.
+                                </p>
                             </div>
                             </template>
                             <p v-else class="form-text mb-0">
@@ -824,6 +851,9 @@ export default {
         withdrawals:  { type: Array,  default: () => [] },
         undepositedRemittances: { type: Array, default: () => [] },
         undepositedChecks: { type: Array, default: () => [] },
+        // What is really waiting, against the capped lists above.
+        undepositedCheckTotal: { type: Number, default: 0 },
+        undepositedRemittanceTotal: { type: Number, default: 0 },
         cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], cash_on_hand: 0, total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
         summaryCards: { type: Array,  default: () => [] },
         stats:        { type: Object, default: () => ({}) },
@@ -844,6 +874,9 @@ export default {
             bdForm:   emptyBdForm(this.cashAccounts),
             bdErrors: {},
             bdSaving: false,
+            // Both pickers grow with the business; these narrow them down.
+            remitSearch: '',
+            chequeSearch: '',
 
             // Cash withdrawals
             wdModal:  { open: false },
@@ -861,6 +894,14 @@ export default {
         },
         wdIsCheck() {
             return this.wdForm.withdrawal_method === 'check';
+        },
+        shownRemittances() {
+            return this.matching(this.undepositedRemittances, this.remitSearch,
+                r => [r.remittance_no, r.rep_name, r.remittance_date]);
+        },
+        shownCheques() {
+            return this.matching(this.undepositedChecks, this.chequeSearch,
+                c => [c.check_number, c.customer, c.check_date]);
         },
         /** What the ticked cheques come to, for the line under the list. */
         bdChequeTotal() {
@@ -939,6 +980,25 @@ export default {
         },
         isRemittanceSelected(r) {
             return this.bdForm.remittance_ids.includes(r.id);
+        },
+        /** Rows whose own words contain what was typed. */
+        matching(rows, term, fields) {
+            const needle = (term || '').toLowerCase();
+            if (!needle) return rows;
+
+            return rows.filter(row => fields(row)
+                .some(value => String(value ?? '').toLowerCase().includes(needle)));
+        },
+        /**
+         * "8" on its own, or "showing 100 of 143" once the list is capped —
+         * so a backlog reads as a number rather than a wall of rows.
+         */
+        pickerCount(shown, total) {
+            if (!total || total <= shown.length) {
+                return shown.length ? `${shown.length} waiting` : '';
+            }
+
+            return `showing ${shown.length} of ${total}`;
         },
         isChequeSelected(c) {
             return this.bdForm.check_ids.includes(c.id);
@@ -1237,6 +1297,8 @@ export default {
     margin-bottom: 0.15rem;
 }
 .bd-cash-head strong { font-size: 1.05rem; }
+.picker-count { float: right; font-weight: 400; font-size: 0.72rem; color: var(--brt-muted); }
+.picker-search { margin-bottom: 0.4rem; font-size: 0.8rem; padding: 0.3rem 0.55rem; }
 .bd-remit-list {
     max-height: 180px; overflow-y: auto;
     display: flex; flex-direction: column; gap: 0.35rem;
