@@ -90,17 +90,13 @@
                                     </td>
                                 </tr>
                                 <template v-for="(list,index) in lists" :key="index">
-                                    <tr @click="toggleRowExpansion(index)"
+                                    <tr @click="openReceipt(list)"
                                         :class="{
                                             'main-table-row': true,
                                             'unremitted-row': list.is_unremitted_past_day
                                         }"
                                         class="cursor-pointer transition-all" style="transition: all 0.3s ease;">
-                                        <td class="text-center">
-                                            <i v-if="expandedRows.includes(index)" class="ri-arrow-down-s-line text-primary"></i>
-                                            <i v-else class="ri-arrow-right-s-line text-muted"></i>
-                                            {{ index + 1}}
-                                        </td>
+                                        <td class="text-center">{{ index + 1 }}</td>
                                         <td class="text-center fw-semibold">{{ list.receipt_number }}</td>
                                         <td class="text-center">{{ list.customer?.name || '-' }}</td>
                                         <td class="text-center">{{ list.sales_rep?.fullname || list.sales_order?.sales_rep?.fullname || '-' }}</td>
@@ -136,39 +132,6 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    <tr v-if="expandedRows.includes(index)" class="bg-light">
-                                        <td colspan="11" class="p-0">
-                                            <div class="p-4">
-                                                <h6 class="text-primary mb-3">
-                                                    <i class="ri-file-list-line me-2"></i>Order Details
-                                                </h6>
-                                                <div class="row g-3">
-                                                    <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm ">
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Receipt Information</h6>
-                                                                <p class="mb-1"><strong>Receipt Date:</strong> {{ list.receipt_date }}</p>
-                                                                <p class="mb-1"><strong>Sales Rep:</strong> {{ list.sales_rep?.fullname || list.sales_order?.sales_rep?.fullname || '-' }}</p>
-                                                                <p class="mb-1"><strong>Receipt Type:</strong> {{ getReceiptTypeLabel(list.receipt_type) }}</p>
-                                                                <p v-if="list.source_receipt?.receipt_number" class="mb-1"><strong>Source Receipt:</strong> {{ list.source_receipt.receipt_number }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="card border-0 shadow-sm ">
-                                                          
-                                                            <div class="card-body">
-                                                                <h6 class="card-title text-muted small mb-2">Customer Information</h6>
-                                                                <p class="mb-1"><strong>Customer:</strong> {{ list.customer?.name || 'N/A' }}</p>
-                                                                <p class="mb-1"><strong>Contact:</strong> {{ list.customer?.contact_number || 'N/A' }}</p>
-                                                                <p class="mb-1"><strong>Email:</strong> {{ list.customer?.email || 'N/A' }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
                                 </template>
                                 </template>
                             </tbody>
@@ -182,6 +145,59 @@
         </div>
     </div>
 
+    <!-- One receipt in full. Was a panel unfolding inside the table, which
+         pushed every row below it down the page. Chrome from
+         _library-modal.scss, as everywhere else. -->
+    <div v-if="openedReceipt" class="modal-overlay active" @click.self="closeReceipt">
+        <div class="modal-container" style="max-width: 760px" @click.stop>
+            <div class="modal-header">
+                <div class="modal-header-icon"><i class="ri-receipt-line"></i></div>
+                <div>
+                    <p class="modal-subtitle mb-0">
+                        {{ openedReceipt.customer?.name || 'Walk-in customer' }}
+                        <span v-if="openedReceipt.receipt_date">&middot; {{ openedReceipt.receipt_date }}</span>
+                    </p>
+                    <h5 class="modal-title mb-0">{{ openedReceipt.receipt_number }}</h5>
+                </div>
+                <button class="close-btn ms-auto" @click="closeReceipt" aria-label="Close">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="card border-0 shadow-sm ">
+                                                            <div class="card-body">
+                                                                <h6 class="card-title text-muted small mb-2">Receipt Information</h6>
+                                                                <p class="mb-1"><strong>Receipt Date:</strong> {{ openedReceipt.receipt_date }}</p>
+                                                                <p class="mb-1"><strong>Sales Rep:</strong> {{ openedReceipt.sales_rep?.fullname || openedReceipt.sales_order?.sales_rep?.fullname || '-' }}</p>
+                                                                <p class="mb-1"><strong>Receipt Type:</strong> {{ getReceiptTypeLabel(openedReceipt.receipt_type) }}</p>
+                                                                <p v-if="openedReceipt.source_receipt?.receipt_number" class="mb-1"><strong>Source Receipt:</strong> {{ openedReceipt.source_receipt.receipt_number }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card border-0 shadow-sm ">
+                                                          
+                                                            <div class="card-body">
+                                                                <h6 class="card-title text-muted small mb-2">Customer Information</h6>
+                                                                <p class="mb-1"><strong>Customer:</strong> {{ openedReceipt.customer?.name || 'N/A' }}</p>
+                                                                <p class="mb-1"><strong>Contact:</strong> {{ openedReceipt.customer?.contact_number || 'N/A' }}</p>
+                                                                <p class="mb-1"><strong>Email:</strong> {{ openedReceipt.customer?.email || 'N/A' }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="acct-btn-secondary" @click="closeReceipt">Close</button>
+                <button class="acct-btn-secondary" @click="onPrint(openedReceipt.id)">
+                    <i class="ri-printer-line"></i>
+                    Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
 
 </template>
 <script>
@@ -219,7 +235,8 @@ export default {
                 total_amount_collected: 0
             },
 
-            expandedRows: [],
+            // The receipt whose modal is open, or null.
+            openedReceipt: null,
             currentPageUrl: null
         }
     },
@@ -288,12 +305,11 @@ export default {
         },
 
 
-        toggleRowExpansion(index) {
-            if (this.expandedRows.includes(index)) {
-                this.expandedRows = this.expandedRows.filter(i => i !== index);
-            } else {
-                this.expandedRows.push(index);
-            }
+        openReceipt(receipt) {
+            this.openedReceipt = receipt;
+        },
+        closeReceipt() {
+            this.openedReceipt = null;
         },
 
         fetchMetrics(){
