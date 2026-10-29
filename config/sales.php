@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'delivery_approval' => (bool) env('DELIVERY_APPROVAL', true),
+    'delivery_approval' => (bool) env('DELIVERY_APPROVAL', false),
 
     /*
     |--------------------------------------------------------------------------

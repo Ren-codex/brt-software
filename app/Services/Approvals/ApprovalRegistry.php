@@ -427,65 +427,6 @@ class ApprovalRegistry
                 ],
             ],
 
-            'delivery' => [
-                'model' => SalesOrder::class,
-                'label' => 'Delivery',
-                'plural' => 'Deliveries',
-                'module' => 'sales',
-                'submodule' => 'sales_orders',
-                'icon' => 'ri-truck-line',
-                'url' => '/sales-orders',
-                // Pending is a held submission, not a status.
-                'watch' => ['delivery_submission'],
-                // Approving records the delivery as encoded. It can still be
-                // refused — the order may have been paid or changed while it
-                // waited — and that message is shown to the approver.
-                'can_approve_inline' => true,
-                'can_reject_inline' => true,
-                'pending' => fn () => SalesOrder::with(['customer'])->awaitingDeliveryApproval(),
-                'row' => function (SalesOrder $so) {
-                    $submission = $so->delivery_submission ?? [];
-                    $collected = round((float) ($submission['payload']['collected_amount'] ?? 0), 2);
-                    $by = ! empty($submission['submitted_by_id'])
-                        ? \App\Models\User::find($submission['submitted_by_id'])
-                        : null;
-
-                    return [
-                        'reference' => $so->so_number,
-                        'summary' => collect([
-                            $so->customer->name ?? 'Walk-in customer',
-                            $collected > 0
-                                ? '₱'.number_format($collected, 2).' collected ('.($submission['payload']['collected_mode'] ?? 'Cash').')'
-                                : 'nothing collected at the door',
-                        ])->implode(' · '),
-                        'amount' => (float) $so->total_amount,
-                        'requested_by' => $by?->name,
-                        'requested_at' => $submission['submitted_at'] ?? $so->updated_at,
-                    ];
-                },
-                // Only approvals: a rejection keeps no record of who or when.
-                'history' => fn (string $decision) => $decision !== 'approved' ? null : SalesOrder::with(['customer', 'deliveredBy', 'deliveryApprovedBy.employee'])
-                    ->whereNotNull('delivery_approved_at')
-                    ->latest('delivery_approved_at')->orderByDesc('id'),
-                // The submission is cleared once approved, so the row is read
-                // from what the approval left on the order.
-                'history_row' => fn (SalesOrder $so) => [
-                    'reference' => $so->so_number,
-                    'summary' => $so->customer->name ?? 'Walk-in customer',
-                    'amount' => (float) $so->total_amount,
-                    'requested_by' => $so->deliveredBy?->name,
-                    'requested_at' => $so->delivered_at,
-                ],
-                'decision' => fn (SalesOrder $so) => [
-                    'model' => $so,
-                    'decision' => 'approved',
-                    'label' => 'Approved',
-                    'by' => $this->who($so->deliveryApprovedBy),
-                    'at' => $so->delivery_approved_at,
-                    'remarks' => null,
-                ],
-            ],
-
             'replenishment' => [
                 'model' => ReplenishmentRequest::class,
                 'label' => 'Replenishment',

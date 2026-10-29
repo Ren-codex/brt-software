@@ -158,7 +158,6 @@ class ApprovalDetailsTest extends TestCase
                 'remittance' => [$remittance, 'Remittance', null],
                 'check' => [$check, 'Cheque', null],
                 'credit_order' => [$order, 'Credit Sale', 1],
-                'delivery' => [$order, 'Delivery', 1],
                 'replenishment' => [$replenishment, 'Replenishment', null],
             ];
         });

@@ -122,27 +122,6 @@
                                     >
                                         <i class="ri-truck-line"></i>
                                     </button>
-                                    <!-- Encoded, not yet a delivery. Approving is what
-                                         records it, and the money entered with it. -->
-                                    <template v-else-if="row.stage === 'pending'">
-                                        <template v-if="canApproveDelivery">
-                                            <button
-                                                class="action-btn approve"
-                                                v-b-tooltip.hover title="Approve delivery"
-                                                @click="openDecision(row, 'approved')"
-                                            >
-                                                <i class="ri-check-line"></i>
-                                            </button>
-                                            <button
-                                                class="action-btn delete"
-                                                v-b-tooltip.hover title="Send back"
-                                                @click="openDecision(row, 'disapproved')"
-                                            >
-                                                <i class="ri-close-line"></i>
-                                            </button>
-                                        </template>
-                                        <span v-else class="waiting-note">Waiting for approval</span>
-                                    </template>
                                     <button
                                         v-else-if="row.stage === 'collect'"
                                         class="action-btn edit"
@@ -218,64 +197,6 @@
             </div>
         </div>
 
-        <div v-if="decision.open" class="modal-overlay active" @click.self="closeDecision">
-            <div class="modal-container" style="max-width: 480px">
-                <div class="modal-header">
-                    <div class="modal-header-icon">
-                        <i :class="decision.type === 'approved' ? 'ri-check-double-line' : 'ri-arrow-go-back-line'"></i>
-                    </div>
-                    <div>
-                        <h5 class="modal-title">{{ decision.type === 'approved' ? 'Approve delivery' : 'Send delivery back' }}</h5>
-                        <p class="modal-subtitle">
-                            {{ decision.row?.reference }} &middot; {{ decision.row?.customer || 'Walk-in customer' }}
-                        </p>
-                    </div>
-                    <button class="close-btn ms-auto" @click="closeDecision" aria-label="Close">
-                        <i class="ri-close-line"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <template v-if="decision.type === 'approved'">
-                        <p class="handover-confirm">
-                            This records the order as <strong>delivered</strong>, as encoded by
-                            {{ decision.row?.person || 'the encoder' }}.
-                        </p>
-                        <p class="handover-confirm" v-if="decision.row?.collected > 0">
-                            It also records the payment received:
-                            <strong>{{ formatCurrency(decision.row.collected) }}</strong>
-                            ({{ decision.row.collected_mode || 'Cash' }}).
-                        </p>
-                        <p class="handover-note" v-else>
-                            Nothing was collected at the door, so the order moves to
-                            &ldquo;To collect&rdquo; unless it is already paid.
-                        </p>
-                    </template>
-                    <template v-else>
-                        <p class="handover-confirm">
-                            Nothing is recorded. The order goes back to &ldquo;Out for delivery&rdquo;
-                            so it can be encoded again.
-                        </p>
-                        <label class="decision-label" for="delivery-decision-remarks">Reason (shown to the encoder)</label>
-                        <textarea
-                            id="delivery-decision-remarks"
-                            v-model.trim="decision.remarks"
-                            class="decision-remarks"
-                            rows="3"
-                            maxlength="300"
-                            placeholder="e.g. Amount collected does not match the receipt"
-                        ></textarea>
-                    </template>
-                    <p v-if="decision.error" class="handover-error">{{ decision.error }}</p>
-                </div>
-                <div class="modal-footer">
-                    <button class="acct-btn-secondary" @click="closeDecision">Cancel</button>
-                    <button class="acct-btn-primary" :disabled="decision.saving" @click="saveDecision">
-                        {{ decision.saving ? 'Saving…' : (decision.type === 'approved' ? 'Approve' : 'Send back') }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <MarkDelivered @delivered="fetch" ref="markDelivered" />
         <Payment @add="fetch" ref="payment" />
     </div>
@@ -283,7 +204,7 @@
 
 <script>
 import axios from 'axios';
-import { onApprovalChange, announceApprovalChange } from '@/Shared/realtime.js';
+import { onApprovalChange } from '@/Shared/realtime.js';
 import MarkDelivered from './Modals/MarkDelivered.vue';
 import Payment from '../ARInvoices/Modals/Payment.vue';
 
@@ -299,10 +220,9 @@ export default {
             loading: false,
             activeStage: 'all',
             // One search and one sort per stage, keyed like the stages.
-            stageKeyword: { all: '', out: '', pending: '', collect: '', money: '', bank: '' },
-            stageSort: { all: '', out: '', pending: '', collect: '', money: '', bank: '' },
-            board: { out_for_delivery: [], pending_approval: [], to_collect: [], with_driver: [], awaiting_bank: [] },
-            decision: { open: false, row: null, type: 'approved', remarks: '', error: '', saving: false },
+            stageKeyword: { all: '', out: '', collect: '', money: '', bank: '' },
+            stageSort: { all: '', out: '', collect: '', money: '', bank: '' },
+            board: { out_for_delivery: [], to_collect: [], with_driver: [], awaiting_bank: [] },
             handover: { open: false, row: null, holder: null, error: '', saving: false },
         };
     },
@@ -316,7 +236,7 @@ export default {
                     hint: 'Everything on the road or still owed, most recently updated first.',
                     empty: 'Nothing out and nothing owed.',
                     tone: 'tone-neutral',
-                    rows: [...this.stageRows('out'), ...this.stageRows('pending'), ...this.stageRows('collect'), ...this.stageRows('money'), ...this.stageRows('bank')],
+                    rows: [...this.stageRows('out'), ...this.stageRows('collect'), ...this.stageRows('money'), ...this.stageRows('bank')],
                 },
                 {
                     key: 'out',
@@ -325,14 +245,6 @@ export default {
                     empty: 'Nothing waiting to go out.',
                     tone: 'tone-neutral',
                     rows: this.stageRows('out'),
-                },
-                {
-                    key: 'pending',
-                    label: 'Pending approval',
-                    hint: 'Encoded as delivered. Not recorded, and no payment taken, until approved.',
-                    empty: 'No deliveries are waiting for approval.',
-                    tone: 'tone-pending',
-                    rows: this.stageRows('pending'),
                 },
                 {
                     key: 'collect',
@@ -359,10 +271,6 @@ export default {
                     rows: this.stageRows('bank'),
                 },
             ];
-        },
-        /** Approving a delivery takes the approver level on Sales Orders. */
-        canApproveDelivery() {
-            return this.can('sales', 'sales_orders', 'approver');
         },
         currentStage() {
             return this.stages.find((s) => s.key === this.activeStage) ?? this.stages[0];
@@ -443,20 +351,6 @@ export default {
                     source: this.board.out_for_delivery,
                     action: { label: 'Mark delivered', run: (row) => this.openDelivery(row) },
                 },
-                pending: {
-                    stageLabel: 'Pending approval',
-                    tone: 'tone-pending',
-                    // "With" reads as who encoded it and what they say was
-                    // collected — the two things an approver is checking.
-                    source: (this.board.pending_approval ?? []).map((row) => ({
-                        ...row,
-                        mode: row.collected > 0
-                            ? `${this.formatCurrency(row.collected)} collected (${row.collected_mode || 'Cash'})`
-                            : 'Nothing collected',
-                        confirmed: true,
-                    })),
-                    action: null,
-                },
                 collect: {
                     stageLabel: 'To collect',
                     tone: 'tone-warn',
@@ -534,34 +428,6 @@ export default {
                     if (order) this.$refs.markDelivered.show(order);
                 })
                 .catch((err) => console.error(err));
-        },
-        openDecision(row, type) {
-            this.decision = { open: true, row, type, remarks: '', error: '', saving: false };
-        },
-        closeDecision() {
-            this.decision.open = false;
-        },
-        saveDecision() {
-            this.decision.saving = true;
-            this.decision.error = '';
-
-            axios.post(`/sales-orders/${this.decision.row.id}/delivery-decision`, {
-                decision: this.decision.type,
-                remarks: this.decision.remarks || null,
-            })
-                .then(() => {
-                    this.decision.open = false;
-                    this.fetch();
-                    // The bell and the Approvals page are counting this too.
-                    announceApprovalChange();
-                })
-                .catch((err) => {
-                    const data = err.response?.data || {};
-                    const first = data.errors ? Object.values(data.errors).flat()[0] : null;
-                    this.decision.error = first || data.info || data.message
-                        || 'Could not save the decision.';
-                })
-                .finally(() => { this.decision.saving = false; });
         },
         openHandover(row) {
             this.handover = { open: true, row, error: '', saving: false };

@@ -128,9 +128,6 @@
                                                 <span v-else-if="list.credit_pending" class="badge bg-warning-subtle text-warning-emphasis">
                                                     For credit approval
                                                 </span>
-                                                <span v-if="list.delivery_pending" class="badge bg-warning-subtle text-warning-emphasis">
-                                                    Delivery pending approval
-                                                </span>
                                                 <span v-if="list.delivered_at && list.status?.slug !== 'closed'"
                                                     class="badge bg-success-subtle text-success-emphasis"
                                                     v-b-tooltip.hover :title="`Recorded by ${list.delivered_by || 'staff'}`">

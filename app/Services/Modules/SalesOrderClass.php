@@ -164,8 +164,6 @@ class SalesOrderClass
         // Goods still to go: promised to travel, and not recorded as arrived.
         $outForDelivery = $mine(SalesOrder::with('customer', 'driver')
             ->whereNull('delivered_at')
-            // Encoded and waiting on an approver: that is its own stage below.
-            ->whereNull('delivery_submission')
             ->whereDoesntHave('status', fn ($q) => $q->where('slug', 'cancelled'))
             ->where(function ($q) {
                 $q->whereNotNull('driver_id')->orWhereNotNull('delivery_date');
@@ -187,34 +185,6 @@ class SalesOrderClass
                 // row changed, so whatever was just worked on comes to the top.
                 'updated_at' => optional($order->updated_at)->toIso8601String(),
             ]);
-
-        // Encoded as delivered, not yet confirmed. Not delivered and not
-        // collectable until an approver says so.
-        $submitters = [];
-        $pendingApproval = $mine(SalesOrder::with('customer', 'driver')->awaitingDeliveryApproval())
-            ->orderBy('updated_at')
-            ->get()
-            ->map(function ($order) use ($days, &$submitters) {
-                $submission = $order->delivery_submission;
-                $byId = $submission['submitted_by_id'] ?? null;
-                if ($byId && ! array_key_exists($byId, $submitters)) {
-                    $user = \App\Models\User::with('employee')->find($byId);
-                    $submitters[$byId] = $user ? (optional($user->employee)->fullname ?? $user->name) : null;
-                }
-                $collected = round((float) ($submission['payload']['collected_amount'] ?? 0), 2);
-
-                return [
-                    'id' => $order->id,
-                    'reference' => $order->so_number,
-                    'customer' => optional($order->customer)->name,
-                    'amount' => (float) $order->total_amount,
-                    'person' => $byId ? ($submitters[$byId] ?? null) : null,
-                    'collected' => $collected,
-                    'collected_mode' => $collected > 0 ? ($submission['payload']['collected_mode'] ?? null) : null,
-                    'days' => $days($submission['submitted_at'] ?? $order->updated_at),
-                    'updated_at' => optional($order->updated_at)->toIso8601String(),
-                ];
-            });
 
         // Delivered, nothing collected: the moment to ask the driver.
         //
@@ -311,7 +281,6 @@ class SalesOrderClass
 
         return response()->json([
             'out_for_delivery' => $outForDelivery->values(),
-            'pending_approval' => $pendingApproval->values(),
             'to_collect' => $toCollect->values(),
             'awaiting_bank' => $awaitingBank->values(),
             'with_driver' => $withDriver->values(),
