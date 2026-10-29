@@ -37,11 +37,17 @@
         <div class="address-label">Bill To</div>
         <strong>{{ $sales_order->customer->name ?? '---' }}</strong><br>
         {!! nl2br(e($sales_order->customer->address ?? '---')) !!}
+        @if($sales_order->customer->contact_number)
+        <br>{{ $sales_order->customer->contact_number }}
+        @endif
     </div>
     <div class="address-block">
         <div class="address-label">Ship To</div>
         <strong>{{ $sales_order->customer->name ?? '---' }}</strong><br>
         {!! nl2br(e($sales_order->customer->address ?? '---')) !!}
+        @if($sales_order->customer->contact_number)
+        <br>{{ $sales_order->customer->contact_number }}
+        @endif
     </div>
     {{-- Beside the addresses, where whoever reads the page is already
          looking: who sold it, who is carrying it, who takes the money. --}}
