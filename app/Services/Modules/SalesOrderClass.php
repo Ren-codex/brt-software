@@ -177,12 +177,10 @@ class SalesOrderClass
                 'amount' => (float) $order->total_amount,
                 'person' => optional($order->driver)->fullname,
                 'due' => optional($order->delivery_date)->toDateString(),
-                // Why the last submission was sent back, so it can be put right.
                 'rejection' => $order->delivery_rejection,
                 'credit_pending' => $order->awaitsCreditApproval(),
+                'payment_mode' => $order->payment_mode,
                 'days' => $days($order->delivery_date),
-                // What the board sorts on: the last time anything about this
-                // row changed, so whatever was just worked on comes to the top.
                 'updated_at' => optional($order->updated_at)->toIso8601String(),
             ]);
 
@@ -210,6 +208,9 @@ class SalesOrderClass
                     'amount' => $outstanding,
                     'person' => optional($order->driver)->fullname,
                     'invoice_id' => optional($invoice)->id,
+                    'invoice_number' => optional($invoice)->invoice_number,
+                    'invoice_date' => optional(optional($invoice)->invoice_date)->format('M d, Y'),
+                    'due_date' => optional($order->due_date)->format('M d, Y'),
                     // The payment screen decides from this whether a part
                     // payment is allowed: on credit yes, on COD no.
                     'payment_mode' => $order->payment_mode,

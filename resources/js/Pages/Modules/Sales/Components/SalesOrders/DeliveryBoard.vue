@@ -61,6 +61,7 @@
                         <tr>
                             <th>Reference</th>
                             <th>Customer</th>
+                            <th class="text-center">Type</th>
                             <th v-if="activeStage === 'all'">Stage</th>
                             <th>With</th>
                             <th class="text-end">Amount</th>
@@ -70,10 +71,10 @@
                     </thead>
                     <tbody class="fs-12">
                         <tr v-if="loading">
-                            <td :colspan="activeStage === 'all' ? 7 : 6" class="delivery-empty">Loading deliveries...</td>
+                            <td :colspan="activeStage === 'all' ? 8 : 7" class="delivery-empty">Loading deliveries...</td>
                         </tr>
                         <tr v-else-if="visibleRows.length === 0">
-                            <td :colspan="activeStage === 'all' ? 7 : 6" class="delivery-empty">
+                            <td :colspan="activeStage === 'all' ? 8 : 7" class="delivery-empty">
                                 {{ stageKeyword[activeStage] ? `Nothing here matches "${stageKeyword[activeStage]}".` : currentStage.empty }}
                             </td>
                         </tr>
@@ -87,6 +88,9 @@
                                 </span>
                             </td>
                             <td>{{ row.customer || 'Walk-in customer' }}</td>
+                            <td class="text-center">
+                                <span class="payment-pill" :class="paymentTone(row.payment_mode)">{{ row.payment_mode || '—' }}</span>
+                            </td>
                             <td v-if="activeStage === 'all'">
                                 <span class="stage-pill" :class="row.tone">{{ row.stageLabel }}</span>
                             </td>
@@ -205,6 +209,7 @@
 <script>
 import axios from 'axios';
 import { onApprovalChange } from '@/Shared/realtime.js';
+import { paymentTone } from '@/Shared/utils/paymentType.js';
 import MarkDelivered from './Modals/MarkDelivered.vue';
 import Payment from '../ARInvoices/Modals/Payment.vue';
 
@@ -453,15 +458,22 @@ export default {
         },
         openPayment(row) {
             this.$refs.payment.show(
-                // The order's terms travel with it: without them the screen
-                // took every collection for a cash sale and locked the
-                // amount at the full balance, so a credit customer could
-                // not pay part of what they owe.
-                { id: row.invoice_id, balance_due: row.amount, sales_order: { payment_mode: row.payment_mode } },
+                {
+                    id: row.invoice_id,
+                    invoice_number: row.invoice_number,
+                    invoice_date: row.invoice_date,
+                    due_date_formatted: row.due_date,
+                    balance_due: row.amount,
+                    sales_order: {
+                        payment_mode: row.payment_mode,
+                        customer: { name: row.customer },
+                    },
+                },
                 row.reference,
                 '/ar-invoices'
             );
         },
+        paymentTone,
         formatCurrency(value) {
             return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value) || 0);
         },
