@@ -105,6 +105,22 @@
                         </div>
                     </div>
 
+                    <!-- Only on an order already delivered, where the money
+                         could be with any of them. A collection recorded as it
+                         happens has an obvious holder and asks nothing. -->
+                    <div v-if="holderOptions.length > 1" class="holder-field">
+                        <label class="field-label" for="held_by_employee_id">Money is with</label>
+                        <select id="held_by_employee_id" v-model="form.held_by_employee_id" class="field-select">
+                            <option v-for="person in holderOptions" :key="person.value ?? 'default'" :value="person.value">
+                                {{ person.name }}
+                            </option>
+                        </select>
+                        <p class="field-hint">
+                            Who is carrying this money now — the crew on a doorstep collection, or
+                            whoever has it at the office when a payment is being recorded late.
+                        </p>
+                    </div>
+
                     <div class="payment-table">
                         <div class="payment-table-header">
                             <span class="col-num">#</span>
@@ -296,6 +312,30 @@ import { openOrPrint } from '@/Shared/utils/printDocument';
 export default {
     props: [ ],
     computed: {
+        /**
+         * The people this money could plausibly be with: the crew who took it
+         * at the door and the rep whose sale it is. Offered only once the
+         * order has been delivered — before that there is no argument about
+         * who has it, and the default rule is right.
+         */
+        holderOptions() {
+            const order = this.invoice?.sales_order;
+            if (!order?.delivered_at) return [];
+
+            const seen = new Set();
+            const options = [{ value: null, name: 'As usual for this order' }];
+            const add = (person, role) => {
+                if (!person?.id || seen.has(person.id)) return;
+                seen.add(person.id);
+                options.push({ value: person.id, name: `${person.fullname} — ${role}` });
+            };
+
+            add(order.checker, 'checker');
+            add(order.driver, 'driver');
+            add(order.sales_rep, 'sales rep');
+
+            return options;
+        },
         heldDescription() {
             const held = this.uncleared;
             if (!held) return '';
@@ -378,6 +418,9 @@ export default {
                 payment_date: new Date().toISOString().slice(0, 10),  // current date,
                 billing_account: null,
                 option: 'payment',
+                // Null leaves the rule alone: the crew on a COD collection,
+                // the rep otherwise.
+                held_by_employee_id: null,
                 splits: [],
             }),
 
@@ -406,6 +449,7 @@ export default {
         show(data, title, route){
             this.showModal = true;
             this.invoice = data;
+            this.form.held_by_employee_id = null;
             this.isSplitPayment = false;
             this.form.id = data.id;
             this.title = title;
@@ -1311,4 +1355,7 @@ export default {
         grid-template-columns: 30px 1fr 130px 50px;
     }
 }
+.holder-field { margin: 0.75rem 0 0.25rem; }
+.holder-field .field-hint { font-size: 0.72rem; color: var(--brt-muted); margin: 0.25rem 0 0; }
+
 </style>

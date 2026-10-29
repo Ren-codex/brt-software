@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 use App\Models\ArInvoice;
+use App\Models\Employee;
 use App\Models\SalesOrder;
 use App\Models\Receipt;
 use App\Models\ListStatus;
@@ -34,7 +35,10 @@ class ArInvoiceClass
 
         $data = ArInvoiceResource::collection(
             $this->visibleInvoices($employeeId)
-                ->with(['sales_order.customer', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status', 'receipts.registerCheck'])
+                // Driver and checker come along so the payment screen can ask
+                // who is holding the money: on a late correction it is often
+                // not whoever the default rule would name.
+                ->with(['sales_order.customer', 'sales_order.salesRep', 'sales_order.driver', 'sales_order.checker', 'sales_order.created_by.employee', 'sales_order.items.product', 'sales_order.status', 'status', 'receipts.status', 'receipts.registerCheck'])
                 ->when($request->location_id, function ($query, $locationId) {
                     $query->whereHas('sales_order', function ($q) use ($locationId) {
                         $q->where('location_id', $locationId);
@@ -385,6 +389,21 @@ class ArInvoiceClass
         // waiting on a handover that cannot happen.
         $collectedInField = (bool) $request->collected_by_driver
             || SalesOrder::isCod(optional($ar_invoice->sales_order)->payment_mode);
+
+        // Whoever the screen says is carrying it, when it knows better than
+        // the rule below. A payment typed to correct an earlier mistake is
+        // recorded at the office with the cash already in somebody's hands,
+        // and assuming the crew has it sends the rep to record a handover
+        // from a driver who never touched this money.
+        $statedHolder = $request->filled('held_by_employee_id')
+            ? (int) $request->input('held_by_employee_id')
+            : null;
+
+        if ($statedHolder && ! Employee::whereKey($statedHolder)->exists()) {
+            throw ValidationException::withMessages([
+                'held_by_employee_id' => 'That employee does not exist.',
+            ]);
+        }
         $lastReceipt = null;
         $receiptIds = [];
 
@@ -418,10 +437,10 @@ class ArInvoiceClass
                 //
                 // On the truck that is the checker when the order has one, and
                 // the driver when it does not — SalesOrder::fieldCollectorId().
-                'held_by_employee_id' => $collectedInField
+                'held_by_employee_id' => $statedHolder ?? ($collectedInField
                     ? (optional($ar_invoice->sales_order)->fieldCollectorId()
                         ?? optional($ar_invoice->sales_order)->sales_rep_id)
-                    : optional($ar_invoice->sales_order)->sales_rep_id,
+                    : optional($ar_invoice->sales_order)->sales_rep_id),
             ]);
 
             $this->journalEntryService->recordReceiptEntry($receipt);
