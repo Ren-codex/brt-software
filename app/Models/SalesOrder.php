@@ -141,7 +141,7 @@ class SalesOrder extends Model
      */
     public function stampCounterDelivery(): void
     {
-        if ($this->delivered_at || $this->isDelivery()) {
+        if ($this->delivered_at || $this->isDelivery() || self::isOnAccount($this->payment_mode)) {
             return;
         }
 
