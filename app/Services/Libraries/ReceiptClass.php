@@ -86,9 +86,11 @@ class ReceiptClass
         // and -1 matches nothing: a user with no employee record sees no one's
         // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
         $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
-        $cancelledId = ListStatus::getBySlug('cancelled')?->id ?? 0;
+        // A payment that was cancelled or undone is not a payment, and has no
+        // business in a figure headed "collections".
+        $excluded = ListStatus::whereIn('slug', ['cancelled', 'voided'])->pluck('id')->all() ?: [0];
 
-        $base = Receipt::where('status_id', '!=', $cancelledId)
+        $base = Receipt::whereNotIn('status_id', $excluded)
             ->when($employeeId, function ($query) use ($employeeId) {
                 $query->whereHas('arInvoice.sales_order', function ($soQuery) use ($employeeId) {
                     $soQuery->where(function ($salesOrderQuery) use ($employeeId) {

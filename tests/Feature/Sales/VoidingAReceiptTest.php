@@ -193,6 +193,37 @@ class VoidingAReceiptTest extends TestCase
             ->assertJsonValidationErrors('reason');
     }
 
+    public function test_the_payment_can_be_recorded_again_afterwards(): void
+    {
+        // The whole point of voiding: a cheque typed by mistake must not go on
+        // blocking the invoice it was recorded against.
+        $receipt = $this->collect('Check');
+        $this->void($this->approver(), $receipt)->assertOk();
+
+        $invoice = ArInvoice::firstOrFail();
+        $this->actingAs($this->user)->put('/ar-invoices/'.$invoice->id, [
+            'id' => $invoice->id,
+            'option' => 'payment',
+            'action' => 'payment',
+            'payment_date' => now()->toDateString(),
+            'balance_due' => (float) $invoice->balance_due,
+            'splits' => [['payment_mode' => 'Cash', 'amount' => 3000]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(0.0, (float) ArInvoice::firstOrFail()->balance_due);
+    }
+
+    public function test_a_voided_receipt_is_left_out_of_the_totals(): void
+    {
+        $receipt = $this->collect('Cash');
+        $this->void($this->approver(), $receipt)->assertOk();
+
+        $figures = $this->actingAs($this->user)->getJson('/receipts?option=dashboard')->assertOk()->json();
+
+        $this->assertSame(0, (int) ($figures['total_receipts']['count'] ?? $figures['total_receipts'] ?? 0),
+            'A payment that was undone is not a payment.');
+    }
+
     private function remittanceFor(Receipt $receipt): int
     {
         return DB::table('remittances')->insertGetId([
