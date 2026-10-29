@@ -112,7 +112,16 @@
                         comes off what they owe.
                     </p>
 
-                    <div v-if="collectedNow" class="collect-fields">
+                    <!-- One tender or several. A customer paying part cash and
+                         part cheque at the door is ordinary; the server has
+                         always taken the lines, only this screen could not
+                         send them. -->
+                    <label v-if="collectedNow" class="split-toggle">
+                        <input type="checkbox" v-model="isSplit" @change="onToggleSplit">
+                        <span>Paid two ways or more</span>
+                    </label>
+
+                    <div v-if="collectedNow && !isSplit" class="collect-fields">
                         <div class="collect-field">
                             <label for="collected_amount">Amount</label>
                             <input
@@ -146,6 +155,55 @@
                         </div>
                         <p class="collect-note" v-if="form.collected_mode !== 'Cash'">
                             Recorded now, but it only counts against the invoice once someone matches it in the bank.
+                        </p>
+                    </div>
+
+                    <div v-if="collectedNow && isSplit" class="split-lines">
+                        <div v-for="(line, index) in form.collected_splits" :key="index" class="split-line">
+                            <select class="form-control" v-model="line.payment_mode">
+                                <option value="Cash">Cash</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Check">Check</option>
+                            </select>
+                            <input
+                                type="number" step="0.01" min="0" class="form-control"
+                                placeholder="0.00" v-model.number="line.amount"
+                            >
+                            <input
+                                v-if="line.payment_mode !== 'Cash'"
+                                type="text" class="form-control"
+                                :placeholder="line.payment_mode === 'Check' ? 'Check number' : 'Reference number'"
+                                v-model="line.reference_number"
+                            >
+                            <input
+                                v-if="line.payment_mode === 'Check'"
+                                type="date" class="form-control" v-model="line.check_date"
+                            >
+                            <button
+                                type="button" class="split-remove"
+                                :disabled="form.collected_splits.length < 2"
+                                @click="removeSplit(index)"
+                                aria-label="Remove this line"
+                            >
+                                <i class="ri-delete-bin-line"></i>
+                            </button>
+                        </div>
+
+                        <button type="button" class="split-add" @click="addSplit">
+                            <i class="ri-add-line"></i> Add another
+                        </button>
+
+                        <p class="split-total" :class="{ over: splitTotal > collectableTotal }">
+                            <span>{{ formatCurrency(splitTotal) }} of {{ formatCurrency(collectableTotal) }}</span>
+                            <span v-if="splitTotal > collectableTotal">That is more than is owed.</span>
+                            <span v-else-if="isCod && splitTotal < collectableTotal">
+                                COD is paid in full on handover — reduce the accepted quantities for anything
+                                going back.
+                            </span>
+                        </p>
+                        <p class="collect-note" v-if="form.collected_splits.some(l => l.payment_mode !== 'Cash')">
+                            Anything but cash is recorded now and counts against the invoice once someone
+                            matches it in the bank.
                         </p>
                     </div>
                 </div>
@@ -183,6 +241,8 @@ export default {
             order: null,
             items: [],
             collectedNow: false,
+            // One tender, or several lines that add up to what was handed over.
+            isSplit: false,
             form: useForm({
                 action: 'mark-delivered',
                 delivered_at: null,
@@ -190,12 +250,18 @@ export default {
                 collected_mode: 'Cash',
                 collected_reference: null,
                 collected_check_date: null,
+                collected_splits: [],
                 accepted_quantities: {},
                 refusal_reasons: {},
             }),
         };
     },
     computed: {
+        /** What the lines add up to, against what is owed. */
+        splitTotal() {
+            return (this.form.collected_splits || [])
+                .reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
+        },
         today() {
             return new Date().toISOString().slice(0, 10);
         },
@@ -284,10 +350,51 @@ export default {
         isShort(item) {
             return Number(this.form.accepted_quantities[item.id] ?? item.quantity) < Number(item.quantity);
         },
+        /** Start the lines from whatever the single field already said. */
+        onToggleSplit() {
+            if (this.isSplit) {
+                this.form.collected_splits = [
+                    {
+                        payment_mode: this.form.collected_mode || 'Cash',
+                        amount: this.form.collected_amount ?? null,
+                        reference_number: this.form.collected_reference,
+                        check_date: this.form.collected_check_date,
+                    },
+                    { payment_mode: 'Cash', amount: null, reference_number: null, check_date: null },
+                ];
+                return;
+            }
+
+            // Back to one tender: keep the first line's details rather than
+            // emptying the field the user already filled in.
+            const first = this.form.collected_splits[0] || {};
+            this.form.collected_mode = first.payment_mode || 'Cash';
+            this.form.collected_amount = first.amount ?? null;
+            this.form.collected_reference = first.reference_number ?? null;
+            this.form.collected_check_date = first.check_date ?? null;
+            this.form.collected_splits = [];
+        },
+        addSplit() {
+            this.form.collected_splits.push({
+                payment_mode: 'Cash', amount: null, reference_number: null, check_date: null,
+            });
+        },
+        removeSplit(index) {
+            if (this.form.collected_splits.length < 2) return;
+            this.form.collected_splits.splice(index, 1);
+        },
         submit() {
             // Nothing collected unless the box is ticked, whatever was typed.
             if (!this.collectedNow) {
                 this.form.collected_amount = null;
+                this.form.collected_splits = [];
+            }
+
+            // The server adds the lines up and names the mode Split; sending
+            // the single fields as well would only invite them to disagree.
+            if (this.collectedNow && this.isSplit) {
+                this.form.collected_splits = this.form.collected_splits
+                    .filter(line => Number(line.amount) > 0 && line.payment_mode);
             }
             this.form.put(`/sales-orders/${this.order.id}`, {
                 preserveScroll: true,
@@ -304,6 +411,7 @@ export default {
             this.showModal = false;
             this.order = null;
             this.items = [];
+            this.isSplit = false;
         },
     },
 };
@@ -455,4 +563,49 @@ export default {
     color: #9b1c1c;
     font-size: 0.85rem;
 }
+.split-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0.65rem 0 0.35rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+.split-lines { display: flex; flex-direction: column; gap: 0.45rem; }
+.split-line {
+    display: grid;
+    grid-template-columns: 9rem 8rem 1fr auto;
+    gap: 0.4rem;
+    align-items: center;
+}
+.split-line .form-control { font-size: 0.82rem; padding: 0.3rem 0.5rem; }
+.split-remove {
+    border: 1px solid #e5c9c7;
+    background: #fff;
+    color: #96231f;
+    border-radius: 8px;
+    padding: 0.25rem 0.45rem;
+    cursor: pointer;
+}
+.split-remove:disabled { opacity: 0.35; cursor: not-allowed; }
+.split-add {
+    align-self: flex-start;
+    border: 1px dashed #c4d9d2;
+    background: #fff;
+    color: #3d8d7a;
+    border-radius: 8px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+.split-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.2rem 0 0;
+    font-size: 0.78rem;
+    color: #6b8c85;
+}
+.split-total.over { color: #96231f; font-weight: 600; }
+
 </style>
