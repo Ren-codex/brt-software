@@ -224,7 +224,7 @@
                 <button class="btn btn-primary" @click="submit" :disabled="form.processing">
                     <i class="ri-loader-4-line spinner" v-if="form.processing"></i>
                     <i class="ri-check-line" v-else></i>
-                    {{ form.processing ? 'Saving...' : (order?.delivered_at ? 'Record Collection' : 'Submit for Approval') }}
+                    {{ form.processing ? 'Saving...' : (order?.delivered_at ? 'Record Collection' : 'Mark as Delivered') }}
                 </button>
             </div>
         </div>
