@@ -175,6 +175,27 @@ class ReceiptController extends Controller
         ]);
     }
 
+    /**
+     * Undo a payment recorded wrongly — usually the mode, which decides
+     * custody and whether the bank has to confirm it.
+     *
+     * Held to approver, the same grant that confirms a cheque cleared: this
+     * reverses money already recorded, so it sits above the encoder who typed
+     * it. A rep cannot undo their own collection.
+     */
+    public function void($id, Request $request)
+    {
+        $this->authorizePermission('sales', 'receipts', 'approver');
+
+        $request->validate([
+            'reason' => 'required|string|max:300',
+        ]);
+
+        $result = $this->handleTransaction(fn () => $this->receipt->void($id, $request->reason));
+
+        return response()->json($result, ($result['status'] ?? true) ? 200 : 422);
+    }
+
     public function destroy($id){
         $this->authorizePermission('sales', 'receipts', 'admin');
 

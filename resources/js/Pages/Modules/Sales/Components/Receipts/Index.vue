@@ -129,6 +129,16 @@
                                                 <button @click.stop="onPrint(list.id)" class="action-btn info" v-b-tooltip.hover title="Print">
                                                     <i class="ri-printer-line"></i>
                                                 </button>
+                                                <!-- Undoing a payment recorded against the wrong mode.
+                                                     Held to the approver grant, and never on one already
+                                                     voided or already inside a remittance. -->
+                                                <button
+                                                    v-if="canVoid(list)"
+                                                    @click.stop="openVoid(list)"
+                                                    class="action-btn delete" v-b-tooltip.hover title="Void Receipt"
+                                                >
+                                                    <i class="ri-close-circle-line"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -141,6 +151,47 @@
                 <div class="px-3 pb-3">
                     <Pagination class="ms-2 me-2 mt-n1" v-if="meta" @fetch="fetch" :lists="lists.length" :links="links" :pagination="meta" />
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="voidModal.open" class="modal-overlay active" @click.self="closeVoid">
+        <div class="modal-container" style="max-width: 460px" @click.stop>
+            <div class="modal-header">
+                <div class="modal-header-icon"><i class="ri-close-circle-line"></i></div>
+                <div>
+                    <p class="modal-subtitle mb-0">
+                        {{ voidModal.receipt?.customer?.name || 'Walk-in customer' }}
+                        &middot; ₱{{ voidModal.receipt?.amount_paid }}
+                        &middot; {{ voidModal.receipt?.payment_mode }}
+                    </p>
+                    <h5 class="modal-title mb-0">Void {{ voidModal.receipt?.receipt_number }}</h5>
+                </div>
+                <button class="close-btn ms-auto" @click="closeVoid" aria-label="Close"><i class="ri-close-line"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="void-lead">
+                    The payment comes off the invoice, the ledger entry is reversed, and a cheque
+                    recorded with it leaves the register. Record the payment again afterwards with
+                    the right details.
+                </p>
+                <label class="form-label" for="void_reason">Why is it being voided?</label>
+                <textarea
+                    id="void_reason"
+                    v-model.trim="voidModal.reason"
+                    class="form-control"
+                    rows="2"
+                    maxlength="300"
+                    placeholder="e.g. Paid by cheque, recorded as cash"
+                    @keyup.enter.ctrl="saveVoid"
+                ></textarea>
+                <p v-if="voidModal.error" class="void-error">{{ voidModal.error }}</p>
+            </div>
+            <div class="modal-footer">
+                <button class="acct-btn-secondary" @click="closeVoid">Cancel</button>
+                <button class="acct-btn-primary" :disabled="voidModal.saving" @click="saveVoid">
+                    {{ voidModal.saving ? 'Voiding…' : 'Void receipt' }}
+                </button>
             </div>
         </div>
     </div>
@@ -237,6 +288,7 @@ export default {
 
             // The receipt whose modal is open, or null.
             openedReceipt: null,
+            voidModal: { open: false, receipt: null, reason: '', error: '', saving: false },
             currentPageUrl: null
         }
     },
@@ -305,6 +357,45 @@ export default {
         },
 
 
+        /**
+         * Only an approver, and only on a receipt still standing. One inside a
+         * remittance is refused by the server too; hiding it here saves
+         * somebody meeting that refusal.
+         */
+        canVoid(receipt) {
+            return this.can('sales', 'receipts', 'approver')
+                && receipt.status?.slug !== 'voided'
+                && !receipt.remittance_id;
+        },
+        openVoid(receipt) {
+            this.voidModal = { open: true, receipt, reason: '', error: '', saving: false };
+        },
+        closeVoid() {
+            this.voidModal.open = false;
+        },
+        saveVoid() {
+            if (!this.voidModal.reason) {
+                this.voidModal.error = 'Say why — the reason stays on the record.';
+                return;
+            }
+
+            this.voidModal.saving = true;
+            this.voidModal.error = '';
+
+            axios.put(`/receipts/${this.voidModal.receipt.id}/void`, { reason: this.voidModal.reason })
+                .then(() => {
+                    this.voidModal.open = false;
+                    this.openedReceipt = null;
+                    this.fetch();
+                    this.fetchMetrics();
+                })
+                .catch(err => {
+                    const errors = err.response?.data?.errors || {};
+                    this.voidModal.error = errors.receipt?.[0] || errors.reason?.[0]
+                        || err.response?.data?.message || 'Could not void this receipt.';
+                })
+                .finally(() => { this.voidModal.saving = false; });
+        },
         openReceipt(receipt) {
             this.openedReceipt = receipt;
         },
@@ -394,4 +485,7 @@ export default {
     line-height: 1.2;
     white-space: nowrap;
 }
+.void-lead { font-size: 0.85rem; color: #16322e; margin-bottom: 0.9rem; }
+.void-error { margin: 0.6rem 0 0; font-size: 0.78rem; color: #96231f; }
+
 </style>

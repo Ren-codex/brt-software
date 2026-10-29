@@ -63,6 +63,9 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
 
     Route::put('/receipts/{id}/confirm-check', [App\Http\Controllers\Modules\ReceiptController::class, 'confirmCheck']);
     Route::put('/receipts/{id}/turn-over', [App\Http\Controllers\Modules\ReceiptController::class, 'turnOver']);
+    // Undoing a payment recorded against the wrong mode. Gated in the
+    // controller on receipts/approver, like confirming a cheque.
+    Route::put('/receipts/{id}/void', [App\Http\Controllers\Modules\ReceiptController::class, 'void']);
 
     // A rep's read-only view of the checks they took. No actions here: clearing
     // a check belongs to Accounting, and a rep must not discharge their own.

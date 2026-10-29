@@ -5,6 +5,8 @@ namespace App\Services\Libraries;
 
 use App\Models\Receipt;
 use App\Models\ArInvoice;
+use App\Models\BankDeposit;
+use App\Models\Check;
 use App\Models\SalesOrder;
 use App\Models\ListStatus;
 use App\Models\SalesOrderIncentive;
@@ -264,6 +266,132 @@ class ReceiptClass
             'message' => 'Receipt updated successfully!',
             'info'    => "You've successfully updated the receipt",
         ];
+    }
+
+    /**
+     * Undo a payment that should never have been recorded as it was.
+     *
+     * The mode is not a label: it decides who is holding the money, whether
+     * the bank has to confirm it, and whether a cheque appears in the
+     * register. Editing it changed the word and none of the consequences, so
+     * the way back is to undo the whole receipt and record it again.
+     *
+     * The receipt is kept, marked voided, with the reason and the name of
+     * whoever did it — an auditor asking why a payment changed mode gets an
+     * answer instead of a rewritten history.
+     */
+    public function void($id, ?string $reason)
+    {
+        $receipt = Receipt::with(['status', 'arInvoice.sales_order', 'remittance', 'registerCheck'])->findOrFail($id);
+        $reason = trim((string) $reason);
+
+        if ($reason === '') {
+            throw ValidationException::withMessages([
+                'reason' => 'Say why this is being voided — it stays on the record.',
+            ]);
+        }
+
+        if (optional($receipt->status)->slug === 'voided') {
+            throw ValidationException::withMessages([
+                'receipt' => 'This receipt has already been voided.',
+            ]);
+        }
+
+        // Money already counted into a remittance cannot quietly leave it:
+        // the total was verified, and possibly banked, against this receipt.
+        if ($receipt->remittance_id) {
+            throw ValidationException::withMessages([
+                'receipt' => 'This receipt is part of remittance '
+                    .(optional($receipt->remittance)->remittance_no ?? '#'.$receipt->remittance_id)
+                    .'. Remove it from the remittance first, then void it.',
+            ]);
+        }
+
+        $check = $receipt->registerCheck;
+
+        if ($check && $check->status === Check::STATUS_CLEARED) {
+            throw ValidationException::withMessages([
+                'receipt' => 'The bank has already paid this cheque. Reverse the clearing before voiding the receipt.',
+            ]);
+        }
+
+        if ($check && BankDeposit::where('check_id', $check->id)->exists()) {
+            throw ValidationException::withMessages([
+                'receipt' => 'This cheque is on a bank deposit. Delete the deposit first, then void the receipt.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($receipt, $reason, $check) {
+            $this->journalEntryService->reverseEntriesForSource(
+                $receipt, 'Receipt voided: '.$reason, now()->toDateString()
+            );
+
+            // Only money the invoice actually counted comes back off it. An
+            // uncleared cheque never reduced the balance, so crediting it here
+            // would hand the customer a payment they never made.
+            $orderMode = optional(optional($receipt->arInvoice)->sales_order)->payment_mode;
+            $wasApplied = ! Receipt::modeAwaitsBankConfirmation($receipt->payment_mode, $orderMode)
+                || ! is_null($receipt->confirmed_at);
+
+            $invoice = $receipt->arInvoice;
+
+            if ($invoice && $wasApplied) {
+                $invoice->amount_paid = max(0, round((float) $invoice->amount_paid - (float) $receipt->amount_paid, 2));
+                $invoice->balance_due = round((float) $invoice->balance_due + (float) $receipt->amount_paid, 2);
+                $invoice->status_id = ListStatus::getBySlug(
+                    $invoice->amount_paid > 0 ? 'partially-paid' : 'unpaid'
+                )?->id;
+                $invoice->save();
+            }
+
+            // A cheque typed by mistake was never on hand, so it leaves the
+            // register rather than sitting there pending for ever.
+            $check?->delete();
+
+            $receipt->update([
+                'status_id' => $this->voidedStatusId(),
+                // Nobody is carrying money that was never taken.
+                'held_by_employee_id' => null,
+            ]);
+
+            DB::table('void_receipts')->insert([
+                'receipt_id' => $receipt->id,
+                'reason' => $reason,
+                'voided_by_id' => Auth::id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $salesOrder = optional($invoice)->sales_order;
+            if ($salesOrder && ($statusId = $salesOrder->fresh()->settledStatusId())) {
+                $salesOrder->update(['status_id' => $statusId]);
+            }
+
+            return [
+                'data' => $receipt->fresh('status'),
+                'message' => 'Receipt voided.',
+                'info' => 'Record the payment again with the right details.',
+                'status' => true,
+            ];
+        });
+    }
+
+    /**
+     * Voided arrived after the original status list, which is a seeder that
+     * rebuilds the whole table, so the row is made here on first use — the
+     * same approach as SalesOrder::settledStatusId.
+     */
+    private function voidedStatusId(): ?int
+    {
+        if (! ListStatus::getBySlug('voided')) {
+            ListStatus::create([
+                'name' => 'Voided', 'slug' => 'voided',
+                'description' => 'Recorded in error and undone',
+                'text_color' => '#ffffff', 'bg_color' => '#96231f',
+            ]);
+        }
+
+        return ListStatus::getBySlug('voided')?->id;
     }
 
     public function delete($id){
