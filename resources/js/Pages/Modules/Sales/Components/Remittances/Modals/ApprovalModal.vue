@@ -56,6 +56,24 @@
                             </div>
                         </div>
 
+                        <!-- What the rep physically hands over: cash to count and
+                             cheques to receive. A transfer is already in the bank,
+                             so it is noted apart, never mixed into the cash. -->
+                        <div class="remit-handover mb-3" v-if="cashToRemit > 0 || chequeToRemit > 0">
+                            <div class="remit-stat cash" v-if="cashToRemit > 0">
+                                <div class="remit-stat-label"><i class="ri-money-dollar-circle-line"></i> Cash to remit</div>
+                                <div class="remit-stat-value">{{ formatCurrency(cashToRemit) }}</div>
+                            </div>
+                            <div class="remit-stat cheque" v-if="chequeToRemit > 0">
+                                <div class="remit-stat-label"><i class="ri-file-list-3-line"></i> Cheques<span v-if="chequeCount"> ({{ chequeCount }})</span></div>
+                                <div class="remit-stat-value">{{ formatCurrency(chequeToRemit) }}</div>
+                            </div>
+                        </div>
+                        <p class="remit-transfer-note" v-if="transferTotal > 0">
+                            <i class="ri-bank-line"></i>
+                            {{ formatCurrency(transferTotal) }} by bank transfer is already in the bank — just confirm it below, no cash to count.
+                        </p>
+
                         <div class="mb-2">
                             <label class="form-label">Amount Received <span class="text-danger">*</span></label>
                             <div class="table-responsive">
@@ -233,6 +251,29 @@ export default {
                 })
                 .map(mode => ({ mode, amount: totals[mode], banks: banks[mode] ? Array.from(banks[mode]) : [] }));
         },
+        // Physical cash the rep counts out of the drawer.
+        cashToRemit() {
+            return this.paymentBreakdown
+                .filter(r => r.mode.trim().toLowerCase() === 'cash')
+                .reduce((sum, r) => sum + (r.amount || 0), 0);
+        },
+        // Cheques handed over as paper — their own pile, never counted as cash.
+        chequeToRemit() {
+            return this.paymentBreakdown
+                .filter(r => r.mode.trim().toLowerCase() === 'check')
+                .reduce((sum, r) => sum + (r.amount || 0), 0);
+        },
+        chequeCount() {
+            if (!this.item || !Array.isArray(this.item.receipts)) return 0;
+            return this.item.receipts
+                .filter(r => String(r.payment_mode || '').trim().toLowerCase() === 'check').length;
+        },
+        // Already in the bank — noted apart from the physical handover.
+        transferTotal() {
+            return this.paymentBreakdown
+                .filter(r => this.isElectronic(r.mode))
+                .reduce((sum, r) => sum + (r.amount || 0), 0);
+        },
         hasReceivedInput() {
             return Object.values(this.form.received_breakdown || {})
                 .some(v => v !== null && v !== '' && v !== undefined);
@@ -366,6 +407,46 @@ export default {
     font-weight: 600;
     color: var(--brt-c-16422c);
 }
+
+.remit-handover {
+    display: flex;
+    gap: 0.75rem;
+}
+.remit-stat {
+    flex: 1;
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid transparent;
+}
+.remit-stat.cash   { background: #ecfdf3; border-color: #bbf7d0; }
+.remit-stat.cheque { background: #fff7ed; border-color: #fed7aa; }
+.remit-stat-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--brt-muted);
+}
+.remit-stat.cash .remit-stat-label   { color: #15803d; }
+.remit-stat.cheque .remit-stat-label { color: #c2410c; }
+.remit-stat-value {
+    margin-top: 2px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--brt-ink);
+}
+.remit-transfer-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: -0.4rem 0 0.9rem;
+    font-size: 0.78rem;
+    color: var(--brt-muted);
+}
+.remit-transfer-note i { color: #0369a1; }
 
 .received-table { font-size: 0.85rem; }
 .received-table th { color: var(--brt-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; border-top: none; }
