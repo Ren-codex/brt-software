@@ -202,7 +202,7 @@
                                 <i class="ri-add-circle-fill"></i> Add another payment method
                             </button>
 
-                            <div class="invalid-feedback d-block" v-if="form.errors.collected_amount">{{ form.errors.collected_amount }}</div>
+                            <div class="invalid-feedback d-block" v-if="splitError">{{ splitError }}</div>
 
                             <div class="payment-summary-bar">
                                 <span class="summary-icon"><i class="ri-calculator-line"></i></span>
@@ -320,6 +320,12 @@ export default {
             if (this.remainingBalance < 0) return `Exceeds balance by ${this.formatCurrency(Math.abs(this.remainingBalance))}.`;
             return `${this.formatCurrency(this.remainingBalance)} remaining after this payment.`;
         },
+        splitError() {
+            return this.form.errors.collected_amount
+                || this.form.errors.splits
+                || this.form.errors.amount_paid
+                || null;
+        },
     },
     watch: {
         collectedNow(on) {
@@ -427,6 +433,26 @@ export default {
 
                 if (!lines.length) {
                     this.form.errors.collected_amount = 'Add at least one payment method with an amount.';
+                    return;
+                }
+
+                const missingBank = lines.find(l => l.payment_mode === 'Bank Transfer' && !l.bank_account_id);
+                if (missingBank) {
+                    this.form.errors.collected_amount = 'Choose which bank account the transfer landed in.';
+                    return;
+                }
+
+                const missingRef = lines.find(l => ['Bank Transfer', 'Check'].includes(l.payment_mode) && !l.reference_number);
+                if (missingRef) {
+                    this.form.errors.collected_amount = missingRef.payment_mode === 'Check'
+                        ? 'Enter the check number for the check payment.'
+                        : 'Enter the reference number for the bank transfer.';
+                    return;
+                }
+
+                const missingCheckDate = lines.find(l => l.payment_mode === 'Check' && !l.check_date);
+                if (missingCheckDate) {
+                    this.form.errors.collected_amount = 'Enter the date written on the check.';
                     return;
                 }
 
