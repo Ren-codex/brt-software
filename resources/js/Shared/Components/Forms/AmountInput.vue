@@ -5,6 +5,8 @@
         :value="displayValue"
         :placeholder="placeholder"
         :disabled="disabled"
+        @beforeinput="onBeforeInput"
+        @keypress="onKeypress"
         @input="onInput"
     />
 </template>
@@ -51,6 +53,21 @@ export default {
             const intClean = intPart.replace(/^0+(?=\d)/, '') || '0';
             const grouped = intClean.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
             return decPart !== undefined ? grouped + '.' + decPart : grouped;
+        },
+        // Refuse anything that is not a digit or a decimal point before it even
+        // lands — so letters and symbols can never be typed, only numbers. A
+        // paste of grouped digits ("1,234") is let through; onInput cleans it.
+        onBeforeInput(event) {
+            if (event.data != null && /[^0-9.,]/.test(event.data)) {
+                event.preventDefault();
+            }
+        },
+        onKeypress(event) {
+            // Belt and braces for browsers that don't fire a cancelable
+            // beforeinput: block a non-numeric single character.
+            if (event.key && event.key.length === 1 && /[^0-9.]/.test(event.key)) {
+                event.preventDefault();
+            }
         },
         onInput(event) {
             let raw = event.target.value.replace(/,/g, '').replace(/[^0-9.]/g, '');
