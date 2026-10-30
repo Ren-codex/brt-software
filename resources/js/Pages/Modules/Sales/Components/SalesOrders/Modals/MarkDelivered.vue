@@ -87,6 +87,11 @@
                 </table>
 
                 <div class="collect-box">
+                    <p v-if="isAlreadyPaid" class="collect-paid-note">
+                        <i class="ri-checkbox-circle-fill"></i>
+                        This order is already paid in full &mdash; just record the delivery.
+                    </p>
+                    <template v-else>
                     <label class="collect-toggle">
                         <input
                             type="checkbox"
@@ -222,6 +227,7 @@
                             </div>
                         </div>
                     </div>
+                    </template>
                 </div>
 
                 <div v-if="refusedCount > 0" class="refusal-note">
@@ -282,6 +288,13 @@ export default {
             const invoice = this.order?.invoices?.[0];
             return invoice ? Number(invoice.balance_due) || 0 : 0;
         },
+        isAlreadyPaid() {
+            // Settled before it reached the door — a transfer or a counter
+            // payment — so there is nothing to collect now, only a delivery to
+            // record. No invoice at all is a different case, not this one.
+            const invoice = this.order?.invoices?.[0];
+            return !!invoice && (Number(invoice.balance_due) || 0) <= 0;
+        },
         collectableTotal() {
             const accepted = this.items.length ? this.acceptedTotal : this.balanceDue;
             return Math.min(accepted, this.balanceDue || accepted);
@@ -341,7 +354,8 @@ export default {
             this.items = Array.isArray(order?.items) ? order.items : [];
             this.form.clearErrors();
             this.form.delivered_at = this.defaultDeliveredAt(order);
-            this.collectedNow = String(order?.payment_mode || '').trim().toLowerCase() === 'cod';
+            this.collectedNow = !this.isAlreadyPaid
+                && String(order?.payment_mode || '').trim().toLowerCase() === 'cod';
             this.isSplitPayment = false;
             this.form.accepted_quantities = {};
             this.form.refusal_reasons = {};
@@ -571,6 +585,17 @@ export default {
     border-radius: 10px;
     background: #f7fbf9;
 }
+
+.collect-paid-note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #166534;
+}
+.collect-paid-note i { font-size: 1.1rem; }
 
 .collect-toggle {
     display: flex;

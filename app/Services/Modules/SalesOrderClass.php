@@ -1138,10 +1138,15 @@ class SalesOrderClass
             ]);
 
             // The money was already in and the order was only waiting on this.
+            // Where it lands depends on whether that money is actually in: a
+            // transfer nobody has verified, or cash a rep is still holding,
+            // keeps it in For Turnover rather than claiming Closed.
             $invoice = $data->arInvoices()->first();
             if ($invoice && round((float) $invoice->balance_due, 2) <= 0
                 && ! in_array(optional($data->status)->slug, ['cancelled', 'sales-returned', 'partially-returned'], true)) {
-                $data->update(['status_id' => ListStatus::getBySlug('closed')?->id]);
+                if ($settledStatusId = $data->fresh()->settledStatusId()) {
+                    $data->update(['status_id' => $settledStatusId]);
+                }
             }
         }
 
