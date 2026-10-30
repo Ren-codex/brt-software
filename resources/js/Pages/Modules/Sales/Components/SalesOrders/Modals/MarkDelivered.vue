@@ -257,7 +257,7 @@ export default {
             splits: [],
             bankAccounts: [],
             bankAccountsError: '',
-            paymentModes: ['Cash', 'GCash', 'Bank Transfer', 'Check'],
+            paymentModes: ['Cash', 'Bank Transfer', 'Check'],
             form: useForm({
                 action: 'mark-delivered',
                 delivered_at: null,
