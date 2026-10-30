@@ -428,19 +428,15 @@ class ArInvoiceClass
                 'ar_invoice_id'  => $ar_invoice->id,
                 'check_status'   => $isCheck ? 'on_hand' : null,
                 'check_date'     => $isCheck ? $split['check_date'] : null,
-                // Whoever took the money is carrying it until a remittance
-                // clears them. The driver only when the collection happened at
-                // the door: a customer paying at the office later hands it to
-                // the office, and blaming the driver for money they never
-                // touched would leave the order waiting on a handover that
-                // cannot happen.
-                //
-                // On the truck that is the checker when the order has one, and
-                // the driver when it does not — SalesOrder::fieldCollectorId().
-                'held_by_employee_id' => $statedHolder ?? ($collectedInField
-                    ? (optional($ar_invoice->sales_order)->fieldCollectorId()
-                        ?? optional($ar_invoice->sales_order)->sales_rep_id)
-                    : optional($ar_invoice->sales_order)->sales_rep_id),
+                // A bank transfer lands in the bank the moment the customer
+                // sends it — no one on the truck is carrying that money, so
+                // assigning a holder would send the order through remittance
+                // for a handover that cannot happen.
+                'held_by_employee_id' => $split['payment_mode'] === 'Bank Transfer' ? null
+                    : ($statedHolder ?? ($collectedInField
+                        ? (optional($ar_invoice->sales_order)->fieldCollectorId()
+                            ?? optional($ar_invoice->sales_order)->sales_rep_id)
+                        : optional($ar_invoice->sales_order)->sales_rep_id)),
             ]);
 
             $this->journalEntryService->recordReceiptEntry($receipt);
