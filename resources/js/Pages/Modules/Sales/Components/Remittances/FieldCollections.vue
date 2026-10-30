@@ -73,7 +73,8 @@
                                 </button>
                                 <button class="fc-link fc-link-quiet" @click="cancelHandover">Cancel</button>
                             </template>
-                            <button v-else class="fc-link" @click="startHandover(row)">Hand over</button>
+                            <button v-else-if="row.needs_handover" class="fc-link" @click="startHandover(row)">Hand over</button>
+                            <span v-else class="fc-ready" title="Already the rep's to remit — no handover needed">Ready to remit</span>
                         </td>
                     </tr>
                 </tbody>
@@ -309,6 +310,12 @@ export default {
 .fc-link-quiet {
     color: var(--brt-muted);
     font-weight: 500;
+}
+
+.fc-ready {
+    color: var(--brt-muted);
+    font-size: 0.78rem;
+    font-style: italic;
 }
 
 .fc-select {

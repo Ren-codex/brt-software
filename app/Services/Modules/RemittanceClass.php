@@ -167,6 +167,15 @@ class RemittanceClass
                 $collectedAt = $receipt->receipt_date ? Carbon::parse($receipt->receipt_date) : null;
                 $mode = strtolower(trim((string) $receipt->payment_mode));
 
+                // A handover only applies while the crew is physically carrying
+                // the money and has to pass it to the rep before it can be
+                // remitted. A bank transfer is already the rep's to remit, and
+                // so is anything the rep is already holding, so there is nothing
+                // to hand over.
+                $crew = array_filter([optional($order)->driver_id, optional($order)->checker_id]);
+                $needsHandover = $receipt->held_by_employee_id
+                    && in_array((int) $receipt->held_by_employee_id, array_map('intval', $crew), true);
+
                 return [
                     'receipt_id' => $receipt->id,
                     'holder' => optional($receipt->heldBy)->fullname ?? 'Unassigned',
@@ -175,6 +184,7 @@ class RemittanceClass
                     'customer' => optional($receipt->customer)->name,
                     'amount' => (float) $receipt->amount_paid,
                     'payment_mode' => $receipt->payment_mode,
+                    'needs_handover' => $needsHandover,
                     'collected_at' => $collectedAt?->toDateString(),
                     'days_out' => $collectedAt ? (int) $collectedAt->startOfDay()->diffInDays(now()->startOfDay()) : null,
                     'is_external' => str_starts_with((string) optional($order)->so_number, 'SO-EXT'),
