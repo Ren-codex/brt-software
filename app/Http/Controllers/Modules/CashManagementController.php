@@ -224,7 +224,7 @@ class CashManagementController extends Controller
         $undepositedRemittanceTotal = (clone $remittancesWaiting)->count();
 
         $undepositedRemittances = $remittancesWaiting
-            ->with(['createdBy.employee'])
+            ->with(['createdBy.employee', 'receipts:id,remittance_id,payment_mode'])
             ->orderByDesc('remittance_date')
             ->orderByDesc('id')
             ->limit(self::PICKER_LIMIT)
@@ -234,6 +234,10 @@ class CashManagementController extends Controller
                 'remittance_no'     => $r->remittance_no,
                 'remittance_date'   => $r->remittance_date,
                 'rep_name'          => optional(optional($r->createdBy)->employee)->fullname ?? 'Unknown',
+                // How the money came in — the verified modes, or the distinct
+                // modes of the receipts it bundles when that was not recorded.
+                'mode'              => $r->received_via
+                    ?: ($r->receipts->pluck('payment_mode')->filter()->unique()->values()->implode(', ') ?: null),
                 'amount'            => (float) ($r->received_amount ?? $r->total_amount),
                 'amount_formatted'  => '₱' . number_format($r->received_amount ?? $r->total_amount, 2),
             ])

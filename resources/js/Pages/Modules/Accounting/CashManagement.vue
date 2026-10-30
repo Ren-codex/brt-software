@@ -465,6 +465,7 @@
                                     <span class="bd-remit-info">
                                         <span class="bd-remit-no">{{ r.remittance_no }}</span>
                                         <span class="bd-remit-rep">{{ r.rep_name }} · {{ r.remittance_date }}</span>
+                                        <span v-if="r.mode" class="bd-remit-mode">{{ r.mode }}</span>
                                     </span>
                                     <span class="bd-remit-amount">{{ r.amount_formatted }}</span>
                                 </label>
@@ -897,7 +898,7 @@ export default {
         },
         shownRemittances() {
             return this.matching(this.undepositedRemittances, this.remitSearch,
-                r => [r.remittance_no, r.rep_name, r.remittance_date]);
+                r => [r.remittance_no, r.rep_name, r.remittance_date, r.mode]);
         },
         shownCheques() {
             return this.matching(this.undepositedChecks, this.chequeSearch,
@@ -1313,6 +1314,17 @@ export default {
 .bd-remit-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .bd-remit-no  { font-weight: 700; color: var(--brt-ink); font-family: monospace; font-size: 0.78rem; }
 .bd-remit-rep { color: var(--brt-muted); font-size: 0.74rem; }
+.bd-remit-mode {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: 2px;
+    padding: 1px 8px;
+    border-radius: 20px;
+    background: rgba(var(--brt-primary-rgb), 0.12);
+    color: var(--brt-ink);
+    font-weight: 600;
+    font-size: 0.68rem;
+}
 .bd-remit-amount { font-weight: 700; color: #1e4d8c; white-space: nowrap; }
 
 /* The cheque picker mirrors the collections list above it, so the two read as
