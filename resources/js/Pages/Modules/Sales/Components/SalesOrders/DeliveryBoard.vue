@@ -142,15 +142,20 @@
                                     </span>
                                     <!-- The driver hands the money in. Only the holder
                                          changes — the collection was recorded at the door,
-                                         and the remittance is what finally clears it. -->
+                                         and the remittance is what finally clears it.
+                                         A bank transfer never left with the crew, so there
+                                         is nothing to hand over — it is the rep's to remit. -->
                                     <button
-                                        v-else
+                                        v-else-if="row.needs_handover"
                                         class="action-btn approve"
                                         v-b-tooltip.hover title="Record Handover"
                                         @click="openHandover(row)"
                                     >
                                         <i class="ri-hand-coin-line"></i>
                                     </button>
+                                    <span v-else class="waiting-note" v-b-tooltip.hover title="Already the rep's to remit — no handover needed">
+                                        Ready to remit
+                                    </span>
                                 </div>
                             </td>
                         </tr>

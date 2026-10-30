@@ -257,6 +257,16 @@ class SalesOrderClass
             'amount' => (float) $receipt->amount_paid,
             'person' => optional($receipt->heldBy)->fullname ?? 'Unassigned',
             'mode' => $receipt->payment_mode,
+            // A handover only applies while the crew is physically carrying the
+            // money. A bank transfer is already the rep's to remit, as is
+            // anything the rep is holding, so there is nothing to hand over.
+            'needs_handover' => (function () use ($receipt) {
+                $order = optional($receipt->arInvoice)->sales_order;
+                $crew = array_filter([optional($order)->driver_id, optional($order)->checker_id]);
+
+                return $receipt->held_by_employee_id
+                    && in_array((int) $receipt->held_by_employee_id, array_map('intval', $crew), true);
+            })(),
             // Who the money may be handed to: the rep whose sale it is.
             'rep_id' => optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->id,
             'rep_name' => optional(optional(optional($receipt->arInvoice)->sales_order)->salesRep)->fullname,
