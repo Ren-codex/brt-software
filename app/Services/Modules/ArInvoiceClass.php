@@ -428,10 +428,8 @@ class ArInvoiceClass
                 'ar_invoice_id'  => $ar_invoice->id,
                 'check_status'   => $isCheck ? 'on_hand' : null,
                 'check_date'     => $isCheck ? $split['check_date'] : null,
-                'held_by_employee_id' => $statedHolder ?? ($collectedInField
-                    ? (optional($ar_invoice->sales_order)->fieldCollectorId()
-                        ?? optional($ar_invoice->sales_order)->sales_rep_id)
-                    : optional($ar_invoice->sales_order)->sales_rep_id),
+                'held_by_employee_id' => $statedHolder
+                    ?? optional($ar_invoice->sales_order)->sales_rep_id,
             ]);
 
             $this->journalEntryService->recordReceiptEntry($receipt);
