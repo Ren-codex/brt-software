@@ -81,17 +81,7 @@ class Receipt extends Model
      */
     public static function modeAwaitsBankConfirmation(?string $paymentMode, ?string $orderPaymentMode): bool
     {
-        $mode = strtolower(trim((string) $paymentMode));
-
-        if ($mode === 'check') {
-            return true;
-        }
-
-        if ($mode !== 'bank transfer') {
-            return false;
-        }
-
-        return SalesOrder::isCod($orderPaymentMode);
+        return strtolower(trim((string) $paymentMode)) === 'check';
     }
 
     /**
