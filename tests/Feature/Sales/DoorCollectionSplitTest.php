@@ -57,7 +57,7 @@ class DoorCollectionSplitTest extends TestCase
 
         $this->deliver($order, ['collected_splits' => [
             ['payment_mode' => 'Cash', 'amount' => 1000],
-            ['payment_mode' => 'GCash', 'amount' => 500],
+            ['payment_mode' => 'Cash', 'amount' => 500],
         ]])->assertSessionHasErrors('collected_amount');
 
         $this->assertNull($order->fresh()->delivered_at);
