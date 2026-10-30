@@ -208,6 +208,7 @@
                                         <th>Date</th>
                                         <th>Customer</th>
                                         <th>Payment Mode</th>
+                                        <th>Bank Account</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -224,6 +225,13 @@
                                             <span class="payment-badge" :class="getPaymentClass(receipt.payment_mode)">
                                                 {{ receipt.payment_mode || '-' }}
                                             </span>
+                                        </td>
+                                        <td>
+                                            <template v-if="receipt.bank_account">
+                                                {{ receipt.bank_account }}
+                                                <div v-if="receipt.reference_number" class="receipt-ref">Ref: {{ receipt.reference_number }}</div>
+                                            </template>
+                                            <span v-else class="text-muted">&mdash;</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -845,6 +853,12 @@ export default {
     border-radius: 50px;
     font-size: 0.85rem;
     font-weight: 500;
+}
+
+.receipt-ref {
+    font-size: 0.72rem;
+    color: var(--brt-muted);
+    margin-top: 2px;
 }
 
 .payment-badge.cash {
