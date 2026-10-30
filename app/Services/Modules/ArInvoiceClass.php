@@ -428,12 +428,14 @@ class ArInvoiceClass
                 'ar_invoice_id'  => $ar_invoice->id,
                 'check_status'   => $isCheck ? 'on_hand' : null,
                 'check_date'     => $isCheck ? $split['check_date'] : null,
-                // A bank transfer lands in the bank the moment the customer
-                // sends it — no one on the truck is carrying that money, so
-                // assigning a holder would send the order through remittance
-                // for a handover that cannot happen.
-                'held_by_employee_id' => $split['payment_mode'] === 'Bank Transfer' ? null
-                    : ($statedHolder ?? ($collectedInField
+                // A bank transfer is never physically with the driver — it
+                // goes to the bank the moment the customer sends it. The
+                // sales rep is responsible for the claim, so the receipt sits
+                // under their name until the office verifies the transfer
+                // arrived during remittance.
+                'held_by_employee_id' => $statedHolder ?? ($split['payment_mode'] === 'Bank Transfer'
+                    ? optional($ar_invoice->sales_order)->sales_rep_id
+                    : ($collectedInField
                         ? (optional($ar_invoice->sales_order)->fieldCollectorId()
                             ?? optional($ar_invoice->sales_order)->sales_rep_id)
                         : optional($ar_invoice->sales_order)->sales_rep_id)),

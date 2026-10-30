@@ -119,16 +119,12 @@ class JournalEntryService
             return null;
         }
 
-        // A bank transfer lands in the bank the moment the customer sends it —
-        // nobody is holding it and no remittance will move it, so it posts
-        // straight to the bank's own GL account. Everything else sits in
-        // Undeposited Collections until a remittance is verified.
-        $isBankTransfer = strcasecmp(trim((string) $receipt->payment_mode), 'Bank Transfer') === 0;
-
-        $debitAccount = $isBankTransfer
-            ? $this->resolveCashAccountByPaymentMode('bank transfer', $receipt->bank_account_id)
-            : $this->ensureAccount('1050', 'undeposited_collections', 'Undeposited Collections', 'asset', 'current_asset');
-
+        // Money collected by a sales rep isn't real Cash/GCash/Bank until the
+        // remittance carrying this receipt is verified — the rep may still be
+        // holding it, or the count may not match. It sits in Undeposited
+        // Collections until then; recordRemittanceApprovalEntry() moves it to
+        // the real account based on what's actually confirmed received.
+        $undepositedAccount = $this->ensureAccount('1050', 'undeposited_collections', 'Undeposited Collections', 'asset', 'current_asset');
         $receivableAccount = $this->ensureAccount('1100', 'accounts_receivable', 'Accounts Receivable', 'asset', 'current_asset');
         $sourceSalesOrder = optional(optional($receipt->arInvoice)->sales_order);
         $memo = 'Receipt ' . $receipt->receipt_number . ' applied to invoice collection.';
@@ -140,12 +136,10 @@ class JournalEntryService
             $memo,
             [
                 [
-                    'account_id' => $debitAccount->id,
+                    'account_id' => $undepositedAccount->id,
                     'line_type' => 'debit',
                     'amount' => $amount,
-                    'description' => $isBankTransfer
-                        ? 'Record bank transfer received from customer.'
-                        : 'Record customer collection, pending remittance verification.',
+                    'description' => 'Record customer collection, pending remittance verification.',
                 ],
                 [
                     'account_id' => $receivableAccount->id,
