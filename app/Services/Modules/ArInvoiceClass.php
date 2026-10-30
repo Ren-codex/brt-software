@@ -305,6 +305,17 @@ class ArInvoiceClass
             ]);
         }
 
+        // A transfer reaches one of our accounts, so it has to name which: with
+        // no bank account it lands in the shared Cash in Bank pool instead of a
+        // real bank, and never shows under that bank's balance in Cash Management.
+        $missingBank = $splits->first(fn ($s) => $s['payment_mode'] === 'Bank Transfer' && blank($s['bank_account_id']));
+
+        if ($missingBank) {
+            throw ValidationException::withMessages([
+                'splits' => 'Choose the bank account the transfer went into.',
+            ]);
+        }
+
         // Without its own date a check cannot be tracked to maturity, and the
         // register would record the day it was handed over instead of the day it
         // can be cashed — which is the one thing the register exists to know.

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Sales\Concerns;
 
+use App\Models\BankAccount;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\InventoryStocks;
@@ -182,6 +183,15 @@ trait BuildsCodOrders
     private function postCod(array $overrides = [])
     {
         return $this->actingAs($this->user)->post('/sales-orders', $this->payload($overrides));
+    }
+
+    /** A bank account for a transfer to name, since every transfer must. */
+    private function fixtureBank(): BankAccount
+    {
+        return BankAccount::first() ?? BankAccount::create([
+            'bank_name' => 'Test Bank', 'account_name' => 'BRT',
+            'gl_code' => '1029', 'is_active' => true,
+        ]);
     }
 
     /**

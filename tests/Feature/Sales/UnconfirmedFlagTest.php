@@ -33,6 +33,11 @@ class UnconfirmedFlagTest extends TestCase
     {
         $invoice = ArInvoice::firstOrFail();
 
+        // A transfer must name the bank it reached; harmless on other modes.
+        if ($mode === 'Bank Transfer' && ! array_key_exists('bank_account_id', $extra)) {
+            $extra['bank_account_id'] = $this->fixtureBank()->id;
+        }
+
         $this->actingAs($this->user)->put('/ar-invoices/'.$invoice->id, array_merge([
             'id' => $invoice->id,
             'option' => 'payment',

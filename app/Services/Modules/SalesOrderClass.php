@@ -772,6 +772,18 @@ class SalesOrderClass
                 ]);
             }
 
+            // A transfer reaches one of our accounts, so it has to name which:
+            // without it the money lands in the shared Cash in Bank pool instead
+            // of a real bank, and never shows under that bank's balance.
+            $missingBank = $lines->first(fn ($line) => $line['payment_mode'] === 'Bank Transfer'
+                && blank($line['bank_account_id']));
+
+            if ($missingBank) {
+                throw ValidationException::withMessages([
+                    'payment_lines' => 'Choose the bank account the transfer went into.',
+                ]);
+            }
+
             return $lines->all();
         }
 

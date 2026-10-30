@@ -227,7 +227,12 @@ class CashManagementController extends Controller
         // portion — the rest of a mixed remittance is already in the bank.
         $remittancesWaiting = Remittance::whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
             ->whereNull('bank_deposit_id')
-            ->whereHas('receipts', fn ($q) => $q->whereRaw('LOWER(TRIM(payment_mode)) = ?', ['cash']));
+            // Has cash to bank — or no receipts at all to judge by, in which
+            // case it is not hidden. A transfer-only remittance always has its
+            // transfer receipt, so it is still correctly left out.
+            ->where(fn ($q) => $q
+                ->whereHas('receipts', fn ($r) => $r->whereRaw('LOWER(TRIM(payment_mode)) = ?', ['cash']))
+                ->orWhereDoesntHave('receipts'));
         $undepositedRemittanceTotal = (clone $remittancesWaiting)->count();
 
         $undepositedRemittances = $remittancesWaiting

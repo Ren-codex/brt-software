@@ -43,6 +43,7 @@ class FieldTransferConfirmationTest extends TestCase
             'payment_date' => now()->toDateString(),
             'payment_mode' => 'Bank Transfer',
             'reference_number' => 'GC-99881',
+            'bank_account_id' => $this->fixtureBank()->id,
         ])->assertSessionHasNoErrors();
 
         return $invoice->fresh();

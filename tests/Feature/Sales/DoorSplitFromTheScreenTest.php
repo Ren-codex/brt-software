@@ -65,7 +65,7 @@ class DoorSplitFromTheScreenTest extends TestCase
     {
         $this->deliver([
             ['payment_mode' => 'Cash', 'amount' => 1500],
-            ['payment_mode' => 'Bank Transfer', 'amount' => 1500, 'reference_number' => 'TRN-9'],
+            ['payment_mode' => 'Bank Transfer', 'amount' => 1500, 'reference_number' => 'TRN-9', 'bank_account_id' => $this->fixtureBank()->id],
         ])->assertSessionHasNoErrors();
 
         $this->assertNotNull(SalesOrder::firstOrFail()->delivered_at);

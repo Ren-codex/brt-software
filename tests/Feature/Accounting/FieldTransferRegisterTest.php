@@ -67,6 +67,7 @@ class FieldTransferRegisterTest extends TestCase
             'payment_date' => now()->toDateString(),
             'payment_mode' => 'Bank Transfer',
             'reference_number' => 'BPI-554433',
+            'bank_account_id' => $this->fixtureBank()->id,
         ])->assertSessionHasNoErrors();
 
         return Receipt::firstOrFail();
@@ -109,6 +110,7 @@ class FieldTransferRegisterTest extends TestCase
                 'payment_mode' => 'Bank Transfer',
                 'payment_amount' => 3000,
                 'reference_number' => 'CTR-1',
+                'bank_account_id' => $this->fixtureBank()->id,
             ]],
         ])->assertSessionHasNoErrors();
 
