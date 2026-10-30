@@ -111,15 +111,11 @@
                                                         <button type="button" class="undo-confirm" @click="undoConfirm(row)">undo</button>
                                                     </span>
                                                 </template>
-                                                <input
+                                                <AmountInput
                                                     v-else
-                                                    type="number"
                                                     class="form-control form-control-sm text-end ms-auto"
-                                                    placeholder="0.00"
-                                                    v-model.number="form.received_breakdown[row.mode]"
-                                                    min="0"
-                                                    step="0.01"
-                                                >
+                                                    v-model="form.received_breakdown[row.mode]"
+                                                />
                                             </td>
                                         </tr>
                                         <tr v-if="paymentBreakdown.length === 0">
@@ -206,8 +202,10 @@
 
 <script>
 import { useForm } from '@inertiajs/vue3';
+import AmountInput from '@/Shared/Components/Forms/AmountInput.vue';
 
 export default {
+    components: { AmountInput },
     props: ['item'],
     data() {
         return {

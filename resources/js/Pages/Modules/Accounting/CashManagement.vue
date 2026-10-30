@@ -235,7 +235,7 @@
                             </div>
                             <div class="col-12 col-sm-6">
                                 <label class="form-label">Amount <span class="text-danger">*</span></label>
-                                <input v-model="ftForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
+                                <AmountInput v-model="ftForm.amount" class="form-control" placeholder="0.00" />
                                 <div v-if="ftErrors.amount" class="error-msg">{{ ftErrors.amount[0] }}</div>
                             </div>
                             <div class="col-12">
@@ -484,7 +484,7 @@
                             <!-- A cheque is worth what is written on it. -->
                             <div class="col-12 col-sm-6" v-if="!bdIsCheck">
                                 <label class="form-label">Amount <span class="text-danger">*</span></label>
-                                <input v-model="bdForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
+                                <AmountInput v-model="bdForm.amount" class="form-control" placeholder="0.00" />
                                 <div v-if="bdErrors.amount" class="error-msg">{{ bdErrors.amount[0] }}</div>
                             </div>
             <!-- Only cash comes out of an account somebody picks. A cheque is
@@ -624,7 +624,7 @@
                             </div>
                             <div class="col-12 col-sm-6">
                                 <label class="form-label">Amount <span class="text-danger">*</span></label>
-                                <input v-model="wdForm.amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" />
+                                <AmountInput v-model="wdForm.amount" class="form-control" placeholder="0.00" />
                                 <div v-if="wdErrors.amount" class="error-msg">{{ wdErrors.amount[0] }}</div>
                             </div>
 
@@ -805,6 +805,7 @@ import axios from "axios";
 import { router } from "@inertiajs/vue3";
 import MainLayout from "@/Shared/Layouts/Main.vue";
 import AccountingLayout from "@/Pages/Modules/Accounting/AccountingLayout.vue";
+import AmountInput from "@/Shared/Components/Forms/AmountInput.vue";
 
 const emptyFtForm = () => ({
     transfer_date: new Date().toISOString().slice(0, 10),
@@ -843,6 +844,7 @@ const emptyWdForm = (cashAccounts = []) => ({
 
 export default {
     layout: [MainLayout, AccountingLayout],
+    components: { AmountInput },
     props: {
         transfers:    { type: Array,  default: () => [] },
         funds:        { type: Array,  default: () => [] },

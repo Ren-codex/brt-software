@@ -20,15 +20,12 @@
           <label class="payment-line-label">Amount</label>
           <div class="amount-input-wrapper">
             <span class="amount-prefix">₱</span>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              v-model.number="line.payment_amount"
+            <AmountInput
+              v-model="line.payment_amount"
               class="form-control modern-input amount-input"
               :class="{ error: lineError(line, index) }"
               placeholder="0.00"
-              @input="emitChange"
+              @update:model-value="emitChange"
             />
           </div>
         </div>
@@ -148,6 +145,7 @@
 </template>
 
 <script>
+import AmountInput from '@/Shared/Components/Forms/AmountInput.vue';
 /**
  * Collects one or more payment lines for a single transaction, so a payable can
  * be settled with several methods at once. Each line names its own funding
@@ -212,6 +210,7 @@ const toInternalLine = (line, cashPaymentMode) => {
 
 export default {
   name: 'PaymentLines',
+  components: { AmountInput },
   props: {
     modelValue: { type: Array, default: () => [] },
     bankAccounts: { type: Array, default: () => [] },
