@@ -10,11 +10,10 @@ use Tests\TestCase;
 /**
  * What "unconfirmed" means on the Deliveries list and on Cash in the Field.
  *
- * Both screens used to flag any unconfirmed check or transfer by matching the
- * payment mode alone. A transfer only waits on the bank when the order is COD —
- * on a credit sale it settles the moment it is recorded — so a credit sale's
- * transfer was marked unconfirmed permanently, which reads as money stuck when
- * nothing is. A check waits whatever the order was.
+ * Only a cheque waits on the bank now: it can bounce, so its amount is not real
+ * until it clears. A bank transfer settles the moment it is recorded, whether
+ * the order is COD or credit — it flows like cash and is accounted for through
+ * remittance, not flagged as money stuck at the bank. Cash was never flagged.
  */
 class UnconfirmedFlagTest extends TestCase
 {
@@ -79,12 +78,14 @@ class UnconfirmedFlagTest extends TestCase
         $this->assertSame(['board' => true, 'field' => true], $this->flags());
     }
 
-    public function test_a_cod_transfer_is_flagged_as_waiting(): void
+    public function test_a_cod_transfer_is_not_flagged_as_waiting(): void
     {
         $this->postCod()->assertSessionHasNoErrors();
         $this->pay('Bank Transfer');
 
-        $this->assertSame(['board' => false, 'field' => false], $this->flags());
+        // It settles like cash and is carried to remittance, not held at the
+        // bank, so nothing flags it as waiting.
+        $this->assertSame(['board' => true, 'field' => true], $this->flags());
     }
 
     public function test_a_check_is_flagged_whatever_the_order_was(): void

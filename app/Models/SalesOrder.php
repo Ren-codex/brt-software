@@ -161,6 +161,24 @@ class SalesOrder extends Model
      */
     public function moneyIsIn(): bool
     {
+        $invoiceIds = $this->arInvoices()->select('id');
+
+        // A bank transfer collected at the door is held by the rep, not the
+        // crew, so the crew check below never sees it — yet the office has not
+        // confirmed it landed either. Until it is turned in and verified it is
+        // no more "in" than cash still in the truck, so it holds the order out
+        // of Closed the same way. Dropping out the moment it joins a remittance.
+        $unverifiedTransfer = Receipt::whereIn('ar_invoice_id', $invoiceIds)
+            ->where('receipt_type', 'payment')
+            ->whereRaw('LOWER(TRIM(payment_mode)) = ?', ['bank transfer'])
+            ->whereNull('remittance_id')
+            ->whereHas('status', fn ($q) => $q->where('slug', 'pending'))
+            ->exists();
+
+        if ($unverifiedTransfer) {
+            return false;
+        }
+
         // Either of the pair may be carrying it: the checker normally, the
         // driver on an order sent out without one or collected before the
         // checker was named.
@@ -170,7 +188,7 @@ class SalesOrder extends Model
             return true;
         }
 
-        return ! Receipt::whereIn('ar_invoice_id', $this->arInvoices()->select('id'))
+        return ! Receipt::whereIn('ar_invoice_id', $invoiceIds)
             ->where('receipt_type', 'payment')
             ->whereIn('held_by_employee_id', $crew)
             ->whereNull('remittance_id')

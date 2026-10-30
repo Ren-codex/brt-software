@@ -10,12 +10,13 @@ use Tests\Feature\Sales\Concerns\BuildsCodOrders;
 use Tests\TestCase;
 
 /**
- * A cheque does not reduce an invoice until someone confirms it with the bank.
- * A bank transfer counted the moment a reference number was typed — so a driver
- * phoning one in from the road marked the invoice paid on their word alone.
+ * A bank transfer collected at the door now settles like cash: it reduces the
+ * invoice the moment it is recorded and is accounted for through remittance,
+ * not held back for a separate check-register confirmation. The office still
+ * verifies it landed — that is the remittance, which moves the money out of
+ * Undeposited Collections into the bank and takes the order out of For Turnover.
  *
- * Money collected in the field now waits for the same confirmation. A transfer
- * taken at the counter is unchanged: the cashier is looking at it.
+ * Only a cheque is held back now, because a cheque can bounce.
  */
 class FieldTransferConfirmationTest extends TestCase
 {
@@ -28,8 +29,6 @@ class FieldTransferConfirmationTest extends TestCase
         $this->seedCodFixture();
         $this->grantArInvoiceAccess($this->user);
         $this->grantReceiptAccess($this->user);
-        // One test here confirms a transfer, which an encoder may no longer do.
-        $this->grantReceiptApproval($this->user);
     }
 
     private function payByTransfer(): ArInvoice
@@ -49,28 +48,30 @@ class FieldTransferConfirmationTest extends TestCase
         return $invoice->fresh();
     }
 
-    public function test_a_field_transfer_leaves_the_invoice_unpaid_until_confirmed(): void
+    public function test_a_cod_field_transfer_settles_the_invoice_immediately(): void
     {
         $this->postCod()->assertSessionHasNoErrors();
 
-        $invoice = $this->payByTransfer();
-
-        $this->assertSame(3000.0, (float) $invoice->balance_due);
-        $this->assertNull(Receipt::firstOrFail()->confirmed_at);
+        // Settled on the spot, like cash — no confirmation step stands between
+        // the collection and the balance.
+        $this->assertSame(0.0, (float) $this->payByTransfer()->balance_due);
     }
 
-    public function test_confirming_a_field_transfer_releases_it(): void
+    public function test_a_cod_field_transfer_is_left_for_remittance_not_a_confirmation(): void
     {
         $this->postCod()->assertSessionHasNoErrors();
         $this->payByTransfer();
+
         $receipt = Receipt::firstOrFail();
 
-        $this->actingAs($this->user)
-            ->put('/receipts/'.$receipt->id.'/confirm-check', ['bank_name' => 'BPI'])
-            ->assertSessionHasNoErrors();
+        // Nothing confirms it in the check register; it waits on remittance, so
+        // it carries no confirmation stamp and no remittance yet.
+        $this->assertNull($receipt->confirmed_at);
+        $this->assertNull($receipt->remittance_id);
 
-        $this->assertSame(0.0, (float) ArInvoice::firstOrFail()->balance_due);
-        $this->assertNotNull($receipt->fresh()->confirmed_at);
+        // The order is paid and delivered but the money is not verified in,
+        // so it rests in For Turnover rather than claiming to be Closed.
+        $this->assertSame('for-turnover', SalesOrder::firstOrFail()->fresh('status')->status->slug);
     }
 
     public function test_a_credit_customers_transfer_still_settles_immediately(): void

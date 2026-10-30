@@ -428,13 +428,13 @@ class ArInvoiceClass
                 'ar_invoice_id'  => $ar_invoice->id,
                 'check_status'   => $isCheck ? 'on_hand' : null,
                 'check_date'     => $isCheck ? $split['check_date'] : null,
-                // Cash collected at the door is physically in the driver/checker's
-                // hands — they carry it until it reaches the office, so the order
-                // stays open under their name. A bank transfer leaves no cash with
-                // the crew: the sales rep recorded it and is responsible for
-                // confirming it landed, so it sits under the rep instead.
+                // Cash and a cheque are physical: the driver/checker carry them
+                // from the door until they reach the office, so the order stays
+                // open under the crew's name. A bank transfer leaves nothing with
+                // the crew — the sales rep recorded it and is responsible for
+                // confirming it landed — so it sits under the rep instead.
                 'held_by_employee_id' => $statedHolder ?? (
-                    $collectedInField && strcasecmp(trim((string) $split['payment_mode']), 'Cash') === 0
+                    $collectedInField && strcasecmp(trim((string) $split['payment_mode']), 'Bank Transfer') !== 0
                         ? (optional($ar_invoice->sales_order)->fieldCollectorId()
                             ?? optional($ar_invoice->sales_order)->sales_rep_id)
                         : optional($ar_invoice->sales_order)->sales_rep_id
