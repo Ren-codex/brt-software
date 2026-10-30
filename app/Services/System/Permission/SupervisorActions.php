@@ -31,6 +31,10 @@ class SupervisorActions
             'label' => 'Record a bounced check',
             'description' => 'Decides money a customer appeared to pay never arrived, and puts the rep back on the hook.',
         ],
+        'inventory.price_change' => [
+            'label' => 'Change a product price',
+            'description' => 'Sets a new retail or wholesale price for a batch, which every future sale then uses.',
+        ],
     ];
 
     /** @return list<string> */

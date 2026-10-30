@@ -85,14 +85,22 @@
       </div>
     </div>
   </div>
+  <SupervisorGate
+    ref="gate"
+    action="inventory.price_change"
+    prompt="Changing a price sets what every future sale charges. Someone authorized for this must approve it."
+    @authorized="onAuthorized"
+  />
   </Teleport>
 </template>
 
 <script>
 import { useForm } from '@inertiajs/vue3';
+import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 
 export default {
   name: 'UpdatePriceModal',
+  components: { SupervisorGate },
   props: {
     inventoryStock: Object,
   },
@@ -106,6 +114,7 @@ export default {
         previous_wholesale_price: null,
         reason: '',
         previous_reason: '',
+        supervisor_token: '',
       }),
       showModal: false,
       saveSuccess: false,
@@ -167,6 +176,15 @@ export default {
       this.form.previous_reason = this.form.reason;
     },
     savePrices() {
+      if (this.wholesalePriceError || this.retailPriceError) return;
+      // Ask a supervisor to authorise first; the save runs on @authorized.
+      this.$refs.gate?.show();
+    },
+    onAuthorized(token) {
+      this.form.supervisor_token = token;
+      this.performSave();
+    },
+    performSave() {
       if (this.wholesalePriceError || this.retailPriceError) return;
       this.form.patch(`/inventory-stocks/${this.form.inventory_stocks_id}`, {
         preserveScroll: true,

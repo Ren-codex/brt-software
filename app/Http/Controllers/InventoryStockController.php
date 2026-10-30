@@ -12,6 +12,7 @@ use App\Models\InventoryStocks;
 class InventoryStockController extends Controller
 {
     use HandlesTransaction;
+    use \App\Http\Controllers\Concerns\RequiresSupervisorAuthorization;
 
     public $inventoryStock;
 
@@ -45,6 +46,10 @@ class InventoryStockController extends Controller
 
     public function update(Request $request, $id)
     {
+        // Changing a price sets what every future sale charges, so it is
+        // authorised by a supervisor at the keyboard before it is applied.
+        $this->requireSupervisor($request, 'inventory.price_change', InventoryStocks::class, (int) $id);
+
         $result = $this->handleTransaction(function () use ($request) {
             return $this->inventoryStock->update($request);
         });

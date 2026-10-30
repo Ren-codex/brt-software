@@ -158,14 +158,25 @@
                             <div v-if="!shouldSplitIntoMultipleItems" class="input-wrapper">
                                 <i class="ri-cash-line input-icon"></i>
                                 <input
-                                    type="text"
+                                    type="number"
                                     id="price"
-                                    :value="formatCurrency(form.price)"
+                                    v-model.number="form.price"
                                     class="form-control"
-                                    :class="{ 'input-error': form.errors.price }"
-                                    readonly
+                                    :class="{ 'input-error': form.errors.price || priceBelowBase }"
+                                    :min="basePrice"
+                                    step="0.01"
+                                    :disabled="!selectedInventoryStock"
+                                    @input="handleInput('price')"
                                 />
                             </div>
+                            <small v-if="!shouldSplitIntoMultipleItems && basePrice > 0" class="price-floor-hint" :class="{ 'is-error': priceBelowBase }">
+                                <template v-if="priceBelowBase">
+                                    Can't go below the {{ isWholesale ? 'wholesale' : 'retail' }} price of {{ formatCurrency(basePrice) }}. Use a discount to lower it.
+                                </template>
+                                <template v-else>
+                                    {{ isWholesale ? 'Wholesale' : 'Retail' }} price is {{ formatCurrency(basePrice) }} — you may raise it for this order; use a discount to lower it.
+                                </template>
+                            </small>
                             <div v-else class="split-preview-list">
                                 <div
                                     v-for="allocation in batchAllocationsPreview"
@@ -268,7 +279,7 @@
                         <i class="ri-close-line"></i>
                         Cancel
                     </button>
-                    <button type="submit" class="btn btn-save" :disabled="form.processing || ( form.quantity == 0 || parseFloat(form.price) === 0 || !form.product_id || !form.price_type  || !form.batch_code)">
+                    <button type="submit" class="btn btn-save" :disabled="form.processing || priceBelowBase || ( form.quantity == 0 || parseFloat(form.price) === 0 || !form.product_id || !form.price_type  || !form.batch_code)">
                         <i class="ri-save-line" v-if="!form.processing"></i>
                         <i class="ri-loader-4-line spinner" v-else></i>
                         {{ form.processing ? 'Saving...' : 'Add Item' }}
@@ -328,6 +339,15 @@ export default {
     computed: {
         discountValue() {
             return parseFloat(this.form.discount_per_unit) || 0;
+        },
+        // The batch's own retail/wholesale price — the floor for this line. The
+        // rep may sell a special customer higher, but never below it; lowering
+        // stays with the capped discount.
+        basePrice() {
+            return parseFloat(this.getBatchPrice(this.selectedBatchDetails) || 0) || 0;
+        },
+        priceBelowBase() {
+            return this.basePrice > 0 && (parseFloat(this.form.price) || 0) < this.basePrice - 0.001;
         },
         // Never more than the unit price: a discount cannot make a sack free.
         discountLimit() {
@@ -513,6 +533,13 @@ export default {
             // Re-validate discount before submitting
             this.validateQuantity();
             this.validateDiscount();
+
+            // The price may be raised for a special customer but never dropped
+            // below the batch's own price; a lower price is a discount, capped.
+            if (this.priceBelowBase) {
+                this.form.errors.price = `Unit price cannot be below the ${this.isWholesale ? 'wholesale' : 'retail'} price of ${this.formatCurrency(this.basePrice)}.`;
+                return;
+            }
 
             if (this.form.errors.quantity || this.form.errors.discount_per_unit) {
                 return;
@@ -1113,6 +1140,17 @@ export default {
     justify-content: space-between;
     gap: 0.75rem;
     margin-bottom: 0.5rem;
+}
+
+.price-floor-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.74rem;
+    color: var(--brt-muted);
+}
+.price-floor-hint.is-error {
+    color: #c62828;
+    font-weight: 600;
 }
 
 .price-adjust-btn {

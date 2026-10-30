@@ -358,6 +358,38 @@ class SalesOrderClass
         }
     }
 
+    /**
+     * A line's unit price may be raised above the batch's own retail/wholesale
+     * price — a special customer sold higher — but never set below it. Lowering
+     * a price is a discount, which is capped separately. Enforced here so the
+     * floor holds even if the form is bypassed.
+     */
+    private function assertPricesNotBelowBase($items): void
+    {
+        foreach ((array) $items as $item) {
+            $stock = InventoryStocks::where('batch_code', $item['batch_code'] ?? null)
+                ->where('product_id', $item['product_id'] ?? null)
+                ->first();
+
+            if (! $stock) {
+                continue;
+            }
+
+            $type = strtolower((string) ($item['price_type'] ?? 'retail'));
+            $base = $type === 'wholesale'
+                ? (float) $stock->wholesale_price
+                : (float) $stock->retail_price;
+
+            if (round((float) ($item['price'] ?? 0), 2) < round($base, 2) - 0.001) {
+                $product = Product::find($item['product_id'] ?? null);
+                throw ValidationException::withMessages([
+                    'items' => 'Unit price for ' . ($product->name ?? 'an item') . ' cannot be below its '
+                        . $type . ' price of ₱' . number_format($base, 2) . '. Use a discount to lower it.',
+                ]);
+            }
+        }
+    }
+
     public function save($request){
 
         // Validate stock availability for all items
@@ -367,6 +399,8 @@ class SalesOrderClass
                 throw ValidationException::withMessages(['stock' => 'Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']]);
             }
         }
+
+        $this->assertPricesNotBelowBase($request->items);
 
         // Nothing is settled at the counter for an on-account sale, COD included.
         $isOnAccount = SalesOrder::isOnAccount($request->payment_mode);
@@ -564,6 +598,8 @@ class SalesOrderClass
                 throw ValidationException::withMessages(['stock' => 'Insufficient stock for product: ' . ($product ? $product->name : 'Unknown Product') . ' in batch ' . $item['batch_code']]);
             }
         }
+
+        $this->assertPricesNotBelowBase($request->items);
 
         $totalAmount = 0;
         $totalDiscount = 0;
