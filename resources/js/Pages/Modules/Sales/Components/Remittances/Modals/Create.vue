@@ -39,6 +39,7 @@
                                         <th v-if="!isSalesRep">Held by</th>
                                         <th class="text-end">Amount</th>
                                         <th>Payment</th>
+                                        <th>Mode</th>
                                         <th>Date</th>
                                     </tr>
                                 </thead>
@@ -53,10 +54,11 @@
                                         </td>
                                         <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
                                         <td>{{ getPaymentMode(order) || '-' }}</td>
+                                        <td>{{ getReceiptMode(order) }}</td>
                                         <td>{{ formatDate(order.created_at) }}</td>
                                     </tr>
                                     <tr v-if="orders.length === 0">
-                                        <td :colspan="isSalesRep ? 6 : 8" class="text-center text-muted">No pending sales orders found.</td>
+                                        <td :colspan="isSalesRep ? 7 : 9" class="text-center text-muted">No pending sales orders found.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -343,6 +345,11 @@ export default {
             const raw = String(order?.payment_mode || order?.ar_invoice?.sales_order?.payment_mode || '').trim().toLowerCase();
             if (raw === 'credit' || raw === 'credit sales') return 'Credit Sales';
             return 'Cash Sales';
+        },
+        getReceiptMode(order) {
+            // How the customer actually paid this receipt — Cash, Bank Transfer
+            // or Check — as opposed to whether it was a cash or credit sale.
+            return String(order?.payment_mode || '').trim() || '-';
         },
         normalizeSalesPaymentMode(order) {
             return String(this.getPaymentMode(order) || '').trim().toLowerCase();
