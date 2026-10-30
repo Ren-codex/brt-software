@@ -75,9 +75,15 @@ class SalesOrderRequest extends FormRequest
                 // Delivering and collecting are one event on a real run, so the
                 // money can be recorded here rather than on a second screen.
                 'collected_amount' => 'nullable|numeric|min:0.01',
-                'collected_mode' => 'nullable|string|required_with:collected_amount|in:Cash,Bank Transfer,Check',
+                'collected_mode' => 'nullable|string|required_with:collected_amount|in:Cash,GCash,Bank Transfer,Check,Split',
                 'collected_reference' => 'nullable|string|max:255',
                 'collected_check_date' => 'nullable|date',
+                'collected_splits' => 'nullable|array',
+                'collected_splits.*.payment_mode' => 'required_with:collected_splits|string|in:Cash,GCash,Bank Transfer,Check',
+                'collected_splits.*.amount' => 'required_with:collected_splits|numeric|min:0.01',
+                'collected_splits.*.bank_account_id' => 'nullable|integer|exists:bank_accounts,id',
+                'collected_splits.*.reference_number' => 'nullable|string|max:255',
+                'collected_splits.*.check_date' => 'nullable|date',
             ];
         }
         else if($action == 'cancel'){
