@@ -55,7 +55,7 @@
                                         <td class="text-end">{{ formatAmount(order.amount_paid) }}</td>
                                         <td>{{ getPaymentMode(order) || '-' }}</td>
                                         <td>{{ getReceiptMode(order) }}</td>
-                                        <td>{{ formatDate(order.created_at) }}</td>
+                                        <td>{{ formatPaymentDateTime(order) }}</td>
                                     </tr>
                                     <tr v-if="orders.length === 0">
                                         <td :colspan="isSalesRep ? 7 : 9" class="text-center text-muted">No pending sales orders found.</td>
@@ -376,6 +376,16 @@ export default {
             const period = hours24 >= 12 ? 'PM' : 'AM';
 
             return `${yyyy}-${mm}-${dd} ${hours12}:${minutes}:${seconds} ${period}`;
+        },
+        formatPaymentDateTime(order) {
+            // The day the payment was made (receipt_date), not the day the row
+            // was created — a door collection is often encoded the next morning.
+            // receipt_date carries no time, so the time it was recorded stands
+            // in for it; falls back to created_at entirely when there is none.
+            const datePart = order?.receipt_date ? String(order.receipt_date).slice(0, 10) : null;
+            if (!datePart) return this.formatDate(order?.created_at);
+            const timePart = order?.created_at ? String(order.created_at).slice(11, 19) || '00:00:00' : '00:00:00';
+            return this.formatDate(`${datePart} ${timePart}`);
         },
         formatAmount(v) {
             if (!v) return '₱0.00';
