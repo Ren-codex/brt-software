@@ -424,7 +424,7 @@ export default {
                 splits: [],
             }),
 
-            payment_modes: ['Cash', 'GCash', 'Bank Transfer', 'Check'],
+            payment_modes: ['Cash', 'Bank Transfer', 'Check'],
             bankAccounts: [],
             bankAccountsError: '',
             loadingBalance: false,
