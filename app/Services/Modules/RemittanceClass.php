@@ -55,7 +55,7 @@ class RemittanceClass
         // sales rather than everyone's. See PermissionService::salesScopeEmployeeId.
         $employeeId = app(PermissionService::class)->salesScopeEmployeeId($user);
 
-        $query = Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount'])
+        $query = Remittance::with(['receipts.arInvoice.sales_order', 'receipts.customer', 'receipts.status', 'receipts.bankAccount', 'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount'])
             ->when($employeeId, function ($query) use ($employeeId) {
                 $query->whereHas('receipts.arInvoice.sales_order', function ($soQuery) use ($employeeId) {
                     $soQuery->where(function ($salesOrderQuery) use ($employeeId) {

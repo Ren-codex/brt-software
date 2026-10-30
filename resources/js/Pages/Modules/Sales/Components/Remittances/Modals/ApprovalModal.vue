@@ -69,7 +69,12 @@
                                     </thead>
                                     <tbody>
                                         <tr v-for="row in displayRows" :key="row.mode">
-                                            <td>{{ row.mode }}</td>
+                                            <td>
+                                                {{ row.mode }}
+                                                <div v-if="row.banks && row.banks.length" class="mode-bank">
+                                                    <i class="ri-bank-line"></i> {{ row.banks.join(', ') }}
+                                                </div>
+                                            </td>
                                             <td class="text-end">{{ row.amount !== null ? formatCurrency(row.amount) : '—' }}</td>
                                             <td class="text-end">
                                                 <div class="d-flex align-items-center justify-content-end gap-1">
@@ -227,9 +232,14 @@ export default {
             if (!this.item || !Array.isArray(this.item.receipts)) return [];
             const order = ['Cash', 'GCash', 'Check', 'Bank Transfer'];
             const totals = {};
+            const banks = {};
             this.item.receipts.forEach(r => {
                 const mode = r.payment_mode || 'Cash';
                 totals[mode] = (totals[mode] || 0) + (parseFloat(r.amount_paid) || 0);
+                // Where the money landed, for the modes that name a bank.
+                if (r.bank_account) {
+                    (banks[mode] = banks[mode] || new Set()).add(r.bank_account);
+                }
             });
             return Object.keys(totals)
                 .sort((a, b) => {
@@ -240,7 +250,7 @@ export default {
                     if (bi === -1) return -1;
                     return ai - bi;
                 })
-                .map(mode => ({ mode, amount: totals[mode] }));
+                .map(mode => ({ mode, amount: totals[mode], banks: banks[mode] ? Array.from(banks[mode]) : [] }));
         },
         // Rows actually shown in the table: the auto ones derived from the
         // remittance's receipts, plus any the verifier added manually. Manually
@@ -250,7 +260,7 @@ export default {
             const extra = this.customModes.filter(m => !autoModes.includes(m));
             return [
                 ...this.paymentBreakdown,
-                ...extra.map(mode => ({ mode, amount: null })),
+                ...extra.map(mode => ({ mode, amount: null, banks: [] })),
             ];
         },
         standardModeOptions() {
@@ -405,6 +415,12 @@ export default {
 .received-table th { color: var(--brt-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; border-top: none; }
 .received-table td { vertical-align: middle; }
 .received-table input { width: 120px; }
+.mode-bank {
+    font-size: 0.72rem;
+    color: var(--brt-muted);
+    margin-top: 2px;
+}
+.mode-bank i { font-size: 0.8rem; }
 
 .remove-mode-btn {
     display: inline-flex;

@@ -50,6 +50,12 @@ class RemittanceResource extends JsonResource
                 'amount_paid'    => $r->amount_paid,
                 'receipt_date'   => $r->receipt_date,
                 'payment_mode'   => $r->payment_mode,
+                'reference_number' => $r->reference_number,
+                // The account a transfer landed in (or a cheque's drawee bank),
+                // so the verifier can see where the money went, not just how.
+                'bank_account'   => $r->bankAccount
+                    ? trim(($r->bankAccount->bank_name ?? '') . ' — ' . ($r->bankAccount->account_name ?? ''), " —")
+                    : ($r->bank_name ?: null),
                 'customer'       => $r->customer,
                 'status'         => $r->status,
             ])->values(),
