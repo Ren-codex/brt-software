@@ -205,8 +205,11 @@
                                                     <span v-if="item.is_deposited" class="deposit-status-chip deposited" :title="item.bank_deposit?.bank_name">
                                                         <i class="ri-checkbox-circle-fill"></i> {{ item.bank_deposit?.deposit_no }}
                                                     </span>
-                                                    <span v-else class="deposit-status-chip pending">
+                                                    <span v-else-if="item.has_cash" class="deposit-status-chip pending">
                                                         <i class="ri-time-line"></i> Not yet deposited
+                                                    </span>
+                                                    <span v-else class="deposit-status-chip banked" title="A transfer or GCash reached the bank at verification — no cash deposit needed">
+                                                        <i class="ri-bank-line"></i> Banked on verification
                                                     </span>
                                                 </td>
                                                 <td class="text-center">
@@ -572,6 +575,7 @@ export default {
 }
 .deposit-status-chip.deposited { background: #dcfce7; color: #166534; }
 .deposit-status-chip.pending   { background: #fef3c7; color: #92400e; }
+.deposit-status-chip.banked    { background: #e0f2fe; color: #075985; }
 
 .filter-segment {
     display: inline-flex;

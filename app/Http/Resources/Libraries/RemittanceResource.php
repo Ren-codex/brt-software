@@ -38,6 +38,13 @@ class RemittanceResource extends JsonResource
             'reference_no' => $this->reference_no,
             'received_breakdown' => $this->received_breakdown,
             'is_deposited' => !is_null($this->bank_deposit_id),
+            // Only a cash portion ever has to be physically banked. A transfer
+            // or GCash collection reached the bank the moment this was verified,
+            // so a transfer-only remittance needs no deposit and should never
+            // read as "not yet deposited".
+            'has_cash' => $this->receipts->contains(
+                fn ($r) => strtolower(trim((string) $r->payment_mode)) === 'cash'
+            ),
             'bank_deposit' => $this->bankDeposit ? [
                 'id'           => $this->bankDeposit->id,
                 'deposit_no'   => $this->bankDeposit->deposit_no,
