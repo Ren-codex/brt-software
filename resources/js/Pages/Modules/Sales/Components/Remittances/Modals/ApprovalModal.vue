@@ -68,7 +68,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="row in displayRows" :key="row.mode">
+                                        <tr v-for="row in paymentBreakdown" :key="row.mode">
                                             <td>
                                                 {{ row.mode }}
                                                 <div v-if="row.banks && row.banks.length" class="mode-bank">
@@ -77,54 +77,23 @@
                                             </td>
                                             <td class="text-end">{{ row.amount !== null ? formatCurrency(row.amount) : '—' }}</td>
                                             <td class="text-end">
-                                                <div class="d-flex align-items-center justify-content-end gap-1">
-                                                    <input
-                                                        type="number"
-                                                        class="form-control form-control-sm text-end"
-                                                        placeholder="0.00"
-                                                        v-model.number="form.received_breakdown[row.mode]"
-                                                        min="0"
-                                                        step="0.01"
-                                                    >
-                                                    <button
-                                                        v-if="customModes.includes(row.mode)"
-                                                        type="button"
-                                                        class="remove-mode-btn"
-                                                        title="Remove"
-                                                        @click="removeCustomMode(row.mode)"
-                                                    >
-                                                        <i class="ri-close-line"></i>
-                                                    </button>
-                                                </div>
+                                                <input
+                                                    type="number"
+                                                    class="form-control form-control-sm text-end ms-auto"
+                                                    placeholder="0.00"
+                                                    v-model.number="form.received_breakdown[row.mode]"
+                                                    min="0"
+                                                    step="0.01"
+                                                >
                                             </td>
                                         </tr>
-                                        <tr v-if="displayRows.length === 0">
+                                        <tr v-if="paymentBreakdown.length === 0">
                                             <td colspan="3" class="text-center text-muted">No receipts found.</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
 
-                            <!-- Add a payment mode not already listed above (e.g. money received a different way than originally recorded) -->
-                            <div class="add-mode-row d-flex align-items-center gap-2 mt-2">
-                                <select class="form-select form-select-sm" style="max-width:170px" v-model="newModeSelect">
-                                    <option value="">+ Add payment mode…</option>
-                                    <option v-for="opt in availableModeOptions" :key="opt" :value="opt">{{ opt }}</option>
-                                    <option value="__other__">Other…</option>
-                                </select>
-                                <input
-                                    v-if="newModeSelect === '__other__'"
-                                    type="text"
-                                    class="form-control form-control-sm"
-                                    style="max-width:170px"
-                                    placeholder="Payment mode name"
-                                    v-model="newModeCustomLabel"
-                                    @keydown.enter.prevent="addPaymentMode"
-                                >
-                                <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="!canAddMode" @click="addPaymentMode">
-                                    <i class="ri-add-line"></i> Add
-                                </button>
-                            </div>
                             <span class="error-message" v-if="form.errors.received_amount">{{ form.errors.received_amount }}</span>
                         </div>
 
@@ -217,11 +186,6 @@ export default {
             }),
             showModal: false,
             saveSuccess: false,
-            // Payment modes added manually, on top of whatever the remittance's
-            // own receipts already contribute to paymentBreakdown.
-            customModes: [],
-            newModeSelect: '',
-            newModeCustomLabel: '',
         };
     },
     computed: {
@@ -251,30 +215,6 @@ export default {
                     return ai - bi;
                 })
                 .map(mode => ({ mode, amount: totals[mode], banks: banks[mode] ? Array.from(banks[mode]) : [] }));
-        },
-        // Rows actually shown in the table: the auto ones derived from the
-        // remittance's receipts, plus any the verifier added manually. Manually
-        // added rows have no "expected" amount, only a received amount.
-        displayRows() {
-            const autoModes = this.paymentBreakdown.map(r => r.mode);
-            const extra = this.customModes.filter(m => !autoModes.includes(m));
-            return [
-                ...this.paymentBreakdown,
-                ...extra.map(mode => ({ mode, amount: null, banks: [] })),
-            ];
-        },
-        standardModeOptions() {
-            return ['Cash', 'GCash', 'Check', 'Bank Transfer'];
-        },
-        availableModeOptions() {
-            const used = this.displayRows.map(r => r.mode.toLowerCase());
-            return this.standardModeOptions.filter(m => !used.includes(m.toLowerCase()));
-        },
-        canAddMode() {
-            if (this.newModeSelect === '__other__') {
-                return !!this.newModeCustomLabel.trim();
-            }
-            return !!this.newModeSelect;
         },
         hasReceivedInput() {
             return Object.values(this.form.received_breakdown || {})
@@ -309,30 +249,12 @@ export default {
     methods: {
         show() {
             this.form.reset();
-            this.customModes = [];
-            this.newModeSelect = '';
-            this.newModeCustomLabel = '';
             const breakdown = {};
             this.paymentBreakdown.forEach(row => {
                 breakdown[row.mode] = null;
             });
             this.form.received_breakdown = breakdown;
             this.showModal = true;
-        },
-        addPaymentMode() {
-            const label = this.newModeSelect === '__other__' ? this.newModeCustomLabel.trim() : this.newModeSelect;
-            if (!label) return;
-            const exists = this.displayRows.some(r => r.mode.toLowerCase() === label.toLowerCase());
-            if (!exists) {
-                this.customModes.push(label);
-                this.form.received_breakdown[label] = null;
-            }
-            this.newModeSelect = '';
-            this.newModeCustomLabel = '';
-        },
-        removeCustomMode(mode) {
-            this.customModes = this.customModes.filter(m => m !== mode);
-            delete this.form.received_breakdown[mode];
         },
         submit() {
             if (this.form.status === 'Approve' && !this.hasReceivedInput) {
@@ -421,23 +343,6 @@ export default {
     margin-top: 2px;
 }
 .mode-bank i { font-size: 0.8rem; }
-
-.remove-mode-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: #c62828;
-    border-radius: 6px;
-}
-.remove-mode-btn:hover { background: #ffebee; }
-
-.add-mode-row .form-select,
-.add-mode-row .form-control { font-size: 0.8rem; }
 
 .received-via-chip {
     display: inline-flex;
