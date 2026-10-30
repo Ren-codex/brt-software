@@ -456,26 +456,22 @@ export default {
                     return;
                 }
 
-                if (lines.length === 1) {
-                    this.form.collected_amount = lines[0].amount;
-                    this.form.collected_mode = lines[0].payment_mode;
-                    this.form.collected_reference = lines[0].reference_number || null;
-                    this.form.collected_check_date = lines[0].check_date || null;
-                    this.form.collected_splits = [];
-                } else {
-                    const total = lines.reduce((s, l) => s + l.amount, 0);
-                    this.form.collected_amount = total;
-                    this.form.collected_mode = 'Split';
-                    this.form.collected_reference = null;
-                    this.form.collected_check_date = null;
-                    this.form.collected_splits = lines.map(l => ({
-                        payment_mode: l.payment_mode,
-                        amount: l.amount,
-                        bank_account_id: l.bank_account_id,
-                        reference_number: l.reference_number,
-                        check_date: l.check_date,
-                    }));
-                }
+                // Always send the lines as splits — even a single one — so the
+                // bank account, reference and check date travel with it. The old
+                // single-line shortcut had no field for the bank account and
+                // dropped it, so a lone transfer reached the server with no bank.
+                const total = lines.reduce((s, l) => s + l.amount, 0);
+                this.form.collected_amount = total;
+                this.form.collected_mode = lines.length === 1 ? lines[0].payment_mode : 'Split';
+                this.form.collected_reference = null;
+                this.form.collected_check_date = null;
+                this.form.collected_splits = lines.map(l => ({
+                    payment_mode: l.payment_mode,
+                    amount: l.amount,
+                    bank_account_id: l.bank_account_id,
+                    reference_number: l.reference_number,
+                    check_date: l.check_date,
+                }));
             }
             this.form.put(`/sales-orders/${this.order.id}`, {
                 preserveScroll: true,
