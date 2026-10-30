@@ -142,14 +142,11 @@
                                         </div>
                                     </div>
                                     <div class="col-amount">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
+                                        <AmountInput
                                             class="field-input"
-                                            v-model.number="split.amount"
+                                            v-model="split.amount"
                                             :disabled="!isSplitPayment"
-                                        >
+                                        />
                                     </div>
                                     <div class="col-action">
                                         <button
@@ -251,8 +248,10 @@
 
 <script>
 import { useForm } from '@inertiajs/vue3';
+import AmountInput from '@/Shared/Components/Forms/AmountInput.vue';
 
 export default {
+    components: { AmountInput },
     data() {
         return {
             showModal: false,

@@ -139,15 +139,12 @@
                                 </div>
                             </div>
                             <div class="col-amount">
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
+                                <AmountInput
                                     class="field-input"
-                                    v-model.number="split.amount"
+                                    v-model="split.amount"
                                     :disabled="!isSplitPayment && !allowsPartialPayment"
-                                    @input="handleInput('splits')"
-                                >
+                                    @update:model-value="handleInput('splits')"
+                                />
                             </div>
                             <div class="col-action">
                                 <button
@@ -309,7 +306,9 @@
 import { useForm } from '@inertiajs/vue3';
 
 import { openOrPrint } from '@/Shared/utils/printDocument';
+import AmountInput from '@/Shared/Components/Forms/AmountInput.vue';
 export default {
+    components: { AmountInput },
     props: [ ],
     computed: {
         /**
