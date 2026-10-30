@@ -253,6 +253,11 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::post('/inventory-stocks/{id}/settings', [App\Http\Controllers\InventoryStockController::class, 'settings'])
         ->middleware('permission:inventory,inventory_stocks,admin');
 
+    // Anyone who can open the price modal (a sales rep at Add Item included) may
+    // ask for a price change; it only creates a pending request, and an approver
+    // is what actually applies it.
+    Route::post('/price-change-requests', [App\Http\Controllers\PriceChangeRequestController::class, 'store']);
+
     Route::middleware(['role:Administrator,Super Admin'])->group(function () {
         Route::patch('/app-settings/{key}', [App\Http\Controllers\AppSettingController::class, 'update']);
     });

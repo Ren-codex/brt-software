@@ -671,21 +671,10 @@ export default {
             });
         },
 
-        handlePriceAdjustmentSaved(payload = {}) {
-            if (!payload?.inventory_stocks_id) return;
-
-            this.dropdowns.products.forEach((product) => {
-                (product.batch_stocks || []).forEach((batch) => {
-                    if (batch.id !== payload.inventory_stocks_id) return;
-                    batch.retail_price = payload.retail_price;
-                    batch.wholesale_price = payload.wholesale_price;
-                    if (Object.prototype.hasOwnProperty.call(batch, 'reason')) {
-                        batch.reason = payload.reason;
-                    }
-                });
-            });
-
-            this.onPriceTypeChange();
+        handlePriceAdjustmentSaved() {
+            // A price change only requests approval now — the product's price
+            // is not updated here, so this line keeps the current price. To sell
+            // higher for a special customer, raise the Unit Price above instead.
             this.priceAdjustmentStock = null;
         },
 

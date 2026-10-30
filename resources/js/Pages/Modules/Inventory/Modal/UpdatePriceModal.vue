@@ -7,7 +7,7 @@
   >
     <div class="modal-container" @click.stop>
       <div class="modal-header">
-        <h2>Update Prices</h2>
+        <h2>Request Price Change</h2>
         <button class="close-btn" @click="hide">
           <i class="ri-close-line"></i>
         </button>
@@ -15,7 +15,7 @@
       <div class="modal-body">
         <div class="success-alert" v-if="saveSuccess">
           <i class="ri-checkbox-circle-fill"></i>
-          <span>Your information has been saved successfully!</span>
+          <span>Price change submitted for approval. The current price stays until it's approved.</span>
         </div>
         <form @submit.prevent="savePrices">
           <div class="form-group">
@@ -78,29 +78,21 @@
           Cancel
         </button>
         <button type="button" class="btn btn-save" :disabled="form.processing || isUnchanged || wholesalePriceError || retailPriceError" @click="savePrices">
-          <i class="ri-save-line" v-if="!form.processing"></i>
+          <i class="ri-send-plane-line" v-if="!form.processing"></i>
           <i class="ri-loader-4-line spinner" v-else></i>
-          {{ form.processing ? 'Saving...' : 'Save' }}
+          {{ form.processing ? 'Submitting...' : 'Request Approval' }}
         </button>
       </div>
     </div>
   </div>
-  <SupervisorGate
-    ref="gate"
-    action="inventory.price_change"
-    prompt="Changing a price sets what every future sale charges. Someone authorized for this must approve it."
-    @authorized="onAuthorized"
-  />
   </Teleport>
 </template>
 
 <script>
 import { useForm } from '@inertiajs/vue3';
-import SupervisorGate from '@/Shared/Components/SupervisorGate.vue';
 
 export default {
   name: 'UpdatePriceModal',
-  components: { SupervisorGate },
   props: {
     inventoryStock: Object,
   },
@@ -114,7 +106,6 @@ export default {
         previous_wholesale_price: null,
         reason: '',
         previous_reason: '',
-        supervisor_token: '',
       }),
       showModal: false,
       saveSuccess: false,
@@ -177,30 +168,17 @@ export default {
     },
     savePrices() {
       if (this.wholesalePriceError || this.retailPriceError) return;
-      // Ask a supervisor to authorise first; the save runs on @authorized.
-      this.$refs.gate?.show();
-    },
-    onAuthorized(token) {
-      this.form.supervisor_token = token;
-      this.performSave();
-    },
-    performSave() {
-      if (this.wholesalePriceError || this.retailPriceError) return;
-      this.form.patch(`/inventory-stocks/${this.form.inventory_stocks_id}`, {
+      // A price change is requested, not applied: it waits for an approver, so
+      // the product keeps its current price until then.
+      this.form.post('/price-change-requests', {
         preserveScroll: true,
-        onSuccess: (response) => {
+        onSuccess: () => {
           this.saveSuccess = true;
-          const payload = {
-            inventory_stocks_id: this.form.inventory_stocks_id,
-            retail_price: parseFloat(this.form.retail_price) || 0,
-            wholesale_price: parseFloat(this.form.wholesale_price) || 0,
-            reason: this.form.reason || '',
-          };
           this.form.reset();
           setTimeout(() => {
-            this.$emit('saved', payload);
+            this.$emit('saved');
             this.hide();
-          }, 1000);
+          }, 1400);
         },
       });
     },

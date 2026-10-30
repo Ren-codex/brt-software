@@ -268,7 +268,7 @@ export default {
     },
 
     handlePriceUpdate() {
-      this.$emit('toast', 'Price updated successfully');
+      this.$emit('toast', 'Price change submitted for approval');
       this.$emit('fetch');
       this.selectedStock = null;
     },

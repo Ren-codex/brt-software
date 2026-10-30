@@ -285,8 +285,16 @@ class ApprovalService
             'delivery' => $this->decideDelivery($id, $decision, $remarks),
             'credit_order' => $this->decideCreditOrder($id, $decision, $remarks),
             'replenishment' => $this->decideReplenishment($id, $remarks),
+            'price_change' => $this->decidePriceChange($id, $decision, $remarks),
             default => abort(422, 'This approval type has no inline action.'),
         };
+    }
+
+    /** A price change is applied to the stock only when approved. */
+    protected function decidePriceChange(int $id, string $decision, ?string $remarks): array
+    {
+        return app(\App\Services\Modules\InventoryStockClass::class)
+            ->decidePriceChange($id, $decision, $remarks);
     }
 
     /** Purchase orders take a `status_id`, and approving also assigns the PO number. */

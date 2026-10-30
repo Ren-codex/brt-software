@@ -9,6 +9,7 @@ use App\Models\Loan;
 use App\Models\LoanLog;
 use App\Models\Payroll;
 use App\Models\PayrollLog;
+use App\Models\PriceChangeRequest;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLog;
 use App\Models\Remittance;
@@ -460,6 +461,45 @@ class ApprovalRegistry
                     'by' => $this->who($r->reviewedBy),
                     'at' => $r->reviewed_at,
                     'remarks' => $r->review_notes,
+                ],
+            ],
+
+            'price_change' => [
+                'model' => PriceChangeRequest::class,
+                'label' => 'Price Change',
+                'plural' => 'Price Changes',
+                'module' => 'inventory',
+                'submodule' => 'inventory_stocks',
+                'icon' => 'ri-price-tag-3-line',
+                'url' => '/inventory-stocks',
+                'can_approve_inline' => true,
+                'can_reject_inline' => true,
+                'pending' => fn () => PriceChangeRequest::with(['product', 'inventoryStock', 'requestedBy'])
+                    ->whereHas('status', fn ($q) => $q->where('slug', 'pending')),
+                'row' => fn (PriceChangeRequest $r) => [
+                    'reference' => ($r->product->name ?? 'Product')
+                        . (optional($r->inventoryStock)->batch_code ? ' · ' . $r->inventoryStock->batch_code : ''),
+                    'summary' => 'Retail ₱' . number_format((float) $r->previous_retail_price, 2) . ' → ₱' . number_format((float) $r->retail_price, 2)
+                        . ' · Wholesale ₱' . number_format((float) $r->previous_wholesale_price, 2) . ' → ₱' . number_format((float) $r->wholesale_price, 2),
+                    'amount' => null,
+                    'requested_by' => $this->who($r->requestedBy),
+                    'requested_at' => $r->created_at,
+                ],
+                'history' => fn (string $decision) => PriceChangeRequest::with(['product', 'inventoryStock', 'requestedBy', 'approvedBy.employee', 'status'])
+                    ->whereNotNull('approved_at')
+                    ->when(
+                        $decision === 'approved',
+                        fn ($q) => $q->whereDoesntHave('status', fn ($s) => $s->where('slug', 'disapproved')),
+                        fn ($q) => $q->whereHas('status', fn ($s) => $s->where('slug', 'disapproved')),
+                    )
+                    ->latest('approved_at')->orderByDesc('id'),
+                'decision' => fn (PriceChangeRequest $r) => [
+                    'model' => $r,
+                    'decision' => $r->status?->slug === 'disapproved' ? 'rejected' : 'approved',
+                    'label' => $r->status?->slug === 'disapproved' ? 'Disapproved' : 'Approved',
+                    'by' => $this->who($r->approvedBy),
+                    'at' => $r->approved_at,
+                    'remarks' => $r->remarks,
                 ],
             ],
         ];

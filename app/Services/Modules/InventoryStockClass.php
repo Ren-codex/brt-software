@@ -7,10 +7,78 @@ use App\Http\Resources\ReceivedStockResource;
 use App\Models\InventoryStocks;
 use Illuminate\Support\Facades\DB;
 use App\Models\InventoryAdjustment;
+use App\Models\ListStatus;
+use App\Models\PriceChangeRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class InventoryStockClass
 {
+    /**
+     * Apply or refuse a requested price change. Approving moves the new prices
+     * onto the stock and logs each one as an adjustment; disapproving leaves
+     * the stock untouched. Either way the request records who decided and when.
+     */
+    public function decidePriceChange(int $id, string $decision, ?string $remarks = null): array
+    {
+        return DB::transaction(function () use ($id, $decision, $remarks) {
+            $request = PriceChangeRequest::with('inventoryStock', 'status')->findOrFail($id);
+
+            if (optional($request->status)->slug !== 'pending') {
+                throw ValidationException::withMessages([
+                    'status' => 'This price change has already been decided.',
+                ]);
+            }
+
+            $approved = $decision === 'approved';
+
+            if ($approved && ($stock = $request->inventoryStock)) {
+                if (round((float) $request->retail_price, 2) != round((float) $stock->retail_price, 2)) {
+                    InventoryAdjustment::create([
+                        'inventory_stocks_id' => $stock->id,
+                        'new_quantity' => $request->retail_price,
+                        'previous_quantity' => $stock->retail_price ?? 0,
+                        'reason' => $request->reason,
+                        'type' => 'update retail price',
+                        'adjustment_date' => now(),
+                        'adjusted_by_id' => Auth::id(),
+                    ]);
+                }
+
+                if (round((float) $request->wholesale_price, 2) != round((float) $stock->wholesale_price, 2)) {
+                    InventoryAdjustment::create([
+                        'inventory_stocks_id' => $stock->id,
+                        'new_quantity' => $request->wholesale_price,
+                        'previous_quantity' => $stock->wholesale_price ?? 0,
+                        'reason' => $request->reason,
+                        'type' => 'update wholesale price',
+                        'adjustment_date' => now(),
+                        'adjusted_by_id' => Auth::id(),
+                    ]);
+                }
+
+                $stock->update([
+                    'retail_price' => $request->retail_price,
+                    'wholesale_price' => $request->wholesale_price,
+                ]);
+            }
+
+            $request->update([
+                'status_id' => ListStatus::getBySlug($approved ? 'approved' : 'disapproved')?->id,
+                'approved_by_id' => Auth::id(),
+                'approved_at' => now(),
+                'remarks' => $remarks,
+            ]);
+
+            return [
+                'data' => $request->fresh(['status', 'inventoryStock']),
+                'message' => $approved ? 'Price change approved and applied.' : 'Price change disapproved.',
+                'info' => $approved ? 'The new price now applies to future sales.' : 'The price was left unchanged.',
+                'status' => true,
+            ];
+        });
+    }
+
     public function lists($request)
     {
         $data = InventoryStockResource::collection(
