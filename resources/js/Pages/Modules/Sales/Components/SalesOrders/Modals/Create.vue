@@ -1528,7 +1528,7 @@ export default {
             // next, so the form starts there rather than empty. Both stay
             // editable for anything that does not.
             this.form.shipping_date = this.localDate(0);
-            this.form.delivery_date = this.localDate(1);
+            this.form.delivery_date = this.localDate(0);
             // Default sales rep should be the logged-in employee (not user id).
             if (this.currentEmployeeId) {
                 this.form.sales_rep_id = this.currentEmployeeId;
