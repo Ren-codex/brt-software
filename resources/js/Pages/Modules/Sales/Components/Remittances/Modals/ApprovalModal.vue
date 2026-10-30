@@ -77,7 +77,24 @@
                                             </td>
                                             <td class="text-end">{{ row.amount !== null ? formatCurrency(row.amount) : '—' }}</td>
                                             <td class="text-end">
+                                                <!-- A transfer is already in the bank, so it is confirmed,
+                                                     not counted. Cash and cheques are still keyed in. -->
+                                                <template v-if="isElectronic(row.mode)">
+                                                    <button
+                                                        v-if="!isConfirmed(row)"
+                                                        type="button"
+                                                        class="confirm-received-btn"
+                                                        @click="confirmReceived(row)"
+                                                    >
+                                                        <i class="ri-checkbox-circle-line"></i> Confirm in bank
+                                                    </button>
+                                                    <span v-else class="received-confirmed">
+                                                        <i class="ri-checkbox-circle-fill"></i> In the bank
+                                                        <button type="button" class="undo-confirm" @click="undoConfirm(row)">undo</button>
+                                                    </span>
+                                                </template>
                                                 <input
+                                                    v-else
                                                     type="number"
                                                     class="form-control form-control-sm text-end ms-auto"
                                                     placeholder="0.00"
@@ -256,6 +273,23 @@ export default {
             this.form.received_breakdown = breakdown;
             this.showModal = true;
         },
+        // A transfer or GCash is money already sitting in an account, so it is
+        // confirmed rather than counted; cash and cheques are keyed in by hand.
+        isElectronic(mode) {
+            return ['bank transfer', 'gcash'].includes(String(mode || '').trim().toLowerCase());
+        },
+        isConfirmed(row) {
+            const v = this.form.received_breakdown[row.mode];
+            return v !== null && v !== '' && v !== undefined;
+        },
+        confirmReceived(row) {
+            // Confirming says the full amount landed; a short transfer is the
+            // bank's problem to chase, not something verified here.
+            this.form.received_breakdown[row.mode] = row.amount;
+        },
+        undoConfirm(row) {
+            this.form.received_breakdown[row.mode] = null;
+        },
         submit() {
             if (this.form.status === 'Approve' && !this.hasReceivedInput) {
                 this.form.setError('received_amount', 'Enter the amount received for at least one payment method.');
@@ -343,6 +377,39 @@ export default {
     margin-top: 2px;
 }
 .mode-bank i { font-size: 0.8rem; }
+
+.confirm-received-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border: 1px solid var(--brt-primary);
+    background: rgba(var(--brt-primary-rgb), 0.08);
+    color: var(--brt-primary);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.confirm-received-btn:hover { background: rgba(var(--brt-primary-rgb), 0.16); }
+
+.received-confirmed {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #166534;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.received-confirmed i { font-size: 1rem; }
+.undo-confirm {
+    border: none;
+    background: transparent;
+    color: var(--brt-muted);
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-decoration: underline;
+    padding: 0;
+}
 
 .received-via-chip {
     display: inline-flex;
