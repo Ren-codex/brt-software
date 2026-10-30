@@ -219,28 +219,38 @@ class CashManagementController extends Controller
         // today is what came in lately. The count says how many are really
         // waiting, so a long backlog shows as a number instead of a page of
         // rows nobody reads.
+        // Only physical cash sits in the drawer waiting to be banked. A bank
+        // transfer or GCash collection reached its own account the moment the
+        // remittance was verified and was never cash on hand, so banking it
+        // again as cash would credit the drawer for money it never held. Only
+        // remittances with a cash portion are offered here, and only that
+        // portion — the rest of a mixed remittance is already in the bank.
         $remittancesWaiting = Remittance::whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
-            ->whereNull('bank_deposit_id');
+            ->whereNull('bank_deposit_id')
+            ->whereHas('receipts', fn ($q) => $q->whereRaw('LOWER(TRIM(payment_mode)) = ?', ['cash']));
         $undepositedRemittanceTotal = (clone $remittancesWaiting)->count();
 
         $undepositedRemittances = $remittancesWaiting
-            ->with(['createdBy.employee', 'receipts:id,remittance_id,payment_mode'])
+            ->with(['createdBy.employee', 'receipts:id,remittance_id,payment_mode,amount_paid'])
             ->orderByDesc('remittance_date')
             ->orderByDesc('id')
             ->limit(self::PICKER_LIMIT)
             ->get()
-            ->map(fn($r) => [
-                'id'                => $r->id,
-                'remittance_no'     => $r->remittance_no,
-                'remittance_date'   => $r->remittance_date,
-                'rep_name'          => optional(optional($r->createdBy)->employee)->fullname ?? 'Unknown',
-                // How the money came in — the verified modes, or the distinct
-                // modes of the receipts it bundles when that was not recorded.
-                'mode'              => $r->received_via
-                    ?: ($r->receipts->pluck('payment_mode')->filter()->unique()->values()->implode(', ') ?: null),
-                'amount'            => (float) ($r->received_amount ?? $r->total_amount),
-                'amount_formatted'  => '₱' . number_format($r->received_amount ?? $r->total_amount, 2),
-            ])
+            ->map(function ($r) {
+                $cashAmount = round((float) $r->receipts
+                    ->filter(fn ($x) => strtolower(trim((string) $x->payment_mode)) === 'cash')
+                    ->sum('amount_paid'), 2);
+
+                return [
+                    'id'                => $r->id,
+                    'remittance_no'     => $r->remittance_no,
+                    'remittance_date'   => $r->remittance_date,
+                    'rep_name'          => optional(optional($r->createdBy)->employee)->fullname ?? 'Unknown',
+                    'mode'              => 'Cash',
+                    'amount'            => $cashAmount,
+                    'amount_formatted'  => '₱' . number_format($cashAmount, 2),
+                ];
+            })
             ->values();
 
         $totalTransferred  = FundTransfer::sum('amount');
