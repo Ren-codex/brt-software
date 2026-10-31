@@ -95,11 +95,11 @@
                                             </div>
                                             {{ list.so_number }}
                                         </td>
-                                        <td class="text-center">{{ list.customer?.name || '-' }}</td>
-                                        <td class="text-center">{{ list.created_at }}</td>
+                                        <td>{{ list.customer?.name || '-' }}</td>
+                                        <td>{{ list.created_at }}</td>
                                         <!-- Status and payment are one fact about the order — "For Payment,
                                              COD" — so they share a cell instead of two columns of pills. -->
-                                        <td class="text-center">
+                                        <td>
                                             <span class="state-stack">
                                                 <span class="status-badge" :class="statusTone(list.status)">
                                                     <i v-if="list.status?.icon" :class="list.status.icon" class="me-1"></i>
@@ -111,7 +111,7 @@
                                             </span>
                                         </td>
                                         <td class="text-end fw-semibold">{{ formatCurrency(list.total_amount) }}</td>
-                                        <td class="text-center">
+                                        <td>
                                             <span class="badge-stack">
                                                 {{ list.due_date }}
                                                 <span v-if="isDueSoon(list)" class="badge bg-danger">Due Soon</span>
