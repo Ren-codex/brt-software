@@ -66,4 +66,35 @@ class DriverDropdownTest extends TestCase
 
         $this->assertCount(0, (new DropdownClass)->drivers());
     }
+
+    public function test_it_leaves_inactive_employees_out_of_all_three_lists(): void
+    {
+        $dropdown = new DropdownClass;
+        $cases = [
+            'drivers' => 'Driver 1 ST',
+            'checkers' => 'Checker 1',
+            'sales_reps' => 'Sales Rep',
+        ];
+
+        foreach ($cases as $list => $title) {
+            $active = $this->employeeWithPosition('Active', $list, $title);
+            $inactive = $this->employeeWithPosition('Inactive', $list, $title);
+            $inactive->update(['is_active' => 0]);
+
+            $ids = collect($dropdown->{$list}())->pluck('value');
+
+            $this->assertContains($active->id, $ids, $list);
+            $this->assertNotContains($inactive->id, $ids, $list);
+        }
+    }
+
+    public function test_it_leaves_out_an_inactive_employee_covering_the_job_as_a_second_position(): void
+    {
+        $inactive = $this->employeeWithPosition('Bea', 'Cruz', 'Cashier');
+        $driving = ListPosition::firstOrCreate(['title' => 'Driver 1 ST'], ['slug' => 'driver-1-st', 'rate_per_day' => 500]);
+        $inactive->extraPositions()->attach($driving->id);
+        $inactive->update(['is_active' => 0]);
+
+        $this->assertCount(0, (new DropdownClass)->drivers());
+    }
 }

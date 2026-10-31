@@ -100,7 +100,7 @@
                                         <i class="ri-steering-2-line input-icon"></i>
                                         <Multiselect
                                             v-model="form.driver_id"
-                                            :options="dropdowns.drivers"
+                                            :options="driverOptions"
                                             label="name"
                                             value-prop="value"
                                             track-by="name"
@@ -123,7 +123,7 @@
                                         <i class="ri-user-follow-line input-icon"></i>
                                         <Multiselect
                                             v-model="form.checker_id"
-                                            :options="dropdowns.checkers || []"
+                                            :options="checkerOptions"
                                             label="name"
                                             value-prop="value"
                                             track-by="name"
@@ -1112,6 +1112,9 @@ export default {
     props: ['dropdowns', 'user'],
     data() {
         return {
+            // Who the order being edited already has, so they still show if they
+            // have since dropped off the pick lists.
+            assignedCrew: { sales_rep: null, driver: null, checker: null },
             currentUrl: window.location.origin,
             form: useForm({
                 id: null,
@@ -1222,7 +1225,13 @@ export default {
                 });
             }
 
-            return options;
+            return this.withAssigned(options, this.assignedCrew.sales_rep);
+        },
+        driverOptions() {
+            return this.withAssigned(this.dropdowns?.drivers || [], this.assignedCrew.driver);
+        },
+        checkerOptions() {
+            return this.withAssigned(this.dropdowns?.checkers || [], this.assignedCrew.checker);
         },
         customerOptions() {
             const customers = Array.isArray(this.dropdowns?.customers) ? this.dropdowns.customers : [];
@@ -1500,6 +1509,7 @@ export default {
 
         show() {
             this.form.reset();
+            this.assignedCrew = { sales_rep: null, driver: null, checker: null };
             this.form.clearErrors();
             this.editable = false;
             this.saveSuccess = false;
@@ -1564,6 +1574,11 @@ export default {
             this.form.sales_rep_id = data.sales_rep_id;
             this.form.driver_id = data.driver_id;
             this.form.checker_id = data.checker_id ?? null;
+            this.assignedCrew = {
+                sales_rep: data.sales_rep || null,
+                driver: data.driver || null,
+                checker: data.checker || null,
+            };
             this.form.delivery_location = data.delivery_location || data.customer?.address || '';
             this.form.status_id = data.status_id;
             this.form.payment_mode = data.payment_mode;
@@ -2182,6 +2197,15 @@ export default {
             const customer = this.dropdowns.customers.find(u => u.value === customer_id);
             return customer;
         },
+        // The lists hold active employees in the job. An old order keeps showing the
+        // person already on it after they leave or move, and only that order does.
+        withAssigned(options, person) {
+            if (!person?.id || options.some((option) => Number(option.value) === Number(person.id))) {
+                return options;
+            }
+
+            return [{ value: person.id, name: `${person.fullname} (no longer available)` }, ...options];
+        },
         getSalesRepName(employeeId) {
             if (!employeeId) return '-';
             const rep = this.salesRepOptions.find(employee => Number(employee.value) === Number(employeeId));
@@ -2189,12 +2213,12 @@ export default {
         },
         getDriverName(employeeId) {
             if (!employeeId) return '-';
-            const driver = this.dropdowns?.drivers?.find(employee => Number(employee.value) === Number(employeeId));
+            const driver = this.driverOptions.find(employee => Number(employee.value) === Number(employeeId));
             return driver ? driver.name : '-';
         },
         getCheckerName(employeeId) {
             if (!employeeId) return '-';
-            const checker = this.dropdowns?.checkers?.find(employee => Number(employee.value) === Number(employeeId));
+            const checker = this.checkerOptions.find(employee => Number(employee.value) === Number(employeeId));
             return checker ? checker.name : '-';
         },
 

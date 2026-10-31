@@ -143,12 +143,12 @@ export default {
         getSalesRepName(employeeId) {
             if (!employeeId) return '-';
             const rep = this.dropdowns?.sales_reps?.find((employee) => employee.value === employeeId);
-            return rep ? rep.name : '-';
+            return rep ? rep.name : (this.salesOrder?.sales_rep?.fullname || '-');
         },
         getDriverName(employeeId) {
             if (!employeeId) return '-';
             const driver = this.dropdowns?.drivers?.find((employee) => employee.value === employeeId);
-            return driver ? driver.name : '-';
+            return driver ? driver.name : (this.salesOrder?.driver?.fullname || '-');
         },
         getLocationName(locationId) {
             if (!locationId) return '-';

@@ -335,8 +335,10 @@ class DropdownClass
     }
 
     /**
-     * Everyone holding any of these positions, as their paying one or as a
-     * job they also cover. Each person once, however many of them match.
+     * Every active employee holding any of these positions, as their paying
+     * one or as a job they also cover. Each person once, however many of them
+     * match. Somebody who has left cannot be given new work; an old order they
+     * are already on keeps showing them, which the order form sees to itself.
      */
     private function holdingPosition($positionIds)
     {
@@ -347,6 +349,7 @@ class DropdownClass
         }
 
         return Employee::with('position')
+            ->where('is_active', 1)
             ->where(function ($query) use ($positionIds) {
                 $query->whereIn('position_id', $positionIds)
                     ->orWhereHas('extraPositions', fn ($q) => $q->whereIn('list_positions.id', $positionIds));
