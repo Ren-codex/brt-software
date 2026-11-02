@@ -24,18 +24,18 @@
            (.new-sheet) so neither copy is split across the cut; those are not
            halved, since there is nothing to cut. */
         /* Each copy is a fixed-height, positioned box so the signatures can be
-           pinned to its bottom edge with absolute positioning (DomPDF honours
-           that, but not a full-height table). The 14mm foot padding reserves the
-           band the signatures sit in, so a near-full item list never runs into
-           them. */
-        .copy-cell { width: 100%; position: relative; box-sizing: border-box; padding-bottom: 14mm; }
-        .half-sheet-top { height: 159.1mm; border-bottom: 1px dashed #999; }
+           pinned to its bottom edge with absolute positioning — DomPDF honours
+           that, but not a full-height table, and not box-sizing with padding
+           (padding there is added on top of the height and spills the pair onto
+           a second sheet, so none is used). */
+        .copy-cell { width: 100%; position: relative; }
+        .half-sheet-top { height: 159.1mm; box-sizing: border-box; border-bottom: 1px dashed #999; }
         /* A hair under 159.1mm leaves room for rounding so the pair never spills
            past the dashed cut onto a second sheet. */
-        .half-sheet-bottom { height: 158mm; }
+        .half-sheet-bottom { height: 158mm; box-sizing: border-box; }
         /* A copy that owns a whole sheet (a long order) fills the printable page,
            so its signatures land at the bottom of the page as well. */
-        .single-copy { height: 316mm; }
+        .single-copy { height: 316mm; box-sizing: border-box; }
         .new-sheet { page-break-before: always; }
         .keep-whole { page-break-inside: avoid; }
 
