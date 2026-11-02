@@ -24,12 +24,21 @@
            (.new-sheet) so neither copy is split across the cut; those are not
            halved, since there is nothing to cut. */
         .copy-cell { width: 100%; }
-        /* Only the top copy is measured. Giving the bottom one a height too
-           made the pair a fraction taller than the page once the dashed border
-           was counted, and it fell onto a second sheet. */
         .half-sheet-top { height: 159.1mm; box-sizing: border-box; border-bottom: 1px dashed #999; }
+        /* The bottom copy is given a height too so its signatures can sit at the
+           foot of its half. A hair under 159.1mm leaves room for rounding so the
+           pair never spills past the dashed cut onto a second sheet. */
+        .half-sheet-bottom { height: 158mm; box-sizing: border-box; }
+        /* A copy that owns a whole sheet (a long order) fills the printable page,
+           so its signatures land at the bottom of the page as well. */
+        .single-copy { height: 316mm; box-sizing: border-box; }
         .new-sheet { page-break-before: always; }
         .keep-whole { page-break-inside: avoid; }
+
+        /* Full-height copy: body at the top, signatures pinned to the foot. */
+        .copy-layout { width: 100%; height: 100%; border-collapse: collapse; }
+        .copy-body { vertical-align: top; }
+        .copy-foot { vertical-align: bottom; }
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -131,11 +140,11 @@
         $copiesShareSheet = count($items) <= 8;
     @endphp
 
-    <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : '' }}">
+    <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : 'single-copy' }}">
         @include('prints.partials.sales-order-copy', ['copyLabel' => 'Customer Copy'])
     </div>
 
-    <div class="copy-cell {{ $copiesShareSheet ? 'keep-whole' : 'new-sheet' }}">
+    <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-bottom keep-whole' : 'single-copy new-sheet' }}">
         @include('prints.partials.sales-order-copy', ['copyLabel' => 'BRT Copy'])
     </div>
 
