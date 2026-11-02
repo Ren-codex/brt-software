@@ -23,22 +23,21 @@
            Orders too long to share a sheet start the second copy on a new sheet
            (.new-sheet) so neither copy is split across the cut; those are not
            halved, since there is nothing to cut. */
-        .copy-cell { width: 100%; }
-        .half-sheet-top { height: 159.1mm; box-sizing: border-box; border-bottom: 1px dashed #999; }
-        /* The bottom copy is given a height too so its signatures can sit at the
-           foot of its half. A hair under 159.1mm leaves room for rounding so the
-           pair never spills past the dashed cut onto a second sheet. */
-        .half-sheet-bottom { height: 158mm; box-sizing: border-box; }
+        /* Each copy is a fixed-height, positioned box so the signatures can be
+           pinned to its bottom edge with absolute positioning (DomPDF honours
+           that, but not a full-height table). The 14mm foot padding reserves the
+           band the signatures sit in, so a near-full item list never runs into
+           them. */
+        .copy-cell { width: 100%; position: relative; box-sizing: border-box; padding-bottom: 14mm; }
+        .half-sheet-top { height: 159.1mm; border-bottom: 1px dashed #999; }
+        /* A hair under 159.1mm leaves room for rounding so the pair never spills
+           past the dashed cut onto a second sheet. */
+        .half-sheet-bottom { height: 158mm; }
         /* A copy that owns a whole sheet (a long order) fills the printable page,
            so its signatures land at the bottom of the page as well. */
-        .single-copy { height: 316mm; box-sizing: border-box; }
+        .single-copy { height: 316mm; }
         .new-sheet { page-break-before: always; }
         .keep-whole { page-break-inside: avoid; }
-
-        /* Full-height copy: body at the top, signatures pinned to the foot. */
-        .copy-layout { width: 100%; height: 100%; border-collapse: collapse; }
-        .copy-body { vertical-align: top; }
-        .copy-foot { vertical-align: bottom; }
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -110,8 +109,9 @@
         .footer-table { width: 100%; margin-top: 8px; }
         .grand-total-box { background-color: #D5DBDB; padding: 7px; font-weight: bold; }
 
-        /* Signature Section */
-        .signature-section { width: 100%; margin-top: 8px; display: table; }
+        /* Signature Section — pinned to the bottom of the copy it sits in, in the
+           band reserved by the copy's foot padding. */
+        .signature-section { position: absolute; left: 0; right: 0; bottom: 2mm; width: 100%; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
         .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 12px; padding-bottom: 4px; }
 

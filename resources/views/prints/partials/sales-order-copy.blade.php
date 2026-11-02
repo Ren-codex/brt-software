@@ -1,8 +1,3 @@
-{{-- A full-height table holds the copy so the signatures can be pushed to the
-     very bottom of the copy's half-sheet, however few items are listed. The body
-     takes all the room it needs at the top; the signature row sits at the foot. --}}
-<table class="copy-layout">
-<tr><td class="copy-body">
 {{-- Names the document across the top, where the letterhead used to be. --}}
 <div class="doc-title">
     SALES ORDER
@@ -138,8 +133,6 @@
     </tr>
 </table>
 
-</td></tr>
-<tr><td class="copy-foot">
 <div class="signature-section">
     <div class="signature-box">
         <div class="signature-line"></div>
@@ -150,5 +143,3 @@
         <strong>Received By</strong>
     </div>
 </div>
-</td></tr>
-</table>
