@@ -1,3 +1,9 @@
+{{-- A table of a definite height holds the copy. DomPDF distributes that height
+     across the rows, so the body row carries the content at the top and the foot
+     row drops the signatures to the bottom — the one bottom-pinning DomPDF does
+     reliably (height:100%, absolute bottom and box padding all failed). --}}
+<table class="copy-layout {{ $layoutClass ?? 'copy-layout-half' }}">
+<tr><td class="copy-body">
 {{-- Names the document across the top, where the letterhead used to be. --}}
 <div class="doc-title">
     SALES ORDER
@@ -133,6 +139,8 @@
     </tr>
 </table>
 
+</td></tr>
+<tr><td class="copy-foot">
 <div class="signature-section">
     <div class="signature-box">
         <div class="signature-line"></div>
@@ -143,3 +151,5 @@
         <strong>Received By</strong>
     </div>
 </div>
+</td></tr>
+</table>

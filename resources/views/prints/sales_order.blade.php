@@ -23,21 +23,28 @@
            Orders too long to share a sheet start the second copy on a new sheet
            (.new-sheet) so neither copy is split across the cut; those are not
            halved, since there is nothing to cut. */
-        /* Each copy is a fixed-height, positioned box so the signatures can be
-           pinned to its bottom edge with absolute positioning — DomPDF honours
-           that, but not a full-height table, and not box-sizing with padding
-           (padding there is added on top of the height and spills the pair onto
-           a second sheet, so none is used). */
-        .copy-cell { width: 100%; position: relative; }
+        .copy-cell { width: 100%; }
         .half-sheet-top { height: 159.1mm; box-sizing: border-box; border-bottom: 1px dashed #999; }
         /* A hair under 159.1mm leaves room for rounding so the pair never spills
            past the dashed cut onto a second sheet. */
         .half-sheet-bottom { height: 158mm; box-sizing: border-box; }
-        /* A copy that owns a whole sheet (a long order) fills the printable page,
-           so its signatures land at the bottom of the page as well. */
+        /* A copy that owns a whole sheet (a long order) fills the printable page. */
         .single-copy { height: 316mm; box-sizing: border-box; }
         .new-sheet { page-break-before: always; }
         .keep-whole { page-break-inside: avoid; }
+
+        /* The copy's inner table carries a definite height so DomPDF pushes the
+           foot row (signatures) to the bottom. A little under each copy's own
+           height leaves a clear gap above the cut / page edge. A long item list
+           simply grows the body row and the signatures ride down with it. */
+        .copy-layout { width: 100%; border-collapse: collapse; }
+        .copy-body { vertical-align: top; }
+        .copy-foot { vertical-align: bottom; }
+        /* The height goes on the body cell — DomPDF honours a cell height where
+           it ignores a table height — so the body stretches and the foot row
+           (signatures) drops to just above the cut / page edge. */
+        .copy-layout-half .copy-body { height: 140mm; }
+        .copy-layout-full .copy-body { height: 290mm; }
 
         /* Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -109,9 +116,8 @@
         .footer-table { width: 100%; margin-top: 8px; }
         .grand-total-box { background-color: #D5DBDB; padding: 7px; font-weight: bold; }
 
-        /* Signature Section — pinned to the bottom of the copy it sits in, in the
-           band reserved by the copy's foot padding. */
-        .signature-section { position: absolute; left: 0; right: 0; bottom: 2mm; width: 100%; display: table; }
+        /* Signature Section — sits in the copy's bottom-aligned foot row. */
+        .signature-section { width: 100%; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
         .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 12px; padding-bottom: 4px; }
 
@@ -132,20 +138,22 @@
 </head>
 <body>
     @php
-        // Measured off the rendered PDF on long bond: one copy stands 150.0mm
-        // Measured in a browser at long-bond width, with the items at 15px:
-        // eight rows stand 154.7mm against the 159.1mm half-sheet, 4.4mm clear
-        // of the cut. A ninth lands on 162.2mm, over the line, so nine and up
-        // get a sheet each instead of being cut through.
-        $copiesShareSheet = count($items) <= 8;
+        // With the signatures pinned to the foot of each copy, the body is given
+        // a 140mm cell on a shared sheet; six item rows fill that and still leave
+        // the signatures a clear gap above the cut (measured on long bond: six
+        // rows land the signature ~155mm, ~10mm clear of the 165mm cut). A
+        // seventh pushes it over, so seven and up get a sheet each.
+        $copiesShareSheet = count($items) <= 6;
     @endphp
 
+    @php $layoutClass = $copiesShareSheet ? 'copy-layout-half' : 'copy-layout-full'; @endphp
+
     <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : 'single-copy' }}">
-        @include('prints.partials.sales-order-copy', ['copyLabel' => 'Customer Copy'])
+        @include('prints.partials.sales-order-copy', ['copyLabel' => 'Customer Copy', 'layoutClass' => $layoutClass])
     </div>
 
     <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-bottom keep-whole' : 'single-copy new-sheet' }}">
-        @include('prints.partials.sales-order-copy', ['copyLabel' => 'BRT Copy'])
+        @include('prints.partials.sales-order-copy', ['copyLabel' => 'BRT Copy', 'layoutClass' => $layoutClass])
     </div>
 
 </body>
