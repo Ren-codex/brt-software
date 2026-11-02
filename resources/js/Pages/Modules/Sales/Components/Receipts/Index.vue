@@ -70,7 +70,7 @@
                                     <th class="text-center" style="width:12%">Payment Date</th>
                                     <th class="text-center" style="width:10%">Sale</th>
                                     <th class="text-center" style="width:10%">Type</th>
-                                    <th class="text-center" style="width:12%">Amount Balance</th>
+                                    <th class="text-end" style="width:12%">Amount Balance</th>
                                     <th class="text-end" style="width:12%">Amount Paid</th>
                                     <th class="text-center" style="width:12%">Payment Mode</th>
                                     <th class="text-center" style="width:12%">Status</th>
@@ -111,8 +111,8 @@
                                                 {{ getReceiptTypeLabel(list.receipt_type) }}
                                             </span>
                                         </td>
-                                        <td class="text-center">₱{{ list.balance_due }}</td>
-                                        <td class="text-center">₱{{ list.amount_paid }}</td>
+                                        <td class="text-end">{{ formatCurrency(list.balance_due) }}</td>
+                                        <td class="text-end fw-semibold">{{ formatCurrency(list.amount_paid) }}</td>
                                         <td class="text-center">{{ list.payment_mode }}</td>
                                         <td class="text-center">
                                             <span class="badge-stack">
@@ -162,7 +162,7 @@
                 <div>
                     <p class="modal-subtitle mb-0">
                         {{ voidModal.receipt?.customer?.name || 'Walk-in customer' }}
-                        &middot; ₱{{ voidModal.receipt?.amount_paid }}
+                        &middot; {{ formatCurrency(voidModal.receipt?.amount_paid) }}
                         &middot; {{ voidModal.receipt?.payment_mode }}
                     </p>
                     <h5 class="modal-title mb-0">Void {{ voidModal.receipt?.receipt_number }}</h5>
@@ -320,6 +320,13 @@ export default {
         });
     },
     methods: {
+        formatCurrency(value) {
+            if (!value) return '₱0.00';
+            return '₱' + Number(value).toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        },
         paymentTone,
         paymentLabel,
         // Tone comes from what the status means — see Shared/utils/statusTone.js

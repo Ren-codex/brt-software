@@ -78,7 +78,7 @@
                                 {{ stageKeyword[activeStage] ? `Nothing here matches "${stageKeyword[activeStage]}".` : currentStage.empty }}
                             </td>
                         </tr>
-                        <tr v-for="row in visibleRows" :key="row.stage + row.id" class="main-table-row">
+                        <tr v-for="row in pagedRows" :key="row.stage + row.id" class="main-table-row">
                             <td class="fw-semibold text-nowrap">
                                 {{ row.reference }}
                                 <!-- Back on the road because an approver sent the
@@ -162,6 +162,17 @@
                     </tbody>
                 </table>
             </div>
+
+            <div v-if="!loading && visibleRows.length" class="delivery-pager">
+                <label class="per-page">
+                    Show
+                    <select v-model.number="perPage" class="form-select form-select-sm">
+                        <option v-for="size in perPageOptions" :key="size" :value="size">{{ size }}</option>
+                    </select>
+                    per page
+                </label>
+                <Pagination class="delivery-pagination" :pagination="pageMeta" :links="pageLinks" @fetch="goToPage" />
+            </div>
         </div>
 
         <!-- Modal chrome comes from _library-modal.scss; nothing here restyles it. -->
@@ -215,11 +226,12 @@
 import axios from 'axios';
 import { onApprovalChange } from '@/Shared/realtime.js';
 import { paymentTone } from '@/Shared/utils/paymentType.js';
+import Pagination from '@/Shared/Components/Pagination.vue';
 import MarkDelivered from './Modals/MarkDelivered.vue';
 import Payment from '../ARInvoices/Modals/Payment.vue';
 
 export default {
-    components: { MarkDelivered, Payment },
+    components: { MarkDelivered, Payment, Pagination },
     emits: ['back'],
     props: {
         showBack: { type: Boolean, default: true },
@@ -232,6 +244,11 @@ export default {
             // One search and one sort per stage, keyed like the stages.
             stageKeyword: { all: '', out: '', collect: '', money: '', bank: '' },
             stageSort: { all: '', out: '', collect: '', money: '', bank: '' },
+            // Paged here, not on the server: the board arrives whole because
+            // the stage counts, the search and the mixed All view all need it.
+            stagePage: { all: 1, out: 1, collect: 1, money: 1, bank: 1 },
+            perPage: 20,
+            perPageOptions: [10, 20, 50, 100, 500],
             board: { out_for_delivery: [], to_collect: [], with_driver: [], awaiting_bank: [] },
             handover: { open: false, row: null, holder: null, error: '', saving: false },
         };
@@ -325,6 +342,34 @@ export default {
                 return lastChanged(a, b);
             });
         },
+        lastPage() {
+            return Math.max(1, Math.ceil(this.visibleRows.length / this.perPage));
+        },
+        /** Held to the last page, as a refresh can leave fewer rows than before. */
+        currentPage() {
+            return Math.min(this.stagePage[this.activeStage], this.lastPage);
+        },
+        pagedRows() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.visibleRows.slice(start, start + this.perPage);
+        },
+        /** In the shapes the shared Pagination takes, with page numbers as links. */
+        pageMeta() {
+            return {
+                current_page: this.currentPage,
+                last_page: this.lastPage,
+                per_page: this.perPage,
+                total: this.visibleRows.length,
+            };
+        },
+        pageLinks() {
+            return {
+                first: 1,
+                prev: this.currentPage > 1 ? this.currentPage - 1 : null,
+                next: this.currentPage < this.lastPage ? this.currentPage + 1 : null,
+                last: this.lastPage,
+            };
+        },
         /** What a stage can be sorted by; the default is what changed last. */
         sortFields() {
             return [
@@ -334,6 +379,14 @@ export default {
                 { field: 'amount', label: 'Amount', type: 'number' },
                 { field: 'days', label: 'Waiting', type: 'number' },
             ];
+        },
+    },
+    watch: {
+        // A new search or order starts from its first row, on this stage only.
+        stageKeyword: { deep: true, handler() { this.stagePage[this.activeStage] = 1; } },
+        stageSort: { deep: true, handler() { this.stagePage[this.activeStage] = 1; } },
+        perPage() {
+            Object.keys(this.stagePage).forEach((key) => { this.stagePage[key] = 1; });
         },
     },
     mounted() {
@@ -348,6 +401,9 @@ export default {
         if (this.stopListening) this.stopListening();
     },
     methods: {
+        goToPage(page) {
+            this.stagePage[this.activeStage] = page;
+        },
         /**
          * Rows for one stage, each tagged with where it sits and what can be
          * done to it — so the All view can mix the three and still show the
@@ -633,6 +689,31 @@ export default {
 .delivery-age.is-late {
     color: #a9681a;
     font-weight: 600;
+}
+
+.delivery-pager {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+}
+
+.delivery-pagination {
+    flex: 1 1 auto;
+}
+
+.per-page {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.78rem;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.per-page select {
+    width: auto;
 }
 
 .delivery-empty {

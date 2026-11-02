@@ -36,6 +36,10 @@ class SalesOrderResource extends JsonResource
             ] : null,
             'sales_rep_id' => $this->sales_rep_id,
             'driver_id' => $this->driver_id,
+            'driver' => $this->relationLoaded('driver') && $this->driver ? [
+                'id' => $this->driver->id,
+                'fullname' => $this->driver->fullname,
+            ] : null,
             'checker_id' => $this->checker_id,
             'checker' => $this->relationLoaded('checker') && $this->checker ? [
                 'id' => $this->checker->id,
