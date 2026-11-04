@@ -384,13 +384,15 @@ class ApprovalDetails
             'title' => 'Price Change',
             'reference' => ($r->product->name ?? 'Product')
                 . (optional($r->inventoryStock)->batch_code ? ' · '.$r->inventoryStock->batch_code : ''),
+            // The point of this approval: the old and new prices, shown as the
+            // headline of the view rather than buried among the other fields.
+            'price_update' => [
+                ['label' => 'Retail Price', 'old' => (float) $r->previous_retail_price, 'new' => (float) $r->retail_price],
+                ['label' => 'Wholesale Price', 'old' => (float) $r->previous_wholesale_price, 'new' => (float) $r->wholesale_price],
+            ],
             'fields' => $this->fields([
                 ['Product', $r->product->name ?? null],
                 ['Batch', optional($r->inventoryStock)->batch_code],
-                ['Current retail', $r->previous_retail_price, 'money'],
-                ['New retail', $r->retail_price, 'money'],
-                ['Current wholesale', $r->previous_wholesale_price, 'money'],
-                ['New wholesale', $r->wholesale_price, 'money'],
                 ['Reason', $r->reason],
                 ['Status', $r->status->name ?? null],
                 ['Requested by', $this->who($r->requestedBy)],

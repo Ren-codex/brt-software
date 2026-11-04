@@ -259,6 +259,22 @@
                         <div v-if="detail.row.remarks" class="fs-12 text-muted w-100">"{{ detail.row.remarks }}"</div>
                     </div>
 
+                    <!-- Price change: the old → new prices, up front and big. -->
+                    <div v-if="detail.data.price_update" class="price-update">
+                        <div v-for="pu in detail.data.price_update" :key="pu.label" class="pu-card">
+                            <div class="pu-label">{{ pu.label }}</div>
+                            <div class="pu-flow">
+                                <span class="pu-old">{{ peso(pu.old) }}</span>
+                                <i class="ri-arrow-right-line pu-arrow"></i>
+                                <span class="pu-new">{{ peso(pu.new) }}</span>
+                            </div>
+                            <div class="pu-delta" :class="pu.new >= pu.old ? 'up' : 'down'">
+                                <i :class="pu.new >= pu.old ? 'ri-arrow-up-line' : 'ri-arrow-down-line'"></i>
+                                {{ pu.new === pu.old ? 'No change' : peso(Math.abs(pu.new - pu.old)) }}
+                            </div>
+                        </div>
+                    </div>
+
                     <dl class="detail-fields">
                         <div v-for="field in detail.data.fields" :key="field.label" class="detail-field">
                             <dt>{{ field.label }}</dt>
@@ -881,6 +897,56 @@ export default {
     background: #f9fafb;
     border: 1px solid #e5e7eb;
 }
+.price-update {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.9rem;
+    margin: 0 0 1.25rem;
+}
+.pu-card {
+    border: 1px solid #d7e6e0;
+    background: linear-gradient(180deg, #f3faf7 0%, #ffffff 100%);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+}
+.pu-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b8c85;
+    margin-bottom: 0.4rem;
+}
+.pu-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.pu-old {
+    font-size: 1rem;
+    color: #9ca3af;
+    text-decoration: line-through;
+}
+.pu-arrow { color: #9ca3af; font-size: 1.1rem; }
+.pu-new {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #16423c;
+}
+.pu-delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 0.4rem;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+.pu-delta.up { background: #e8f5e9; color: #2e7d32; }
+.pu-delta.down { background: #fdecea; color: #c62828; }
+
 .detail-fields {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
