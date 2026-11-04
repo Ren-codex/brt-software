@@ -6,6 +6,7 @@ use App\Models\Check;
 use App\Models\Expense;
 use App\Models\Loan;
 use App\Models\Payroll;
+use App\Models\PriceChangeRequest;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Remittance;
@@ -41,6 +42,7 @@ class ApprovalDetails
             'check' => $this->check($id),
             'credit_order', 'delivery' => $this->salesOrder($id, $source),
             'replenishment' => $this->replenishment($id),
+            'price_change' => $this->priceChange($id),
             default => abort(404, 'Unknown approval type.'),
         };
     }
@@ -373,6 +375,33 @@ class ApprovalDetails
     }
 
     /** [label, value, type?] triples into fields, skipping the blank ones. */
+    protected function priceChange(int $id): array
+    {
+        $r = PriceChangeRequest::with(['product', 'inventoryStock', 'status', 'requestedBy.employee', 'approvedBy.employee'])
+            ->findOrFail($id);
+
+        return [
+            'title' => 'Price Change',
+            'reference' => ($r->product->name ?? 'Product')
+                . (optional($r->inventoryStock)->batch_code ? ' · '.$r->inventoryStock->batch_code : ''),
+            'fields' => $this->fields([
+                ['Product', $r->product->name ?? null],
+                ['Batch', optional($r->inventoryStock)->batch_code],
+                ['Current retail', $r->previous_retail_price, 'money'],
+                ['New retail', $r->retail_price, 'money'],
+                ['Current wholesale', $r->previous_wholesale_price, 'money'],
+                ['New wholesale', $r->wholesale_price, 'money'],
+                ['Reason', $r->reason],
+                ['Status', $r->status->name ?? null],
+                ['Requested by', $this->who($r->requestedBy)],
+                ['Approved by', $this->who($r->approvedBy)],
+                ['Approved on', $r->approved_at, 'datetime'],
+                ['Remarks', $r->remarks],
+            ]),
+            'lines' => null,
+        ];
+    }
+
     protected function fields(array $triples): array
     {
         return collect($triples)
