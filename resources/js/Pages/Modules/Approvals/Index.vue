@@ -138,10 +138,8 @@
                                             </td>
                                         </tr>
                                         <tr v-for="row in rows" :key="rowKey(row)"
-                                            class="clickable-row"
                                             :class="{ 'is-focused': tab === 'pending' && isFocused(row) }"
-                                            :ref="el => registerRowRef(row, el)"
-                                            @click="viewDetails(row)">
+                                            :ref="el => registerRowRef(row, el)">
                                             <td>
                                                 <span class="type-chip">
                                                     <i :class="row.icon"></i>
@@ -168,7 +166,7 @@
                                                 </td>
                                                 <td class="text-end">
                                                     <button class="act-btn act-view" v-b-tooltip.hover title="View"
-                                                        aria-label="View" @click.stop="viewDetails(row)">
+                                                        aria-label="View" @click="viewDetails(row)">
                                                         <i class="ri-eye-line"></i>
                                                     </button>
                                                 </td>
@@ -181,21 +179,21 @@
                                                 <div class="d-flex gap-1 justify-content-end flex-wrap">
                                                     <!-- Icon only; the name is the tooltip. -->
                                                     <button class="act-btn act-view" v-b-tooltip.hover title="View"
-                                                        aria-label="View" @click.stop="viewDetails(row)">
+                                                        aria-label="View" @click="viewDetails(row)">
                                                         <i class="ri-eye-line"></i>
                                                     </button>
                                                     <button v-if="row.can_approve_inline"
                                                         class="act-btn act-approve"
                                                         v-b-tooltip.hover title="Approve" aria-label="Approve"
                                                         :disabled="busyKey === rowKey(row)"
-                                                        @click.stop="open(row, 'approved')">
+                                                        @click="open(row, 'approved')">
                                                         <i class="ri-check-line"></i>
                                                     </button>
                                                     <button v-if="row.can_reject_inline"
                                                         class="act-btn act-reject"
                                                         v-b-tooltip.hover title="Reject" aria-label="Reject"
                                                         :disabled="busyKey === rowKey(row)"
-                                                        @click.stop="open(row, 'disapproved')">
+                                                        @click="open(row, 'disapproved')">
                                                         <i class="ri-close-line"></i>
                                                     </button>
                                                     <!-- Some workflows need input this page does not
@@ -203,7 +201,6 @@
                                                          button that cannot complete. -->
                                                     <Link v-if="!row.can_approve_inline || !row.can_reject_inline"
                                                         :href="reviewUrl(row)" class="act-btn act-review"
-                                                        @click.stop
                                                         v-b-tooltip.hover title="Review" aria-label="Review">
                                                         <i class="ri-external-link-line"></i>
                                                     </Link>
@@ -925,10 +922,6 @@ tr.is-focused {
     background-color: #fffbea !important;
     box-shadow: inset 3px 0 0 #f59e0b;
 }
-
-/* The whole row opens the details; the action buttons stop the click. */
-tr.clickable-row { cursor: pointer; }
-tbody tr.clickable-row:hover { background-color: #f4f8f6; }
 
 .approval-empty {
     text-align: center;
