@@ -703,12 +703,21 @@ export default {
         },
 
         allocateItemQuantities(baseItem) {
-            return this.batchAllocationsPreview.map((allocation, index) => ({
+            const allocations = this.batchAllocationsPreview;
+
+            return allocations.map((allocation, index) => ({
                     ...baseItem,
                     id: Date.now() + index,
                     quantity: allocation.quantity,
                     batch_code: allocation.batch_code,
-                    price: Number(allocation.price || 0).toFixed(2),
+                    // A single batch keeps the price the user confirmed — which
+                    // may have been raised above the base for a special customer.
+                    // Only when the quantity is split across batches, where the
+                    // price field is read-only at each batch's own price, does
+                    // the per-batch price apply.
+                    price: allocations.length > 1
+                        ? Number(allocation.price || 0).toFixed(2)
+                        : Number(baseItem.price || 0).toFixed(2),
                 }));
         },
 
