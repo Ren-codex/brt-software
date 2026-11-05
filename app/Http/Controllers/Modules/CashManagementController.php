@@ -220,11 +220,11 @@ class CashManagementController extends Controller
         // waiting, so a long backlog shows as a number instead of a page of
         // rows nobody reads.
         // Only physical cash sits in the drawer waiting to be banked. A bank
-        // transfer or GCash collection reached its own account the moment the
-        // remittance was verified and was never cash on hand, so banking it
-        // again as cash would credit the drawer for money it never held. Only
-        // remittances with a cash portion are offered here, and only that
-        // portion — the rest of a mixed remittance is already in the bank.
+        // transfer reached its own account the moment the remittance was
+        // verified and was never cash on hand, so banking it again as cash
+        // would credit the drawer for money it never held. Only remittances
+        // with a cash portion are offered here, and only that portion — the
+        // rest of a mixed remittance is already in the bank.
         $remittancesWaiting = Remittance::whereHas('status', fn ($q) => $q->where('slug', 'liquidated'))
             ->whereNull('bank_deposit_id')
             // Has cash to bank — or no receipts at all to judge by, in which
@@ -234,6 +234,15 @@ class CashManagementController extends Controller
                 ->whereHas('receipts', fn ($r) => $r->whereRaw('LOWER(TRIM(payment_mode)) = ?', ['cash']))
                 ->orWhereDoesntHave('receipts'));
         $undepositedRemittanceTotal = (clone $remittancesWaiting)->count();
+
+        // Of the Cash on Hand total, how much is cash from remittances still
+        // waiting to be banked — summed across every waiting remittance, not
+        // only the page the picker shows — so the modal can split the drawer
+        // into what the reps turned in versus cash there from other sources.
+        $cashAwaitingDeposit = round((float) \App\Models\Receipt::query()
+            ->whereIn('remittance_id', (clone $remittancesWaiting)->select('id'))
+            ->whereRaw('LOWER(TRIM(payment_mode)) = ?', ['cash'])
+            ->sum('amount_paid'), 2);
 
         $undepositedRemittances = $remittancesWaiting
             ->with(['createdBy.employee', 'receipts:id,remittance_id,payment_mode,amount_paid'])
@@ -271,6 +280,7 @@ class CashManagementController extends Controller
             'undepositedChecks' => $undepositedChecks,
             'undepositedCheckTotal' => $undepositedCheckTotal,
             'undepositedRemittanceTotal' => $undepositedRemittanceTotal,
+            'cashAwaitingDeposit' => $cashAwaitingDeposit,
             'transfers'    => $transfers,
             'funds'        => $funds,
             'bankAccounts' => $bankAccounts,

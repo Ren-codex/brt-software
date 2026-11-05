@@ -72,7 +72,7 @@
                                     <span v-else-if="item.has_cash" class="deposit-status-chip pending ms-1">
                                         <i class="ri-time-line"></i> Not yet deposited
                                     </span>
-                                    <span v-else class="deposit-status-chip banked ms-1" title="A transfer or GCash reached the bank at verification — no cash deposit needed">
+                                    <span v-else class="deposit-status-chip banked ms-1" title="A transfer reached the bank at verification — no cash deposit needed">
                                         <i class="ri-bank-line"></i> Banked on verification
                                     </span>
                                 </p>

@@ -10,7 +10,7 @@
  * Shared so the same order reads the same way on every screen.
  */
 const CREDIT_MODES = ['credit', 'credit sales'];
-const COUNTER_METHODS = ['bank transfer', 'check', 'cheque', 'gcash'];
+const COUNTER_METHODS = ['bank transfer', 'check', 'cheque'];
 
 const normalize = (mode) => String(mode || 'cash').trim().toLowerCase();
 

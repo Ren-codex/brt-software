@@ -356,7 +356,7 @@
 
             <!-- Bank Deposit Modal -->
             <div v-if="bdModal.open" class="modal-overlay active" @click.self="bdModal.open = false">
-                <div class="modal-container" style="max-width:520px">
+                <div class="modal-container" style="max-width:760px">
                     <div class="modal-header">
                         <div class="modal-header-icon"><i class="ri-bank-card-2-line"></i></div>
                         <div>
@@ -441,8 +441,23 @@
                                 <span>Cash on Hand</span>
                                 <strong>{{ bdCashAvailable }}</strong>
                             </div>
-                            <p class="form-text mt-0 mb-2">
-                                What the drawer holds, whether it came from a rep's remittance, a bank
+                            <!-- The drawer total, split by where the money came from. The
+                                 two lines add up to the figure above. -->
+                            <div class="bd-cash-breakdown">
+                                <div class="bd-cash-break-row">
+                                    <span>
+                                        From verified remittances
+                                        <span v-if="bdCashBreakdown.count" class="bd-cash-break-count">{{ bdCashBreakdown.count }}</span>
+                                    </span>
+                                    <span class="bd-cash-break-amt">{{ formatCurrency(bdCashBreakdown.fromRemittances) }}</span>
+                                </div>
+                                <div class="bd-cash-break-row">
+                                    <span>Other drawer cash</span>
+                                    <span class="bd-cash-break-amt">{{ formatCurrency(bdCashBreakdown.other) }}</span>
+                                </div>
+                            </div>
+                            <p class="form-text mt-2 mb-2">
+                                &ldquo;Other&rdquo; is cash in the drawer not from a waiting remittance — a bank
                                 withdrawal or an entry made by hand.
                             </p>
 
@@ -857,6 +872,9 @@ export default {
         // What is really waiting, against the capped lists above.
         undepositedCheckTotal: { type: Number, default: 0 },
         undepositedRemittanceTotal: { type: Number, default: 0 },
+        // Of the drawer total, how much is cash from remittances still awaiting
+        // a deposit — the rest is other drawer cash (withdrawals / manual).
+        cashAwaitingDeposit: { type: Number, default: 0 },
         cashPosition: { type: Object, default: () => ({ data_ready: false, bank_balances: [], petty_cash: [], cash_on_hand: 0, total_bank: 0, total_petty_cash: 0, total_cash: 0 }) },
         summaryCards: { type: Array,  default: () => [] },
         stats:        { type: Object, default: () => ({}) },
@@ -919,6 +937,27 @@ export default {
         bdCashAvailable() {
             return this.bdSelectedCashAccount?.balance_formatted
                 ?? (this.cashAccounts[0]?.balance_formatted ?? '₱0.00');
+        },
+        /**
+         * The Cash on Hand total split by source: cash the reps turned in that
+         * is still waiting to be banked, versus whatever else is in the drawer
+         * (bank withdrawals, entries made by hand). The two lines add up to the
+         * Cash on Hand figure above them.
+         */
+        bdCashBreakdown() {
+            const total = Number(this.bdSelectedCashAccount?.balance
+                ?? this.cashAccounts[0]?.balance ?? 0);
+            const fromRemittances = Number(this.cashAwaitingDeposit || 0);
+            // Clamp: a drawer short of its remittances would otherwise show a
+            // negative "other", which only confuses. Reconciliation aside, the
+            // split is a reading aid.
+            const other = Math.max(0, Math.round((total - fromRemittances) * 100) / 100);
+            return {
+                total,
+                fromRemittances,
+                other,
+                count: this.undepositedRemittanceTotal || 0,
+            };
         },
         bdSelectedCashAccount() {
             return this.cashAccounts.find(a => a.id === this.bdForm.cash_account_id) ?? null;
@@ -1300,6 +1339,22 @@ export default {
     margin-bottom: 0.15rem;
 }
 .bd-cash-head strong { font-size: 1.05rem; }
+.bd-cash-breakdown {
+    margin: 0.25rem 0 0.15rem;
+    padding-top: 0.4rem;
+    border-top: 1px dashed var(--brt-c-e0eeea);
+    display: flex; flex-direction: column; gap: 0.2rem;
+}
+.bd-cash-break-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 0.8rem; color: var(--brt-muted);
+}
+.bd-cash-break-amt { font-weight: 600; color: #16322e; font-variant-numeric: tabular-nums; }
+.bd-cash-break-count {
+    display: inline-block; margin-left: 0.3rem; padding: 0 0.4rem;
+    font-size: 0.68rem; font-weight: 600; color: #3d8d7a;
+    background: rgba(61,141,122,0.12); border-radius: 8px;
+}
 .picker-count { float: right; font-weight: 400; font-size: 0.72rem; color: var(--brt-muted); }
 .picker-search { margin-bottom: 0.4rem; font-size: 0.8rem; padding: 0.3rem 0.55rem; }
 .bd-remit-list {

@@ -210,6 +210,9 @@ class RemittanceBankRoutingTest extends TestCase
     public function test_a_mode_the_verifier_added_by_hand_still_posts(): void
     {
         // No receipt backs 'GCash' — the verifier typed it in during approval.
+        // GCash is retired as a payment type (it is only a bank name now), so it
+        // no longer spins up a phantom 1012 account; the hand-typed line falls
+        // back to Cash and still posts, with nothing dropped.
         $remittance = $this->remittanceWith(
             [['payment_mode' => 'Cash', 'amount_paid' => 500]],
             ['Cash' => 500, 'GCash' => 250]
@@ -218,8 +221,8 @@ class RemittanceBankRoutingTest extends TestCase
         $entry = app(JournalEntryService::class)->recordRemittanceApprovalEntry($remittance);
         $debits = $this->debitsByAccount($entry->fresh('lines.account'));
 
-        $this->assertEquals(500.0, $debits['1000']);
-        $this->assertEquals(250.0, $debits['1012']);
+        $this->assertEquals(750.0, $debits['1000']);
+        $this->assertArrayNotHasKey('1012', $debits);
     }
 
     public function test_the_entry_still_balances_when_several_banks_are_involved(): void

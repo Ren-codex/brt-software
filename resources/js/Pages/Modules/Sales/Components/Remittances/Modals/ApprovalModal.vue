@@ -224,10 +224,10 @@ export default {
     computed: {
         // Amount received is captured per payment mode present on the
         // remittance's receipts, since a single remittance can bundle cash,
-        // GCash, check, and bank transfer receipts together.
+        // check, and bank transfer receipts together.
         paymentBreakdown() {
             if (!this.item || !Array.isArray(this.item.receipts)) return [];
-            const order = ['Cash', 'GCash', 'Check', 'Bank Transfer'];
+            const order = ['Cash', 'Check', 'Bank Transfer'];
             const totals = {};
             const banks = {};
             this.item.receipts.forEach(r => {
@@ -312,10 +312,10 @@ export default {
             this.form.received_breakdown = breakdown;
             this.showModal = true;
         },
-        // A transfer or GCash is money already sitting in an account, so it is
+        // A transfer is money already sitting in an account, so it is
         // confirmed rather than counted; cash and cheques are keyed in by hand.
         isElectronic(mode) {
-            return ['bank transfer', 'gcash'].includes(String(mode || '').trim().toLowerCase());
+            return ['bank transfer'].includes(String(mode || '').trim().toLowerCase());
         },
         isConfirmed(row) {
             const v = this.form.received_breakdown[row.mode];

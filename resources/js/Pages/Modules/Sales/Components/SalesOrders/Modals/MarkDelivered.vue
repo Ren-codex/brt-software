@@ -405,7 +405,6 @@ export default {
         modeIcon(mode) {
             const map = {
                 'Cash': 'ri-money-peso-circle-line',
-                'GCash': 'ri-smartphone-line',
                 'Bank Transfer': 'ri-bank-line',
                 'Check': 'ri-file-list-3-line',
             };

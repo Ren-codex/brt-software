@@ -1591,7 +1591,6 @@ class JournalEntryService
         return match ($mode) {
             'bank transfer', 'check' => $this->ensureAccount('1011', 'cash_in_bank', 'Cash in Bank', 'asset', 'cash'),
             'credit card', 'debit card' => $this->ensureAccount('1090', 'card_clearing', 'Card Clearing', 'asset', 'current_asset'),
-            'gcash' => $this->ensureAccount('1012', 'gcash', 'GCash', 'asset', 'cash'),
             default => $this->ensureAccount('1000', 'cash', 'Cash', 'asset', 'current_asset'),
         };
     }
