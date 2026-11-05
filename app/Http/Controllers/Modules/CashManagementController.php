@@ -371,7 +371,7 @@ class CashManagementController extends Controller
             'deposit_type'       => 'required|in:cash,check',
             // Cheques are picked off the list of what is on hand; their
             // number, date and amount come from the cheque itself.
-            'check_ids'          => 'required_if:deposit_type,check|array|min:1',
+            'check_ids'          => 'exclude_unless:deposit_type,check|required|array|min:1',
             'check_ids.*'        => 'integer|exists:checks,id',
             'reference'          => 'nullable|string|max:100',
             'notes'              => 'nullable|string|max:500',
