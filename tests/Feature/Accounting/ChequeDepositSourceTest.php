@@ -129,6 +129,7 @@ class ChequeDepositSourceTest extends TestCase
             'bank_account_id' => $this->bank->id,
             'deposit_date' => now()->toDateString(),
             'deposit_type' => 'check',
+            'reference' => 'SLIP-1',
             'check_ids' => [Check::where('check_number', $number)->latest('id')->firstOrFail()->id],
         ], $extra));
     }
@@ -198,6 +199,7 @@ class ChequeDepositSourceTest extends TestCase
             'amount' => 2000,
             'deposit_date' => now()->toDateString(),
             'deposit_type' => 'cash',
+            'reference' => 'SLIP-1',
         ])->assertOk();
 
         $this->assertSame(3000.0, $this->balance('1000'));

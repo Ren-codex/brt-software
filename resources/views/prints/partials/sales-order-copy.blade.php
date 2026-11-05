@@ -17,23 +17,13 @@
     <tr>
         {{-- No logo, no company name, no address: these print on headed paper,
              which carries all three already. --}}
-        {{-- No "Sales Order" heading: the copy label and the numbered block
-             below already say what this is. --}}
+        {{-- Just the copy label: the date and SO number already sit in the
+             centred title above, so the old right-hand meta block only
+             repeated them. --}}
         <td class="order-info">
             @isset($copyLabel)
                 <div class="copy-label">{{ $copyLabel }}</div>
             @endisset
-            <table class="order-meta-table">
-                <tr>
-                    <td class="order-meta-value">{{ \Carbon\Carbon::parse($sales_order->order_date)->format('m/d/Y') }}</td>
-                </tr>
-                <tr>
-                    <td class="order-meta-label">Sales Order No.</td>
-                </tr>
-                <tr>
-                    <td class="order-meta-value">{{ $sales_order->so_number }}</td>
-                </tr>
-            </table>
         </td>
     </tr>
 </table>

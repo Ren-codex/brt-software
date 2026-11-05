@@ -118,7 +118,7 @@ class CashDepositWithoutChequesTest extends TestCase
             'deposit_date' => now()->toDateString(),
             'check_ids' => [],
             'remittance_ids' => [],
-            'reference' => null,
+            'reference' => 'SLIP-1',
             'notes' => null,
         ], $extra));
     }
@@ -150,6 +150,17 @@ class CashDepositWithoutChequesTest extends TestCase
         $this->deposit($this->accountant(), ['remittance_ids' => [$remittance->id]])->assertOk();
 
         $this->assertNotNull($remittance->fresh()->bank_deposit_id, 'The banked remittance is linked to its deposit.');
+    }
+
+    public function test_a_deposit_needs_a_reference(): void
+    {
+        $this->cashOnHand(10000);
+
+        // Every deposit must carry a reference (deposit slip / OR number) so it
+        // can be matched against the bank's own record.
+        $this->deposit($this->accountant(), ['reference' => null])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('reference');
     }
 
     public function test_a_cheque_deposit_still_needs_a_cheque(): void

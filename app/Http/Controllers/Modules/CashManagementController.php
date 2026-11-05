@@ -148,7 +148,7 @@ class CashManagementController extends Controller
 
         $undepositedChecks = $chequesOnHand
             ? $chequesOnHand
-                ->with('customer')
+                ->with('customer', 'receivedBy')
                 // Oldest cheque date first: that is the one the bank is
                 // waiting on, and the one that ages into trouble.
                 ->orderBy('check_date')
@@ -160,6 +160,9 @@ class CashManagementController extends Controller
                     'check_number' => $c->check_number,
                     'check_date' => optional($c->check_date)->toDateString(),
                     'customer' => $c->customer->name ?? 'Walk-in customer',
+                    // The sales rep who turned the cheque in (checks.received_by_id
+                    // is set to the order's sales rep when the payment is recorded).
+                    'rep_name' => optional($c->receivedBy)->fullname ?? 'Unknown rep',
                     'bank_name' => $c->bank_name,
                     'amount' => (float) $c->amount,
                     'amount_formatted' => '₱' . number_format((float) $c->amount, 2),
@@ -383,7 +386,7 @@ class CashManagementController extends Controller
             // number, date and amount come from the cheque itself.
             'check_ids'          => 'exclude_unless:deposit_type,check|required|array|min:1',
             'check_ids.*'        => 'integer|exists:checks,id',
-            'reference'          => 'nullable|string|max:100',
+            'reference'          => 'required|string|max:100',
             'notes'              => 'nullable|string|max:500',
             'remittance_ids'     => 'nullable|array',
             'remittance_ids.*'   => 'integer|exists:remittances,id',

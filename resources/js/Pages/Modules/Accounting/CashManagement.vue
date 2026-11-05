@@ -314,7 +314,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="d in deposits" :key="d.id">
+                                <tr v-for="d in deposits" :key="d.id" class="cm-row-clickable" @click="openDepositDetails(d)" title="View full details">
                                     <td class="font-monospace deposit-no">{{ d.deposit_no }}</td>
                                     <td class="text-nowrap">{{ d.deposit_date }}</td>
                                     <td>
@@ -342,8 +342,8 @@
                                         </span>
                                     </td>
                                     <td class="text-muted small">{{ d.created_by }}</td>
-                                    <td class="text-center">
-                                        <button v-if="can('accounting', 'cash_management', 'admin')" class="action-btn delete" @click="confirmDeleteDeposit(d)" title="Delete & Reverse">
+                                    <td class="text-center" @click.stop>
+                                        <button v-if="can('accounting', 'cash_management', 'admin')" class="action-btn delete" @click.stop="confirmDeleteDeposit(d)" title="Delete & Reverse">
                                             <i class="ri-delete-bin-line"></i>
                                         </button>
                                     </td>
@@ -356,7 +356,7 @@
 
             <!-- Bank Deposit Modal -->
             <div v-if="bdModal.open" class="modal-overlay active" @click.self="bdModal.open = false">
-                <div class="modal-container" style="max-width:760px">
+                <div class="modal-container" style="max-width:880px">
                     <div class="modal-header">
                         <div class="modal-header-icon"><i class="ri-bank-card-2-line"></i></div>
                         <div>
@@ -370,6 +370,8 @@
                         <button class="close-btn ms-auto" @click="bdModal.open = false"><i class="ri-close-line"></i></button>
                     </div>
                     <div class="modal-body">
+                        <div class="bd-two-col">
+                        <div class="bd-col-left">
                         <div class="row g-3">
                             <div class="col-12 col-sm-6">
                                 <label class="form-label">Deposit Date <span class="text-danger">*</span></label>
@@ -386,6 +388,54 @@
                             </div>
                         </div>
 
+                        <div class="row g-3 mt-0">
+                            <!-- A cheque is worth what is written on it, so only cash enters an amount. -->
+                            <div class="col-12 col-sm-6" v-if="!bdIsCheck">
+                                <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                <AmountInput v-model="bdForm.amount" class="form-control" placeholder="0.00" />
+                                <div v-if="bdErrors.amount" class="error-msg">{{ bdErrors.amount[0] }}</div>
+                            </div>
+                            <div class="col-12" v-if="!bdIsCheck">
+                                <label class="form-label">Cash Account (Source) <span class="text-danger">*</span></label>
+                                <select v-model="bdForm.cash_account_id" class="form-select">
+                                    <option value="">-- Select cash GL account --</option>
+                                    <option v-for="a in cashAccounts" :key="a.id" :value="a.id">{{ a.code }} — {{ a.name }}</option>
+                                </select>
+                                <div class="form-text">
+                                    The cash account that will be reduced (credited).
+                                    <span v-if="bdSelectedCashAccount" class="cash-balance-hint" :class="{ over: Number(bdForm.amount) > bdSelectedCashAccount.balance }">
+                                        Available: {{ bdSelectedCashAccount.balance_formatted }}
+                                    </span>
+                                </div>
+                                <div v-if="bdErrors.cash_account_id" class="error-msg">{{ bdErrors.cash_account_id[0] }}</div>
+                            </div>
+                            <div class="col-12" v-else>
+                                <div class="form-text mb-0">
+                                    Nothing leaves the cash drawer: the cheque is the customer's money, and it is
+                                    banked straight out of collections in transit. Cash on Hand does not change.
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Deposit To (Bank Account) <span class="text-danger">*</span></label>
+                                <select v-model="bdForm.bank_account_id" class="form-select">
+                                    <option value="">-- Select bank account --</option>
+                                    <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.bank_name }} — {{ b.account_name }}</option>
+                                </select>
+                                <div v-if="bdErrors.bank_account_id" class="error-msg">{{ bdErrors.bank_account_id[0] }}</div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Reference No <span class="text-danger">*</span></label>
+                                <input v-model="bdForm.reference" type="text" class="form-control" placeholder="Deposit slip / OR no." />
+                                <div v-if="bdErrors.reference" class="error-msg">{{ bdErrors.reference[0] }}</div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
+                                <input v-model="bdForm.notes" type="text" class="form-control" placeholder="e.g. Collections from Jan 15–20" />
+                            </div>
+                        </div>
+                        </div><!-- /bd-col-left -->
+
+                        <div class="bd-col-right">
             <!-- Cheques are not typed out: you tick the ones in your hand.
                  Each becomes a deposit of its own, because the bank pays them
                  one at a time and any one of them can bounce alone. -->
@@ -408,7 +458,7 @@
                                 v-model.trim="chequeSearch"
                                 type="text"
                                 class="form-control picker-search"
-                                placeholder="Search by cheque no, customer or date"
+                                placeholder="Search by cheque no, customer, rep or date"
                             >
 
                             <div v-if="undepositedChecks.length" class="bd-cheque-list">
@@ -416,6 +466,7 @@
                                     <input type="checkbox" :checked="isChequeSelected(c)" @change="toggleCheque(c)" />
                                     <span class="bd-cheque-info">
                                         <span class="bd-cheque-no">{{ c.check_number || 'No number' }}</span>
+                                        <span class="bd-cheque-rep"><i class="ri-user-line"></i> {{ c.rep_name || 'Unknown rep' }}</span>
                                         <span class="bd-cheque-meta">
                                             {{ c.customer }}<span v-if="c.check_date"> · dated {{ c.check_date }}</span>
                                         </span>
@@ -479,8 +530,8 @@
                                     <input type="checkbox" :checked="isRemittanceSelected(r)" @change="toggleRemittance(r)" />
                                     <span class="bd-remit-info">
                                         <span class="bd-remit-no">{{ r.remittance_no }}</span>
-                                        <span class="bd-remit-rep">{{ r.rep_name }} · {{ r.remittance_date }}</span>
-                                        <span v-if="r.mode" class="bd-remit-mode">{{ r.mode }}</span>
+                                        <span class="bd-remit-rep"><i class="ri-user-line"></i> {{ r.rep_name || 'Unknown rep' }}</span>
+                                        <span class="bd-remit-sub">{{ r.remittance_date }}<span v-if="r.mode"> · {{ r.mode }}</span></span>
                                     </span>
                                     <span class="bd-remit-amount">{{ r.amount_formatted }}</span>
                                 </label>
@@ -495,54 +546,8 @@
                             </p>
                         </div>
 
-                        <div class="row g-3 mt-0">
-                            <!-- A cheque is worth what is written on it. -->
-                            <div class="col-12 col-sm-6" v-if="!bdIsCheck">
-                                <label class="form-label">Amount <span class="text-danger">*</span></label>
-                                <AmountInput v-model="bdForm.amount" class="form-control" placeholder="0.00" />
-                                <div v-if="bdErrors.amount" class="error-msg">{{ bdErrors.amount[0] }}</div>
-                            </div>
-            <!-- Only cash comes out of an account somebody picks. A cheque is
-                 the customer's money passing through: it is sitting in
-                 collections in transit, and that is what the deposit credits,
-                 whatever this form might have offered. -->
-                            <div class="col-12" v-if="!bdIsCheck">
-                                <label class="form-label">Cash Account (Source) <span class="text-danger">*</span></label>
-                                <select v-model="bdForm.cash_account_id" class="form-select">
-                                    <option value="">-- Select cash GL account --</option>
-                                    <option v-for="a in cashAccounts" :key="a.id" :value="a.id">{{ a.code }} — {{ a.name }}</option>
-                                </select>
-                                <div class="form-text">
-                                    The cash account that will be reduced (credited).
-                                    <span v-if="bdSelectedCashAccount" class="cash-balance-hint" :class="{ over: Number(bdForm.amount) > bdSelectedCashAccount.balance }">
-                                        Available: {{ bdSelectedCashAccount.balance_formatted }}
-                                    </span>
-                                </div>
-                                <div v-if="bdErrors.cash_account_id" class="error-msg">{{ bdErrors.cash_account_id[0] }}</div>
-                            </div>
-                            <div class="col-12" v-else>
-                                <div class="form-text mb-0">
-                                    Nothing leaves the cash drawer: the cheque is the customer's money, and it is
-                                    banked straight out of collections in transit. Cash on Hand does not change.
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Deposit To (Bank Account) <span class="text-danger">*</span></label>
-                                <select v-model="bdForm.bank_account_id" class="form-select">
-                                    <option value="">-- Select bank account --</option>
-                                    <option v-for="b in bankAccounts" :key="b.id" :value="b.id">{{ b.bank_name }} — {{ b.account_name }}</option>
-                                </select>
-                                <div v-if="bdErrors.bank_account_id" class="error-msg">{{ bdErrors.bank_account_id[0] }}</div>
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Reference No <span class="text-muted">(optional)</span></label>
-                                <input v-model="bdForm.reference" type="text" class="form-control" placeholder="Deposit slip / OR no." />
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
-                                <input v-model="bdForm.notes" type="text" class="form-control" placeholder="e.g. Collections from Jan 15–20" />
-                            </div>
-                        </div>
+                        </div><!-- /bd-col-right -->
+                        </div><!-- /bd-two-col -->
                     </div>
                     <div class="modal-footer">
                         <button class="acct-btn-secondary" @click="bdModal.open = false">Cancel</button>
@@ -550,6 +555,81 @@
                             <span v-if="bdSaving"><i class="ri-loader-4-line spin"></i> Saving...</span>
                             <span v-else>Record Deposit</span>
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deposit Details Modal -->
+            <div v-if="ddModal.open && ddModal.deposit" class="modal-overlay active" @click.self="ddModal.open = false">
+                <div class="modal-container" style="max-width:640px">
+                    <div class="modal-header">
+                        <div class="modal-header-icon"><i class="ri-bank-card-2-line"></i></div>
+                        <div>
+                            <h5 class="modal-title">Deposit {{ ddModal.deposit.deposit_no }}</h5>
+                            <p class="modal-subtitle">Full details of this bank deposit.</p>
+                        </div>
+                        <button class="close-btn ms-auto" @click="ddModal.open = false"><i class="ri-close-line"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="dd-hero">
+                            <div>
+                                <span class="dd-section-label">Amount</span>
+                                <div class="dd-hero-amount">{{ ddModal.deposit.amount_formatted }}</div>
+                            </div>
+                            <div class="dd-hero-chips">
+                                <span class="bd-type-chip" :class="ddModal.deposit.deposit_type === 'check' ? 'check' : 'cash'">
+                                    <i :class="ddModal.deposit.deposit_type === 'check' ? 'ri-bill-line' : 'ri-money-peso-circle-line'"></i>
+                                    {{ ddModal.deposit.deposit_type === 'check' ? 'Check' : 'Cash' }}
+                                </span>
+                                <span class="bd-status-chip" :class="ddModal.deposit.status">
+                                    {{ ddModal.deposit.status === 'pending' ? 'Pending' : 'Posted' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <dl class="dd-grid">
+                            <div class="dd-row"><dt>Deposit Date</dt><dd>{{ ddModal.deposit.deposit_date || '—' }}</dd></div>
+                            <div class="dd-row"><dt>Recorded</dt><dd>{{ ddModal.deposit.created_at || '—' }}</dd></div>
+                            <div class="dd-row" v-if="ddModal.deposit.deposit_type === 'check'"><dt>Cheque No</dt><dd>{{ ddModal.deposit.check_number || '—' }}</dd></div>
+                            <div class="dd-row" v-if="ddModal.deposit.deposit_type === 'check'"><dt>Cheque Date</dt><dd>{{ ddModal.deposit.check_date || '—' }}</dd></div>
+                            <div class="dd-row"><dt>Cash Account (Source)</dt><dd>{{ ddModal.deposit.cash_account || '—' }}</dd></div>
+                            <div class="dd-row"><dt>Deposited To</dt><dd>{{ ddModal.deposit.bank_name }}</dd></div>
+                            <div class="dd-row"><dt>Reference</dt><dd>{{ ddModal.deposit.reference || '—' }}</dd></div>
+                            <div class="dd-row"><dt>Recorded By</dt><dd>{{ ddModal.deposit.created_by || '—' }}</dd></div>
+                        </dl>
+
+                        <div class="dd-block">
+                            <span class="dd-section-label">Journal Effect</span>
+                            <p v-if="ddModal.deposit.deposit_type === 'check'" class="dd-posting-note">
+                                A cheque sits in collections in transit until it clears; it posts to
+                                {{ ddModal.deposit.bank_name }} only when confirmed cleared. Cash on Hand is unaffected.
+                            </p>
+                            <p v-else class="dd-posting-note">
+                                <span class="dd-dr">DR</span> {{ ddModal.deposit.bank_name }}
+                                &nbsp;·&nbsp;
+                                <span class="dd-cr">CR</span> {{ ddModal.deposit.cash_account || 'Cash' }}
+                                &nbsp;—&nbsp; {{ ddModal.deposit.amount_formatted }}
+                            </p>
+                        </div>
+
+                        <div v-if="ddModal.deposit.remittances && ddModal.deposit.remittances.length" class="dd-block">
+                            <span class="dd-section-label">Linked Collections ({{ ddModal.deposit.remittances.length }})</span>
+                            <div class="dd-remit-list">
+                                <div v-for="r in ddModal.deposit.remittances" :key="r.id" class="dd-remit-row">
+                                    <span class="dd-remit-no">{{ r.remittance_no }}</span>
+                                    <span class="dd-remit-rep">{{ r.rep_name || '—' }}</span>
+                                    <span class="dd-remit-amt">{{ formatCurrency(r.amount) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="ddModal.deposit.notes" class="dd-block">
+                            <span class="dd-section-label">Notes</span>
+                            <p class="dd-notes-text">{{ ddModal.deposit.notes }}</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="acct-btn-secondary" @click="ddModal.open = false">Close</button>
                     </div>
                 </div>
             </div>
@@ -895,6 +975,8 @@ export default {
             bdForm:   emptyBdForm(this.cashAccounts),
             bdErrors: {},
             bdSaving: false,
+            // Read-only details of a deposit row the user clicked.
+            ddModal:  { open: false, deposit: null },
             // Both pickers grow with the business; these narrow them down.
             remitSearch: '',
             chequeSearch: '',
@@ -922,7 +1004,7 @@ export default {
         },
         shownCheques() {
             return this.matching(this.undepositedChecks, this.chequeSearch,
-                c => [c.check_number, c.customer, c.check_date]);
+                c => [c.check_number, c.customer, c.rep_name, c.check_date]);
         },
         /** What the ticked cheques come to, for the line under the list. */
         bdChequeTotal() {
@@ -1019,6 +1101,10 @@ export default {
             this.bdForm   = emptyBdForm(this.cashAccounts);
             this.bdErrors = {};
             this.bdModal.open = true;
+        },
+        openDepositDetails(deposit) {
+            this.ddModal.deposit = deposit;
+            this.ddModal.open = true;
         },
         isRemittanceSelected(r) {
             return this.bdForm.remittance_ids.includes(r.id);
@@ -1182,6 +1268,46 @@ export default {
 }
 .cm-table tbody td { font-size: 0.85rem; vertical-align: middle; }
 
+/* Clickable rows open a read-only details view. */
+.cm-row-clickable { cursor: pointer; transition: background 0.12s ease; }
+.cm-row-clickable:hover td { background: #f3faf8; }
+
+/* ── Deposit details modal ───────────────────────────────────── */
+.dd-section-label {
+    display: block; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--brt-muted); margin-bottom: 0.35rem;
+}
+.dd-hero {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+    padding: 0.75rem 1rem; margin-bottom: 1rem;
+    background: #f7fbfa; border: 1px solid var(--brt-c-e0eeea); border-radius: 10px;
+}
+.dd-hero-amount { font-size: 1.5rem; font-weight: 700; color: #16322e; font-variant-numeric: tabular-nums; }
+.dd-hero-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+.dd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5rem; margin: 0; }
+.dd-row {
+    display: flex; justify-content: space-between; gap: 0.75rem; align-items: baseline;
+    padding: 0.4rem 0; border-bottom: 1px dashed var(--brt-c-e0eeea); font-size: 0.85rem;
+}
+.dd-row dt { color: var(--brt-muted); margin: 0; font-weight: 500; }
+.dd-row dd { margin: 0; color: #16322e; font-weight: 600; text-align: right; }
+.dd-block { margin-top: 1rem; }
+.dd-posting-note { font-size: 0.85rem; color: #16322e; margin: 0; }
+.dd-dr, .dd-cr { font-weight: 700; font-size: 0.7rem; padding: 0 0.35rem; border-radius: 6px; }
+.dd-dr { color: #1b6b58; background: rgba(61,141,122,0.12); }
+.dd-cr { color: #9a5b00; background: rgba(214,158,46,0.14); }
+.dd-remit-list { display: flex; flex-direction: column; gap: 0.3rem; }
+.dd-remit-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.45rem 0.6rem; background: #fff;
+    border: 1px solid var(--brt-c-e5efec); border-radius: 8px; font-size: 0.82rem;
+}
+.dd-remit-no { font-family: monospace; font-weight: 700; color: var(--brt-ink); }
+.dd-remit-rep { color: var(--brt-muted); flex: 1; min-width: 0; }
+.dd-remit-amt { font-weight: 600; color: #16322e; font-variant-numeric: tabular-nums; }
+.dd-notes-text { font-size: 0.85rem; color: #16322e; margin: 0; white-space: pre-wrap; }
+@media (max-width: 575px) { .dd-grid { grid-template-columns: 1fr; } }
+
 /* ── Bank chip ───────────────────────────────────────────────── */
 .bank-chip {
     display: inline-block;
@@ -1325,8 +1451,17 @@ export default {
     font-size: 0.76rem; font-weight: 600; cursor: default;
 }
 
+/* Two columns in the deposit modal: the form on the left, the breakdown and
+   what is being banked on the right. Stacks on narrow screens. */
+.bd-two-col { display: flex; gap: 1.25rem; align-items: flex-start; }
+.bd-col-left  { flex: 1 1 0; min-width: 0; }
+.bd-col-right { flex: 1 1 0; min-width: 0; }
+@media (max-width: 767px) {
+    .bd-two-col { flex-direction: column; gap: 0; }
+}
+
 .bd-remit-section {
-    margin-top: 0.75rem; padding: 0.85rem 1rem;
+    margin-top: 0; padding: 0.85rem 1rem;
     background: #f7fbfa; border: 1px solid var(--brt-c-e0eeea); border-radius: 10px;
 }
 .bd-cash-head {
@@ -1370,7 +1505,9 @@ export default {
 .bd-remit-row:hover { border-color: var(--brt-c-a7d4c4); }
 .bd-remit-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .bd-remit-no  { font-weight: 700; color: var(--brt-ink); font-family: monospace; font-size: 0.78rem; }
-.bd-remit-rep { color: var(--brt-muted); font-size: 0.74rem; }
+.bd-remit-rep { color: var(--brt-ink); font-weight: 600; font-size: 0.76rem; }
+.bd-remit-rep i { color: #3d8d7a; }
+.bd-remit-sub { color: var(--brt-muted); font-size: 0.72rem; }
 .bd-remit-mode {
     display: inline-block;
     align-self: flex-start;
@@ -1387,7 +1524,7 @@ export default {
 /* The cheque picker mirrors the collections list above it, so the two read as
    one idea: tick what this deposit is carrying. */
 .bd-cheque-section {
-    margin-top: 0.75rem; padding: 0.85rem 1rem;
+    margin-top: 0; padding: 0.85rem 1rem;
     background: #f7fbfa; border: 1px solid var(--brt-c-e0eeea); border-radius: 10px;
 }
 .bd-cheque-empty { font-size: 0.8rem; color: var(--brt-muted); }
@@ -1404,6 +1541,8 @@ export default {
 .bd-cheque-row:hover { border-color: var(--brt-c-a7d4c4); }
 .bd-cheque-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .bd-cheque-no { font-weight: 700; color: var(--brt-ink); font-family: monospace; font-size: 0.78rem; }
+.bd-cheque-rep { color: var(--brt-ink); font-weight: 600; font-size: 0.76rem; }
+.bd-cheque-rep i { color: #3d8d7a; }
 .bd-cheque-meta { color: var(--brt-muted); font-size: 0.74rem; }
 .bd-cheque-amount { font-weight: 700; color: #1e4d8c; white-space: nowrap; }
 .bd-cheque-total {
