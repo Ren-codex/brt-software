@@ -47,9 +47,9 @@
         .copy-layout-full .copy-body { height: 290mm; }
 
         /* Header */
-        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
         /* Centred across the top, in place of the letterhead. */
-        .doc-title { text-align: center; font-size: 18px; font-weight: bold; margin: 0 0 8px 0; }
+        .doc-title { text-align: center; font-size: 15px; font-weight: bold; margin: 0 0 4px 0; }
         .doc-title-meta { font-size: 12px; font-weight: normal; }
         .order-info { text-align: right; font-size: 12px; }
         .order-meta-table { width: 100%; border-collapse: collapse; }
@@ -65,7 +65,7 @@
         .order-meta-value { text-align: right; font-size: 12px; padding: 2px 0 5px 0; }
 
         /* Address & Total Section */
-        .summary-container { width: 100%; display: table; margin-bottom: 6px; }
+        .summary-container { width: 100%; display: table; margin-bottom: 3px; }
         .address-block { display: table-cell; width: 24%; vertical-align: top; }
         /* The crew reads as a list, not as the boxes it wore at the foot of
            the page: three names in a column beside two addresses. */
@@ -75,7 +75,7 @@
             display: table-cell;
             width: 28%;
             background-color: #E5E7E9;
-            padding: 10px;
+            padding: 6px;
             text-align: right;
             vertical-align: middle;
         }
@@ -91,12 +91,12 @@
         .meta-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
             background-color: #D5DBDB;
             border: 1px solid #BDC3C7;
         }
-        .meta-table th { font-size: 10px; padding: 2px 3px; text-align: center; width: 20%; }
-        .meta-table td { background-color: white; text-align: center; padding: 2px 4px; border: 1px solid #BDC3C7; }
+        .meta-table th { font-size: 10px; padding: 1px 3px; text-align: center; width: 20%; }
+        .meta-table td { background-color: white; text-align: center; padding: 1px 4px; border: 1px solid #BDC3C7; }
 
         /* Items Table */
         .items-table { width: 100%; border-collapse: collapse; }
@@ -104,8 +104,8 @@
            padding was spending, and the row still clears the text. */
         /* The items are what the warehouse and the customer actually read off
            this page, so they print a size up from everything around them. */
-        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 4px 5px; text-align: left; font-size: 15px; }
-        .items-table td { padding: 4px 5px; border-bottom: 1px solid #eee; font-size: 15px; }
+        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 1px 5px; text-align: left; font-size: 11px; }
+        .items-table td { padding: 1px 5px; border-bottom: 1px solid #eee; font-size: 12px; }
         /* Narrow and centred, sitting against the packaging it belongs to:
            "3 Sack" reads as one fact, not a number adrift in a wide column. */
         .items-table .qty-col { width: 60px; text-align: center; }
@@ -113,13 +113,13 @@
         .items-table .text-center { text-align: center; }
 
         /* Footer */
-        .footer-table { width: 100%; margin-top: 8px; }
-        .grand-total-box { background-color: #D5DBDB; padding: 7px; font-weight: bold; }
+        .footer-table { width: 100%; margin-top: 3px; }
+        .grand-total-box { background-color: #D5DBDB; padding: 4px; font-weight: bold; }
 
         /* Signature Section — sits in the copy's bottom-aligned foot row. */
         .signature-section { width: 100%; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
-        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 12px; padding-bottom: 4px; }
+        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 8px; padding-bottom: 4px; }
 
         /* Copy label */
         .copy-label {
@@ -139,11 +139,11 @@
 <body>
     @php
         // With the signatures pinned to the foot of each copy, the body is given
-        // a 140mm cell on a shared sheet; six item rows fill that and still leave
-        // the signatures a clear gap above the cut (measured on long bond: six
-        // rows land the signature ~155mm, ~10mm clear of the 165mm cut). A
-        // seventh pushes it over, so seven and up get a sheet each.
-        $copiesShareSheet = count($items) <= 6;
+        // a 140mm cell on a shared sheet. The items print compactly (12px, tight
+        // rows), so twelve fit within that cell and still leave the signatures a
+        // clear gap above the 165mm cut (verified on long bond). A thirteenth
+        // pushes it over, so thirteen and up get a sheet each.
+        $copiesShareSheet = count($items) <= 12;
     @endphp
 
     @php $layoutClass = $copiesShareSheet ? 'copy-layout-half' : 'copy-layout-full'; @endphp

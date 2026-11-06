@@ -164,22 +164,23 @@ class SalesOrderPrintItemsTest extends TestCase
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
     }
 
-    public function test_six_items_still_share_one_sheet(): void
+    public function test_twelve_items_still_share_one_sheet(): void
     {
-        // With the signatures pinned to the foot of each copy, six item rows
-        // land the signature ~155mm on long bond, ~10mm clear of the 165mm cut,
-        // so the two copies still share the sheet.
-        $html = $this->renderOrder($this->order(), items: 6);
+        // The items print compactly (12px, tight rows), so twelve fit the 140mm
+        // half-sheet body and land the signature ~154mm on long bond — ~10mm
+        // clear of the 165mm cut (verified against the rendered PDF). So the two
+        // copies still share one sheet.
+        $html = $this->renderOrder($this->order(), items: 12);
 
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
         $this->assertStringNotContainsString('class="copy-cell single-copy new-sheet"', $html);
     }
 
-    public function test_seven_items_take_a_sheet_each(): void
+    public function test_thirteen_items_take_a_sheet_each(): void
     {
-        // A seventh row pushes the signature past the cut, so each copy takes
+        // A thirteenth row pushes the signature past the cut, so each copy takes
         // its own full sheet and neither is cut through.
-        $html = $this->renderOrder($this->order(), items: 7);
+        $html = $this->renderOrder($this->order(), items: 13);
 
         // The class name also appears in the stylesheet, so match where it is
         // applied rather than merely mentioned.
