@@ -104,8 +104,11 @@
            padding was spending, and the row still clears the text. */
         /* The items are what the warehouse and the customer actually read off
            this page, so they print a size up from everything around them. */
-        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 1px 5px; text-align: left; font-size: 11px; }
-        .items-table td { padding: 1px 5px; border-bottom: 1px solid #eee; font-size: 12px; }
+        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 1px 5px; text-align: left; font-size: 13px; }
+        /* The items are what the warehouse and the customer read off the page,
+           so they stay at a readable 15px even though everything around them is
+           compact; the row padding is kept tight so more still fit per sheet. */
+        .items-table td { padding: 1px 5px; border-bottom: 1px solid #eee; font-size: 15px; }
         /* Narrow and centred, sitting against the packaging it belongs to:
            "3 Sack" reads as one fact, not a number adrift in a wide column. */
         .items-table .qty-col { width: 60px; text-align: center; }
