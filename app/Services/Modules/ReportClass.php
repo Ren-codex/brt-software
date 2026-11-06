@@ -179,7 +179,11 @@ class ReportClass
                 DB::raw('SUM(so.total_amount) as total_sales'),
                 DB::raw('AVG(so.total_amount) as average_order_value')
             )
-            ->groupBy('so.sales_rep_id', 'e.firstname', 'e.middlename', 'e.lastname', 'e.suffix')
+            // e.id is grouped too: the name expression references it, and strict
+            // ONLY_FULL_GROUP_BY on older MySQL (unlike 8.0) will not infer that
+            // it is fixed by the grouped sales_rep_id. It is 1:1 with
+            // sales_rep_id, so the grouping is unchanged.
+            ->groupBy('so.sales_rep_id', 'e.id', 'e.firstname', 'e.middlename', 'e.lastname', 'e.suffix')
             ->orderByDesc('total_sales')
             ->limit($filters['limit'])
             ->get();
