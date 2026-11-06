@@ -6,6 +6,7 @@ use App\Services\System\Permission\PermissionService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ReportClass
 {
@@ -387,6 +388,24 @@ class ReportClass
      */
     private function salesReturnReport(array $filters): array
     {
+        // The returns history table is created by a migration that may not have
+        // been run in every environment. Rather than 500 the whole report, the
+        // section reads empty where the table is absent; refusals carry their
+        // own guard below.
+        if (! Schema::hasTable('sales_return_history')) {
+            $refusals = $this->deliveryRefusals($filters);
+
+            return [
+                'total_quantity' => 0.0,
+                'total_value' => 0.0,
+                'returned_orders' => 0,
+                'restocked_quantity' => 0.0,
+                'items' => collect(),
+                'refusals' => $refusals,
+                'refused_quantity' => (float) $refusals->sum('refused_quantity'),
+            ];
+        }
+
         $query = DB::table('sales_return_history as srh')
             ->join('sales_orders as so', 'srh.sales_order_id', '=', 'so.id')
             ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
@@ -450,6 +469,13 @@ class ReportClass
      */
     private function deliveryRefusals(array $filters)
     {
+        // Created by a later migration that may not have been run everywhere;
+        // where the table is absent the report shows no refusals rather than
+        // failing the whole summary.
+        if (! Schema::hasTable('sales_order_delivery_refusals')) {
+            return collect();
+        }
+
         $query = DB::table('sales_order_delivery_refusals as dr')
             ->join('sales_orders as so', 'dr.sales_order_id', '=', 'so.id')
             ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
