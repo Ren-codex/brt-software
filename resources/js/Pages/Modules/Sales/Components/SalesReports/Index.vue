@@ -91,6 +91,18 @@
             <p>Loading report data...</p>
           </div>
 
+          <!-- Error State -->
+          <div v-else-if="error" class="report-error">
+            <i class="ri-error-warning-line"></i>
+            <div class="report-error-body">
+              <p class="report-error-title">Couldn't load the report</p>
+              <p class="report-error-msg">{{ error }}</p>
+            </div>
+            <button class="report-error-retry" @click="fetchReports">
+              <i class="ri-refresh-line"></i> Retry
+            </button>
+          </div>
+
           <!-- Report Content -->
           <div v-else class="report-content">
           <div v-if="activeReport === 'sales-summary'">
@@ -764,6 +776,7 @@ export default {
       loading: false,
       downloading: false,
       showDownloadMenu: false,
+      error: null,
       activeReport: 'sales-summary',
       employeeSearch: '',
       reportTabs: [
@@ -814,9 +827,16 @@ export default {
   methods: {
     fetchReports() {
       this.loading = true;
+      this.error = null;
       axios.get('/reports', { params: { option: 'summary', ...this.normalizedForm() } })
         .then(res => this.report = { ...createDefaultReport(), ...res.data })
-        .catch(err => console.error('Failed to fetch reports', err))
+        .catch(err => {
+          console.error('Failed to fetch reports', err);
+          // Laravel only sends the real exception text when APP_DEBUG is on; in
+          // production the message is generic, so fall back to the status code.
+          this.error = err.response?.data?.message
+            || `Couldn't load the report (${err.response?.status || 'network error'}). Please try again.`;
+        })
         .finally(() => this.loading = false);
     },
     resetFilters() {
@@ -1063,6 +1083,38 @@ export default {
   text-align: center;
   color: var(--brt-c-5f786e);
 }
+
+.report-error {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #fdf1f1;
+  border: 1px solid #f0c7c7;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  color: #8a2e2e;
+}
+.report-error > i {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.report-error-body { flex: 1; min-width: 0; }
+.report-error-title { margin: 0; font-weight: 700; }
+.report-error-msg { margin: 0.1rem 0 0; font-size: 0.85rem; color: #a35151; }
+.report-error-retry {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #fff;
+  border: 1px solid #e3b4b4;
+  border-radius: 10px;
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+  color: #8a2e2e;
+  cursor: pointer;
+}
+.report-error-retry:hover { background: #fbe9e9; }
 
 .spinner {
   width: 36px;
