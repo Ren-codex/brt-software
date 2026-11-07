@@ -134,6 +134,20 @@ class CashManagementService
             ]);
         }
 
+        // A post-dated cheque is held until its date: the bank will not honour it
+        // before then, so it cannot be deposited yet.
+        $postDated = $cheques->filter(
+            fn (Check $c) => $c->check_date && $c->check_date->gt(today())
+        );
+
+        if ($postDated->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'check_ids' => 'Post-dated — not depositable yet: '.$postDated
+                    ->map(fn (Check $c) => $c->check_number.' (due '.$c->check_date->format('m/d/Y').')')
+                    ->implode(', ').'.',
+            ]);
+        }
+
         $first = null;
 
         foreach ($cheques as $cheque) {

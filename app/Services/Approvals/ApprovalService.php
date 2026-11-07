@@ -386,7 +386,18 @@ class ApprovalService
 
     protected function decideCheck(int $id): array
     {
-        $check = app(CheckRegisterClass::class)->markCleared(Check::findOrFail($id));
+        $check = Check::findOrFail($id);
+
+        // Clearing a received cheque needs the bank it lands in. On this screen
+        // nobody types it — but the cheque was deposited before it got here, and
+        // the deposit recorded which of our accounts it went to, so read the bank
+        // name from there rather than refusing for want of it.
+        $bankName = $check->bank_name;
+        if (blank($bankName) && $check->bank_account_id) {
+            $bankName = optional(\App\Models\BankAccount::find($check->bank_account_id))->bank_name;
+        }
+
+        $check = app(CheckRegisterClass::class)->markCleared($check, $bankName);
 
         return [
             'data' => $check->fresh(),

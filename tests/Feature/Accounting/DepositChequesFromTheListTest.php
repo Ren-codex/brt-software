@@ -77,7 +77,7 @@ class DepositChequesFromTheListTest extends TestCase
             'payment_date' => now()->toDateString(), 'balance_due' => (float) $invoice->balance_due,
             'splits' => [[
                 'payment_mode' => 'Check', 'amount' => $amount, 'bank_account_id' => null,
-                'reference_number' => $number, 'check_date' => now()->addDays(4)->toDateString(),
+                'reference_number' => $number, 'check_date' => now()->toDateString(),
             ]],
         ])->assertSessionHasNoErrors();
 

@@ -242,7 +242,7 @@
                                 </td>
                                 <td class="font-monospace">{{ c.check_number }}</td>
                                 <td class="text-nowrap">
-                                    {{ c.check_date }}
+                                    {{ fmtDate(c.check_date) }}
                                     <div v-if="isOverdue(c)" class="chk-overdue-note">due — not yet confirmed</div>
                                 </td>
                                 <td>{{ c.customer?.name || c.supplier?.name || '—' }}</td>
@@ -414,6 +414,14 @@ export default {
         money(value) {
             return `PHP ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         },
+        // A cheque date is a plain date; show it in words (e.g. Sep 17, 2026),
+        // read in UTC so the stored day never shifts with the viewer's timezone.
+        fmtDate(value) {
+            if (!value) return '—';
+            const dt = new Date(value);
+            if (isNaN(dt.getTime())) return value;
+            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+        },
         // A pending check whose date has passed is money that should have
         // arrived and has not been confirmed — the row worth looking at.
         isOverdue(check) {
@@ -506,7 +514,18 @@ export default {
     background: var(--brt-c-f4f8f7); border: 1px solid var(--brt-c-d8e6e1); color: var(--brt-c-33564f); font-size: 0.78rem;
 }
 
-.action-btn.confirm { color: var(--brt-c-1b6b4a); }
+/* The shared system action-button: a bordered icon square, green to confirm,
+   red to bounce — matching the action buttons across the rest of the system. */
+.action-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid;
+    background: transparent; cursor: pointer; font-size: 0.95rem;
+    transition: all 0.15s; margin-left: 4px;
+}
+.action-btn.confirm       { border-color: var(--brt-c-a8d5c5); color: var(--brt-c-1b6b4a); }
+.action-btn.confirm:hover { background: var(--brt-c-e9f5f0); }
+.action-btn.delete        { border-color: #fca5a5; color: #991b1b; }
+.action-btn.delete:hover  { background: #fee2e2; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 

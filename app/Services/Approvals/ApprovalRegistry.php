@@ -321,7 +321,17 @@ class ApprovalRegistry
                 // authorization, both collected on the check register. It puts
                 // the customer back in debt, so it is not a one-click action.
                 'can_reject_inline' => false,
-                'pending' => fn () => Check::with(['customer', 'supplier', 'receivedBy'])->pending(),
+                // A received cheque is decided (cleared or bounced) only after it
+                // has been deposited — until then it is a post-dated cheque held
+                // on hand, with no bank to clear into. A received cheque banks
+                // into one of our accounts (bank_account_id), so that is the
+                // "deposited" signal; an issued cheque needs no deposit step.
+                'pending' => fn () => Check::with(['customer', 'supplier', 'receivedBy'])
+                    ->pending()
+                    ->where(function ($q) {
+                        $q->where('direction', '!=', Check::DIRECTION_RECEIVED)
+                            ->orWhereNotNull('bank_account_id');
+                    }),
                 'row' => fn (Check $c) => [
                     'reference' => 'CHK '.($c->check_number ?: '#'.$c->id),
                     'summary' => collect([

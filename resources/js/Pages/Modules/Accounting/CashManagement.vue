@@ -462,13 +462,16 @@
                             >
 
                             <div v-if="undepositedChecks.length" class="bd-cheque-list">
-                                <label v-for="c in shownCheques" :key="c.id" class="bd-cheque-row">
-                                    <input type="checkbox" :checked="isChequeSelected(c)" @change="toggleCheque(c)" />
+                                <label v-for="c in shownCheques" :key="c.id" class="bd-cheque-row" :class="{ 'bd-cheque-notdue': !c.due }">
+                                    <input type="checkbox" :checked="isChequeSelected(c)" :disabled="!c.due" @change="toggleCheque(c)" />
                                     <span class="bd-cheque-info">
                                         <span class="bd-cheque-no">{{ c.check_number || 'No number' }}</span>
                                         <span class="bd-cheque-rep"><i class="ri-user-line"></i> {{ c.rep_name || 'Unknown rep' }}</span>
                                         <span class="bd-cheque-meta">
                                             {{ c.customer }}<span v-if="c.check_date"> · dated {{ c.check_date }}</span>
+                                        </span>
+                                        <span v-if="!c.due" class="bd-cheque-hold">
+                                            <i class="ri-time-line"></i> Post-dated — depositable on {{ c.due_date || c.check_date }}
                                         </span>
                                     </span>
                                     <span class="bd-cheque-amount">{{ c.amount_formatted }}</span>
@@ -1132,6 +1135,8 @@ export default {
             return this.bdForm.check_ids.includes(c.id);
         },
         toggleCheque(c) {
+            // A post-dated cheque is not depositable until its date; ignore ticks.
+            if (c.due === false) return;
             const idx = this.bdForm.check_ids.indexOf(c.id);
             if (idx === -1) this.bdForm.check_ids.push(c.id);
             else this.bdForm.check_ids.splice(idx, 1);
@@ -1545,6 +1550,19 @@ export default {
 .bd-cheque-rep i { color: #3d8d7a; }
 .bd-cheque-meta { color: var(--brt-muted); font-size: 0.74rem; }
 .bd-cheque-amount { font-weight: 700; color: #1e4d8c; white-space: nowrap; }
+/* A post-dated cheque is listed but held: greyed and not tickable until due. */
+.bd-cheque-row.bd-cheque-notdue {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #fbfaf5;
+    border-style: dashed;
+}
+.bd-cheque-row.bd-cheque-notdue:hover { border-color: var(--brt-c-e5efec); }
+.bd-cheque-row.bd-cheque-notdue input { cursor: not-allowed; }
+.bd-cheque-hold {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    margin-top: 2px; font-size: 0.72rem; font-weight: 600; color: #a05a00;
+}
 .bd-cheque-total {
     display: flex; justify-content: space-between;
     margin-top: 0.5rem; font-size: 0.78rem; color: var(--brt-muted);

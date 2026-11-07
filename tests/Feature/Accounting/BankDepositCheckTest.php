@@ -93,15 +93,15 @@ class BankDepositCheckTest extends TestCase
         $this->assertCount(1, $this->entriesFor($deposit));
     }
 
-    public function test_future_dated_check_creates_no_journal_entry(): void
+    public function test_a_post_dated_cheque_cannot_be_deposited(): void
     {
-        $deposit = $this->service()->createBankDeposit(
+        // A post-dated cheque is held until its date — the bank will not honour
+        // it before then — so depositing one is refused outright.
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        $this->service()->createBankDeposit(
             $this->chequePayload('CHK-001', now()->addDays(10)->toDateString())
         );
-
-        $this->assertSame(BankDeposit::STATUS_PENDING, $deposit->status);
-        $this->assertNull($deposit->posted_at);
-        $this->assertCount(0, $this->entriesFor($deposit));
     }
 
     public function test_check_dated_today_is_created_pending_and_posts_nothing(): void
@@ -120,11 +120,13 @@ class BankDepositCheckTest extends TestCase
 
     public function test_the_command_never_posts_a_due_check(): void
     {
+        // A cheque is deposited on its date (post-dated ones are refused), and
+        // even then only a person confirming it posts the money — the scheduled
+        // command never does.
         $deposit = $this->service()->createBankDeposit(
-            $this->chequePayload('CHK-003', now()->addDays(3)->toDateString())
+            $this->chequePayload('CHK-003', now()->toDateString())
         );
 
-        $this->travelTo(now()->addDays(3));
         $this->artisan('deposits:post-due-checks')->assertSuccessful();
 
         $deposit->refresh();
@@ -132,24 +134,11 @@ class BankDepositCheckTest extends TestCase
         $this->assertCount(0, $this->entriesFor($deposit));
     }
 
-    public function test_command_does_not_post_a_check_before_its_date(): void
-    {
-        $deposit = $this->service()->createBankDeposit(
-            $this->chequePayload('CHK-004', now()->addDays(5)->toDateString())
-        );
-
-        $this->artisan('deposits:post-due-checks')->assertSuccessful();
-
-        $deposit->refresh();
-        $this->assertSame(BankDeposit::STATUS_PENDING, $deposit->status);
-        $this->assertCount(0, $this->entriesFor($deposit));
-    }
-
     public function test_a_pending_check_is_held_against_the_account_it_came_from(): void
     {
         $cash = $this->cashAccount();
         $deposit = $this->service()->createBankDeposit(
-            $this->chequePayload('CHK-008', now()->addDays(9)->toDateString(), 5000)
+            $this->chequePayload('CHK-008', now()->toDateString(), 5000)
         );
 
         // A cheque never sat in the drawer, so the drawer is untouched by one
@@ -187,7 +176,7 @@ class BankDepositCheckTest extends TestCase
     public function test_deleting_a_pending_deposit_does_not_error(): void
     {
         $deposit = $this->service()->createBankDeposit(
-            $this->chequePayload('CHK-007', now()->addDays(7)->toDateString())
+            $this->chequePayload('CHK-007', now()->toDateString())
         );
 
         $this->service()->deleteBankDeposit($deposit->id);

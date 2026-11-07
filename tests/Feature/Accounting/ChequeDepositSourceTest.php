@@ -115,7 +115,7 @@ class ChequeDepositSourceTest extends TestCase
             'payment_date' => now()->toDateString(), 'balance_due' => (float) $invoice->balance_due,
             'splits' => [[
                 'payment_mode' => 'Check', 'amount' => 3000, 'bank_account_id' => null,
-                'reference_number' => $number, 'check_date' => now()->addDays(3)->toDateString(),
+                'reference_number' => $number, 'check_date' => now()->toDateString(),
             ]],
         ])->assertSessionHasNoErrors();
 
@@ -231,5 +231,34 @@ class ChequeDepositSourceTest extends TestCase
             ->pluck('code')->all();
 
         $this->assertSame(['1000'], $codes);
+    }
+
+    public function test_a_cheque_is_approved_from_the_approvals_screen_only_after_it_is_deposited(): void
+    {
+        $accountant = $this->accountant();
+        $cheque = $this->chequeCollected();
+
+        // Held until it is banked — not yet awaiting a cleared/bounced decision.
+        $this->assertNotContains($cheque->id, $this->chequesAwaitingDecision());
+
+        $this->depositCheque($accountant)->assertOk();
+
+        // Deposited: now it is listed for a decision, and approving it clears it,
+        // reading the bank from the deposit instead of demanding one be typed.
+        $this->assertContains($cheque->id, $this->chequesAwaitingDecision());
+
+        $this->actingAs($accountant)
+            ->postJson('/approvals/check/'.$cheque->id.'/decide', ['decision' => 'approved'])
+            ->assertOk();
+
+        $this->assertSame(Check::STATUS_CLEARED, $cheque->fresh()->status);
+    }
+
+    /** The cheques the Approvals screen lists for a cleared/bounced decision. */
+    private function chequesAwaitingDecision(): array
+    {
+        return app(\App\Services\Approvals\ApprovalRegistry::class)
+            ->sources()['check']['pending']()
+            ->pluck('id')->all();
     }
 }

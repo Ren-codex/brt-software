@@ -166,6 +166,10 @@ class CashManagementController extends Controller
                     'bank_name' => $c->bank_name,
                     'amount' => (float) $c->amount,
                     'amount_formatted' => '₱' . number_format((float) $c->amount, 2),
+                    // A post-dated cheque cannot be banked until its date arrives;
+                    // it is still listed, but shown as not yet depositable.
+                    'due' => ! $c->check_date || $c->check_date->lte(today()),
+                    'due_date' => optional($c->check_date)->format('m/d/Y'),
                 ])
                 ->values()
             : collect();

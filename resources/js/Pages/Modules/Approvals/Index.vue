@@ -371,6 +371,22 @@
             </div>
         </div>
     </div>
+
+    <!-- Approval success: a big animated check, shown right after an approve. -->
+    <div v-if="successModal" class="modal-overlay active approval-success-overlay" @click.self="closeApprovalSuccess">
+        <div class="modal-container approval-success-modal" @click.stop>
+            <div class="modal-body approval-success-body">
+                <div class="approval-success-icon">
+                    <svg class="approval-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <circle class="approval-check-circle" cx="26" cy="26" r="25" fill="none" />
+                        <path class="approval-check-mark" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                    </svg>
+                </div>
+                <h4 class="approval-success-title">Approved</h4>
+                <p class="approval-success-text">{{ successModal.label }} has been approved.</p>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -413,6 +429,9 @@ export default {
             submitting: false,
             busyKey: null,
             stopListening: null,
+            audioCtx: null,     // unlocked on the approve click, reused after
+            successModal: null, // { label } while the approval success modal is shown
+            successTimer: null,
         };
     },
     created() {
@@ -669,12 +688,24 @@ export default {
             this.submitting = true;
             this.busyKey = this.rowKey(row);
 
+            // Unlock the audio here, inside the click, so the chime is allowed
+            // to play later in the async success handler — browsers gate audio
+            // on a user gesture, and the network response is outside it.
+            if (decision === 'approved') this.primeAudio();
+
             axios.post(`/approvals/${row.source}/${row.id}/decide`, {
                 decision,
                 remarks: this.remarks || null,
             })
                 .then(res => {
-                    this.$toast?.success(res.data.message || 'Decision recorded.');
+                    // An approval gets the big-check modal and a chime; a
+                    // rejection just gets the usual toast.
+                    if (decision === 'approved') {
+                        this.playApproveTone();
+                        this.showApprovalSuccess(row.label);
+                    } else {
+                        this.$toast?.success(res.data.message || 'Decision recorded.');
+                    }
                     // The response carries the refreshed list, so the row
                     // disappears without a second round trip.
                     if (res.data.pending) {
@@ -699,6 +730,54 @@ export default {
                     this.submitting = false;
                     this.busyKey = null;
                 });
+        },
+        /** Show the big-check success modal, auto-dismissing after a moment. */
+        showApprovalSuccess(label) {
+            this.successModal = { label: label || 'The request' };
+            if (this.successTimer) clearTimeout(this.successTimer);
+            this.successTimer = setTimeout(() => { this.successModal = null; }, 2000);
+        },
+        closeApprovalSuccess() {
+            if (this.successTimer) { clearTimeout(this.successTimer); this.successTimer = null; }
+            this.successModal = null;
+        },
+        /** Create/resume the audio context from inside a user gesture. */
+        primeAudio() {
+            if (typeof window === 'undefined') return;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            try {
+                if (!this.audioCtx) this.audioCtx = new AudioCtx();
+                if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+            } catch (e) {
+                // Audio unavailable — ignore; the toast still confirms.
+            }
+        },
+        /** "Major Chord Climb" — three bright notes stepping up, on approval. */
+        playApproveTone() {
+            const ctx = this.audioCtx;
+            if (!ctx) return;
+            try {
+                if (ctx.state === 'suspended') ctx.resume();
+                const now = ctx.currentTime;
+                // C5 → E5 → G5: a small ascending "ta-da".
+                [[523.25, 0, 0.14], [659.25, 0.11, 0.14], [783.99, 0.22, 0.22]].forEach(([freq, offset, dur]) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const t = now + offset;
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, t);
+                    gain.gain.setValueAtTime(0.0001, t);
+                    gain.gain.exponentialRampToValueAtTime(0.16, t + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(t);
+                    osc.stop(t + dur + 0.03);
+                });
+            } catch (e) {
+                // Audio unavailable or blocked — the toast already confirms it.
+            }
         },
     },
     mounted() {
@@ -737,6 +816,38 @@ export default {
 
 <style scoped>
 /* Content-specific only — modal chrome comes from _library-modal.scss. */
+
+/* ── Approval success modal (big animated check) ─────────────── */
+.approval-success-modal { max-width: 380px; }
+.approval-success-body {
+    padding: 2rem 1.75rem 1.75rem;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.approval-success-icon { width: 104px; height: 104px; margin: 0 auto 1rem; display: grid; place-items: center; }
+.approval-check {
+    width: 104px; height: 104px; border-radius: 50%; display: block;
+    stroke-width: 3; stroke: var(--brt-primary, #3d8d7a); stroke-miterlimit: 10;
+    box-shadow: inset 0 0 0 var(--brt-primary, #3d8d7a);
+    animation: approvalCheckFill 0.4s ease-in-out 0.4s forwards, approvalCheckScale 0.3s ease-in-out 0.9s both;
+}
+.approval-check-circle {
+    stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 3; stroke-miterlimit: 10;
+    stroke: var(--brt-primary, #3d8d7a); fill: none;
+    animation: approvalCheckStroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+.approval-check-mark {
+    transform-origin: 50% 50%; stroke: #fff; stroke-width: 4;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 48; stroke-dashoffset: 48;
+    animation: approvalCheckStroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+@keyframes approvalCheckStroke { 100% { stroke-dashoffset: 0; } }
+@keyframes approvalCheckScale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+@keyframes approvalCheckFill { 100% { box-shadow: inset 0 0 0 52px var(--brt-primary, #3d8d7a); } }
+.approval-success-title { margin: 0; font-weight: 800; color: #16322e; font-size: 1.3rem; }
+.approval-success-text { margin: 0.35rem 0 1.25rem; color: #6b8c85; font-size: 0.9rem; }
+.approval-success-btn { min-width: 130px; }
+
 .approval-total-badge {
     background: rgba(var(--brt-primary-rgb), 0.12);
     border: 1px solid rgba(var(--brt-primary-rgb), 0.2);

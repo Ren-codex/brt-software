@@ -99,7 +99,8 @@ class CheckForecastTest extends TestCase
     public function test_depositing_a_check_assigns_it_to_that_bank(): void
     {
         $bdo = $this->bank('1020', 'BDO');
-        $check = $this->received(null, now()->addDays(8)->toDateString(), 800000);
+        // Dated today so it can be banked — a post-dated cheque is not depositable.
+        $check = $this->received(null, now()->toDateString(), 800000);
         $check->update(['check_number' => 'CHK-777']);
 
         app(\App\Services\Accounting\CashManagementService::class)->createBankDeposit([
