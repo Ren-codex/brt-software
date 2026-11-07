@@ -396,6 +396,7 @@ class CheckRegisterClass
             ]);
 
             $this->retireDepositForCheck($check);
+            $this->reverseBouncedSupplierPayment($check);
         });
 
         $this->notifyReceivingRep($check);
@@ -449,6 +450,36 @@ class CheckRegisterClass
             ->update(['bank_deposit_id' => null]);
 
         $deposit->delete();
+    }
+
+    /**
+     * A bounced supplier cheque never paid: the money was held back, not posted
+     * (see recordReceivedStockPaymentEntry's check guard), so there is no
+     * journal entry to reverse. But the payment was recorded against the payable
+     * when the cheque was written, inflating its amount_paid. Undo that one
+     * payment so the payable shows the supplier is still owed; the bounced
+     * cheque stays in the register for the record (and keeps blocking its
+     * number). Received cheques post through their own deposit and are unwound
+     * by retireDepositForCheck instead.
+     */
+    private function reverseBouncedSupplierPayment(Check $check): void
+    {
+        if ($check->direction !== Check::DIRECTION_ISSUED
+            || $check->source_type !== ReceivedStockPayment::class) {
+            return;
+        }
+
+        $payment = ReceivedStockPayment::with('receivedStock')->find($check->source_id);
+        if (! $payment || ! $payment->receivedStock) {
+            return;
+        }
+
+        $stock = $payment->receivedStock;
+        $stock->update([
+            'amount_paid' => round(max(0, (float) $stock->amount_paid - (float) $payment->amount_paid), 2),
+        ]);
+
+        $payment->delete();
     }
 
     private function notifyReceivingRep(Check $check): void

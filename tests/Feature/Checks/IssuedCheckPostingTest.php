@@ -132,4 +132,25 @@ class IssuedCheckPostingTest extends TestCase
         $this->assertNull($entry, 'A padded "Check " payment mode must not slip past the guard.');
         $this->assertSame(0.0, $this->bankBalance());
     }
+
+    public function test_bouncing_a_supplier_check_restores_the_payable(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        [$stock, $payment] = $this->supplierPayment('Check', 50000);
+        // Writing the cheque recorded the payment against the payable.
+        $stock->update(['amount_paid' => 50000]);
+
+        $register = app(\App\Services\Modules\CheckRegisterClass::class);
+        $check = $register->registerIssued($payment, ['check_date' => now()->toDateString()]);
+
+        $register->markBounced($check, 'Insufficient funds on our account');
+
+        // The cheque posted nothing, so there is no ledger entry to reverse —
+        // but the payable must show the supplier is owed again, and the bounced
+        // payment is gone.
+        $this->assertSame(\App\Models\Check::STATUS_BOUNCED, $check->fresh()->status);
+        $this->assertSame(0.0, round((float) $stock->fresh()->amount_paid, 2));
+        $this->assertNull(ReceivedStockPayment::find($payment->id));
+    }
 }
