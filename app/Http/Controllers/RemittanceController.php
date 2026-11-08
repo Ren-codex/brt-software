@@ -200,18 +200,10 @@ class RemittanceController extends Controller
                     }
                 },
             ],
-            'reference_no' => [
-                'nullable',
-                'string',
-                'max:255',
-                function ($attribute, $value, $fail) use ($request) {
-                    $modes = array_filter(array_map('trim', explode(',', (string) $request->received_via)));
-                    $hasCheck = collect($modes)->contains(fn ($mode) => strtolower($mode) === 'check');
-                    if ($request->status === 'Approve' && $hasCheck && empty($value)) {
-                        $fail('Reference no. is required when a check payment is included.');
-                    }
-                },
-            ],
+            // Each cheque's number now lives on its own receipt and is carried
+            // onto the remittance automatically when the verifier confirms the
+            // cheques one by one, so nothing is typed here.
+            'reference_no' => ['nullable', 'string', 'max:255'],
             // Per-payment-mode amounts backing received_amount/received_via,
             // e.g. {"Cash": 500, "GCash": 250} — used to reclassify each
             // portion into the right GL account (see recordRemittanceApprovalEntry).

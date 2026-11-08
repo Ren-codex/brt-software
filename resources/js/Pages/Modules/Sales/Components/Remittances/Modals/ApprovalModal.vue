@@ -118,7 +118,33 @@
                                                 />
                                             </td>
                                         </tr>
-                                        <tr v-if="paymentBreakdown.length === 0">
+                                        <!-- Each cheque is received on its own line: its
+                                             amount is fixed on the cheque, so it is confirmed,
+                                             not keyed in. -->
+                                        <tr v-for="c in chequeReceipts" :key="'chq-' + c.id">
+                                            <td>
+                                                Cheque <span class="font-monospace">{{ c.number || '—' }}</span>
+                                                <div v-if="c.bank" class="mode-bank">
+                                                    <i class="ri-bank-line"></i> {{ c.bank }}
+                                                </div>
+                                            </td>
+                                            <td class="text-end">{{ formatCurrency(c.amount) }}</td>
+                                            <td class="text-end">
+                                                <button
+                                                    v-if="!isChequeConfirmed(c)"
+                                                    type="button"
+                                                    class="confirm-received-btn"
+                                                    @click="confirmCheque(c)"
+                                                >
+                                                    <i class="ri-checkbox-circle-line"></i> Received
+                                                </button>
+                                                <span v-else class="received-confirmed">
+                                                    <i class="ri-checkbox-circle-fill"></i> Received
+                                                    <button type="button" class="undo-confirm" @click="undoCheque(c)">undo</button>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="paymentBreakdown.length === 0 && chequeReceipts.length === 0">
                                             <td colspan="3" class="text-center text-muted">No receipts found.</td>
                                         </tr>
                                     </tbody>
@@ -150,18 +176,6 @@
                             <span class="error-message" v-if="form.errors.received_via">{{ form.errors.received_via }}</span>
                         </div>
 
-                        <!-- Reference no. — only when Check is one of the received modes -->
-                        <div class="mb-3" v-if="hasCheckMode">
-                            <label class="form-label">Reference No. <span class="text-danger">*</span></label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                :class="{ 'input-error': form.errors.reference_no }"
-                                placeholder="Enter check reference no..."
-                                v-model="form.reference_no"
-                            >
-                            <span class="error-message" v-if="form.errors.reference_no">{{ form.errors.reference_no }}</span>
-                        </div>
                     </template>
 
                     <!-- Remarks / discrepancy reason. When there's a variance, this becomes
@@ -219,6 +233,8 @@ export default {
             }),
             showModal: false,
             saveSuccess: false,
+            // Which individual cheques the verifier has confirmed receiving.
+            confirmedCheques: {},
         };
     },
     computed: {
@@ -227,11 +243,14 @@ export default {
         // check, and bank transfer receipts together.
         paymentBreakdown() {
             if (!this.item || !Array.isArray(this.item.receipts)) return [];
-            const order = ['Cash', 'Check', 'Bank Transfer'];
+            const order = ['Cash', 'Bank Transfer'];
             const totals = {};
             const banks = {};
             this.item.receipts.forEach(r => {
                 const mode = r.payment_mode || 'Cash';
+                // Cheques are verified one by one below, each with its own number,
+                // bank and amount — never summed into a single "Check" line.
+                if (String(mode).trim().toLowerCase() === 'check') return;
                 totals[mode] = (totals[mode] || 0) + (parseFloat(r.amount_paid) || 0);
                 // Where the money landed, for the modes that name a bank.
                 if (r.bank_account) {
@@ -255,16 +274,26 @@ export default {
                 .filter(r => r.mode.trim().toLowerCase() === 'cash')
                 .reduce((sum, r) => sum + (r.amount || 0), 0);
         },
+        // Each cheque on its own, with its number, bank and amount, so the
+        // verifier confirms them one by one instead of as a combined total.
+        chequeReceipts() {
+            if (!this.item || !Array.isArray(this.item.receipts)) return [];
+            return this.item.receipts
+                .filter(r => String(r.payment_mode || '').trim().toLowerCase() === 'check')
+                .map(r => ({
+                    id: r.id,
+                    number: r.reference_number,
+                    bank: r.bank_account,
+                    amount: parseFloat(r.amount_paid) || 0,
+                    date: r.receipt_date,
+                }));
+        },
         // Cheques handed over as paper — their own pile, never counted as cash.
         chequeToRemit() {
-            return this.paymentBreakdown
-                .filter(r => r.mode.trim().toLowerCase() === 'check')
-                .reduce((sum, r) => sum + (r.amount || 0), 0);
+            return this.chequeReceipts.reduce((sum, c) => sum + (c.amount || 0), 0);
         },
         chequeCount() {
-            if (!this.item || !Array.isArray(this.item.receipts)) return 0;
-            return this.item.receipts
-                .filter(r => String(r.payment_mode || '').trim().toLowerCase() === 'check').length;
+            return this.chequeReceipts.length;
         },
         // Already in the bank — noted apart from the physical handover.
         transferTotal() {
@@ -305,12 +334,37 @@ export default {
     methods: {
         show() {
             this.form.reset();
+            this.confirmedCheques = {};
             const breakdown = {};
             this.paymentBreakdown.forEach(row => {
                 breakdown[row.mode] = null;
             });
             this.form.received_breakdown = breakdown;
             this.showModal = true;
+        },
+        isChequeConfirmed(cheque) {
+            return !!this.confirmedCheques[cheque.id];
+        },
+        confirmCheque(cheque) {
+            this.confirmedCheques = { ...this.confirmedCheques, [cheque.id]: true };
+            this.syncChequeTotal();
+        },
+        undoCheque(cheque) {
+            const next = { ...this.confirmedCheques };
+            delete next[cheque.id];
+            this.confirmedCheques = next;
+            this.syncChequeTotal();
+        },
+        // Cheques are confirmed one at a time, but the backend posts the batch as
+        // a single "Check" amount, so keep that total in step with what's ticked.
+        syncChequeTotal() {
+            const total = this.chequeReceipts
+                .filter(c => this.confirmedCheques[c.id])
+                .reduce((sum, c) => sum + (c.amount || 0), 0);
+            this.form.received_breakdown = {
+                ...this.form.received_breakdown,
+                Check: total > 0 ? Math.round(total * 100) / 100 : null,
+            };
         },
         // A transfer is money already sitting in an account, so it is
         // confirmed rather than counted; cash and cheques are keyed in by hand.
@@ -338,12 +392,15 @@ export default {
                 this.form.setError('remarks', 'Remarks are required when there is a variance.');
                 return;
             }
-            if (this.hasCheckMode && !this.form.reference_no?.trim()) {
-                this.form.setError('reference_no', 'Reference no. is required for check payments.');
-                return;
-            }
             this.form.received_amount = this.totalReceived;
             this.form.received_via = this.receivedViaModes.join(', ');
+            // Each cheque's number already lives on its receipt; carry the
+            // confirmed ones onto the remittance as its reference, no retyping.
+            this.form.reference_no = this.chequeReceipts
+                .filter(c => this.confirmedCheques[c.id])
+                .map(c => c.number)
+                .filter(Boolean)
+                .join(', ') || null;
             // Absolute path: the relative form resolved against the current URL
             // and broke on any route deeper than /remittances.
             const wasApproved = this.form.status === 'Approve';
