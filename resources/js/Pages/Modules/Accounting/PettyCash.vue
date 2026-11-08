@@ -311,7 +311,7 @@
                         </div>
                         <div class="col-5">
                             <label class="form-label fw-semibold">Amount <span class="text-danger">*</span></label>
-                            <input v-model="voucherForm.amount" type="number" step="0.01" min="0.01" class="form-control" :class="{ 'is-invalid': voucherErrors.amount }" placeholder="0.00" />
+                            <AmountInput v-model="voucherForm.amount" class="form-control" :class="{ 'is-invalid': voucherErrors.amount }" placeholder="0.00" />
                             <div v-if="voucherErrors.amount" class="invalid-feedback">{{ voucherErrors.amount }}</div>
                         </div>
                         <div class="col-7">

@@ -25,7 +25,7 @@
                         <label class="form-label">Low Balance Threshold <span class="text-muted">(optional)</span></label>
                         <div class="input-group">
                             <span class="input-group-text">₱</span>
-                            <input type="number" v-model="form.low_balance_threshold" class="form-control" placeholder="e.g. 500.00" min="0" step="0.01">
+                            <AmountInput v-model="form.low_balance_threshold" class="form-control" placeholder="e.g. 500.00" />
                         </div>
                         <small class="text-muted">Admins are notified when the fund balance drops below this amount.</small>
                     </div>
@@ -34,7 +34,7 @@
                             <label class="form-label">Initial Balance <span class="text-muted">(optional)</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">₱</span>
-                                <input type="number" v-model="form.initial_balance" class="form-control" :class="{ 'is-invalid': form.errors.initial_balance }" placeholder="0.00" min="0.01" step="0.01">
+                                <AmountInput v-model="form.initial_balance" class="form-control" :class="{ 'is-invalid': form.errors.initial_balance }" placeholder="0.00" />
                             </div>
                             <div class="invalid-feedback" v-if="form.errors.initial_balance">{{ form.errors.initial_balance }}</div>
                         </div>

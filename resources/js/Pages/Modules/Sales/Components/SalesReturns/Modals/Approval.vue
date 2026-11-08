@@ -115,7 +115,7 @@
                                         <input type="number" v-model.number="row.quantity" min="1" class="form-control form-control-sm" placeholder="Qty">
                                     </td>
                                     <td>
-                                        <input type="number" v-model.number="row.price" min="0" step="0.01" class="form-control form-control-sm" placeholder="Price">
+                                        <AmountInput v-model="row.price" class="form-control form-control-sm" placeholder="Price" />
                                     </td>
                                     <td class="fw-semibold">{{ formatCurrency((row.quantity || 0) * (row.price || 0)) }}</td>
                                     <td>

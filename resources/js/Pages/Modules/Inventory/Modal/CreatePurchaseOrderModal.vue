@@ -142,10 +142,11 @@
                                             <td class="text-center">
                                                 <div class="money-input">
                                                     <span class="money-prefix">PHP</span>
-                                                    <input type="number" v-model="item.unit_cost" class="form-control form-control-plain no-spinner"
+                                                    <AmountInput :model-value="item.unit_cost" :decimals="4"
+                                                        @update:model-value="val => { item.unit_cost = val; calculateTotal(item); handleInput(`items.${index}.unit_cost`); }"
+                                                        class="form-control form-control-plain no-spinner"
                                                         :class="{ 'input-error': form.errors[`items.${index}.unit_cost`] }"
-                                                        @input="calculateTotal(item); handleInput(`items.${index}.unit_cost`)"
-                                                        step="any" min="0" :max="MAX_UNIT_COST" required>
+                                                        required />
                                                 </div>
                                                 <span class="error-message" v-if="form.errors[`items.${index}.unit_cost`]">
                                                     {{ form.errors[`items.${index}.unit_cost`] }}

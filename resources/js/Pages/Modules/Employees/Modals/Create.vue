@@ -303,15 +303,12 @@
 
                             <div class="form-group">
                                 <label>Overtime Rate (₱ / hour) <span class="required">*</span></label>
-                                <input
-                                    type="number"
-                                    v-model.number="form.overtime_rate"
+                                <AmountInput
+                                    v-model="form.overtime_rate"
                                     :class="{ 'error': form.errors.overtime_rate }"
                                     placeholder="0.00"
-                                    min="0"
-                                    step="0.01"
-                                    @input="handleInput('overtime_rate')"
-                                >
+                                    @update:model-value="handleInput('overtime_rate')"
+                                />
                                 <span class="error-text" v-if="form.errors.overtime_rate">{{ form.errors.overtime_rate }}</span>
                             </div>
 

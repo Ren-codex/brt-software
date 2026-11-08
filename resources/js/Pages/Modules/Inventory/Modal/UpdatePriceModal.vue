@@ -22,13 +22,10 @@
             <label for="wholesale_price" class="form-label">Wholesale Price</label>
             <div class="input-wrapper">
               <i class="ri-stack-line input-icon"></i>
-              <input
-                type="number"
+              <AmountInput
                 id="wholesale_price"
                 v-model="form.wholesale_price"
                 class="form-control"
-                min="0"
-                step="0.01"
                 placeholder="Enter wholesale price"
                 :class="{ 'input-error': wholesalePriceError }"
               />
@@ -40,13 +37,10 @@
             <label for="retail_price" class="form-label">Retail Price</label>
             <div class="input-wrapper">
               <i class="ri-price-tag-line input-icon"></i>
-              <input
-                type="number"
+              <AmountInput
                 id="retail_price"
                 v-model="form.retail_price"
                 class="form-control"
-                min="0"
-                step="0.01"
                 placeholder="Enter retail price"
                 :class="{ 'input-error': retailPriceError }"
               />

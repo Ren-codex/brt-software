@@ -129,16 +129,13 @@
                         <label for="credit_limit" class="form-label">Credit Limit <span class="text-muted small">(0 = no limit)</span></label>
                         <div class="input-wrapper">
                             <i class="ri-bank-card-line input-icon"></i>
-                            <input
-                                type="number"
+                            <AmountInput
                                 id="credit_limit"
                                 v-model="form.credit_limit"
                                 class="form-control"
                                 :class="{ 'input-error': form.errors.credit_limit }"
                                 placeholder="0.00"
-                                min="0"
-                                step="0.01"
-                            >
+                            />
                         </div>
                         <span class="error-message" v-if="form.errors.credit_limit">{{ form.errors.credit_limit }}</span>
                     </div>

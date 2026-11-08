@@ -227,7 +227,7 @@
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label">Statement Closing Balance <span class="text-danger">*</span></label>
-                            <input v-model="startForm.statement_balance" type="number" step="0.01" class="form-control" placeholder="0.00" />
+                            <AmountInput v-model="startForm.statement_balance" class="form-control" placeholder="0.00" />
                             <div class="form-text">Enter the ending balance from your bank statement.</div>
                             <div v-if="startErrors.statement_balance" class="error-msg">{{ startErrors.statement_balance[0] }}</div>
                         </div>

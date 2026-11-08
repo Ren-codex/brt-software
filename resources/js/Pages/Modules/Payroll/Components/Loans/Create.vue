@@ -125,14 +125,12 @@
                             </label>
                             <div class="input-group">
                                 <span class="currency-symbol">₱</span>
-                                <input
-                                    type="number"
+                                <AmountInput
                                     v-model="form.amount"
                                     class="form-control"
                                     :class="{ 'input-error': form.errors.amount }"
                                     placeholder="0.00"
-                                    @wheel="$event.target.blur()"
-                                >
+                                />
                             </div>
                             <span class="error-message" v-if="form.errors.amount">
                                 <i class="ri-alert-line"></i>

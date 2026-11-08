@@ -11,6 +11,7 @@ import Layout from '@/Shared/Layouts/Main.vue'
 import store from "@/Shared/State/store";
 import { applyInitialTheme } from "@/Shared/theme";
 import SortSelect from "@/Shared/Components/SortSelect.vue";
+import AmountInput from "@/Shared/Components/Forms/AmountInput.vue";
 import { permissionsMixin } from '@/Shared/permissions';
 import { ApprovedPlugin } from '@/Shared/approved';
 import AOS from 'aos';
@@ -53,6 +54,8 @@ createInertiaApp({
             .component("Head", Head)
             // On every list page, so it is registered once here.
             .component("SortSelect", SortSelect)
+            // Used by money inputs across many forms, registered once here.
+            .component("AmountInput", AmountInput)
             .mount(el);
     },
     title: title => title ? `${appName} | ${title}` : appName,

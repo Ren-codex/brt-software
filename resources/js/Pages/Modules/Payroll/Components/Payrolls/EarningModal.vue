@@ -33,14 +33,11 @@
           <label class="form-label">Amount</label>
           <div class="input-wrapper">
             <i class="ri-cash-line input-icon"></i>
-            <input 
-              type="number" 
-              v-model.number="localAmount" 
-              class="form-control" 
-              min="0" 
-              step="0.01"
+            <AmountInput
+              v-model="localAmount"
+              class="form-control"
               placeholder="0.00"
-              @keyup.enter="save">
+              @keyup.enter="save" />
           </div>
         </div>
         <div class="form-actions">

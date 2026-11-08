@@ -721,16 +721,13 @@
                     <label for="cash_received_modal" class="form-label">Amount Received<span class="text-danger">*</span></label>
                     <div class="input-wrapper">
                         <i class="ri-money-peso-circle-line input-icon"></i>
-                        <input
+                        <AmountInput
                             id="cash_received_modal"
-                            v-model.number="cashReceivedAmount"
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            :model-value="cashReceivedAmount"
+                            @update:model-value="val => { cashReceivedAmount = val; validateCashReceivedAmount(); }"
                             class="form-control"
                             :class="{ 'input-error': cashChargeError }"
                             placeholder="Enter amount received"
-                            @input="validateCashReceivedAmount"
                         />
                     </div>
                     <span class="error-message" v-if="cashChargeError">{{ cashChargeError }}</span>
@@ -913,16 +910,13 @@
                         <label for="bank_transfer_amount" class="form-label">Amount Paid<span class="text-danger">*</span></label>
                         <div class="input-wrapper">
                             <i class="ri-money-peso-circle-line input-icon"></i>
-                            <input
+                            <AmountInput
                                 id="bank_transfer_amount"
-                                v-model.number="bankTransferDetails.amount_paid"
-                                type="number"
-                                min="0"
-                                step="0.01"
+                                :model-value="bankTransferDetails.amount_paid"
+                                @update:model-value="val => { bankTransferDetails.amount_paid = val; validateBankTransferAmount(); }"
                                 class="form-control"
                                 :class="{ 'input-error': bankTransferError }"
                                 placeholder="Enter amount paid"
-                                @input="validateBankTransferAmount"
                             />
                         </div>
                     </div>

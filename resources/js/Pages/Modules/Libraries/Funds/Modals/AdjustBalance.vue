@@ -18,7 +18,7 @@
                     <label class="form-label">New Balance <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
-                        <input type="number" v-model="form.balance" class="form-control" :class="{ 'is-invalid': errors.balance }" placeholder="0.00" min="0" step="0.01">
+                        <AmountInput v-model="form.balance" class="form-control" :class="{ 'is-invalid': errors.balance }" placeholder="0.00" />
                     </div>
                     <div class="invalid-feedback d-block" v-if="errors.balance">{{ errors.balance[0] }}</div>
                 </div>

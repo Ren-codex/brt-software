@@ -34,7 +34,7 @@
                 </div>
                 <div class="overtime-field">
                   <span class="overtime-label">OT Rate (₱/hr)</span>
-                  <input type="number" v-model.number="form.overtime_rate" min="0" step="0.01" class="summary-input" />
+                  <AmountInput v-model="form.overtime_rate" class="summary-input" />
                 </div>
                 <div class="overtime-field">
                   <span class="overtime-label">OT Hours</span>
@@ -139,7 +139,7 @@
 
               <div class="summary-row">
                 <span>Rate per day</span>
-                <input type="number" v-model="form.basic_salary" class="summary-input" style="width: 163px;"/>
+                <AmountInput v-model="form.basic_salary" class="summary-input" style="width: 163px;" />
               </div>
 
               <div class="summary-row">

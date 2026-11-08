@@ -14,7 +14,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Incentive</label>
-          <input type="number" v-model.number="localIncentive" class="form-control" min="0" step="0.01">
+          <AmountInput v-model="localIncentive" class="form-control" />
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-cancel" @click="close">Cancel</button>

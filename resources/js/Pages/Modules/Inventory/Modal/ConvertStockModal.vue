@@ -218,9 +218,9 @@
                       <label class="form-label">Wholesale Price</label>
                       <div class="input-wrapper">
                         <i class="ri-stack-line input-icon"></i>
-                        <input type="number" v-model="form.wholesale_price" class="form-control"
+                        <AmountInput v-model="form.wholesale_price" class="form-control"
                           :class="{ 'input-error': form.errors.wholesale_price || wholesalePriceWarning }"
-                          min="0" step="0.01" placeholder="0.00" />
+                          placeholder="0.00" />
                       </div>
                       <span class="error-message" v-if="form.errors.wholesale_price">{{ form.errors.wholesale_price }}</span>
                       <span class="price-warning" v-else-if="wholesalePriceWarning"><i class="ri-error-warning-line"></i> {{ wholesalePriceWarning }}</span>
@@ -231,9 +231,9 @@
                       <label class="form-label">Retail Price</label>
                       <div class="input-wrapper">
                         <i class="ri-price-tag-line input-icon"></i>
-                        <input type="number" v-model="form.retail_price" class="form-control"
+                        <AmountInput v-model="form.retail_price" class="form-control"
                           :class="{ 'input-error': form.errors.retail_price || retailPriceWarning }"
-                          min="0" step="0.01" placeholder="0.00" />
+                          placeholder="0.00" />
                       </div>
                       <span class="error-message" v-if="form.errors.retail_price">{{ form.errors.retail_price }}</span>
                       <span class="price-warning" v-else-if="retailPriceWarning"><i class="ri-error-warning-line"></i> {{ retailPriceWarning }}</span>

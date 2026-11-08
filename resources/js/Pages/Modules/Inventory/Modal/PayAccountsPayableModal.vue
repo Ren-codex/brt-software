@@ -48,15 +48,11 @@
 
           <div>
             <label class="form-label" for="payment_amount">Payment Amount</label>
-            <input
+            <AmountInput
               id="payment_amount"
               v-model="form.payment_amount"
-              type="number"
-              min="0"
-              step="0.01"
               class="form-input"
-              :max="remainingBalance"
-            >
+            />
             <small class="form-help">Maximum payable amount: {{ formatCurrency(remainingBalance) }}</small>
             <small v-if="errors.payment_amount" class="field-error">{{ errors.payment_amount }}</small>
           </div>

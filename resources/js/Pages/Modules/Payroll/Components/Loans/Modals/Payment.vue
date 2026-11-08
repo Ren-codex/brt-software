@@ -31,18 +31,14 @@
             </div>
             <div class="input-group" :class="{ 'input-group-error': errors.amount }">
               <span class="currency-symbol">PHP</span>
-              <input
+              <AmountInput
                 id="payment-amount"
-                v-model="form.amount"
-                type="number"
-                min="0"
-                :max="remainingBalance"
-                step="0.01"
+                :model-value="form.amount"
+                @update:model-value="val => { form.amount = val; enforceAmountLimit(); }"
                 class="form-control amount-input"
                 :class="{ 'input-error': errors.amount }"
                 placeholder="Enter payment amount"
-                @input="enforceAmountLimit"
-              >
+              />
             </div>
             <p class="field-hint">
               Enter any amount up to {{ numberFormat(remainingBalance) }}.

@@ -168,7 +168,7 @@
                                 <label class="form-label">Amount <span class="text-danger">*</span></label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">₱</span>
-                                    <input type="number" v-model="form.amount" min="0.01" step="0.01"
+                                    <AmountInput v-model="form.amount"
                                         class="form-control" :class="{ 'is-invalid': errors.amount }" />
                                 </div>
                                 <div class="invalid-feedback">{{ errors.amount }}</div>

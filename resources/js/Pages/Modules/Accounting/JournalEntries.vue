@@ -360,7 +360,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <input v-model.number="line.amount" type="number" min="0.01" step="0.01"
+                                        <AmountInput v-model="line.amount"
                                             class="form-control form-control-sm text-end"
                                             :class="{ 'is-invalid': entryErrors['lines.' + i + '.amount'] }"
                                             placeholder="0.00" />

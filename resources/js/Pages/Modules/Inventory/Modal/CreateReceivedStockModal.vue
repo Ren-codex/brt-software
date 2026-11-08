@@ -86,11 +86,10 @@
                     <td class="input-cell">
                       <div class="input-wrapper">
                         <span class="currency-symbol">₱</span>
-                        <input type="number" v-model="item.wholesale_price"
+                        <AmountInput v-model="item.wholesale_price"
                           :class="{ 'error': shouldShowWholesalePriceError(item) }"
-                          @input="markFieldTouched(item, 'wholesale_price')" @blur="markFieldTouched(item, 'wholesale_price')"
-                          class="form-control modern-input with-currency" :min="item.unit_cost || 0"
-                          :max="item.retail_price || undefined" step="0.01"
+                          @update:model-value="markFieldTouched(item, 'wholesale_price')" @blur="markFieldTouched(item, 'wholesale_price')"
+                          class="form-control modern-input with-currency"
                           :disabled="item.status !== 'pending'" placeholder="0.00" />
                         <div v-if="shouldShowWholesalePriceError(item)" class="field-error">
                           {{ getWholesalePriceError(item) }}
@@ -102,10 +101,10 @@
                     <td class="input-cell">
                       <div class="input-wrapper">
                         <span class="currency-symbol">₱</span>
-                        <input type="number" v-model="item.retail_price" class="form-control modern-input with-currency"
+                        <AmountInput v-model="item.retail_price" class="form-control modern-input with-currency"
                           :class="{ 'error': shouldShowRetailPriceError(item) }"
-                          @input="markFieldTouched(item, 'retail_price')" @blur="markFieldTouched(item, 'retail_price')"
-                          :min="item.unit_cost || 0" step="0.01" :disabled="item.status !== 'pending'"
+                          @update:model-value="markFieldTouched(item, 'retail_price')" @blur="markFieldTouched(item, 'retail_price')"
+                          :disabled="item.status !== 'pending'"
                           placeholder="0.00" />
                         <div v-if="shouldShowRetailPriceError(item)" class="field-error">
                           {{ getRetailPriceError(item) }}

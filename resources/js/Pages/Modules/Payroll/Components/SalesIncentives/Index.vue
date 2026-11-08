@@ -202,7 +202,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Amount *</label>
-                                <input v-model.number="form.amount" type="number" step="0.01" class="form-control" required>
+                                <AmountInput v-model="form.amount" class="form-control" required />
                             </div>
                         </div>
                     </div>

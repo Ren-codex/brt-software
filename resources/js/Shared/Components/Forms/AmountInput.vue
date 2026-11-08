@@ -23,6 +23,8 @@ export default {
         modelValue: { type: [Number, String], default: null },
         placeholder: { type: String, default: '0.00' },
         disabled: { type: Boolean, default: false },
+        // Max decimal places kept. Money is 2; unit costs can need more.
+        decimals: { type: Number, default: 2 },
     },
     emits: ['update:modelValue'],
     data() {
@@ -75,7 +77,7 @@ export default {
             const firstDot = raw.indexOf('.');
             if (firstDot !== -1) {
                 const intPart = raw.slice(0, firstDot);
-                const decPart = raw.slice(firstDot + 1).replace(/\./g, '').slice(0, 2);
+                const decPart = raw.slice(firstDot + 1).replace(/\./g, '').slice(0, this.decimals);
                 raw = intPart + '.' + decPart;
             }
 

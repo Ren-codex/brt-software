@@ -58,12 +58,10 @@
             <label class="form-label">Unit Cost</label>
             <div class="input-wrapper">
               <i class="ri-money-peso-circle-line input-icon"></i>
-              <input
-                type="number"
+              <AmountInput
                 v-model="form.unit_cost"
                 class="form-control"
-                min="0"
-                step="0.0001"
+                :decimals="4"
                 :class="{ 'input-error': form.errors.unit_cost }"
                 placeholder="0.00"
               />
