@@ -624,11 +624,11 @@ export default {
             this.loan.status = status === 'disapproved' ? 'rejected' : status;
           }
 
-          Swal.fire(
-              'Success',
-              'Loan updated successfully!',
-              'success'
-          );
+          if (status === 'approved') {
+            this.$approved('Loan #' + this.loan.id);
+          } else {
+            Swal.fire('Success', 'Loan updated successfully!', 'success');
+          }
           this.showModal = false;
           this.remarks = '';
         },

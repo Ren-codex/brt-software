@@ -436,11 +436,11 @@ export default {
         remarks: this.remarks
       }, {
         onSuccess: () => {
-          Swal.fire(
-              'Success',
-              'Payroll updated successfully!',
-              'success'
-          );
+          if (status === 'approved') {
+            this.$approved('Payroll #' + this.payroll.id);
+          } else {
+            Swal.fire('Success', 'Payroll updated successfully!', 'success');
+          }
           this.showModal = false;
           this.remarks = '';
           this.$inertia.visit('/payrolls');

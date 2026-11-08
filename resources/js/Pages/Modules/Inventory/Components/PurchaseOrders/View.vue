@@ -394,6 +394,9 @@ export default {
         remarks: this.remarks
       }, {
         onSuccess: () => {
+          if (status === 'Approved') {
+            this.$approved('PO ' + (this.purchaseOrder.po_number || this.purchaseOrder.pr_number || '#' + this.purchaseOrder.id));
+          }
           this.showToast('Purchase order updated successfully');
           this.showModal = false;
           this.remarks = '';

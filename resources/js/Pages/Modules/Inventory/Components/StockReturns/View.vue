@@ -433,6 +433,7 @@ export default {
         // anything that threw while showing the message left the screen on the
         // old status with no sign that the approval had gone through.
         this.applyUpdate(response);
+        if (String(status) === 'approved') this.$approved('Stock return #' + this.data.id);
         this.$emit('toast', response?.data?.message || 'Stock return updated successfully');
       } catch (error) {
         // Keep the modal open and say why here. The server refuses an approval

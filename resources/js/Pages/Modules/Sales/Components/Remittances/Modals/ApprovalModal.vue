@@ -346,8 +346,15 @@ export default {
             this.form.received_via = this.receivedViaModes.join(', ');
             // Absolute path: the relative form resolved against the current URL
             // and broke on any route deeper than /remittances.
+            const wasApproved = this.form.status === 'Approve';
             this.form.post(`/remittances/${this.item.id}/approve`, {
                 onSuccess: () => {
+                    if (wasApproved) {
+                        this.$emit('reload');
+                        this.hide();
+                        this.$approved('Remittance ' + (this.item.remittance_no || '#' + this.item.id));
+                        return;
+                    }
                     this.saveSuccess = true;
                     setTimeout(() => {
                         this.$emit('reload');

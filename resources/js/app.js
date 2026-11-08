@@ -12,6 +12,7 @@ import store from "@/Shared/State/store";
 import { applyInitialTheme } from "@/Shared/theme";
 import SortSelect from "@/Shared/Components/SortSelect.vue";
 import { permissionsMixin } from '@/Shared/permissions';
+import { ApprovedPlugin } from '@/Shared/approved';
 import AOS from 'aos';
 
 AOS.init({
@@ -47,6 +48,7 @@ createInertiaApp({
             .use(VueApexCharts)
             .use(Toast)
             .use(ConfirmPlugin)
+            .use(ApprovedPlugin)
             .component("Link", Link)
             .component("Head", Head)
             // On every list page, so it is registered once here.

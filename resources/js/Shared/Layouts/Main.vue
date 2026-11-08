@@ -5,6 +5,7 @@ import Horizontal from "./Horizontal.vue";
 import TwoColumns from "./Twocolumn.vue";
 import MinimisedDraftBar from "@/Shared/Components/MinimisedDraftBar.vue";
 import ThemeSwitcher from "@/Shared/Components/ThemeSwitcher.vue";
+import ApprovalSuccess from "@/Shared/Components/ApprovalSuccess.vue";
 export default {
     components: {
         Vertical,
@@ -12,6 +13,7 @@ export default {
         TwoColumns,
         MinimisedDraftBar,
         ThemeSwitcher,
+        ApprovalSuccess,
     },
     props: { 
         surveyQuestions: Array
@@ -58,6 +60,10 @@ export default {
         <!-- Applies the saved system theme for everyone; shows its floating
              button only to Super Admin and Mini Admin. -->
         <ThemeSwitcher />
+
+        <!-- The shared "Approved" confirmation (big check + chime), fired from
+             anywhere with this.$approved('<what was approved>'). -->
+        <ApprovalSuccess />
     </div>
     <!-- <div v-if="message" class="flash-modal-overlay" @click.self="check()">
         <div class="flash-modal">

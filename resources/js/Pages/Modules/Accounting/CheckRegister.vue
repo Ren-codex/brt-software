@@ -429,7 +429,11 @@ export default {
         },
         confirm(check) {
             axios.put(`/accounting/check-register/${check.id}/confirm`)
-                .then(() => { this.fetch(); this.fetchForecast(); })
+                .then(() => {
+                    this.$approved('Cheque ' + (check.check_number || '#' + check.id));
+                    this.fetch();
+                    this.fetchForecast();
+                })
                 .catch(err => alert(err.response?.data?.message || 'Could not confirm this check.'));
         },
         openBounce(check) {

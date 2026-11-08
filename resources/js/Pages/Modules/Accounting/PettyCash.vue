@@ -722,6 +722,7 @@ export default {
                 const idx = this.localReplenishments.findIndex(x => x.id === data.id);
                 if (idx !== -1) this.localReplenishments[idx] = res.data.data;
                 if (action === 'approve') {
+                    this.$approved('Replenishment #' + data.id);
                     router.reload({ only: ['funds'] });
                 } else {
                     this.localVouchers.forEach(v => { if (v.status === 'submitted' && v.fund_id === data.fund_id) v.status = 'recorded'; });

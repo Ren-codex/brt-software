@@ -409,7 +409,10 @@ export default {
             });
             if (!ok) return;
             axios.patch(`/accounting/expenses/${e.id}/approve`)
-                .then(res => this.replaceLocal(res.data.data))
+                .then(res => {
+                    this.$approved('Expense for ' + e.payee);
+                    this.replaceLocal(res.data.data);
+                })
                 .catch(err => alert(err.response?.data?.message || 'Error'));
         },
 
