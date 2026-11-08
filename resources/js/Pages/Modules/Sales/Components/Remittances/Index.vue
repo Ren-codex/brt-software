@@ -484,7 +484,10 @@ export default {
         fetch(page_url, { quiet = false } = {}) {
             // Pagination emits the next/prev link, which was previously accepted
             // and then ignored — every page button silently refetched page one.
-            page_url = page_url || '/remittances';
+            // Only a real URL string is a page to fetch: some callers (the
+            // Create modal's @add fires `true`) pass a non-URL, which otherwise
+            // became the request URL and failed silently, leaving the list stale.
+            page_url = (typeof page_url === 'string' && page_url) ? page_url : '/remittances';
             this.currentPageUrl = page_url;
 
             if (!quiet) {
