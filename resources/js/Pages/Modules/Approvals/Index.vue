@@ -259,6 +259,17 @@
                         <div v-if="detail.row.remarks" class="fs-12 text-muted w-100">"{{ detail.row.remarks }}"</div>
                     </div>
 
+                    <!-- Price change: the product itself, front and centre. -->
+                    <div v-if="detail.data.subject" class="detail-subject">
+                        <div class="subject-icon"><i class="ri-archive-2-line"></i></div>
+                        <div class="subject-text">
+                            <div class="subject-name">{{ detail.data.subject.name }}</div>
+                            <div v-if="detail.data.subject.batch" class="subject-batch">
+                                <i class="ri-price-tag-3-line"></i> Batch {{ detail.data.subject.batch }}
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Price change: the old → new prices, up front and big. -->
                     <div v-if="detail.data.price_update" class="price-update">
                         <div v-for="pu in detail.data.price_update" :key="pu.label" class="pu-card">
@@ -1007,6 +1018,45 @@ export default {
     border-radius: 10px;
     background: #f9fafb;
     border: 1px solid #e5e7eb;
+}
+.detail-subject {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 1.1rem;
+    margin: 0 0 1.1rem;
+    border-radius: 14px;
+    border: 1px solid #c4d9d2;
+    background: linear-gradient(to right, #cfe0d9 0%, #edf6f2 100%);
+}
+.subject-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(61, 141, 122, 0.14);
+    color: #3d8d7a;
+    font-size: 1.5rem;
+}
+.subject-text { min-width: 0; }
+.subject-name {
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #16322e;
+    word-break: break-word;
+}
+.subject-batch {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b8c85;
 }
 .price-update {
     display: grid;

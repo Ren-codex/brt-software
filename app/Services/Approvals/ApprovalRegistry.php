@@ -76,6 +76,36 @@ class ApprovalRegistry
     }
 
     /**
+     * A price-change request names an inventory batch, not a product — its own
+     * product_id is only set for converted batches. A received batch carries its
+     * product on the receiving line. Products have no name of their own; the
+     * label is brand + weight + unit (e.g. "Jasmine Rice 25 Kg").
+     */
+    protected function priceChangeProductName(PriceChangeRequest $r): ?string
+    {
+        $product = $r->product
+            ?: optional($r->inventoryStock)->product
+            ?: optional(optional($r->inventoryStock)->receivedItem)->product;
+
+        if (! $product) {
+            return null;
+        }
+
+        return trim(($product->brand?->name ?? '').' '.($product->weight ?? '').' '.($product->unit?->name ?? ''))
+            ?: ($product->code ?? null);
+    }
+
+    /** The relations needed to resolve a price-change request's product name. */
+    protected function priceChangeProductRelations(): array
+    {
+        return [
+            'product.brand', 'product.unit',
+            'inventoryStock.product.brand', 'inventoryStock.product.unit',
+            'inventoryStock.receivedItem.product.brand', 'inventoryStock.receivedItem.product.unit',
+        ];
+    }
+
+    /**
      * @return array<string, array<string, mixed>>
      */
     public function sources(): array
@@ -484,10 +514,10 @@ class ApprovalRegistry
                 'url' => '/inventory-stocks',
                 'can_approve_inline' => true,
                 'can_reject_inline' => true,
-                'pending' => fn () => PriceChangeRequest::with(['product', 'inventoryStock', 'requestedBy'])
+                'pending' => fn () => PriceChangeRequest::with(array_merge(['requestedBy'], $this->priceChangeProductRelations()))
                     ->whereHas('status', fn ($q) => $q->where('slug', 'pending')),
                 'row' => fn (PriceChangeRequest $r) => [
-                    'reference' => ($r->product->name ?? 'Product')
+                    'reference' => ($this->priceChangeProductName($r) ?: 'Product')
                         . (optional($r->inventoryStock)->batch_code ? ' · ' . $r->inventoryStock->batch_code : ''),
                     'summary' => 'Retail ₱' . number_format((float) $r->previous_retail_price, 2) . ' → ₱' . number_format((float) $r->retail_price, 2)
                         . ' · Wholesale ₱' . number_format((float) $r->previous_wholesale_price, 2) . ' → ₱' . number_format((float) $r->wholesale_price, 2),
@@ -495,7 +525,7 @@ class ApprovalRegistry
                     'requested_by' => $this->who($r->requestedBy),
                     'requested_at' => $r->created_at,
                 ],
-                'history' => fn (string $decision) => PriceChangeRequest::with(['product', 'inventoryStock', 'requestedBy', 'approvedBy.employee', 'status'])
+                'history' => fn (string $decision) => PriceChangeRequest::with(array_merge(['requestedBy', 'approvedBy.employee', 'status'], $this->priceChangeProductRelations()))
                     ->whereNotNull('approved_at')
                     ->when(
                         $decision === 'approved',

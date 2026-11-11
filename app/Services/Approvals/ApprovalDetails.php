@@ -377,13 +377,26 @@ class ApprovalDetails
     /** [label, value, type?] triples into fields, skipping the blank ones. */
     protected function priceChange(int $id): array
     {
-        $r = PriceChangeRequest::with(['product', 'inventoryStock', 'status', 'requestedBy.employee', 'approvedBy.employee'])
-            ->findOrFail($id);
+        $r = PriceChangeRequest::with([
+            'product.brand', 'product.unit',
+            'inventoryStock.product.brand', 'inventoryStock.product.unit',
+            'inventoryStock.receivedItem.product.brand', 'inventoryStock.receivedItem.product.unit',
+            'status', 'requestedBy.employee', 'approvedBy.employee',
+        ])->findOrFail($id);
+
+        $product = $this->priceChangeProduct($r);
+        $name = $this->productName($product);
 
         return [
             'title' => 'Price Change',
-            'reference' => ($r->product->name ?? 'Product')
+            'reference' => ($name ?: 'Product')
                 . (optional($r->inventoryStock)->batch_code ? ' · '.$r->inventoryStock->batch_code : ''),
+            // The product being repriced, shown big at the top of the view so the
+            // approver sees what they are deciding on before the numbers.
+            'subject' => [
+                'name' => $name ?: 'Product',
+                'batch' => optional($r->inventoryStock)->batch_code,
+            ],
             // The point of this approval: the old and new prices, shown as the
             // headline of the view rather than buried among the other fields.
             'price_update' => [
@@ -391,8 +404,7 @@ class ApprovalDetails
                 ['label' => 'Wholesale Price', 'old' => (float) $r->previous_wholesale_price, 'new' => (float) $r->wholesale_price],
             ],
             'fields' => $this->fields([
-                ['Product', $r->product->name ?? null],
-                ['Batch', optional($r->inventoryStock)->batch_code],
+                ['Qty on hand', optional($r->inventoryStock)->quantity, 'number'],
                 ['Reason', $r->reason],
                 ['Status', $r->status->name ?? null],
                 ['Requested by', $this->who($r->requestedBy)],
@@ -402,6 +414,18 @@ class ApprovalDetails
             ]),
             'lines' => null,
         ];
+    }
+
+    /**
+     * A price-change request names an inventory batch, not a product — its own
+     * product_id is only set for converted batches. A received batch carries its
+     * product on the receiving line, so fall through to there.
+     */
+    protected function priceChangeProduct(PriceChangeRequest $r): ?Product
+    {
+        return $r->product
+            ?: optional($r->inventoryStock)->product
+            ?: optional(optional($r->inventoryStock)->receivedItem)->product;
     }
 
     protected function fields(array $triples): array
