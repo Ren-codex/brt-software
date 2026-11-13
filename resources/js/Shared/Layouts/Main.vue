@@ -24,6 +24,14 @@ export default {
         };
     },
 
+    mounted() {
+        // Pull this user's set-aside forms from the server so the floating bar
+        // reappears after a refresh on any device, not just where they were
+        // saved. Guests have nothing to load.
+        if (this.$page.props.user) {
+            this.$store.dispatch('loadDrafts');
+        }
+    },
     computed: {
         ...layoutComputed,
         message() {

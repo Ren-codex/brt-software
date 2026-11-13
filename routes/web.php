@@ -12,6 +12,13 @@ Route::get('/landing', function () {
 
 Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+
+    // A form someone set aside, kept server-side so it survives a refresh on any
+    // device — see App\Http\Controllers\DraftController and the draft store.
+    Route::get('/drafts', [App\Http\Controllers\DraftController::class, 'index']);
+    Route::put('/drafts/{kind}', [App\Http\Controllers\DraftController::class, 'update']);
+    Route::delete('/drafts/{kind}', [App\Http\Controllers\DraftController::class, 'destroy']);
+
     Route::resource('/sales-orders', App\Http\Controllers\Modules\SalesOrderController::class)->except(['create', 'edit']);
     Route::get('/reports', [App\Http\Controllers\Modules\ReportsController::class, 'index']);
     Route::post('/sales-orders/{id}/adjustment', [App\Http\Controllers\Modules\SalesOrderController::class, 'adjustment']);

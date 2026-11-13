@@ -2,9 +2,12 @@
  * Forms someone started and set aside.
  *
  * A modal cannot survive leaving the page — the component is destroyed — so a
- * minimised form lives here and in localStorage. The store makes the floating
- * bar react to it; localStorage is what carries it across a page change, and
- * it is per-browser by nature, which suits a personal half-written form.
+ * minimised form lives here and, so it survives a refresh, on the server keyed
+ * to the user. localStorage is kept too, as an instant local cache: the bar can
+ * show the moment a page loads, before the server has answered, and it still
+ * works offline. The server is the source of truth — field reps on mobile
+ * browsers routinely have localStorage blocked or cleared, which is exactly why
+ * a draft used to vanish on their next refresh.
  *
  * Each kind knows where it belongs, so the bar can offer a way back to a form
  * that may be two modules away.
@@ -46,7 +49,8 @@ const write = (kind, draft) => {
             window.localStorage.removeItem(key);
         }
     } catch (e) {
-        // Nothing to do: the draft stays in memory for this page at least.
+        // The device blocks storage: the server copy is what carries it across a
+        // refresh now, so there is nothing to recover here.
     }
 };
 
@@ -82,13 +86,48 @@ const mutations = {
 };
 
 const actions = {
+    /**
+     * Pull the user's drafts from the server once on start-up. The server wins
+     * where it has a draft; a kind it does not know about is left to whatever
+     * the local cache holds, so a draft made moments ago is never clobbered by
+     * an empty server answer.
+     */
+    async loadDrafts({ commit, state }) {
+        try {
+            const { data } = await window.axios.get('/drafts');
+            const serverDrafts = data?.data ?? {};
+            Object.keys(DRAFT_KINDS).forEach((kind) => {
+                const draft = serverDrafts[kind];
+                if (draft && draft.payload) {
+                    commit('setDraft', { kind, draft });
+                }
+            });
+        } catch (e) {
+            // Offline or a guest page: the local cache still serves the bar.
+        }
+    },
     keepDraft({ commit }, { kind, summary, payload }) {
-        commit('setDraft', { kind, draft: { summary, payload, saved_at: new Date().toISOString() } });
+        const draft = {
+            summary,
+            payload,
+            return_path: window.location.pathname,
+            saved_at: new Date().toISOString(),
+        };
+        commit('setDraft', { kind, draft });
         commit('setDraftOpen', { kind, open: false });
+
+        // Mirror to the server so it survives a refresh on any device. A failure
+        // here still leaves the local cache in place for this browser.
+        window.axios?.put(`/drafts/${kind}`, {
+            summary: draft.summary,
+            payload: draft.payload,
+            return_path: draft.return_path,
+        }).catch(() => {});
     },
     discardDraft({ commit }, kind) {
         commit('setDraft', { kind, draft: null });
         commit('setDraftOpen', { kind, open: false });
+        window.axios?.delete(`/drafts/${kind}`).catch(() => {});
     },
     draftOpened({ commit }, kind) {
         commit('setDraftOpen', { kind, open: true });

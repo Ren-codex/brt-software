@@ -79,7 +79,13 @@ export default {
                 return;
             }
 
-            router.visit(draft.path);
+            // Prefer where the form was actually set aside — an external rep's
+            // orders live on /sales-orders-external, not the admin route — and
+            // fall back to the kind's default page for older drafts.
+            const target = draft.return_path
+                ? draft.return_path + (draft.return_path.includes('?') ? '&' : '?') + 'resume=1'
+                : draft.path;
+            router.visit(target);
         },
         discard(draft) {
             this.$store.dispatch('discardDraft', draft.kind);

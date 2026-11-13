@@ -153,6 +153,18 @@ export default {
     this.fetchSalesOrders();
     this.debouncedSearch = _.debounce(this.fetchSalesOrders, 500);
   },
+  mounted() {
+    // Sent here by the floating Resume bar: show the orders tab, then let it
+    // reopen the set-aside order once the tab has rendered.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('resume')) {
+      this.activeTab = 'sales_orders';
+      localStorage.setItem('sales_external_active_tab', 'sales_orders');
+      this.$nextTick(() => {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('resume-sales-order')), 300);
+      });
+    }
+  },
   methods: {
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
