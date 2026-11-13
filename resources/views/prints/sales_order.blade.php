@@ -114,6 +114,11 @@
         .items-table .qty-col { width: 60px; text-align: center; }
         .text-right { text-align: right; }
         .items-table .text-center { text-align: center; }
+        /* A longer order (13–15 items) on a shared half-sheet: tighten the rows
+           a step so the extra lines still clear the cut. Twelve or fewer keep
+           the larger 15px size above. */
+        .items-compact th { font-size: 12px; }
+        .items-compact td { font-size: 13px; line-height: 1.15; }
 
         /* Footer */
         .footer-table { width: 100%; margin-top: 3px; }
@@ -142,21 +147,23 @@
 <body>
     @php
         // With the signatures pinned to the foot of each copy, the body is given
-        // a 140mm cell on a shared sheet. The items print compactly (12px, tight
-        // rows), so twelve fit within that cell and still leave the signatures a
-        // clear gap above the 165mm cut (verified on long bond). A thirteenth
-        // pushes it over, so thirteen and up get a sheet each.
-        $copiesShareSheet = count($items) <= 12;
+        // a 140mm cell on a shared sheet. Up to twelve items print at the larger,
+        // more readable 15px size. A longer list (13–15) switches to tighter 13px
+        // rows, which take about the same height twelve of the big rows did — so
+        // the signatures still land clear of the 165mm cut. Sixteen and up no
+        // longer fit a half-sheet, so each copy takes its own sheet.
+        $copiesShareSheet = count($items) <= 15;
+        $compactItems = $copiesShareSheet && count($items) > 12;
     @endphp
 
     @php $layoutClass = $copiesShareSheet ? 'copy-layout-half' : 'copy-layout-full'; @endphp
 
     <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : 'single-copy' }}">
-        @include('prints.partials.sales-order-copy', ['copyLabel' => 'Customer Copy', 'layoutClass' => $layoutClass])
+        @include('prints.partials.sales-order-copy', ['copyLabel' => 'Customer Copy', 'layoutClass' => $layoutClass, 'compact' => $compactItems])
     </div>
 
     <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-bottom keep-whole' : 'single-copy new-sheet' }}">
-        @include('prints.partials.sales-order-copy', ['copyLabel' => 'BRT Copy', 'layoutClass' => $layoutClass])
+        @include('prints.partials.sales-order-copy', ['copyLabel' => 'BRT Copy', 'layoutClass' => $layoutClass, 'compact' => $compactItems])
     </div>
 
 </body>

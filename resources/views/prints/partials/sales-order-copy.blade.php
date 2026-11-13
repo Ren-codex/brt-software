@@ -84,7 +84,7 @@
     </tbody>
 </table>
 
-<table class="items-table">
+<table class="items-table{{ ($compact ?? false) ? ' items-compact' : '' }}">
     <thead>
         <tr>
             <th class="qty-col">Quantity</th>

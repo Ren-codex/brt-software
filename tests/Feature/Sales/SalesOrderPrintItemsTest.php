@@ -164,23 +164,36 @@ class SalesOrderPrintItemsTest extends TestCase
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
     }
 
-    public function test_twelve_items_still_share_one_sheet(): void
+    public function test_fifteen_items_still_share_one_sheet(): void
     {
-        // The items print compactly (12px, tight rows), so twelve fit the 140mm
-        // half-sheet body and land the signature ~154mm on long bond — ~10mm
-        // clear of the 165mm cut (verified against the rendered PDF). So the two
-        // copies still share one sheet.
-        $html = $this->renderOrder($this->order(), items: 12);
+        // Up to twelve items print at the larger 15px size; thirteen to fifteen
+        // switch to tighter 13px rows (the .items-compact class) which take about
+        // the height twelve big rows did, so the signatures still land clear of
+        // the 165mm cut and the two copies share one sheet.
+        $html = $this->renderOrder($this->order(), items: 15);
 
         $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
         $this->assertStringNotContainsString('class="copy-cell single-copy new-sheet"', $html);
+        // The longer list is the compressed variant.
+        $this->assertStringContainsString('items-table items-compact', $html);
     }
 
-    public function test_thirteen_items_take_a_sheet_each(): void
+    public function test_twelve_items_keep_the_larger_rows(): void
     {
-        // A thirteenth row pushes the signature past the cut, so each copy takes
-        // its own full sheet and neither is cut through.
-        $html = $this->renderOrder($this->order(), items: 13);
+        // Twelve still fit at the readable size, so they are not compressed.
+        $html = $this->renderOrder($this->order(), items: 12);
+
+        $this->assertStringContainsString('class="copy-cell half-sheet-top"', $html);
+        // The stylesheet always defines .items-compact; what matters is that the
+        // class is not applied to the table.
+        $this->assertStringNotContainsString('items-table items-compact', $html);
+    }
+
+    public function test_sixteen_items_take_a_sheet_each(): void
+    {
+        // A sixteenth row pushes the signature past the cut even compressed, so
+        // each copy takes its own full sheet and neither is cut through.
+        $html = $this->renderOrder($this->order(), items: 16);
 
         // The class name also appears in the stylesheet, so match where it is
         // applied rather than merely mentioned.
