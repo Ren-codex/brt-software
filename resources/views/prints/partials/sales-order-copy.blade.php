@@ -108,7 +108,10 @@
                  goes in its own column is how it is packed. --}}
             <td><strong>{{ $item->product->brand->name ?? '' }} {{ $item->product->weight }}</strong> {{ $item->product->unit->name ?? '' }}</td>
             <td>{{ $item->batch_code ?? '---' }}</td>
-            <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
+            {{-- The unit price shown is what the customer actually pays: the
+                 original price less any per-unit discount, so Unit Price × Qty
+                 reads straight across to the Total. --}}
+            <td class="text-right">PHP {{ number_format($item->price - $item->discount_per_unit, 2) }}</td>
             <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>
         </tr>
         @endforeach
