@@ -163,6 +163,9 @@ class ReceivedStockService
                             'quantity' => $itemData['to_received_quantity'],
                             'unit_cost' => $itemData['unit_cost'],
                             'total_cost' => $receivedItemTotalCost,
+                            // Optional, reference-only extras entered per item.
+                            'tracking_expense' => $itemData['tracking_expense'] ?? null,
+                            'remarks' => $itemData['remarks'] ?? null,
                             'po_item_id' => $itemData['po_item_id'],
                         ]);
 

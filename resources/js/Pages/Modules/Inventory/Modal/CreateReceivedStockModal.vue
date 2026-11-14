@@ -31,8 +31,10 @@
                     <th>Received</th>
                     <th>To Receive</th>
                     <th>Unit Cost</th>
+                    <th>Tracking Expense</th>
                     <th>Wholesale Price</th>
                     <th>Retail Price</th>
+                    <th class="remarks-col">Remarks</th>
                     <th>Expiry</th>
                   </tr>
                 </thead>
@@ -82,6 +84,15 @@
                       <span class="currency-value">{{ formatCurrency(item.unit_cost) }}</span>
                     </td>
 
+                    <!-- Tracking Expense (optional, recorded for reference) -->
+                    <td class="input-cell">
+                      <div class="input-wrapper">
+                        <span class="currency-symbol">₱</span>
+                        <AmountInput v-model="item.tracking_expense" class="form-control modern-input with-currency"
+                          :disabled="item.status !== 'pending'" placeholder="0.00" />
+                      </div>
+                    </td>
+
                     <!-- Wholesale Price -->
                     <td class="input-cell">
                       <div class="input-wrapper">
@@ -112,6 +123,14 @@
                       </div>
                     </td>
 
+                    <!-- Remarks (optional note for this item) -->
+                    <td class="input-cell remarks-cell">
+                      <div class="input-wrapper">
+                        <input type="text" v-model="item.remarks" class="form-control modern-input"
+                          :disabled="item.status !== 'pending'" maxlength="1000" placeholder="Optional note" />
+                      </div>
+                    </td>
+
                     <!-- Expiry -->
                     <td class="expiry-cell">
                       <div class="expiry-control">
@@ -134,7 +153,7 @@
 
                   <!-- Empty State -->
                   <tr v-if="!form.items || form.items.length === 0">
-                    <td colspan="8" class="empty-state">
+                    <td colspan="10" class="empty-state">
                       <i class="ri-inbox-line"></i>
                       <p>No items available</p>
                     </td>
@@ -575,6 +594,8 @@ export default {
           to_received_quantity: item.quantity - item.received_quantity,
           retail_price: 0,
           wholesale_price: 0,
+          tracking_expense: null,
+          remarks: '',
           expiration_date: null,
           has_expiry: false,
           _touched: {
@@ -888,6 +909,15 @@ export default {
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 2rem);
+  /* Wider than the default 1200px modal-xl so the extra columns (tracking
+     expense, remarks) and a roomy remarks field all fit without crowding. */
+  max-width: min(1480px, 96vw);
+}
+
+/* The remarks note wants room to read, so it gets a wide column of its own. */
+.remarks-col,
+.remarks-cell {
+  min-width: 240px;
 }
 
 .modal-body {
@@ -1504,7 +1534,7 @@ export default {
   }
 
   .purchase-order-table {
-    min-width: 1000px;
+    min-width: 1320px;
   }
 
   .payment-option-grid,

@@ -54,6 +54,9 @@ class StoreReceivedStockRequest extends FormRequest
             'items.*.po_item_id' => 'required|exists:purchase_order_items,id',
             'items.*.retail_price' => 'nullable|numeric|min:0',
             'items.*.wholesale_price' => 'nullable|numeric|min:0',
+            // Optional per-item extras, recorded for reference only.
+            'items.*.tracking_expense' => 'nullable|numeric|min:0',
+            'items.*.remarks' => 'nullable|string|max:1000',
             'items.*.expiration_date' => 'nullable|date',
         ];
     }

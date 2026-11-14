@@ -12,6 +12,8 @@ class ReceivedItem extends Model
         'quantity',
         'unit_cost',
         'total_cost',
+        'tracking_expense',
+        'remarks',
         'po_item_id',
     ];
 

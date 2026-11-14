@@ -43,6 +43,8 @@ class ReceivedStockResource extends JsonResource
                     'quantity' => $item->quantity,
                     'unit_cost' => (float) $item->unit_cost,
                     'total_cost' => (float) $item->total_cost,
+                    'tracking_expense' => $item->tracking_expense !== null ? (float) $item->tracking_expense : null,
+                    'remarks' => $item->remarks,
                 ];
             })->values(),
             'payment_mode' => $resolvedPaymentMode,

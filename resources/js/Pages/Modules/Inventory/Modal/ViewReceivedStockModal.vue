@@ -126,7 +126,9 @@
                   <th>Product</th>
                   <th>Quantity</th>
                   <th>Unit Cost</th>
+                  <th>Tracking Expense</th>
                   <th>Total Cost</th>
+                  <th>Remarks</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,7 +137,9 @@
                   <td>{{ item.product?.name || 'N/A' }}</td>
                   <td>{{ item.quantity }}</td>
                   <td>{{ formatCurrency(item.unit_cost) }}</td>
+                  <td>{{ item.tracking_expense != null ? formatCurrency(item.tracking_expense) : '—' }}</td>
                   <td class="rs-item-amount">{{ formatCurrency(item.total_cost) }}</td>
+                  <td>{{ item.remarks || '—' }}</td>
                 </tr>
               </tbody>
             </table>

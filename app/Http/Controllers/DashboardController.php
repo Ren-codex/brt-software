@@ -59,7 +59,7 @@ class DashboardController extends Controller
             ->whereIn('so.id', $successfulSalesOrders);
 
         $totalSales = (float) (clone $revenueBaseQuery)
-            ->selectRaw('COALESCE(SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity), 0) as total_revenue')
+            ->selectRaw('COALESCE(SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - (COALESCE(ri.unit_cost, 0) + COALESCE(ri.tracking_expense, 0))) * soi.quantity), 0) as total_revenue')
             ->value('total_revenue');
 
         $totalReceipts = Receipt::query()
@@ -99,7 +99,7 @@ class DashboardController extends Controller
 
             $sales = (float) (clone $revenueBaseQuery)
                 ->whereIn('so.id', $monthlySuccessfulSalesOrders)
-                ->selectRaw('COALESCE(SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity), 0) as total_revenue')
+                ->selectRaw('COALESCE(SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - (COALESCE(ri.unit_cost, 0) + COALESCE(ri.tracking_expense, 0))) * soi.quantity), 0) as total_revenue')
                 ->value('total_revenue');
             $monthlySales[] = [
                 'month' => $month,
@@ -128,7 +128,7 @@ class DashboardController extends Controller
                 DB::raw('CONCAT(p.weight, " ", lu.name, " ", lb.name) as name'),
                 DB::raw('lb.name as brand'),
                 DB::raw('SUM(soi.quantity) as quantity_sold'),
-                DB::raw('SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - COALESCE(ri.unit_cost, 0)) * soi.quantity) as revenue')
+                DB::raw('SUM(((soi.price - COALESCE(soi.discount_per_unit, 0)) - (COALESCE(ri.unit_cost, 0) + COALESCE(ri.tracking_expense, 0))) * soi.quantity) as revenue')
             )
             ->groupBy('p.id', 'p.weight', 'lu.name', 'lb.name')
             ->orderByDesc('quantity_sold')
