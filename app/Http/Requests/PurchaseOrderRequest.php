@@ -23,9 +23,12 @@ class PurchaseOrderRequest extends FormRequest
     {
         return [
             'total_amount' => 'required|numeric|min:0|max:9999999999999.99',
-            'supplier_id' => 'required|exists:list_suppliers,id',
+            // Supplier now lives on each line; the order-level value is derived
+            // server-side from the lines, so it is no longer required here.
+            'supplier_id' => 'nullable|exists:list_suppliers,id',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.supplier_id' => 'required|exists:list_suppliers,id',
             'items.*.quantity' => 'required|integer|min:1|max:2147483647',
             'items.*.unit_cost' => 'required|numeric|min:0|max:99999999.99',
             'items.*.total_cost' => 'required|numeric|min:0|max:9999999999999.99',
@@ -35,6 +38,8 @@ class PurchaseOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'items.*.supplier_id.required' => 'Each item must have a supplier.',
+            'items.*.supplier_id.exists' => 'The selected supplier is invalid.',
             'items.*.quantity.max' => 'Quantity is too large.',
             'items.*.unit_cost.max' => 'Unit cost must not exceed 99,999,999.99.',
             'items.*.total_cost.max' => 'Total cost per item must not exceed 9,999,999,999,999.99.',

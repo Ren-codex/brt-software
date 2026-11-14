@@ -76,7 +76,7 @@ class PrintClass
     }
 
     public function prinPurchaseOrder($id){
-        $purchase_order = \App\Models\PurchaseOrder::with('status' , 'items.product.brand', 'items.product.unit', 'supplier')->findOrFail($id);
+        $purchase_order = \App\Models\PurchaseOrder::with('status' , 'items.product.brand', 'items.product.unit', 'items.supplier', 'supplier')->findOrFail($id);
         $items = $purchase_order->items;
 
         $array = [

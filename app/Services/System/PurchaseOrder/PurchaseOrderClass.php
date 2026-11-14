@@ -22,6 +22,28 @@ class PurchaseOrderClass
         $this->series_service = $series_service;
     }
 
+    /**
+     * The order-level supplier shown on lists and the printed Bill-To. It is
+     * the shared supplier when every line uses the same one, otherwise the
+     * first line's supplier (a representative for a mixed-supplier order). Falls
+     * back to any order-level value the caller supplied when there are no lines.
+     */
+    private function representativeSupplierId(array $items, $fallback = null)
+    {
+        $supplierIds = collect($items)
+            ->pluck('supplier_id')
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+
+        if ($supplierIds->isEmpty()) {
+            return $fallback;
+        }
+
+        // The first line's supplier — which is the shared one when every line
+        // matches, and a representative when they differ.
+        return $supplierIds->first();
+    }
+
     public function list($request)
     {
         $data = PurchaseOrder::with([
@@ -29,6 +51,7 @@ class PurchaseOrderClass
             'supplier',
             'approved_by',
             'items.product',
+            'items.supplier',
             'items.receivedItems.inventoryStocks',
             'items.receivedItems.receivedStock',
         ])
@@ -45,6 +68,7 @@ class PurchaseOrderClass
             'supplier',
             'approved_by',
             'items.product',
+            'items.supplier',
             'items.receivedItems.inventoryStocks',
             'items.receivedItems.receivedStock',
             'logs',
@@ -60,7 +84,11 @@ class PurchaseOrderClass
                 'po_date' => now(),
                 'total_amount' => $request->total_amount,
                 'status_id' => ListStatus::where('name', 'Pending')->first()->id,
-                'supplier_id' => $request->supplier_id,
+                // Supplier lives on each line now. The order keeps a
+                // representative supplier so the printed Bill-To and lists still
+                // have one to show; it's the shared supplier when every line
+                // matches, otherwise the first line's.
+                'supplier_id' => $this->representativeSupplierId($request->items, $request->supplier_id),
                 'created_by_id' => Auth::id(),
             ];
 
@@ -70,6 +98,7 @@ class PurchaseOrderClass
                 PurchaseOrderItem::create([
                     'po_id' => $purchaseOrder->id,
                     'product_id' => $item['product_id'],
+                    'supplier_id' => $item['supplier_id'] ?? null,
                     'quantity' => $item['quantity'],
                     'unit_cost' => $item['unit_cost'],
                     'total_cost' => $item['total_cost'],
@@ -83,7 +112,7 @@ class PurchaseOrderClass
                 'remarks' => 'Purchase order created.',
             ]);
 
-            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'logs']);
+            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'items.supplier', 'logs']);
         });
 
         return [
@@ -128,7 +157,7 @@ class PurchaseOrderClass
                 'remarks' => $request->remarks,
             ]);
 
-            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'logs']);
+            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'items.supplier', 'logs']);
         });
 
         return [
@@ -173,7 +202,7 @@ class PurchaseOrderClass
                 'remarks' => $request->remarks,
             ]);
 
-            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'logs']);
+            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'items.supplier', 'logs']);
         });
 
         return [
@@ -202,7 +231,7 @@ class PurchaseOrderClass
 
             $poData = [
                 'total_amount' => $request->total_amount,
-                'supplier_id' => $request->supplier_id,
+                'supplier_id' => $this->representativeSupplierId($request->items, $request->supplier_id),
             ];
 
             $purchaseOrder->update($poData);
@@ -214,6 +243,7 @@ class PurchaseOrderClass
                 PurchaseOrderItem::create([
                     'po_id' => $purchaseOrder->id,
                     'product_id' => $item['product_id'],
+                    'supplier_id' => $item['supplier_id'] ?? null,
                     'quantity' => $item['quantity'],
                     'unit_cost' => $item['unit_cost'],
                     'total_cost' => $item['total_cost'],
@@ -227,7 +257,7 @@ class PurchaseOrderClass
                 'remarks' => 'Purchase order updated.',
             ]);
 
-            return $purchaseOrder->load(['status', 'supplier', 'items.product']);
+            return $purchaseOrder->load(['status', 'supplier', 'items.product', 'items.supplier']);
         });
 
         return [

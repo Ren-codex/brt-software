@@ -54,7 +54,7 @@
                       <div class="col-md-6">
                         <div class="mb-3">
                           <label class="form-label">Supplier</label>
-                          <p class="text-muted">{{ purchaseOrder.supplier?.name || 'N/A' }}</p>
+                          <p class="text-muted">{{ supplierLabel }}</p>
                         </div>
                       </div>
                       <div class="col-md-6">
@@ -119,6 +119,7 @@
                         <tr>
                           <th>#</th>
                           <th>Product</th>
+                          <th>Supplier</th>
                           <th>Quantity</th>
                           <th>Unit Cost</th>
                           <th>Total Cost</th>
@@ -129,6 +130,7 @@
                         <tr v-for="(item, index) in purchaseOrder.items" :key="item.id">
                           <td>{{ index + 1 }}</td>
                           <td>{{ item.product?.brand?.name || 'N/A' }}</td>
+                          <td>{{ item.supplier?.name || purchaseOrder.supplier?.name || 'N/A' }}</td>
                           <td>{{ Math.floor(item.quantity) }}</td>
                           <td>{{ formatCurrency(item.unit_cost) }}</td>
                           <td>{{ formatCurrency(item.total_cost) }}</td>
@@ -303,6 +305,20 @@ export default {
   computed: {
     canApprove() {
       return this.can('inventory', 'purchase_orders', 'approver');
+    },
+    /**
+     * The order's supplier for the summary line. A single supplier shows by
+     * name; a mixed order says so and points the reader at the per-line column.
+     */
+    supplierLabel() {
+      const names = [...new Set(
+        (this.purchaseOrder?.items || [])
+          .map(item => item.supplier?.name)
+          .filter(Boolean)
+      )];
+      if (names.length === 1) return names[0];
+      if (names.length > 1) return `Multiple suppliers (${names.length}) — see items`;
+      return this.purchaseOrder?.supplier?.name || 'N/A';
     },
     /**
      * Edit and delete belong to whoever raised the order, and only while it is

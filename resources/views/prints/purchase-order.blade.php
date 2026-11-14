@@ -76,16 +76,34 @@
         </tr>
     </table>
 
+    @php
+        // Supplier is per line now. When the order uses just one, the Bill-To
+        // shows it as before; when it mixes several, the per-line Supplier
+        // column carries the detail and Bill-To says so.
+        $supplierNames = $items->pluck('supplier.name')->filter()->unique()->values();
+        $isMixedSuppliers = $supplierNames->count() > 1;
+        $primarySupplier = $purchase_order->supplier;
+    @endphp
+
     <div class="summary-container">
         <div class="address-block">
             <div class="address-label">Bill To</div>
-            <strong>{{ $purchase_order->supplier->name }}</strong><br>
-            {!! nl2br(e($purchase_order->supplier->address)) !!}
+            @if($isMixedSuppliers)
+                <strong>Multiple suppliers</strong><br>
+                See the Supplier column on each line item.
+            @else
+                <strong>{{ optional($primarySupplier)->name ?? '—' }}</strong><br>
+                {!! nl2br(e(optional($primarySupplier)->address)) !!}
+            @endif
         </div>
         <div class="address-block">
             <div class="address-label">Ship To</div>
-            <strong>{{ $purchase_order->supplier->name }}</strong><br>
-            {!! nl2br(e($purchase_order->supplier->address)) !!}
+            @if($isMixedSuppliers)
+                <strong>Multiple suppliers</strong>
+            @else
+                <strong>{{ optional($primarySupplier)->name ?? '—' }}</strong><br>
+                {!! nl2br(e(optional($primarySupplier)->address)) !!}
+            @endif
         </div>
         <div class="total-block">
             <div style="text-align: left; font-weight: bold; font-size: 14px;">TOTAL</div>
@@ -120,6 +138,7 @@
                 <th>Quantity</th>
                 <th>Item</th>
                 <th>Description</th>
+                <th>Supplier</th>
                 <th>UoM</th>
                 <th class="text-right">Unit Price</th>
                 <th class="text-right">Amount</th>
@@ -133,6 +152,7 @@
                 <td>{{ number_format($item->quantity) }}</td>
                 <td><strong>{{ $item->product->sku }}</strong></td>
                 <td>{{ $item->product->description }}</td>
+                <td>{{ optional($item->supplier)->name ?? optional($purchase_order->supplier)->name ?? '—' }}</td>
                 <td>Bg</td>
                 <td class="text-right">{{ number_format($item->unit_cost, 2) }}</td>
                 <td class="text-right">{{ number_format($item->total_cost, 2) }}</td>

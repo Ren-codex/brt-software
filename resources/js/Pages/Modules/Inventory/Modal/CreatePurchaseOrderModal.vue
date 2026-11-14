@@ -22,31 +22,14 @@
                         <section class="form-panel form-panel-main">
                             <div class="panel-head">
                                 <div>
-                                    <p class="panel-kicker">Supplier Setup</p>
+                                    <p class="panel-kicker">Purchase Request</p>
                                     <h3 class="panel-title">Purchase Request Details</h3>
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">Select Supplier</label>
-                                <div class="input-wrapper">
-                                    <i class="ri-store-line input-icon"></i>
-                                    <Multiselect
-                                        v-model="form.supplier_id"
-                                        :options="dropdowns.suppliers"
-                                        label="name"
-                                        value-prop="value"
-                                        track-by="name"
-                                        :searchable="true"
-                                        :can-clear="false"
-                                        :append-to-body="true"
-                                        placeholder="Type to search a supplier..."
-                                        class="form-control supplier-multiselect"
-                                        :style="supplierSelectStyle()"
-                                        @change="handleInput('supplier_id')"
-                                    />
-                                </div>
-                                <span class="error-message" v-if="form.errors.supplier_id">{{ form.errors.supplier_id }}</span>
+                            <div class="per-line-supplier-hint">
+                                <i class="ri-store-line"></i>
+                                <span>Each product can come from a different supplier — pick the supplier on every line below.</span>
                             </div>
 
                             <div class="section-divider">
@@ -72,17 +55,18 @@
                                     <thead class="pretty-header">
                                         <tr class="fs-11">
                                             <th style="width: 4%;">#</th>
-                                            <th style="width: 30%;">Product</th>
-                                            <th style="width: 16%;" class="text-center">Quantity</th>
-                                            <th style="width: 18%;" class="text-center">Unit Cost</th>
-                                            <th style="width: 18%;" class="text-center">Total Cost</th>
-                                            <th style="width: 14%;" class="text-center">Actions</th>
+                                            <th style="width: 22%;">Product</th>
+                                            <th style="width: 20%;">Supplier</th>
+                                            <th style="width: 12%;" class="text-center">Quantity</th>
+                                            <th style="width: 16%;" class="text-center">Unit Cost</th>
+                                            <th style="width: 14%;" class="text-center">Total Cost</th>
+                                            <th style="width: 12%;" class="text-center">Actions</th>
                                         </tr>
                                     </thead>
 
                                     <tbody class="table-white fs-12">
                                         <tr v-if="form.items.length === 0">
-                                            <td colspan="6" class="empty-table">
+                                            <td colspan="7" class="empty-table">
                                                 <div class="empty-table-inner">
                                                     <i class="ri-shopping-cart-line"></i>
                                                     <h4>No Items Added Yet</h4>
@@ -117,6 +101,26 @@
                                                 </span>
                                                 <span class="warning-message" v-else-if="isDuplicateProduct(index)">
                                                     <i class="ri-error-warning-line"></i> Already in list
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Multiselect
+                                                    v-model="item.supplier_id"
+                                                    :options="dropdowns.suppliers"
+                                                    label="name"
+                                                    value-prop="value"
+                                                    track-by="name"
+                                                    :searchable="true"
+                                                    :can-clear="false"
+                                                    :append-to-body="true"
+                                                    placeholder="Select a supplier..."
+                                                    class="form-control table-select table-multiselect"
+                                                    :class="{ 'input-error': form.errors[`items.${index}.supplier_id`] }"
+                                                    :style="itemSupplierStyle(index)"
+                                                    @change="handleInput(`items.${index}.supplier_id`)"
+                                                />
+                                                <span class="error-message" v-if="form.errors[`items.${index}.supplier_id`]">
+                                                    {{ form.errors[`items.${index}.supplier_id`] }}
                                                 </span>
                                             </td>
                                             <td class="text-center">
@@ -172,7 +176,7 @@
 
                                     <tfoot v-if="form.items.length > 0">
                                         <tr>
-                                            <td colspan="4" class="text-end footer-label">Totals</td>
+                                            <td colspan="5" class="text-end footer-label">Totals</td>
                                             <td class="text-center footer-value">{{ formatCurrency(totalAmount) }}</td>
                                             <td></td>
                                         </tr>
@@ -281,7 +285,6 @@ export default {
             MAX_QUANTITY: 2147483647,
             form: useForm({
                 id: null,
-                supplier_id: null,
                 total_amount: 0,
                 items: [],
             }),
@@ -292,12 +295,27 @@ export default {
         };
     },
     computed: {
-        /** Named on the floating bar, so a minimised draft says whose it is. */
+        /**
+         * Named on the floating bar, so a minimised draft says whose it is.
+         * Suppliers now vary by line, so this reports how many distinct ones the
+         * draft touches (or the single supplier's name when they all match).
+         */
         supplierName() {
-            const supplier = (this.dropdowns?.suppliers ?? [])
-                .find((option) => String(option.value) === String(this.form.supplier_id));
+            const ids = [...new Set(
+                this.form.items
+                    .map((item) => item.supplier_id)
+                    .filter((id) => id !== null && id !== '' && id !== undefined)
+            )];
 
-            return supplier?.name ?? null;
+            if (ids.length === 0) {
+                return null;
+            }
+            if (ids.length === 1) {
+                const supplier = (this.dropdowns?.suppliers ?? [])
+                    .find((option) => String(option.value) === String(ids[0]));
+                return supplier?.name ?? '1 supplier';
+            }
+            return `${ids.length} suppliers`;
         },
         totalAmount() {
             return this.form.items.reduce((sum, item) => sum + (parseFloat(item.total_cost) || 0), 0);
@@ -328,11 +346,11 @@ export default {
             if (!productId) return false;
             return this.form.items.some((other, i) => i !== index && other.product_id === productId);
         },
-        supplierSelectStyle() {
+        itemSupplierStyle(index) {
             // Same reason as productSelectStyle: the library and the global
             // theme both set border-color with !important, so only an inline
             // style shows the error.
-            return this.form.errors.supplier_id ? 'border-color: #e74c3c !important;' : '';
+            return this.form.errors[`items.${index}.supplier_id`] ? 'border-color: #e74c3c !important;' : '';
         },
         productSelectStyle(index) {
             // The @vueform/multiselect library and a global theme rule both set
@@ -357,7 +375,7 @@ export default {
             this.$store.dispatch('keepDraft', {
                 kind: 'purchase-request',
                 summary: `${this.supplierName || 'No supplier yet'} · ${count} item${count === 1 ? '' : 's'}`,
-                payload: { supplier_id: this.form.supplier_id, items: this.form.items },
+                payload: { items: this.form.items },
             });
             this.showModal = false;
         },
@@ -374,10 +392,9 @@ export default {
             this.submitError = '';
             this.editable = false;
             this.form.id = null;
-            this.form.supplier_id = kept.supplier_id ?? null;
             this.form.items = Array.isArray(kept.items) && kept.items.length
                 ? kept.items
-                : [{ product_id: null, quantity: 0, unit_cost: '', total_cost: 0 }];
+                : [{ product_id: null, supplier_id: null, quantity: 0, unit_cost: '', total_cost: 0 }];
             this.$store.dispatch('draftOpened', 'purchase-request');
             this.showModal = true;
         },
@@ -389,6 +406,7 @@ export default {
             this.form.items = [
                 {
                     product_id: null,
+                    supplier_id: null,
                     quantity: 0,
                     unit_cost: '',
                     total_cost: 0,
@@ -404,10 +422,10 @@ export default {
             this.form.reset();
             this.form.clearErrors();
             this.form.id = data.id;
-            this.form.supplier_id = data.supplier ? data.supplier.id : null;
             this.submitError = '';
             this.form.items = data.items ? data.items.map(item => ({
                 product_id: item.product.id,
+                supplier_id: item.supplier_id ?? (item.supplier ? item.supplier.id : null),
                 quantity: item.quantity,
                 unit_cost: item.unit_cost != null ? String(item.unit_cost) : '',
                 total_cost: item.total_cost || 0,
@@ -423,17 +441,18 @@ export default {
             this.form.total_amount = this.totalAmount;
             this.submitError = '';
 
-            if (!this.form.supplier_id) {
-                this.submitError = 'Please select a supplier.';
-                return;
-            }
-
             const formattedItems = this.form.items.map(item => ({
                 product_id: item.product_id,
+                supplier_id: item.supplier_id || null,
                 quantity: parseInt(item.quantity) || 0,
                 unit_cost: parseFloat(item.unit_cost) || 0,
                 total_cost: this.roundTo2((parseInt(item.quantity) || 0) * (parseFloat(item.unit_cost) || 0)),
             }));
+
+            if (formattedItems.some((item) => !item.supplier_id)) {
+                this.submitError = 'Each item must have a supplier.';
+                return;
+            }
 
             const hasInvalidItem = formattedItems.some((item) => {
                 return !item.product_id
@@ -529,6 +548,7 @@ export default {
         addItem() {
             this.form.items.push({
                 product_id: null,
+                supplier_id: null,
                 quantity: 0,
                 unit_cost: '',
                 total_cost: 0,
@@ -547,6 +567,7 @@ export default {
             if (!ok) return;
             this.form.items = [{
                 product_id: null,
+                supplier_id: null,
                 quantity: 0,
                 unit_cost: '',
                 total_cost: 0,
@@ -560,6 +581,7 @@ export default {
             } else {
                 this.form.items[0] = {
                     product_id: null,
+                    supplier_id: null,
                     quantity: 0,
                     unit_cost: '',
                     total_cost: 0,
@@ -574,6 +596,7 @@ export default {
                 unit_cost: itemToDuplicate.unit_cost ?? '',
                 total_cost: itemToDuplicate.total_cost,
                 product_id: itemToDuplicate.product_id,
+                supplier_id: itemToDuplicate.supplier_id ?? null,
             });
         },
 
@@ -996,21 +1019,26 @@ export default {
     font-size: 0.8rem;
 }
 
-/* The supplier field is a searchable dropdown sitting behind the wrapper's
-   icon, so its own text has to clear it the way a plain input's padding did. */
-.supplier-multiselect {
-    padding: 0 !important;
-}
-
-.supplier-multiselect :deep(.multiselect-wrapper) {
-    min-height: 38px !important;
-}
-
-.supplier-multiselect :deep(.multiselect-single-label),
-.supplier-multiselect :deep(.multiselect-search),
-.supplier-multiselect :deep(.multiselect-placeholder) {
-    padding-left: 2.3rem;
+/* A quiet note that supplier is now chosen per line, where the single
+   order-level supplier picker used to sit. */
+.per-line-supplier-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.85rem;
+    background: #eef6f3;
+    border: 1px solid #c4d9d2;
+    border-radius: 10px;
+    color: #3d6b60;
     font-size: 0.82rem;
+    line-height: 1.3;
+}
+
+.per-line-supplier-hint i {
+    font-size: 1rem;
+    color: #3d8d7a;
+    flex-shrink: 0;
 }
 
 .table-multiselect {

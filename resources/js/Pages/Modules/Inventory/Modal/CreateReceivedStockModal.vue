@@ -20,6 +20,26 @@
             {{ errorMessage }}
           </div>
 
+          <div class="receive-supplier-bar mb-3">
+            <template v-if="isMultiSupplierPo">
+              <label class="section-kicker mb-1 d-block">Receiving from supplier</label>
+              <select v-model="form.supplier_id" @change="onReceiveSupplierChange"
+                class="form-control modern-input receive-supplier-select">
+                <option v-for="s in receiveSuppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+              <p class="receive-supplier-hint">
+                <i class="ri-information-line"></i>
+                This purchase order has items from several suppliers. Receive one supplier at a time —
+                only this supplier's items are shown below, and the bill goes to them. Receive the others
+                separately.
+              </p>
+            </template>
+            <template v-else>
+              <p class="section-kicker mb-1">Supplier</p>
+              <p class="receive-supplier-single mb-0">{{ singleSupplierName }}</p>
+            </template>
+          </div>
+
           <div class="mb-2">
             <p class="section-kicker">Purchase Order Items</p>
             <div class="table-responsive">
@@ -390,6 +410,9 @@ export default {
       },
       errorMessage: '',
       purchaseOrder: [],
+      // All of the order's pending lines, mapped once. form.items is the subset
+      // for the supplier currently being received (one supplier per receipt).
+      pendingItems: [],
       submitAttempted: false,
       showPaymentMethodModal: false,
       showAmountPaidModal: false,
@@ -437,6 +460,30 @@ export default {
     };
   },
   computed: {
+    /**
+     * The distinct suppliers across this order's pending lines. An order can mix
+     * suppliers now, so a receipt covers one of them at a time — this drives the
+     * supplier picker and decides whether a picker is needed at all.
+     */
+    receiveSuppliers() {
+      const map = new Map();
+      (this.pendingItems || []).forEach((item) => {
+        const id = item.supplier_id;
+        if (id === null || id === undefined || id === '') return;
+        if (!map.has(id)) {
+          map.set(id, item.supplier?.name || this.purchaseOrder?.supplier?.name || 'Supplier');
+        }
+      });
+      return [...map.entries()].map(([id, name]) => ({ id, name }));
+    },
+    /** A picker only appears when the order draws from more than one supplier. */
+    isMultiSupplierPo() {
+      return this.receiveSuppliers.length > 1;
+    },
+    /** Shown read-only when the whole order is from a single supplier. */
+    singleSupplierName() {
+      return this.receiveSuppliers[0]?.name || this.purchaseOrder?.supplier?.name || 'N/A';
+    },
     /**
      * Whether this user settles supplier bills. When they don't, receiving is
      * goods-only: no payment choice, no bank list, and the delivery becomes an
@@ -582,34 +629,62 @@ export default {
       this.purchaseOrder = data;
       this.resetForm();
       this.form.po_id = this.purchaseOrder.id;
-      this.form.supplier_id = this.purchaseOrder.supplier.id;
       this.form.received_date = this.nowLocal;
-      this.form.items = this.purchaseOrder.items
-        .filter(item => item.status === 'pending')
-        .map(item => ({
-          ...item,
-          po_item_id: item.id,
-          product_id: item.product.id,
-          product_name: item.product?.name,
-          to_received_quantity: item.quantity - item.received_quantity,
-          retail_price: 0,
-          wholesale_price: 0,
-          tracking_expense: null,
-          remarks: '',
-          expiration_date: null,
-          has_expiry: false,
-          _touched: {
-            retail_price: false,
-            wholesale_price: false,
-          },
-        }));
 
+      // Map every pending line once. Each line's supplier is resolved here, so a
+      // mixed-supplier order can be split by supplier below. Old orders whose
+      // lines predate the per-line supplier fall back to the order's supplier.
+      this.pendingItems = this.purchaseOrder.items
+        .filter(item => item.status === 'pending')
+        .map(item => {
+          const supplierId = item.supplier_id
+            ?? (item.supplier ? item.supplier.id : (data.supplier ? data.supplier.id : null));
+          return {
+            ...item,
+            po_item_id: item.id,
+            product_id: item.product.id,
+            product_name: item.product?.name,
+            supplier_id: supplierId,
+            supplier: item.supplier ?? data.supplier ?? null,
+            to_received_quantity: item.quantity - item.received_quantity,
+            retail_price: 0,
+            wholesale_price: 0,
+            tracking_expense: null,
+            remarks: '',
+            expiration_date: null,
+            has_expiry: false,
+            _touched: {
+              retail_price: false,
+              wholesale_price: false,
+            },
+          };
+        });
+
+      // Receive one supplier at a time — default to the first and show only its
+      // lines. A single-supplier order behaves exactly as before.
+      this.form.supplier_id = this.receiveSuppliers[0]?.id
+        ?? (data.supplier ? data.supplier.id : '');
+      this.applySupplierFilter();
 
       this.showModal = true;
       this.loadBankAccounts();
       this.loadCashOnHand();
     },
+
+    /** Narrow the editable line list to the supplier being received. */
+    applySupplierFilter() {
+      const sid = this.form.supplier_id;
+      this.form.items = (this.pendingItems || []).filter(
+        item => String(item.supplier_id) === String(sid)
+      );
+    },
+
+    /** Switching supplier re-filters to that supplier's lines. */
+    onReceiveSupplierChange() {
+      this.applySupplierFilter();
+    },
     resetForm() {
+      this.pendingItems = [];
       this.form = {
         po_id: '',
         supplier_id: '',
@@ -903,6 +978,42 @@ export default {
   letter-spacing: 0.06em;
   color: var(--brt-muted);
   margin-bottom: 0.5rem;
+}
+
+/* Supplier bar above the line items: a picker for mixed-supplier orders, a
+   plain read-only name when the whole order is from one supplier. */
+.receive-supplier-bar {
+  padding: 0.7rem 0.9rem;
+  background: #f4f8f6;
+  border: 1px solid #d9e6e1;
+  border-radius: 10px;
+}
+
+.receive-supplier-select {
+  max-width: 420px;
+}
+
+.receive-supplier-single {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #16322e;
+}
+
+.receive-supplier-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #3d6b60;
+}
+
+.receive-supplier-hint i {
+  color: #3d8d7a;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
 }
 
 .modal-container.modal-xl {
