@@ -14,6 +14,7 @@ use App\Models\JournalEntry;
 use App\Models\ProductConversion;
 use App\Models\PettyCashTransaction;
 use App\Models\Receipt;
+use App\Models\ArInvoice;
 use App\Models\ReceivedStock;
 use App\Models\ReceivedStockPayment;
 use App\Models\Remittance;
@@ -611,6 +612,35 @@ class JournalEntryService
             [
                 ['account_id' => $inventoryAccount->id, 'line_type' => 'debit', 'amount' => $amount, 'description' => 'Stock on hand at the start.'],
                 ['account_id' => $equityAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Opening balance of inventory.'],
+            ]
+        );
+    }
+
+    /**
+     * An opening receivable booked when the system starts: a customer already
+     * owed this balance before go-live. Mirrors the opening-stock entry —
+     * DR Accounts Receivable / CR Opening Balance Equity — for the invoice's
+     * outstanding balance.
+     */
+    public function recordOpeningReceivable(ArInvoice $invoice): ?JournalEntry
+    {
+        $amount = round((float) $invoice->balance_due, 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $receivableAccount = $this->ensureAccount('1100', 'accounts_receivable', 'Accounts Receivable', 'asset', 'current_asset');
+        $equityAccount = $this->ensureAccount('3900', 'opening_balance_equity', 'Opening Balance Equity', 'equity', 'opening_balance');
+        $memo = 'Opening receivable ' . $invoice->invoice_number . ' brought into the books.';
+
+        return $this->createEntry(
+            $invoice,
+            $invoice->invoice_date,
+            'opening_entry',
+            $memo,
+            [
+                ['account_id' => $receivableAccount->id, 'line_type' => 'debit', 'amount' => $amount, 'description' => 'Amount owed by the customer at the start.'],
+                ['account_id' => $equityAccount->id, 'line_type' => 'credit', 'amount' => $amount, 'description' => 'Opening balance of receivables.'],
             ]
         );
     }
