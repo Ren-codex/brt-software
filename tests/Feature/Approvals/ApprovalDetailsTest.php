@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Approvals;
 
-use App\Models\Check;
 use App\Models\Employee;
 use App\Models\Expense;
 use App\Models\InventoryStocks;
@@ -125,12 +124,6 @@ class ApprovalDetailsTest extends TestCase
                 'status_id' => ListStatus::getBySlug('for-verification')->id, 'created_by_id' => $user->id,
             ]);
 
-            $check = Check::create([
-                'direction' => Check::DIRECTION_RECEIVED, 'check_number' => '000123', 'check_date' => '2026-10-04',
-                'amount' => 5000, 'bank_name' => 'BDO', 'status' => Check::STATUS_PENDING,
-                'source_type' => 'receipt', 'source_id' => 1,
-            ]);
-
             $order = SalesOrder::create([
                 'so_number' => 'SO-1', 'payment_mode' => 'Credit', 'order_date' => '2026-10-05', 'total_amount' => 3000,
                 'added_by_id' => $user->id, 'status_id' => $pending, 'credit_approval' => 'pending',
@@ -156,7 +149,6 @@ class ApprovalDetailsTest extends TestCase
                 'loan' => [$loan, 'Employee Loan', null],
                 'expense' => [$expense, 'Expense', null],
                 'remittance' => [$remittance, 'Remittance', null],
-                'check' => [$check, 'Cheque', null],
                 'credit_order' => [$order, 'Credit Sale', 1],
                 'replenishment' => [$replenishment, 'Replenishment', null],
             ];

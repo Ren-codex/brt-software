@@ -2,7 +2,6 @@
 
 namespace App\Services\Approvals;
 
-use App\Models\Check;
 use App\Models\Expense;
 use App\Models\ListStatus;
 use App\Models\Loan;
@@ -331,76 +330,6 @@ class ApprovalRegistry
                     'at' => $r->approved_at,
                     'remarks' => $r->remarks,
                 ],
-            ],
-
-            'check' => [
-                'model' => Check::class,
-                'label' => 'Cheque',
-                'plural' => 'Cheques',
-                'module' => 'accounting',
-                'submodule' => 'check_register',
-                'icon' => 'ri-bank-card-line',
-                'url' => '/accounting/check-register',
-                // Approving a cheque confirms it cleared: the amount is posted
-                // to the bank, and for a customer's cheque it is released into
-                // the invoice balance. It can still be refused by its own rules
-                // (a bank deposit that cannot be matched, say), and that
-                // message is shown to the approver.
-                'can_approve_inline' => true,
-                // Bouncing a cheque needs a reason and a supervisor's
-                // authorization, both collected on the check register. It puts
-                // the customer back in debt, so it is not a one-click action.
-                'can_reject_inline' => false,
-                // A received cheque is decided (cleared or bounced) only after it
-                // has been deposited — until then it is a post-dated cheque held
-                // on hand, with no bank to clear into. A received cheque banks
-                // into one of our accounts (bank_account_id), so that is the
-                // "deposited" signal; an issued cheque needs no deposit step.
-                'pending' => fn () => Check::with(['customer', 'supplier', 'receivedBy'])
-                    ->pending()
-                    ->where(function ($q) {
-                        $q->where('direction', '!=', Check::DIRECTION_RECEIVED)
-                            ->orWhereNotNull('bank_account_id');
-                    }),
-                'row' => fn (Check $c) => [
-                    'reference' => 'CHK '.($c->check_number ?: '#'.$c->id),
-                    'summary' => collect([
-                        $c->direction === Check::DIRECTION_ISSUED
-                            ? 'Issued to '.($c->supplier->name ?? 'supplier')
-                            : 'Received from '.($c->customer->name ?? 'customer'),
-                        $c->bank_name,
-                        $c->check_date ? 'dated '.$c->check_date->format('M d, Y') : null,
-                    ])->filter()->implode(' · '),
-                    'amount' => (float) $c->amount,
-                    'requested_by' => $c->receivedBy?->fullname,
-                    'requested_at' => $c->created_at,
-                ],
-                // Bouncing is done on the check register, but it is the other
-                // way a pending cheque gets decided, so it is listed too.
-                'history' => fn (string $decision) => $decision === 'approved'
-                    ? Check::with(['customer', 'supplier', 'receivedBy', 'clearedBy.employee'])
-                        ->where('status', Check::STATUS_CLEARED)
-                        ->latest('cleared_at')->orderByDesc('id')
-                    : Check::with(['customer', 'supplier', 'receivedBy', 'bouncedBy.employee'])
-                        ->where('status', Check::STATUS_BOUNCED)
-                        ->latest('bounced_at')->orderByDesc('id'),
-                'decision' => fn (Check $c) => $c->status === Check::STATUS_CLEARED
-                    ? [
-                        'model' => $c,
-                        'decision' => 'approved',
-                        'label' => 'Cleared',
-                        'by' => $this->who($c->clearedBy),
-                        'at' => $c->cleared_at,
-                        'remarks' => null,
-                    ]
-                    : [
-                        'model' => $c,
-                        'decision' => 'rejected',
-                        'label' => 'Bounced',
-                        'by' => $this->who($c->bouncedBy),
-                        'at' => $c->bounced_at,
-                        'remarks' => $c->bounce_reason,
-                    ],
             ],
 
             'credit_order' => [
