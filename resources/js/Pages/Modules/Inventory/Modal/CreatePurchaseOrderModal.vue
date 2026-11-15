@@ -325,8 +325,12 @@ export default {
         },
     },
 
-
-
+    watch: {
+        // Save the open form as it is edited, so a refresh resumes it on the bar
+        // even when it was never minimised by hand. Supplier lives on each line,
+        // so the deep item watch covers it.
+        'form.items': { handler() { this.scheduleStash(); }, deep: true },
+    },
 
     mounted() {
         document.addEventListener('keydown', this._onEscape);
@@ -370,13 +374,30 @@ export default {
          * keeps it in localStorage, and the floating bar carries it to
          * whatever page they open next.
          */
-        minimise() {
+        /** What a minimised/stashed draft carries. Shared so both agree. */
+        draftContent() {
             const count = this.form.items.length;
-            this.$store.dispatch('keepDraft', {
+            return {
                 kind: 'purchase-request',
                 summary: `${this.supplierName || 'No supplier yet'} · ${count} item${count === 1 ? '' : 's'}`,
                 payload: { items: this.form.items },
-            });
+            };
+        },
+        /** Empty, freshly-opened forms are not worth resuming. */
+        hasDraftContent() {
+            return this.form.items.some(i => i.supplier_id || i.product_id);
+        },
+        /** Debounced autosave of the open form (see the watch block). */
+        scheduleStash() {
+            clearTimeout(this._stashTimer);
+            this._stashTimer = setTimeout(() => this.stashOpenDraft(), 600);
+        },
+        stashOpenDraft() {
+            if (!this.showModal || this.editable || !this.hasDraftContent()) return;
+            this.$store.dispatch('stashDraft', this.draftContent());
+        },
+        minimise() {
+            this.$store.dispatch('keepDraft', this.draftContent());
             this.showModal = false;
         },
         /** Reopen a minimised draft exactly as it was left. */
@@ -535,6 +556,8 @@ export default {
 
         hide() {
             // Closing outright is not minimising: the draft goes with it.
+            clearTimeout(this._stashTimer);
+            this.showModal = false;
             this.$store.dispatch('discardDraft', 'purchase-request');
             this.$store.dispatch('draftClosed', 'purchase-request');
             this.form.reset();

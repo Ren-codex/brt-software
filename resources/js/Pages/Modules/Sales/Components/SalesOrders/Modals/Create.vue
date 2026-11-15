@@ -1376,7 +1376,21 @@ export default {
                 || !Number.isFinite(amountPaid)
                 || amountPaid < this.grandTotal;
         },
+        /** Serialised draft payload; changes whenever the open form is edited. */
+        _draftSignature() {
+            if (!this.showModal || this.editable) return '';
+            try {
+                return JSON.stringify({ form: this.form.data(), customerSelection: this.customerSelection });
+            } catch (e) {
+                return '';
+            }
+        },
 
+    },
+    watch: {
+        // Autosave the open form as it is edited, so a refresh resumes it on the
+        // bar even when it was never minimised by hand.
+        _draftSignature() { this.scheduleStash(); },
     },
     beforeUnmount() {
         // Leaving the page takes the form with it, so a kept draft is
@@ -2083,16 +2097,33 @@ export default {
          * which keeps it in localStorage, and the floating bar carries it to
          * whatever page they open next.
          */
-        minimise() {
+        /** What a minimised/stashed draft carries. Shared so both agree. */
+        draftContent() {
             const count = this.form.items.length;
             const customer = this.selectedCustomer?.name
                 || (this.isWalkInCustomer ? 'Walk-in customer' : 'No customer yet');
-
-            this.$store.dispatch('keepDraft', {
+            return {
                 kind: 'sales-order',
                 summary: `${customer} · ${count} item${count === 1 ? '' : 's'}`,
                 payload: { form: this.form.data(), customerSelection: this.customerSelection },
-            });
+            };
+        },
+        /** Empty, freshly-opened forms are not worth resuming. */
+        hasDraftContent() {
+            return !!this.customerSelection
+                || (Array.isArray(this.form.items) && this.form.items.length > 0);
+        },
+        /** Debounced autosave of the open form (see the watch block). */
+        scheduleStash() {
+            clearTimeout(this._stashTimer);
+            this._stashTimer = setTimeout(() => this.stashOpenDraft(), 600);
+        },
+        stashOpenDraft() {
+            if (!this.showModal || this.editable || !this.hasDraftContent()) return;
+            this.$store.dispatch('stashDraft', this.draftContent());
+        },
+        minimise() {
+            this.$store.dispatch('keepDraft', this.draftContent());
 
             // The review and payment steps are separate overlays sitting on top
             // of this one; leaving one up would strand it over the page.
@@ -2122,7 +2153,10 @@ export default {
             this.showModal = true;
         },
         hide() {
-            // Closing outright is not minimising: the draft goes with it.
+            // Closing outright is not minimising: the draft goes with it. Stop
+            // any pending autosave first so it cannot re-create what we discard.
+            clearTimeout(this._stashTimer);
+            this.showModal = false;
             this.$store.dispatch('discardDraft', 'sales-order');
             this.$store.dispatch('draftClosed', 'sales-order');
             this.form.reset();

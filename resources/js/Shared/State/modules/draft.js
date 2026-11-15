@@ -124,6 +124,30 @@ const actions = {
             return_path: draft.return_path,
         }).catch(() => {});
     },
+    /**
+     * Save a form that is still open, as it is being edited. Same persistence as
+     * keepDraft, but the form stays flagged open so the bar does NOT show it yet
+     * — it is still on screen. If the page then reloads, the open flag (never
+     * persisted) resets and the saved draft shows on the bar, exactly as if it
+     * had been minimised by hand. So a refresh never loses work that was only
+     * ever open, not minimised.
+     */
+    stashDraft({ commit }, { kind, summary, payload }) {
+        const draft = {
+            summary,
+            payload,
+            return_path: window.location.pathname,
+            saved_at: new Date().toISOString(),
+        };
+        commit('setDraft', { kind, draft });
+        commit('setDraftOpen', { kind, open: true });
+
+        window.axios?.put(`/drafts/${kind}`, {
+            summary: draft.summary,
+            payload: draft.payload,
+            return_path: draft.return_path,
+        }).catch(() => {});
+    },
     discardDraft({ commit }, kind) {
         commit('setDraft', { kind, draft: null });
         commit('setDraftOpen', { kind, open: false });
