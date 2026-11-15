@@ -196,10 +196,20 @@
                                                         @click="open(row, 'disapproved')">
                                                         <i class="ri-close-line"></i>
                                                     </button>
-                                                    <!-- Some workflows need input this page does not
-                                                         collect, so they link out instead of offering a
-                                                         button that cannot complete. -->
-                                                    <Link v-if="!row.can_approve_inline || !row.can_reject_inline"
+                                                    <!-- A remittance is accepted through its verification
+                                                         table, which opens right here now instead of
+                                                         sending the approver to the Remittances screen. -->
+                                                    <button v-if="row.source === 'remittance'"
+                                                        class="act-btn act-approve"
+                                                        v-b-tooltip.hover title="Accept" aria-label="Accept"
+                                                        :disabled="busyKey === rowKey(row)"
+                                                        @click="acceptRemittance(row)">
+                                                        <i class="ri-check-double-line"></i>
+                                                    </button>
+                                                    <!-- Other workflows that need input this page does not
+                                                         collect link out instead of offering a button that
+                                                         cannot complete. -->
+                                                    <Link v-else-if="!row.can_approve_inline || !row.can_reject_inline"
                                                         :href="reviewUrl(row)" class="act-btn act-review"
                                                         v-b-tooltip.hover title="Review" aria-label="Review">
                                                         <i class="ri-external-link-line"></i>
@@ -330,7 +340,11 @@
                 <button class="btn btn-light" @click="detail = null">Close</button>
                 <!-- Still pending: decide from here, once it has been looked at. -->
                 <template v-if="tab === 'pending'">
-                    <Link v-if="!detail.row.can_approve_inline || !detail.row.can_reject_inline"
+                    <button v-if="detail.row.source === 'remittance'" class="btn btn-success"
+                        @click="acceptRemittance(detail.row); detail = null;">
+                        <i class="ri-check-double-line"></i> Accept
+                    </button>
+                    <Link v-else-if="!detail.row.can_approve_inline || !detail.row.can_reject_inline"
                         :href="reviewUrl(detail.row)" class="btn btn-light">
                         <i class="ri-external-link-line"></i> Review
                     </Link>
@@ -398,17 +412,22 @@
             </div>
         </div>
     </div>
+
+    <!-- Accepting a remittance happens here, not on the Remittances screen:
+         the same verification flow, opened in place. -->
+    <ApprovalModal v-if="remittanceItem" :item="remittanceItem" ref="approvalModal" @reload="onRemittanceAccepted" />
 </template>
 
 <script>
 import PageHeader from '@/Shared/Components/PageHeader.vue';
 import Pagination from '@/Shared/Components/Pagination.vue';
 import TableLoadingRow from '@/Shared/Components/TableLoadingRow.vue';
+import ApprovalModal from '@/Pages/Modules/Sales/Components/Remittances/Modals/ApprovalModal.vue';
 import { pollingMixin } from '@/Shared/polling.js';
 import { onApprovalChange, announceApprovalChange } from '@/Shared/realtime.js';
 
 export default {
-    components: { PageHeader, Pagination, TableLoadingRow },
+    components: { PageHeader, Pagination, TableLoadingRow, ApprovalModal },
     mixins: [pollingMixin],
     props: {
         initial: { type: Object, default: () => ({ groups: [], total: 0 }) },
@@ -435,6 +454,9 @@ export default {
             perPage: 10,
             loading: false,
             pending: null,      // { row, decision }
+            // The remittance whose verification modal is open (fetched with its
+            // receipts so it can be accepted here instead of on the Remittances screen).
+            remittanceItem: null,
             detail: null,       // { row, loading, data, error } while View is open
             remarks: '',
             submitting: false,
@@ -627,6 +649,27 @@ export default {
         /** Tells the module screen it was opened from here, so it can offer a way back. */
         reviewUrl(row) {
             return row.url + (row.url.includes('?') ? '&' : '?') + 'from=approvals';
+        },
+        /**
+         * Accept a remittance without leaving this page: fetch it with its
+         * receipts, then open the same verification modal the Remittances screen
+         * uses. The modal posts to /remittances/{id}/approve and emits reload.
+         */
+        acceptRemittance(row) {
+            this.busyKey = this.rowKey(row);
+            axios.get(`/approvals/remittance-detail/${row.id}`)
+                .then(res => {
+                    // RemittanceResource wraps the record under `data`.
+                    this.remittanceItem = res.data?.data ?? res.data;
+                    this.$nextTick(() => this.$refs.approvalModal?.show());
+                })
+                .catch(() => this.$toast?.error('Could not load this remittance. Please try again.'))
+                .finally(() => { this.busyKey = null; });
+        },
+        onRemittanceAccepted() {
+            this.remittanceItem = null;
+            this.refresh();
+            announceApprovalChange();
         },
         rowKey(row) {
             // A decided row has its own key: one record decided twice is two rows.

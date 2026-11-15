@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\Libraries\RemittanceResource;
+use App\Models\Remittance;
 use App\Services\Approvals\ApprovalDetails;
 use App\Services\Approvals\ApprovalService;
 use App\Traits\HandlesTransaction;
@@ -68,6 +70,28 @@ class ApprovalController extends Controller
         }
 
         return response()->json($details->for($source, $id));
+    }
+
+    /**
+     * A remittance is accepted through its verification table (received per
+     * mode, each cheque confirmed, variance checked) — detail the generic
+     * shape above does not carry. This returns the remittance with its receipts
+     * so that verification modal can open inside the Approvals page instead of
+     * sending the approver over to the Remittances screen. Held to the same
+     * rule: only someone who may approve remittances can fetch it.
+     */
+    public function remittanceDetail(Request $request, int $id)
+    {
+        if (! in_array('remittance', $this->service->allowedSourceKeys($request->user()), true)) {
+            abort(403, 'You do not have access to these approvals.');
+        }
+
+        $remittance = Remittance::with([
+            'receipts.customer', 'receipts.status', 'receipts.bankAccount',
+            'status', 'createdBy.employee', 'approvedBy.employee', 'bankDeposit.bankAccount',
+        ])->findOrFail($id);
+
+        return new RemittanceResource($remittance);
     }
 
     public function decide(Request $request, string $source, int $id)

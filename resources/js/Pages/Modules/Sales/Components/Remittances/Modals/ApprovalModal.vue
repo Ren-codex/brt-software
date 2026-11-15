@@ -480,8 +480,8 @@ export default {
     padding: 0.7rem 0.9rem;
     border: 1px solid transparent;
 }
-.remit-stat.cash   { background: #ecfdf3; border-color: #bbf7d0; }
-.remit-stat.cheque { background: #fff7ed; border-color: #fed7aa; }
+.remit-stat.cash   { background: #ecfdf3; border-color: #86efac; box-shadow: 0 1px 3px rgba(21, 128, 61, 0.1); }
+.remit-stat.cheque { background: #fff7ed; border-color: #fdba74; box-shadow: 0 1px 3px rgba(194, 65, 12, 0.08); }
 .remit-stat-label {
     display: flex;
     align-items: center;
@@ -494,12 +494,19 @@ export default {
 }
 .remit-stat.cash .remit-stat-label   { color: #15803d; }
 .remit-stat.cheque .remit-stat-label { color: #c2410c; }
+/* The amount actually handed over is the number the verifier acts on, so it is
+   emphasized — larger and in its accent colour — to keep it from being read as
+   the (neutral, smaller) Remittance Total above. */
 .remit-stat-value {
     margin-top: 2px;
-    font-size: 1.35rem;
+    font-size: 1.7rem;
     font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
     color: var(--brt-ink);
 }
+.remit-stat.cash .remit-stat-value   { color: #15803d; }
+.remit-stat.cheque .remit-stat-value { color: #c2410c; }
 .remit-transfer-note {
     display: flex;
     align-items: center;

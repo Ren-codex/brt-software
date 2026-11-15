@@ -115,6 +115,8 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
     // Which roles are responsible for a module, for the in-app guides.
     Route::get('/guides/roles', [\App\Http\Controllers\GuideController::class, 'roles']);
     Route::get('/approvals', [\App\Http\Controllers\ApprovalController::class, 'index']);
+    // Registered before the generic {source}/{id} route so it is not captured by it.
+    Route::get('/approvals/remittance-detail/{id}', [\App\Http\Controllers\ApprovalController::class, 'remittanceDetail'])->whereNumber('id');
     Route::get('/approvals/{source}/{id}', [\App\Http\Controllers\ApprovalController::class, 'show'])->whereNumber('id');
     Route::post('/approvals/{source}/{id}/decide', [\App\Http\Controllers\ApprovalController::class, 'decide']);
 
