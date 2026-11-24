@@ -70,7 +70,12 @@ class PermissionService
             return -1;
         }
 
-        if ($this->userHasAccess($user, 'sales', null, 'admin')) {
+        // Anyone who can administer any part of sales answers for the whole
+        // team's sales, so they see every rep's — not only their own. A
+        // module-wide admin grant (Administrator, Super Admin) satisfies this
+        // too; a Senior Sales Rep qualifies through admin on the order tabs
+        // while being only a viewer on remittances and cheques.
+        if ($this->userHasAccess($user, 'sales', self::ANY_SUBMODULE, 'admin')) {
             return null;
         }
 
