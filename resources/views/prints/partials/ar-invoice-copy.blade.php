@@ -1,34 +1,25 @@
+{{-- A table of a definite height holds the copy. DomPDF distributes that height
+     across the rows, so the body row carries the content at the top and the foot
+     row drops the signatures to the bottom. Same layout as the sales order copy. --}}
+<table class="copy-layout {{ $layoutClass ?? 'copy-layout-half' }}">
+<tr><td class="copy-body">
+{{-- Names the document across the top, where the letterhead used to be. --}}
+<div class="doc-title">
+    AR INVOICE
+    <span class="doc-title-meta">
+        ({{ \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('m/d/Y') }})
+        (Invoice No. {{ $ar_invoice->invoice_number }})
+    </span>
+</div>
+
 <table class="header-table">
     <tr>
-        <td style="width: 60px;">
-            <div class="logo-box">
-                @if(file_exists($logoPath))
-                    <img src="{{ $logoPath }}" alt="System Logo" class="logo-img">
-                @else
-                    <div class="logo-fallback"></div>
-                @endif
-            </div>
-        </td>
-        <td>
-            <h1 class="company-name">BOUYANT RICE TRADING</h1>
-            Sinunoc, Zamboanga City Zamboanga del Sur, 7000<br>Philippines
-        </td>
-        <td class="order-info" style="width: 120px;">
+        {{-- No logo, no company name, no address: these print on headed paper.
+             The date and invoice number already sit in the centred title. --}}
+        <td class="order-info">
             @isset($copyLabel)
                 <div class="copy-label">{{ $copyLabel }}</div>
             @endisset
-            <h2 class="order-title">AR Invoice</h2>
-            <table class="order-meta-table">
-                <tr>
-                    <td class="order-meta-value">{{ \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('m/d/Y') }}</td>
-                </tr>
-                <tr>
-                    <td class="order-meta-label">Invoice No.</td>
-                </tr>
-                <tr>
-                    <td class="order-meta-value">{{ $ar_invoice->invoice_number }}</td>
-                </tr>
-            </table>
         </td>
     </tr>
 </table>
@@ -38,15 +29,25 @@
         <div class="address-label">Bill To</div>
         <strong>{{ $sales_order->customer->name ?? '---' }}</strong><br>
         {!! nl2br(e($sales_order->customer->address ?? '---')) !!}
+        @if($sales_order->customer->contact_number ?? false)
+        <br>{{ $sales_order->customer->contact_number }}
+        @endif
     </div>
     <div class="address-block">
         <div class="address-label">Ship To</div>
         <strong>{{ $sales_order->customer->name ?? '---' }}</strong><br>
         {!! nl2br(e($sales_order->customer->address ?? '---')) !!}
+        @if($sales_order->customer->contact_number ?? false)
+        <br>{{ $sales_order->customer->contact_number }}
+        @endif
+    </div>
+    <div class="address-block crew-block">
+        <div class="address-label">Assigned To</div>
+        <div class="crew-line"><strong>Sales Rep:</strong> {{ $sales_order->salesRep->fullname ?? '---' }}</div>
     </div>
     <div class="total-block">
-        <div style="text-align: left; font-weight: bold; font-size: 11px;">BALANCE DUE</div>
-        <div style="font-size: 16px; font-weight: bold;">PHP {{ number_format($ar_invoice->balance_due, 2) }}</div>
+        <div style="text-align: left; font-weight: bold; font-size: 13px;">BALANCE DUE</div>
+        <div style="font-size: 19px; font-weight: bold;">PHP {{ number_format($ar_invoice->balance_due, 2) }}</div>
     </div>
 </div>
 
@@ -54,46 +55,44 @@
     <thead>
         <tr>
             <th>SO Number</th>
-            <th>Payment Terms</th>
             <th>Payment Mode</th>
+            <th>Invoice Date</th>
+            <th>Due Date</th>
             <th>Status</th>
-            <th>Amount Paid</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td>{{ $sales_order->so_number ?? '---' }}</td>
-            <td>{{ $sales_order->payment_term ?? '---' }}</td>
             <td>{{ $sales_order->payment_mode ?? '---' }}</td>
+            <td>{{ $ar_invoice->invoice_date ? \Carbon\Carbon::parse($ar_invoice->invoice_date)->format('m/d/Y') : '---' }}</td>
+            <td>{{ $ar_invoice->due_date ? \Carbon\Carbon::parse($ar_invoice->due_date)->format('m/d/Y') : '---' }}</td>
             <td>{{ $ar_invoice->status->name ?? 'N/A' }}</td>
-            <td>PHP {{ number_format($ar_invoice->amount_paid, 2) }}</td>
         </tr>
     </tbody>
 </table>
 
-<table class="items-table">
+<table class="items-table{{ ($compact ?? false) ? ' items-compact' : '' }}">
     <thead>
         <tr>
-            <th width="10%">Quantity</th>
-            <th>Item</th>
-            <th width="14%">Batch Code</th>
-            <th width="15%" class="text-right">Unit Price</th>
-            @if($hasDiscount)
-            <th width="13%" class="text-right">Discount</th>
-            @endif
-            <th width="16%" class="text-right">Amount</th>
+            <th class="qty-col">Quantity</th>
+            <th class="text-center">Packaging</th>
+            <th>Product</th>
+            <th>Batch Code</th>
+            <th class="text-right">Unit Price</th>
+            <th class="text-right">Total</th>
         </tr>
     </thead>
     <tbody>
-        @foreach($items as $index => $item)
+        @foreach($items as $item)
         <tr>
-            <td><strong>{{ number_format($item->quantity) }}</strong></td>
-            <td><strong>{{ $item->product->brand?->name ?? '' }} {{ $item->product->weight ?? '' }}</strong> {{ $item->product->unit?->name ?? '' }}</td>
+            <td class="qty-col"><strong>{{ number_format($item->quantity) }}</strong></td>
+            <td class="text-center">{{ $item->product->packaging->name ?? '---' }}</td>
+            <td><strong>{{ $item->product->brand->name ?? '' }} {{ $item->product->weight }}</strong> {{ $item->product->unit->name ?? '' }}</td>
             <td>{{ $item->batch_code ?? '---' }}</td>
-            <td class="text-right">PHP {{ number_format($item->price, 2) }}</td>
-            @if($hasDiscount)
-            <td class="text-right">PHP {{ number_format($item->discount_per_unit * $item->quantity, 2) }}</td>
-            @endif
+            {{-- The unit price shown is what the customer actually pays: the
+                 original price less any per-unit discount. --}}
+            <td class="text-right">PHP {{ number_format($item->price - $item->discount_per_unit, 2) }}</td>
             <td class="text-right">PHP {{ number_format(($item->price - $item->discount_per_unit) * $item->quantity, 2) }}</td>
         </tr>
         @endforeach
@@ -102,32 +101,19 @@
 
 <table class="footer-table">
     <tr>
-        <td style="vertical-align: top;">
-            <div class="sales-rep-box">
-                <strong>Sales Rep:</strong> {{ $sales_order->salesRep->fullname ?? '---' }}
-            </div>
-        </td>
+        <td style="vertical-align: top;"></td>
         <td style="width: 220px;">
-            @php
-                $subtotal = $sales_order->total_amount + $sales_order->total_discount;
-            @endphp
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                    <td style="padding: 4px 0;">Subtotal</td>
-                    <td class="text-right">PHP {{ number_format($subtotal, 2) }}</td>
+                    <td style="padding: 3px 5px;">Invoice Total</td>
+                    <td class="text-right" style="padding: 3px 5px;">PHP {{ number_format($sales_order->total_amount, 2) }}</td>
                 </tr>
-                @if($hasDiscount)
                 <tr>
-                    <td style="padding: 4px 0;">Discount</td>
-                    <td class="text-right">PHP {{ number_format($sales_order->total_discount, 2) }}</td>
-                </tr>
-                @endif
-                <tr>
-                    <td style="padding: 4px 0;">Amount Paid</td>
-                    <td class="text-right">PHP {{ number_format($ar_invoice->amount_paid, 2) }}</td>
+                    <td style="padding: 3px 5px;">Amount Paid</td>
+                    <td class="text-right" style="padding: 3px 5px;">PHP {{ number_format($ar_invoice->amount_paid, 2) }}</td>
                 </tr>
                 <tr class="grand-total-box">
-                    <td style="padding: 7px 5px;">Balance Due</td>
+                    <td style="padding: 7px 5px;">BALANCE DUE</td>
                     <td class="text-right" style="padding: 7px 5px;">PHP {{ number_format($ar_invoice->balance_due, 2) }}</td>
                 </tr>
             </table>
@@ -135,6 +121,8 @@
     </tr>
 </table>
 
+</td></tr>
+<tr><td class="copy-foot">
 <div class="signature-section">
     <div class="signature-box">
         <div class="signature-line"></div>
@@ -145,3 +133,5 @@
         <strong>Received By</strong>
     </div>
 </div>
+</td></tr>
+</table>

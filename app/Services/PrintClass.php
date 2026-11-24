@@ -136,7 +136,7 @@ class PrintClass
     public const LOAN_PAYMENT_ROWS_PER_HALF_SHEET = 12;
 
     public function printArInvoice($id){
-        $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.approved_by')->findOrFail($id);
+        $ar_invoice = \App\Models\ArInvoice::with('status', 'sales_order.customer', 'sales_order.items.product.brand', 'sales_order.items.product.unit', 'sales_order.items.product.packaging', 'sales_order.salesRep', 'sales_order.created_by.employee', 'sales_order.approved_by')->findOrFail($id);
         $sales_order = $ar_invoice->sales_order;
         $items = $sales_order->items;
 

@@ -13,65 +13,45 @@
             line-height: 1.3;
         }
 
-        /* Two-copies-per-sheet layout — each copy takes only the height its content needs
-           (no forced fixed height), so short documents don't leave a large dead gap before
-           the cut line. Content that's too long for one page simply flows onto a second
-           page rather than being clipped. */
-        /* Two copies on one sheet, cut in half with scissors — the same layout
-           the sales order print uses. The top copy is given exactly half the
-           printable height (long bond is 330.2mm; less the 6mm margins at each
-           end, half is 159.1mm) and carries the cut line on its bottom edge, so
-           the cut falls on the middle of the paper.
-
-           A document with too many rows to fit half a sheet used to run on and
-           split a copy across two pages. Now each copy takes a sheet of its own
-           instead (.new-sheet), and neither is ever cut through. */
+        /* Two-copies-per-sheet layout, cut in half with scissors — the same
+           design the sales order print uses. The first copy is given exactly
+           half the printable height and carries the cut line on its own bottom
+           edge (long bond is 330.2mm; less 6mm margin at each end, half of what
+           is left is 159.1mm, and 6mm + 159.1mm = 165.1mm, the middle of the
+           paper). Invoices too long to share a sheet start the second copy on a
+           new sheet so neither copy is split across the cut. */
         .copy-cell { width: 100%; }
         .half-sheet-top { height: 159.1mm; box-sizing: border-box; border-bottom: 1px dashed #999; }
+        .half-sheet-bottom { height: 158mm; box-sizing: border-box; }
+        .single-copy { height: 316mm; box-sizing: border-box; }
         .new-sheet { page-break-before: always; }
         .keep-whole { page-break-inside: avoid; }
 
+        /* The copy's inner table carries a definite height so DomPDF pushes the
+           foot row (signatures) to the bottom. */
+        .copy-layout { width: 100%; border-collapse: collapse; }
+        .copy-body { vertical-align: top; }
+        .copy-foot { vertical-align: bottom; }
+        .copy-layout-half .copy-body { height: 140mm; }
+        .copy-layout-full .copy-body { height: 290mm; }
+
         /* Header */
-        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .logo-box {
-            width: 45px;
-            height: 45px;
-            border-radius: 4px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        .logo-img {
-            width: 45px;
-            height: 45px;
-            object-fit: contain;
-        }
-        .logo-fallback {
-            width: 45px;
-            height: 45px;
-            background-color: #C0392B;
-            border-radius: 4px;
-        }
-        .company-name { font-size: 17px; font-weight: bold; color: #1a1a1a; margin: 0; }
-        .order-title { font-size: 22px; font-weight: bold; text-align: right; margin: 0 0 6px 0; }
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        /* Centred across the top, in place of the letterhead. */
+        .doc-title { text-align: center; font-size: 15px; font-weight: bold; margin: 0 0 4px 0; }
+        .doc-title-meta { font-size: 12px; font-weight: normal; }
         .order-info { text-align: right; font-size: 12px; }
-        .order-meta-table { width: 100%; border-collapse: collapse; }
-        .order-meta-label {
-            font-size: 10px;
-            font-weight: bold;
-            text-align: right;
-            border-bottom: 1px solid #333;
-            padding-bottom: 2px;
-        }
-        .order-meta-value { text-align: right; font-size: 12px; padding: 2px 0 5px 0; }
 
         /* Address & Total Section */
-        .summary-container { width: 100%; display: table; margin-bottom: 10px; }
-        .address-block { display: table-cell; width: 33%; vertical-align: top; }
+        .summary-container { width: 100%; display: table; margin-bottom: 3px; }
+        .address-block { display: table-cell; width: 24%; vertical-align: top; }
+        .crew-block { padding-right: 8px; }
+        .crew-line { font-size: 11px; padding: 1px 0; }
         .total-block {
             display: table-cell;
-            width: 34%;
+            width: 28%;
             background-color: #E5E7E9;
-            padding: 10px;
+            padding: 6px;
             text-align: right;
             vertical-align: middle;
         }
@@ -87,33 +67,33 @@
         .meta-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
             background-color: #D5DBDB;
             border: 1px solid #BDC3C7;
         }
-        .meta-table th { font-size: 10px; padding: 3px; text-align: center; width: 20%; }
-        .meta-table td { background-color: white; text-align: center; padding: 4px; border: 1px solid #BDC3C7; }
+        .meta-table th { font-size: 10px; padding: 1px 3px; text-align: center; width: 20%; }
+        .meta-table td { background-color: white; text-align: center; padding: 1px 4px; border: 1px solid #BDC3C7; }
 
-        /* Items Table */
+        /* Items Table — the items print a size up from everything around them. */
         .items-table { width: 100%; border-collapse: collapse; }
-        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 5px; text-align: left; }
-        .items-table td { padding: 5px; border-bottom: 1px solid #eee; }
+        .items-table th { background-color: #D5DBDB; border: 1px solid #BDC3C7; padding: 1px 5px; text-align: left; font-size: 13px; }
+        .items-table td { padding: 1px 5px; border-bottom: 1px solid #eee; font-size: 15px; }
+        .items-table .qty-col { width: 60px; text-align: center; }
         .text-right { text-align: right; }
-        .text-center { text-align: center; }
+        .items-table .text-center { text-align: center; }
+        /* A longer invoice (13–15 items) on a shared half-sheet tightens the
+           rows a step so the extra lines still clear the cut. */
+        .items-compact th { font-size: 12px; }
+        .items-compact td { font-size: 13px; line-height: 1.15; }
 
         /* Footer */
-        .footer-table { width: 100%; margin-top: 14px; }
-        .grand-total-box { background-color: #D5DBDB; padding: 7px; font-weight: bold; }
-        .sales-rep-box {
-            display: inline-block;
-            border: 1px solid #BDC3C7;
-            padding: 5px 9px;
-        }
+        .footer-table { width: 100%; margin-top: 3px; }
+        .grand-total-box { background-color: #D5DBDB; padding: 4px; font-weight: bold; }
 
-        /* Signature Section */
-        .signature-section { width: 100%; margin-top: 16px; display: table; }
+        /* Signature Section — sits in the copy's bottom-aligned foot row. */
+        .signature-section { width: 100%; display: table; }
         .signature-box { display: table-cell; text-align: center; width: 50%; }
-        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 24px; padding-bottom: 4px; }
+        .signature-line { border-bottom: 1px solid #333; margin-bottom: 4px; padding-top: 8px; padding-bottom: 4px; }
 
         /* Copy label */
         .copy-label {
@@ -132,21 +112,20 @@
 </head>
 <body>
     @php
-        $logoPath = public_path('images/official-logo-mini.png');
-        // The discount column and total are only worth their space when a
-        // discount was actually given.
-        $hasDiscount = collect($items)->contains(fn ($item) => (float) $item->discount_per_unit > 0)
-            || (float) $sales_order->total_discount > 0;
-        // How many item rows one copy can hold and still fit half a sheet.
-        $copiesShareSheet = count($items) <= \App\Services\PrintClass::INVOICE_ROWS_PER_HALF_SHEET;
+        // Same rule as the sales order print: up to 15 item rows share a sheet
+        // (two copies, cut in half); 13–15 switch to tighter rows; 16+ take a
+        // sheet each so no copy is cut through.
+        $copiesShareSheet = count($items) <= 15;
+        $compactItems = $copiesShareSheet && count($items) > 12;
+        $layoutClass = $copiesShareSheet ? 'copy-layout-half' : 'copy-layout-full';
     @endphp
 
-    <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : '' }}">
-        @include('prints.partials.ar-invoice-copy', ['copyLabel' => 'Customer Copy'])
+    <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-top' : 'single-copy' }}">
+        @include('prints.partials.ar-invoice-copy', ['copyLabel' => 'Customer Copy', 'layoutClass' => $layoutClass, 'compact' => $compactItems])
     </div>
 
-    <div class="copy-cell {{ $copiesShareSheet ? 'keep-whole' : 'new-sheet' }}">
-        @include('prints.partials.ar-invoice-copy', ['copyLabel' => 'BRT Copy'])
+    <div class="copy-cell {{ $copiesShareSheet ? 'half-sheet-bottom keep-whole' : 'single-copy new-sheet' }}">
+        @include('prints.partials.ar-invoice-copy', ['copyLabel' => 'BRT Copy', 'layoutClass' => $layoutClass, 'compact' => $compactItems])
     </div>
 
 </body>
