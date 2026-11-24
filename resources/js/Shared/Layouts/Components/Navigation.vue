@@ -24,6 +24,9 @@ export default {
       notifTab: 'all',
       stopListening: null,
       stopApprovalListening: null,
+      // A chime plays when the bell count climbs; the mute state is per-browser.
+      notifSoundMuted: (() => { try { return window.localStorage.getItem('brt.notif-muted') === '1'; } catch (e) { return false; } })(),
+      audioCtx: null,
     };
   },
   mixins: [pollingMixin],
@@ -159,6 +162,7 @@ export default {
                 this.notifications = res.data.notifications;
                 this.unreadCount   = res.data.unread_count;
                 this.approvalCount = res.data.approval_count ?? 0;
+                this.maybeChimeForBell();
             })
             .catch(() => {});
     },
@@ -167,15 +171,24 @@ export default {
             .then(() => {
                 this.unreadCount = 0;
                 this.notifications = this.notifications.map(n => ({ ...n, read_at: new Date().toISOString() }));
+                // The badge drops, but bellCount still carries approvalCount, so
+                // this only re-baselines the chime; it never sounds on a decrease.
+                this.maybeChimeForBell();
             })
             .catch(() => {});
     },
     /**
+     * Opening the bell marks notifications read so the badge drops. It does NOT
+     * hide approvals you still owe: bellCount keeps the approval count, so the
+     * badge falls to just your outstanding approvals rather than to zero.
+     */
+    onBellOpened() {
+        if (this.unreadCount > 0) {
+            this.markAllRead();
+        }
+    },
+    /**
      * Clicking a notification goes where it points and marks only that one read.
-     *
-     * The panel used to mark *everything* read simply on opening, which made the
-     * bell useless for approvals — glancing at it cleared the record of what you
-     * still had to action.
      */
     openNotification(n) {
         if (!n.read_at && n.id) {
@@ -187,6 +200,66 @@ export default {
         const url = n.data?.url;
         if (url) {
             this.$inertia.visit(url);
+        }
+    },
+    /** Flip the per-browser mute, and give a tiny preview when turning it on. */
+    toggleNotifSound() {
+        this.notifSoundMuted = !this.notifSoundMuted;
+        try { window.localStorage.setItem('brt.notif-muted', this.notifSoundMuted ? '1' : '0'); } catch (e) {}
+        if (!this.notifSoundMuted) {
+            this.primeAudio();
+            this.playNotifTone();
+        }
+    },
+    /**
+     * Chime only when the bell count CLIMBS — a genuinely new notification or
+     * approval. Never on the first load (no baseline yet) and never on a
+     * decrease (opening the panel, actioning a request).
+     */
+    maybeChimeForBell() {
+        const count = this.bellCount;
+        const previous = this._bellPrev;
+        this._bellPrev = count;
+        if (previous != null && count > previous && !this.notifSoundMuted) {
+            this.playNotifTone();
+        }
+    },
+    /** Create/resume the audio context — must happen from a user gesture. */
+    primeAudio() {
+        if (typeof window === 'undefined') return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        try {
+            if (!this.audioCtx) this.audioCtx = new AudioCtx();
+            if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+        } catch (e) {
+            // Audio unavailable on this device — ignore; the badge still updates.
+        }
+    },
+    /** A gentle two-note "ding-dong" when something new arrives. */
+    playNotifTone() {
+        const ctx = this.audioCtx;
+        if (!ctx) return;
+        try {
+            if (ctx.state === 'suspended') ctx.resume();
+            const now = ctx.currentTime;
+            // G5 → B5: a soft rising pair, quieter than the approvals chime.
+            [[783.99, 0, 0.18], [987.77, 0.12, 0.26]].forEach(([freq, offset, dur]) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const t = now + offset;
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, t);
+                gain.gain.setValueAtTime(0.0001, t);
+                gain.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t);
+                osc.stop(t + dur + 0.03);
+            });
+        } catch (e) {
+            // Blocked or unavailable — the badge already reflects the change.
         }
     },
     /** Heading shown for each notification type in the panel. */
@@ -284,7 +357,18 @@ export default {
             read_at:    null,
             created_at: new Date().toISOString(),
         });
+        this.maybeChimeForBell();
     });
+
+    // Browsers block audio until the user has interacted, so arm the chime on
+    // the first click or keypress anywhere, then stop listening.
+    this._primeNotifAudio = () => {
+        this.primeAudio();
+        window.removeEventListener('pointerdown', this._primeNotifAudio);
+        window.removeEventListener('keydown', this._primeNotifAudio);
+    };
+    window.addEventListener('pointerdown', this._primeNotifAudio);
+    window.addEventListener('keydown', this._primeNotifAudio);
 
     // A request was raised or actioned — here, on another screen, or by another
     // approver. Refetch rather than patch the list, so the badge, the pinned
@@ -294,6 +378,10 @@ export default {
   beforeUnmount() {
     this.stopListening?.();
     this.stopApprovalListening?.();
+    if (this._primeNotifAudio) {
+        window.removeEventListener('pointerdown', this._primeNotifAudio);
+        window.removeEventListener('keydown', this._primeNotifAudio);
+    }
   },
 };
 </script>
@@ -391,7 +479,8 @@ export default {
                needs doing. -->
           <BDropdown class="ms-1 header-item" variant="ghost-secondary" end no-size
             toggle-class="btn-icon btn-topbar rounded-circle arrow-none position-relative"
-            menu-class="dropdown-menu-end notif-panel p-0">
+            menu-class="dropdown-menu-end notif-panel p-0"
+            @shown="onBellOpened">
             <template #button-content>
               <i class="bx bxs-bell fs-22"></i>
               <span v-if="bellCount > 0"
@@ -403,9 +492,17 @@ export default {
 
             <div class="notif-head">
               <h4 class="notif-head-title">Notifications</h4>
-              <a href="#" class="notif-head-action" v-if="unreadCount > 0" @click.prevent="markAllRead">
-                Mark all as read
-              </a>
+              <div class="notif-head-actions">
+                <button type="button" class="notif-sound-toggle"
+                  :title="notifSoundMuted ? 'Turn notification sound on' : 'Mute notification sound'"
+                  :aria-label="notifSoundMuted ? 'Turn notification sound on' : 'Mute notification sound'"
+                  @click.stop="toggleNotifSound">
+                  <i :class="notifSoundMuted ? 'ri-volume-mute-line' : 'ri-volume-up-line'"></i>
+                </button>
+                <a href="#" class="notif-head-action" v-if="unreadCount > 0" @click.prevent="markAllRead">
+                  Mark all as read
+                </a>
+              </div>
             </div>
 
             <div class="notif-tabs">

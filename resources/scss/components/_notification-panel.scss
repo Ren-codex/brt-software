@@ -45,6 +45,13 @@ $notif-muted: #65767a;
     color: $notif-ink;
 }
 
+.notif-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
 .notif-head-action {
     flex-shrink: 0;
     font-size: 0.82rem;
@@ -53,6 +60,28 @@ $notif-muted: #65767a;
     text-decoration: none;
     padding: 0.3rem 0.5rem;
     border-radius: 6px;
+
+    &:hover {
+        background: rgba(var(--brt-primary-rgb), 0.1);
+        color: var(--brt-primary-dark);
+    }
+}
+
+.notif-sound-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    color: $notif-muted;
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
 
     &:hover {
         background: rgba(var(--brt-primary-rgb), 0.1);
