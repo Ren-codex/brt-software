@@ -12,6 +12,7 @@ class Check extends Model
     public const STATUS_PENDING = 'pending';
     public const STATUS_CLEARED = 'cleared';
     public const STATUS_BOUNCED = 'bounced';
+    public const STATUS_CANCELLED = 'cancelled';
 
     protected $attributes = [
         'status' => self::STATUS_PENDING,
@@ -22,12 +23,14 @@ class Check extends Model
         'bank_account_id', 'status', 'source_type', 'source_id', 'customer_id',
         'supplier_id', 'received_by_id', 'cleared_at', 'cleared_by_id',
         'bounced_at', 'bounced_by_id', 'bounce_reason', 'notes',
+        'cancelled_at', 'cancelled_by_id', 'cancel_reason',
     ];
 
     protected $casts = [
         'check_date' => 'date',
         'cleared_at' => 'datetime',
         'bounced_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     public function customer()
@@ -58,6 +61,11 @@ class Check extends Model
     public function bouncedBy()
     {
         return $this->belongsTo(User::class, 'bounced_by_id');
+    }
+
+    public function cancelledBy()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by_id');
     }
 
     public function source()

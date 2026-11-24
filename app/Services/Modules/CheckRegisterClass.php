@@ -65,7 +65,7 @@ class CheckRegisterClass
             ->keyBy('status');
 
         $summary = [];
-        foreach ([Check::STATUS_PENDING, Check::STATUS_CLEARED, Check::STATUS_BOUNCED] as $status) {
+        foreach ([Check::STATUS_PENDING, Check::STATUS_CLEARED, Check::STATUS_BOUNCED, Check::STATUS_CANCELLED] as $status) {
             $summary[$status] = [
                 'count' => (int) ($rows[$status]->total ?? 0),
                 'amount' => (float) ($rows[$status]->amount ?? 0),
@@ -404,11 +404,45 @@ class CheckRegisterClass
         return $check;
     }
 
+    /**
+     * Cancel a pending cheque that is being withdrawn — the customer is paying
+     * another way (cash, or carrying it as credit). Unlike a bounce this is no
+     * bank failure and no fault of the rep, so nobody is chased; but the effect
+     * on the money is the same: any pending deposit is retired and an issued
+     * cheque's pending payment is undone, and the cheque stops holding the
+     * invoice (see Receipt::isUnclearedFor), so it is fully owing and
+     * collectable again for whatever payment replaces it.
+     */
+    public function markCancelled(Check $check, string $reason): Check
+    {
+        $this->assertPending($check);
+
+        if (trim($reason) === '') {
+            throw ValidationException::withMessages([
+                'cancel_reason' => 'Say why the cheque is being cancelled — it stays on the record.',
+            ]);
+        }
+
+        DB::transaction(function () use ($check, $reason) {
+            $check->update([
+                'status' => Check::STATUS_CANCELLED,
+                'cancelled_at' => now(),
+                'cancelled_by_id' => Auth::id(),
+                'cancel_reason' => trim($reason),
+            ]);
+
+            $this->retireDepositForCheck($check);
+            $this->reverseBouncedSupplierPayment($check);
+        });
+
+        return $check;
+    }
+
     private function assertPending(Check $check): void
     {
         if (!$check->isPending()) {
             throw ValidationException::withMessages([
-                'status' => 'Only a pending check can be cleared or bounced. This one is ' . $check->status . '.',
+                'status' => 'Only a pending check can be cleared, bounced or cancelled. This one is ' . $check->status . '.',
             ]);
         }
     }

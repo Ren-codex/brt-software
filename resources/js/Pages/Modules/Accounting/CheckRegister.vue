@@ -251,6 +251,7 @@
                                 <td>
                                     <span class="chk-status" :class="c.status">{{ label(c.status) }}</span>
                                     <div v-if="c.status === 'bounced' && c.bounce_reason" class="chk-reason">{{ c.bounce_reason }}</div>
+                                    <div v-if="c.status === 'cancelled' && c.cancel_reason" class="chk-reason chk-reason-neutral">{{ c.cancel_reason }}</div>
                                 </td>
                                 <td class="text-muted small">{{ repName(c) }}</td>
                                 <td class="text-center">
@@ -260,6 +261,9 @@
                                         </button>
                                         <button class="action-btn delete" title="Record a bounce" @click="openBounce(c)">
                                             <i class="ri-close-circle-line"></i>
+                                        </button>
+                                        <button class="action-btn cancel" title="Cancel the cheque (paying another way)" @click="openCancel(c)">
+                                            <i class="ri-forbid-2-line"></i>
                                         </button>
                                     </template>
                                     <span v-else-if="c.status !== 'pending'" class="text-muted small">—</span>
@@ -303,6 +307,39 @@
             </div>
         </div>
 
+        <!-- Cancel modal: the cheque is being withdrawn (customer paying another way). -->
+        <div v-if="cancel.open" class="modal-overlay active" @click.self="cancel.open = false">
+            <div class="modal-container" style="max-width:480px">
+                <div class="modal-header">
+                    <div class="modal-header-icon"><i class="ri-forbid-2-line"></i></div>
+                    <div>
+                        <h5 class="modal-title">Cancel this cheque</h5>
+                        <p class="modal-subtitle">The amount goes back to owing — the customer can pay another way.</p>
+                    </div>
+                    <button class="close-btn ms-auto" @click="cancel.open = false"><i class="ri-close-line"></i></button>
+                </div>
+                <div class="modal-body">
+                    <p class="chk-bounce-summary">
+                        Cheque <strong>{{ cancel.check?.check_number }}</strong> for
+                        <strong>{{ money(cancel.check?.amount) }}</strong> will be withdrawn.
+                        It stays on the register as cancelled, and the invoice is collectable again.
+                    </p>
+                    <label class="form-label">Why is it being cancelled? <span class="text-danger">*</span></label>
+                    <input v-model.trim="cancel.reason" type="text" class="form-control"
+                        placeholder="e.g. Customer paying cash instead" @keyup.enter="submitCancel" />
+
+                    <div v-if="cancel.error" class="error-msg">{{ cancel.error }}</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="acct-btn-secondary" @click="cancel.open = false">Close</button>
+                    <button class="acct-btn-primary" :disabled="cancel.saving" @click="submitCancel">
+                        <span v-if="cancel.saving"><i class="ri-loader-4-line spin"></i> Saving…</span>
+                        <span v-else>Cancel cheque</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <SupervisorGate
             ref="bounceGate"
             action="checks.bounce"
@@ -331,6 +368,7 @@ export default {
             loading: true,
             filters: { direction: '', status: '', keyword: '' },
             bounce: { open: false, check: null, reason: '', error: '', saving: false, token: '' },
+            cancel: { open: false, check: null, reason: '', error: '', saving: false },
             forecast: { accounts: [], unassigned_received: 0 },
             forecastLoading: true,
             searchTimer: null,
@@ -405,7 +443,7 @@ export default {
             this.searchTimer = setTimeout(this.fetch, 300);
         },
         label(status) {
-            return { pending: 'Pending', cleared: 'Cleared', bounced: 'Bounced' }[status] ?? status;
+            return { pending: 'Pending', cleared: 'Cleared', bounced: 'Bounced', cancelled: 'Cancelled' }[status] ?? status;
         },
         repName(check) {
             const rep = check?.received_by;
@@ -463,6 +501,23 @@ export default {
                 .catch(err => { this.bounce.error = err.response?.data?.message || 'Could not record the bounce.'; })
                 .finally(() => { this.bounce.saving = false; });
         },
+        openCancel(check) {
+            this.cancel = { open: true, check, reason: '', error: '', saving: false };
+        },
+        submitCancel() {
+            if (!this.cancel.reason) {
+                this.cancel.error = 'Say why the cheque is being cancelled.';
+                return;
+            }
+            this.cancel.error = '';
+            this.cancel.saving = true;
+            axios.put(`/accounting/check-register/${this.cancel.check.id}/cancel`, {
+                cancel_reason: this.cancel.reason,
+            })
+                .then(() => { this.cancel.open = false; this.fetch(); this.fetchForecast(); })
+                .catch(err => { this.cancel.error = err.response?.data?.message || 'Could not cancel the cheque.'; })
+                .finally(() => { this.cancel.saving = false; });
+        },
     },
 };
 </script>
@@ -490,8 +545,10 @@ export default {
 .chk-status.pending { background: #fdf3e3; color: #8a5a10; border: 1px solid #f0d49a; }
 .chk-status.cleared { background: var(--brt-c-e9f5f0); color: var(--brt-c-1b6b4a); border: 1px solid var(--brt-c-a8dcc8); }
 .chk-status.bounced { background: #fdeaea; color: #96231f; border: 1px solid #f2b8b5; }
+.chk-status.cancelled { background: #eef1f3; color: #5b6b73; border: 1px solid #d6dde1; }
 
 .chk-reason, .chk-overdue-note { font-size: 0.7rem; color: #96231f; margin-top: 2px; }
+.chk-reason-neutral { color: #5b6b73; }
 .chk-overdue { background: #fffaf3; }
 
 .chk-bounce-summary { font-size: 0.85rem; color: var(--brt-c-33564f); margin-bottom: 0.9rem; }
@@ -530,6 +587,8 @@ export default {
 .action-btn.confirm:hover { background: var(--brt-c-e9f5f0); }
 .action-btn.delete        { border-color: #fca5a5; color: #991b1b; }
 .action-btn.delete:hover  { background: #fee2e2; }
+.action-btn.cancel        { border-color: #cbd5d8; color: #5b6b73; }
+.action-btn.cancel:hover  { background: #eef1f3; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 

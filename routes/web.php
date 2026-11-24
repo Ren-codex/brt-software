@@ -379,6 +379,10 @@ Route::middleware(['2fa', 'auth', 'is_active'])->group(function () {
             ->middleware('permission:accounting,check_register,approver');
         Route::put('/accounting/check-register/{id}/bounce', [App\Http\Controllers\Modules\CheckRegisterController::class, 'bounce'])
             ->middleware('permission:accounting,check_register,approver');
+        // Cancelling withdraws a pending cheque (the customer is paying another
+        // way); like confirm/bounce it decides the money, so it sits at approver.
+        Route::put('/accounting/check-register/{id}/cancel', [App\Http\Controllers\Modules\CheckRegisterController::class, 'cancel'])
+            ->middleware('permission:accounting,check_register,approver');
         // A field transfer is confirmed by receipt id, not by a register row —
         // same act, same gate as confirming a check.
         Route::put('/accounting/check-register/transfers/{receiptId}/confirm', [App\Http\Controllers\Modules\CheckRegisterController::class, 'confirmTransfer'])

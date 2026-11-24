@@ -52,7 +52,7 @@ class CheckRegisterController extends Controller
 
         return inertia('Modules/Accounting/CheckRegister', [
             'directions' => [Check::DIRECTION_RECEIVED, Check::DIRECTION_ISSUED],
-            'statuses' => [Check::STATUS_PENDING, Check::STATUS_CLEARED, Check::STATUS_BOUNCED],
+            'statuses' => [Check::STATUS_PENDING, Check::STATUS_CLEARED, Check::STATUS_BOUNCED, Check::STATUS_CANCELLED],
         ]);
     }
 
@@ -119,6 +119,23 @@ class CheckRegisterController extends Controller
             'data' => $check->fresh(),
             'message' => 'Check recorded as bounced.',
             'info' => 'The customer still owes this amount, and the rep who received it has been told.',
+        ]);
+    }
+
+    public function cancel(int $id, Request $request)
+    {
+        $data = $request->validate([
+            'cancel_reason' => 'required|string|max:255',
+        ]);
+
+        $check = Check::findOrFail($id);
+
+        $this->register->markCancelled($check, $data['cancel_reason']);
+
+        return response()->json([
+            'data' => $check->fresh(),
+            'message' => 'Cheque cancelled.',
+            'info' => 'The cheque was withdrawn; the amount is owing again and can be paid another way (cash, or left on credit).',
         ]);
     }
 }

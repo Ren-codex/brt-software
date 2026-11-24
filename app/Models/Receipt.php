@@ -87,10 +87,10 @@ class Receipt extends Model
     /**
      * Money this receipt promises but has not delivered: still waiting on the
      * bank, and not written off. A bounced check is not uncleared — it never
-     * was money and never will be, so it holds nothing against the invoice.
-     * Neither is a voided one: it was recorded in error and undone, and left
-     * counted here it would block the invoice against the payment that
-     * replaces it.
+     * was money and never will be, so it holds nothing against the invoice. A
+     * cancelled one is the same: the cheque was withdrawn (the customer is
+     * paying another way), so it must stop holding the invoice against the
+     * payment that replaces it. Neither is a voided one, for the same reason.
      */
     public function isUnclearedFor(?string $orderPaymentMode): bool
     {
@@ -106,7 +106,11 @@ class Receipt extends Model
             return false;
         }
 
-        return optional($this->registerCheck)->status !== Check::STATUS_BOUNCED;
+        return ! in_array(
+            optional($this->registerCheck)->status,
+            [Check::STATUS_BOUNCED, Check::STATUS_CANCELLED],
+            true
+        );
     }
 
     /** Recorded in error and undone. */
